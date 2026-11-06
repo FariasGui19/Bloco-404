@@ -6,6 +6,7 @@
 import { state } from './state.js';
 import { openDialogue } from '../ui/dialogue.js';
 import { saveGame } from './save.js';
+import { isGateOpen } from './gates.js';
 import { hasAbility, showAbilityMessage, ARCHETYPE_ABILITIES } from './abilities.js';
 
 const DEFAULT_MODULE_DISTANCE = 1.65;
@@ -15,7 +16,7 @@ function distanceBetween(aX, aY, bX, bY) {
 }
 
 function canDiagnose(item) {
-  if (!item?.moduleSystem) return false;
+  if (!item?.moduleSystem || isGateOpen(item)) return false;
   const allowed = item.moduleSystem.allowedArchetypes;
   if (!allowed) return true; // Qualquer módulo pode ler se o mapa não especificar
   return allowed.includes(state.progress.archetype);

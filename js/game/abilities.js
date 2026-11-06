@@ -20,32 +20,15 @@ import { input } from '../engine/input.js';
 import { getFloor } from './world.js';
 import { moveWithCollision } from './collision.js';
 import { tryModuleInteraction } from './module-interactions.js';
+import { ARCHETYPE_KITS, IMPLEMENTED_ABILITIES } from '../data/archetype-kits.js';
 
 // ---------------------------------------------------------------------
 // CONFIGURAÇÃO INTERNA DE HABILIDADES
 // ---------------------------------------------------------------------
 
-export const ARCHETYPE_ABILITIES = {
-  nucleo_dez_forma: [
-    'forma_veloz',
-    'eco_scan',
-  ],
-
-  lamina_dominio_anciao: [
-    'golpe_ruptura',
-    'postura_dominio',
-  ],
-
-  motor_bio_forja: [
-    'bio_dash',
-    'bio_diagnostic',
-  ],
-
-  mare_astral: [
-    'passo_corrente',
-    'senso_corrente',
-  ],
-};
+export const ARCHETYPE_ABILITIES = Object.fromEntries(
+  Object.entries(ARCHETYPE_KITS).map(([id, kit]) => [id, [kit.q, kit.r]])
+);
 
 const BIO_DASH = {
   id: 'bio_dash',
@@ -319,13 +302,16 @@ export function updateAbilities(dt) {
     if (abilityId === 'bio_dash') {
       return tryStartBioDash();
     }
-    // Futuramente, quando o Domínio for implementado:
-    // if (abilityId === 'golpe_ruptura') { return tryGolpeRuptura(); }
+    if (abilityId && !IMPLEMENTED_ABILITIES.includes(abilityId)) {
+      showAbilityMessage('HABILIDADE AINDA EM DESENVOLVIMENTO');
+    }
   }
 
   // R = interação especial do módulo (mantém como está).
   if (pressed('r', 'keyr')) {
-    tryModuleInteraction();
+    const abilityId = ARCHETYPE_ABILITIES[state.progress.archetype]?.[1];
+    if (IMPLEMENTED_ABILITIES.includes(abilityId)) tryModuleInteraction();
+    else if (abilityId) showAbilityMessage('HABILIDADE AINDA EM DESENVOLVIMENTO');
   }
 
   return false;

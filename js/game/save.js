@@ -11,6 +11,7 @@
 // =====================================================================
 
 import { state } from './state.js';
+import { ensureArchetypeProgress } from './progression.js';
 
 const SAVE_VERSION = 1;
 const SLOT_COUNT = 3;
@@ -41,6 +42,7 @@ function createDefaultProgress() {
     archetype: null,
 
     abilities: [],
+    archetypeProgress: {},
     inventory: [],
 
     activeQuest: null,
@@ -141,6 +143,7 @@ function migrateSave(save, slot) {
     },
   };
 
+  ensureArchetypeProgress(safeSave.progress);
   return safeSave;
 }
 

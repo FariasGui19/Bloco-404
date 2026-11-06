@@ -25,6 +25,7 @@ import {
   stopActorTalking,
 } from './actors.js';
 import { getArchetypeAbilities } from './abilities.js';
+import { ensureArchetypeProgress } from './progression.js';
 
 function createEmptyScores() {
   return {
@@ -202,6 +203,7 @@ function finalizeArchetype(actor, archetypeId) {
   state.progress.archetype = archetypeId;
   // Libera o kit inicial de habilidades do módulo escolhido. 
   state.progress.abilities = getArchetypeAbilities(archetypeId);
+  ensureArchetypeProgress(state.progress);
   state.progress.onboardingCompleted = true;
   state.progress.onboardingStarted = true;
 

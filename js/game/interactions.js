@@ -13,8 +13,7 @@ import { openElevatorMenu } from '../ui/elevator-menu.js';
 import { saveGame } from './save.js';
 import { startNexoOnboarding } from './onboarding.js';
 import { getNearestCollectible, getCollectiblePrompt, collectItem } from './collectibles.js';
-import { checkGate, getGateFailureMessage } from './gates.js';
-import { isGateOpen } from './gates.js'; 
+import { checkGate, getGateFailureMessage, getGateSuccessMessage, isGateOpen, openGate } from './gates.js';
 
 const DEFAULT_INTERACTION_DISTANCE = 1.35;
 

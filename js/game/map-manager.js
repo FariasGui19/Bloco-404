@@ -9,6 +9,7 @@ import { state } from './state.js';
 import { snapCameraTo } from '../engine/camera.js';
 import { createActorRuntime } from './actors.js';
 import { rememberMapLocation } from './save.js';
+import { applyGateStates } from './gates.js';
 
 function findDefaultSpawn(layout) {
   const height = layout.length;
@@ -76,6 +77,9 @@ export async function loadMap(mapId, spawnId = 'inicio') {
       y: object.y + 0.5,
       renderType: 'object',
     }));
+
+    // Reaplica os gates persistidos sem alterar os dados originais do mapa.
+    applyGateStates(state.objects);
 
     // Portais
     state.portals = (mapData.portals ?? []).map(portal => ({

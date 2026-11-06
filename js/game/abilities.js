@@ -21,6 +21,7 @@ import { getFloor } from './world.js';
 import { moveWithCollision } from './collision.js';
 import { tryModuleInteraction } from './module-interactions.js';
 import { ARCHETYPE_KITS, IMPLEMENTED_ABILITIES } from '../data/archetype-kits.js';
+import { getBioDashProfile } from './ability-context.js';
 
 // ---------------------------------------------------------------------
 // CONFIGURAÇÃO INTERNA DE HABILIDADES
@@ -29,19 +30,6 @@ import { ARCHETYPE_KITS, IMPLEMENTED_ABILITIES } from '../data/archetype-kits.js
 export const ARCHETYPE_ABILITIES = Object.fromEntries(
   Object.entries(ARCHETYPE_KITS).map(([id, kit]) => [id, [kit.q, kit.r]])
 );
-
-const BIO_DASH = {
-  id: 'bio_dash',
-
-  energyCost: 28,
-  cooldown: 1.25,
-
-  duration: 0.18,
-  distance: 2.15,
-
-  // Pequena margem para não tentar dash se já estiver em menu/diálogo.
-  minimumEnergy: 28,
-};
 
 // ---------------------------------------------------------------------
 // API PÚBLICA
@@ -59,7 +47,7 @@ export function getCooldownPercent(abilityId) {
   const cooldown = state.player.ability?.cooldowns?.[abilityId] ?? 0;
 
   if (abilityId === 'bio_dash') {
-    return Math.max(0, Math.min(1, cooldown / BIO_DASH.cooldown));
+    return Math.max(0, Math.min(1, cooldown / getBioDashProfile({ archetype: 'motor_bio_forja' }, null).cooldown));
   }
 
   return 0;
@@ -69,10 +57,10 @@ export function getAbilityLabel(abilityId) {
   const labels = {
     bio_dash: 'PROPULSOR DE IMPULSO',
     bio_diagnostic: 'LINK DE DIAGNÓSTICO',
-    forma_veloz: 'FORMA VELOZ',
+    forma_veloz: 'PULSO VELOZ',
     eco_scan: 'LEITURA DE ECO',
     golpe_ruptura: 'GOLPE DE RUPTURA',
-    postura_dominio: 'POSTURA DE DOMÍNIO',
+    postura_dominio: 'LEITURA DE FREQUÊNCIA',
     passo_corrente: 'PASSO DE CORRENTE',
     senso_corrente: 'SENSO DE CORRENTE',
   };
@@ -154,6 +142,8 @@ function tryStartBioDash() {
   const ability = player.ability;
 
   if (!hasAbility('bio_dash')) return false;
+  const profile = getBioDashProfile(state.progress, player);
+  if (!profile) return false;
 
   const cooldown = ability.cooldowns.bio_dash ?? 0;
 
@@ -162,16 +152,16 @@ function tryStartBioDash() {
     return false;
   }
 
-  if (player.energy < BIO_DASH.minimumEnergy) {
+  if (player.energy < profile.energyCost) {
     showAbilityMessage('ENERGIA INSUFICIENTE');
     return false;
   }
 
   const direction = getFacingWorldDirection(player.facing);
 
-  player.energy -= BIO_DASH.energyCost;
+  player.energy -= profile.energyCost;
 
-  ability.cooldowns.bio_dash = BIO_DASH.cooldown;
+  ability.cooldowns.bio_dash = profile.cooldown;
 
   ability.active = 'bio_dash';
 
@@ -179,14 +169,15 @@ function tryStartBioDash() {
     directionX: direction.x,
     directionY: direction.y,
 
-    timeLeft: BIO_DASH.duration,
-    speed: BIO_DASH.distance / BIO_DASH.duration,
+    timeLeft: profile.duration,
+    speed: profile.distance / profile.duration,
+    mode: profile.mode,
 
     // Usaremos isso depois no renderer para rastro/partículas.
     trailTimer: 0,
   };
 
-  showAbilityMessage('PROPULSOR DE IMPULSO');
+  showAbilityMessage(profile.mode === 'equipped' ? 'PROPULSOR • TRAJE ATIVO' : 'PROPULSOR • MODO RÁPIDO');
 
   return true;
 }

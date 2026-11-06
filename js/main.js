@@ -12,6 +12,7 @@ import { loadMap } from './game/map-manager.js';
 
 import { updatePlayer } from './game/player.js';
 import { updateAbilities } from './game/abilities.js';
+import { toggleBioSuit } from './game/ability-context.js';
 import { updateCamera } from './engine/camera.js';
 
 import { input, initInput, endInputFrame } from './engine/input.js';
@@ -148,16 +149,6 @@ await loadSprites([
 
 async function update(dt) {
   updateDebugInput();
-  // Gatilho temporário para testar a transformação
-  if (input.pressed.has('t') || input.pressed.has('keyt')) {
-    if (state.progress.archetype === 'motor_bio_forja') {
-      state.player.equippedSuit = state.player.equippedSuit === 'bio_forja' ? null : 'bio_forja';
-      console.log(`[TRAJE] Equipado: ${state.player.equippedSuit}`);
-    } else {
-      console.log(`[TRAJE] Nenhum traje disponível para este arquétipo.`);
-    }
-  }
-
   // Atualiza a ferramenta de calibração antes de qualquer outro input.
   updateBackgroundCalibration();
 
@@ -219,6 +210,10 @@ async function update(dt) {
     input.click = null;
     state.onElevator = false;
   } else {
+    // T não atua em diálogos, menus, calibração ou durante um dash.
+    if (input.pressed.has('t') || input.pressed.has('keyt')) {
+      toggleBioSuit(state.progress, player);
+    }
     const abilityLocksMovement = updateAbilities(dt);
 
     if (!abilityLocksMovement) {

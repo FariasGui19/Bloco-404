@@ -75,6 +75,7 @@ export const state = {
     archetype: null,
 
     abilities: [],
+    archetypeProgress: {},
     inventory: [],
 
     activeQuest: null,

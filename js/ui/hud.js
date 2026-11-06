@@ -18,6 +18,7 @@ import {
   getBackgroundCalibrationText,
 } from '../game/background-calibration.js';
 import { ARCHETYPE_ABILITIES, getAbilityLabel } from '../game/abilities.js';
+import { IMPLEMENTED_ABILITIES } from '../data/archetype-kits.js';
 
 const el = {};
 const cache = {};
@@ -120,7 +121,7 @@ function updateAbilityHud(state) {
       <kbd>Q</kbd>
       <div>
         <strong>${label}</strong>
-        <span>${isCoolingDown ? `RECARREGANDO ${cooldown.toFixed(1)}s` : 'PRONTO'}</span>
+        <span>${!IMPLEMENTED_ABILITIES.includes(primaryId) ? 'EM DESENVOLVIMENTO' : isCoolingDown ? `RECARREGANDO ${cooldown.toFixed(1)}s` : 'PRONTO'}</span>
       </div>
     `;
     el.abilityPrimary.classList.toggle('cooldown', isCoolingDown);
@@ -134,7 +135,7 @@ function updateAbilityHud(state) {
       <kbd>R</kbd>
       <div>
         <strong>${label}</strong>
-        <span>${prompt ? prompt : 'PROCURE SISTEMAS COMPATÍVEIS'}</span>
+        <span>${!IMPLEMENTED_ABILITIES.includes(secondaryId) ? 'EM DESENVOLVIMENTO' : prompt ? prompt : 'PROCURE SISTEMAS COMPATÍVEIS'}</span>
       </div>
     `;
     el.abilitySecondary.classList.toggle('ready', Boolean(prompt));

@@ -1,0 +1,405 @@
+// js/game/collision.js
+// =====================================================================
+//  COLISÃO
+//
+//  Player / NPCs / Robô = círculos.
+//  Paredes e objetos = retângulos.
+//
+//  FONTE DA VERDADE DO CHÃO: tileAt()
+//    - Se o mapa tem walkMask, ELE decide o que é chão:
+//        "." = caminhável | qualquer outro caractere = bloqueado
+//      (tem prioridade sobre map.layout)
+//    - Sem walkMask, vale o layout normal.
+//
+//  PORTA ÚNICA DE MOVIMENTO: canStandAt()
+//    parede/máscara + objetos sólidos + atores.
+//
+//  canStandAt aceita:
+//    canStandAt(map, x, y, raio, ignorar)
+//    canStandAt(x, y, raio, ignorar)
+// =====================================================================
+
+import { CONFIG, TILE } from '../config.js';
+import { state } from './state.js';
+import { getCurrentMap } from './map-manager.js';
+
+const MAX_STEP = 0.08;
+const WALKABLE_CHAR = '.';
+const avisados = new Set();
+
+const num = (value, fallback) =>
+  Number.isFinite(value) ? value : fallback;
+
+// =====================================================================
+// WALK MASK
+//
+// walkMask: [
+//   "##################",
+//   "#####........#####",
+// ]
+//
+// Linha = y, coluna = x (mesma indexação do layout).
+// Fora da máscara = bloqueado.
+// =====================================================================
+
+export function isWalkMaskTileWalkable(map, tileX, tileY) {
+  if (!map?.walkMask) return true;
+
+  const row = map.walkMask[tileY];
+  if (!row) return false;
+
+  return row[tileX] === WALKABLE_CHAR;
+}
+
+// =====================================================================
+// TILES
+// =====================================================================
+
+export function tileAt(map, x, y) {
+  if (!map) return TILE.WALL;
+
+  const tileX = Math.floor(x);
+  const tileY = Math.floor(y);
+
+  // Mapa com máscara: a máscara manda.
+  if (map.walkMask) {
+    if (!isWalkMaskTileWalkable(map, tileX, tileY)) {
+      return TILE.WALL;
+    }
+
+    // Tile liberado pela máscara. Mantém tipos especiais do layout
+    // (ex.: ELEVATOR) mas nunca deixa o layout re-bloquear o chão.
+    const tile = map.layout?.[tileY]?.[tileX];
+    return tile === undefined || tile === TILE.WALL
+      ? TILE.FLOOR
+      : tile;
+  }
+
+  if (!map.layout) return TILE.WALL;
+
+  const tile = map.layout[tileY]?.[tileX];
+  return tile === undefined ? TILE.WALL : tile;
+}
+
+export function isWall(map, x, y) {
+  return tileAt(map, x, y) === TILE.WALL;
+}
+
+// Para clique no chão, IA de NPC etc. (não precisa conhecer walkMask).
+export function isTileWalkable(map, x, y) {
+  return !isWall(map, x, y);
+}
+
+// =====================================================================
+// GEOMETRIA
+// =====================================================================
+
+function circleHitsRect(circleX, circleY, radius, rectX, rectY, rectW, rectH) {
+  const nearestX = Math.max(rectX, Math.min(circleX, rectX + rectW));
+  const nearestY = Math.max(rectY, Math.min(circleY, rectY + rectH));
+
+  const dx = circleX - nearestX;
+  const dy = circleY - nearestY;
+
+  return (dx * dx + dy * dy) < (radius * radius);
+}
+
+// =====================================================================
+// PAREDES (inclui a máscara, via tileAt)
+// =====================================================================
+
+export function hitsWall(map, x, y, radius) {
+  const minX = Math.floor(x - radius);
+  const maxX = Math.floor(x + radius);
+  const minY = Math.floor(y - radius);
+  const maxY = Math.floor(y + radius);
+
+  for (let tileY = minY; tileY <= maxY; tileY++) {
+    for (let tileX = minX; tileX <= maxX; tileX++) {
+      if (!isWall(map, tileX, tileY)) continue;
+
+      if (circleHitsRect(x, y, radius, tileX, tileY, 1, 1)) {
+        return true;
+      }
+    }
+  }
+
+  return false;
+}
+
+// =====================================================================
+// OBJETOS — HITBOXES
+//
+// hitbox:  { offsetX, offsetY, width, height }
+// hitboxes: [ { ... }, { ... } ]
+//
+// Objetos espelhados no renderer (scale(-1,1)) trocam os eixos do mundo
+// iso, então a hitbox também troca X<->Y.
+// =====================================================================
+
+function buildBox(object, hitbox) {
+  let offsetX = num(hitbox.offsetX, -0.30);
+  let offsetY = num(hitbox.offsetY, -0.30);
+  let width = num(hitbox.width, 0.60);
+  let height = num(hitbox.height, 0.60);
+
+  if (object.espelhar) {
+    [offsetX, offsetY] = [offsetY, offsetX];
+    [width, height] = [height, width];
+  }
+
+  return {
+    objectId: object.id,
+
+    x: object.x + offsetX,
+    y: object.y + offsetY,
+
+    width,
+    height,
+
+    // Compatibilidade com ferramentas antigas.
+    w: width,
+    h: height,
+  };
+}
+
+export function getObjectHitbox(object) {
+  if (!object?.bloqueia) return null;
+
+  if (!Number.isFinite(object.x) || !Number.isFinite(object.y)) {
+    if (!avisados.has(object.id)) {
+      console.warn(
+        `[COLISÃO] Objeto "${object.id}" com posição inválida:`,
+        object.x,
+        object.y
+      );
+      avisados.add(object.id);
+    }
+    return null;
+  }
+
+  return buildBox(object, object.hitbox ?? {});
+}
+
+export function getCustomObjectHitbox(object, hitbox) {
+  if (!object?.bloqueia || !hitbox) return null;
+
+  if (!Number.isFinite(object.x) || !Number.isFinite(object.y)) {
+    return null;
+  }
+
+  return buildBox(object, hitbox);
+}
+
+// =====================================================================
+// BARREIRAS ATRAVESSÁVEIS POR DASH
+//
+// { bloqueia: true, dashPassable: true,
+//   dashPassableRequiresFlag: 'cargoSecurityDiagnosed' }
+//
+// Só libera OBJETOS. Paredes e máscara continuam valendo no dash.
+// =====================================================================
+
+function canDashPassObject(object, ignore) {
+  if (ignore !== state.player) return false;
+  if (!state.player?.ability?.dash) return false;
+  if (!object.dashPassable) return false;
+
+  if (object.dashPassableRequiresFlag) {
+    return state.progress?.flags?.[object.dashPassableRequiresFlag] === true;
+  }
+
+  return true;
+}
+
+// =====================================================================
+// OBJETOS — BLOQUEIO
+// =====================================================================
+
+export function getBlockingObject(x, y, radius, ignore = null) {
+  for (const object of state.objects ?? []) {
+    if (!object?.bloqueia) continue;
+    if (object === ignore) continue;
+
+    // Objeto escondido por progresso não bloqueia mais.
+    if (
+      object.hideWhenFlag &&
+      state.progress?.flags?.[object.hideWhenFlag]
+    ) {
+      continue;
+    }
+
+    // Bloqueia andando, libera durante dash.
+    if (canDashPassObject(object, ignore)) continue;
+
+    // Múltiplas hitboxes.
+    if (Array.isArray(object.hitboxes) && object.hitboxes.length > 0) {
+      for (const customHitbox of object.hitboxes) {
+        const box = getCustomObjectHitbox(object, customHitbox);
+        if (!box) continue;
+
+        if (
+          circleHitsRect(x, y, radius, box.x, box.y, box.width, box.height)
+        ) {
+          return object;
+        }
+      }
+
+      // Já testou as múltiplas; não testa a hitbox simples.
+      continue;
+    }
+
+    // Hitbox única.
+    const box = getObjectHitbox(object);
+    if (!box) continue;
+
+    if (circleHitsRect(x, y, radius, box.x, box.y, box.width, box.height)) {
+      return object;
+    }
+  }
+
+  return null;
+}
+
+export function hitsSolidObject(x, y, radius, ignore = null) {
+  return getBlockingObject(x, y, radius, ignore) !== null;
+}
+
+// =====================================================================
+// ATORES / NPCs / ROBÔS
+//
+// solido: false permite atravessar aquele ator.
+// =====================================================================
+
+export function hitsActor(x, y, radius, ignore = null) {
+  for (const actor of state.actors ?? []) {
+    if (!actor) continue;
+    if (actor === ignore) continue;
+    if (actor.solido === false) continue;
+
+    const actorRadius = actor.raio ?? CONFIG.NPC_RADIUS ?? 0.28;
+    const minDistance = radius + actorRadius;
+
+    const dx = x - actor.x;
+    const dy = y - actor.y;
+
+    if ((dx * dx + dy * dy) < (minDistance * minDistance)) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+// =====================================================================
+// PODE FICAR NESTA POSIÇÃO?  (PORTA ÚNICA DE MOVIMENTO)
+// =====================================================================
+
+export function canStandAt(...args) {
+  // canStandAt(x, y, radius, ignore)  ou
+  // canStandAt(map, x, y, radius, ignore)
+  if (typeof args[0] === 'number') {
+    args.unshift(getCurrentMap());
+  }
+
+  const [
+    map,
+    x,
+    y,
+    radius = CONFIG.PLAYER_RADIUS ?? 0.25,
+    ignore = null,
+  ] = args;
+
+  if (!map || !Number.isFinite(x) || !Number.isFinite(y)) {
+    return false;
+  }
+
+  if (hitsWall(map, x, y, radius)) return false;           // layout + walkMask
+  if (hitsSolidObject(x, y, radius, ignore)) return false; // props sólidos
+  if (hitsActor(x, y, radius, ignore)) return false;       // NPCs / robôs
+
+  return true;
+}
+
+// =====================================================================
+// PONTO CAMINHÁVEL MAIS PRÓXIMO
+//
+// Para clique no chão: se o clique caiu no vazio/parede/prop, devolve
+// o ponto válido mais próximo dentro de maxDist tiles, ou null.
+// =====================================================================
+
+export function findNearestStandable(
+  map,
+  x,
+  y,
+  radius = CONFIG.PLAYER_RADIUS ?? 0.25,
+  maxDist = 1.5,
+  ignore = null
+) {
+  if (canStandAt(map, x, y, radius, ignore)) return { x, y };
+
+  const step = 0.25;
+  const maxSq = maxDist * maxDist;
+  let best = null;
+  let bestSq = Infinity;
+
+  for (let dy = -maxDist; dy <= maxDist; dy += step) {
+    for (let dx = -maxDist; dx <= maxDist; dx += step) {
+      const sq = dx * dx + dy * dy;
+      if (sq > maxSq || sq >= bestSq) continue;
+
+      if (canStandAt(map, x + dx, y + dy, radius, ignore)) {
+        best = { x: x + dx, y: y + dy };
+        bestSq = sq;
+      }
+    }
+  }
+
+  return best;
+}
+
+// =====================================================================
+// MOVIMENTO COM COLISÃO
+//
+// Divide movimentos grandes em passos pequenos.
+// Tenta diagonal, depois deslize X, depois deslize Y.
+// =====================================================================
+
+export function moveWithCollision(map, entity, dx, dy, radius) {
+  const distance = Math.hypot(dx, dy);
+
+  if (!distance || !map) return false;
+
+  const steps = Math.max(1, Math.ceil(distance / MAX_STEP));
+  const stepX = dx / steps;
+  const stepY = dy / steps;
+
+  let moved = false;
+
+  for (let i = 0; i < steps; i++) {
+    if (canStandAt(map, entity.x + stepX, entity.y + stepY, radius, entity)) {
+      entity.x += stepX;
+      entity.y += stepY;
+      moved = true;
+      continue;
+    }
+
+    if (
+      stepX !== 0 &&
+      canStandAt(map, entity.x + stepX, entity.y, radius, entity)
+    ) {
+      entity.x += stepX;
+      moved = true;
+    }
+
+    if (
+      stepY !== 0 &&
+      canStandAt(map, entity.x, entity.y + stepY, radius, entity)
+    ) {
+      entity.y += stepY;
+      moved = true;
+    }
+  }
+
+  return moved;
+} 

@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BLOCO 404</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+
+<body class="in-menu">
+  <canvas id="game"></canvas>
+
+  <!-- ============ HUD (fica escondido enquanto o menu está aberto) ============ -->
+  <div id="ui">
+    <div class="panel">
+      <h1 id="floorName">...</h1>
+      <p id="coords">X: 0 Y: 0 | ZOOM: 100%</p>
+    </div>
+    <!-- HUD DO MÓDULO DE ECO ATIVO -->
+    <div id="moduleHud">
+      <span class="module-hud-label">ECO ATIVO</span>
+      <strong id="moduleHudName">---</strong>
+      <span id="moduleHudSubtitle">---</span>
+    </div>
+    <!-- HUD DE HABILIDADES -->
+    <div id="abilityHud">
+      <div class="ability-energy-row">
+        <span class="ability-energy-label">ENERGIA</span>
+        <strong id="abilityEnergyText">100 / 100</strong>
+      </div>
+      <!-- HUD DE MISSÃO ATIVA -->
+      <div id="questHud">
+        <span class="quest-hud-label">MISSÃO ATIVA</span>
+        <strong id="questHudTitle">---</strong>
+        <span id="questHudDescription">---</span>
+      </div>
+      <!-- HUD DE CALIBRAÇÃO INTERNA -->
+      <pre id="backgroundCalibrationHud"></pre>
+
+      <div class="ability-energy-track">
+        <div id="abilityEnergyFill"></div>
+      </div>
+
+      <div class="ability-list">
+        <div id="abilityPrimary" class="ability-slot">
+          <kbd>Q</kbd>
+
+          <div>
+            <strong>---</strong>
+            <span>INDISPONÍVEL</span>
+          </div>
+        </div>
+        <div id="abilitySecondary" class="ability-slot ability-secondary">
+          <kbd>R</kbd>
+
+          <div>
+            <strong>LINK DE DIAGNÓSTICO</strong>
+            <span>PROCURE SISTEMAS COMPATÍVEIS</span>
+          </div>
+        </div>
+
+        <div id="abilityMessage" class="ability-message"></div>
+      </div>
+    </div>
+    <div class="panel right">
+      <p id="stats" class="stats">● -- FPS</p>
+      <p id="version"></p>
+    </div>
+  </div>
+
+  <div id="controls">
+    <div class="panel">
+      <b>WASD / Setas</b> mover &nbsp;|&nbsp; <b>CLIQUE</b> no chão &nbsp;|&nbsp; <b>ARRASTAR botão direito</b>
+      câmera<br>
+      <b>RODINHA / + -</b> zoom | <b>C</b> centralizar | <b>[E]</b> interagir | <b>H</b> debug | <b>V</b> calibrar
+      cenário &nbsp;|&nbsp; <b>U/O</b> escala X &nbsp;|&nbsp; <b>N/M</b> escala Y
+    </div>
+  </div>
+
+  <!-- Prompt de Interação Contextual -->
+  <div id="elevatorPrompt">[E] INTERAGIR</div>
+
+  <div id="dialogueBox">
+    <div class="dialogue-header">
+      <span class="dialogue-signal">◆</span>
+      <span id="dialogueSpeaker">SISTEMA</span>
+    </div>
+
+    <p id="dialogueText">...</p>
+
+    <!-- Escolhas aparecem aqui somente quando o diálogo possui opções -->
+    <div id="dialogueChoices" class="dialogue-choices"></div>
+
+    <div id="dialogueHint">[E / ESPAÇO / CLIQUE] CONTINUAR</div>
+  </div>
+
+  <!-- ============ TELA DE TÍTULO ============ -->
+  <div id="titleScreen">
+    <div class="title-bg">
+      <div class="title-grid"></div>
+    </div>
+    <div class="title-sparks" id="titleSparks"></div>
+    <div class="title-vignette"></div>
+
+    <main class="title-content">
+      <p class="title-tag">— UM PRÉDIO · TODOS OS UNIVERSOS —</p>
+      <h1 class="title-logo">
+        <span class="word">BLOCO</span> <span class="n404">404</span>
+      </h1>
+      <p class="title-sub">Suba de andar. Descubra quem mora em cada um.</p>
+      <button id="startBtn" class="btn-start" type="button">INICIAR JOGO</button>
+      <p class="title-hint">ou pressione <kbd>ENTER</kbd></p>
+    </main>
+
+    <footer class="title-footer">
+      <span id="titleVersion"></span>
+      <span>FEITO COM VIBE CODE</span>
+    </footer>
+  </div>
+  <!-- ============ SELEÇÃO DE SAVE ============ -->
+  <div id="saveMenu" aria-hidden="true">
+    <div class="save-menu-bg"></div>
+
+    <section class="save-menu-panel">
+      <header class="save-menu-header">
+        <div>
+          <p class="save-menu-kicker">BLOCO 404 // TERMINAL DE OPERADORES</p>
+          <h2 id="saveMenuTitle">SELECIONE UMA ASSINATURA</h2>
+        </div>
+
+        <button id="saveMenuBackBtn" class="save-close-btn" type="button">
+          VOLTAR
+        </button>
+      </header>
+
+      <p class="save-menu-description">
+        Selecione um arquivo existente ou registre um novo Operador Dimensional.
+      </p>
+
+      <div id="saveSlots" class="save-slots"></div>
+
+      <footer class="save-menu-footer">
+        <span>◆ DADOS ARMAZENADOS LOCALMENTE NESTE NAVEGADOR</span>
+        <span>V0.3 // BLOCO 404</span>
+      </footer>
+    </section>
+  </div>
+  <!-- ============ ARQUIVOS DE ECO / ARQUÉTIPOS ============ -->
+  <div id="archetypeCards">
+    <div class="archetype-overlay-bg"></div>
+
+    <section class="archetype-panel">
+      <header class="archetype-panel-header">
+        <p>BLOCO 404 // ARQUIVO CENTRAL</p>
+        <h2 id="archetypeCardsTitle">ANALISANDO RESSONÂNCIA</h2>
+      </header>
+
+      <div id="archetypeCardsContent"></div>
+
+      <footer class="archetype-panel-footer">
+        ◆ MÓDULOS DE ECO SÃO INSTÁVEIS. USE COM RESPONSABILIDADE RELATIVA.
+      </footer>
+    </section>
+  </div>
+  <script type="module" src="js/main.js"></script>
+</body>
+
+</html>

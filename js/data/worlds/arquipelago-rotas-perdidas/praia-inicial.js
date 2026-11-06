@@ -249,6 +249,9 @@ const gate = (id, x, y, col, row, larguraPx, cfg) =>
     ...(cfg.moduleSystem ? { moduleSystem: cfg.moduleSystem } : {}),
     gate: {
       anyOf: cfg.anyOf,
+      requiresFlag: cfg.requiresFlag,
+      diagnosisArchetype: cfg.diagnosisArchetype,
+      falhaDiagnostico: cfg.falhaDiagnostico,
       falha: cfg.falha,
       sucesso: cfg.sucesso,
       promptFalha: 'EXAMINAR',
@@ -387,6 +390,7 @@ export const map = {
       nome: 'TELEFÉRICO QUEBRADO',
       moduleSystem: {
         id: 'beach_cable_car',
+        diagnosisFlag: 'teleferico_diagnosticado',
         allowedArchetypes: ['motor_bio_forja'],
         distance: 2.6,
         label: 'DIAGNOSTICAR CONDUTOR',
@@ -396,6 +400,9 @@ export const map = {
       label: 'RECONSTRUIR CONDUTOR',
       hitbox: HIT_PONTE_V,
       anyOf: [{ arquetipo: 'motor_bio_forja' }],
+      requiresFlag: 'teleferico_diagnosticado',
+      diagnosisArchetype: 'motor_bio_forja',
+      falhaDiagnostico: ['CONDUTOR ROMPIDO.', 'USE [R] PARA DIAGNOSTICAR ANTES DE RECONSTRUIR.'],
       falha: ['O CONDUTOR ESTÁ ROMPIDO.', 'UM OPERADOR DE RECONSTRUÇÃO PODERIA REPARAR.'],
       sucesso: ['CONDUTOR RECONSTRUÍDO.', 'O CAMINHO ESTÁ LIVRE.'],
     }),

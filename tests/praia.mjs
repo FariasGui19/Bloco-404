@@ -4,9 +4,19 @@ import { map } from '../js/data/worlds/arquipelago-rotas-perdidas/praia-inicial.
 import { state } from '../js/game/state.js';
 import { canStandAt } from '../js/game/collision.js';
 import { checkGate, openGate, isGateOpen } from '../js/game/gates.js';
-import { findNearestInteraction, getInteractionPrompt } from '../js/game/interactions.js';
+import { findNearestInteraction, getInteractionPrompt, checkInteractions } from '../js/game/interactions.js';
+import { closeDialogue, isDialogueOpen } from '../js/ui/dialogue.js';
 import { loadMap } from '../js/game/map-manager.js';
-import { getModuleInteractionPrompt } from '../js/game/module-interactions.js';
+import { getModuleInteractionPrompt, tryModuleInteraction } from '../js/game/module-interactions.js';
+import { getSave } from '../js/game/save.js';
+
+const elements = Object.fromEntries(['dialogueBox', 'dialogueSpeaker', 'dialogueText', 'dialogueHint', 'dialogueChoices'].map(id => [id, {
+  dataset: {}, classList: { add() {}, remove() {} }, addEventListener() {}, textContent: '', innerHTML: ''
+}]));
+globalThis.document = { getElementById: id => elements[id] };
+globalThis.window = { addEventListener() {} };
+const storage = new Map();
+globalThis.localStorage = { getItem: key => storage.get(key) ?? null, setItem: (key, value) => storage.set(key, value) };
 
 state.save.activeSlot = null;
 state.progress.flags = {};
@@ -54,9 +64,27 @@ const cableCar = gates.teleferico_quebrado;
 state.player.x = cableCar.x;
 state.player.y = cableCar.y - 1.5;
 assert.equal(getModuleInteractionPrompt(), 'DIAGNOSTICAR CONDUTOR');
-assert(checkGate(gates.teleferico_quebrado.gate));
+assert(!checkGate(cableCar.gate), 'E deve exigir diagnóstico');
+assert.equal(getInteractionPrompt(findNearestInteraction()), 'EXAMINAR • DIAGNÓSTICO: R');
+await checkInteractions(true);
+assert(isDialogueOpen());
+assert(!isGateOpen(cableCar));
+assert.match(elements.dialogueText.textContent, /CONDUTOR ROMPIDO/);
+closeDialogue();
+
+state.save.loaded = true;
+state.save.activeSlot = 1;
+assert(tryModuleInteraction());
+assert(state.progress.flags.teleferico_diagnosticado);
+assert(getSave(1).progress.flags.teleferico_diagnosticado, 'diagnóstico deve ser salvo');
+assert(!isGateOpen(cableCar), 'R não deve abrir o gate');
+closeDialogue();
+assert(checkGate(cableCar.gate));
 assert(!checkGate(gates.rocha_rachada.gate));
-openGate(gates.teleferico_quebrado);
+await checkInteractions(true);
+assert(isDialogueOpen());
+closeDialogue();
+assert(getSave(1).progress.flags.gate_teleferico_quebrado, 'abertura deve ser salva');
 assert(isGateOpen(gates.teleferico_quebrado));
 assert.equal(gates.teleferico_quebrado.bloqueia, false);
 assert.equal(getModuleInteractionPrompt(), null, 'não deve diagnosticar o gate já aberto');
@@ -64,6 +92,8 @@ points = reachable();
 assert(near(points, 9, 31, 2), 'ilha C deve ser acessível após abrir teleférico');
 assert(near(points, gates.fenda_estreita.x, gates.fenda_estreita.y, 2.6));
 
+// Saves antigos com o gate aberto não precisam refazer o diagnóstico.
+delete state.progress.flags.teleferico_diagnosticado;
 await loadMap('ilha_praia_inicial');
 assert(isGateOpen(state.objects.find(o => o.id === 'teleferico_quebrado')));
 assert.equal(state.objects.find(o => o.id === 'teleferico_quebrado').bloqueia, false);

@@ -11,6 +11,7 @@ import { getFrame } from './sprite-clean.js';
 import { drawAmbientBack, drawAmbientFront } from './ambient.js';
 import { isDebugEnabled, drawDebugWorld } from '../game/debug.js';
 import { ACTION_SPRITES } from '../data/action-sprites.js';
+import { state } from '../game/state.js';
 
 const HW = CONFIG.TILE_W / 2;
 const HH = CONFIG.TILE_H / 2;
@@ -1166,7 +1167,7 @@ function drawPlayerSprite(player, ix, iy) {
   // ===============================================
   // 1. ANIMAÇÃO DE ESCANEAMENTO (R)
   // ===============================================
-  if (player.ability?.scanning > 0) {
+  if (player.ability?.scanning > 0 && state.progress.archetype === 'motor_bio_forja') {
     const sprite = CONFIG.PLAYER_BIO_FORJA_SCAN_SPRITE;
     const image = getSprite(sprite.ID);
     if (!image) return false;
@@ -1247,7 +1248,13 @@ function drawPlayerSprite(player, ix, iy) {
   const drawX = ix - drawW / 2 + offset.x;
   const drawY = iy - drawH * sprite.FEET_ANCHOR_Y + offset.y;
 
+  ctx.save();
+  if (player.equippedSuit === 'dominio' || player.equippedSuit === 'mare') {
+    ctx.shadowColor = player.equippedSuit === 'dominio' ? '#ffd264' : '#53d9f4';
+    ctx.shadowBlur = 15;
+  }
   drawSmooth(fr.cell, insetX, insetY, sourceW, sourceH, drawX, drawY, drawW, drawH);
+  ctx.restore();
   
   player._topo = iy - (drawY + Math.max(0, fr.crop.y - insetY) * sprite.SCALE);
   return true;

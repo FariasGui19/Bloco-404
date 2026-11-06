@@ -58,8 +58,13 @@ export function tryArchetypePower(id, showMessage) {
   const profile = POWER_PROFILES[id];
   if (SCAN_LABELS[id]) {
     const target = nearestGate(5);
+    if (target?.gate?.scanFlag && target.gate.diagnosisArchetype === state.progress.archetype) {
+      state.progress.flags ??= {};
+      state.progress.flags[target.gate.scanFlag] = true;
+      saveGame();
+    }
     player.ability.reveal = target ? { targetId: target.id, timeLeft: 4, color: profile.color } : null;
-    showMessage(target ? `${SCAN_LABELS[id]}: ${target.nome}` : `${SCAN_LABELS[id]}: NENHUM RASTRO PRÓXIMO`);
+    showMessage(target?.gate?.scanMessage ?? (target ? `${SCAN_LABELS[id]}: ${target.nome}` : `${SCAN_LABELS[id]}: NENHUM RASTRO PRÓXIMO`));
     return false;
   }
 
@@ -67,7 +72,7 @@ export function tryArchetypePower(id, showMessage) {
     const direction = facingDirection(player.facing);
     const target = nearestGate(2.6, o => {
       const dx = o.x - player.x, dy = o.y - player.y;
-      return o.id === 'rocha_rachada' && dx * direction.x + dy * direction.y > 0 && checkGate(o.gate);
+      return (o.id === 'rocha_rachada' || o.gate.requiredAction === id) && dx * direction.x + dy * direction.y > 0 && checkGate(o.gate);
     });
     if (target) {
       openGate(target);
@@ -78,10 +83,10 @@ export function tryArchetypePower(id, showMessage) {
   }
 
   const direction = facingDirection(player.facing);
-  if (id === 'passo_corrente') {
+  if (id === 'passo_corrente' || id === 'forma_veloz') {
     const target = nearestGate(2.6, o => {
       const dx = o.x - player.x, dy = o.y - player.y;
-      return o.id === 'caverna_alagada' && dx * direction.x + dy * direction.y > 0 && checkGate(o.gate);
+      return (o.id === 'caverna_alagada' && id === 'passo_corrente' || o.gate.requiredAction === id) && dx * direction.x + dy * direction.y > 0 && checkGate(o.gate);
     });
     if (target) {
       openGate(target);

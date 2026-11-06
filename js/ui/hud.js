@@ -120,7 +120,7 @@ function updateAbilityHud(state) {
     const bioProfile = primaryId === 'bio_dash' ? getBioDashProfile(state.progress, state.player) : null;
     const readyText = bioProfile
       ? `${bioProfile.mode === 'equipped' ? 'TRAJE ATIVO' : 'MODO RÁPIDO'} • ${bioProfile.energyCost} ENERGIA`
-      : 'PRONTO';
+      : (['dominio', 'mare'].includes(state.player.equippedSuit) ? 'TRAJE EXPERIMENTAL ATIVO' : 'PRONTO');
 
     el.abilityPrimary.innerHTML = `
       <kbd>Q</kbd>

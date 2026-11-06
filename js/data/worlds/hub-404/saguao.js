@@ -188,7 +188,7 @@ export const map = {
       moduleSystem: {
         id: 'metro_navigation_core',
 
-        allowedArchetypes: ['motor_bio_forja'],
+        allowedArchetypes: ['motor_bio_forja', 'lamina_dominio_anciao', 'mare_astral', 'nucleo_dez_forma'],
 
         label: 'DIAGNOSTICAR LINHA INTERDIMENSIONAL',
 

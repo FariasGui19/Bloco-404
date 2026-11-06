@@ -10,6 +10,15 @@ export function getAbilityContext(progress, player) {
 }
 
 // Chamado apenas quando não há menus, diálogo nem calibração ativos.
+export function toggleArchetypeSuit(progress, player) {
+  if (!player || player.ability?.dash) return false;
+  const suits = { motor_bio_forja: 'bio_forja', lamina_dominio_anciao: 'dominio', mare_astral: 'mare' };
+  const suit = suits[progress?.archetype];
+  if (!suit) return false; // 10X usará uma interface própria.
+  player.equippedSuit = player.equippedSuit === suit ? null : suit;
+  return true;
+}
+
 export function toggleBioSuit(progress, player) {
   if (progress?.archetype !== 'motor_bio_forja' || !player || player.ability?.dash) return false;
   player.equippedSuit = player.equippedSuit === 'bio_forja' ? null : 'bio_forja';

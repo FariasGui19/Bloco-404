@@ -193,10 +193,10 @@ function interactWithObject(object) {
       });
       return;
     }
-    if (object.gate.requiredAction === 'golpe_ruptura') {
+    if (object.gate.requiredAction) {
       openDialogue({
         speaker: object.nome ?? 'OBSTÁCULO',
-        dialogue: ['APONTE PARA A ROCHA E USE [Q] PARA ROMPÊ-LA.'],
+        dialogue: [object.gate.actionMessage ?? 'APONTE PARA O OBSTÁCULO E USE [Q] PARA ROMPÊ-LO.'],
       });
       return;
     }

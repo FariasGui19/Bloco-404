@@ -249,6 +249,7 @@ const gate = (id, x, y, col, row, larguraPx, cfg) =>
     ...(cfg.moduleSystem ? { moduleSystem: cfg.moduleSystem } : {}),
     gate: {
       anyOf: cfg.anyOf,
+      requiredAction: cfg.requiredAction,
       requiresFlag: cfg.requiresFlag,
       diagnosisArchetype: cfg.diagnosisArchetype,
       falhaDiagnostico: cfg.falhaDiagnostico,
@@ -378,7 +379,8 @@ export const map = {
     // A -> B (ponte no eixo X, linhas 7-8)
     gate('rocha_rachada', 18, 8, 0, 1, 78, {
       nome: 'ROCHA RACHADA',
-      label: 'QUEBRAR ROCHA',
+      label: 'EXAMINAR • Q: ROMPER',
+      requiredAction: 'golpe_ruptura',
       hitbox: HIT_PONTE_H,
       anyOf: [{ habilidade: 'golpe_ruptura' }, { arquetipo: 'lamina_dominio_anciao' }],
       falha: ['A ROCHA É MUITO DENSA.', 'FALTA FORÇA BRUTA PARA QUEBRÁ-LA.'],

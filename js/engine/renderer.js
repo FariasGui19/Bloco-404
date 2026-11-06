@@ -63,6 +63,7 @@ export function render(map, state) {
   if (!map.meta?.backgroundCoversFloor) {
     if (map.aguaPraia) {
       drawBeachSea(map);
+      drawBeachWaterDetail(map);
       drawBeachRipples(map);
     }
     drawFloors(map);
@@ -83,6 +84,7 @@ export function render(map, state) {
 
   drawAmbientBack(ctx, state, HW, HH);
   drawWorld(map, state);
+  drawAbilityEffects(state);
   drawAmbientFront(ctx, map, HW, HH);
   drawTarget(state.player);
 
@@ -372,6 +374,27 @@ function drawBeachSea(map) {
   ctx.restore();
 }
 
+// Reaproveita os tiles de água rasa da nova folha como textura translúcida.
+// Não usamos os tiles mistos de areia/água: eles não têm bordas compatíveis
+// em todas as orientações e colocariam areia visual sobre água bloqueada.
+function drawBeachWaterDetail(map) {
+  const image = getSprite('beach_shore');
+  const frame = getFrame(image, 2, 0, 4, 4)?.crop;
+  if (!frame) return;
+  ctx.save();
+  ctx.globalAlpha = 0.2;
+  ctx.imageSmoothingEnabled = false;
+  for (let y = range.y0; y <= range.y1; y++) {
+    for (let x = range.x0; x <= range.x1; x++) {
+      const tile = map.aguaPraia[y]?.[x];
+      if (!tile || !'Yy'.includes(tile)) continue;
+      const tx = (x - y) * HW, ty = (x + y) * HH;
+      ctx.drawImage(frame.canvas, 0, 0, frame.w, frame.h, tx - HW, ty, HW * 2, TH);
+    }
+  }
+  ctx.restore();
+}
+
 // Reflexos também no mar além dos limites do mapa: o fundo deixa de ser
 // um vazio chapado, sem criar terrenos jogáveis nem alterar a colisão.
 function drawBeachRipples(map) {
@@ -450,11 +473,26 @@ function drawBeachShore(map) {
   ctx.restore();
 }
 
+// Superfícies planas da nova folha, sem alterar pontes, poças ou máscara.
+function drawBeachSand(tile, x, y, tx, ty) {
+  const image = getSprite('beach_shore');
+  const frame = getFrame(image, tile === 'M' ? 1 : 0, 0, 4, 4)?.crop;
+  if (!frame) return false;
+  ctx.save();
+  ctx.imageSmoothingEnabled = false;
+  ctx.translate(tx, ty);
+  if (hash(x, y) < 0.5) ctx.scale(-1, 1);
+  ctx.drawImage(frame.canvas, 0, 0, frame.w, frame.h, -HW, 0, HW * 2, TH);
+  ctx.restore();
+  return true;
+}
+
 function drawFloorTile(type, x, y, map) {
   const tx = (x - y) * HW;
   const ty = (x + y) * HH;
 
   const water = map.aguaPraia?.[y]?.[x];
+  if (water && 'SM'.includes(water) && drawBeachSand(water, x, y, tx, ty)) return;
   if (water && 'YyDd'.includes(water)) {
     // O mar contínuo já foi desenhado sob as ilhas e pontes.
     return;
@@ -1104,6 +1142,33 @@ function drawDoor(o) {
 //  PLAYER
 // =====================================================================
 function drawPlayerSprite(player, ix, iy) {
+  // As folhas de referência têm poses, não quadros sequenciais. Usamos uma
+  // pose provisória com os pulsos animados, sem fingir que são animações finais.
+  const effect = player.ability?.effect;
+  const actionSprites = {
+    golpe_ruptura: ['player_dominio_reference', 1],
+    postura_dominio: ['player_dominio_reference', 0],
+    passo_corrente: ['player_mare_reference', 1],
+    senso_corrente: ['player_mare_reference', 0],
+  };
+  if (effect && (actionSprites[effect.id] || effect.id === 'forma_veloz')) {
+    const transformed = effect.id === 'forma_veloz';
+    const [id, row] = actionSprites[effect.id] ?? ['player_10x_reference', 0];
+    const image = getSprite(id);
+    const col = transformed ? 2 : (player.facing === 'down' ? 0 : player.facing === 'up' ? 2 : 1);
+    const frame = getFrame(image, col, row, 4, transformed ? 1 : 2)?.crop;
+    if (frame) {
+      const height = transformed ? 108 : 115;
+      const width = height * frame.w / frame.h;
+      ctx.save();
+      ctx.translate(ix, iy);
+      if (player.facing === 'left') ctx.scale(-1, 1);
+      drawSmooth(frame.canvas, 0, 0, frame.w, frame.h, -width / 2, -height, width, height);
+      ctx.restore();
+      player._topo = height;
+      return true;
+    }
+  }
   // ===============================================
   // 1. ANIMAÇÃO DE ESCANEAMENTO (R)
   // ===============================================
@@ -1369,6 +1434,47 @@ function drawCollectible(item, state) {
 
   ctx.restore();
 
+  ctx.restore();
+}
+
+// Efeitos de energia provisórios: cada poder tem cor e pulso próprios.
+function drawAbilityEffects(state) {
+  const player = state.player;
+  const ability = player.ability;
+  const effect = ability?.effect;
+  const reveal = ability?.reveal;
+  ctx.save();
+  if (reveal) {
+    const target = state.objects.find(o => o.id === reveal.targetId && o.gate && !state.progress.flags?.[`gate_${o.id}`]);
+    if (target) {
+      const x = (target.x - target.y) * HW, y = (target.x + target.y) * HH;
+      ctx.strokeStyle = reveal.color;
+      ctx.globalAlpha = Math.min(0.9, reveal.timeLeft * 0.6);
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.ellipse(x, y, 27, 11, 0, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+  }
+  if (effect) {
+    const x = (player.x - player.y) * HW, y = (player.x + player.y) * HH;
+    const t = Math.max(0, 1 - effect.timeLeft / effect.duration);
+    const isScan = ['postura_dominio', 'senso_corrente', 'eco_scan'].includes(effect.id);
+    ctx.strokeStyle = effect.color;
+    ctx.globalAlpha = Math.max(0, 0.85 * (1 - t));
+    ctx.lineWidth = 2.5;
+    ctx.shadowColor = effect.color;
+    ctx.shadowBlur = 10;
+    ctx.beginPath();
+    ctx.ellipse(x, y, (isScan ? 14 + 65 * t : 20 + 20 * t), (isScan ? 6 + 30 * t : 9 + 9 * t), 0, 0, Math.PI * 2);
+    ctx.stroke();
+    if (!isScan) {
+      ctx.beginPath();
+      ctx.moveTo(x - 14, y - 25);
+      ctx.lineTo(x + 15, y - 49);
+      ctx.stroke();
+    }
+  }
   ctx.restore();
 }
 

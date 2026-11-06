@@ -135,12 +135,14 @@ function updateAbilityHud(state) {
   if (secondaryId && el.abilitySecondary) {
     const label = getAbilityLabel(secondaryId);
     const prompt = getModuleInteractionPrompt();
+    const cooldown = state.player.ability?.cooldowns?.[secondaryId] ?? 0;
+    const scanStatus = cooldown > 0 ? `RECARREGANDO ${cooldown.toFixed(1)}s` : 'VARREDURA DISPONÍVEL';
 
     el.abilitySecondary.innerHTML = `
       <kbd>R</kbd>
       <div>
         <strong>${label}</strong>
-        <span>${!IMPLEMENTED_ABILITIES.includes(secondaryId) ? 'EM DESENVOLVIMENTO' : prompt ? prompt : 'PROCURE SISTEMAS COMPATÍVEIS'}</span>
+        <span>${!IMPLEMENTED_ABILITIES.includes(secondaryId) ? 'EM DESENVOLVIMENTO' : secondaryId !== 'bio_diagnostic' ? scanStatus : prompt ? prompt : 'PROCURE SISTEMAS COMPATÍVEIS'}</span>
       </div>
     `;
     el.abilitySecondary.classList.toggle('ready', Boolean(prompt));

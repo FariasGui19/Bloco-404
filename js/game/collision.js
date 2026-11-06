@@ -202,7 +202,9 @@ export function getCustomObjectHitbox(object, hitbox) {
 
 function canDashPassObject(object, ignore) {
   if (ignore !== state.player) return false;
-  if (!state.player?.ability?.dash) return false;
+  // As barreiras de impulso existentes foram projetadas para a Bio-Forja;
+  // um dash de outro arquétipo não herda automaticamente essa capacidade.
+  if (!state.player?.ability?.dash || state.player.ability.active !== 'bio_dash') return false;
   if (!object.dashPassable) return false;
 
   if (object.dashPassableRequiresFlag) {

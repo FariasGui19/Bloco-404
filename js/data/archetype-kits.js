@@ -9,5 +9,8 @@ export const ARCHETYPE_KITS = {
 
 export const KIT_SLOTS = Object.freeze(['q', 'r', 'utility', 'support', 'ultimate']);
 
-// Apenas estas habilidades têm implementação jogável neste momento.
-export const IMPLEMENTED_ABILITIES = Object.freeze(['bio_dash', 'bio_diagnostic']);
+// Os demais Q/R são protótipos jogáveis com efeitos procedurais provisórios.
+export const IMPLEMENTED_ABILITIES = Object.freeze([
+  'bio_dash', 'bio_diagnostic', 'golpe_ruptura', 'postura_dominio',
+  'passo_corrente', 'senso_corrente', 'forma_veloz', 'eco_scan',
+]);

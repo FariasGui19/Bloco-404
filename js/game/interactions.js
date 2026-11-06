@@ -125,6 +125,10 @@ export function getInteractionPrompt(interaction) {
 
   // NOVO: Se o objeto tem um gate e você não passa, o prompt muda
   if (kind === 'object' && data.gate && !checkGate(data.gate)) {
+    if (data.gate.requiresFlag && !state.progress.flags?.[data.gate.requiresFlag] &&
+        state.progress.archetype === data.gate.diagnosisArchetype) {
+      return 'EXAMINAR • DIAGNÓSTICO: R';
+    }
     return data.gate.promptFalha ?? 'BLOQUEADO';
   }
 

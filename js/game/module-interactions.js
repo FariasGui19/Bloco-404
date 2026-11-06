@@ -309,7 +309,15 @@ export function tryModuleInteraction() {
     return false;
   }
 
-  // NOVO: Trava o player indefinidamente até o diálogo acabar
+  // Alguns sistemas persistem o diagnóstico antes de permitir sua reparação.
+  const diagnosisFlag = target.item.moduleSystem?.diagnosisFlag;
+  if (diagnosisFlag) {
+    state.progress.flags ??= {};
+    state.progress.flags[diagnosisFlag] = true;
+    saveGame();
+  }
+
+  // Trava o player até o diálogo acabar.
   state.player.ability.scanning = 999; 
 
   if (archetype === 'motor_bio_forja') {

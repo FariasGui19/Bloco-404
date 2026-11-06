@@ -61,6 +61,7 @@ export function render(map, state) {
 
   // O metrô modular volta a usar chão e tiles.
   if (!map.meta?.backgroundCoversFloor) {
+    if (map.aguaPraia) drawBeachSea(map);
     drawFloors(map);
     if (map.aguaPraia) drawBeachShore(map);
 
@@ -322,27 +323,50 @@ function drawFloors(map) {
   }
 }
 
-// Água plana: não desenha as faces laterais dos sprites de bloco.
-// A colisão continua vindo do walkMask original, independentemente do desenho.
-function drawBeachWater(tx, ty, water, x, y) {
-  ctx.fillStyle = 'Yy'.includes(water) ? '#58bcb5' : '#1e6384';
-  ctx.beginPath();
-  ctx.moveTo(tx, ty - 0.5);
-  ctx.lineTo(tx + HW + 0.5, ty + HH);
-  ctx.lineTo(tx, ty + TH + 0.5);
-  ctx.lineTo(tx - HW - 0.5, ty + HH);
-  ctx.closePath();
-  ctx.fill();
-
-  // Pequenos reflexos esparsos, sem grade desenhada sobre o mar.
-  if ('Yy'.includes(water) && hash(x, y) < 0.16) {
-    ctx.strokeStyle = 'rgba(210, 255, 238, 0.28)';
-    ctx.lineWidth = 1;
-    ctx.beginPath();
-    ctx.moveTo(tx - HW * 0.2, ty + HH);
-    ctx.lineTo(tx + HW * 0.12, ty + HH - 2);
-    ctx.stroke();
+// Textura de mar contínua em coordenadas de mundo. A distância é calculada
+// até a areia (não até pontes), sem modificar a máscara de colisão.
+const beachSeaCache = new WeakMap();
+function drawBeachSea(map) {
+  let texture = beachSeaCache.get(map);
+  const rows = map.aguaPraia;
+  const width = rows[0].length, height = rows.length;
+  if (!texture) {
+    const scale = 4;
+    texture = document.createElement('canvas');
+    texture.width = width * scale;
+    texture.height = height * scale;
+    const sea = texture.getContext('2d');
+    const image = sea.createImageData(texture.width, texture.height);
+    const shallow = [111, 200, 184], deep = [30, 99, 132];
+    for (let py = 0; py < texture.height; py++) {
+      for (let px = 0; px < texture.width; px++) {
+        const wx = (px + 0.5) / scale, wy = (py + 0.5) / scale;
+        let closest = 5;
+        for (let y = Math.max(0, Math.floor(wy) - 5); y <= Math.min(height - 1, Math.floor(wy) + 5); y++) {
+          for (let x = Math.max(0, Math.floor(wx) - 5); x <= Math.min(width - 1, Math.floor(wx) + 5); x++) {
+            if (!'SMTPR'.includes(rows[y][x])) continue;
+            const dx = Math.max(x - wx, 0, wx - (x + 1));
+            const dy = Math.max(y - wy, 0, wy - (y + 1));
+            closest = Math.min(closest, Math.hypot(dx, dy));
+          }
+        }
+        // Degradê contínuo entre a margem e o mar aberto.
+        const t = Math.min(1, closest / 4.5);
+        const smooth = t * t * (3 - 2 * t);
+        const detail = (1 - smooth) * Math.sin(wx * 4.1 + Math.sin(wy * 2.3)) * 2;
+        const i = (py * texture.width + px) * 4;
+        for (let c = 0; c < 3; c++) image.data[i + c] = shallow[c] * (1 - smooth) + deep[c] * smooth + detail;
+        image.data[i + 3] = 255;
+      }
+    }
+    sea.putImageData(image, 0, 0);
+    beachSeaCache.set(map, texture);
   }
+  ctx.save();
+  ctx.transform(HW, HH, -HW, HH, 0, 0);
+  ctx.imageSmoothingEnabled = true;
+  ctx.drawImage(texture, 0, 0, width, height);
+  ctx.restore();
 }
 
 // Espuma apenas nas bordas de água que encostam em areia, não nas pontes.
@@ -353,8 +377,9 @@ function drawBeachShore(map) {
     return tile != null && 'SMT'.includes(tile);
   };
   ctx.save();
-  ctx.strokeStyle = 'rgba(224, 255, 235, 0.72)';
-  ctx.lineWidth = 2;
+  ctx.strokeStyle = 'rgba(230, 255, 237, 0.48)';
+  ctx.lineWidth = 1.5;
+  ctx.lineCap = 'round';
   for (let y = range.y0; y <= range.y1; y++) {
     for (let x = range.x0; x <= range.x1; x++) {
       const c = rows[y]?.[x];
@@ -384,7 +409,7 @@ function drawFloorTile(type, x, y, map) {
 
   const water = map.aguaPraia?.[y]?.[x];
   if (water && 'YyDd'.includes(water)) {
-    drawBeachWater(tx, ty, water, x, y);
+    // O mar contínuo já foi desenhado sob as ilhas e pontes.
     return;
   }
 

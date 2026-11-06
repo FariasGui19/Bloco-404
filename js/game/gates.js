@@ -39,6 +39,7 @@
 
   export function checkGate(gate) {
     if (!gate) return true;
+    if (gate.requiresFlag && !state.progress.flags?.[gate.requiresFlag]) return false;
     if (!Array.isArray(gate.anyOf) || gate.anyOf.length === 0) return true;
 
     const abilities = getEffectiveAbilities();
@@ -53,6 +54,10 @@
 
   export function getGateFailureMessage(gate) {
     if (!gate) return ['ACESSO NEGADO.'];
+    if (gate.requiresFlag && !state.progress.flags?.[gate.requiresFlag] &&
+        state.progress.archetype === gate.diagnosisArchetype) {
+      return gate.falhaDiagnostico ?? ['USE R PARA DIAGNOSTICAR PRIMEIRO.'];
+    }
     return gate.falha ?? ['VOCÊ NÃO TEM A CAPACIDADE NECESSÁRIA PARA PASSAR.'];
   }
 

@@ -19,6 +19,7 @@ import {
 } from '../game/background-calibration.js';
 import { ARCHETYPE_ABILITIES, getAbilityLabel } from '../game/abilities.js';
 import { IMPLEMENTED_ABILITIES } from '../data/archetype-kits.js';
+import { getBioDashProfile } from '../game/ability-context.js';
 
 const el = {};
 const cache = {};
@@ -116,12 +117,16 @@ function updateAbilityHud(state) {
     const cooldown = state.player.ability?.cooldowns?.[primaryId] ?? 0;
     const isCoolingDown = cooldown > 0;
     const label = getAbilityLabel(primaryId);
+    const bioProfile = primaryId === 'bio_dash' ? getBioDashProfile(state.progress, state.player) : null;
+    const readyText = bioProfile
+      ? `${bioProfile.mode === 'equipped' ? 'TRAJE ATIVO' : 'MODO RÁPIDO'} • ${bioProfile.energyCost} ENERGIA`
+      : 'PRONTO';
 
     el.abilityPrimary.innerHTML = `
       <kbd>Q</kbd>
       <div>
         <strong>${label}</strong>
-        <span>${!IMPLEMENTED_ABILITIES.includes(primaryId) ? 'EM DESENVOLVIMENTO' : isCoolingDown ? `RECARREGANDO ${cooldown.toFixed(1)}s` : 'PRONTO'}</span>
+        <span>${!IMPLEMENTED_ABILITIES.includes(primaryId) ? 'EM DESENVOLVIMENTO' : isCoolingDown ? `RECARREGANDO ${cooldown.toFixed(1)}s` : readyText}</span>
       </div>
     `;
     el.abilityPrimary.classList.toggle('cooldown', isCoolingDown);

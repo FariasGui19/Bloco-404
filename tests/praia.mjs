@@ -1,6 +1,7 @@
 // Execute: node --experimental-default-type=module tests/praia.mjs
 import assert from 'node:assert/strict';
 import { map } from '../js/data/worlds/arquipelago-rotas-perdidas/praia-inicial.js';
+import { linhaDoTrem } from '../js/data/shared/linha-trem.js';
 import { state } from '../js/game/state.js';
 import { canStandAt } from '../js/game/collision.js';
 import { checkGate, openGate, isGateOpen } from '../js/game/gates.js';
@@ -24,6 +25,8 @@ state.progress.abilities = [];
 assert.equal(await loadMap('ilha_praia_inicial'), true);
 const gates = Object.fromEntries(state.objects.filter(o => o.gate).map(o => [o.id, o]));
 assert.equal(Object.keys(gates).length, 4);
+assert.equal(map.objects.find(o => o.id === 'trem_dimensional').ajusteY, 68);
+assert.equal(linhaDoTrem().find(o => o.id === 'trem_dimensional').ajusteY, 58, 'ajuste da praia não altera o trem compartilhado');
 
 // Sample traversable positions at quarter-tile intervals with real collision radius.
 function reachable() {

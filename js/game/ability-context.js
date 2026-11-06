@@ -21,7 +21,7 @@ export function toggleBioSuit(progress, player) {
 // e aumenta um pouco o alcance, sem contornar colisões nem gates.
 const BIO_DASH_PROFILES = Object.freeze({
   quick: Object.freeze({ energyCost: 28, cooldown: 1.25, duration: 0.18, distance: 2.15 }),
-  equipped: Object.freeze({ energyCost: 22, cooldown: 1.25, duration: 0.18, distance: 2.35 }),
+  equipped: Object.freeze({ energyCost: 22, cooldown: 1.25, duration: 0.18, distance: 2.8 }),
 });
 
 export function getBioDashProfile(progress, player) {

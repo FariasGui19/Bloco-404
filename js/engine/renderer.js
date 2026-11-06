@@ -61,7 +61,10 @@ export function render(map, state) {
 
   // O metrô modular volta a usar chão e tiles.
   if (!map.meta?.backgroundCoversFloor) {
-    if (map.aguaPraia) drawBeachSea(map);
+    if (map.aguaPraia) {
+      drawBeachSea(map);
+      drawBeachRipples(map);
+    }
     drawFloors(map);
     if (map.aguaPraia) drawBeachShore(map);
 
@@ -366,6 +369,50 @@ function drawBeachSea(map) {
   ctx.transform(HW, HH, -HW, HH, 0, 0);
   ctx.imageSmoothingEnabled = true;
   ctx.drawImage(texture, 0, 0, width, height);
+  ctx.restore();
+}
+
+// Reflexos também no mar além dos limites do mapa: o fundo deixa de ser
+// um vazio chapado, sem criar terrenos jogáveis nem alterar a colisão.
+function drawBeachRipples(map) {
+  const halfW = view.w / (2 * camera.zoom);
+  const halfH = view.h / (2 * camera.zoom);
+  const corners = [
+    isoToWorld(camera.x - halfW, camera.y - halfH),
+    isoToWorld(camera.x + halfW, camera.y - halfH),
+    isoToWorld(camera.x + halfW, camera.y + halfH),
+    isoToWorld(camera.x - halfW, camera.y + halfH),
+  ];
+  const spacing = 2;
+  const x0 = Math.floor(Math.min(...corners.map(p => p.x)) / spacing) - 1;
+  const x1 = Math.ceil(Math.max(...corners.map(p => p.x)) / spacing) + 1;
+  const y0 = Math.floor(Math.min(...corners.map(p => p.y)) / spacing) - 1;
+  const y1 = Math.ceil(Math.max(...corners.map(p => p.y)) / spacing) + 1;
+  const rows = map.aguaPraia;
+
+  ctx.save();
+  ctx.strokeStyle = 'rgba(176, 238, 226, 0.24)';
+  ctx.lineWidth = 1;
+  ctx.lineCap = 'round';
+  ctx.beginPath();
+  for (let y = y0; y <= y1; y++) {
+    for (let x = x0; x <= x1; x++) {
+      if (hash(x + 319, y - 871) > 0.58) continue;
+      const wx = (x + hash(x + 29, y + 17)) * spacing;
+      const wy = (y + hash(x - 37, y + 53)) * spacing;
+      const tile = rows[Math.floor(wy)]?.[Math.floor(wx)];
+      if (tile && 'SMTPRBb'.includes(tile)) continue;
+      const ix = (wx - wy) * HW, iy = (wx + wy) * HH;
+      const length = 6 + hash(x + 117, y - 62) * 10;
+      ctx.moveTo(ix - length / 2, iy);
+      ctx.quadraticCurveTo(ix, iy - 2.2, ix + length / 2, iy);
+      if (hash(x - 19, y + 23) < 0.22) {
+        ctx.moveTo(ix - length * 0.18, iy + 3);
+        ctx.lineTo(ix + length * 0.22, iy + 3);
+      }
+    }
+  }
+  ctx.stroke();
   ctx.restore();
 }
 

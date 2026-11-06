@@ -6,6 +6,7 @@
 import { state } from './state.js';
 import { openDialogue } from '../ui/dialogue.js';
 import { saveGame } from './save.js';
+import { recordAirportDiagnosis, recordCargoDiagnosis, installMetroFragment } from './metro-quest.js';
 import { isGateOpen } from './gates.js';
 import { hasAbility, showAbilityMessage, ARCHETYPE_ABILITIES } from './abilities.js';
 
@@ -79,11 +80,7 @@ function diagnoseAirportTerminal(target) {
     return;
   }
 
-  flags.airportTerminalDiagnosed = true;
-  if (state.progress.activeQuest?.id === 'calibracao_de_eco') {
-    state.progress.activeQuest.stage = 'find_fragment';
-    state.progress.activeQuest.description = 'O Terminal de Manutenção detectou um Fragmento de Sincronização na Área de Carga Desativada do Aeroporto.';
-  }
+  recordAirportDiagnosis(state.progress);
   saveGame();
   openDialogue({
     speaker: 'TERMINAL DE MANUTENÇÃO',
@@ -148,22 +145,7 @@ function diagnoseMetroSystem(target) {
       {
         text: 'INSTALAR FRAGMENTO DE SINCRONIZAÇÃO',
         onSelect: () => {
-          flags.metroCalibrado = true;
-          flags.metroUnlocked = true;
-          state.progress.inventory = (state.progress.inventory ?? []).filter(i => i !== 'fragmento_sincronizacao');
-          if (state.progress.activeQuest?.id === 'calibracao_de_eco') {
-            state.progress.activeQuest.status = 'completed';
-            state.progress.completedQuests ??= [];
-            if (!state.progress.completedQuests.includes('calibracao_de_eco')) {
-              state.progress.completedQuests.push('calibracao_de_eco');
-            }
-            state.progress.activeQuest = {
-              id: 'embarque_dimensional',
-              title: 'EMBARQUE DIMENSIONAL',
-              description: 'Acesse a Plataforma Interdimensional pelo Metrô e investigue a primeira rota disponível.',
-              status: 'active',
-            };
-          }
+          installMetroFragment(state.progress);
           saveGame();
           openDialogue({
             speaker: 'PAINEL DO METRÔ',
@@ -250,11 +232,7 @@ function diagnoseCargoSecurityPanel() {
     });
     return;
   }
-  flags.cargoSecurityDiagnosed = true;
-  if (state.progress.activeQuest?.id === 'calibracao_de_eco') {
-    state.progress.activeQuest.stage = 'collect_fragment';
-    state.progress.activeQuest.description = 'A Grade de Impulso foi reconfigurada. Use o Propulsor de Impulso para atravessar o campo e coletar o Fragmento de Sincronização.';
-  }
+  recordCargoDiagnosis(state.progress);
   saveGame();
   openDialogue({
     speaker: 'PAINEL DE SEGURANÇA',

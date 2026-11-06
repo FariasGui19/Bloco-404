@@ -27,3 +27,9 @@ O dash conserva suas colisões; os modos não liberam água ou gates extras. O e
 - 10X Q: glitch holográfico verde, forma veloz e rastro cinético. R: leitura de anomalias por lente orbital. As imagens existentes são referência visual, não são automaticamente uma sequência de animação utilizável.
 
 Os demais Q/R têm protótipos com energia, recarga, efeitos e poses provisórias. O Golpe de Ruptura abre a rocha com Q; o Passo de Corrente abre a caverna com Q. As varreduras identificam gates fechados próximos, sem desbloqueá-los. As folhas de referência têm poses, não animações temporais finais. Parte dos gates legados ainda aceita E somente pela posse do módulo; a sequência inicial de missões do metrô também depende da Bio-Forja. Rotas alternativas completas por arquétipo, Núcleo 10X com interface de seleção e formas, vãos seguros e combate continuam pendentes.
+
+## Preparação para missão inicial compartilhada
+
+As transições de progresso (diagnóstico do aeroporto, painel de carga e instalação do fragmento) foram isoladas em `js/game/metro-quest.js`; a UI continua chamando essas mesmas transições e salvando normalmente. **Isso ainda não desbloqueia o metrô para os outros módulos.** Terminais, mensagens, grade de impulso e coleta ainda dependem da rota Bio-Forja.
+
+Próxima etapa: criar soluções próprias por arquétipo para acesso ao terminal, à segurança da carga e ao painel do metrô, todas alimentando as mesmas flags e missão sem conceder outro módulo. Testar o percurso inteiro com saves novos e antigos, inclusive sem permitir que habilidades de outros módulos atravessem a barreira Bio-Forja indevidamente.

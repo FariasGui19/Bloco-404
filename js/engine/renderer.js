@@ -10,6 +10,7 @@ import { getSprite } from './sprites.js';
 import { getFrame } from './sprite-clean.js';
 import { drawAmbientBack, drawAmbientFront } from './ambient.js';
 import { isDebugEnabled, drawDebugWorld } from '../game/debug.js';
+import { ACTION_SPRITES } from '../data/action-sprites.js';
 
 const HW = CONFIG.TILE_W / 2;
 const HH = CONFIG.TILE_H / 2;
@@ -1145,20 +1146,13 @@ function drawPlayerSprite(player, ix, iy) {
   // As folhas de referência têm poses, não quadros sequenciais. Usamos uma
   // pose provisória com os pulsos animados, sem fingir que são animações finais.
   const effect = player.ability?.effect;
-  const actionSprites = {
-    golpe_ruptura: ['player_dominio_reference', 1],
-    postura_dominio: ['player_dominio_reference', 0],
-    passo_corrente: ['player_mare_reference', 1],
-    senso_corrente: ['player_mare_reference', 0],
-  };
-  if (effect && (actionSprites[effect.id] || effect.id === 'forma_veloz')) {
-    const transformed = effect.id === 'forma_veloz';
-    const [id, row] = actionSprites[effect.id] ?? ['player_10x_reference', 0];
-    const image = getSprite(id);
-    const col = transformed ? 2 : (player.facing === 'down' ? 0 : player.facing === 'up' ? 2 : 1);
-    const frame = getFrame(image, col, row, 4, transformed ? 1 : 2)?.crop;
+  const actionSprite = ACTION_SPRITES[effect?.id];
+  if (actionSprite) {
+    const image = getSprite(actionSprite.sprite);
+    const col = actionSprite.column ?? (player.facing === 'down' ? 0 : player.facing === 'up' ? 2 : 1);
+    const frame = getFrame(image, col, actionSprite.row, 4, actionSprite.rows)?.crop;
     if (frame) {
-      const height = transformed ? 108 : 115;
+      const height = actionSprite.height;
       const width = height * frame.w / frame.h;
       ctx.save();
       ctx.translate(ix, iy);

@@ -61,8 +61,10 @@ export async function usePortal(portal) {
 
     await playTransition(message);
 
+    const questRooms = { lamina_dominio_anciao: 'hub_camara_dominio', mare_astral: 'hub_camara_mare', nucleo_dez_forma: 'hub_camara_nucleo' };
+    const mapId = portal.id === 'porta_area_carga' ? (questRooms[state.progress.archetype] ?? portal.destino.mapId) : portal.destino.mapId;
     const loaded = await loadMap(
-      portal.destino.mapId,
+      mapId,
       portal.destino.spawnId ?? 'inicio'
     );
 

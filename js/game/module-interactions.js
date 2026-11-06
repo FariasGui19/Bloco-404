@@ -67,6 +67,13 @@ export function getModuleInteractionPrompt() {
 // ---------------------------------------------------------------------
 function diagnoseAirportTerminal(target) {
   const flags = state.progress.flags ??= {};
+  const route = { lamina_dominio_anciao: ['FREQUÊNCIA ANCESTRAL IDENTIFICADA.', 'CÂMARA DE FREQUÊNCIA: LEIA O LACRE COM R E ROMPA COM Q.'], mare_astral: ['FLUXO ASTRAL IDENTIFICADO.', 'CÂMARA DE FLUXO: LEIA A CORRENTE COM R E ATRAVESSE COM Q.'], nucleo_dez_forma: ['ECO CINÉTICO IDENTIFICADO.', 'CÂMARA DE ECO: LEIA A MALHA COM R E ACELERE COM Q.'] }[state.progress.archetype];
+  if (route) {
+    recordAirportDiagnosis(state.progress);
+    saveGame();
+    openDialogue({ speaker: 'TERMINAL DE MANUTENÇÃO', dialogue: [route[0], 'FRAGMENTO DETECTADO NA CÂMARA ATRÁS DA PORTA DA CARGA.', route[1]] });
+    return;
+  }
   if (flags.airportTerminalDiagnosed) {
     openDialogue({
       speaker: 'TERMINAL DE MANUTENÇÃO',
@@ -100,7 +107,7 @@ function diagnoseMetroSystem(target) {
     openDialogue({
       speaker: 'PAINEL DO METRÔ',
       dialogue: [
-        'LINK BIO-FORJA ACEITO.',
+        'MÓDULO COMPATÍVEL: ACEITO.',
         'ERRO CRÍTICO: ROTA DIMENSIONAL SEM SINCRONIA.',
         'RECOMENDAÇÃO: ANALISAR TERMINAL DE MANUTENÇÃO NO AEROPORTO CENTRAL.',
       ],
@@ -111,11 +118,11 @@ function diagnoseMetroSystem(target) {
     openDialogue({
       speaker: 'PAINEL DO METRÔ',
       dialogue: [
-        'LINK BIO-FORJA ACEITO.',
+        'MÓDULO COMPATÍVEL: ACEITO.',
         'DIAGNÓSTICO ATUALIZADO.',
         'FRAGMENTO DE SINCRONIZAÇÃO AINDA NÃO INSTALADO.',
         'A LINHA INTERDIMENSIONAL PERMANECE BLOQUEADA.',
-        'LOCALIZE O FRAGMENTO NA ÁREA DE CARGA DESATIVADA.',
+        'LOCALIZE O FRAGMENTO ATRÁS DA PORTA DE CARGA DO AEROPORTO.',
       ],
     });
     return;
@@ -137,7 +144,7 @@ function diagnoseMetroSystem(target) {
     speaker: 'PAINEL DO METRÔ',
     dialogue: [
       'FRAGMENTO DE SINCRONIZAÇÃO DETECTADO.',
-      'COMPATIBILIDADE BIO-FORJA: APROVADA.',
+      'COMPATIBILIDADE DO MÓDULO: APROVADA.',
       'A INSTALAÇÃO DO FRAGMENTO REATIVARÁ A LINHA INTERDIMENSIONAL.',
       'ATENÇÃO: A ENERGIA RESTANTE PODE ATRAIR ECOS INSTÁVEIS.',
     ],
@@ -274,6 +281,11 @@ function showDiagnosis(opts) {
   });
 }
 
+export function hasSharedQuestSystem() {
+  const id = getNearestModuleSystem()?.item.moduleSystem?.id;
+  return id === 'airport_maintenance_terminal' || id === 'metro_navigation_core';
+}
+
 export function tryModuleInteraction() {
   const archetype = state.progress.archetype;
   if (!archetype) return false;
@@ -298,6 +310,9 @@ export function tryModuleInteraction() {
   // Trava o player até o diálogo acabar.
   state.player.ability.scanning = 999; 
 
+  const sharedId = target.item.moduleSystem?.id;
+  if (sharedId === 'airport_maintenance_terminal') { diagnoseAirportTerminal(target); return true; }
+  if (sharedId === 'metro_navigation_core') { diagnoseMetroSystem(target); return true; }
   if (archetype === 'motor_bio_forja') {
     const systemId = target.item.moduleSystem?.id;
     switch (systemId) {

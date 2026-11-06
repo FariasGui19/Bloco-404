@@ -19,7 +19,7 @@ import { state } from './state.js';
 import { input } from '../engine/input.js';
 import { getFloor } from './world.js';
 import { moveWithCollision } from './collision.js';
-import { tryModuleInteraction } from './module-interactions.js';
+import { tryModuleInteraction, hasSharedQuestSystem } from './module-interactions.js';
 import { ARCHETYPE_KITS, IMPLEMENTED_ABILITIES } from '../data/archetype-kits.js';
 import { getBioDashProfile } from './ability-context.js';
 import { tryArchetypePower, POWER_PROFILES } from './archetype-powers.js';
@@ -310,7 +310,7 @@ export function updateAbilities(dt) {
   // R = interação especial do módulo (mantém como está).
   if (pressed('r', 'keyr')) {
     const abilityId = ARCHETYPE_ABILITIES[state.progress.archetype]?.[1];
-    if (abilityId === 'bio_diagnostic') tryModuleInteraction();
+    if (abilityId === 'bio_diagnostic' || (hasAbility(abilityId) && hasSharedQuestSystem())) tryModuleInteraction();
     else if (POWER_PROFILES[abilityId]) tryArchetypePower(abilityId, showAbilityMessage);
     else if (abilityId) showAbilityMessage('HABILIDADE AINDA EM DESENVOLVIMENTO');
   }

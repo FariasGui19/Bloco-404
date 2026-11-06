@@ -78,7 +78,7 @@ export const map = {
       moduleSystem: {
         id: 'airport_maintenance_terminal',
 
-        allowedArchetypes: ['motor_bio_forja'],
+        allowedArchetypes: ['motor_bio_forja', 'lamina_dominio_anciao', 'mare_astral', 'nucleo_dez_forma'],
 
         label: 'DIAGNOSTICAR TERMINAL',
 

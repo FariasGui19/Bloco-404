@@ -12,7 +12,7 @@ import { loadMap } from './game/map-manager.js';
 
 import { updatePlayer } from './game/player.js';
 import { updateAbilities } from './game/abilities.js';
-import { toggleBioSuit } from './game/ability-context.js';
+import { toggleArchetypeSuit } from './game/ability-context.js';
 import { updateCamera } from './engine/camera.js';
 
 import { input, initInput, endInputFrame } from './engine/input.js';
@@ -216,7 +216,7 @@ async function update(dt) {
   } else {
     // T não atua em diálogos, menus, calibração ou durante um dash.
     if (input.pressed.has('t') || input.pressed.has('keyt')) {
-      toggleBioSuit(state.progress, player);
+      toggleArchetypeSuit(state.progress, player);
     }
     const abilityLocksMovement = updateAbilities(dt);
 

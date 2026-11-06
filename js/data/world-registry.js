@@ -15,6 +15,9 @@ export const WORLD_REGISTRY = {
     dimensao: 'hub_404',
     load: () => import('./worlds/hub-404/aeroporto-carga.js'),
   },
+  hub_camara_dominio: { load: () => import('./worlds/hub-404/camara-dominio.js') },
+  hub_camara_mare: { load: () => import('./worlds/hub-404/camara-mare.js') },
+  hub_camara_nucleo: { load: () => import('./worlds/hub-404/camara-nucleo.js') },
   hub_setor_anime: {
     nome: 'Setor Anime',
     dimensao: 'hub_404',

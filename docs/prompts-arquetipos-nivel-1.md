@@ -140,3 +140,27 @@ Preparação, abertura, leitura e dissipação, com corpo e pés estáveis.
 ```
 
 A interface circular de escolha de formas, a animação de caminhada, as demais formas e os efeitos de cenário serão pedidos separadamente após definir suas mecânicas. Não substituir automaticamente folhas existentes por gerações ainda não validadas.
+
+## Referências de evolução (decisão atual)
+
+As artes de seleção de Domínio, Maré e Núcleo representam conceitos dos trajes/formas **completos de nível 2**, não sprites prontos do nível 1. Para o nível 1, mantenha identidade e materiais, reduzindo volume, ornamentação e potência aparente. O Domínio deve crescer de uma configuração inicial para uma silhueta heroica e imponente, com ombros e postura monumentais, inspirada na sensação de força de heróis de fantasia, sem copiar personagem existente. Sua espada inicial é pequena; não substituí-la por punhos. As poses atuais de Q são recortes temporários de referência nível 2, não o traje definitivo do personagem.
+
+## Cenários para as câmaras de missão
+
+Prompts para assets distintos; usar a mesma perspectiva isométrica e iluminação do Hub 404. Criar backgrounds sem texto, personagem ou interface; não assar portas, fragmentos ou obstáculos no fundo, pois devem permanecer interativos. Exportar camadas separadas com transparência real e dimensões/alinhamento a definir após teste no jogo.
+
+**Domínio — Câmara de Frequência:** sala subterrânea de manutenção do aeroporto, arquitetura industrial com pilares de basalto negro, círculos de runas douradas gravadas em anéis concêntricos e fraturas geométricas discretas; um lacre metálico de frequência ocupa o corredor central. Luz âmbar contida e poeira suspensa, leitura clara da rota. Criar o lacre em sprite separado, fechado e rompido, com rachaduras poligonais luminosas e ponto de impacto reconhecível.
+
+**Maré — Câmara de Fluxo:** galeria de recirculação sob o aeroporto, canais rasos transparentes entre passarelas industriais, janelas com água profunda e ecos bioluminescentes ao fundo, reflexos ciano e azuis, sem transformar o piso em vazio azul. No corredor, um fluxo de água suspensa preso por um aro; sprite separado com estado contido e corrente desviada, legível sem parecer um escudo.
+
+**Núcleo 10X — Câmara de Eco Cinético:** laboratório abandonado de calibração dimensional, anéis incompletos e trilhas holográficas verde e âmbar, cabos e marcadores de aceleração no chão, silhuetas de formas desconhecidas sugeridas em monitores apagados. Obstáculo separado: malha energética com padrão cinético interrompido, estados estável e dissipado; sem logotipos ou reprodução de interfaces de franquias.
+
+**Interface própria do Núcleo:** projetar overlay radial circular original para selecionar formas, com núcleo central, segmentos vazios para descobertas futuras, um único segmento da forma veloz inicial, estados selecionado/indisponível e símbolos sem texto. Não usar a interface como roupa tática. Definir depois interação, duração e custo de forma rápida versus sustentada; Q rápido deve continuar a retornar ao operador.
+
+## Estado e pendências de implementação
+
+- As três câmaras do aeroporto são protótipos de layout e usam props existentes; os desafios compartilham a estrutura de leitura R, ação Q e coleta, mas têm identificação, falas e obstáculos próprios. Criar arte e mecânicas realmente distintas, além de revisão visual em jogo.
+- T da Bio continua funcional. Para Domínio e Maré, T alterna apenas um estado experimental com brilho sobre o civil: faltam sprites e animações próprios de traje nível 1, HUD e balanceamento. Núcleo ainda não tem seletor radial nem transformação sustentada; não recebeu um toggle de armadura.
+- Os Q de Domínio e Maré usam sempre a pose lateral correspondente, espelhada à esquerda. Não são animações direcionais, não representam perfeitamente todas as direções e ainda usam referência de nível 2. Gerar folhas de nível 1 para corrigir isso de forma definitiva.
+- A linha do metrô pode ser calibrada pelos quatro arquétipos, mas os obstáculos da praia ainda exigem arquétipos diferentes em sequência. Projetar e testar soluções alternativas individuais sem conceder outros módulos, preservando o diagnóstico R→E da Bio e os saves antigos. O trilho/trem na praia também precisa de um posicionamento coerente, sem atravessar areia.
+- Validar visualmente no navegador, testar colisões, câmera e feedback em cada rota, incluindo retorno ao aeroporto e saves antigos; ajustar escala dos props. Ampliar falas, interação e cenografia ao substituir protótipos.

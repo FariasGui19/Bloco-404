@@ -1,12 +1,14 @@
 // Transições de progresso da missão do metrô, independentes de arquétipo e UI.
-// Os pontos de entrada e a solução da missão continuam, por enquanto, Bio-Forja.
+// As rotas temáticas compartilham apenas as transições de progresso.
 // Estas funções não salvam nem abrem diálogos: o chamador controla esses efeitos.
 export function recordAirportDiagnosis(progress) {
   progress.flags ??= {};
   progress.flags.airportTerminalDiagnosed = true;
   if (progress.activeQuest?.id === 'calibracao_de_eco') {
     progress.activeQuest.stage = 'find_fragment';
-    progress.activeQuest.description = 'O Terminal de Manutenção detectou um Fragmento de Sincronização na Área de Carga Desativada do Aeroporto.';
+    progress.activeQuest.description = progress.archetype === 'motor_bio_forja'
+      ? 'O Terminal de Manutenção detectou um Fragmento de Sincronização na Área de Carga Desativada do Aeroporto.'
+      : 'O terminal detectou um Fragmento de Sincronização na câmara acessível pela porta da carga do Aeroporto.';
   }
 }
 

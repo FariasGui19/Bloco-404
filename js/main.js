@@ -83,6 +83,9 @@ await loadSprites([
   { id: 'player_bio_forja', src: 'assets/sprites/player/player-bio-forja-lvl1.png' },
    { id: 'player_bio_forja_walk', src: 'assets/sprites/player/player-bio-forja-walk.png' },
   { id: 'player_bio_forja_scan', src: 'assets/sprites/player/player-bio-forja-scan.png' },
+  { id: 'player_dominio_reference', src: 'assets/sprites/player/player-dominio-reference.png' },
+  { id: 'player_mare_reference', src: 'assets/sprites/player/player-mare-reference.png' },
+  { id: 'player_10x_reference', src: 'assets/sprites/player/player-10x-reference.png' },
   {
     id: 'elevator_door',
     src: 'assets/sprites/objects/elevator-door.png',
@@ -140,6 +143,7 @@ await loadSprites([
     src: 'assets/sprites/objects/train-boarding-terminal.png',
   },
   { id: 'beach_floor', src: 'assets/sprites/tiles/beach-floor.png' },
+  { id: 'beach_shore', src: 'assets/sprites/tiles/beach-shore.png' },
   { id: 'beach_props', src: 'assets/sprites/objects/beach-props.png' },
 ]);
 

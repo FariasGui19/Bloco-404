@@ -22,6 +22,7 @@ import { moveWithCollision } from './collision.js';
 import { tryModuleInteraction } from './module-interactions.js';
 import { ARCHETYPE_KITS, IMPLEMENTED_ABILITIES } from '../data/archetype-kits.js';
 import { getBioDashProfile } from './ability-context.js';
+import { tryArchetypePower, POWER_PROFILES } from './archetype-powers.js';
 
 // ---------------------------------------------------------------------
 // CONFIGURAÇÃO INTERNA DE HABILIDADES
@@ -50,7 +51,8 @@ export function getCooldownPercent(abilityId) {
     return Math.max(0, Math.min(1, cooldown / getBioDashProfile({ archetype: 'motor_bio_forja' }, null).cooldown));
   }
 
-  return 0;
+  const duration = POWER_PROFILES[abilityId]?.cooldown;
+  return duration ? Math.max(0, Math.min(1, cooldown / duration)) : 0;
 }
 
 export function getAbilityLabel(abilityId) {
@@ -241,6 +243,12 @@ export function updateAbilities(dt) {
   const player = state.player;
   const ability = player.ability;
 
+  for (const key of ['effect', 'reveal']) {
+    if (!ability[key]) continue;
+    ability[key].timeLeft -= dt;
+    if (ability[key].timeLeft <= 0) ability[key] = null;
+  }
+
   // Cooldowns.
   for (const id in ability.cooldowns) {
     ability.cooldowns[id] = Math.max(
@@ -293,6 +301,7 @@ export function updateAbilities(dt) {
     if (abilityId === 'bio_dash') {
       return tryStartBioDash();
     }
+    if (POWER_PROFILES[abilityId]) return tryArchetypePower(abilityId, showAbilityMessage);
     if (abilityId && !IMPLEMENTED_ABILITIES.includes(abilityId)) {
       showAbilityMessage('HABILIDADE AINDA EM DESENVOLVIMENTO');
     }
@@ -301,7 +310,8 @@ export function updateAbilities(dt) {
   // R = interação especial do módulo (mantém como está).
   if (pressed('r', 'keyr')) {
     const abilityId = ARCHETYPE_ABILITIES[state.progress.archetype]?.[1];
-    if (IMPLEMENTED_ABILITIES.includes(abilityId)) tryModuleInteraction();
+    if (abilityId === 'bio_diagnostic') tryModuleInteraction();
+    else if (POWER_PROFILES[abilityId]) tryArchetypePower(abilityId, showAbilityMessage);
     else if (abilityId) showAbilityMessage('HABILIDADE AINDA EM DESENVOLVIMENTO');
   }
 

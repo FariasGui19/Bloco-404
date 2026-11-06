@@ -193,6 +193,13 @@ function interactWithObject(object) {
       });
       return;
     }
+    if (object.gate.requiredAction === 'golpe_ruptura') {
+      openDialogue({
+        speaker: object.nome ?? 'OBSTÁCULO',
+        dialogue: ['APONTE PARA A ROCHA E USE [Q] PARA ROMPÊ-LA.'],
+      });
+      return;
+    }
     openGate(object);
     saveGame();
     openDialogue({

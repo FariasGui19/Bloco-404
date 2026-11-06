@@ -6,6 +6,7 @@ import { canStandAt } from '../js/game/collision.js';
 import { checkGate, openGate, isGateOpen } from '../js/game/gates.js';
 import { findNearestInteraction, getInteractionPrompt } from '../js/game/interactions.js';
 import { loadMap } from '../js/game/map-manager.js';
+import { getModuleInteractionPrompt } from '../js/game/module-interactions.js';
 
 state.save.activeSlot = null;
 state.progress.flags = {};
@@ -48,11 +49,17 @@ assert(!near(points, 30, 9, 2));
 assert(!near(points, 9, 31, 2));
 
 state.progress.archetype = 'motor_bio_forja';
+state.progress.abilities = ['bio_dash', 'bio_diagnostic'];
+const cableCar = gates.teleferico_quebrado;
+state.player.x = cableCar.x;
+state.player.y = cableCar.y - 1.5;
+assert.equal(getModuleInteractionPrompt(), 'DIAGNOSTICAR CONDUTOR');
 assert(checkGate(gates.teleferico_quebrado.gate));
 assert(!checkGate(gates.rocha_rachada.gate));
 openGate(gates.teleferico_quebrado);
 assert(isGateOpen(gates.teleferico_quebrado));
 assert.equal(gates.teleferico_quebrado.bloqueia, false);
+assert.equal(getModuleInteractionPrompt(), null, 'não deve diagnosticar o gate já aberto');
 points = reachable();
 assert(near(points, 9, 31, 2), 'ilha C deve ser acessível após abrir teleférico');
 assert(near(points, gates.fenda_estreita.x, gates.fenda_estreita.y, 2.6));

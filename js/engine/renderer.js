@@ -62,6 +62,7 @@ export function render(map, state) {
   // O metrô modular volta a usar chão e tiles.
   if (!map.meta?.backgroundCoversFloor) {
     drawFloors(map);
+    if (map.aguaPraia) drawBeachShore(map);
 
     if (map.metroTiles) {
       drawMetroPlatformTiles(map);
@@ -321,9 +322,71 @@ function drawFloors(map) {
   }
 }
 
+// Água plana: não desenha as faces laterais dos sprites de bloco.
+// A colisão continua vindo do walkMask original, independentemente do desenho.
+function drawBeachWater(tx, ty, water, x, y) {
+  ctx.fillStyle = 'Yy'.includes(water) ? '#58bcb5' : '#1e6384';
+  ctx.beginPath();
+  ctx.moveTo(tx, ty - 0.5);
+  ctx.lineTo(tx + HW + 0.5, ty + HH);
+  ctx.lineTo(tx, ty + TH + 0.5);
+  ctx.lineTo(tx - HW - 0.5, ty + HH);
+  ctx.closePath();
+  ctx.fill();
+
+  // Pequenos reflexos esparsos, sem grade desenhada sobre o mar.
+  if ('Yy'.includes(water) && hash(x, y) < 0.16) {
+    ctx.strokeStyle = 'rgba(210, 255, 238, 0.28)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(tx - HW * 0.2, ty + HH);
+    ctx.lineTo(tx + HW * 0.12, ty + HH - 2);
+    ctx.stroke();
+  }
+}
+
+// Espuma apenas nas bordas de água que encostam em areia, não nas pontes.
+function drawBeachShore(map) {
+  const rows = map.aguaPraia;
+  const sand = (x, y) => {
+    const tile = rows[y]?.[x];
+    return tile != null && 'SMT'.includes(tile);
+  };
+  ctx.save();
+  ctx.strokeStyle = 'rgba(224, 255, 235, 0.72)';
+  ctx.lineWidth = 2;
+  for (let y = range.y0; y <= range.y1; y++) {
+    for (let x = range.x0; x <= range.x1; x++) {
+      const c = rows[y]?.[x];
+      if (!c || !'Yy'.includes(c)) continue;
+      const tx = (x - y) * HW, ty = (x + y) * HH;
+      const edges = [
+        [x - 1, y, tx - HW, ty + HH, tx, ty],
+        [x, y - 1, tx, ty, tx + HW, ty + HH],
+        [x + 1, y, tx + HW, ty + HH, tx, ty + TH],
+        [x, y + 1, tx, ty + TH, tx - HW, ty + HH],
+      ];
+      for (const [nx, ny, ax, ay, bx, by] of edges) {
+        if (!sand(nx, ny)) continue;
+        ctx.beginPath();
+        ctx.moveTo(ax, ay);
+        ctx.lineTo(bx, by);
+        ctx.stroke();
+      }
+    }
+  }
+  ctx.restore();
+}
+
 function drawFloorTile(type, x, y, map) {
   const tx = (x - y) * HW;
   const ty = (x + y) * HH;
+
+  const water = map.aguaPraia?.[y]?.[x];
+  if (water && 'YyDd'.includes(water)) {
+    drawBeachWater(tx, ty, water, x, y);
+    return;
+  }
 
   // Placa específica (map.pisos) ou mapa inteiro em placas
   const placas = map.meta?.estiloPiso === 'placas';

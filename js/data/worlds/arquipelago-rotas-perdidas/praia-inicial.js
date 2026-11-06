@@ -246,6 +246,7 @@ const gate = (id, x, y, col, row, larguraPx, cfg) =>
     // renderer.js e collision.js já respeitam hideWhenFlag.
     hideWhenFlag: `gate_${id}`,
     interacao: { label: cfg.label, distancia: 2.6 },
+    ...(cfg.moduleSystem ? { moduleSystem: cfg.moduleSystem } : {}),
     gate: {
       anyOf: cfg.anyOf,
       falha: cfg.falha,
@@ -316,7 +317,7 @@ export const map = {
     tipo: 'exterior',
     dimensao: 'arquipelago',
     // Aproximação da cor do tile de mar fundo. Ajuste se aparecer emenda.
-    corFundo: '#1f6aa5',
+    corFundo: '#1e6384',
     ambiente: { poeira: 15, cor: '#FFD54F' },
     estiloPiso: 'livre',
     // Células 'X' (mar aberto) são parede no layout mas NÃO devem desenhar parede.
@@ -333,10 +334,13 @@ export const map = {
   layout,
   walkMask: ground.walkMask,
   pisos: ground.pisos,
+  // Dados visuais separados da máscara de colisão.
+  aguaPraia: grid.map(linha => linha.join('')),
 
   objects: [
     ...linhaDoTrem({
       trilho: { larguraPx: 390, ajusteX: 9, ajusteY: 31.5 },
+      trem: { ajusteY: 63 }, // ajuste local: aproxima as rodas do trilho
     }),
 
     // ---- Ilha A (props originais, inalterados) ----
@@ -381,6 +385,14 @@ export const map = {
     // A -> C (ponte no eixo Y, colunas 7-8)
     gate('teleferico_quebrado', 8, 18, 1, 2, 130, {
       nome: 'TELEFÉRICO QUEBRADO',
+      moduleSystem: {
+        id: 'beach_cable_car',
+        allowedArchetypes: ['motor_bio_forja'],
+        distance: 2.6,
+        label: 'DIAGNOSTICAR CONDUTOR',
+        speaker: 'LINK BIO-FORJA',
+        dialogue: ['CONDUTOR DO TELEFÉRICO ROMPIDO.', 'RECONSTRUÇÃO DISPONÍVEL: APROXIME-SE E PRESSIONE E.'],
+      },
       label: 'RECONSTRUIR CONDUTOR',
       hitbox: HIT_PONTE_V,
       anyOf: [{ arquetipo: 'motor_bio_forja' }],

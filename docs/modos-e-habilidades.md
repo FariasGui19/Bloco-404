@@ -9,7 +9,7 @@ Cada operador escolhe um arquétipo; um possível morfador mestre futuro não é
 | Modo | Como usar | Energia | Alcance | Duração | Recarga |
 | --- | --- | --- | --- | --- | --- |
 | Rápido | Q com roupa civil | 28 | 2,15 tiles | 0,18 s | 1,25 s |
-| Traje ativo | T para equipar, depois Q | 22 | 2,35 tiles | 0,18 s | 1,25 s |
+| Traje ativo | T para equipar, depois Q | 22 | 2,80 tiles | 0,18 s | 1,25 s |
 
 O dash conserva suas colisões; os modos não liberam água ou gates extras. O estado do traje é temporário de runtime, não altera o arquétipo escolhido nem seu nível no save. O perfil é fixado no início do dash. O T não troca o traje durante um dash, diálogo, menu ou calibração. O Q continua exibindo a pose de propulsão Bio-Forja também no uso rápido. Nenhum nível superior altera estes números ainda.
 

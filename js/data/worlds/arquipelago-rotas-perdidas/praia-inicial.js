@@ -343,7 +343,7 @@ export const map = {
   objects: [
     ...linhaDoTrem({
       trilho: { larguraPx: 390, ajusteX: 9, ajusteY: 31.5 },
-      trem: { ajusteY: 63 }, // ajuste local: aproxima as rodas do trilho
+      trem: { ajusteY: 68 }, // ajuste local para aproximar as rodas do trilho
     }),
 
     // ---- Ilha A (props originais, inalterados) ----

@@ -43,8 +43,8 @@ startDash('bio_forja');
 assert.equal(state.player.energy, 78);
 assert.equal(state.player.ability.dash.mode, 'equipped');
 const equippedDistance = finishDash();
-assert(Math.abs(equippedDistance - 2.35) < 1e-8);
-assert(equippedDistance > quickDistance);
+assert(Math.abs(equippedDistance - 2.8) < 1e-8);
+assert(equippedDistance - quickDistance >= 0.6, 'diferença entre modos deve ser perceptível');
 
 startDash('bio_forja', 21);
 assert.equal(state.player.energy, 21);

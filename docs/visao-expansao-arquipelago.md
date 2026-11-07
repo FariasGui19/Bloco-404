@@ -28,7 +28,7 @@ Para todos: arte original, pixel art isométrica compatível com Bloco 404, câm
 
 ## Salas de missão — prompts para camadas de cenário
 
-As câmaras existentes são protótipos com mesmo layout; aprofundar rotas, puzzles, NPCs e ambientação sem alterar flags de progresso anteriores. Nenhum NPC hostil nem combate foi implementado nesta etapa. Para tutorial futuro, apresentar um simulador ou eco instável com alvo claramente telegráfico, opção de segurança e recompensa pequena; clique esquerdo deverá atacar quando o combate existir e o movimento por clique terá outro comando, ainda a decidir.
+As câmaras existentes são protótipos com mesmo layout; aprofundar rotas, puzzles, NPCs e ambientação sem alterar flags de progresso anteriores. Não há NPC hostil nesta etapa. Um protótipo de ataque básico por clique esquerdo e um eco de treino inofensivo estão disponíveis; Shift + clique move. Vida, dano ao jogador, recompensas e inimigos continuam em planejamento.
 
 **Bio-Forja — oficina de carga:**
 > Aeroporto industrial abandonado, oficina de carga com esteiras, cabos partidos, portões de impulso e consoles de manutenção. Tubulações ciano, placas gastas, materiais metálicos, luz de emergência e rotas legíveis. Camadas separadas: piso repetível, paredes, maquinário e obstáculo de impulso. Sugerir uma área segura para treino de reconstrução, sem incluir NPC ou texto.
@@ -56,7 +56,7 @@ Q rápido: transição curta, executa o movimento e retorna; forma sustentada: a
 
 - Criar soluções coerentes de cada arquétipo para todos os obstáculos da praia, sem destruir a corrente ou a fenda só porque o jogador atravessou; testar acesso e retorno, incluindo saves antigos.
 - Câmara de Maré e 10X agora mantêm obstáculo sólido e visível e registram a travessia somente após sair pelo outro lado; ainda usam arte provisória de pedra/props e um alinhamento automático curto para o corredor. Substituir por fluxo e malha animados, telegráficos e revisados visualmente.
-- Criar combate básico e decidir novo comando de movimento antes de trocar o clique esquerdo; adicionar NPCs e tutorial após existirem hitboxes, vida, dano, inimigos, recuperação e testes.
+- Evoluir o protótipo de ataque básico e validar Shift + clique para movimento; adicionar NPCs e tutorial após existirem vida, dano ao jogador, recuperação, IA e testes.
 - Criar roteiro e layouts específicos mais ricos para as quatro salas, com pistas, falas e missões, e testar retornos/diálogos/saves.
 - Evoluir o protótipo da interface radial 10X com novas formas e transformação sustentada, quando regras e arte estiverem definidas.
 - Testar os novos trajes e frames no navegador: os JPEGs tinham quadriculado embutido, a limpeza automática é aproximada, há efeitos recortados na borda e poses com orientações inconsistentes; pedir PNGs originais transparentes e folhas direcionais bem alinhadas para o acabamento.

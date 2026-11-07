@@ -5,7 +5,7 @@ Este documento registra decisões e rascunhos; não indica que os sistemas futur
 ## Princípios
 
 - Um arquétipo escolhido pelo jogador; apenas um módulo de arquétipo ativo por vez. Uma futura ferramenta inspirada em um «morfador mestre» poderá conceder habilidades de outros personagens do multiverso, sem ser tratada como troca automática de arquétipo. Seu desbloqueio e regras ainda não foram definidos.
-- Ataque básico no clique esquerdo: varia conforme arquétipo, forma de Eco e ferramenta equipada. Movimento por clique deve mudar para outro comando, ainda a definir; até o combate existir, preservar o controle atual.
+- Ataque básico no clique esquerdo: varia conforme arquétipo, forma de Eco e ferramenta equipada. O protótipo usa Shift + clique para movimento e clique esquerdo para atacar; ajustes por traje, arma e forma estão em desenvolvimento.
 - Cada arquétipo tem quatro habilidades e uma Ultimate. Todas evoluem individualmente; a Ultimate também começa no nível 1. Evolução adiciona possibilidades e efeitos, não apenas dano.
 - Uma geografia compartilhada com experiências e acessos distintos. Superfície, céu, subsolo, mar e fundo do mar podem ser mapas conectados; percepção e interação também mudam conforme o contexto do jogador.
 
@@ -36,5 +36,5 @@ O Rival dimensional (nomes provisórios Operador Nulo, Nexo-Null ou Arquivo 0) c
 2. Calibrar trem, costa e água; avaliar necessidade de novos assets.
 3. Modelar capacidades, níveis e migração segura dos saves.
 4. Prototipar Q e R dos demais arquétipos e experiências próprias de exploração.
-5. Implementar ataque básico adaptativo e trocar movimento por clique para comando acordado.
+5. Evoluir o protótipo do ataque básico, testar diferenças entre trajes e formas e validar Shift + clique como movimento.
 6. Expandir demais slots, Ultimate, Bolt e Rival por etapas jogáveis.

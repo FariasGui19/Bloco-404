@@ -9,6 +9,7 @@ import { state } from './state.js';
 import { snapCameraTo } from '../engine/camera.js';
 import { createActorRuntime } from './actors.js';
 import { createCoastalFauna } from './fauna-costeira.js';
+import { createTrainingTargets } from './combat.js';
 import { rememberMapLocation } from './save.js';
 import { applyGateStates } from './gates.js';
 
@@ -46,6 +47,8 @@ export async function loadMap(mapId, spawnId = 'inicio') {
 
     state.actors = [];
     state.fauna = createCoastalFauna(mapData);
+    state.trainingTargets = createTrainingTargets(mapData);
+    state.player.combat = null;
     state.objects = [];
     state.portals = [];
     state.collectibles = [];

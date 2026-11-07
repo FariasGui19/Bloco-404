@@ -320,6 +320,11 @@ function espalharProps() {
           bloqueia: true,
           hitbox: { offsetX: -0.3, offsetY: -0.3, width: 0.6, height: 0.6 },
         }));
+      } else if (r >= .11 && r < .14 && c === 'S') {
+        // Detalhes de vegetação sem colisão, longe dos acessos às pontes.
+        lista.push(prop(id('folhagem_costeira'), x, y, 0, 0, 35 + hash(x, y, 64) * 15, {
+          sprite: 'vegetacao_tropical', frame: { col: hash(x, y, 12) < .5 ? 0 : 1, row: 0 }, bloqueia: false,
+        }));
       }
     }
   }

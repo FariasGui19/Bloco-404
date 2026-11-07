@@ -31,6 +31,7 @@ export const map = {
     estiloPiso: 'livre', useBackgroundWalls: true, sandSprite: 'beach_novas_artes', ambiente: { poeira: 12, cor: '#ffd98a' } },
   corChao: '#e6c280', layout, walkMask: ground.walkMask, pisos: ground.pisos, aguaPraia: rows,
   spawnPoints: { inicio: { x: 6.5, y: 15.5 }, vindo_da_praia: { x: 6.5, y: 15.5 } },
+  trainingTargets: [{ id: 'eco_treino_enseada', x: 14, y: 15, maxHealth: 3 }],
   fauna: [
     { id: 'enseada_caranguejo_1', species: 'caranguejo', x: 7.5, y: 12.5 },
     { id: 'enseada_caranguejo_2', species: 'caranguejo', x: 24.5, y: 19.5 },
@@ -53,6 +54,8 @@ export const map = {
     tropical('enseada_folhas_3', 24, 12, 0, 50), tropical('enseada_folhas_4', 24, 18, 1, 45),
     tropical('enseada_folhas_5', 11, 7, 1, 42), tropical('enseada_folhas_6', 19, 7, 0, 50),
     tropical('enseada_folhas_7', 23, 20, 1, 45), tropical('enseada_folhas_8', 12, 23, 0, 46),
+    tropical('enseada_folhas_9', 7, 10, 1, 40), tropical('enseada_folhas_10', 8, 20, 0, 43),
+    tropical('enseada_folhas_11', 15, 8, 1, 38), tropical('enseada_folhas_12', 22, 23, 0, 42),
     tropical('enseada_ruinas', 20, 13, 6, 72), tropical('enseada_rochas', 12, 22, 7, 58),
     { id: 'marco_praia', tipo: 'decoracao', x: 5, y: 15, routeMarker: 'PRAIA', bloqueia: false },
     tropical('enseada_palmeira_1', 9, 10, 2, 84), tropical('enseada_palmeira_2', 21, 9, 2, 80),

@@ -5,6 +5,8 @@
 // Diretor do jogo.
 // =====================================================================
 
+import { updateBasicCombat, tryBasicAttack } from './game/combat.js';
+import { isQuestJournalOpen, openQuestJournal, closeQuestJournal } from './ui/quest-journal.js';
 import { updateCoastalFauna } from './game/fauna-costeira.js';
 import { state } from './game/state.js';
 
@@ -190,7 +192,7 @@ async function update(dt) {
   if (isBackgroundCalibrationEnabled()) {
     player.moving = false;
     player.target = null;
-    input.click = null;
+    input.click = null; input.attackClick = null;
 
     updateCamera(dt, player.x, player.y);
     return;
@@ -203,7 +205,7 @@ async function update(dt) {
   if (isDialogueOpen()) {
     player.moving = false;
     player.target = null;
-    input.click = null;
+    input.click = null; input.attackClick = null;
     updateNpcBrains(dt);
     updateCamera(dt, player.x, player.y);
     return;
@@ -217,7 +219,7 @@ async function update(dt) {
   if (isArchetypeCardsOpen()) {
     player.moving = false;
     player.target = null;
-    input.click = null;
+    input.click = null; input.attackClick = null;
 
     updateNpcBrains(dt);
     updateCamera(dt, player.x, player.y);
@@ -228,8 +230,21 @@ async function update(dt) {
     updateNucleoWheel();
     player.moving = false;
     player.target = null;
-    input.click = null;
+    input.click = null; input.attackClick = null;
     updateCamera(dt, player.x, player.y);
+    return;
+  }
+
+  if (isQuestJournalOpen()) {
+    if (input.pressed.has('j') || input.pressed.has('keyj') || input.pressed.has('escape')) closeQuestJournal();
+    player.moving = false; player.target = null;
+    input.click = null; input.attackClick = null;
+    updateCamera(dt, player.x, player.y); return;
+  }
+  if (!isElevatorMenuOpen() && (input.pressed.has('j') || input.pressed.has('keyj'))) {
+    openQuestJournal(state.progress, getFloor());
+    player.moving = false; player.target = null;
+    input.click = null; input.attackClick = null;
     return;
   }
 
@@ -239,7 +254,7 @@ async function update(dt) {
     player.moving = false;
     player.target = null;
 
-    input.click = null;
+    input.click = null; input.attackClick = null;
     state.onElevator = false;
   } else {
     // T não atua em diálogos, menus, calibração ou durante um dash.
@@ -251,7 +266,14 @@ async function update(dt) {
         }
       } else toggleArchetypeSuit(state.progress, player);
     }
+    updateBasicCombat(player, state.trainingTargets, dt);
     const abilityLocksMovement = updateAbilities(dt);
+    if (input.attackClick) {
+      const point = input.attackClick; input.attackClick = null;
+      if (!abilityLocksMovement && !state.world.isLoading) {
+        tryBasicAttack({ player, progress: state.progress, map: getFloor(), targets: state.trainingTargets, point });
+      }
+    }
 
     if (!abilityLocksMovement) {
       updatePlayer(dt);

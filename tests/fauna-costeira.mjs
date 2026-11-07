@@ -1,11 +1,17 @@
 import assert from 'node:assert/strict';
-import { createCoastalFauna, updateCoastalFauna, habitatAllows } from '../js/game/fauna-costeira.js';
+import { createCoastalFauna, updateCoastalFauna, habitatAllows, faunaFootAnchor } from '../js/game/fauna-costeira.js';
 import { map as praia } from '../js/data/worlds/arquipelago-rotas-perdidas/praia-inicial.js';
 import { map as enseada } from '../js/data/worlds/arquipelago-rotas-perdidas/enseada-ecos.js';
 import { state } from '../js/game/state.js';
 import { loadMap } from '../js/game/map-manager.js';
 import { canStandAt } from '../js/game/collision.js';
 
+// As patas de cada frame pousam no mesmo ponto, apesar da altura variar.
+for (const bottom of [153, 156, 151, 149, 137, 155, 155]) {
+  const box = { y: 25, h: bottom - 25 };
+  assert.equal(-80 * faunaFootAnchor(box, 256) + 80 * bottom / 256, 0);
+}
+assert.equal(faunaFootAnchor(null, 256), .78);
 for (const map of [praia, enseada]) {
   const animals = createCoastalFauna(map);
   assert.equal(animals.length, map.fauna.length, 'todos os animais começam no habitat correto');

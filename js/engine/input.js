@@ -23,10 +23,12 @@ export const input = {
 
   // Clique no chão em coordenadas de mundo.
   click: null,
+  attackClick: null,
 };
 
 const drag = {
   left: false,
+  moveClick: false,
   pan: false,
 
   startX: 0,
@@ -134,6 +136,8 @@ export function initInput(canvas) {
 
     input.pressed.clear();
     input.click = null;
+    input.attackClick = null;
+    drag.left = false; drag.pan = false;
   });
 
   // -------------------------------------------------------------------
@@ -155,9 +159,10 @@ export function initInput(canvas) {
     drag.startX = event.clientX;
     drag.startY = event.clientY;
 
-    // Botão esquerdo: possível clique de movimento.
+    // Botão esquerdo ataca; Shift + esquerdo preserva o movimento por clique.
     if (event.button === 0) {
       drag.left = true;
+      drag.moveClick = event.shiftKey;
       return;
     }
 
@@ -196,11 +201,13 @@ export function initInput(canvas) {
       );
 
       // Se quase não moveu o mouse, foi clique no chão.
-      if (moved < CONFIG.CLICK_DRAG_THRESHOLD) {
-        input.click = screenToWorld(
+      if (moved < CONFIG.CLICK_DRAG_THRESHOLD && event.target === canvas) {
+        const point = screenToWorld(
           event.clientX,
           event.clientY
         );
+        if (drag.moveClick) { input.attackClick = null; input.click = point; }
+        else { input.click = null; input.attackClick = point; }
       }
     } 
 

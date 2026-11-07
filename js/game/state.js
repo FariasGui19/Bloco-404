@@ -29,6 +29,7 @@ export const state = {
   // -------------------------------------------------------------------
   actors: [],
   fauna: [],
+  trainingTargets: [],
   objects: [],
   portals: [],
   collectibles: [],

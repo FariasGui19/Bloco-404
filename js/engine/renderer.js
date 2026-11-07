@@ -8,6 +8,8 @@ import { CONFIG, TILE } from '../config.js';
 import { camera, view, worldToScreen, isoToWorld } from './camera.js';
 import { getSprite } from './sprites.js';
 import { createBeachSurface } from './beach-surface.js';
+import { bridgeThresholdGeometry } from './bridge-geometry.js';
+import { faunaFootAnchor } from '../game/fauna-costeira.js';
 import { getFrame } from './sprite-clean.js';
 import { drawAmbientBack, drawAmbientFront } from './ambient.js';
 import { isDebugEnabled, drawDebugWorld } from '../game/debug.js';
@@ -87,6 +89,7 @@ export function render(map, state) {
 
   drawAmbientBack(ctx, state, HW, HH);
   drawWorld(map, state);
+  drawBasicAttack(state.player);
   drawAbilityEffects(state);
   drawAmbientFront(ctx, map, HW, HH);
   drawTarget(state.player);
@@ -788,6 +791,7 @@ function drawWorld(map, state) {
 
   for (const a of state.actors ?? []) drawList.push(a);
   for (const a of state.fauna ?? []) if (visivel(a)) drawList.push(a);
+  for (const target of state.trainingTargets ?? []) if (visivel(target)) drawList.push(target);
 
   for (const o of state.objects ?? []) {
     if (o.camada === 'fundo') backList.push(o);      // trem/trilho sempre
@@ -806,6 +810,8 @@ function drawWorld(map, state) {
   const drawItem = (item) => {
     if (item.renderType === 'object') {
       drawMapObject(item, state);
+    } else if (item.renderType === 'trainingTarget') {
+      drawTrainingTarget(item);
     } else if (item.renderType === 'fauna') {
       drawCoastalFauna(item);
     } else if (item.renderType === 'collectible') {
@@ -841,6 +847,40 @@ function drawWorld(map, state) {
   while (ei < drawList.length) drawItem(drawList[ei++]);
 }
 
+// Manifestação de treino é um alvo explícito e inofensivo; não é fauna.
+function drawTrainingTarget(target) {
+  const x = (target.x-target.y)*HW, y = (target.x+target.y)*HH;
+  const down = target.health <= 0;
+  ctx.save();
+  ctx.fillStyle = 'rgba(12,34,35,.30)'; ctx.beginPath(); ctx.ellipse(x,y+2,22,8,0,0,Math.PI*2); ctx.fill();
+  ctx.fillStyle = '#334c50'; ctx.beginPath(); ctx.moveTo(x-22,y); ctx.lineTo(x,y+8); ctx.lineTo(x+22,y); ctx.lineTo(x,y-8); ctx.closePath(); ctx.fill();
+  ctx.fillStyle = down ? '#566362' : target.hitTimer > 0 ? '#fff7bd' : '#58dcca';
+  ctx.strokeStyle = '#cdfef3'; ctx.lineWidth = 1.4;
+  ctx.beginPath(); ctx.moveTo(x,y-(down?19:48)); ctx.lineTo(x+13,y-29); ctx.lineTo(x,y-12); ctx.lineTo(x-13,y-29); ctx.closePath(); ctx.fill(); ctx.stroke();
+  ctx.fillStyle = '#d9fff5'; ctx.font = 'bold 8px monospace'; ctx.textAlign = 'center';
+  const caption = down ? 'RECARREGANDO' : 'ECO DE TREINO · CLIQUE';
+  ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(5,30,32,.9)'; ctx.strokeText(caption, x, y-58); ctx.fillText(caption, x, y-58);
+  if (!down) { ctx.fillStyle = '#1d3735'; ctx.fillRect(x-18,y-54,36,3); ctx.fillStyle = '#9af9c8'; ctx.fillRect(x-18,y-54,36*target.health/target.maxHealth,3); }
+  ctx.restore();
+}
+
+function drawBasicAttack(player) {
+  const a = player.combat;
+  if (!a?.timeLeft) return;
+  const t = 1 - a.timeLeft/a.duration;
+  const ix = (player.x-player.y)*HW, iy = (player.x+player.y)*HH - 17;
+  const sx = (a.dx-a.dy)*HW, sy = (a.dx+a.dy)*HH;
+  const angle = Math.atan2(sy,sx), radius = 30 + 12*t;
+  ctx.save(); ctx.translate(ix,iy); ctx.rotate(angle);
+  ctx.strokeStyle = a.color; ctx.globalAlpha = Math.sin(Math.PI*t)*.9;
+  ctx.lineWidth = a.style === 'lamina_dominio_anciao' ? 5 : 4; ctx.lineCap = 'round';
+  ctx.beginPath(); ctx.arc(3,0,radius,-.75,.75); ctx.stroke();
+  ctx.strokeStyle = '#f4fff5'; ctx.lineWidth = 1.5;
+  ctx.beginPath(); ctx.arc(3,0,radius-4,-.48,.48); ctx.stroke();
+  if (a.transformed) { ctx.beginPath(); ctx.moveTo(12,-10); ctx.lineTo(34,-10); ctx.moveTo(8,11); ctx.lineTo(28,11); ctx.stroke(); }
+  ctx.restore();
+}
+
 // As células são desenhadas integralmente: os peixes são um cardume, não
 // componentes desconectados a eliminar, e as âncoras não pulam entre quadros.
 function drawCoastalFauna(a) {
@@ -863,7 +903,10 @@ function drawCoastalFauna(a) {
   ctx.translate(x, y - (flight ? 18 + Math.sin(a.clock * 8) * 2 : 0));
   if (a.flip) ctx.scale(-1, 1);
   ctx.imageSmoothingEnabled = false;
-  ctx.drawImage(image, col * cw, row * ch, cw, ch, -width / 2, -height * .78, width, height);
+  const box = a.species === 'capivara' ? getVisibleBox(image, col * cw, row * ch, cw, ch) : null;
+  // Usa a base opaca de cada quadro, sem redimensioná-lo ou deslocar a sombra.
+  const anchor = faunaFootAnchor(box, ch);
+  ctx.drawImage(image, col * cw, row * ch, cw, ch, -width / 2, -height * anchor, width, height);
   ctx.restore();
 }
 
@@ -1026,12 +1069,13 @@ function getVisibleBox(image, sx, sy, sw, sh, threshold = 40) {
 }
 // Limiares acompanhando a largura e o eixo do deck, em vez de uma caverna
 // ou rocha aparentemente solta sobre a ponte. Só muda o desenho do gate.
-function drawBridgeThreshold(object) {
+function drawBridgeThreshold(object, map) {
   const alongX = object.id === 'travessia_mare_eco' || object.id === 'fenda_estreita';
   const fissure = object.id === 'fenda_estreita';
   const broken = object.id === 'teleferico_quebrado';
-  const x = (object.x - object.y) * HW, y = (object.x + object.y) * HH;
-  const dx = (alongX ? -1 : 1) * HW * 1.15, dy = HH * 1.15;
+  const center = bridgeThresholdGeometry(map?.aguaPraia, object, alongX ? 'x' : 'y') ?? { x: object.x, y: object.y, halfWidth: .92 };
+  const x = (center.x - center.y) * HW, y = (center.x + center.y) * HH;
+  const dx = (alongX ? -1 : 1) * HW * center.halfWidth, dy = HH * center.halfWidth;
   const t = performance.now() / 1000;
   ctx.save(); ctx.translate(x, y + 2);
   ctx.lineCap = 'round';
@@ -1067,7 +1111,7 @@ function drawMapObject(object, state) {
   if (object.hideWhenFlag && state.progress.flags?.[object.hideWhenFlag]) return;
   if (object.showWhenFlag && !state.progress.flags?.[object.showWhenFlag]) return; // NOVO
 
-  if (['travessia_mare_eco', 'passagem_mare_eco', 'caverna_alagada', 'fenda_estreita', 'teleferico_quebrado'].includes(object.id)) { drawBridgeThreshold(object); return; }
+  if (['travessia_mare_eco', 'passagem_mare_eco', 'caverna_alagada', 'fenda_estreita', 'teleferico_quebrado'].includes(object.id)) { drawBridgeThreshold(object, state.world?.currentMap); return; }
 
   if (object.gate) {
     const x = (object.x - object.y) * HW, y = (object.x + object.y) * HH;

@@ -291,15 +291,24 @@ function espalharProps() {
       const id = (nome) => `${nome}_${x}_${y}`;
 
       if (raso) {
-        if (r < 0.04) lista.push(prop(id('coral'), x, y, 0, 3, 54));
+        if (r < 0.018) lista.push(prop(id('coral'), x, y, 0, 3, 48));
+        else if (r < 0.031) lista.push(prop(id('rochedos_costeiros'), x, y, 0, 0, 52, {
+          sprite: 'vegetacao_tropical', frame: { col: 7, row: 0 }, bloqueia: false,
+        }));
         continue;
       }
 
       if (r < 0.035) {
         const [col, larg] = palmeiras[Math.floor(hash(x, y, 5) * palmeiras.length)];
-        lista.push(prop(id('palmeira'), x, y, col, 0, larg, { bloqueia: true, hitbox: TRONCO }));
+        const tropical = hash(x, y, 83) < .60;
+        const foliage = [2, 3, 4, 5][Math.floor(hash(x, y, 61) * 4)];
+        lista.push(prop(id('palmeira'), x, y, col, 0, tropical ? 98 : larg, {
+          ...(tropical ? { sprite: 'vegetacao_tropical', frame: { col: foliage, row: 0 } } : {}),
+          bloqueia: true, hitbox: TRONCO,
+        }));
       } else if (r < 0.055) {
-        lista.push(prop(id('arbusto'), x, y, 3, 0, 50));
+        lista.push(prop(id('arbusto'), x, y, 3, 0, 50, hash(x, y, 29) < .65
+          ? { sprite: 'vegetacao_tropical', frame: { col: hash(x, y, 19) < .5 ? 0 : 1, row: 0 } } : {}));
       } else if (r < 0.068) {
         lista.push(prop(id('pedras'), x, y, 2, 1, 60));
       } else if (r < 0.078) {
@@ -350,9 +359,23 @@ export const map = {
     { id: 'praia_caranguejo_1', species: 'caranguejo', x: 3.5, y: 10.5 },
     { id: 'praia_caranguejo_2', species: 'caranguejo', x: 26.5, y: 14.5 },
     { id: 'praia_gaivota', species: 'gaivota', x: 11.5, y: 6.5 },
-    { id: 'praia_peixes', species: 'peixes', x: 15.5, y: 10.5 },
+    { id: 'praia_peixes', species: 'peixes', x: 17.5, y: 16.5 },
+    // Grupos pequenos distribuídos entre as ilhas, sem colisão ou progresso.
+    { id: 'praia_gaivota_leste', species: 'gaivota', x: 35.5, y: 13.5 },
+    { id: 'praia_caranguejo_leste', species: 'caranguejo', x: 39.5, y: 9.5 },
+    { id: 'praia_caranguejo_sul', species: 'caranguejo', x: 3.5, y: 31.5 },
+    { id: 'praia_gaivota_sul', species: 'gaivota', x: 13.5, y: 36.5 },
+    { id: 'praia_peixes_sul', species: 'peixes', x: 19.5, y: 34.5 },
+    { id: 'praia_peixes_leste', species: 'peixes', x: 41.5, y: 30.5 },
+    { id: 'praia_caranguejo_centro', species: 'caranguejo', x: 36.5, y: 34.5 },
+    { id: 'praia_capivara_centro', species: 'capivara', x: 27.5, y: 26.5 },
+    { id: 'praia_gaivota_farol', species: 'gaivota', x: 32.5, y: 44.5 },
+    { id: 'praia_peixes_farol', species: 'peixes', x: 37.5, y: 42.5 },
   ],
   objects: [
+    { id: 'rochedos_praia_leste', tipo: 'decoracao', x: 40, y: 12, sprite: 'costa_rochosa', frame: { col: 1, row: 0 }, useCrop: true, larguraPx: 104, pivotY: 1, bloqueia: false },
+    { id: 'rochedos_praia_sul', tipo: 'decoracao', x: 1, y: 27, sprite: 'costa_rochosa', frame: { col: 3, row: 0 }, useCrop: true, larguraPx: 79, pivotY: 1, bloqueia: false },
+    { id: 'rochedos_praia_centro', tipo: 'decoracao', x: 40, y: 35, sprite: 'costa_rochosa', frame: { col: 2, row: 0 }, useCrop: true, larguraPx: 72, pivotY: 1, bloqueia: false },
     { id: 'folha_costeira_a', tipo: 'decoracao', x: 2, y: 9, sprite: 'vegetacao_tropical', frame: { col: 1, row: 0 }, useCrop: true, larguraPx: 45, pivotY: 1, bloqueia: false },
     { id: 'folha_costeira_b', tipo: 'decoracao', x: 12, y: 10, sprite: 'vegetacao_tropical', frame: { col: 0, row: 0 }, useCrop: true, larguraPx: 45, pivotY: 1, bloqueia: false },
     { id: 'marco_enseada', tipo: 'decoracao', x: 12, y: 11, routeMarker: 'ENSEADA', bloqueia: false },
@@ -391,7 +414,7 @@ export const map = {
 
     // ---- GATES (um por ponte) ----
     // A -> B (ponte no eixo X, linhas 7-8)
-    gate('rocha_rachada', 18, 8, 0, 1, 78, {
+    gate('rocha_rachada', 18, 8, 0, 1, 110, {
       nome: 'ROCHA RACHADA',
       label: 'EXAMINAR • Q: ROMPER',
       requiredAction: 'golpe_ruptura',

@@ -7,6 +7,7 @@
 import { CONFIG, TILE } from '../config.js';
 import { camera, view, worldToScreen, isoToWorld } from './camera.js';
 import { getSprite } from './sprites.js';
+import { createBeachSurface } from './beach-surface.js';
 import { getFrame } from './sprite-clean.js';
 import { drawAmbientBack, drawAmbientFront } from './ambient.js';
 import { isDebugEnabled, drawDebugWorld } from '../game/debug.js';
@@ -65,8 +66,8 @@ export function render(map, state) {
   if (!map.meta?.backgroundCoversFloor) {
     if (map.aguaPraia) {
       drawBeachSea(map);
-      drawBeachWaterDetail(map);
       drawBeachRipples(map);
+      drawBeachSurface(map);
     }
     drawFloors(map);
     if (map.aguaPraia) drawBeachShore(map);
@@ -358,9 +359,11 @@ function drawBeachSea(map) {
           }
         }
         // Degradê contínuo entre a margem e o mar aberto.
-        const t = Math.min(1, closest / 4.5);
+        const edge = Math.min(wx, wy, width - wx, height - wy);
+        const border = Math.max(0, Math.min(1, edge / 1.6));
+        const t = Math.max(Math.min(1, closest / 4.5), 1 - border * border * (3 - 2 * border));
         const smooth = t * t * (3 - 2 * t);
-        const detail = (1 - smooth) * Math.sin(wx * 4.1 + Math.sin(wy * 2.3)) * 2;
+        const detail = (1 - smooth) * (Math.sin(wx * 4.1 + Math.sin(wy * 2.3)) * 3 + Math.sin(wy * 3.2 - wx * .7) * 2);
         const i = (py * texture.width + px) * 4;
         for (let c = 0; c < 3; c++) image.data[i + c] = shallow[c] * (1 - smooth) + deep[c] * smooth + detail;
         image.data[i + 3] = 255;
@@ -376,24 +379,40 @@ function drawBeachSea(map) {
   ctx.restore();
 }
 
-// Reaproveita os tiles de água rasa da nova folha como textura translúcida.
-// Não usamos os tiles mistos de areia/água: eles não têm bordas compatíveis
-// em todas as orientações e colocariam areia visual sobre água bloqueada.
-function drawBeachWaterDetail(map) {
-  const image = getSprite('beach_shore');
-  const frame = getFrame(image, 2, 0, 4, 4)?.crop;
-  if (!frame) return;
-  ctx.save();
-  ctx.globalAlpha = 0.2;
-  ctx.imageSmoothingEnabled = false;
-  for (let y = range.y0; y <= range.y1; y++) {
-    for (let x = range.x0; x <= range.x1; x++) {
-      const tile = map.aguaPraia[y]?.[x];
-      if (!tile || !'Yy'.includes(tile)) continue;
-      const tx = (x - y) * HW, ty = (x + y) * HH;
-      ctx.drawImage(frame.canvas, 0, 0, frame.w, frame.h, tx - HW, ty, HW * 2, TH);
+// Uma única textura de areia em coordenadas de mundo elimina as emendas de
+// cada losango. A máscara vem da própria grade, não altera chão ou colisão.
+const beachSurfaceCache = new WeakMap();
+function drawBeachSurface(map) {
+  let texture = beachSurfaceCache.get(map);
+  if (!texture) {
+    const data = createBeachSurface(map.aguaPraia);
+    texture = document.createElement('canvas');
+    texture.width = data.width; texture.height = data.height;
+    const paint = texture.getContext('2d');
+    const image = paint.createImageData(data.width, data.height);
+    image.data.set(data.pixels);
+    paint.putImageData(image, 0, 0);
+    // Grãos e sulcos sutis são assados no cache, não redesenhados por frame.
+    const rows = map.aguaPraia, scale = data.width / rows[0].length;
+    paint.strokeStyle = 'rgba(145,101,58,.20)'; paint.lineWidth = .8;
+    paint.lineCap = 'round'; paint.beginPath();
+    for (let y = 0; y < rows.length; y++) for (let x = 0; x < rows[y].length; x++) {
+      if (!'SMT'.includes(rows[y][x])) continue;
+      for (let n = 0; n < 3; n++) {
+        const wx = x + .14 + hash(x * 7 + n * 31, y + 17) * .72;
+        const wy = y + .14 + hash(x + 11, y * 7 + n * 23) * .72;
+        const size = .035 + hash(x+n*29, y+37) * .05;
+        paint.moveTo((wx-size)*scale, wy*scale);
+        paint.quadraticCurveTo(wx*scale, (wy-.04)*scale, (wx+size)*scale, wy*scale);
+      }
     }
+    paint.stroke();
+    beachSurfaceCache.set(map, texture);
   }
+  ctx.save();
+  ctx.transform(HW, HH, -HW, HH, 0, 0);
+  ctx.imageSmoothingEnabled = true;
+  ctx.drawImage(texture, 0, 0, map.aguaPraia[0].length, map.aguaPraia.length);
   ctx.restore();
 }
 
@@ -408,7 +427,7 @@ function drawBeachRipples(map) {
     isoToWorld(camera.x + halfW, camera.y + halfH),
     isoToWorld(camera.x - halfW, camera.y + halfH),
   ];
-  const spacing = 2;
+  const spacing = 1.6;
   const x0 = Math.floor(Math.min(...corners.map(p => p.x)) / spacing) - 1;
   const x1 = Math.ceil(Math.max(...corners.map(p => p.x)) / spacing) + 1;
   const y0 = Math.floor(Math.min(...corners.map(p => p.y)) / spacing) - 1;
@@ -417,7 +436,7 @@ function drawBeachRipples(map) {
 
   ctx.save();
   const waveTime = performance.now() / 1000;
-  ctx.strokeStyle = `rgba(176, 238, 226, ${0.18 + 0.05 * Math.sin(waveTime * 0.9)})`;
+  ctx.strokeStyle = `rgba(176, 238, 226, ${0.22 + 0.05 * Math.sin(waveTime * 0.9)})`;
   ctx.lineWidth = 1;
   ctx.lineCap = 'round';
   ctx.beginPath();
@@ -442,52 +461,31 @@ function drawBeachRipples(map) {
   ctx.restore();
 }
 
-// Espuma apenas nas bordas de água que encostam em areia, não nas pontes.
+// Pequenos arcos de espuma interrompidos, em água junto à areia. Evita
+// sublinhar os dentes da máscara com uma linha geométrica contínua.
 function drawBeachShore(map) {
   const rows = map.aguaPraia;
-  const sand = (x, y) => {
-    const tile = rows[y]?.[x];
-    return tile != null && 'SMT'.includes(tile);
-  };
-  ctx.save();
-  ctx.strokeStyle = 'rgba(230, 255, 237, 0.48)';
-  ctx.lineWidth = 1.5;
-  ctx.lineCap = 'round';
-  for (let y = range.y0; y <= range.y1; y++) {
-    for (let x = range.x0; x <= range.x1; x++) {
-      const c = rows[y]?.[x];
-      if (!c || !'Yy'.includes(c)) continue;
-      const tx = (x - y) * HW, ty = (x + y) * HH;
-      const edges = [
-        [x - 1, y, tx - HW, ty + HH, tx, ty],
-        [x, y - 1, tx, ty, tx + HW, ty + HH],
-        [x + 1, y, tx + HW, ty + HH, tx, ty + TH],
-        [x, y + 1, tx, ty + TH, tx - HW, ty + HH],
-      ];
-      for (const [nx, ny, ax, ay, bx, by] of edges) {
-        if (!sand(nx, ny)) continue;
-        ctx.beginPath();
-        ctx.moveTo(ax, ay);
-        ctx.lineTo(bx, by);
-        ctx.stroke();
-      }
+  const sand = (x, y) => 'SMT'.includes(rows[y]?.[x] ?? ' ');
+  ctx.save(); ctx.strokeStyle = 'rgba(222,255,240,.44)';
+  ctx.lineWidth = 1.25; ctx.lineCap = 'round';
+  const wave = performance.now() / 1000;
+  for (let y = range.y0; y <= range.y1; y++) for (let x = range.x0; x <= range.x1; x++) {
+    if (!'Yy'.includes(rows[y]?.[x] ?? ' ')) continue;
+    const tx = (x-y)*HW, ty = (x+y)*HH;
+    const edges = [
+      [x-1,y,tx-HW,ty+HH,tx,ty], [x,y-1,tx,ty,tx+HW,ty+HH],
+      [x+1,y,tx+HW,ty+HH,tx,ty+TH], [x,y+1,tx,ty+TH,tx-HW,ty+HH],
+    ];
+    for (const [nx,ny,ax,ay,bx,by] of edges) {
+      if (!sand(nx,ny) || hash(x + nx*7, y + ny*11) < .22) continue;
+      const shift = Math.sin(wave * .8 + x * .5 + y) * 1.5;
+      const sx = ax*.8+bx*.2, sy = ay*.8+by*.2;
+      const ex = ax*.2+bx*.8, ey = ay*.2+by*.8;
+      ctx.beginPath(); ctx.moveTo(sx, sy + shift);
+      ctx.quadraticCurveTo((ax+bx)/2, (ay+by)/2 + shift - 2, ex, ey + shift); ctx.stroke();
     }
   }
   ctx.restore();
-}
-
-// Superfícies planas da nova folha, sem alterar pontes, poças ou máscara.
-function drawBeachSand(tile, x, y, tx, ty, map) {
-  const image = getSprite(map.meta?.sandSprite ?? 'beach_shore');
-  const frame = getFrame(image, tile === 'M' ? 1 : 0, 0, 4, 4)?.crop;
-  if (!frame) return false;
-  ctx.save();
-  ctx.imageSmoothingEnabled = false;
-  ctx.translate(tx, ty);
-  if (hash(x, y) < 0.5) ctx.scale(-1, 1);
-  ctx.drawImage(frame.canvas, 0, 0, frame.w, frame.h, -HW, 0, HW * 2, TH);
-  ctx.restore();
-  return true;
 }
 
 function drawFloorTile(type, x, y, map) {
@@ -495,7 +493,7 @@ function drawFloorTile(type, x, y, map) {
   const ty = (x + y) * HH;
 
   const water = map.aguaPraia?.[y]?.[x];
-  if (water && 'SM'.includes(water) && drawBeachSand(water, x, y, tx, ty, map)) return;
+  if (water && 'SMT'.includes(water)) return; // já pintado na superfície contínua
   if (water && 'YyDd'.includes(water)) {
     // O mar contínuo já foi desenhado sob as ilhas e pontes.
     return;
@@ -954,6 +952,7 @@ function drawWallProcedural(x, y, front) {
 // =====================================================================
 
 function getObjectSpriteConfig(spriteId) {
+  if (spriteId === 'costa_rochosa') return { SHEET_COLS: 4, SHEET_ROWS: 1, DEFAULT_SCALE: 1, FEET_ANCHOR_Y: 1 };
   if (spriteId === 'vegetacao_tropical') return { SHEET_COLS: 8, SHEET_ROWS: 1, DEFAULT_SCALE: 1, FEET_ANCHOR_Y: 1 };
   if (spriteId === 'metro_props') {
     return CONFIG.METRO_PROPS_SPRITE;
@@ -1025,9 +1024,56 @@ function getVisibleBox(image, sx, sy, sw, sh, threshold = 40) {
   porImagem.set(key, box);
   return box;
 }
+// Limiares acompanhando a largura e o eixo do deck, em vez de uma caverna
+// ou rocha aparentemente solta sobre a ponte. Só muda o desenho do gate.
+function drawBridgeThreshold(object) {
+  const alongX = object.id === 'travessia_mare_eco' || object.id === 'fenda_estreita';
+  const fissure = object.id === 'fenda_estreita';
+  const broken = object.id === 'teleferico_quebrado';
+  const x = (object.x - object.y) * HW, y = (object.x + object.y) * HH;
+  const dx = (alongX ? -1 : 1) * HW * 1.15, dy = HH * 1.15;
+  const t = performance.now() / 1000;
+  ctx.save(); ctx.translate(x, y + 2);
+  ctx.lineCap = 'round';
+  // Base sombreada ajuda a ancorar o efeito às tábuas.
+  ctx.strokeStyle = 'rgba(15,36,39,.7)'; ctx.lineWidth = 13;
+  ctx.beginPath(); ctx.moveTo(-dx, -dy); ctx.lineTo(dx, dy); ctx.stroke();
+  ctx.strokeStyle = broken ? '#dfae62' : fissure ? '#98edba' : '#66dfd8'; ctx.lineWidth = fissure ? 2 : 3;
+  ctx.beginPath(); ctx.moveTo(-dx, -dy - 8);
+  if (broken) {
+    ctx.quadraticCurveTo(-dx*.65, -dy*.65-3, -dx*.22, -dy*.22-3);
+    ctx.moveTo(dx*.22, dy*.22-3); ctx.quadraticCurveTo(dx*.65, dy*.65-3, dx, dy-8);
+  } else ctx.quadraticCurveTo(Math.sin(t * 2) * 4, -6 + Math.sin(t * 2.5) * 2, dx, dy - 4);
+  ctx.stroke();
+  ctx.strokeStyle = fissure ? 'rgba(157,255,192,.65)' : 'rgba(195,255,244,.75)'; ctx.lineWidth = 1;
+  for (let i = -1; i <= 1; i++) {
+    if (broken && i !== 0) continue;
+    const f = (i + Math.sin(t * 1.8 + i) * .15) / 2;
+    const px = dx * f, py = dy * f;
+    ctx.beginPath(); ctx.moveTo(px - (broken ? 2 : 7), py - 7); ctx.quadraticCurveTo(px, py - 11, px + (broken ? 2 : 7), py - 7); ctx.stroke();
+  }
+  // Estacas baixas de cada lado deixam clara a entrada no limiar.
+  for (const side of [-1, 1]) {
+    const px = dx * side, py = dy * side;
+    ctx.strokeStyle = '#413f35'; ctx.lineWidth = 6;
+    ctx.beginPath(); ctx.moveTo(px, py + 3); ctx.lineTo(px, py - 18); ctx.stroke();
+    ctx.strokeStyle = broken ? '#edbc78' : fissure ? '#83f2ae' : '#75e9e1'; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(px, py - 15); ctx.lineTo(px, py - 10); ctx.stroke();
+  }
+  ctx.restore();
+}
+
 function drawMapObject(object, state) {
   if (object.hideWhenFlag && state.progress.flags?.[object.hideWhenFlag]) return;
   if (object.showWhenFlag && !state.progress.flags?.[object.showWhenFlag]) return; // NOVO
+
+  if (['travessia_mare_eco', 'passagem_mare_eco', 'caverna_alagada', 'fenda_estreita', 'teleferico_quebrado'].includes(object.id)) { drawBridgeThreshold(object); return; }
+
+  if (object.gate) {
+    const x = (object.x - object.y) * HW, y = (object.x + object.y) * HH;
+    ctx.save(); ctx.fillStyle = 'rgba(11,24,28,.28)'; ctx.beginPath();
+    ctx.ellipse(x, y + 3, 30, 9, 0, 0, Math.PI * 2); ctx.fill(); ctx.restore();
+  }
 
   if (object.porta) { drawDoor(object); return; }
   if (object.routeMarker) {

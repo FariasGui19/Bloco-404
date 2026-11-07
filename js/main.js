@@ -161,6 +161,7 @@ await loadSprites([
   { id: 'beach_novas_artes', src: 'assets/sprites/tiles/beach-novas-artes.png' },
   { id: 'fauna_costeira', src: 'assets/sprites/fauna/fauna-costeira.png' },
   { id: 'fauna_caranguejo', src: 'assets/sprites/fauna/caranguejo.png' },
+  { id: 'costa_rochosa', src: 'assets/sprites/objects/costa-rochosa.png' },
   { id: 'vegetacao_tropical', src: 'assets/sprites/objects/vegetacao-tropical.png' },
   { id: 'beach_props', src: 'assets/sprites/objects/beach-props.png' },
 ]);

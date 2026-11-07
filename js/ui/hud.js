@@ -6,6 +6,7 @@
 // =====================================================================
 
 import { CONFIG } from '../config.js';
+import { BASIC_ATTACKS } from '../game/combat.js';
 import { camera } from '../engine/camera.js';
 
 import { getInteractionPrompt } from '../game/interactions.js';
@@ -45,6 +46,8 @@ export function initHud() {
     'moduleHudName',
     'moduleHudSubtitle',
     'abilityHud',
+    'nucleoTimer',
+    'attackStrain',
     'abilityEnergyText',
     'abilityEnergyFill',
     'abilityPrimary',
@@ -102,6 +105,17 @@ function updateAbilityHud(state) {
 
   el.abilityHud?.classList.toggle('visible', shouldShow);
   if (!shouldShow) return;
+
+  const runtime = state.player.nucleoRuntime;
+  const active = archetypeId === 'nucleo_dez_forma' && state.player.nucleoForm === 'forma_veloz';
+  const recharge = archetypeId === 'nucleo_dez_forma' && !active ? runtime?.recharge ?? 0 : 0;
+  const timerText = active ? (runtime?.remaining <= 0 ? 'FORMA VELOZ • RETORNO ASSIM QUE SEGURO' : `FORMA VELOZ • ${Math.ceil(runtime?.remaining ?? 0)}s`) : recharge > 0 ? `NÚCLEO RECARREGANDO • ${Math.ceil(recharge)}s` : '';
+  setText('nucleoTimer', timerText);
+  el.nucleoTimer?.classList.toggle('visible', Boolean(timerText));
+
+  const strain = BASIC_ATTACKS[archetypeId]?.strain;
+  const chain = state.player.combat?.style === archetypeId ? state.player.combat.chain ?? 0 : 0;
+  setText('attackStrain', strain ? `ATAQUE ${chain}/${strain.hits} • ${strain.label} ao encadear` : '');
 
   const energy = Math.round(state.player.energy ?? 0);
   const maxEnergy = Math.round(state.player.maxEnergy ?? 100);

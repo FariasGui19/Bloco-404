@@ -6,6 +6,7 @@ let overlay = null;
 let opened = false;
 let currentProgress = null;
 let currentPlayer = null;
+let safeToReturn = () => true;
 
 function closeWheel() {
   opened = false;
@@ -15,12 +16,13 @@ function closeWheel() {
 
 function confirmWheel() {
   if (!opened) return;
+  if (currentPlayer.nucleoForm === 'forma_veloz' && !safeToReturn()) return;
   if (toggleNucleoForm(currentProgress, currentPlayer)) closeWheel();
 }
 
 export function isNucleoWheelOpen() { return opened; }
 
-export function openNucleoWheel(progress, player) {
+export function openNucleoWheel(progress, player, isSafeToReturn = () => true) {
   if (progress?.archetype !== 'nucleo_dez_forma' || !progress.abilities?.includes('forma_veloz') || player?.ability?.dash || player?.ability?.effect?.id === 'transformacao_10x') return false;
   if (!overlay) {
     overlay = document.createElement('div');
@@ -32,7 +34,7 @@ export function openNucleoWheel(progress, player) {
         <div class="nucleo-orbit" role="group" aria-label="Uma forma disponível e quatro formas futuras bloqueadas">
           <div class="nucleo-ring ring-outer"></div><div class="nucleo-ring ring-inner"></div>
           <div class="nucleo-core"><span>10</span><small>ECO ATIVO</small></div>
-          <button class="nucleo-form" type="button" aria-label="Selecionar forma veloz"><span>✦</span><b>FORMA VELOZ</b><small>DISPONÍVEL</small></button>
+          <button class="nucleo-form" type="button" aria-label="Selecionar forma veloz"><img class="nucleo-preview" src="assets/sprites/ui/nucleo-forma-veloz.png" alt=""><b>FORMA VELOZ</b><small>DISPONÍVEL</small></button>
           <span class="nucleo-locked lock-a" aria-label="Forma futura bloqueada">◆</span>
           <span class="nucleo-locked lock-b" aria-label="Forma futura bloqueada">◆</span>
           <span class="nucleo-locked lock-c" aria-label="Forma futura bloqueada">◆</span>
@@ -52,10 +54,13 @@ export function openNucleoWheel(progress, player) {
   }
   currentProgress = progress;
   currentPlayer = player;
+  safeToReturn = isSafeToReturn;
   const active = player.nucleoForm === 'forma_veloz';
-  overlay.querySelector('#nucleo-status').innerHTML = active
-    ? 'FORMA VELOZ <strong>ATIVA</strong><br><small>Confirme para retornar ao operador.</small>'
-    : 'FORMA VELOZ <strong>SELECIONADA</strong><br><small>Confirme para assumir a forma. Q continua disponível.</small>';
+  const recharge = Math.ceil(player.nucleoRuntime?.recharge ?? 0);
+  overlay.querySelector('#nucleo-status').innerHTML = active && !safeToReturn()
+    ? 'RETORNO <strong>AGUARDANDO ÁREA SEGURA</strong><br><small>Feche a roda e saia do obstáculo antes de retornar.</small>'
+    : active ? `FORMA VELOZ <strong>ATIVA • ${Math.ceil(player.nucleoRuntime?.remaining ?? 0)}s</strong><br><small>Confirme para retornar ao operador.</small>`
+    : recharge > 0 ? `NÚCLEO EM <strong>RECARGA • ${recharge}s</strong><br><small>Feche a roda para recarregar. Q rápido continua disponível.</small>` : 'FORMA VELOZ <strong>SELECIONADA</strong><br><small>30s de forma • 8s de recarga. Q rápido continua disponível.</small>';
   input.click = null;
   opened = true;
   overlay.classList.add('visible');

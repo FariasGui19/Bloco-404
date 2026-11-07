@@ -6,6 +6,9 @@
 // =====================================================================
 
 import { updateBasicCombat, tryBasicAttack } from './game/combat.js';
+import { updateNucleoForm } from './game/nucleo-form.js';
+import { canStandAt } from './game/collision.js';
+import { CONFIG } from './config.js';
 import { isQuestJournalOpen, openQuestJournal, closeQuestJournal } from './ui/quest-journal.js';
 import { updateCoastalFauna } from './game/fauna-costeira.js';
 import { state } from './game/state.js';
@@ -97,6 +100,7 @@ await loadSprites([
   { id: 'player_mare_q', src: 'assets/sprites/player/player-mare-q.png' },
   { id: 'player_mare_r', src: 'assets/sprites/player/player-mare-r.png' },
   { id: 'player_10x_lvl1', src: 'assets/sprites/player/player-10x-lvl1.png' },
+  { id: 'player_bio_ataque_frontal', src: 'assets/sprites/player/player-bio-ataque-frontal.png' },
   { id: 'player_10x_q', src: 'assets/sprites/player/player-10x-q.png' },
   { id: 'player_10x_r', src: 'assets/sprites/player/player-10x-r.png' },
   {
@@ -260,14 +264,16 @@ async function update(dt) {
     // T não atua em diálogos, menus, calibração ou durante um dash.
     if (input.pressed.has('t') || input.pressed.has('keyt')) {
       if (state.progress.archetype === 'nucleo_dez_forma') {
-        if (openNucleoWheel(state.progress, player)) {
+        if (openNucleoWheel(state.progress, player, () => canStandAt(getFloor(), player.x, player.y, CONFIG.PLAYER_RADIUS, player))) {
           player.moving = false; player.target = null;
           return;
         }
       } else toggleArchetypeSuit(state.progress, player);
     }
     updateBasicCombat(player, state.trainingTargets, dt);
-    const abilityLocksMovement = updateAbilities(dt);
+    let abilityLocksMovement = updateAbilities(dt);
+    updateNucleoForm(state.progress, player, dt, canStandAt(getFloor(), player.x, player.y, CONFIG.PLAYER_RADIUS, player));
+    abilityLocksMovement ||= player.ability?.effect?.id === 'transformacao_10x';
     if (input.attackClick) {
       const point = input.attackClick; input.attackClick = null;
       if (!abilityLocksMovement && !state.world.isLoading) {

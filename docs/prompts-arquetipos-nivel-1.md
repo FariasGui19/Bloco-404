@@ -160,9 +160,9 @@ Prompts para assets distintos; usar a mesma perspectiva isométrica e iluminaç�
 ## Estado e pendências de implementação
 
 - As três câmaras do aeroporto são protótipos de layout e usam props existentes; os desafios compartilham a estrutura de leitura R, ação Q e coleta, mas têm identificação, falas e obstáculos próprios. Criar arte e mecânicas realmente distintas, além de revisão visual em jogo.
-- T da Bio continua funcional. Domínio e Maré usam as novas poses estáticas de traje nível 1; faltam caminhada, transições e refinamento visual. Núcleo ainda não tem seletor radial nem transformação sustentada; não recebeu um toggle de armadura.
+- T da Bio continua funcional. Domínio e Maré usam as novas poses estáticas de traje nível 1; faltam caminhada, transições e refinamento visual. Núcleo possui seletor radial e uma forma veloz sustentada experimental; não recebeu um toggle de armadura.
 - Os Q de Domínio e Maré usam as novas sequências quando o traje está ativo; em modo rápido conservam as poses provisórias anteriores. Faltam sequências direcionais consistentes para ambos os modos.
-- A linha do metrô pode ser calibrada pelos quatro arquétipos, mas os obstáculos da praia ainda exigem arquétipos diferentes em sequência. Projetar e testar soluções alternativas individuais sem conceder outros módulos, preservando o diagnóstico R→E da Bio e os saves antigos. O trilho/trem na praia também precisa de um posicionamento coerente, sem atravessar areia.
+- A linha do metrô pode ser calibrada pelos quatro arquétipos. Maré e 10X já possuem caminhos próprios até a ilha central; faltam soluções para Bio e Domínio além da primeira ilha, preservando R→E e saves antigos. O trilho/trem na praia também precisa de um posicionamento coerente, sem atravessar areia.
 - Validar visualmente no navegador, testar colisões, câmera e feedback em cada rota, incluindo retorno ao aeroporto e saves antigos; ajustar escala dos props. Ampliar falas, interação e cenografia ao substituir protótipos.
 
 ## Atualização — folhas recebidas
@@ -190,7 +190,7 @@ costas e esquerda mantendo a mesma escala e sequência.
 
 ## Núcleo 10X — interface radial para acabamento futuro
 
-O protótipo implementado usa formas geométricas em CSS, com uma forma disponível e espaços bloqueados, T para abrir/fechar e Enter/E ou clique para confirmar. Q continua rápido, com retorno ao operador; transformação sustentada e outras formas não foram adicionadas. Para futura arte de produção:
+A roda usa formas geométricas em CSS, com uma forma disponível e espaços bloqueados. T abre; Espaço, Enter, E ou clique transformam; T/Esc cancelam. Reabrir e confirmar retorna ao operador. A forma sustentada é um protótipo visual temporário; Q rápido ainda funciona em modo civil e retorna ao operador. Outras formas e balanceamento permanecem pendentes. Para futura arte de produção:
 
 ```text
 Interface radial original para o Núcleo 10X de Bloco 404, ficção científica

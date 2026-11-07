@@ -1,0 +1,27 @@
+import assert from 'node:assert/strict';
+import { state } from '../js/game/state.js';
+import { input } from '../js/engine/input.js';
+import { toggleNucleoForm } from '../js/game/nucleo-form.js';
+import { getArchetypeAbilities, updateAbilities } from '../js/game/abilities.js';
+import { buildCurrentSave } from '../js/game/save.js';
+
+state.progress.archetype = 'nucleo_dez_forma';
+state.progress.abilities = getArchetypeAbilities('nucleo_dez_forma');
+state.player.ability = { cooldowns: {}, dash: null };
+state.player.nucleoForm = null;
+assert(toggleNucleoForm(state.progress, state.player));
+assert.equal(state.player.nucleoForm, 'forma_veloz');
+input.pressed.add('q');
+assert(updateAbilities(0.1), 'movimento bloqueado enquanto transforma');
+assert.equal(state.player.ability.dash, null, 'Q não interrompe transformação');
+input.pressed.clear();
+assert(!toggleNucleoForm(state.progress, state.player), 'não reverte antes da transição terminar');
+for (let i = 0; i < 20; i++) updateAbilities(0.1);
+assert.equal(state.player.ability.effect, null);
+assert.equal(state.player.nucleoForm, 'forma_veloz', 'forma é sustentada');
+assert(!('nucleoForm' in buildCurrentSave().player), 'forma temporária não altera schema do save');
+assert(toggleNucleoForm(state.progress, state.player));
+assert.equal(state.player.nucleoForm, null);
+assert.equal(state.player.ability.effect.activating, false);
+assert(!toggleNucleoForm({ archetype: 'mare_astral', abilities: ['forma_veloz'] }, state.player));
+console.log('Núcleo: transição, travas, forma sustentada e save compatível OK.');

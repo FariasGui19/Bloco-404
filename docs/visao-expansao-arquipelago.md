@@ -65,4 +65,47 @@ Q rápido: transição curta, executa o movimento e retorna; forma sustentada: a
 
 Duas pontes alternativas da Praia Inicial levam da ilha inicial à ilha leste e depois à ilha central/farol. Maré e 10X atravessam com Q e retornam pelo mesmo caminho; os obstáculos permanecem no lugar e sólidos para caminhada. Ainda usam props provisórios e requerem revisão visual, arte de corrente/malha e refinamento das missões. As rotas antigas de Bio e Domínio foram preservadas; soluções próprias para que ambos também superem os obstáculos além da primeira ilha continuam pendentes.
 
-A roda 10X agora tem um protótipo funcional em CSS e uma única forma selecionável, sem novas habilidades concedidas ou estado de transformação sustentada. O T abre a roda; Enter/E ou clique confirmam, Esc/T cancelam. A forma veloz continua rápida e retorna ao operador. Custos e regras da evolução sustentada permanecem em aberto. A roupa de referência 10X não é um toggle de traje.
+A roda 10X tem um protótipo em CSS e uma única forma disponível. T abre; Espaço/Enter/E ou clique confirmam a transformação sustentada experimental; reabrir e confirmar retorna ao operador. Esc/T cancelam. Q rápido continua disponível em modo civil, sem novas habilidades concedidas. Custos e regras da forma sustentada permanecem em aberto. A roupa de referência 10X não é um toggle de traje.
+
+## Mapa de evolução de regiões — preparação
+
+`js/data/arquipelago-regioes.js` registra uma sequência planejada e conexões bidirecionais. Não cria portais, não abre destinos e não muda saves: apenas a Praia Inicial é jogável. Para cada próxima etapa, construir e testar um mapa conectado, retorno, acesso para cada arquétipo e limites de câmera antes de registrá-lo como disponível.
+
+| Região | Identidade e fatia inicial | Vida e oportunidade narrativa |
+|---|---|---|
+| Enseada dos Ecos | Praia maior, pequenas poças entre rochas e ponto de observação do mar; acesso a partir da praia inicial | Aves e caranguejos; pistas da chegada de outros viajantes e rotas do trem. |
+| Manguezal Sussurrante | Estuário com passarelas, raízes e canais com alternativas de travessia | Peixes, aves e marés; ouvir rastros e observar sem exigir combate. |
+| Floresta das Raízes | Borda de mata, riacho, clareira e acesso ao interior em trechos | Pequenos animais, plantas e ciclos diários; futuro encontro de Bolt com trilhas. |
+| Falhas do Farol | Falésias e ruínas com vista para rotas dimensionais | Pistas graduais do rival, sem antecipar o arco completo. |
+
+A ilha deve parecer ampla sem exigir um mapa único enorme: usar regiões adjacentes, carregar somente o necessário e preservar visual contínuo, mar, horizonte e pontos reconhecíveis. Planejar obstáculos alternativos por arquétipo; não distribuir outros módulos de graça. Fauna, rotinas, regiões novas e encontros são planejamento, não implementações prontas.
+
+## Prompt — chegada coerente do trem dimensional
+
+Objetivo: transformar o ponto de chegada em **pequena estação costeira elevada**, conectada à ilha por passarela, sem cortar a praia com trilho solto. O trem existente permanece um objeto e o trilho uma camada independente: não embutir trem, terminal nem trilhos na imagem da plataforma. Primeiro gerar uma referência geral, depois peças individuais com alpha real, todas com a mesma perspectiva e ponto de apoio. Validar encaixe e colisão antes de alterar a praia já aprovada.
+
+```text
+Arte original para Bloco 404, jogo isométrico de exploração em pixel art.
+Uma pequena estação dimensional costeira construída sobre uma plataforma
+baixa e reforçada à beira-mar, visualmente coerente com o trem tecnológico
+azul-ciano e grafite de referência. Base estrutural de pedra e metal resistente
+à maresia, apoios visíveis que encontram o solo ou água rasa, acabamento de
+madeira na passarela de pedestres ligando naturalmente a plataforma à areia.
+Espaço vazio e alinhado para um único trilho e o trem serem inseridos depois;
+acesso seguro à porta do trem, pequenas luzes ciano, cabos discretos, guarda
+corpo interrompido apenas na entrada, placas sem letras. Uma extremidade da
+via deve sugerir um túnel/portal dimensional embutido numa estrutura de
+contenção na costa, não trilhos surgindo arbitrariamente no meio da praia.
+Areia, vegetação e água rasa devem contornar a construção naturalmente, com
+sombra e proporção coerentes com o jogo. Cenário acolhedor, funcional e
+explorável; não uma estação gigante ou futurista genérica.
+
+Gerar primeiro como imagem conceitual sem personagens, texto, marcas ou
+interface. Depois exportar base de estação, apoios, passarela e portal como
+peças separadas em PNG com transparência real, sem tabuleiro quadriculado,
+sem trem e sem trilhos desenhados. Mesma orientação isométrica e escala do
+sprite de trem fornecido. Não incluir elementos que obstruam a futura rota do
+jogador; não criar sombras opacas como parte do chão.
+```
+
+**Integração futura:** preservar `linhaDoTrem()` e o ajuste de alinhamento aprovado; testar dimensões da plataforma em ambos os eixos, sobreposição/profundidade, acesso ao terminal e ao retorno, colisão, spawn, maré visual e continuidade com o mar. Considerar portal de chegada como peça de cenário, não teletransporte automático. Não substituir o chão inteiro da praia por um background achatado.

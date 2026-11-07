@@ -1,8 +1,11 @@
 // Seletor do Núcleo: apenas a forma veloz disponível; não troca arquétipo.
 import { input } from '../engine/input.js';
+import { toggleNucleoForm } from '../game/nucleo-form.js';
 
 let overlay = null;
 let opened = false;
+let currentProgress = null;
+let currentPlayer = null;
 
 function closeWheel() {
   opened = false;
@@ -10,10 +13,15 @@ function closeWheel() {
   input.click = null;
 }
 
+function confirmWheel() {
+  if (!opened) return;
+  if (toggleNucleoForm(currentProgress, currentPlayer)) closeWheel();
+}
+
 export function isNucleoWheelOpen() { return opened; }
 
 export function openNucleoWheel(progress, player) {
-  if (progress?.archetype !== 'nucleo_dez_forma' || player?.ability?.dash) return false;
+  if (progress?.archetype !== 'nucleo_dez_forma' || !progress.abilities?.includes('forma_veloz') || player?.ability?.dash || player?.ability?.effect?.id === 'transformacao_10x') return false;
   if (!overlay) {
     overlay = document.createElement('div');
     overlay.id = 'nucleoWheel';
@@ -29,13 +37,19 @@ export function openNucleoWheel(progress, player) {
           <span class="nucleo-locked lock-b" aria-label="Forma futura bloqueada">◆</span>
           <span class="nucleo-locked lock-c" aria-label="Forma futura bloqueada">◆</span>
         </div>
-        <p>FORMA VELOZ <strong>SELECIONADA</strong><br><small>Q executa a forma rapidamente e retorna ao operador.</small></p>
-        <div class="nucleo-help">ENTER / E ou clique para confirmar · T / ESC para fechar</div>
+        <p id="nucleo-status"></p>
+        <div class="nucleo-help">ESPAÇO / ENTER / E ou clique para transformar · T / ESC cancelar</div>
       </div>`;
     document.body.appendChild(overlay);
-    overlay.querySelector('.nucleo-form').addEventListener('click', closeWheel);
+    overlay.querySelector('.nucleo-form').addEventListener('click', confirmWheel);
     overlay.addEventListener('click', e => { if (e.target === overlay) closeWheel(); });
   }
+  currentProgress = progress;
+  currentPlayer = player;
+  const active = player.nucleoForm === 'forma_veloz';
+  overlay.querySelector('#nucleo-status').innerHTML = active
+    ? 'FORMA VELOZ <strong>ATIVA</strong><br><small>Confirme para retornar ao operador.</small>'
+    : 'FORMA VELOZ <strong>SELECIONADA</strong><br><small>Confirme para assumir a forma. Q continua disponível.</small>';
   input.click = null;
   opened = true;
   overlay.classList.add('visible');
@@ -45,5 +59,6 @@ export function openNucleoWheel(progress, player) {
 
 export function updateNucleoWheel() {
   if (!opened) return;
-  if (['escape', 't', 'keyt', 'enter', 'e', 'keye', ' '].some(key => input.pressed.has(key))) closeWheel();
+  if (['escape', 't', 'keyt'].some(key => input.pressed.has(key))) closeWheel();
+  else if (['enter', 'e', 'keye', ' ', 'space'].some(key => input.pressed.has(key))) confirmWheel();
 }

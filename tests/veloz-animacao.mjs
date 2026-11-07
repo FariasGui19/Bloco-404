@@ -1,0 +1,17 @@
+import assert from 'node:assert/strict';
+import { getVelozAnimation } from '../js/data/veloz-animation.js';
+const progress = { archetype: 'nucleo_dez_forma' };
+const p = { nucleoForm: 'forma_veloz', facing: 'right', moving: true, ability: {} };
+assert.equal(getVelozAnimation(progress, p, 0).col, 0);
+assert.equal(getVelozAnimation(progress, p, 95).col, 1);
+p.facing = 'left'; assert(getVelozAnimation(progress, p, 95).flip);
+p.facing = 'up'; assert.equal(getVelozAnimation(progress, p, 95), null);
+p.combat = { style: 'nucleo_dez_forma', timeLeft: .16, duration: .32 };
+assert.equal(getVelozAnimation(progress, p, 0).row, 2);
+p.facing = 'down'; assert.equal(getVelozAnimation(progress, p, 0).row, 0);
+p.facing = 'right'; assert.equal(getVelozAnimation(progress, p, 0).row, 2);
+p.ability.effect = { timeLeft: .2 }; assert.equal(getVelozAnimation(progress, p, 0), null);
+p.ability = { dash: {} }; assert.equal(getVelozAnimation(progress, p, 0), null);
+p.ability = {}; p.nucleoForm = null; assert.equal(getVelozAnimation(progress, p, 0), null);
+assert.equal(getVelozAnimation({ archetype: 'mare_astral' }, p, 0), null);
+console.log('Forma veloz: seleção visual direcional, corrida lateral e prioridade das habilidades OK.');

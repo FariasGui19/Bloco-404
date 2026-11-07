@@ -1,3 +1,8 @@
+// A animação é ambiental: não decide desbloqueio, interação ou progressão.
+export function hasHubScreenFx(mapId, id) {
+  return mapId === 'hub_saguao' && (id === 'totem' || id === 'metro');
+}
+
 // Coordenadas locais da célula hub_props: moldura e pedestal são sempre
 // o mesmo sprite; os efeitos são recortados à tela/interior, sem deslocá-los.
 export function drawHubScreenFx(ctx, id, t) {
@@ -12,13 +17,20 @@ export function drawHubScreenFx(ctx, id, t) {
   } else if (id === 'metro') {
     ctx.beginPath(); ctx.ellipse(138, 190, 40, 69, .33, 0, Math.PI * 2); ctx.clip();
     ctx.translate(138, 190); ctx.rotate(.33);
-    ctx.strokeStyle = 'rgba(200,255,255,.23)'; ctx.lineWidth = 3;
+    // Arcos e partículas giram sobre o vórtice existente; nenhum pixel
+    // da moldura ou da rampa é alterado. Funciona mesmo com o acesso bloqueado.
+    ctx.lineCap = 'round';
     for (let i = 0; i < 3; i++) {
-      const angle = t * .8 + i * Math.PI * 2 / 3;
-      ctx.beginPath(); ctx.ellipse(0, 0, 15 + i * 8, 23 + i * 12, 0, angle, angle + 1.15); ctx.stroke();
+      const phase = (t * .8 + i / 3) % 1;
+      ctx.strokeStyle = `rgba(210,255,255,${.72 * (1 - phase * .75)})`;
+      ctx.lineWidth = 4.5 - phase * 1.4;
+      ctx.beginPath(); ctx.ellipse(0, 0, 6 + phase * 30, 10 + phase * 53, 0, t * 1.9 + i * 2.1, t * 1.9 + i * 2.1 + 2.1); ctx.stroke();
     }
-    ctx.fillStyle = 'rgba(224,255,255,.35)';
-    for (let i = 0; i < 5; i++) { const a = t * .6 + i * 1.26; ctx.beginPath(); ctx.arc(Math.cos(a) * (12 + i * 3), Math.sin(a) * (20 + i * 4), 1.4, 0, Math.PI * 2); ctx.fill(); }
+    ctx.fillStyle = 'rgba(228,255,255,.82)';
+    for (let i = 0; i < 5; i++) {
+      const phase = (t * .32 + i / 5) % 1, a = t * 1.9 + i * 2.4;
+      ctx.beginPath(); ctx.arc(Math.cos(a) * (4 + phase * 30), Math.sin(a) * (7 + phase * 50), 1.8, 0, Math.PI * 2); ctx.fill();
+    }
   }
   ctx.restore();
 }

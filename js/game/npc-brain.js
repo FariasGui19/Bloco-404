@@ -17,6 +17,7 @@
 // =====================================================================
 
 import { CONFIG } from '../config.js';
+import { updateLobbyVisitor } from './viajante-saguao.js';
 import { state } from './state.js';
 import { input } from '../engine/input.js';
 import { getCurrentMap } from './map-manager.js';
@@ -256,6 +257,11 @@ export function updateNpcBrains(dt) {
       }
     }
 
+    if (actor.tipo === 'viajante_ambiental') {
+      if (!falando && !isDialogueOpen()) updateLobbyVisitor(actor, state.player, map, dt);
+      else actor.moving = false;
+      continue;
+    }
     if (actor.tipo === 'robo') {
       updateRobo(actor, dt, map);
       continue;

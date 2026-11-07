@@ -1043,6 +1043,7 @@ function drawWallProcedural(x, y, front) {
 // =====================================================================
 
 function getObjectSpriteConfig(spriteId) {
+  if (['hub_vaso_novo', 'hub_reciclagem', 'hub_carrinho', 'hub_bebedouro'].includes(spriteId)) return { SHEET_COLS: 1, SHEET_ROWS: 1, DEFAULT_SCALE: .25, FEET_ANCHOR_Y: 1 };
   if (spriteId === 'costa_rochosa') return { SHEET_COLS: 4, SHEET_ROWS: 1, DEFAULT_SCALE: 1, FEET_ANCHOR_Y: 1 };
   if (spriteId === 'vegetacao_tropical') return { SHEET_COLS: 8, SHEET_ROWS: 1, DEFAULT_SCALE: 1, FEET_ANCHOR_Y: 1 };
   if (spriteId === 'metro_props') {
@@ -1190,6 +1191,25 @@ function drawMapObject(object, state) {
     ctx.ellipse(x, y + 3, 30, 9, 0, 0, Math.PI * 2); ctx.fill(); ctx.restore();
   }
 
+  // A animação do portal só entra depois da calibração; gate e hitbox não mudam.
+  if (object.id === 'metro' && state.world?.currentMapId === 'hub_saguao' && state.progress.flags?.metroCalibrado) {
+    const image = getSprite('hub_portal_animado');
+    if (image) {
+      const x = (object.x - object.y) * HW, y = (object.x + object.y) * HH + (object.ajusteY ?? 0) + 5;
+      const col = Math.floor(performance.now() / 230) % 5;
+      ctx.drawImage(image, col * 170, 0, 170, 192, x - 76, y - 172, 152, 172);
+      return;
+    }
+  }
+  if (object.id === 'totem' && state.world?.currentMapId === 'hub_saguao') {
+    const image = getSprite('hub_painel_animado');
+    if (image) {
+      const x = (object.x - object.y) * HW, y = (object.x + object.y) * HH + (object.ajusteY ?? 0) - 5;
+      const col = Math.floor(performance.now() / 180) % 8;
+      ctx.drawImage(image, col * 160, 0, 160, 176, x - 44, y - 96.8, 88, 96.8);
+      return;
+    }
+  }
   if (object.tipo === 'holograma_decorativo') { drawHubHologram(object); return; }
   if (object.porta) { drawDoor(object); return; }
   if (object.routeMarker) {
@@ -1652,6 +1672,27 @@ function drawFramePe(e, image, cfg, rc, ix, iy, S, flip, ajuste) {
 function drawNexoSprite(npc, ix, iy) {
   if (npc.sprite !== 'nexo_04' || !CONFIG.NEXO_04_SPRITE) return false;
 
+  if (!npc.moving && state.world?.currentMapId === 'hub_saguao') {
+    const isWave = npc.pose === 'wave' && npc.facing === 'down';
+    const isTablet = npc.pose === 'tablet' && ['left', 'right'].includes(npc.facing);
+    const actionSheet = getSprite(isWave ? 'hub_nexo_aceno' : isTablet ? 'hub_nexo_tablet' : '');
+    if (actionSheet) {
+      const col = isWave ? [0, 2, 0][Math.floor(performance.now() / 240) % 3] : Math.floor(performance.now() / 350) % 5;
+      ctx.save(); ctx.translate(ix, iy + 4);
+      if (isTablet && npc.facing === 'left') ctx.scale(-1, 1);
+      ctx.drawImage(actionSheet, col * 128, 0, 128, 192, -44, -132, 88, 132);
+      ctx.restore(); npc._topo = 126; return true;
+    }
+  }
+  const walkSheet = getSprite('hub_nexo_walk');
+  if (npc.moving && walkSheet && state.world?.currentMapId === 'hub_saguao') {
+    const row = npc.facing === 'up' ? 2 : npc.facing === 'down' ? 0 : 1;
+    const col = Math.floor(performance.now() / 150) % 5;
+    ctx.save(); ctx.translate(ix, iy + 4);
+    if (npc.facing === 'left') ctx.scale(-1, 1);
+    ctx.drawImage(walkSheet, col * 128, row * 192, 128, 192, -44, -132, 88, 132);
+    ctx.restore(); npc._topo = 126; return true;
+  }
   const cfg = CONFIG.NEXO_04_SPRITE;
   const image = getSprite(cfg.ID);
   if (!image) return false;
@@ -1856,6 +1897,19 @@ function drawEntity(entity, state) {
     return;
   }
 
+  if (entity.tipo === 'viajante_ambiental') {
+    const image = getSprite('hub_viajante');
+    if (image) {
+      drawShadow(ix, iy, .24);
+      const row = entity.facing === 'up' ? 1 : 0;
+      const frame = entity.moving ? Math.floor((entity.visitorRuntime?.clock ?? 0) * 7) % 6 : 0;
+      ctx.save(); ctx.translate(ix, iy);
+      if (entity.facing === 'left') ctx.scale(-1, 1);
+      ctx.drawImage(image, frame * 160, row * 192, 160, 192, -53, -128, 106, 128);
+      ctx.restore(); entity._topo = 122; return;
+    }
+    return; // Sem arte, não desenha uma cópia do NEXO.
+  }
   if (entity.tipo === 'robo') {
     ctx.beginPath();
     ctx.ellipse(ix, iy, 9, 4, 0, 0, Math.PI * 2);

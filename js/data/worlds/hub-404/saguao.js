@@ -46,6 +46,11 @@ export const map = {
   ],
 
   actors: [
+    // Viajante ambiental não bloqueia o jogador nem substitui NPCs existentes.
+    { id: 'viajante_saguao', tipo: 'viajante_ambiental', sprite: 'hub_viajante',
+      x: 6.3, y: 11.3, nome: 'Viajante', semNome: true, solido: false, facing: 'right',
+      interacao: { label: 'CONVERSAR COM VIAJANTE', speaker: 'VIAJANTE', distancia: 1.25,
+        dialogue: ['Primeira vez no Bloco 404? Eu também estou conhecendo as rotas.', 'Espero que a minha mala tenha chegado da mesma dimensão que eu!'] } },
     {
       id: 'recepcionista',
 
@@ -144,6 +149,11 @@ export const map = {
   ],
 
   objects: [
+    // Novos móveis ocupam bordas livres; hitboxes pequenas seguem as bases.
+    { id: 'saguao_vaso_novo', tipo: 'planta', x: 15.6, y: 11.5, sprite: 'hub_vaso_novo', scale: .27, anchorY: 1, bloqueia: true, hitbox: { offsetX: -.19, offsetY: -.19, width: .38, height: .38 } },
+    { id: 'saguao_reciclagem', tipo: 'reciclagem', x: 1.2, y: 8.4, sprite: 'hub_reciclagem', scale: .25, anchorY: 1, bloqueia: true, hitbox: { offsetX: -.18, offsetY: -.18, width: .36, height: .36 } },
+    { id: 'saguao_carrinho', tipo: 'carrinho_limpeza', x: 2.0, y: 12.2, sprite: 'hub_carrinho', scale: .25, anchorY: 1, bloqueia: true, hitbox: { offsetX: -.20, offsetY: -.20, width: .40, height: .40 } },
+    { id: 'saguao_bebedouro', tipo: 'bebedouro', x: 16.0, y: 10.0, sprite: 'hub_bebedouro', scale: .25, anchorY: 1, bloqueia: true, hitbox: { offsetX: -.18, offsetY: -.18, width: .36, height: .36 } },
     // Elementos ambientais sem gameplay, em posições de parede/fora das rotas.
     { id: 'hub_holograma', tipo: 'holograma_decorativo', x: 11.7, y: 2.4, bloqueia: false,
       brilho: { cor: '#35E6D3', raio: 1.2, forca: 0.18 } },

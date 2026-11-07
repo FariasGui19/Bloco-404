@@ -23,6 +23,11 @@ import {
 import { moveWithCollision } from './collision.js';
 
 const CLICK_SNAP_DIST = 1.0;
+// Aplicado apenas à locomoção da forma sustentada, não ao Q nem a trajes.
+export const VELOZ_SPEED_MULTIPLIER = 1.8;
+export function getPlayerMoveSpeed(progress, player) {
+  return CONFIG.PLAYER_SPEED * (progress?.archetype === 'nucleo_dez_forma' && player?.nucleoForm === 'forma_veloz' ? VELOZ_SPEED_MULTIPLIER : 1);
+}
 
 const keyHeld = (...keys) =>
   keys.some(key => input.keys[key]);
@@ -82,7 +87,7 @@ export function updatePlayer(dt) {
   if (!map) return;
 
   const radius = CONFIG.PLAYER_RADIUS;
-  const speed = CONFIG.PLAYER_SPEED;
+  const speed = getPlayerMoveSpeed(state.progress, player);
   const maxStep = speed * dt;
 
   let dx = 0;

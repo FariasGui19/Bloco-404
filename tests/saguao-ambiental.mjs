@@ -1,0 +1,16 @@
+import assert from 'node:assert/strict';
+import { map } from '../js/data/worlds/hub-404/saguao.js';
+import { state } from '../js/game/state.js';
+import { loadMap } from '../js/game/map-manager.js';
+import { canStandAt } from '../js/game/collision.js';
+const decorative = map.objects.filter(o => o.id.startsWith('hub_'));
+assert.equal(decorative.length, 4);
+assert(decorative.every(o => o.bloqueia === false && !o.interacao && !o.moduleSystem && !o.gate));
+assert.deepEqual(map.portals.map(p => p.id), ['para_aeroporto', 'para_elevadores', 'metro_interdimensional']);
+state.progress = {flags: {}, inventory: []};
+await loadMap('hub_saguao', 'inicio');
+const p = state.player;
+assert(canStandAt(map, p.x, p.y, .25, p), 'entrada continua livre');
+assert.equal(state.objects.filter(o => o.id.startsWith('hub_')).length, 4);
+assert.equal(state.portals.length, 3);
+console.log('Saguão: decoração sem colisão, spawn e portais preservados.');

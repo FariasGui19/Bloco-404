@@ -14,6 +14,7 @@ import { getFrame } from './sprite-clean.js';
 import { drawAmbientBack, drawAmbientFront } from './ambient.js';
 import { isDebugEnabled, drawDebugWorld } from '../game/debug.js';
 import { ACTION_SPRITES } from '../data/action-sprites.js';
+import { getBasicAttackPose } from '../data/basic-attack-poses.js';
 import { state } from '../game/state.js';
 
 const HW = CONFIG.TILE_W / 2;
@@ -554,6 +555,12 @@ function drawHubFloorMarkings() {
   ctx.fillStyle = 'rgba(173,255,229,.7)'; ctx.textAlign = 'center'; ctx.font = 'bold 12px monospace';
   ctx.fillText('BLOCO 404', 0, 0);
   ctx.fillStyle = 'rgba(119,213,193,.58)'; ctx.font = '8px monospace'; ctx.fillText('CONEXÕES • ECOS', 0, 12);
+  const angle = performance.now() * .00045;
+  ctx.strokeStyle = 'rgba(112,255,218,.62)'; ctx.lineWidth = 2;
+  for (let i = 0; i < 3; i++) {
+    const a = angle + i * Math.PI * 2 / 3;
+    ctx.beginPath(); ctx.ellipse(0, 0, 78, 37, 0, a, a + .22); ctx.stroke();
+  }
   ctx.restore();
 }
 
@@ -903,7 +910,22 @@ function drawBasicAttack(player) {
   ctx.beginPath(); ctx.arc(3,0,radius,-.75,.75); ctx.stroke();
   ctx.strokeStyle = '#f4fff5'; ctx.lineWidth = 1.5;
   ctx.beginPath(); ctx.arc(3,0,radius-4,-.48,.48); ctx.stroke();
-  if (a.transformed) { ctx.beginPath(); ctx.moveTo(12,-10); ctx.lineTo(34,-10); ctx.moveTo(8,11); ctx.lineTo(28,11); ctx.stroke(); }
+  if (a.style === 'mare_astral') {
+    ctx.strokeStyle = '#86f5ff'; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.arc(3, 0, radius - 8, -.9, .65); ctx.stroke();
+    ctx.fillStyle = '#d3ffff';
+    for (let i = 0; i < 3; i++) { ctx.beginPath(); ctx.arc(24 + i * 6, -16 + i * 15, 2 - i * .35, 0, Math.PI * 2); ctx.fill(); }
+  } else if (a.style === 'motor_bio_forja') {
+    ctx.strokeStyle = '#ffe6b0'; ctx.lineWidth = 1.5;
+    for (let i = 0; i < 4; i++) { const ang = -.6 + i * .4; ctx.beginPath(); ctx.moveTo(Math.cos(ang)*radius, Math.sin(ang)*radius); ctx.lineTo(Math.cos(ang)*(radius+7), Math.sin(ang)*(radius+7)); ctx.stroke(); }
+  } else if (a.style === 'lamina_dominio_anciao') {
+    ctx.strokeStyle = '#fff1af'; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(20,-12); ctx.lineTo(39,0); ctx.lineTo(20,12); ctx.stroke();
+  }
+  if (a.transformed) {
+    ctx.strokeStyle = '#c9ffd5'; ctx.lineWidth = 2;
+    for (let i = -1; i <= 1; i++) { ctx.beginPath(); ctx.moveTo(13, i*8 - 4); ctx.lineTo(36, i*8 + 2); ctx.stroke(); }
+  }
   ctx.restore();
 }
 
@@ -1133,6 +1155,29 @@ function drawBridgeThreshold(object, map) {
   ctx.restore();
 }
 
+// Projetor decorativo de recepção, ordenado como objeto; não é portal nem interação.
+function drawHubHologram(object) {
+  const x = (object.x - object.y) * HW, y = (object.x + object.y) * HH;
+  const t = performance.now() / 1000;
+  ctx.save(); ctx.translate(x, y);
+  ctx.fillStyle = '#142c30'; ctx.strokeStyle = '#529a8c'; ctx.lineWidth = 1.5;
+  ctx.beginPath(); ctx.ellipse(0, 0, 25, 9, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+  ctx.fillStyle = 'rgba(55,237,207,.08)';
+  ctx.beginPath(); ctx.moveTo(-19, -2); ctx.lineTo(-37, -78); ctx.lineTo(37, -78); ctx.lineTo(19, -2); ctx.closePath(); ctx.fill();
+  const bob = Math.sin(t * 1.7) * 3;
+  ctx.translate(0, -51 + bob);
+  ctx.shadowColor = '#49ffe2'; ctx.shadowBlur = 12;
+  ctx.strokeStyle = 'rgba(108,255,226,.8)'; ctx.lineWidth = 1.3;
+  ctx.beginPath(); ctx.arc(0, 0, 17, 0, Math.PI * 2); ctx.stroke();
+  ctx.save(); ctx.rotate(t * .7); ctx.strokeStyle = 'rgba(111,249,222,.55)';
+  ctx.beginPath(); ctx.ellipse(0, 0, 26, 10, -.4, 0, Math.PI * 2); ctx.stroke();
+  ctx.fillStyle = '#c0fff0'; ctx.beginPath(); ctx.arc(25, -4, 2, 0, Math.PI * 2); ctx.fill(); ctx.restore();
+  ctx.fillStyle = 'rgba(175,255,237,.85)'; ctx.font = 'bold 9px monospace'; ctx.textAlign = 'center'; ctx.fillText('404', 0, 3);
+  ctx.shadowBlur = 0; ctx.strokeStyle = 'rgba(95,242,217,.28)'; ctx.lineWidth = .7;
+  for (let i = 0; i < 4; i++) { const yy = -13 + i * 8; ctx.beginPath(); ctx.moveTo(-31, yy); ctx.lineTo(31, yy); ctx.stroke(); }
+  ctx.restore();
+}
+
 function drawMapObject(object, state) {
   if (object.hideWhenFlag && state.progress.flags?.[object.hideWhenFlag]) return;
   if (object.showWhenFlag && !state.progress.flags?.[object.showWhenFlag]) return; // NOVO
@@ -1145,6 +1190,7 @@ function drawMapObject(object, state) {
     ctx.ellipse(x, y + 3, 30, 9, 0, 0, Math.PI * 2); ctx.fill(); ctx.restore();
   }
 
+  if (object.tipo === 'holograma_decorativo') { drawHubHologram(object); return; }
   if (object.porta) { drawDoor(object); return; }
   if (object.routeMarker) {
     const x = (object.x - object.y) * HW, y = (object.x + object.y) * HH;
@@ -1200,6 +1246,16 @@ function drawMapObject(object, state) {
   );
   ctx.filter = 'none';
   ctx.restore();
+  if (object.id === 'hub_painel_decor') {
+    // Dados e varredura sobre o mostrador já existente, apenas decoração.
+    ctx.save(); ctx.translate(ix, iy); ctx.transform(1, .22, 0, 1, 0, 0);
+    ctx.fillStyle = 'rgba(4,62,69,.9)'; ctx.textAlign = 'center'; ctx.font = 'bold 6px monospace';
+    ctx.fillText('ROTAS', 0, -64); ctx.fillRect(-9, -58, 18, 1);
+    ctx.fillRect(-9, -53, 13, 1); ctx.fillRect(-9, -49, 16, 1);
+    ctx.fillStyle = 'rgba(220,255,249,.55)';
+    ctx.fillRect(-9, -58 + (performance.now() * .012) % 18, 18, 1);
+    ctx.restore();
+  }
 }
 
 function drawCroppedObject(object, image, sheet) {
@@ -1366,6 +1422,11 @@ function drawPlayerSprite(player, ix, iy) {
       player._topo = 125;
       return true;
     }
+  }
+  const attackPose = getBasicAttackPose(state.progress, player);
+  if (attackPose && drawArchetypeSheet(attackPose.sprite, attackPose.col, attackPose.row, ix, iy, attackPose.flip, { scale: attackPose.scale, anchor: attackPose.anchor })) {
+    player._topo = 100;
+    return true;
   }
   if (state.progress.archetype === 'nucleo_dez_forma' && effect?.id === 'transformacao_10x') {
     const t = Math.max(0, Math.min(0.999, 1 - effect.timeLeft / effect.duration));
@@ -1766,6 +1827,17 @@ function drawEntity(entity, state) {
 
   if (entity === state.player) {
     drawShadow(ix, iy, 0.28);
+    if (state.progress.archetype === 'nucleo_dez_forma' && entity.nucleoForm === 'forma_veloz' && entity.moving && !entity.ability?.dash) {
+      const dir = { left: [-1,0], right: [1,0], up: [0,-1], down: [0,1] }[entity.facing] ?? [1,0];
+      const pulse = .45 + .2 * Math.sin(performance.now() * .02);
+      ctx.save(); ctx.globalAlpha = pulse; ctx.strokeStyle = '#83ffb1'; ctx.lineWidth = 1.5; ctx.lineCap = 'round';
+      for (let i = 0; i < 3; i++) {
+        const ox = -dir[0] * (20 + i * 7) + dir[1] * (i - 1) * 5;
+        const oy = -dir[1] * (9 + i * 4) - 15 + dir[0] * (i - 1) * 3;
+        ctx.beginPath(); ctx.moveTo(ix + ox, iy + oy); ctx.lineTo(ix + ox - dir[0] * 13, iy + oy - dir[1] * 7); ctx.stroke();
+      }
+      ctx.restore();
+    }
     // Reação corporal provisória para todos os ataques; não inventa folhas direcionais.
     const attack = entity.combat;
     const t = attack?.timeLeft > 0 ? 1 - attack.timeLeft / attack.duration : 0;

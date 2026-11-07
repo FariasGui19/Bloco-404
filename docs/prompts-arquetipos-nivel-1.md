@@ -160,7 +160,13 @@ Prompts para assets distintos; usar a mesma perspectiva isométrica e iluminaç�
 ## Estado e pendências de implementação
 
 - As três câmaras do aeroporto são protótipos de layout e usam props existentes; os desafios compartilham a estrutura de leitura R, ação Q e coleta, mas têm identificação, falas e obstáculos próprios. Criar arte e mecânicas realmente distintas, além de revisão visual em jogo.
-- T da Bio continua funcional. Para Domínio e Maré, T alterna apenas um estado experimental com brilho sobre o civil: faltam sprites e animações próprios de traje nível 1, HUD e balanceamento. Núcleo ainda não tem seletor radial nem transformação sustentada; não recebeu um toggle de armadura.
-- Os Q de Domínio e Maré usam sempre a pose lateral correspondente, espelhada à esquerda. Não são animações direcionais, não representam perfeitamente todas as direções e ainda usam referência de nível 2. Gerar folhas de nível 1 para corrigir isso de forma definitiva.
+- T da Bio continua funcional. Domínio e Maré usam as novas poses estáticas de traje nível 1; faltam caminhada, transições e refinamento visual. Núcleo ainda não tem seletor radial nem transformação sustentada; não recebeu um toggle de armadura.
+- Os Q de Domínio e Maré usam as novas sequências quando o traje está ativo; em modo rápido conservam as poses provisórias anteriores. Faltam sequências direcionais consistentes para ambos os modos.
 - A linha do metrô pode ser calibrada pelos quatro arquétipos, mas os obstáculos da praia ainda exigem arquétipos diferentes em sequência. Projetar e testar soluções alternativas individuais sem conceder outros módulos, preservando o diagnóstico R→E da Bio e os saves antigos. O trilho/trem na praia também precisa de um posicionamento coerente, sem atravessar areia.
 - Validar visualmente no navegador, testar colisões, câmera e feedback em cada rota, incluindo retorno ao aeroporto e saves antigos; ajustar escala dos props. Ampliar falas, interação e cenografia ao substituir protótipos.
+
+## Atualização — folhas recebidas
+
+Os novos trajes de Domínio e Maré nível 1 e as folhas Q/R foram integrados experimentalmente. Os arquivos de origem são JPEGs com quadriculado desenhado; `tools/prepare-archetype-sheets.py` gera PNGs com remoção aproximada do fundo, podendo remover pontos claros e deixar artefatos. As folhas de Q usam sequências fornecidas em uma orientação, espelhadas à esquerda, e não substituem animações direcionais completas; o Q é curto e os frames precisam de teste e ajuste visual. No R do Domínio, usam-se poses direcionais da folha, não uma sequência temporal. No R de Maré, as poses foram usadas como sequência experimental, embora mudem de orientação. Os trajes são poses estáticas também durante a caminhada, pois não foram fornecidos ciclos de andar. Com roupa civil, mantêm-se os efeitos anteriores; as novas folhas de habilidade aparecem com o traje ativo. O T do Núcleo 10X continua reservado para o seletor próprio.
+
+Para roteiros, prompts de expansão da praia, floresta, fauna, backgrounds e interface 10X, ver [visão do arquipélago](visao-expansao-arquipelago.md). Os itens seguem sujeitos à revisão visual em jogo.

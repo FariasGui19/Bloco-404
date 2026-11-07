@@ -204,7 +204,14 @@ function canDashPassObject(object, ignore) {
   if (ignore !== state.player) return false;
   // As barreiras de impulso existentes foram projetadas para a Bio-Forja;
   // um dash de outro arquétipo não herda automaticamente essa capacidade.
-  if (!state.player?.ability?.dash || state.player.ability.active !== 'bio_dash') return false;
+  if (!state.player?.ability?.dash) return false;
+  if (object.phaseAction) {
+    return state.player.ability.active === object.phaseAction &&
+      state.progress.archetype === object.gate?.diagnosisArchetype &&
+      !!state.progress.flags?.[object.gate?.scanFlag] &&
+      state.player.ability.dash.phaseGateId === object.id;
+  }
+  if (state.player.ability.active !== 'bio_dash') return false;
   if (!object.dashPassable) return false;
 
   if (object.dashPassableRequiresFlag) {

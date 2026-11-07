@@ -83,20 +83,28 @@ export function tryArchetypePower(id, showMessage) {
   }
 
   const direction = facingDirection(player.facing);
+  // Na câmara, alinhar a travessia com o corredor de um tile; não apagar o
+  // obstáculo nem conceder o fragmento até que o jogador saia do outro lado.
+  const phaseGate = (state.objects ?? []).find(o => o.phaseAction === id && checkGate(o.gate) &&
+    Math.abs(player.y - o.y) < 0.38 && Math.abs(player.x - o.x) < 2.05 &&
+    (o.x - player.x) * direction.x > 0 && Math.abs(player.x - o.x) >= 0.5);
   if (id === 'passo_corrente' || id === 'forma_veloz') {
     const target = nearestGate(2.6, o => {
       const dx = o.x - player.x, dy = o.y - player.y;
-      return (o.id === 'caverna_alagada' && id === 'passo_corrente' || o.gate.requiredAction === id) && dx * direction.x + dy * direction.y > 0 && checkGate(o.gate);
+      return (o.id === 'caverna_alagada' && id === 'passo_corrente' || (!o.phaseAction && o.gate.requiredAction === id)) && dx * direction.x + dy * direction.y > 0 && checkGate(o.gate);
     });
     if (target) {
       openGate(target);
       saveGame();
     }
   }
+  const phaseDirection = phaseGate ? Math.sign(phaseGate.x - player.x) : 0;
+  const phaseDistance = phaseGate ? Math.abs(phaseGate.x - player.x) + 0.9 : profile.distance;
   player.ability.active = id;
   player.ability.dash = {
-    directionX: direction.x, directionY: direction.y,
-    timeLeft: profile.duration, speed: profile.distance / profile.duration,
+    directionX: phaseGate ? phaseDirection : direction.x, directionY: phaseGate ? 0 : direction.y,
+    timeLeft: profile.duration, speed: phaseDistance / profile.duration,
+    phaseGateId: phaseGate?.id ?? null, phaseDirection,
     mode: 'quick',
   };
   showMessage(id === 'forma_veloz' ? 'PULSO VELOZ' : 'PASSO DE CORRENTE');

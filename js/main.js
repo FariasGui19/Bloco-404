@@ -86,6 +86,12 @@ await loadSprites([
   { id: 'player_dominio_reference', src: 'assets/sprites/player/player-dominio-reference.png' },
   { id: 'player_mare_reference', src: 'assets/sprites/player/player-mare-reference.png' },
   { id: 'player_10x_reference', src: 'assets/sprites/player/player-10x-reference.png' },
+  { id: 'player_dominio_lvl1', src: 'assets/sprites/player/player-dominio-lvl1.png' },
+  { id: 'player_dominio_q', src: 'assets/sprites/player/player-dominio-q.png' },
+  { id: 'player_dominio_r', src: 'assets/sprites/player/player-dominio-r.png' },
+  { id: 'player_mare_lvl1', src: 'assets/sprites/player/player-mare-lvl1.png' },
+  { id: 'player_mare_q', src: 'assets/sprites/player/player-mare-q.png' },
+  { id: 'player_mare_r', src: 'assets/sprites/player/player-mare-r.png' },
   {
     id: 'elevator_door',
     src: 'assets/sprites/objects/elevator-door.png',

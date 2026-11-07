@@ -1143,10 +1143,46 @@ function drawDoor(o) {
 // =====================================================================
 //  PLAYER
 // =====================================================================
+// As folhas novas foram limpas de JPGs com quadriculado embutido. Células
+// inteiras mantêm a escala e os efeitos, sem recortar cada pose separadamente.
+function drawArchetypeSheet(spriteId, col, row, ix, iy, flip = false) {
+  const image = getSprite(spriteId);
+  if (!image) return false;
+  const x0 = Math.round(col * image.width / 4), x1 = Math.round((col + 1) * image.width / 4);
+  const y0 = Math.round(row * image.height / 2), y1 = Math.round((row + 1) * image.height / 2);
+  const scale = 0.25;
+  const w = (x1 - x0) * scale, h = (y1 - y0) * scale;
+  ctx.save();
+  ctx.translate(ix, iy);
+  if (flip) ctx.scale(-1, 1);
+  drawSmooth(image, x0, y0, x1 - x0, y1 - y0, -w / 2, -h * 0.98, w, h);
+  ctx.restore();
+  return true;
+}
+
 function drawPlayerSprite(player, ix, iy) {
   // As folhas de referência têm poses, não quadros sequenciais. Usamos uma
   // pose provisória com os pulsos animados, sem fingir que são animações finais.
   const effect = player.ability?.effect;
+  const suit = player.equippedSuit;
+  const equippedAction = (suit === 'dominio' && ['golpe_ruptura', 'postura_dominio'].includes(effect?.id)) ||
+    (suit === 'mare' && ['passo_corrente', 'senso_corrente'].includes(effect?.id));
+  if (equippedAction) {
+    const elapsed = Math.max(0, Math.min(0.999, 1 - effect.timeLeft / effect.duration));
+    let col = Math.floor(elapsed * 4), row = 0;
+    let flip = player.facing === 'left';
+    // A folha de R do Domínio contém poses direcionais, não frames temporais.
+    if (effect.id === 'postura_dominio') {
+      row = 1;
+      col = player.facing === 'up' ? 1 : player.facing === 'down' ? 0 : 2;
+      flip = player.facing === 'right';
+    }
+    const sheet = `player_${suit}_${effect.id === 'golpe_ruptura' || effect.id === 'passo_corrente' ? 'q' : 'r'}`;
+    if (drawArchetypeSheet(sheet, col, row, ix, iy, flip)) {
+      player._topo = 100;
+      return true;
+    }
+  }
   const actionSprite = ACTION_SPRITES[effect?.id];
   if (actionSprite) {
     const image = getSprite(actionSprite.sprite);
@@ -1222,6 +1258,13 @@ function drawPlayerSprite(player, ix, iy) {
     // ===============================================
   // 3. ANDAR / PARADO
   // ===============================================
+  if (suit === 'dominio' || suit === 'mare') {
+    const col = player.facing === 'up' ? 2 : player.facing === 'down' ? 0 : 1;
+    if (drawArchetypeSheet(`player_${suit}_lvl1`, col, 0, ix, iy, player.facing === 'left')) {
+      player._topo = 100;
+      return true;
+    }
+  }
   const useBioForja = player.equippedSuit === 'bio_forja';
   const sprite = useBioForja ? CONFIG.PLAYER_BIO_FORJA_SPRITE : CONFIG.PLAYER_SPRITE;
   const image = getSprite(sprite.ID);

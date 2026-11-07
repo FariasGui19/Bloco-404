@@ -77,6 +77,8 @@
   // Aplica o efeito visual/colisão no objeto em runtime.
   export function applyGateOpenState(object) {
     object.aberto = true;
+    // Barreiras de travessia permanecem visíveis e sólidas para caminhada.
+    if (object.phaseAction) return;
     object.bloqueia = false;
     object.hitbox = { offsetX: 0, offsetY: 0, width: 0, height: 0 };
     object.oculto = object.gate?.manterVisivel ? false : true;

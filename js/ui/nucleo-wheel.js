@@ -29,7 +29,7 @@ export function openNucleoWheel(progress, player) {
       <div class="nucleo-panel" role="dialog" aria-modal="true" aria-label="Seletor do Núcleo 10X">
         <div class="nucleo-eyebrow">PROTOCOLO DE METAMORFOSE</div>
         <h2>NÚCLEO <span>10X</span></h2>
-        <div class="nucleo-orbit">
+        <div class="nucleo-orbit" role="group" aria-label="Uma forma disponível e quatro formas futuras bloqueadas">
           <div class="nucleo-ring ring-outer"></div><div class="nucleo-ring ring-inner"></div>
           <div class="nucleo-core"><span>10</span><small>ECO ATIVO</small></div>
           <button class="nucleo-form" type="button" aria-label="Selecionar forma veloz"><span>✦</span><b>FORMA VELOZ</b><small>DISPONÍVEL</small></button>
@@ -41,6 +41,12 @@ export function openNucleoWheel(progress, player) {
         <div class="nucleo-help">ESPAÇO / ENTER / E ou clique para transformar · T / ESC cancelar</div>
       </div>`;
     document.body.appendChild(overlay);
+    // Mantém a roda CSS original se a arte não carregar.
+    if (typeof Image !== 'undefined') {
+      const art = new Image();
+      art.onload = () => overlay.classList.add('nucleo-art-ready');
+      art.src = 'assets/sprites/ui/nucleo-roda.png';
+    }
     overlay.querySelector('.nucleo-form').addEventListener('click', confirmWheel);
     overlay.addEventListener('click', e => { if (e.target === overlay) closeWheel(); });
   }

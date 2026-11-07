@@ -35,6 +35,7 @@ export const WORLD_REGISTRY = {
   // ==========================================
   // ARQUIPÉLAGO DAS ROTAS PERDIDAS (Futuro)
   // ==========================================
+    ilha_enseada_ecos: { nome: 'Enseada dos Ecos', dimensao: 'arquipelago', load: () => import('./worlds/arquipelago-rotas-perdidas/enseada-ecos.js') },
     ilha_praia_inicial: {
     nome: 'Praia Inicial',
     dimensao: 'arquipelago',

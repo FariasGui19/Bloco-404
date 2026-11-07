@@ -476,8 +476,8 @@ function drawBeachShore(map) {
 }
 
 // Superfícies planas da nova folha, sem alterar pontes, poças ou máscara.
-function drawBeachSand(tile, x, y, tx, ty) {
-  const image = getSprite('beach_shore');
+function drawBeachSand(tile, x, y, tx, ty, map) {
+  const image = getSprite(map.meta?.sandSprite ?? 'beach_shore');
   const frame = getFrame(image, tile === 'M' ? 1 : 0, 0, 4, 4)?.crop;
   if (!frame) return false;
   ctx.save();
@@ -494,7 +494,7 @@ function drawFloorTile(type, x, y, map) {
   const ty = (x + y) * HH;
 
   const water = map.aguaPraia?.[y]?.[x];
-  if (water && 'SM'.includes(water) && drawBeachSand(water, x, y, tx, ty)) return;
+  if (water && 'SM'.includes(water) && drawBeachSand(water, x, y, tx, ty, map)) return;
   if (water && 'YyDd'.includes(water)) {
     // O mar contínuo já foi desenhado sob as ilhas e pontes.
     return;
@@ -999,6 +999,29 @@ function drawMapObject(object, state) {
   if (object.showWhenFlag && !state.progress.flags?.[object.showWhenFlag]) return; // NOVO
 
   if (object.porta) { drawDoor(object); return; }
+  if (object.routeMarker) {
+    const x = (object.x - object.y) * HW, y = (object.x + object.y) * HH;
+    ctx.save();
+    ctx.strokeStyle = '#9fffe3'; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.ellipse(x, y, 12, 5, 0, 0, Math.PI * 2); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(x, y - 4); ctx.lineTo(x, y - 30); ctx.stroke();
+    ctx.fillStyle = '#0c393c'; ctx.fillRect(x - 38, y - 48, 76, 18);
+    ctx.strokeRect(x - 38, y - 48, 76, 18);
+    ctx.fillStyle = '#e1fff1'; ctx.font = 'bold 8px monospace'; ctx.textAlign = 'center';
+    ctx.fillText(object.routeMarker, x, y - 36);
+    ctx.restore(); return;
+  }
+  // Painel de arquivo: arte de cenário em moldura, não geometria transitável.
+  const scene = object.sceneSprite && getSprite(object.sceneSprite);
+  if (scene) {
+    const x = (object.x - object.y) * HW, y = (object.x + object.y) * HH;
+    ctx.save();
+    ctx.fillStyle = '#0b1b25'; ctx.fillRect(x - 42, y - 92, 84, 47);
+    ctx.drawImage(scene, x - 40, y - 90, 80, 43);
+    ctx.strokeStyle = 'rgba(119, 231, 221, 0.8)'; ctx.lineWidth = 1;
+    ctx.strokeRect(x - 42, y - 92, 84, 47);
+    ctx.restore();
+  }
   // ...
 
   const sheet = getObjectSpriteConfig(object.sprite);

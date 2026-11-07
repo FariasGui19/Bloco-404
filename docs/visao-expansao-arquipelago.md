@@ -1,6 +1,6 @@
 # Arquipélago vivo — direção e próximos passos
 
-Documento de direção, não sistemas já implementados. A ilha é compartilhada: o jogador escolhe um único arquétipo; cada região deve ter uma solução viável por arquétipo, sem conceder módulos extras nem depender do futuro morfador mestre. Preservar os saves, a praia já aprovada, o retorno pelo metrô e o R → E do teleférico Bio.
+Documento de direção; a primeira fatia jogável está descrita ao final. A ilha é compartilhada: o jogador escolhe um único arquétipo; cada região deve ter uma solução viável por arquétipo, sem conceder módulos extras nem depender do futuro morfador mestre. Preservar os saves, a praia já aprovada, o retorno pelo metrô e o R → E do teleférico Bio.
 
 ## Praias, florestas e vida própria
 
@@ -69,7 +69,7 @@ A roda 10X tem um protótipo em CSS e uma única forma disponível. T abre; Espa
 
 ## Mapa de evolução de regiões — preparação
 
-`js/data/arquipelago-regioes.js` registra uma sequência planejada e conexões bidirecionais. Não cria portais, não abre destinos e não muda saves: apenas a Praia Inicial é jogável. Para cada próxima etapa, construir e testar um mapa conectado, retorno, acesso para cada arquétipo e limites de câmera antes de registrá-lo como disponível.
+`js/data/arquipelago-regioes.js` registra uma sequência planejada e conexões bidirecionais. Não cria portais, não abre destinos e não muda saves: a Praia Inicial e a Enseada dos Ecos são jogáveis; as demais regiões são planejamento. Para cada próxima etapa, construir e testar um mapa conectado, retorno, acesso para cada arquétipo e limites de câmera antes de registrá-lo como disponível.
 
 | Região | Identidade e fatia inicial | Vida e oportunidade narrativa |
 |---|---|---|
@@ -109,3 +109,9 @@ jogador; não criar sombras opacas como parte do chão.
 ```
 
 **Integração futura:** preservar `linhaDoTrem()` e o ajuste de alinhamento aprovado; testar dimensões da plataforma em ambos os eixos, sobreposição/profundidade, acesso ao terminal e ao retorno, colisão, spawn, maré visual e continuidade com o mar. Considerar portal de chegada como peça de cenário, não teletransporte automático. Não substituir o chão inteiro da praia por um background achatado.
+
+## Primeira fatia jogável — Enseada dos Ecos
+
+A trilha na Praia Inicial dá acesso à Enseada dos Ecos, com retorno à praia e acesso comum aos quatro arquétipos. Há três vestígios opcionais; encontrá-los marca `enseada_ecos_mapeada` no save sem substituir a missão ativa. O HUD mostra o progresso somente enquanto estiver na enseada. Essa área é um protótipo pequeno de exploração, não representa ainda manguezal, floresta, fauna, Bolt ou combate. Próximos passos: criar saídas e objetivos próprios por arquétipo, integrar Bolt aos rastros e expandir o manguezal após validar navegação, retorno e desempenho.
+
+As novas artes de cenário aparecem como imagens nos registros das câmaras, não como paredes nem chão jogável: a perspectiva fixa e os pilares embutidos não coincidem com a geometria atual. Os obstáculos mantêm a arte anterior e o comportamento R → Q; Maré e 10X atravessam sem destruição. Para integrá-los visualmente, produzir PNGs com alpha real de lacre inteiro/rompido, anel intacto e malha estável/dissipada, em escala e perspectiva compatíveis com os respectivos hitboxes. A folha nova de praia é usada na areia da enseada; suas bordas mistas e águas ainda não têm encaixe/alpha confiáveis, por isso o mar contínuo e as bordas procedurais foram mantidos. As imagens originais ficam em `assets/sprites/backgrounds/conceitos/` para futura preparação.

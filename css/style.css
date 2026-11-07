@@ -2187,3 +2187,10 @@ body.in-menu #controls {
 .nucleo-panel p { font-size: 12px; line-height: 1.7; }.nucleo-panel p small { color: #a2c6b2; }
 @keyframes nucleo-spin { to { transform: rotate(360deg); } }
 @media (prefers-reduced-motion: reduce) { .ring-outer { animation: none; } }
+
+/* Arte fornecida para a roda: o centro seleciona a única forma disponível. */
+.nucleo-art-ready .nucleo-orbit { background: url('../assets/sprites/ui/nucleo-roda.png') center / contain no-repeat; width: 360px; height: 300px; max-width: 78vw; max-height: 65vw; }
+.nucleo-art-ready .nucleo-orbit .nucleo-ring, .nucleo-art-ready .nucleo-orbit .nucleo-core, .nucleo-art-ready .nucleo-orbit .nucleo-locked { display: none; }
+.nucleo-art-ready .nucleo-orbit .nucleo-form { left: 50%; top: 46%; transform: translate(-50%,-50%); width: 25%; height: 30%; border-radius: 50%; background: transparent; border: 1px solid transparent; box-shadow: none; }
+.nucleo-art-ready .nucleo-orbit .nucleo-form span, .nucleo-art-ready .nucleo-orbit .nucleo-form b, .nucleo-art-ready .nucleo-orbit .nucleo-form small { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+.nucleo-art-ready .nucleo-orbit .nucleo-form:hover, .nucleo-art-ready .nucleo-orbit .nucleo-form:focus-visible { outline: 2px solid #dcffac; box-shadow: 0 0 20px #62ffa5; background: #58ff991c; }

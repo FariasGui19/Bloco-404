@@ -25,7 +25,7 @@ while (queue.length) {
 for (const item of enseada.collectibles) assert(seen.has(`${item.x},${item.y}`), `${item.id} inacessível`);
 assert(seen.has(`${back.x},${back.y}`));
 assert.equal(enseada.collectibles.length, 3);
-assert(enseada.objects.every(o => o.bloqueia === false));
+assert(enseada.objects.filter(o => o.bloqueia).every(o => o.hitbox && o.sprite === 'vegetacao_tropical'));
 console.log('Enseada: ida, volta e três vestígios acessíveis OK.');
 
 // As descobertas persistem em flags separadas e não reescrevem a missão do metrô.

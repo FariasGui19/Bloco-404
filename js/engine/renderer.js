@@ -416,7 +416,8 @@ function drawBeachRipples(map) {
   const rows = map.aguaPraia;
 
   ctx.save();
-  ctx.strokeStyle = 'rgba(176, 238, 226, 0.24)';
+  const waveTime = performance.now() / 1000;
+  ctx.strokeStyle = `rgba(176, 238, 226, ${0.18 + 0.05 * Math.sin(waveTime * 0.9)})`;
   ctx.lineWidth = 1;
   ctx.lineCap = 'round';
   ctx.beginPath();
@@ -427,7 +428,7 @@ function drawBeachRipples(map) {
       const wy = (y + hash(x - 37, y + 53)) * spacing;
       const tile = rows[Math.floor(wy)]?.[Math.floor(wx)];
       if (tile && 'SMTPRBb'.includes(tile)) continue;
-      const ix = (wx - wy) * HW, iy = (wx + wy) * HH;
+      const ix = (wx - wy) * HW + Math.sin(waveTime * 0.7 + x * 0.8 + y) * 2, iy = (wx + wy) * HH;
       const length = 6 + hash(x + 117, y - 62) * 10;
       ctx.moveTo(ix - length / 2, iy);
       ctx.quadraticCurveTo(ix, iy - 2.2, ix + length / 2, iy);
@@ -788,6 +789,7 @@ function drawWorld(map, state) {
     o.y >= range.y0 - margem && o.y <= range.y1 + margem;
 
   for (const a of state.actors ?? []) drawList.push(a);
+  for (const a of state.fauna ?? []) if (visivel(a)) drawList.push(a);
 
   for (const o of state.objects ?? []) {
     if (o.camada === 'fundo') backList.push(o);      // trem/trilho sempre
@@ -806,6 +808,8 @@ function drawWorld(map, state) {
   const drawItem = (item) => {
     if (item.renderType === 'object') {
       drawMapObject(item, state);
+    } else if (item.renderType === 'fauna') {
+      drawCoastalFauna(item);
     } else if (item.renderType === 'collectible') {
       drawCollectible(item, state);
     } else {
@@ -837,6 +841,32 @@ function drawWorld(map, state) {
   }
 
   while (ei < drawList.length) drawItem(drawList[ei++]);
+}
+
+// As células são desenhadas integralmente: os peixes são um cardume, não
+// componentes desconectados a eliminar, e as âncoras não pulam entre quadros.
+function drawCoastalFauna(a) {
+  const crab = a.species === 'caranguejo';
+  const image = getSprite(crab ? 'fauna_caranguejo' : 'fauna_costeira');
+  if (!image) return;
+  const cols = crab ? 4 : 8, rows = 4;
+  const flight = a.species === 'gaivota' && a.fleeing;
+  const row = crab ? (a.fleeing ? 2 : 0) : ({ gaivota: 1, peixes: 2, capivara: 3 }[a.species] ?? 0);
+  const tick = Math.floor(a.clock * (a.fleeing ? 8 : 4));
+  const col = crab ? tick % 4 : flight ? 4 + tick % 4 : a.species === 'gaivota' ? tick % 4 : a.species === 'capivara' ? tick % 7 : tick % 8;
+  const width = crab ? 54 : a.species === 'peixes' ? 65 : a.species === 'capivara' ? 62 : 48;
+  const cw = image.width / cols, ch = image.height / rows;
+  const height = width * ch / cw;
+  const x = (a.x - a.y) * HW, y = (a.x + a.y) * HH;
+  ctx.save();
+  if (a.species !== 'peixes') {
+    ctx.fillStyle = 'rgba(12,25,24,.22)'; ctx.beginPath(); ctx.ellipse(x, y + 3, width * .22, 4, 0, 0, Math.PI * 2); ctx.fill();
+  }
+  ctx.translate(x, y - (flight ? 18 + Math.sin(a.clock * 8) * 2 : 0));
+  if (a.flip) ctx.scale(-1, 1);
+  ctx.imageSmoothingEnabled = false;
+  ctx.drawImage(image, col * cw, row * ch, cw, ch, -width / 2, -height * .78, width, height);
+  ctx.restore();
 }
 
 // ---------------------------------------------------------------------
@@ -924,6 +954,7 @@ function drawWallProcedural(x, y, front) {
 // =====================================================================
 
 function getObjectSpriteConfig(spriteId) {
+  if (spriteId === 'vegetacao_tropical') return { SHEET_COLS: 8, SHEET_ROWS: 1, DEFAULT_SCALE: 1, FEET_ANCHOR_Y: 1 };
   if (spriteId === 'metro_props') {
     return CONFIG.METRO_PROPS_SPRITE;
   }

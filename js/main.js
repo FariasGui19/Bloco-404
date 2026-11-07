@@ -5,6 +5,7 @@
 // Diretor do jogo.
 // =====================================================================
 
+import { updateCoastalFauna } from './game/fauna-costeira.js';
 import { state } from './game/state.js';
 
 import { getFloor } from './game/world.js';
@@ -158,6 +159,9 @@ await loadSprites([
   { id: 'visao_mare', src: 'assets/sprites/backgrounds/camara-mare-visao.jpg' },
   { id: 'visao_nucleo', src: 'assets/sprites/backgrounds/camara-nucleo-visao.jpg' },
   { id: 'beach_novas_artes', src: 'assets/sprites/tiles/beach-novas-artes.png' },
+  { id: 'fauna_costeira', src: 'assets/sprites/fauna/fauna-costeira.png' },
+  { id: 'fauna_caranguejo', src: 'assets/sprites/fauna/caranguejo.png' },
+  { id: 'vegetacao_tropical', src: 'assets/sprites/objects/vegetacao-tropical.png' },
   { id: 'beach_props', src: 'assets/sprites/objects/beach-props.png' },
 ]);
 
@@ -260,6 +264,7 @@ async function update(dt) {
   }
 
   updateNpcBrains(dt);
+  updateCoastalFauna(getFloor(), state.fauna, player, dt);
   updateCamera(dt, player.x, player.y);
 }
 

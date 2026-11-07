@@ -52,7 +52,7 @@ export function buildEchoChamber(key) {
       sprite: 'beach_props', frame: { col: v.col, row: v.row }, useCrop: true,
       larguraPx: 84, pivotX: 0.5, pivotY: 1, bloqueia: true,
       hitbox: { offsetX: -0.5, offsetY: -0.5, width: 1.0, height: 1.0 },
-      hideWhenFlag: `gate_${v.obstacle}`,
+      ...(key === 'dominio' ? { hideWhenFlag: `gate_${v.obstacle}` } : { phaseAction: v.action }),
       brilho: { cor: v.cor, raio: 1, forca: 0.3 },
       interacao: { label: 'EXAMINAR • R: LER / Q: AGIR', distancia: 2.6 },
       gate: {

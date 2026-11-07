@@ -23,6 +23,8 @@ import { tryModuleInteraction, hasSharedQuestSystem } from './module-interaction
 import { ARCHETYPE_KITS, IMPLEMENTED_ABILITIES } from '../data/archetype-kits.js';
 import { getBioDashProfile } from './ability-context.js';
 import { tryArchetypePower, POWER_PROFILES } from './archetype-powers.js';
+import { openGate } from './gates.js';
+import { saveGame } from './save.js';
 
 // ---------------------------------------------------------------------
 // CONFIGURAÇÃO INTERNA DE HABILIDADES
@@ -210,6 +212,14 @@ function updateBioDash(dt) {
     moveY,
     CONFIG.PLAYER_RADIUS
   );
+
+  if (dash.phaseGateId) {
+    const gate = state.objects.find(o => o.id === dash.phaseGateId);
+    if (gate && (player.x - gate.x) * dash.phaseDirection >= 0.72 && !state.progress.flags?.[`gate_${gate.id}`]) {
+      openGate(gate);
+      saveGame();
+    }
+  }
 
   // Se bateu em parede ou objeto, encerra o dash.
   if (!moved) {

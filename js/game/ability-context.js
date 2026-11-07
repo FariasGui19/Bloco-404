@@ -1,6 +1,5 @@
 // Contexto de uso, independente da escolha do arquétipo no save.
-// Por enquanto T controla o traje da Bio-Forja; não há estado paralelo que
-// possa divergir do traje desenhado. Formas do 10X ainda não estão jogáveis.
+// T alterna trajes; as formas do 10X terão seleção própria.
 export function getAbilityContext(progress, player) {
   const archetype = progress?.archetype ?? null;
   const mode = archetype === 'motor_bio_forja'

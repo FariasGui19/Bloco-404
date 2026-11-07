@@ -45,9 +45,27 @@ for (const [archetype, room, action] of [
   assert(!isGateOpen(obstacle), 'E não substitui Q depois do diagnóstico');
   closeDialogue();
   press('q');
-  assert(isGateOpen(obstacle), `${action} abre somente após leitura`);
+  if (obstacle.phaseAction) {
+    assert(!isGateOpen(obstacle), 'travessia não é concluída ao iniciar Q');
+    assert(obstacle.bloqueia);
+    updateAbilities(0.03);
+    assert(!isGateOpen(obstacle), 'movimento parcial não concede a conclusão');
+    for (let i = 0; i < 20 && player.ability.dash; i++) updateAbilities(0.03);
+    assert(player.x > obstacle.x + 0.72, 'o jogador realmente atravessou');
+    assert(obstacle.bloqueia && !obstacle.oculto, 'a barreira continua presente');
+  }
+  assert(isGateOpen(obstacle), `${action} completa após leitura`);
   await loadMap(room, 'vindo_do_aeroporto');
-  assert(isGateOpen(state.objects[0]), 'abertura persiste após retornar');
+  assert(isGateOpen(state.objects[0]), 'progresso persiste após retornar');
+  if (state.objects[0].phaseAction) {
+    const reloaded = state.objects[0];
+    assert(reloaded.bloqueia && !reloaded.oculto, 'travessia mantém obstáculo sólido após recarregar');
+    assert(!canStandAt(state.world.currentMap, reloaded.x, reloaded.y, 0.2, player), 'caminhada ainda colide');
+    Object.assign(player, { x: 6.8, y: 4.5, facing: 'left', energy: 100, ability: { cooldowns: {}, dash: null } });
+    press('q');
+    for (let i = 0; i < 20 && player.ability.dash; i++) updateAbilities(0.03);
+    assert(player.x < reloaded.x - 0.72, 'possível voltar sem remover a barreira');
+  }
   player.x = 8; player.y = 4;
   const collectible = getNearestCollectible();
   assert(collectible && collectItem(collectible.item));

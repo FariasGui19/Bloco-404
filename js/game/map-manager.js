@@ -8,6 +8,7 @@ import { WORLD_REGISTRY } from '../data/world-registry.js';
 import { state } from './state.js';
 import { snapCameraTo } from '../engine/camera.js';
 import { createActorRuntime } from './actors.js';
+import { createCoastalFauna } from './fauna-costeira.js';
 import { rememberMapLocation } from './save.js';
 import { applyGateStates } from './gates.js';
 
@@ -44,6 +45,7 @@ export async function loadMap(mapId, spawnId = 'inicio') {
     if (!mapData) throw new Error(`O mapa '${mapId}' não exporta "map".`);
 
     state.actors = [];
+    state.fauna = createCoastalFauna(mapData);
     state.objects = [];
     state.portals = [];
     state.collectibles = [];

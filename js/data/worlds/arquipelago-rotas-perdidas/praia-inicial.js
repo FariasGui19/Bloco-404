@@ -346,7 +346,15 @@ export const map = {
   // Dados visuais separados da máscara de colisão.
   aguaPraia: grid.map(linha => linha.join('')),
 
+  fauna: [
+    { id: 'praia_caranguejo_1', species: 'caranguejo', x: 3.5, y: 10.5 },
+    { id: 'praia_caranguejo_2', species: 'caranguejo', x: 26.5, y: 14.5 },
+    { id: 'praia_gaivota', species: 'gaivota', x: 11.5, y: 6.5 },
+    { id: 'praia_peixes', species: 'peixes', x: 15.5, y: 10.5 },
+  ],
   objects: [
+    { id: 'folha_costeira_a', tipo: 'decoracao', x: 2, y: 9, sprite: 'vegetacao_tropical', frame: { col: 1, row: 0 }, useCrop: true, larguraPx: 45, pivotY: 1, bloqueia: false },
+    { id: 'folha_costeira_b', tipo: 'decoracao', x: 12, y: 10, sprite: 'vegetacao_tropical', frame: { col: 0, row: 0 }, useCrop: true, larguraPx: 45, pivotY: 1, bloqueia: false },
     { id: 'marco_enseada', tipo: 'decoracao', x: 12, y: 11, routeMarker: 'ENSEADA', bloqueia: false },
     ...linhaDoTrem({
       trilho: { larguraPx: 390, ajusteX: 9, ajusteY: 31.5 },

@@ -28,6 +28,7 @@ export const state = {
   // Essas listas são recriadas ao trocar de mapa.
   // -------------------------------------------------------------------
   actors: [],
+  fauna: [],
   objects: [],
   portals: [],
   collectibles: [],

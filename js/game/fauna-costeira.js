@@ -2,6 +2,10 @@
 // As espécies têm territórios curtos e nunca atravessam o limite terra/água.
 const aquatic = tile => tile != null && 'YyDdX'.includes(tile);
 const terrestrial = tile => tile != null && 'SMT'.includes(tile);
+export function faunaFootAnchor(box, frameHeight) {
+  if (!box || !Number.isFinite(frameHeight) || frameHeight <= 0) return .78;
+  return Math.max(0, Math.min(1, (box.y + box.h) / frameHeight));
+}
 const tileAt = (map, x, y) => map.aguaPraia?.[Math.floor(y)]?.[Math.floor(x)];
 export function habitatAllows(map, species, x, y) {
   const tile = tileAt(map, x, y);

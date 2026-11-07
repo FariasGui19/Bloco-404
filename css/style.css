@@ -78,6 +78,7 @@ canvas:active {
 }
 
 #controls {
+  max-width: calc(100vw - 30px);
   position: fixed;
   bottom: 15px;
   left: 15px;
@@ -2194,3 +2195,14 @@ body.in-menu #controls {
 .nucleo-art-ready .nucleo-orbit .nucleo-form { left: 50%; top: 46%; transform: translate(-50%,-50%); width: 25%; height: 30%; border-radius: 50%; background: transparent; border: 1px solid transparent; box-shadow: none; }
 .nucleo-art-ready .nucleo-orbit .nucleo-form span, .nucleo-art-ready .nucleo-orbit .nucleo-form b, .nucleo-art-ready .nucleo-orbit .nucleo-form small { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
 .nucleo-art-ready .nucleo-orbit .nucleo-form:hover, .nucleo-art-ready .nucleo-orbit .nucleo-form:focus-visible { outline: 2px solid #dcffac; box-shadow: 0 0 20px #62ffa5; background: #58ff991c; }
+
+/* Diário de missões: somente consulta; não altera a missão ativa. */
+#questJournal { position: fixed; inset: 0; z-index: 89; display: none; align-items: center; justify-content: center; background: rgba(3,12,18,.8); color: #d8f8ed; font-family: monospace; }
+#questJournal.visible { display: flex; }
+.journal-panel { width: min(520px, 90vw); max-height: 85vh; overflow: auto; padding: 24px; border: 1px solid #65bba7; border-radius: 14px; background: #0b2027; box-shadow: 0 0 40px #2dd7b833; }
+.journal-panel h2 { color: #91f4da; letter-spacing: .12em; margin: 0; }
+.journal-panel h3 { color: #f4d77e; font-size: 12px; margin-top: 22px; }
+.journal-panel p { line-height: 1.6; font-size: 12px; }
+.journal-caption, .journal-note { color: #98bcb6; }
+.journal-panel button { padding: 10px 14px; color: #dafdef; background: #123f3b; border: 1px solid #6fe6bd; cursor: pointer; }
+.journal-panel button:focus-visible { outline: 2px solid white; }

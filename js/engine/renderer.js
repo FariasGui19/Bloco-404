@@ -14,7 +14,8 @@ import { getFrame } from './sprite-clean.js';
 import { drawAmbientBack, drawAmbientFront } from './ambient.js';
 import { isDebugEnabled, drawDebugWorld } from '../game/debug.js';
 import { ACTION_SPRITES } from '../data/action-sprites.js';
-import { drawHubScreenFx } from './hub-screen-fx.js';
+import { drawHubScreenFx, hasHubScreenFx } from './hub-screen-fx.js';
+import { getVelozAnimation } from '../data/veloz-animation.js';
 import { getBasicAttackPose } from '../data/basic-attack-poses.js';
 import { state } from '../game/state.js';
 
@@ -1238,7 +1239,7 @@ function drawMapObject(object, state) {
 
   if (state.world?.currentMapId === 'hub_saguao' && ['saguao_vaso_novo', 'saguao_bebedouro'].includes(object.id)) {
     ctx.save(); ctx.fillStyle = 'rgba(0,0,0,.33)'; ctx.beginPath();
-    ctx.ellipse(ix, iy + (object.ajusteY ?? 0) + 1, 14, 5, 0, 0, Math.PI * 2); ctx.fill(); ctx.restore();
+    ctx.ellipse(ix, iy + (object.ajusteY ?? 0) + 2, object.id === 'saguao_bebedouro' ? 18 : 20, 7, 0, 0, Math.PI * 2); ctx.fill(); ctx.restore();
   }
   ctx.save();
   if (object.filter) ctx.filter = object.filter;
@@ -1251,7 +1252,7 @@ function drawMapObject(object, state) {
     drawW, drawH
   );
   // Desenhar o movimento apenas dentro das superfícies do sprite fixo.
-  if (state.world?.currentMapId === 'hub_saguao' && (object.id === 'totem' || (object.id === 'metro' && state.progress.flags?.metroCalibrado))) {
+  if (hasHubScreenFx(state.world?.currentMapId, object.id)) {
     ctx.save(); ctx.translate(-drawW / 2, -drawH * (object.anchorY ?? sheet.FEET_ANCHOR_Y));
     ctx.scale(drawW / frameW, drawH / frameH);
     drawHubScreenFx(ctx, object.id, performance.now() / 1000);
@@ -1445,6 +1446,18 @@ function drawPlayerSprite(player, ix, iy) {
     const t = Math.max(0, Math.min(0.999, 1 - effect.timeLeft / effect.duration));
     const frames = effect.activating ? [0, 1, 1, 2] : [2, 1, 3, 3];
     if (drawArchetypeSheet('player_10x_q', frames[Math.floor(t * 4)], 0, ix, iy, player.facing === 'left', { rows: 1, scale: 0.29, anchor: 0.78 })) { player._topo = 120; return true; }
+  }
+  const velozFrame = getVelozAnimation(state.progress, player, performance.now());
+  if (velozFrame) {
+    const image = getSprite(velozFrame.sprite);
+    if (image) {
+      const w = image.width / 6, h = image.height / 4, scale = .5;
+      ctx.save(); ctx.translate(ix, iy);
+      if (velozFrame.flip) ctx.scale(-1, 1);
+      drawSmooth(image, velozFrame.col * w, velozFrame.row * h, w, h,
+        -w * scale / 2, -velozFrame.footY * scale, w * scale, h * scale);
+      ctx.restore(); player._topo = 110; return true;
+    }
   }
   if (state.progress.archetype === 'nucleo_dez_forma' && player.nucleoForm === 'forma_veloz') {
     if (drawArchetypeSheet('player_10x_q', 2, 0, ix, iy, player.facing === 'left', { rows: 1, scale: 0.29, anchor: 0.78, walk: player.moving })) { player._topo = 120; return true; }
@@ -1665,34 +1678,6 @@ function drawFramePe(e, image, cfg, rc, ix, iy, S, flip, ajuste) {
 function drawNexoSprite(npc, ix, iy) {
   if (npc.sprite !== 'nexo_04' || !CONFIG.NEXO_04_SPRITE) return false;
 
-  if (!npc.moving && state.world?.currentMapId === 'hub_saguao') {
-    const isWave = npc.pose === 'wave' && npc.facing === 'down';
-    const isTablet = npc.pose === 'tablet' && ['left', 'right'].includes(npc.facing);
-    const actionSheet = getSprite(isWave ? 'hub_nexo_aceno' : isTablet ? 'hub_nexo_tablet' : '');
-    if (actionSheet) {
-      const col = isWave ? [0, 2, 0][Math.floor(performance.now() / 240) % 3] : Math.floor(performance.now() / 350) % 5;
-      ctx.save(); ctx.translate(ix, iy + 4);
-      if (isTablet && npc.facing === 'left') ctx.scale(-1, 1);
-      ctx.drawImage(actionSheet, col * 128, 0, 128, 192, -44, -132, 88, 132);
-      ctx.restore(); npc._topo = 126; return true;
-    }
-  }
-  const walkSheet = getSprite('hub_nexo_walk');
-  if (npc.moving && walkSheet && state.world?.currentMapId === 'hub_saguao') {
-    // As quatro linhas da nova folha têm alpha real e direções próprias.
-    const row = { down: 0, right: 1, up: 2, left: 3 }[npc.facing] ?? 0;
-    const tick = Math.floor(performance.now() / 150);
-    // A linha frontal vira de perfil nos últimos quadros; não os usar de frente.
-    const col = row === 0 ? [0, 1, 2, 1][tick % 4] : tick % 6;
-    const cellW = walkSheet.width / 6, cellH = walkSheet.height / 4;
-    const box = getVisibleBox(walkSheet, col * cellW, row * cellH, cellW, cellH);
-    const scale = .53;
-    ctx.save(); ctx.translate(ix, iy + 4);
-    // Mesma escala em todos os quadros; ancorar pelo contorno dos pés.
-    ctx.drawImage(walkSheet, col * cellW, row * cellH, cellW, cellH,
-      -(box.x + box.w / 2) * scale, -(box.y + box.h) * scale, cellW * scale, cellH * scale);
-    ctx.restore(); npc._topo = 126; return true;
-  }
   const cfg = CONFIG.NEXO_04_SPRITE;
   const image = getSprite(cfg.ID);
   if (!image) return false;

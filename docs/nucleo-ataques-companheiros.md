@@ -26,3 +26,7 @@ A nova folha Bio possui nove quadros frontais com ferramenta/faíscas, sem vista
 ## Cenário
 
 O saguão recebeu vias luminosas e um selo procedural no piso, sem alterar objetos, hitboxes, spawns ou portais. As folhas novas de costa, estação e ruínas são referências para as próximas regiões; algumas possuem fundo opaco e perspectiva/recortes heterogêneos, portanto não foram espalhadas como tiles sem validação. O próximo passo é selecionar peças isoladas, limpar fundo sem apagar detalhes, testar âncoras e profundidade e conferir acessibilidade no mapa real.
+
+## Atualização visual da Forma Veloz
+
+Na forma sustentada, a folha nova fornece corrida lateral (espelhada para esquerda) e ataque básico em quatro direções. Frente e costas em movimento continuam com a pose provisória anterior. Q, R, transformação, duração, velocidade e regras de combate não foram modificados. As folhas de Domínio e Maré recebidas variam a identidade e o traje em comparação com o nível 1; ficam arquivadas até recebermos versões fiéis. Veja `docs/prompts-sprites-precisao.md`.

@@ -1,11 +1,15 @@
 import assert from 'node:assert/strict';
-import { drawHubScreenFx } from '../js/engine/hub-screen-fx.js';
+import { drawHubScreenFx, hasHubScreenFx } from '../js/engine/hub-screen-fx.js';
 import { map } from '../js/data/worlds/hub-404/saguao.js';
 const mk = () => {
   const calls = []; const ctx = { calls };
   for (const method of ['save','restore','beginPath','moveTo','lineTo','closePath','clip','stroke','ellipse','translate','rotate','arc','fill']) ctx[method] = (...args) => calls.push([method, ...args]);
   return ctx;
 };
+assert(hasHubScreenFx('hub_saguao', 'metro'), 'anima mesmo enquanto o gate está bloqueado');
+assert(hasHubScreenFx('hub_saguao', 'totem'));
+assert(!hasHubScreenFx('outra_sala', 'metro'));
+assert(!hasHubScreenFx('hub_saguao', 'outro'));
 for (const id of ['totem','metro']) {
   const first = mk(), second = mk();
   drawHubScreenFx(first,id,0); drawHubScreenFx(second,id,1.7);

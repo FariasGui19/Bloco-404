@@ -150,10 +150,10 @@ export const map = {
 
   objects: [
     // Novos móveis ocupam bordas livres; hitboxes pequenas seguem as bases.
-    { id: 'saguao_vaso_novo', tipo: 'planta', x: 15.8, y: 12.2, sprite: 'hub_vaso_novo', scale: .42, anchorY: 1, ajusteY: 2, bloqueia: true, hitbox: { offsetX: -.28, offsetY: -.28, width: .56, height: .56 } },
+    { id: 'saguao_vaso_novo', tipo: 'planta', x: 15.8, y: 12.2, sprite: 'hub_vaso_novo', scale: .42, anchorY: 1, ajusteY: 8, bloqueia: true, hitbox: { offsetX: -.28, offsetY: -.28, width: .56, height: .56 } },
     { id: 'saguao_reciclagem', tipo: 'reciclagem', x: 1.2, y: 8.4, sprite: 'hub_reciclagem', scale: .25, anchorY: 1, bloqueia: true, hitbox: { offsetX: -.18, offsetY: -.18, width: .36, height: .36 } },
     { id: 'saguao_carrinho', tipo: 'carrinho_limpeza', x: 2.0, y: 12.2, sprite: 'hub_carrinho', scale: .25, anchorY: 1, bloqueia: true, hitbox: { offsetX: -.20, offsetY: -.20, width: .40, height: .40 } },
-    { id: 'saguao_bebedouro', tipo: 'bebedouro', x: 16.0, y: 10.0, sprite: 'hub_bebedouro', scale: .40, anchorY: 1, ajusteY: 2, bloqueia: true, hitbox: { offsetX: -.25, offsetY: -.25, width: .50, height: .50 } },
+    { id: 'saguao_bebedouro', tipo: 'bebedouro', x: 16.0, y: 10.0, sprite: 'hub_bebedouro', scale: .50, anchorY: 1, ajusteY: 8, bloqueia: true, hitbox: { offsetX: -.28, offsetY: -.28, width: .56, height: .56 } },
     // Elementos ambientais sem gameplay, em posições de parede/fora das rotas.
     { id: 'hub_holograma', tipo: 'holograma_decorativo', x: 11.7, y: 2.4, bloqueia: false,
       brilho: { cor: '#35E6D3', raio: 1.2, forca: 0.18 } },

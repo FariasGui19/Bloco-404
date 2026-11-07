@@ -72,6 +72,27 @@ for (const [archetype, q, r] of [
   }
 }
 
+// A duração extra é visual: modo rápido mantém o perfil e o dash equipado
+// não altera distância, tempo, custo ou cooldown.
+choose('mare_astral');
+state.player.equippedSuit = null;
+press('q');
+assert.equal(state.player.ability.effect.duration, 0.22);
+assert.equal(state.player.ability.dash.timeLeft, 0.22);
+choose('mare_astral');
+state.player.equippedSuit = 'mare';
+press('q');
+assert.equal(state.player.ability.effect.duration, 0.55);
+assert.equal(state.player.ability.dash.timeLeft, 0.22);
+assert.equal(state.player.energy, 76);
+assert.equal(state.player.ability.cooldowns.passo_corrente, 1.3);
+assert.equal(state.player.ability.dash.speed * state.player.ability.dash.timeLeft, 2.3);
+choose('lamina_dominio_anciao');
+state.player.equippedSuit = 'dominio';
+press('q');
+assert.equal(state.player.ability.effect.duration, 0.8);
+state.player.equippedSuit = null;
+
 // A Maré pode domar a caverna com Q quando está perto e voltada para ela.
 choose('mare_astral');
 const caverna = state.objects.find(o => o.id === 'caverna_alagada');

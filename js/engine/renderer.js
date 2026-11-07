@@ -1145,26 +1145,56 @@ function drawDoor(o) {
 // =====================================================================
 // As folhas novas foram limpas de JPGs com quadriculado embutido. Células
 // inteiras mantêm a escala e os efeitos, sem recortar cada pose separadamente.
-function drawArchetypeSheet(spriteId, col, row, ix, iy, flip = false) {
+function drawArchetypeSheet(spriteId, col, row, ix, iy, flip = false, options = {}) {
   const image = getSprite(spriteId);
   if (!image) return false;
-  const x0 = Math.round(col * image.width / 4), x1 = Math.round((col + 1) * image.width / 4);
-  const y0 = Math.round(row * image.height / 2), y1 = Math.round((row + 1) * image.height / 2);
-  const scale = 0.25;
+  let x0 = Math.round(col * image.width / 4), x1 = Math.round((col + 1) * image.width / 4);
+  // A criatura da folha 10X extrapola a célula; incluir sua silhueta inteira.
+  if (spriteId === 'player_10x_q' && col === 2) { x0 = Math.round(image.width * 0.468); x1 = Math.round(image.width * 0.78); }
+  const rows = options.rows ?? 2;
+  const y0 = Math.round(row * image.height / rows), y1 = Math.round((row + 1) * image.height / rows);
+  // A altura útil do traje (~378 px) deve acompanhar a do civil (~450 px × 0,31).
+  const scale = options.scale ?? 0.37;
   const w = (x1 - x0) * scale, h = (y1 - y0) * scale;
   ctx.save();
-  ctx.translate(ix, iy);
+  const stride = options.walk ? Math.sin(performance.now() * 0.012) : 0;
+  ctx.translate(ix, iy - Math.abs(stride) * 1.8);
   if (flip) ctx.scale(-1, 1);
-  drawSmooth(image, x0, y0, x1 - x0, y1 - y0, -w / 2, -h * 0.98, w, h);
+  if (options.walk) ctx.rotate(stride * 0.025);
+  drawSmooth(image, x0, y0, x1 - x0, y1 - y0, -w / 2, -h * (options.anchor ?? 0.98), w, h);
   ctx.restore();
   return true;
+}
+
+function getVisualEffect(player) {
+  if (player.ability?.scanning > 0 && state.progress.archetype !== 'motor_bio_forja') {
+    const scans = {
+      lamina_dominio_anciao: ['postura_dominio', '#ffd264'],
+      mare_astral: ['senso_corrente', '#53d9f4'],
+      nucleo_dez_forma: ['eco_scan', '#6bff92'],
+    };
+    const scan = scans[state.progress.archetype];
+    if (scan) return { id: scan[0], color: scan[1], duration: 1, timeLeft: 1 - (performance.now() % 1200) / 1200 };
+  }
+  return player.ability?.effect;
 }
 
 function drawPlayerSprite(player, ix, iy) {
   // As folhas de referência têm poses, não quadros sequenciais. Usamos uma
   // pose provisória com os pulsos animados, sem fingir que são animações finais.
-  const effect = player.ability?.effect;
+  const effect = getVisualEffect(player);
   const suit = player.equippedSuit;
+  if (effect && state.progress.archetype === 'nucleo_dez_forma' && ['forma_veloz', 'eco_scan'].includes(effect.id)) {
+    const elapsed = Math.max(0, Math.min(0.999, 1 - effect.timeLeft / effect.duration));
+    const phase = Math.floor(elapsed * 4);
+    // O cone do frame 2 tem quadriculado colorido embutido e invade a célula seguinte.
+    const col = effect.id === 'eco_scan' ? [0, 1, 1, 3][phase] : phase;
+    const id = effect.id === 'forma_veloz' ? 'player_10x_q' : 'player_10x_r';
+    if (drawArchetypeSheet(id, col, 0, ix, iy, player.facing === 'left', { rows: 1, scale: 0.29, anchor: 0.78 })) {
+      player._topo = 120;
+      return true;
+    }
+  }
   const equippedAction = (suit === 'dominio' && ['golpe_ruptura', 'postura_dominio'].includes(effect?.id)) ||
     (suit === 'mare' && ['passo_corrente', 'senso_corrente'].includes(effect?.id));
   if (equippedAction) {
@@ -1260,7 +1290,7 @@ function drawPlayerSprite(player, ix, iy) {
   // ===============================================
   if (suit === 'dominio' || suit === 'mare') {
     const col = player.facing === 'up' ? 2 : player.facing === 'down' ? 0 : 1;
-    if (drawArchetypeSheet(`player_${suit}_lvl1`, col, 0, ix, iy, player.facing === 'left')) {
+    if (drawArchetypeSheet(`player_${suit}_lvl1`, col, 0, ix, iy, player.facing === 'left', { walk: player.moving })) {
       player._topo = 100;
       return true;
     }
@@ -1485,7 +1515,7 @@ function drawCollectible(item, state) {
 function drawAbilityEffects(state) {
   const player = state.player;
   const ability = player.ability;
-  const effect = ability?.effect;
+  const effect = getVisualEffect(player);
   const reveal = ability?.reveal;
   ctx.save();
   if (reveal) {

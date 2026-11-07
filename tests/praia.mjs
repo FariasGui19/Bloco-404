@@ -24,7 +24,7 @@ state.progress.flags = {};
 state.progress.abilities = [];
 assert.equal(await loadMap('ilha_praia_inicial'), true);
 const gates = Object.fromEntries(state.objects.filter(o => o.gate).map(o => [o.id, o]));
-assert.equal(Object.keys(gates).length, 4);
+assert.equal(Object.keys(gates).length, 6);
 assert.equal(map.objects.find(o => o.id === 'trem_dimensional').ajusteY, 68);
 assert.equal(linhaDoTrem().find(o => o.id === 'trem_dimensional').ajusteY, 58, 'ajuste da praia não altera o trem compartilhado');
 

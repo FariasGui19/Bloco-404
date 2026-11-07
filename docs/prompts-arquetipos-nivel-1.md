@@ -170,3 +170,37 @@ Prompts para assets distintos; usar a mesma perspectiva isométrica e iluminaç�
 Os novos trajes de Domínio e Maré nível 1 e as folhas Q/R foram integrados experimentalmente. Os arquivos de origem são JPEGs com quadriculado desenhado; `tools/prepare-archetype-sheets.py` gera PNGs com remoção aproximada do fundo, podendo remover pontos claros e deixar artefatos. As folhas de Q usam sequências fornecidas em uma orientação, espelhadas à esquerda, e não substituem animações direcionais completas; o Q é curto e os frames precisam de teste e ajuste visual. No R do Domínio, usam-se poses direcionais da folha, não uma sequência temporal. No R de Maré, as poses foram usadas como sequência experimental, embora mudem de orientação. Os trajes são poses estáticas também durante a caminhada, pois não foram fornecidos ciclos de andar. Com roupa civil, mantêm-se os efeitos anteriores; as novas folhas de habilidade aparecem com o traje ativo. O T do Núcleo 10X continua reservado para o seletor próprio.
 
 Para roteiros, prompts de expansão da praia, floresta, fauna, backgrounds e interface 10X, ver [visão do arquipélago](visao-expansao-arquipelago.md). Os itens seguem sujeitos à revisão visual em jogo.
+
+## Novas folhas de locomoção necessárias
+
+As artes de traje recebidas mostram poses paradas, não passadas sequenciais. O jogo agora aplica balanço procedural leve ao se deslocar; isso é um recurso provisório, não animação de pernas. Para cada arquétipo (Domínio e Maré primeiro; depois forma do 10X), pedir uma folha por direção e validar cada uma antes de produzir as demais:
+
+```text
+Sprite sheet original para jogo isométrico pixel art Bloco 404. Use a imagem
+anexada como referência obrigatória de personagem e traje nível 1, preservando
+rosto, paleta, silhueta e proporções exatas. Uma única direção de caminhada,
+começando com perfil direito, quatro quadros temporais distintos: contato do
+pé direito, passagem, contato do pé esquerdo, passagem. Pernas e braços devem
+mover-se de verdade, pés no mesmo nível e personagem no mesmo centro e escala.
+Uma figura inteira por célula, sem sobreposição ou corte, fundo PNG com alpha
+verdadeiro, NÃO desenhar quadriculado. Sem texto, sem grade, sem sombras
+embutidas; efeitos e equipamentos separados. Depois repetir para frente,
+costas e esquerda mantendo a mesma escala e sequência.
+```
+
+## Núcleo 10X — interface radial para acabamento futuro
+
+O protótipo implementado usa formas geométricas em CSS, com uma forma disponível e espaços bloqueados, T para abrir/fechar e Enter/E ou clique para confirmar. Q continua rápido, com retorno ao operador; transformação sustentada e outras formas não foram adicionadas. Para futura arte de produção:
+
+```text
+Interface radial original para o Núcleo 10X de Bloco 404, ficção científica
+pixel art sofisticada e legível. Mostrador circular holográfico visto de frente,
+camadas separadas para aro exterior segmentado, aro interno, núcleo central,
+ícone abstrato da forma veloz e marcadores de formas ainda bloqueadas. Energia
+verde-esmeralda e acentos âmbar, mecanismos dimensionais, hierarquia clara,
+contraste forte e detalhes luminosos contidos. Cada peça isolada em PNG com
+transparência real; sem personagem, números fixos, texto, marcas, logotipos,
+quadriculado ou cópia de interfaces de franquias. Não incluir fundos opacos.
+```
+
+As novas folhas 10X também chegaram em JPG com transparência simulada. A remoção é aproximada, podendo perder brilho; o cone da leitura invade a célula vizinha e contém quadriculado colorido, por isso não é usado na animação atual. Pedir originais em PNG com alpha e efeitos independentes, mais direções alinhadas. A arte estática do operador 10X foi armazenada como referência, mas T **não** veste armadura: abre a interface própria.

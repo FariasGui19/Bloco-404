@@ -215,7 +215,7 @@ function updateBioDash(dt) {
 
   if (dash.phaseGateId) {
     const gate = state.objects.find(o => o.id === dash.phaseGateId);
-    if (gate && (player.x - gate.x) * dash.phaseDirection >= 0.72 && !state.progress.flags?.[`gate_${gate.id}`]) {
+    if (gate && (player[dash.phaseAxis ?? 'x'] - gate[dash.phaseAxis ?? 'x']) * dash.phaseDirection >= 0.85 && !state.progress.flags?.[`gate_${gate.id}`]) {
       openGate(gate);
       saveGame();
     }

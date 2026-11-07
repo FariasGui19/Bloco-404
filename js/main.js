@@ -13,6 +13,7 @@ import { loadMap } from './game/map-manager.js';
 import { updatePlayer } from './game/player.js';
 import { updateAbilities } from './game/abilities.js';
 import { toggleArchetypeSuit } from './game/ability-context.js';
+import { openNucleoWheel, isNucleoWheelOpen, updateNucleoWheel } from './ui/nucleo-wheel.js';
 import { updateCamera } from './engine/camera.js';
 
 import { input, initInput, endInputFrame } from './engine/input.js';
@@ -92,6 +93,9 @@ await loadSprites([
   { id: 'player_mare_lvl1', src: 'assets/sprites/player/player-mare-lvl1.png' },
   { id: 'player_mare_q', src: 'assets/sprites/player/player-mare-q.png' },
   { id: 'player_mare_r', src: 'assets/sprites/player/player-mare-r.png' },
+  { id: 'player_10x_lvl1', src: 'assets/sprites/player/player-10x-lvl1.png' },
+  { id: 'player_10x_q', src: 'assets/sprites/player/player-10x-q.png' },
+  { id: 'player_10x_r', src: 'assets/sprites/player/player-10x-r.png' },
   {
     id: 'elevator_door',
     src: 'assets/sprites/objects/elevator-door.png',
@@ -211,6 +215,15 @@ async function update(dt) {
     return;
   }
 
+  if (isNucleoWheelOpen()) {
+    updateNucleoWheel();
+    player.moving = false;
+    player.target = null;
+    input.click = null;
+    updateCamera(dt, player.x, player.y);
+    return;
+  }
+
   if (isElevatorMenuOpen()) {
     updateElevatorMenu();
 
@@ -222,7 +235,12 @@ async function update(dt) {
   } else {
     // T não atua em diálogos, menus, calibração ou durante um dash.
     if (input.pressed.has('t') || input.pressed.has('keyt')) {
-      toggleArchetypeSuit(state.progress, player);
+      if (state.progress.archetype === 'nucleo_dez_forma') {
+        if (openNucleoWheel(state.progress, player)) {
+          player.moving = false; player.target = null;
+          return;
+        }
+      } else toggleArchetypeSuit(state.progress, player);
     }
     const abilityLocksMovement = updateAbilities(dt);
 

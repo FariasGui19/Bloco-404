@@ -188,6 +188,8 @@ export function loadSaveIntoState(slot) {
   state.progress = clone(save.progress);
 
   state.player.facing = save.player?.facing ?? 'down';
+  state.player.nucleoForm = null;
+  if (state.player.ability?.effect?.id === 'transformacao_10x') state.player.ability.effect = null;
 
   state.world.currentMapId = save.world.lastMapId;
   state.world.currentSpawnId = save.world.lastSpawnId;
@@ -205,6 +207,8 @@ export function startNewSave(slot, profileName = null) {
   state.progress = clone(save.progress);
 
   state.player.facing = save.player.facing;
+  state.player.nucleoForm = null;
+  if (state.player.ability?.effect?.id === 'transformacao_10x') state.player.ability.effect = null;
 
   state.world.currentMapId = save.world.lastMapId;
   state.world.currentSpawnId = save.world.lastSpawnId;

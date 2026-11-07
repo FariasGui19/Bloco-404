@@ -1184,6 +1184,14 @@ function drawPlayerSprite(player, ix, iy) {
   // pose provisória com os pulsos animados, sem fingir que são animações finais.
   const effect = getVisualEffect(player);
   const suit = player.equippedSuit;
+  if (state.progress.archetype === 'nucleo_dez_forma' && effect?.id === 'transformacao_10x') {
+    const t = Math.max(0, Math.min(0.999, 1 - effect.timeLeft / effect.duration));
+    const frames = effect.activating ? [0, 1, 1, 2] : [2, 1, 3, 3];
+    if (drawArchetypeSheet('player_10x_q', frames[Math.floor(t * 4)], 0, ix, iy, player.facing === 'left', { rows: 1, scale: 0.29, anchor: 0.78 })) { player._topo = 120; return true; }
+  }
+  if (state.progress.archetype === 'nucleo_dez_forma' && player.nucleoForm === 'forma_veloz') {
+    if (drawArchetypeSheet('player_10x_q', 2, 0, ix, iy, player.facing === 'left', { rows: 1, scale: 0.29, anchor: 0.78, walk: player.moving })) { player._topo = 120; return true; }
+  }
   if (effect && state.progress.archetype === 'nucleo_dez_forma' && ['forma_veloz', 'eco_scan'].includes(effect.id)) {
     const elapsed = Math.max(0, Math.min(0.999, 1 - effect.timeLeft / effect.duration));
     const phase = Math.floor(elapsed * 4);
@@ -1533,7 +1541,7 @@ function drawAbilityEffects(state) {
   if (effect) {
     const x = (player.x - player.y) * HW, y = (player.x + player.y) * HH;
     const t = Math.max(0, 1 - effect.timeLeft / effect.duration);
-    const isScan = ['postura_dominio', 'senso_corrente', 'eco_scan'].includes(effect.id);
+    const isScan = ['postura_dominio', 'senso_corrente', 'eco_scan', 'transformacao_10x'].includes(effect.id);
     ctx.strokeStyle = effect.color;
     ctx.globalAlpha = Math.max(0, 0.85 * (1 - t));
     ctx.lineWidth = 2.5;
@@ -1542,6 +1550,23 @@ function drawAbilityEffects(state) {
     ctx.beginPath();
     ctx.ellipse(x, y, (isScan ? 14 + 65 * t : 20 + 20 * t), (isScan ? 6 + 30 * t : 9 + 9 * t), 0, 0, Math.PI * 2);
     ctx.stroke();
+    if (effect.id === 'transformacao_10x') {
+      // Pulso e fragmentos de eco: feedback temporal sem alterar a câmera.
+      ctx.globalAlpha = Math.sin(Math.PI * t) * 0.85;
+      ctx.lineWidth = 2;
+      for (let ring = 0; ring < 3; ring++) {
+        const radius = 18 + ((t + ring / 3) % 1) * 76;
+        ctx.beginPath(); ctx.ellipse(x, y - 8, radius, radius * 0.42, 0, 0, Math.PI * 2); ctx.stroke();
+      }
+      ctx.fillStyle = '#9cffbc';
+      for (let i = 0; i < 16; i++) {
+        const angle = i * Math.PI * 2 / 16 + t * 2;
+        const r = 22 + 40 * t + (i % 3) * 7;
+        const px = x + Math.cos(angle) * r;
+        const py = y - 28 - (i % 5) * 14 + Math.sin(angle) * r * 0.35;
+        ctx.fillRect(px, py, 3, 3);
+      }
+    }
     if (!isScan) {
       ctx.beginPath();
       ctx.moveTo(x - 14, y - 25);

@@ -44,6 +44,13 @@ for (const [archetype, room, action] of [
   await checkInteractions(true);
   assert(!isGateOpen(obstacle), 'E não substitui Q depois do diagnóstico');
   closeDialogue();
+  if (obstacle.phaseAction) {
+    Object.assign(player, { x: 4.9, y: 4.8, facing: 'left', energy: 100, ability: { cooldowns: {}, dash: null } });
+    press('q');
+    for (let i = 0; i < 20 && player.ability.dash; i++) updateAbilities(0.03);
+    assert(!isGateOpen(obstacle), 'sair pelo mesmo lado não conta travessia');
+    Object.assign(player, { x: 4, y: 4.5, facing: 'right', energy: 100, ability: { cooldowns: {}, dash: null } });
+  }
   press('q');
   if (obstacle.phaseAction) {
     assert(!isGateOpen(obstacle), 'travessia não é concluída ao iniciar Q');
@@ -65,6 +72,16 @@ for (const [archetype, room, action] of [
     press('q');
     for (let i = 0; i < 20 && player.ability.dash; i++) updateAbilities(0.03);
     assert(player.x < reloaded.x - 0.72, 'possível voltar sem remover a barreira');
+    // Posições relatadas pelo jogador junto ao limiar e fora do centro.
+    Object.assign(player, { x: 6.2, y: 4.2, facing: 'left', energy: 100, ability: { cooldowns: {}, dash: null } });
+    press('q');
+    for (let i = 0; i < 20 && player.ability.dash; i++) updateAbilities(0.03);
+    assert(player.x < reloaded.x - 0.85, `retorno do limiar desalinhado: ${player.x}, ${player.y}`);
+    Object.assign(player, { x: 4.9, y: 4.8, facing: 'right', energy: 100, ability: { cooldowns: {}, dash: null } });
+    press('q');
+    for (let i = 0; i < 20 && player.ability.dash; i++) updateAbilities(0.03);
+    assert(player.x > reloaded.x + 0.85, `ida do limiar desalinhado: ${player.x}, ${player.y}`);
+
   }
   player.x = 8; player.y = 4;
   const collectible = getNearestCollectible();

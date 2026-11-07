@@ -4,6 +4,9 @@ import { state } from './state.js';
 import { checkGate, isGateOpen, openGate } from './gates.js';
 import { saveGame } from './save.js';
 import { ARCHETYPE_KITS } from '../data/archetype-kits.js';
+import { CONFIG } from '../config.js';
+import { canStandAt } from './collision.js';
+import { getCurrentMap } from './map-manager.js';
 
 export const POWER_PROFILES = {
   golpe_ruptura: { cost: 24, cooldown: 1.4, color: '#ffd264', duration: 0.55 },
@@ -95,7 +98,7 @@ export function tryArchetypePower(id, showMessage) {
     const axis = o.phaseAxis ?? 'x', cross = axis === 'x' ? 'y' : 'x';
     const delta = o[axis] - player[axis];
     return Math.abs(player[cross] - o[cross]) < (o.phaseLane ?? 0.38) &&
-      Math.abs(delta) < 2.05 && Math.abs(delta) >= 0.65 && delta * direction[axis] > 0;
+      Math.abs(delta) < 2.05 && (Math.abs(delta) < 0.75 || delta * direction[axis] > 0);
   });
   if (id === 'passo_corrente' || id === 'forma_veloz') {
     const target = nearestGate(2.6, o => {
@@ -108,15 +111,27 @@ export function tryArchetypePower(id, showMessage) {
     }
   }
   const phaseAxis = phaseGate?.phaseAxis ?? 'x';
-  const phaseDirection = phaseGate ? Math.sign(phaseGate[phaseAxis] - player[phaseAxis]) : 0;
+  const phaseDelta = phaseGate ? phaseGate[phaseAxis] - player[phaseAxis] : 0;
+  // Se já está tocando a barreira (inclusive saves antigos), deixe sair para
+  // qualquer lado conforme a direção; fora dela, exige apontar para o gate.
+  const phaseDirection = phaseGate ? (Math.abs(phaseDelta) < 0.75 ? Math.sign(direction[phaseAxis]) : Math.sign(phaseDelta)) : 0;
   const phaseDistance = phaseGate ? Math.abs(phaseGate[phaseAxis] - player[phaseAxis]) + 1 : profile.distance;
   player.ability.active = id;
   player.ability.dash = {
     directionX: phaseGate ? (phaseAxis === 'x' ? phaseDirection : 0) : direction.x, directionY: phaseGate ? (phaseAxis === 'y' ? phaseDirection : 0) : direction.y,
     timeLeft: profile.duration, speed: phaseDistance / profile.duration,
     phaseGateId: phaseGate?.id ?? null, phaseDirection, phaseAxis,
+    phaseCrosses: phaseDelta * phaseDirection > 0,
     mode: 'quick',
   };
+  if (phaseGate && !phaseGate.phaseLane) {
+    // O corredor da câmara tem um tile. Corrigir a deriva perpendicular só
+    // quando o ponto alinhado é válido, sem atravessar paredes por teleporte.
+    const cross = phaseAxis === 'x' ? 'y' : 'x';
+    const x = cross === 'x' ? phaseGate.x : player.x;
+    const y = cross === 'y' ? phaseGate.y : player.y;
+    if (canStandAt(getCurrentMap(), x, y, CONFIG.PLAYER_RADIUS, player)) player[cross] = phaseGate[cross];
+  }
   showMessage(id === 'forma_veloz' ? 'PULSO VELOZ' : 'PASSO DE CORRENTE');
   return true;
 }

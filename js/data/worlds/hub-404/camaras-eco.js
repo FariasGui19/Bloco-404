@@ -8,6 +8,8 @@ const variants = {
     scan: 'VEIOS DE FREQUÊNCIA REVELAM O PONTO FRÁGIL.',
     blocked: 'O LACRE EXIGE A LÂMINA DO DOMÍNIO.',
     notice: 'LEIA A FREQUÊNCIA COM R, APONTE PARA O LACRE E USE Q.',
+    archive: ['ARQUIVO DE FREQUÊNCIA: O LACRE VIBRA EM PADRÕES GEOMÉTRICOS.', 'A LEITURA REVELA A FISSURA. UM GOLPE CONCENTRADO ROMPE O LACRE.'],
+    details: [[1, 1, 0, 3], [8, 2, 2, 1], [8, 6, 0, 3]],
   },
   mare: {
     id: 'hub_camara_mare', nome: 'CÂMARA DE FLUXO', cor: '#4dd8e7',
@@ -15,7 +17,9 @@ const variants = {
     objeto: 'FLUXO CONTIDO', col: 0, row: 2,
     scan: 'CORRENTES PRESAS INDICAM A SAÍDA DO FLUXO.',
     blocked: 'A PRESSÃO EXIGE CONTROLE DE CORRENTE.',
-    notice: 'LEIA A CORRENTE COM R, APONTE PARA A PASSAGEM E USE Q.',
+    notice: 'USE R. NO CENTRO DO CORREDOR, APONTE PARA O OUTRO LADO E USE Q.',
+    archive: ['ARQUIVO HIDRODINÂMICO: UMA CORRENTE ESTÁ PRESA NO ANEL.', 'SINTA O FLUXO COM R. O PASSO DE CORRENTE ATRAVESSA SEM DESTRUIR O ANEL.'],
+    details: [[1, 1, 3, 1], [8, 2, 3, 1], [8, 6, 0, 1]],
   },
   nucleo: {
     id: 'hub_camara_nucleo', nome: 'CÂMARA DE ECO CINÉTICO', cor: '#70f995',
@@ -23,7 +27,9 @@ const variants = {
     objeto: 'MALHA CINÉTICA', col: 2, row: 2,
     scan: 'A MALHA REVELA UMA JANELA DE ACELERAÇÃO.',
     blocked: 'A MALHA EXIGE UMA ASSINATURA CINÉTICA COMPATÍVEL.',
-    notice: 'LEIA O ECO COM R, APONTE PARA A MALHA E USE Q.',
+    notice: 'USE R. NO CENTRO DO CORREDOR, APONTE PARA O OUTRO LADO E USE Q.',
+    archive: ['ARQUIVO CINÉTICO: A MALHA REAGE A UMA ASSINATURA VELOZ.', 'USE R PARA LOCALIZAR A JANELA. Q ATRAVESSA; A ESTRUTURA PERMANECE INTACTA.'],
+    details: [[1, 1, 3, 2], [8, 2, 0, 1], [8, 6, 3, 2]],
   },
 };
 
@@ -61,7 +67,16 @@ export function buildEchoChamber(key) {
         scanFlag, scanMessage: v.scan, actionMessage: v.notice,
         falhaDiagnostico: [v.notice], falha: [v.blocked],
       },
-    }],
+    },
+      // Registros e luzes não bloqueantes enriquecem a cena sem mudar o puzzle.
+      { id: `arquivo_${key}`, nome: 'REGISTRO DE ECO', tipo: 'painel', x: 2, y: 2,
+        sprite: 'hub_props', frame: { col: 1, row: 3 }, scale: 0.30, anchorY: 0.94,
+        bloqueia: false, brilho: { cor: v.cor, raio: 0.8, forca: 0.23 },
+        interacao: { label: 'LER REGISTRO', distancia: 1.3, speaker: v.nome, dialogue: v.archive } },
+      ...v.details.map(([x, y, col, row], i) => ({ id: `cenario_${key}_${i}`, tipo: 'decoracao', x, y,
+        sprite: 'hub_props', frame: { col, row }, scale: 0.24, anchorY: 0.94, bloqueia: false,
+        brilho: { cor: v.cor, raio: 0.7, forca: 0.16 } })),
+    ],
     collectibles: [{
       id: 'fragmento_sincronizacao', tipo: 'fragmento', x: 8, y: 4,
       label: 'COLETAR FRAGMENTO DE SINCRONIZAÇÃO', interactionDistance: 1.25,

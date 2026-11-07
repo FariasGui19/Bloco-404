@@ -109,6 +109,7 @@ export const state = {
     maxEnergy: 100,
      // NOVO: Controla qual traje o player está usando visualmente
     equippedSuit: null, // 'bio_forja', etc.
+    nucleoForm: null, // estado temporário, não salvo
 
     ability: {
       active: null,

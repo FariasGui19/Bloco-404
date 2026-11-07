@@ -215,7 +215,7 @@ function updateBioDash(dt) {
 
   if (dash.phaseGateId) {
     const gate = state.objects.find(o => o.id === dash.phaseGateId);
-    if (gate && (player[dash.phaseAxis ?? 'x'] - gate[dash.phaseAxis ?? 'x']) * dash.phaseDirection >= 0.85 && !state.progress.flags?.[`gate_${gate.id}`]) {
+    if (gate && dash.phaseCrosses && (player[dash.phaseAxis ?? 'x'] - gate[dash.phaseAxis ?? 'x']) * dash.phaseDirection >= 0.85 && !state.progress.flags?.[`gate_${gate.id}`]) {
       openGate(gate);
       saveGame();
     }
@@ -292,6 +292,9 @@ export function updateAbilities(dt) {
       ability.messageTimer = 0;
     }
   }
+
+  // A transição de forma é uma ação curta e não permite interromper com Q/T.
+  if (ability.effect?.id === 'transformacao_10x') return true;
 
   // Dash ativo tem prioridade.
   if (ability.dash) {

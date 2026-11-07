@@ -65,6 +65,11 @@ export const map = {
   actors: [],
 
   objects: [
+    { id: 'registro_bio_carga', nome: 'REGISTRO DE MANUTENÇÃO', tipo: 'painel', x: 2, y: 2,
+      sprite: 'hub_props', frame: { col: 0, row: 1 }, scale: 0.28, anchorY: 0.94,
+      bloqueia: false, brilho: { cor: '#35E6D3', raio: 0.8, forca: 0.20 },
+      interacao: { label: 'LER REGISTRO', distancia: 1.3, speaker: 'ARQUIVO DE CARGA',
+        dialogue: ['A GRADE PROTEGE O FRAGMENTO APÓS UMA FALHA NO SETOR.', 'RECONFIGURE O PAINEL COM R E USE Q PARA ATRAVESSAR O CAMPO.'] } },
     {
       id: 'caixa_carga_01',
       tipo: 'caixa',

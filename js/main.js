@@ -154,6 +154,10 @@ await loadSprites([
   },
   { id: 'beach_floor', src: 'assets/sprites/tiles/beach-floor.png' },
   { id: 'beach_shore', src: 'assets/sprites/tiles/beach-shore.png' },
+  { id: 'visao_dominio', src: 'assets/sprites/backgrounds/camara-dominio-visao.jpg' },
+  { id: 'visao_mare', src: 'assets/sprites/backgrounds/camara-mare-visao.jpg' },
+  { id: 'visao_nucleo', src: 'assets/sprites/backgrounds/camara-nucleo-visao.jpg' },
+  { id: 'beach_novas_artes', src: 'assets/sprites/tiles/beach-novas-artes.png' },
   { id: 'beach_props', src: 'assets/sprites/objects/beach-props.png' },
 ]);
 

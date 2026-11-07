@@ -151,7 +151,15 @@ function updateAbilityHud(state) {
   const message = state.player.ability?.lastMessage ?? '';
   setText('abilityMessage', message);
 }
-function updateQuestHud(state) {
+function updateQuestHud(state, map) {
+  if (map.id === 'ilha_enseada_ecos') {
+    const flags = state.progress?.flags ?? {};
+    const count = ['mar', 'pedra', 'mata'].filter(id => flags[`collected_enseada_rastro_${id}`]).length;
+    el.questHud?.classList.toggle('visible', true);
+    setText('questHudTitle', 'EXPLORAÇÃO • ENSEADA DOS ECOS');
+    setText('questHudDescription', count === 3 ? 'Três vestígios registrados. Enseada mapeada.' : `Investigue os vestígios da enseada: ${count}/3. Use E perto de cada eco.`);
+    return;
+  }
   const quest = state.progress?.activeQuest;
   const shouldShow = Boolean(quest && quest.status === 'active');
 
@@ -215,7 +223,7 @@ export function updateHud(map, state) {
 
   updateModuleHud(state);
   updateAbilityHud(state);
-  updateQuestHud(state);
+  updateQuestHud(state, map);
   updateBackgroundCalibrationHud();
 
   const active = state.interaction.active;

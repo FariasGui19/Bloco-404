@@ -335,6 +335,7 @@ export const map = {
   spawnPoints: {
     inicio: { x: 8.0, y: 7.5 },
     vindo_do_trem: { x: 8.0, y: 5.5 },
+    vindo_da_enseada: { x: 11.5, y: 10.5 },
   },
 
   corChao: '#e6c280',
@@ -346,6 +347,7 @@ export const map = {
   aguaPraia: grid.map(linha => linha.join('')),
 
   objects: [
+    { id: 'marco_enseada', tipo: 'decoracao', x: 12, y: 11, routeMarker: 'ENSEADA', bloqueia: false },
     ...linhaDoTrem({
       trilho: { larguraPx: 390, ajusteX: 9, ajusteY: 31.5 },
       trem: { ajusteY: 68 }, // ajuste local para aproximar as rodas do trilho
@@ -453,6 +455,7 @@ export const map = {
   ],
 
   portals: [
+    { id: 'trilha_enseada', tipo: 'door', x: 12, y: 11, label: 'EXPLORAR ENSEADA DOS ECOS', interactionDistance: 1.4, destino: { mapId: 'ilha_enseada_ecos', spawnId: 'vindo_da_praia' }, transition: 'fade' },
     {
       id: 'voltar_trem',
       tipo: 'train',

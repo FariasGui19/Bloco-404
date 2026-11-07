@@ -70,7 +70,7 @@ export function buildEchoChamber(key) {
     },
       // Registros e luzes não bloqueantes enriquecem a cena sem mudar o puzzle.
       { id: `arquivo_${key}`, nome: 'REGISTRO DE ECO', tipo: 'painel', x: 2, y: 2,
-        sprite: 'hub_props', frame: { col: 1, row: 3 }, scale: 0.30, anchorY: 0.94,
+        sprite: 'hub_props', sceneSprite: `visao_${key}`, frame: { col: 1, row: 3 }, scale: 0.30, anchorY: 0.94,
         bloqueia: false, brilho: { cor: v.cor, raio: 0.8, forca: 0.23 },
         interacao: { label: 'LER REGISTRO', distancia: 1.3, speaker: v.nome, dialogue: v.archive } },
       ...v.details.map(([x, y, col, row], i) => ({ id: `cenario_${key}_${i}`, tipo: 'decoracao', x, y,

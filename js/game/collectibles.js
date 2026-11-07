@@ -77,6 +77,12 @@ export function collectItem(item) {
 
   state.progress.flags[`collected_${item.id}`] = true;
 
+  // Descobertas opcionais da Enseada não substituem a missão ativa.
+  const tracks = ['enseada_rastro_mar', 'enseada_rastro_pedra', 'enseada_rastro_mata'];
+  if (tracks.includes(item.id) && tracks.every(id => state.progress.flags[`collected_${id}`])) {
+    state.progress.flags.enseada_ecos_mapeada = true;
+  }
+
   // Missão Calibração de Eco.
   if (item.id === 'fragmento_sincronizacao') {
     state.progress.flags.fragmentoSincronizacaoColetado = true;
@@ -93,7 +99,9 @@ export function collectItem(item) {
   openDialogue({
     speaker: item.speaker ?? 'ARQUIVO DE ECO',
 
-    dialogue: item.dialogue ?? [
+    dialogue: item.id.startsWith('enseada_rastro_') && state.progress.flags.enseada_ecos_mapeada
+      ? [...(item.dialogue ?? []), 'TRÊS VESTÍGIOS REGISTRADOS. ENSEADA MAPEADA.']
+      : item.dialogue ?? [
       `${item.nome ?? 'ITEM'} COLETADO.`,
     ],
   });

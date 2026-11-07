@@ -144,6 +144,12 @@ export const map = {
   ],
 
   objects: [
+    // Elementos ambientais sem gameplay, em posições de parede/fora das rotas.
+    { id: 'hub_holograma', tipo: 'holograma_decorativo', x: 11.7, y: 2.4, bloqueia: false,
+      brilho: { cor: '#35E6D3', raio: 1.2, forca: 0.18 } },
+    { id: 'hub_luz_a', tipo: 'luminaria_decorativa', x: 5.5, y: 0.75, sprite: 'hub_props', frame: { col: 3, row: 2 }, scale: .36, anchorY: .94, bloqueia: false, brilho: { cor: '#35E6D3', raio: .8, forca: .16 } },
+    { id: 'hub_luz_b', tipo: 'luminaria_decorativa', x: 13.2, y: 0.75, sprite: 'hub_props', frame: { col: 3, row: 2 }, scale: .36, anchorY: .94, bloqueia: false, brilho: { cor: '#35E6D3', raio: .8, forca: .16 } },
+    { id: 'hub_painel_decor', tipo: 'painel_decorativo', x: 0.75, y: 7.2, sprite: 'hub_props', frame: { col: 0, row: 2 }, scale: .32, anchorY: .95, bloqueia: false, espelhar: true },
     {
       id: 'rec',
       tipo: 'recepcao',

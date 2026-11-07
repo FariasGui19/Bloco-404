@@ -58,5 +58,11 @@ Q rápido: transição curta, executa o movimento e retorna; forma sustentada: a
 - Câmara de Maré e 10X agora mantêm obstáculo sólido e visível e registram a travessia somente após sair pelo outro lado; ainda usam arte provisória de pedra/props e um alinhamento automático curto para o corredor. Substituir por fluxo e malha animados, telegráficos e revisados visualmente.
 - Criar combate básico e decidir novo comando de movimento antes de trocar o clique esquerdo; adicionar NPCs e tutorial após existirem hitboxes, vida, dano, inimigos, recuperação e testes.
 - Criar roteiro e layouts específicos mais ricos para as quatro salas, com pistas, falas e missões, e testar retornos/diálogos/saves.
-- Planejar interface radial 10X e evolução de formas; não está implementada.
+- Evoluir o protótipo da interface radial 10X com novas formas e transformação sustentada, quando regras e arte estiverem definidas.
 - Testar os novos trajes e frames no navegador: os JPEGs tinham quadriculado embutido, a limpeza automática é aproximada, há efeitos recortados na borda e poses com orientações inconsistentes; pedir PNGs originais transparentes e folhas direcionais bem alinhadas para o acabamento.
+
+## Atualização — rotas Maré/10X e interface
+
+Duas pontes alternativas da Praia Inicial levam da ilha inicial à ilha leste e depois à ilha central/farol. Maré e 10X atravessam com Q e retornam pelo mesmo caminho; os obstáculos permanecem no lugar e sólidos para caminhada. Ainda usam props provisórios e requerem revisão visual, arte de corrente/malha e refinamento das missões. As rotas antigas de Bio e Domínio foram preservadas; soluções próprias para que ambos também superem os obstáculos além da primeira ilha continuam pendentes.
+
+A roda 10X agora tem um protótipo funcional em CSS e uma única forma selecionável, sem novas habilidades concedidas ou estado de transformação sustentada. O T abre a roda; Enter/E ou clique confirmam, Esc/T cancelam. A forma veloz continua rápida e retorna ao operador. Custos e regras da evolução sustentada permanecem em aberto. A roupa de referência 10X não é um toggle de traje.

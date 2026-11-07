@@ -2167,3 +2167,23 @@ body.in-menu #controls {
 #backgroundCalibrationHud.visible {
   display: block;
 }
+/* Núcleo 10X — seletor radial original; uma única forma está disponível. */
+#nucleoWheel { position: fixed; inset: 0; z-index: 90; display: none; align-items: center; justify-content: center; background: rgba(3, 12, 14, .77); backdrop-filter: blur(5px); color: #d9ffec; font-family: monospace; }
+#nucleoWheel.visible { display: flex; }
+.nucleo-panel { text-align: center; width: min(500px, 95vw); padding: 22px; border: 1px solid #357d59; border-radius: 18px; background: radial-gradient(circle at 50% 40%, #123e31, #071619 74%); box-shadow: 0 0 65px #2aff9255, inset 0 0 35px #39ff8014; }
+.nucleo-panel h2 { letter-spacing: .3em; margin: 6px 0; color: #c7ffe0; }
+.nucleo-panel h2 span, .nucleo-panel strong { color: #75ff9d; }
+.nucleo-eyebrow, .nucleo-help { font-size: 10px; letter-spacing: .15em; color: #9abdae; }
+.nucleo-orbit { position: relative; width: 290px; height: 290px; max-width: 65vw; max-height: 65vw; margin: 10px auto; }
+.nucleo-ring { position: absolute; border-radius: 50%; pointer-events: none; }
+.ring-outer { inset: 10%; border: 2px dashed #5aff9c88; box-shadow: 0 0 20px #30f88055, inset 0 0 20px #30f88044; animation: nucleo-spin 18s linear infinite; }
+.ring-inner { inset: 25%; border: 2px solid #7aff9b99; box-shadow: 0 0 12px #54ff93aa; }
+.nucleo-core { position: absolute; inset: 35%; display: flex; flex-direction: column; justify-content: center; border-radius: 50%; background: #081d16; border: 3px double #8affab; box-shadow: 0 0 20px #71ff9788; }
+.nucleo-core span { font-size: 30px; font-weight: bold; color: #a0ffbd; text-shadow: 0 0 16px #44ff88; }
+.nucleo-core small, .nucleo-form small { font-size: 8px; letter-spacing: .06em; }
+.nucleo-form { position: absolute; left: 50%; top: 0; transform: translateX(-50%); width: 94px; height: 75px; color: #d8ffe5; border: 1px solid #9dffb3; border-radius: 14px; background: #123e2b; cursor: pointer; box-shadow: 0 0 18px #49ff8788; }
+.nucleo-form span, .nucleo-form b, .nucleo-form small { display: block; }.nucleo-form span { font-size: 22px; color: #79ff9e; }.nucleo-form b { font-size: 9px; }.nucleo-form:hover, .nucleo-form:focus-visible { outline: 2px solid #e6ffd9; background: #246244; }
+.nucleo-locked { position: absolute; color: #47695c; font-size: 23px; }.lock-a { top: 45%; left: 4%; }.lock-b { top: 45%; right: 4%; }.lock-c { bottom: 2%; left: 47%; }
+.nucleo-panel p { font-size: 12px; line-height: 1.7; }.nucleo-panel p small { color: #a2c6b2; }
+@keyframes nucleo-spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .ring-outer { animation: none; } }

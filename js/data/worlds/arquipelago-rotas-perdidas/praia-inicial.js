@@ -158,6 +158,9 @@ ponte(14, 7, 23, 8, 'B');         // A -> B
 ponte(7, 12, 8, 23, 'b');         // A -> C
 ponte(30, 15, 31, 24, 'b');       // B -> D
 ponte(15, 31, 23, 32, 'B');       // C -> D
+// Rotas alternativas de travessia, separadas das pontes Bio/Domínio.
+ponte(14, 11, 23, 12, 'B');
+ponte(36, 14, 37, 25, 'b');
 ponte(30, 37, 31, 42, 'b');       // D -> F
 
 // Água em camadas.
@@ -244,12 +247,13 @@ const gate = (id, x, y, col, row, larguraPx, cfg) =>
     bloqueia: true,
     hitbox: cfg.hitbox,
     // renderer.js e collision.js já respeitam hideWhenFlag.
-    hideWhenFlag: `gate_${id}`,
+    ...(cfg.phaseActions ? { phaseActions: cfg.phaseActions, phaseAxis: cfg.phaseAxis, phaseLane: 0.8 } : { hideWhenFlag: `gate_${id}` }),
     interacao: { label: cfg.label, distancia: 2.6 },
     ...(cfg.moduleSystem ? { moduleSystem: cfg.moduleSystem } : {}),
     gate: {
       anyOf: cfg.anyOf,
       requiredAction: cfg.requiredAction,
+      actionMessage: cfg.actionMessage,
       requiresFlag: cfg.requiresFlag,
       diagnosisArchetype: cfg.diagnosisArchetype,
       falhaDiagnostico: cfg.falhaDiagnostico,
@@ -385,6 +389,24 @@ export const map = {
       anyOf: [{ habilidade: 'golpe_ruptura' }, { arquetipo: 'lamina_dominio_anciao' }],
       falha: ['A ROCHA É MUITO DENSA.', 'FALTA FORÇA BRUTA PARA QUEBRÁ-LA.'],
       sucesso: ['A ROCHA SE PARTE EM PEDAÇOS.', 'CAMINHO LIBERADO.'],
+    }),
+
+    // Alternativas para Maré e 10X, acessíveis sem abrir a rocha ou o teleférico.
+    gate('travessia_mare_eco', 18, 11, 0, 2, 85, {
+      nome: 'CORRENTE DE ECO', label: 'ATRAVESSAR COM Q', hitbox: HIT_PONTE_H,
+      phaseActions: ['passo_corrente', 'forma_veloz'], phaseAxis: 'x', requiredAction: 'travessia',
+      actionMessage: 'APONTE PARA A CORRENTE E USE [Q] PARA ATRAVESSAR.',
+      anyOf: [{ arquetipo: 'mare_astral' }, { arquetipo: 'nucleo_dez_forma' }],
+      falha: ['A CORRENTE EXIGE UM MOVIMENTO FLUIDO OU UMA FORMA VELOZ.'],
+      sucesso: ['TRAVESSIA REGISTRADA.'],
+    }),
+    gate('passagem_mare_eco', 36, 19, 2, 2, 85, {
+      nome: 'PASSAGEM DE ECO', label: 'ATRAVESSAR COM Q', hitbox: HIT_PONTE_V,
+      phaseActions: ['passo_corrente', 'forma_veloz'], phaseAxis: 'y', requiredAction: 'travessia',
+      actionMessage: 'APONTE PARA A PASSAGEM E USE [Q] PARA ATRAVESSAR.',
+      anyOf: [{ arquetipo: 'mare_astral' }, { arquetipo: 'nucleo_dez_forma' }],
+      falha: ['A PASSAGEM EXIGE UM MOVIMENTO FLUIDO OU UMA FORMA VELOZ.'],
+      sucesso: ['TRAVESSIA REGISTRADA.'],
     }),
 
     // A -> C (ponte no eixo Y, colunas 7-8)

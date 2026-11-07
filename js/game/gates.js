@@ -78,7 +78,7 @@
   export function applyGateOpenState(object) {
     object.aberto = true;
     // Barreiras de travessia permanecem visíveis e sólidas para caminhada.
-    if (object.phaseAction) return;
+    if (object.phaseAction || object.phaseActions) return;
     object.bloqueia = false;
     object.hitbox = { offsetX: 0, offsetY: 0, width: 0, height: 0 };
     object.oculto = object.gate?.manterVisivel ? false : true;

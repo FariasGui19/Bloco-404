@@ -5,7 +5,10 @@ const terrestrial = tile => tile != null && 'SMT'.includes(tile);
 const tileAt = (map, x, y) => map.aguaPraia?.[Math.floor(y)]?.[Math.floor(x)];
 export function habitatAllows(map, species, x, y) {
   const tile = tileAt(map, x, y);
-  return species === 'peixes' ? aquatic(tile) : terrestrial(tile);
+  if (species !== 'peixes') return terrestrial(tile);
+  // A arte do cardume é mais larga que o ponto lógico: não deixe os peixes
+  // desenharem sobre uma ponte ou na areia ao seguir a borda da água.
+  return [-.65, 0, .65].every(dx => [-.65, 0, .65].every(dy => aquatic(tileAt(map, x + dx, y + dy))));
 }
 export function createCoastalFauna(map) {
   return (map.fauna ?? []).filter(a => habitatAllows(map, a.species, a.x, a.y)).map((a, i) => ({

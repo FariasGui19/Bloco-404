@@ -14,6 +14,7 @@ import { getFrame } from './sprite-clean.js';
 import { drawAmbientBack, drawAmbientFront } from './ambient.js';
 import { isDebugEnabled, drawDebugWorld } from '../game/debug.js';
 import { ACTION_SPRITES } from '../data/action-sprites.js';
+import { drawHubScreenFx } from './hub-screen-fx.js';
 import { getBasicAttackPose } from '../data/basic-attack-poses.js';
 import { state } from '../game/state.js';
 
@@ -1191,25 +1192,6 @@ function drawMapObject(object, state) {
     ctx.ellipse(x, y + 3, 30, 9, 0, 0, Math.PI * 2); ctx.fill(); ctx.restore();
   }
 
-  // A animação do portal só entra depois da calibração; gate e hitbox não mudam.
-  if (object.id === 'metro' && state.world?.currentMapId === 'hub_saguao' && state.progress.flags?.metroCalibrado) {
-    const image = getSprite('hub_portal_animado');
-    if (image) {
-      const x = (object.x - object.y) * HW, y = (object.x + object.y) * HH + (object.ajusteY ?? 0) + 5;
-      const col = Math.floor(performance.now() / 230) % 5;
-      ctx.drawImage(image, col * 170, 0, 170, 192, x - 76, y - 172, 152, 172);
-      return;
-    }
-  }
-  if (object.id === 'totem' && state.world?.currentMapId === 'hub_saguao') {
-    const image = getSprite('hub_painel_animado');
-    if (image) {
-      const x = (object.x - object.y) * HW, y = (object.x + object.y) * HH + (object.ajusteY ?? 0) - 5;
-      const col = Math.floor(performance.now() / 180) % 8;
-      ctx.drawImage(image, col * 160, 0, 160, 176, x - 44, y - 96.8, 88, 96.8);
-      return;
-    }
-  }
   if (object.tipo === 'holograma_decorativo') { drawHubHologram(object); return; }
   if (object.porta) { drawDoor(object); return; }
   if (object.routeMarker) {
@@ -1254,6 +1236,10 @@ function drawMapObject(object, state) {
   const ix = (object.x - object.y) * HW;
   const iy = (object.x + object.y) * HH;
 
+  if (state.world?.currentMapId === 'hub_saguao' && ['saguao_vaso_novo', 'saguao_bebedouro'].includes(object.id)) {
+    ctx.save(); ctx.fillStyle = 'rgba(0,0,0,.33)'; ctx.beginPath();
+    ctx.ellipse(ix, iy + (object.ajusteY ?? 0) + 1, 14, 5, 0, 0, Math.PI * 2); ctx.fill(); ctx.restore();
+  }
   ctx.save();
   if (object.filter) ctx.filter = object.filter;
   ctx.translate(ix + (object.ajusteX ?? 0), iy + (object.ajusteY ?? 0));
@@ -1264,11 +1250,18 @@ function drawMapObject(object, state) {
     -drawW / 2, -drawH * (object.anchorY ?? sheet.FEET_ANCHOR_Y),
     drawW, drawH
   );
+  // Desenhar o movimento apenas dentro das superfícies do sprite fixo.
+  if (state.world?.currentMapId === 'hub_saguao' && (object.id === 'totem' || (object.id === 'metro' && state.progress.flags?.metroCalibrado))) {
+    ctx.save(); ctx.translate(-drawW / 2, -drawH * (object.anchorY ?? sheet.FEET_ANCHOR_Y));
+    ctx.scale(drawW / frameW, drawH / frameH);
+    drawHubScreenFx(ctx, object.id, performance.now() / 1000);
+    ctx.restore();
+  }
   ctx.filter = 'none';
   ctx.restore();
   if (object.id === 'hub_painel_decor') {
     // Dados e varredura sobre o mostrador já existente, apenas decoração.
-    ctx.save(); ctx.translate(ix, iy); ctx.transform(1, .22, 0, 1, 0, 0);
+    ctx.save(); ctx.translate(ix, iy); ctx.transform(1, -.22, 0, 1, 0, 0);
     ctx.fillStyle = 'rgba(4,62,69,.9)'; ctx.textAlign = 'center'; ctx.font = 'bold 6px monospace';
     ctx.fillText('ROTAS', 0, -64); ctx.fillRect(-9, -58, 18, 1);
     ctx.fillRect(-9, -53, 13, 1); ctx.fillRect(-9, -49, 16, 1);
@@ -1686,11 +1679,18 @@ function drawNexoSprite(npc, ix, iy) {
   }
   const walkSheet = getSprite('hub_nexo_walk');
   if (npc.moving && walkSheet && state.world?.currentMapId === 'hub_saguao') {
-    const row = npc.facing === 'up' ? 2 : npc.facing === 'down' ? 0 : 1;
-    const col = Math.floor(performance.now() / 150) % 5;
+    // As quatro linhas da nova folha têm alpha real e direções próprias.
+    const row = { down: 0, right: 1, up: 2, left: 3 }[npc.facing] ?? 0;
+    const tick = Math.floor(performance.now() / 150);
+    // A linha frontal vira de perfil nos últimos quadros; não os usar de frente.
+    const col = row === 0 ? [0, 1, 2, 1][tick % 4] : tick % 6;
+    const cellW = walkSheet.width / 6, cellH = walkSheet.height / 4;
+    const box = getVisibleBox(walkSheet, col * cellW, row * cellH, cellW, cellH);
+    const scale = .53;
     ctx.save(); ctx.translate(ix, iy + 4);
-    if (npc.facing === 'left') ctx.scale(-1, 1);
-    ctx.drawImage(walkSheet, col * 128, row * 192, 128, 192, -44, -132, 88, 132);
+    // Mesma escala em todos os quadros; ancorar pelo contorno dos pés.
+    ctx.drawImage(walkSheet, col * cellW, row * cellH, cellW, cellH,
+      -(box.x + box.w / 2) * scale, -(box.y + box.h) * scale, cellW * scale, cellH * scale);
     ctx.restore(); npc._topo = 126; return true;
   }
   const cfg = CONFIG.NEXO_04_SPRITE;

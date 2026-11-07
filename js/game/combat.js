@@ -4,10 +4,10 @@ import { canStandAt } from './collision.js';
 import { CONFIG } from '../config.js';
 
 export const BASIC_ATTACKS = Object.freeze({
-  motor_bio_forja: { color: '#ffb45c', label: 'IMPULSO', range: 1.8, cooldown: .48 },
-  lamina_dominio_anciao: { color: '#ffd465', label: 'LÂMINA', range: 1.8, cooldown: .48 },
-  mare_astral: { color: '#73e9fa', label: 'MARÉ', range: 1.8, cooldown: .48 },
-  nucleo_dez_forma: { color: '#8cff9e', label: 'PULSO', range: 1.8, cooldown: .48 },
+  motor_bio_forja: { color: '#ffb45c', label: 'IMPULSO', range: 1.8, cooldown: .48, strain: { hits: 4, extra: .5, label: 'SOBRECARGA BIO' } },
+  lamina_dominio_anciao: { color: '#ffd465', label: 'LÂMINA', range: 1.8, cooldown: .48, strain: { hits: 3, extra: .65, label: 'ABERTURA DA LÂMINA' } },
+  mare_astral: { color: '#73e9fa', label: 'MARÉ', range: 1.8, cooldown: .48, strain: { hits: 4, extra: .45, label: 'DISPERSÃO DA MARÉ' } },
+  nucleo_dez_forma: { color: '#8cff9e', label: 'PULSO', range: 1.8, cooldown: .48, strain: { hits: 5, extra: .55, label: 'INSTABILIDADE DO NÚCLEO' } },
 });
 export function createTrainingTargets(map) {
   return (map.trainingTargets ?? []).map(item => ({ ...item, x: item.x + .5, y: item.y + .5,
@@ -17,6 +17,8 @@ export function updateBasicCombat(player, targets, dt) {
   if (player.combat) {
     player.combat.cooldown = Math.max(0, player.combat.cooldown - dt);
     player.combat.timeLeft = Math.max(0, player.combat.timeLeft - dt);
+    player.combat.chainWindow = Math.max(0, (player.combat.chainWindow ?? 0) - dt);
+    if (!player.combat.chainWindow) player.combat.chain = 0;
   }
   for (const target of targets) {
     target.hitTimer = Math.max(0, target.hitTimer - dt);
@@ -57,8 +59,17 @@ export function tryBasicAttack({ player, progress, map, targets, point }) {
   const sx = dx - dy, sy = dx + dy;
   player.facing = Math.abs(sx) > Math.abs(sy) ? (sx > 0 ? 'right' : 'left') : (sy > 0 ? 'down' : 'up');
   player.target = null;
-  player.combat = { cooldown: profile.cooldown, duration: .24, timeLeft: .24, dx, dy, color: profile.color,
+  const previous = player.combat;
+  const chain = previous?.style === progress.archetype && previous.chainWindow > 0 ? (previous.chain ?? 0) + 1 : 1;
+  const strained = chain >= profile.strain.hits;
+  player.combat = { cooldown: profile.cooldown + (strained ? profile.strain.extra : 0), duration: .32, timeLeft: .32, dx, dy, color: profile.color,
+    chain: strained ? 0 : chain, chainWindow: strained ? 0 : 1.3, strained,
     style: progress.archetype, transformed: player.nucleoForm === 'forma_veloz', equipped: !!player.equippedSuit };
+  if (strained) {
+    player.ability ??= {};
+    player.ability.lastMessage = `${profile.strain.label} • RECUPERAÇÃO DO ATAQUE`;
+    player.ability.messageTimer = 1.8;
+  }
   let best = null, nearest = Infinity;
   for (const target of targets ?? []) {
     if (target.health <= 0) continue;

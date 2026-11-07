@@ -72,6 +72,7 @@ export function render(map, state) {
       drawBeachSurface(map);
     }
     drawFloors(map);
+    if (map.id === 'hub_saguao') drawHubFloorMarkings();
     if (map.aguaPraia) drawBeachShore(map);
 
     if (map.metroTiles) {
@@ -517,7 +518,9 @@ function drawFloorTile(type, x, y, map) {
   }
 
   // Ladrilho procedural (saguão)
-  const base = map.corChao ?? '#1b1f27';
+  const isHub = map.id === 'hub_saguao';
+  const hubRoute = isHub && (x === 9 || y === 6);
+  const base = hubRoute ? '#20323a' : isHub && (x === 1 || x === 16 || y === 1 || y === 13) ? '#222c31' : map.corChao ?? '#1b1f27';
   const r = hash(x, y);
   const v = r < 0.33 ? -3 : r < 0.66 ? 0 : 3;
   quad(tx, ty, tx + HW, ty + HH, tx, ty + TH, tx - HW, ty + HH, tint(base, v), C.GRID);
@@ -530,7 +533,30 @@ function drawFloorTile(type, x, y, map) {
     tx - HW * k, ty + HH,
     tint(base, v + 5), null
   );
+  if (hubRoute) {
+    // Filetes encaixados no losango: decoração de chão, sem hitboxes.
+    ctx.save(); ctx.strokeStyle = 'rgba(77,224,197,.25)'; ctx.lineWidth = .8;
+    ctx.beginPath();
+    if (x === 9) { ctx.moveTo(tx-HW*.76,ty+HH*.76); ctx.lineTo(tx+HW*.24,ty+HH*1.76); }
+    if (y === 6) { ctx.moveTo(tx+HW*.76,ty+HH*.76); ctx.lineTo(tx-HW*.24,ty+HH*1.76); }
+    ctx.stroke(); ctx.restore();
+  }
 }
+
+function drawHubFloorMarkings() {
+  const x = (9 - 9.5) * HW, y = (9 + 9.5) * HH;
+  ctx.save(); ctx.translate(x, y);
+  ctx.fillStyle = 'rgba(13,43,43,.48)'; ctx.beginPath(); ctx.ellipse(0, 0, 80, 39, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.strokeStyle = 'rgba(83,229,196,.56)'; ctx.lineWidth = 1.5;
+  ctx.beginPath(); ctx.ellipse(0, 0, 78, 37, 0, 0, Math.PI * 2); ctx.stroke();
+  ctx.strokeStyle = 'rgba(235,191,96,.45)'; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.ellipse(0, 0, 69, 32, 0, 0, Math.PI * 2); ctx.stroke();
+  ctx.fillStyle = 'rgba(173,255,229,.7)'; ctx.textAlign = 'center'; ctx.font = 'bold 12px monospace';
+  ctx.fillText('BLOCO 404', 0, 0);
+  ctx.fillStyle = 'rgba(119,213,193,.58)'; ctx.font = '8px monospace'; ctx.fillText('CONEXÕES • ECOS', 0, 12);
+  ctx.restore();
+}
+
 // =====================================================================
 // TILES ESPECIAIS DO METRÔ
 //
@@ -1328,6 +1354,19 @@ function drawPlayerSprite(player, ix, iy) {
   // pose provisória com os pulsos animados, sem fingir que são animações finais.
   const effect = getVisualEffect(player);
   const suit = player.equippedSuit;
+  // A folha nova é frontal: não a espelhamos nem fingimos vistas laterais/traseiras.
+  const attack = player.combat;
+  if (suit === 'bio_forja' && player.facing === 'down' && attack?.style === 'motor_bio_forja' && attack.timeLeft > 0 && !effect && !(player.ability?.scanning > 0)) {
+    const sheet = getSprite('player_bio_ataque_frontal');
+    if (sheet) {
+      const phase = Math.max(0, Math.min(.9999, 1 - attack.timeLeft / attack.duration));
+      const col = Math.floor(phase * 9), x0 = Math.round(col * sheet.width / 9), x1 = Math.round((col + 1) * sheet.width / 9);
+      const scale = .19, w = (x1 - x0) * scale, h = sheet.height * scale;
+      drawSmooth(sheet, x0, 0, x1 - x0, sheet.height, ix - w / 2, iy - h * .92, w, h);
+      player._topo = 125;
+      return true;
+    }
+  }
   if (state.progress.archetype === 'nucleo_dez_forma' && effect?.id === 'transformacao_10x') {
     const t = Math.max(0, Math.min(0.999, 1 - effect.timeLeft / effect.duration));
     const frames = effect.activating ? [0, 1, 1, 2] : [2, 1, 3, 3];
@@ -1727,7 +1766,13 @@ function drawEntity(entity, state) {
 
   if (entity === state.player) {
     drawShadow(ix, iy, 0.28);
-    if (drawPlayerSprite(entity, ix, iy)) return;
+    // Reação corporal provisória para todos os ataques; não inventa folhas direcionais.
+    const attack = entity.combat;
+    const t = attack?.timeLeft > 0 ? 1 - attack.timeLeft / attack.duration : 0;
+    const push = attack?.timeLeft > 0 ? Math.sin(Math.PI * t) * 4 : 0;
+    const dx = attack ? (attack.dx - attack.dy) : 0, dy = attack ? (attack.dx + attack.dy) * .5 : 0;
+    const length = Math.hypot(dx, dy) || 1;
+    if (drawPlayerSprite(entity, ix + dx / length * push, iy + dy / length * push)) return;
 
     ctx.beginPath();
     ctx.arc(ix, iy - 14, 9, 0, Math.PI * 2);

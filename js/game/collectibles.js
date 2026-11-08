@@ -22,6 +22,7 @@ function isCollected(item) {
 
 function isAvailable(item) {
   if (isCollected(item)) return false;
+  if (item.id.startsWith('lumeo_') && state.progress.flags?.companheiro_lumeo) return false;
 
   if (item.requiresFlag) {
     return state.progress.flags?.[item.requiresFlag] === true;
@@ -71,12 +72,12 @@ export function collectItem(item) {
   state.progress.inventory ??= [];
   state.progress.flags ??= {};
 
-  if (!state.progress.inventory.includes(item.id)) {
+  if (!item.id.startsWith('lumeo_') && !state.progress.inventory.includes(item.id)) {
     state.progress.inventory.push(item.id);
   }
 
   state.progress.flags[`collected_${item.id}`] = true;
-  if (item.id === 'lumeo_encontro') state.progress.flags.companheiro_lumeo = true;
+  if (item.id === 'lumeo_vinculo') state.progress.flags.companheiro_lumeo = true;
 
   // Descobertas opcionais da Enseada não substituem a missão ativa.
   const tracks = ['enseada_rastro_mar', 'enseada_rastro_pedra', 'enseada_rastro_mata'];

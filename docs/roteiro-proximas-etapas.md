@@ -7,7 +7,7 @@ Uma ilha compartilhada, um arquétipo por personagem e progressão contínua. O 
 ## 1. Agora: um ciclo jogável pequeno e confiável
 
 - Refinar saguão, NEXO, viajante e leitura de direções; validar com o jogador em câmera, zoom e deslocamento reais.
-- **Lúmeo — primeiro vínculo opcional:** investigar três vestígios da Enseada, encontrar o pequeno eco próximo à trilha e escolher acolhê-lo. O diário aponta o encontro; ele acompanha sem bloquear ou atacar, com visual procedural provisório. O vínculo é salvo, sem substituir a missão principal. Ainda faltam recolher/dispensar, tela de companheiros, arte definitiva e comportamento mais robusto. Bolt continua reservado, sem concessão automática.
+- **Lúmeo — primeiro vínculo opcional:** investigar três vestígios da Enseada, ouvir um sinal junto à trilha, acalmar a ressonância nas ruínas e oferecer companhia ao eco na mata. O diário aponta o encontro; ele acompanha sem bloquear ou atacar, com visual procedural provisório. O vínculo é salvo, sem substituir a missão principal. Ainda faltam recolher/dispensar, tela de companheiros, arte definitiva e comportamento mais robusto. Bolt continua reservado, sem concessão automática.
 - Completar caminhadas coerentes das quatro direções da Forma Veloz e NEXO. A nova folha da Forma Veloz contém vistas predominantemente laterais; não fingir que são frente/costas. Novas folhas de Domínio/Maré são referências de poses, não sequências completas; usar somente quando não trocarem a identidade do traje.
 - Consolidar primeiro objetivo da ilha: missão própria por arquétipo que leva da calibração à Enseada, com retorno, diário, recompensa útil, teste de saves antigos e nenhuma segunda escolha de arquétipo.
 

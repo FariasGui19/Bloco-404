@@ -1753,6 +1753,8 @@ function drawShadow(ix, iy, alpha) {
 // =====================================================================
 
 function drawCollectible(item, state) {
+  // Saves antigos com Lúmeo mantêm seu vínculo e não repetem a missão.
+  if (item.id.startsWith('lumeo_') && state.progress.flags?.companheiro_lumeo) return;
   // Não desenha se já foi coletado.
   if (state.progress.flags?.[`collected_${item.id}`]) {
     return;

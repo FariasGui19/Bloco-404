@@ -1,3 +1,5 @@
+import { activateCompanion } from '../game/companion-progress.js';
+import { saveGame } from '../game/save.js';
 // Diário somente de leitura: não altera nem substitui missões ou saves.
 let overlay = null;
 let opened = false;
@@ -11,12 +13,21 @@ export function openQuestJournal(progress, map) {
       <h2 id="journalTitle">DIÁRIO DE ROTAS</h2><p class="journal-caption">MISSÕES E DESCOBERTAS</p>
       <h3>PRINCIPAL</h3><strong id="journalMainTitle"></strong><p id="journalMainDescription"></p>
       <h3>EXPLORAÇÃO OPCIONAL</h3><strong id="journalSideTitle">ENSEADA DOS ECOS</strong><p id="journalSideDescription"></p>
-      <p class="journal-note">Outras dimensões, atividades e modos serão adicionados futuramente.</p>
+      <h3>COMPANHEIROS · PRÉVIA LOCAL</h3><p id="petInfo"></p><button type="button" id="petBolt">TESTAR BOLT NESTE SAVE</button><button type="button" id="petLumeo">ACOMPANHAR COM LÚMEO</button><p class="journal-note">Outras dimensões, atividades e modos serão adicionados futuramente.</p>
       <button type="button" id="journalClose">FECHAR · J / ESC</button></section>`;
     document.body.appendChild(overlay);
     overlay.querySelector('#journalClose').addEventListener('click', closeQuestJournal);
     overlay.addEventListener('click', e => { if (e.target === overlay) closeQuestJournal(); });
   }
+  const updatePets = () => {
+    const pets = progress.companions ?? { active: progress.flags?.companheiro_lumeo ? 'lumeo' : null, pets: {} };
+    const active = pets.active, pet = pets.pets[active];
+    overlay.querySelector('#petInfo').textContent = active ? `${active === 'bolt' ? 'Bolt' : 'Lúmeo'} · nível ${pet?.level ?? 1} · XP ${pet?.xp ?? 0} · inventário ${(pet?.inventory ?? []).length} itens. Árvore em preparação.` : 'Nenhum companheiro ativo.';
+    overlay.querySelector('#petLumeo').disabled = !progress.flags?.companheiro_lumeo;
+  };
+  overlay.querySelector('#petBolt').onclick = () => { activateCompanion(progress, 'bolt'); saveGame(); updatePets(); };
+  overlay.querySelector('#petLumeo').onclick = () => { activateCompanion(progress, 'lumeo'); saveGame(); updatePets(); };
+  updatePets();
   const quest = progress?.activeQuest;
   overlay.querySelector('#journalMainTitle').textContent = quest?.title ?? 'NENHUMA MISSÃO ATIVA';
   overlay.querySelector('#journalMainDescription').textContent = quest?.description ?? 'Continue explorando o Bloco 404.';

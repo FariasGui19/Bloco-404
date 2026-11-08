@@ -7,7 +7,7 @@ Uma ilha compartilhada, um arquétipo por personagem e progressão contínua. O 
 ## 1. Agora: um ciclo jogável pequeno e confiável
 
 - Refinar saguão, NEXO, viajante e leitura de direções; validar com o jogador em câmera, zoom e deslocamento reais.
-- **Lúmeo — primeiro vínculo opcional:** investigar três vestígios da Enseada, ouvir um sinal junto à trilha, acalmar a ressonância nas ruínas e oferecer companhia ao eco na mata. O diário aponta o encontro; ele acompanha sem bloquear ou atacar, com visual procedural provisório. O vínculo é salvo, sem substituir a missão principal. Ainda faltam recolher/dispensar, tela de companheiros, arte definitiva e comportamento mais robusto. Bolt continua reservado, sem concessão automática.
+- **Lúmeo — primeiro vínculo opcional:** investigar três vestígios da Enseada, ouvir um sinal junto à trilha, acalmar a ressonância nas ruínas e oferecer companhia ao eco na mata. O diário aponta o encontro; ele acompanha sem bloquear ou atacar, com visual procedural provisório. O vínculo é salvo, sem substituir a missão principal. Ainda faltam recolher/dispensar, tela de companheiros, arte definitiva e comportamento mais robusto. Bolt tem prévia local opt-in no diário; autenticação e missão pessoal continuam pendentes, sem concessão automática.
 - Completar caminhadas coerentes das quatro direções da Forma Veloz e NEXO. A nova folha da Forma Veloz contém vistas predominantemente laterais; não fingir que são frente/costas. Novas folhas de Domínio/Maré são referências de poses, não sequências completas; usar somente quando não trocarem a identidade do traje.
 - Consolidar primeiro objetivo da ilha: missão própria por arquétipo que leva da calibração à Enseada, com retorno, diário, recompensa útil, teste de saves antigos e nenhuma segunda escolha de arquétipo.
 
@@ -32,3 +32,7 @@ Rotas da ilha → arquipélago e teleférico → zonas com inimigos e primeiro c
 ## Decisões ainda abertas
 
 Arte e personalidade definitivas de Lúmeo; regras de troca/dispensa e progressão de pets; aquisição autorizada do Bolt; custos de nave/combustível; dano, recompensas e níveis dos inimigos; como o tempo de transformação 10X evolui. Não conceder habilidades multiversais, inventar múltiplos arquétipos simultâneos ou impor números definitivos antes dessas decisões.
+
+## Atualização: primeiro setor Bio e Bolt
+
+Veja `docs/estacao-bio-e-bolt.md` para o setor explorável provisório e a prévia local de Bolt, além das limitações antes de convertê-los em conteúdo final.

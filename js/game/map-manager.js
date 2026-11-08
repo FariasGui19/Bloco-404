@@ -6,7 +6,7 @@
 
 import { WORLD_REGISTRY } from '../data/world-registry.js';
 import { state } from './state.js';
-import { snapCameraTo } from '../engine/camera.js';
+import { snapCameraTo, setMapZoomMin } from '../engine/camera.js';
 import { createActorRuntime } from './actors.js';
 import { createCoastalFauna } from './fauna-costeira.js';
 import { createTrainingTargets } from './combat.js';
@@ -108,6 +108,7 @@ export async function loadMap(mapId, spawnId = 'inicio') {
     p.target = null;
     p.moving = false;
 
+    setMapZoomMin(mapData.meta?.minZoom);
     snapCameraTo(p.x, p.y);
     // Salva a última localização somente se um perfil estiver ativo.
     rememberMapLocation(mapData.id, spawnId);

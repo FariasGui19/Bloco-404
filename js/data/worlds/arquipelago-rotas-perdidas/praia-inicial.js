@@ -350,6 +350,7 @@ export const map = {
     inicio: { x: 8.0, y: 7.5 },
     vindo_do_trem: { x: 8.0, y: 5.5 },
     vindo_da_enseada: { x: 11.5, y: 10.5 },
+    vindo_da_estacao: { x: 8.5, y: 23.5 },
   },
 
   corChao: '#e6c280',
@@ -491,6 +492,7 @@ export const map = {
   ],
 
   portals: [
+    { id: 'trilha_estacao_bio', tipo: 'door', x: 8, y: 23, label: 'EXPLORAR ESTAÇÃO BIO-FORJA', requiresFlag: 'gate_teleferico_quebrado', interactionDistance: 1.4, destino: { mapId: 'ilha_estacao_bio', spawnId: 'inicio' }, transition: 'fade' },
     { id: 'trilha_enseada', tipo: 'door', x: 12, y: 11, label: 'EXPLORAR ENSEADA DOS ECOS', interactionDistance: 1.4, destino: { mapId: 'ilha_enseada_ecos', spawnId: 'vindo_da_praia' }, transition: 'fade' },
     {
       id: 'voltar_trem',

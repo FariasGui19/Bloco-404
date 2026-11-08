@@ -3,6 +3,12 @@ import { CONFIG } from '../config.js';
 export const view = { w: 0, h: 0, dpr: 1 };  // tamanho da janela (preenchido pelo renderer)
 export const camera = { x: 0, y: 0, zoom: 1, targetZoom: 1, follow: true }; // x,y em espaço ISO
 
+let mapMinZoom = CONFIG.ZOOM_MIN;
+export function setMapZoomMin(value) {
+  mapMinZoom = Number.isFinite(value) ? Math.max(CONFIG.ZOOM_MIN, Math.min(CONFIG.ZOOM_MAX, value)) : CONFIG.ZOOM_MIN;
+  camera.zoom = Math.max(camera.zoom, mapMinZoom); camera.targetZoom = Math.max(camera.targetZoom, mapMinZoom);
+}
+
 const HW = CONFIG.TILE_W / 2;
 const HH = CONFIG.TILE_H / 2;
 
@@ -28,7 +34,7 @@ export function screenToWorld(sx, sy) {
 
 // ---- Controle ----
 export function setZoom(z) {
-  camera.targetZoom = Math.min(CONFIG.ZOOM_MAX, Math.max(CONFIG.ZOOM_MIN, z));
+  camera.targetZoom = Math.min(CONFIG.ZOOM_MAX, Math.max(mapMinZoom, z));
 }
 
 export function snapCameraTo(wx, wy) {

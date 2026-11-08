@@ -29,10 +29,12 @@ export function updateCompanion(companion, owner, dt, canMove) {
 
 // Vínculo persistido em flags; posição é somente runtime e reinicia com o mapa.
 export function updateOwnedCompanion(state, map, dt, canStandAt) {
-  if (!state.progress?.flags?.companheiro_lumeo || !map || typeof canStandAt !== 'function') { state.companion = null; return; }
+  if (!map || typeof canStandAt !== 'function') { state.companion = null; return; }
+  const id = state.progress?.companions?.active ?? (state.progress?.flags?.companheiro_lumeo ? 'lumeo' : null);
+  if (!id || (id === 'lumeo' && !state.progress?.flags?.companheiro_lumeo) || !['bolt', 'lumeo'].includes(id)) { state.companion = null; return; }
   const player = state.player;
-  if (!state.companion || state.companion.mapId !== map.id) {
-    const pet = { ...createCompanion('lumeo', player), mapId: map.id, renderType: 'companion', blocked: 0 };
+  if (!state.companion || state.companion.mapId !== map.id || state.companion.speciesId !== id) {
+    const pet = { ...createCompanion(id, player), mapId: map.id, renderType: 'companion', blocked: 0 };
     for (const [dx, dy] of [[-.8, 0], [0, .8], [.8, 0], [0, -.8]]) {
       if (canStandAt(map, player.x + dx, player.y + dy, .15, pet)) { pet.x += dx; pet.y += dy; break; }
     }

@@ -1,0 +1,12 @@
+import assert from 'node:assert/strict';
+import { activateCompanion, ensureCompanionProgress } from '../js/game/companion-progress.js';
+import { updateOwnedCompanion } from '../js/game/companions.js';
+const progress={flags:{companheiro_lumeo:true}};
+assert.equal(ensureCompanionProgress(progress).active,'lumeo');
+assert(activateCompanion(progress,'bolt')); assert(progress.flags.companheiro_lumeo);
+assert.deepEqual(progress.companions.pets.bolt,{level:1,xp:0,inventory:[],skills:{}});
+const state={progress,player:{x:5,y:5}};const map={id:'mapa'};
+updateOwnedCompanion(state,map,.1,()=>true);assert.equal(state.companion.speciesId,'bolt');
+assert(activateCompanion(progress,'lumeo'));updateOwnedCompanion(state,map,.1,()=>true);assert.equal(state.companion.speciesId,'lumeo');
+assert.equal(activateCompanion(progress,'inexistente'),false);assert(!activateCompanion({flags:{}},'lumeo'));
+console.log('Bolt: prévia opt-in, dados separados e alternância preservando Lúmeo OK.');

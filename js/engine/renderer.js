@@ -825,7 +825,7 @@ function drawWorld(map, state) {
     o.y >= range.y0 - margem && o.y <= range.y1 + margem;
 
   for (const a of state.actors ?? []) drawList.push(a);
-  if (state.companion && state.progress.flags?.companheiro_lumeo) drawList.push(state.companion);
+  if (state.companion) drawList.push(state.companion);
   for (const a of state.fauna ?? []) if (visivel(a)) drawList.push(a);
   for (const target of state.trainingTargets ?? []) if (visivel(target)) drawList.push(target);
 
@@ -849,7 +849,7 @@ function drawWorld(map, state) {
     } else if (item.renderType === 'trainingTarget') {
       drawTrainingTarget(item);
     } else if (item.renderType === 'companion') {
-      drawLumeo(item);
+      if (item.speciesId === 'bolt') drawBolt(item); else drawLumeo(item);
     } else if (item.renderType === 'fauna') {
       drawCoastalFauna(item);
     } else if (item.renderType === 'collectible') {
@@ -1731,6 +1731,17 @@ function drawRobo(e, ix, iy) {
 // =====================================================================
 //  ENTIDADES
 // =====================================================================
+// Uma pose provisória, espelhada de perfil: não é uma folha de caminhada.
+function drawBolt(pet) {
+  const image = getSprite('pet_bolt');
+  if (!image) return;
+  const x = (pet.x - pet.y) * HW, y = (pet.x + pet.y) * HH;
+  drawShadow(x, y, .23);
+  ctx.save(); ctx.translate(x, y - (pet.moving ? Math.abs(Math.sin(performance.now() / 120)) * 1.5 : 0));
+  if (pet.facing === 'left') ctx.scale(-1, 1);
+  ctx.drawImage(image, -30, -61, 60, 61); ctx.restore();
+}
+
 // Visual provisório: eco luminoso leve, sem dano nem colisão para o jogador.
 function drawLumeo(pet) {
   const x = (pet.x - pet.y) * HW, y = (pet.x + pet.y) * HH;

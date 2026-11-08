@@ -76,7 +76,12 @@ export function render(map, state) {
     }
     drawFloors(map);
     if (map.id === 'hub_saguao') drawHubFloorMarkings();
-    if (map.id === 'ilha_estacao_bio') drawStationPaving(map);
+    if (map.id === 'ilha_estacao_bio') {
+      drawStationPaving(map);
+      drawStationBridges(map);
+      drawBioNetwork(map);
+      drawBioShadows(map);
+    }
     if (map.aguaPraia) drawBeachShore(map);
 
     if (map.metroTiles) {
@@ -547,44 +552,153 @@ function drawFloorTile(type, x, y, map) {
   }
 }
 
-// Caminhos de manutenção e pátios são só tratamento visual sobre o piso;
-// a máscara e as pontes existentes seguem sendo a fonte de colisão.
-function drawStationPaving(map) {
-  const sheet = getSprite('bio_piso');
-  const onPath = (x, y) => map.walkMask[y]?.[x] === '.' && (
-    (x>=7 && x<=14 && y>=3 && y<=10) ||
-    (x>=8 && x<=18 && y>=10 && y<=18) ||
-    (x>=14 && x<=39 && y>=17 && y<=22) ||
-    (x>=35 && x<=48 && y>=18 && y<=23) ||
-    (x>=30 && x<=34 && y>=22 && y<=27) ||
-    (x>=44 && x<=48 && y>=18 && y<=51) ||
-    (x>=45 && x<=59 && y>=46 && y<=53) ||
-    (x>=53 && x<=59 && y>=42 && y<=47));
-  ctx.save();
-  // Clip da geometria real do caminho: a textura nunca invade canais ou areia.
+// Recorte em losangos: limita qualquer textura de chão à geometria caminhável
+// visível. Usado pelo piso industrial, conduítes e sombras de apoio.
+function stationClip(map, predicate) {
   ctx.beginPath();
-  for (let y=range.y0; y<=range.y1; y++) for (let x=range.x0; x<=range.x1; x++) {
-    if (!onPath(x,y)) continue;
-    const ix=(x-y)*HW, iy=(x+y)*HH;
-    ctx.moveTo(ix,iy); ctx.lineTo(ix+HW,iy+HH); ctx.lineTo(ix,iy+TH); ctx.lineTo(ix-HW,iy+HH); ctx.closePath();
+  for (let y = range.y0; y <= range.y1; y++) for (let x = range.x0; x <= range.x1; x++) {
+    if (!predicate(x, y)) continue;
+    const ix = (x - y) * HW, iy = (x + y) * HH;
+    ctx.moveTo(ix, iy); ctx.lineTo(ix + HW, iy + HH); ctx.lineTo(ix, iy + TH); ctx.lineTo(ix - HW, iy + HH); ctx.closePath();
   }
   ctx.clip();
+}
+
+const ehDeck = (map, x, y) => 'Bb'.includes(map.aguaPraia?.[y]?.[x] ?? ' ');
+
+// Pátios e caminhos de manutenção são tratamento visual; a máscara de colisão
+// continua sendo a única fonte de caminhabilidade.
+function caminhoEstacao(map, x, y) {
+  if (map.walkMask[y]?.[x] !== '.' || ehDeck(map, x, y)) return false;
+  return (
+    (x >= 5 && x <= 16 && y >= 3 && y <= 14) ||   // avental do terminal
+    (x >= 8 && x <= 18 && y >= 10 && y <= 18) ||
+    (x >= 14 && x <= 39 && y >= 17 && y <= 22) ||
+    (x >= 35 && x <= 48 && y >= 18 && y <= 23) ||
+    (x >= 30 && x <= 34 && y >= 22 && y <= 27) ||
+    (x >= 44 && x <= 48 && y >= 18 && y <= 51) ||
+    (x >= 47 && x <= 63 && y >= 43 && y <= 55) ||  // avental da estufa
+    (x >= 45 && x <= 59 && y >= 46 && y <= 53) ||
+    (x >= 53 && x <= 59 && y >= 42 && y <= 47));
+}
+
+function drawStationPaving(map) {
+  const sheet = getSprite('bio_piso');
+  const onPath = (x, y) => caminhoEstacao(map, x, y);
+  ctx.save();
+  stationClip(map, onPath);
   // Base evita frestas transparentes nas bordas da arte gerada.
-  ctx.fillStyle='#4c5648';
-  for (let y=range.y0; y<=range.y1; y++) for (let x=range.x0; x<=range.x1; x++) {
-    if (!onPath(x,y)) continue;
-    const ix=(x-y)*HW, iy=(x+y)*HH;
-    ctx.beginPath(); ctx.moveTo(ix,iy); ctx.lineTo(ix+HW,iy+HH); ctx.lineTo(ix,iy+TH); ctx.lineTo(ix-HW,iy+HH); ctx.closePath(); ctx.fill();
+  ctx.fillStyle = '#4c5648';
+  for (let y = range.y0; y <= range.y1; y++) for (let x = range.x0; x <= range.x1; x++) {
+    if (!onPath(x, y)) continue;
+    const ix = (x - y) * HW, iy = (x + y) * HH;
+    ctx.beginPath(); ctx.moveTo(ix, iy); ctx.lineTo(ix + HW, iy + HH); ctx.lineTo(ix, iy + TH); ctx.lineTo(ix - HW, iy + HH); ctx.closePath(); ctx.fill();
   }
   if (sheet) {
     // Um módulo cobre 3×3 tiles lógicos, para não reduzir seus ladrilhos a ruído.
-    const span=3, sw=sheet.width/2, sh=sheet.height/2;
-    ctx.imageSmoothingEnabled=false;
-    for (let y=Math.floor(range.y0/span)*span; y<=range.y1; y+=span) for (let x=Math.floor(range.x0/span)*span; x<=range.x1; x+=span) {
-      const tone=hash(x,y), variant=tone < .62 ? 0 : tone < .76 ? 1 : tone < .88 ? 2 : 3;
-      const ix=(x-y)*HW, iy=(x+y)*HH;
-      ctx.drawImage(sheet,(variant%2)*sw,Math.floor(variant/2)*sh,sw,sh,ix-span*HW,iy,span*HW*2,span*TH);
+    const span = 3, sw = sheet.width / 2, sh = sheet.height / 2;
+    ctx.imageSmoothingEnabled = false;
+    for (let y = Math.floor(range.y0 / span) * span; y <= range.y1; y += span) for (let x = Math.floor(range.x0 / span) * span; x <= range.x1; x += span) {
+      const tone = hash(x, y), variant = tone < .62 ? 0 : tone < .76 ? 1 : tone < .88 ? 2 : 3;
+      const ix = (x - y) * HW, iy = (x + y) * HH;
+      ctx.drawImage(sheet, (variant % 2) * sw, Math.floor(variant / 2) * sh, sw, sh, ix - span * HW, iy, span * HW * 2, span * TH);
     }
+  }
+  ctx.restore();
+}
+
+// Tabuleiros das duas travessias: geometria real sobre a água, com espessura
+// nas bordas. Guarda-corpos são desenhados depois, como objetos por trecho.
+function drawStationBridges(map) {
+  const iso = (x, y) => [(x - y) * HW, (x + y) * HH];
+  ctx.save();
+  for (const ponte of map.bioBridges ?? []) {
+    const x0 = ponte.x0, x1 = ponte.x1 + 1, y0 = ponte.y0, y1 = ponte.y1 + 1;
+    const a = iso(x0, y0), b = iso(x1, y0), c = iso(x1, y1), d = iso(x0, y1);
+    // Sombra na água, deslocada para baixo, sem criar colisão.
+    ctx.fillStyle = 'rgba(5,32,38,.42)';
+    ctx.beginPath(); ctx.moveTo(a[0], a[1] + 9); ctx.lineTo(b[0], b[1] + 9);
+    ctx.lineTo(c[0], c[1] + 9); ctx.lineTo(d[0], d[1] + 9); ctx.closePath(); ctx.fill();
+    // Faces laterais dão espessura ao tabuleiro.
+    ctx.fillStyle = '#252e2b';
+    ctx.beginPath(); ctx.moveTo(b[0], b[1]); ctx.lineTo(c[0], c[1]); ctx.lineTo(c[0], c[1] + 9); ctx.lineTo(b[0], b[1] + 9); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = '#3a443c';
+    ctx.beginPath(); ctx.moveTo(d[0], d[1]); ctx.lineTo(c[0], c[1]); ctx.lineTo(c[0], c[1] + 9); ctx.lineTo(d[0], d[1] + 9); ctx.closePath(); ctx.fill();
+    // Tampa do deck: tom quente separa a travessia do piso industrial escuro.
+    ctx.fillStyle = '#6b6550';
+    ctx.beginPath(); ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); ctx.lineTo(c[0], c[1]); ctx.lineTo(d[0], d[1]); ctx.closePath(); ctx.fill();
+    // Tábuas/réguas acompanhando o eixo longo da travessia.
+    const alongX = ponte.axis === 'x';
+    ctx.lineWidth = 1.4;
+    ctx.strokeStyle = 'rgba(38,46,40,.55)';
+    for (let t = 0; t <= (alongX ? ponte.y1 - ponte.y0 : ponte.x1 - ponte.x0) + 1; t++) {
+      const p = alongX ? iso(x0, y0 + t) : iso(x0 + t, y0);
+      const q = alongX ? iso(x1, y0 + t) : iso(x0 + t, y1);
+      ctx.beginPath(); ctx.moveTo(p[0], p[1]); ctx.lineTo(q[0], q[1]); ctx.stroke();
+    }
+    for (let t = 0; t <= (alongX ? ponte.x1 - ponte.x0 : ponte.y1 - ponte.y0) + 1; t++) {
+      const p = alongX ? iso(x0 + t, y0) : iso(x0, y0 + t);
+      const q = alongX ? iso(x0 + t, y1) : iso(x1, y0 + t);
+      ctx.beginPath(); ctx.moveTo(p[0], p[1]); ctx.lineTo(q[0], q[1]); ctx.stroke();
+    }
+    // Longarinas metálicas nas duas bordas longas.
+    ctx.strokeStyle = '#22322e'; ctx.lineWidth = 4;
+    for (const [p, q] of alongX ? [[a, b], [d, c]] : [[a, d], [b, c]]) {
+      ctx.beginPath(); ctx.moveTo(p[0], p[1]); ctx.lineTo(q[0], q[1]); ctx.stroke();
+    }
+    ctx.strokeStyle = 'rgba(178,193,155,.6)'; ctx.lineWidth = 1.4;
+    for (const [p, q] of alongX ? [[a, b], [d, c]] : [[a, d], [b, c]]) {
+      ctx.beginPath(); ctx.moveTo(p[0], p[1] - 2); ctx.lineTo(q[0], q[1] - 2); ctx.stroke();
+    }
+  }
+  ctx.restore();
+}
+
+// Rede de pressão: conduítes no chão, com estado vindo apenas dos reparos.
+// Não concede item, habilidade ou conclusão de missão.
+function drawBioNetwork(map) {
+  const net = map.bioNetwork;
+  if (!net) return;
+  const flags = state.progress?.flags ?? {};
+  const energizada = !!flags.gate_bio_reparo_condutor && !!flags.gate_bio_reparo_regulador;
+  const fluxo = !!flags.gate_bio_valvula_estufa;
+  ctx.save();
+  stationClip(map, (x, y) => map.walkMask[y]?.[x] === '.' && !'YyDd'.includes(map.aguaPraia?.[y]?.[x] ?? ' '));
+  const ponto = ([x, y]) => [((x + .5) - (y + .5)) * HW, ((x + .5) + (y + .5)) * HH];
+  for (const path of net.paths) {
+    const desenha = (largura, cor) => {
+      ctx.beginPath();
+      for (let i = 0; i < path.length; i++) {
+        const [px, py] = ponto(path[i]);
+        if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+      }
+      ctx.lineWidth = largura; ctx.strokeStyle = cor; ctx.lineJoin = 'round'; ctx.lineCap = 'round'; ctx.stroke();
+    };
+    desenha(5, 'rgba(24,38,38,.75)');
+    desenha(3, energizada ? '#41705f' : '#46534e');
+    desenha(1.2, energizada ? (fluxo ? '#a9f3d2' : '#77c9ad') : '#637069');
+  }
+  for (const node of net.nodes) {
+    const [px, py] = ponto([node.x, node.y]);
+    ctx.fillStyle = '#182827';
+    ctx.beginPath(); ctx.ellipse(px, py, 13, 6, 0, 0, Math.PI * 2); ctx.fill();
+    if (energizada) {
+      const pulso = .55 + .35 * Math.sin(performance.now() / 420 + node.x);
+      ctx.fillStyle = fluxo ? `rgba(150,255,214,${pulso})` : `rgba(96,214,185,${pulso * .6})`;
+      ctx.beginPath(); ctx.ellipse(px, py, 8, 3.5, 0, 0, Math.PI * 2); ctx.fill();
+    }
+  }
+  ctx.restore();
+}
+
+// Apoio no solo para as estruturas grandes: elipse escura antes dos objetos.
+function drawBioShadows() {
+  ctx.save();
+  for (const o of state.objects ?? []) {
+    if (!o.sombra || o.oculto) continue;
+    const ix = (o.x - o.y) * HW, iy = (o.x + o.y) * HH;
+    ctx.fillStyle = 'rgba(10,26,27,.22)';
+    ctx.beginPath(); ctx.ellipse(ix, iy + 2, o.sombra[0], o.sombra[1], 0, 0, Math.PI * 2); ctx.fill();
   }
   ctx.restore();
 }
@@ -873,8 +987,24 @@ function drawWorld(map, state) {
   for (const target of state.trainingTargets ?? []) if (visivel(target)) drawList.push(target);
 
   for (const o of state.objects ?? []) {
-    if (o.camada === 'fundo') backList.push(o);      // trem/trilho sempre
-    else if (visivel(o)) drawList.push(o);
+    if (o.camada === 'fundo') { backList.push(o); continue; }  // trem/trilho sempre
+    if (!visivel(o)) continue;
+    // Estruturas grandes deixam de ter uma única profundidade: o PNG é
+    // desenhado em faixas horizontais com valores de profundidade próprios,
+    // para que o jogador passe entre a parte de trás e a da frente.
+    const camadas = o.depthLayers;
+    if (camadas?.count > 1) {
+      depthLayerOffsets(camadas).forEach((offset, i) => drawList.push({
+        ...o,
+        __slice: { index: i, count: camadas.count },
+        depthOffset: offset,
+      }));
+    } else drawList.push(o);
+  }
+
+  // Guarda-corpos das pontes Bio: cada trecho é um item com x+y real.
+  for (const rail of map.bioBridgeRails ?? []) {
+    if (visivel(rail)) drawList.push(rail);
   }
 
   for (const item of state.collectibles ?? []) {
@@ -897,6 +1027,8 @@ function drawWorld(map, state) {
       drawCoastalFauna(item);
     } else if (item.renderType === 'collectible') {
       drawCollectible(item, state);
+    } else if (item.renderType === 'bioRail') {
+      drawBioRail(item);
     } else {
       drawEntity(item, state);
     }
@@ -926,6 +1058,36 @@ function drawWorld(map, state) {
   }
 
   while (ei < drawList.length) drawItem(drawList[ei++]);
+}
+
+// Um trecho de guarda-corpo: poste + duas travessas até o poste seguinte.
+// A posição é a coordenada de mundo real do trecho, então a ordenação por
+// profundidade separa de verdade o lado distante do lado próximo da ponte.
+function drawBioRail(rail) {
+  const ix = (rail.x - rail.y) * HW, iy = (rail.x + rail.y) * HH;
+  const passoX = rail.axis === 'x' ? HW : -HW;
+  const passoY = HH;
+  const altura = 20;
+  ctx.save();
+  ctx.fillStyle = 'rgba(8,25,26,.3)';
+  ctx.beginPath(); ctx.ellipse(ix, iy + 2, 5, 2.4, 0, 0, Math.PI * 2); ctx.fill();
+  if (!rail.ultimo) {
+    ctx.lineCap = 'round';
+    ctx.strokeStyle = '#20322f'; ctx.lineWidth = 5;
+    for (const dy of [-altura + 3, -altura + 10]) {
+      ctx.beginPath(); ctx.moveTo(ix, iy + dy); ctx.lineTo(ix + passoX, iy + passoY + dy); ctx.stroke();
+    }
+    ctx.strokeStyle = 'rgba(148,182,158,.7)'; ctx.lineWidth = 1.2;
+    ctx.beginPath(); ctx.moveTo(ix, iy - altura + 2); ctx.lineTo(ix + passoX, iy + passoY - altura + 2); ctx.stroke();
+  }
+  // Poste e lanterna de baixa intensidade.
+  ctx.strokeStyle = '#1c2c2b'; ctx.lineWidth = 6;
+  ctx.beginPath(); ctx.moveTo(ix, iy + 2); ctx.lineTo(ix, iy - altura - 2); ctx.stroke();
+  ctx.strokeStyle = '#6f8c78'; ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.moveTo(ix, iy); ctx.lineTo(ix, iy - altura); ctx.stroke();
+  ctx.fillStyle = rail.side === 'perto' ? '#f0c57b' : '#96d3bc';
+  ctx.beginPath(); ctx.arc(ix, iy - altura - 3, 2.6, 0, Math.PI * 2); ctx.fill();
+  ctx.restore();
 }
 
 // Manifestação de treino é um alvo explícito e inofensivo; não é fauna.
@@ -1091,7 +1253,7 @@ function drawWallProcedural(x, y, front) {
 // =====================================================================
 
 function getObjectSpriteConfig(spriteId) {
-  if (['bio_terminal', 'bio_reator', 'bio_ponte', 'bio_estufa', 'bio_floreira', 'bio_tubos', 'bio_caixa', 'bio_luminaria', 'bio_plataforma', 'bio_margem_canto', 'bio_margem_cano', 'bio_margem_ruina', 'bio_margem_mureta', 'bio_condutor_quebrado', 'bio_condutor_ativo', 'bio_regulador_quebrado', 'bio_regulador_ativo', 'bio_mato_cano', 'bio_mato_ventilacao', 'bio_mato_barris', 'bio_mato_fissura'].includes(spriteId)) return { SHEET_COLS: 1, SHEET_ROWS: 1, DEFAULT_SCALE: 1, FEET_ANCHOR_Y: 1 };
+  if (['bio_terminal', 'bio_reator', 'bio_ponte', 'bio_estufa', 'bio_floreira', 'bio_tubos', 'bio_caixa', 'bio_luminaria', 'bio_plataforma', 'bio_margem_canto', 'bio_margem_cano', 'bio_margem_ruina', 'bio_margem_mureta', 'bio_condutor_quebrado', 'bio_condutor_ativo', 'bio_regulador_quebrado', 'bio_regulador_ativo', 'bio_mato_cano', 'bio_mato_ventilacao', 'bio_mato_barris', 'bio_mato_fissura', 'bio_cabeceira', 'bio_distribuidor'].includes(spriteId)) return { SHEET_COLS: 1, SHEET_ROWS: 1, DEFAULT_SCALE: 1, FEET_ANCHOR_Y: 1 };
   if (['hub_vaso_novo', 'hub_reciclagem', 'hub_carrinho', 'hub_bebedouro'].includes(spriteId)) return { SHEET_COLS: 1, SHEET_ROWS: 1, DEFAULT_SCALE: .25, FEET_ANCHOR_Y: 1 };
   if (spriteId === 'costa_rochosa') return { SHEET_COLS: 4, SHEET_ROWS: 1, DEFAULT_SCALE: 1, FEET_ANCHOR_Y: 1 };
   if (spriteId === 'vegetacao_tropical') return { SHEET_COLS: 8, SHEET_ROWS: 1, DEFAULT_SCALE: 1, FEET_ANCHOR_Y: 1 };
@@ -1228,6 +1390,31 @@ function drawHubHologram(object) {
   ctx.restore();
 }
 
+// Filtro de estado: uma flag persistida pode acender uma peça sem trocar de sprite.
+export function filtroObjeto(object) {
+  return object.filterOnFlag && state.progress?.flags?.[object.filterOnFlag]
+    ? (object.filterOn ?? object.filter)
+    : object.filter;
+}
+
+// Offsets de profundidade de uma estrutura em camadas. Exportado para os testes
+// conferirem que o jogador fica entre duas faixas, e não atrás de um sprite inteiro.
+export function depthLayerOffsets(camadas) {
+  const n = camadas?.count ?? 0;
+  if (n < 2) return [camadas?.back ?? 0];
+  return Array.from({ length: n }, (_, i) =>
+    camadas.back + (camadas.front - camadas.back) * ((i + .5) / n));
+}
+
+// Faixa horizontal da imagem desenhada por uma camada de profundidade.
+export function fatiaObjeto(object, altura) {
+  if (!object.__slice) return { sy: 0, sh: altura };
+  const { index, count } = object.__slice;
+  const sy = Math.floor(altura * index / count);
+  const fim = Math.floor(altura * (index + 1) / count);
+  return { sy, sh: Math.max(1, fim - sy) };
+}
+
 function drawMapObject(object, state) {
   if (object.hideWhenFlag && state.progress.flags?.[object.hideWhenFlag]) return;
   if (object.showWhenFlag && !state.progress.flags?.[object.showWhenFlag]) return; // NOVO
@@ -1271,6 +1458,9 @@ function drawMapObject(object, state) {
   const image = getSprite(object.sprite ?? sheet.ID);
   if (!image || !sheet) return;
 
+  // Estado ligado a uma flag de progresso (ex.: válvula da estufa aberta).
+  const filtro = filtroObjeto(object);
+
   if (object.useCrop && drawCroppedObject(object, image, sheet)) return;
 
   // fallback antigo (não usado pelo trem/trilho)
@@ -1288,15 +1478,16 @@ function drawMapObject(object, state) {
     ctx.save(); ctx.fillStyle = 'rgba(0,0,0,.33)'; ctx.beginPath();
     ctx.ellipse(ix, iy + (object.ajusteY ?? 0) + 2, object.id === 'saguao_bebedouro' ? 18 : 20, 7, 0, 0, Math.PI * 2); ctx.fill(); ctx.restore();
   }
+  const banda = fatiaObjeto(object, frameH);
   ctx.save();
-  if (object.filter) ctx.filter = object.filter;
+  if (filtro) ctx.filter = filtro;
   ctx.translate(ix + (object.ajusteX ?? 0), iy + (object.ajusteY ?? 0));
   if (object.espelhar) ctx.scale(-1, 1);
   ctx.drawImage(
     image,
-    col * frameW, row * frameH, frameW, frameH,
-    -drawW / 2, -drawH * (object.anchorY ?? sheet.FEET_ANCHOR_Y),
-    drawW, drawH
+    col * frameW, row * frameH + banda.sy, frameW, banda.sh,
+    -drawW / 2, -drawH * (object.anchorY ?? sheet.FEET_ANCHOR_Y) + banda.sy * scale,
+    drawW, banda.sh * scale
   );
   // Desenhar o movimento apenas dentro das superfícies do sprite fixo.
   if (hasHubScreenFx(state.world?.currentMapId, object.id)) {
@@ -1345,19 +1536,22 @@ function drawCroppedObject(object, image, sheet) {
   const skewY = object.skewY ?? 0;
   const escalaY = object.escalaY ?? 1;
 
+  const banda = fatiaObjeto(object, c.h);
   ctx.save();
-  if (object.filter) ctx.filter = object.filter;
+  const filtro = filtroObjeto(object);
+  if (filtro) ctx.filter = filtro;
   ctx.imageSmoothingEnabled = true;
   ctx.imageSmoothingQuality = 'high';
   ctx.translate(ix, iy);
   if (skewY !== 0 || escalaY !== 1) ctx.transform(1, skewY, 0, escalaY, 0, 0);
   if (object.espelhar) ctx.scale(-1, 1);
-  ctx.drawImage(c.canvas, 0, 0, c.w, c.h, -w * px, -h * py, w, h);
+  ctx.drawImage(c.canvas, 0, banda.sy, c.w, banda.sh,
+    -w * px, -h * py + banda.sy * scale, w, banda.sh * scale);
   ctx.filter = 'none';
   ctx.restore();
 
   // Debug H: cruz vermelha mostra o ponto de âncora no mundo
-  if (isDebugEnabled()) {
+  if (isDebugEnabled() && !object.__slice) {
     ctx.save();
     ctx.strokeStyle = '#ff3b3b';
     ctx.lineWidth = 1.5;

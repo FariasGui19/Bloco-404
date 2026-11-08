@@ -36,3 +36,7 @@ Arte e personalidade definitivas de Lúmeo; regras de troca/dispensa e progress�
 ## Atualização: primeiro setor Bio e Bolt
 
 Veja `docs/estacao-bio-e-bolt.md` para o setor explorável provisório e a prévia local de Bolt, além das limitações antes de convertê-los em conteúdo final.
+
+## Atualização 0.3.5: base espacial antes de mais conteúdo
+
+A Estação Bio ganhou decks caminháveis sobre os canais, guarda-corpos com profundidade por trecho, camadas de desenho para as estruturas grandes, hitbox do terminal medida, aventais de piso, sombras de apoio e uma rede de pressão que torna os reparos existentes perceptíveis e leva a uma válvula opcional na estufa. Foram geradas e implementadas exatamente duas imagens estáticas (cabeceira e distribuidor), não folhas de animação; a ordem e a justificativa estão em `docs/ordem-de-arte-e-implementacao.md`. O ciclo de vida do jogador, inimigos telegrafados, minibosses, nave e voo contínuo seguem nas etapas acima: nada disso foi antecipado ou declarado pronto. O passo da válvula não concede recompensa nem conclui o setor; é apenas a primeira consequência jogável dos reparos.

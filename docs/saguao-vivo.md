@@ -15,3 +15,7 @@ O spawn, os três portais, suas regras e a missão não foram substituídos. A a
 O painel próximo à porta foi desespelhado e seu texto ajustado à perspectiva. Vaso e bebedouro ganharam escala, âncoras e sombras de contato, com hitboxes proporcionais; rotas e spawns continuam acessíveis. A viajante permanece com a arte anterior enquanto aguardamos a nova folha.
 
 As folhas de Maré e Domínio permanecem em `assets/source-art/proximas-animacoes/`, mas suas armaduras divergem dos trajes em jogo. As folhas da forma veloz servem para corrida lateral e ataque básico provisórios, com as limitações indicadas em `docs/prompts-sprites-precisao.md`. A caminhada RGBA do NEXO foi retirada por inconsistência visual.
+
+## Nova rodada de sprites
+
+O bebedouro foi espelhado para o banco. A nova viajante substitui a anterior, com quatro vistas e seis poses; seu WebP tinha quadriculado incorporado, por isso a extração é aproximada (`tools/preparar-viajante-2026.py`) e pode ter resíduos em detalhes pequenos. Sua rota, espera e diálogo não foram modificados. A folha nova do NEXO tem passos coerentes somente de perfil: foram usados na caminhada lateral, espelhados à esquerda; frente e costas mantêm a folha anterior até existirem ciclos direcionais reais. A nova folha lateral da Forma Veloz e as poses de Domínio/Maré foram arquivadas como referência; não substituem as animações existentes por sequências sem direções ou quadros suficientes.

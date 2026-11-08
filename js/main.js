@@ -10,6 +10,7 @@ import { updateNucleoForm } from './game/nucleo-form.js';
 import { canStandAt } from './game/collision.js';
 import { CONFIG } from './config.js';
 import { isQuestJournalOpen, openQuestJournal, closeQuestJournal } from './ui/quest-journal.js';
+import { updateOwnedCompanion } from './game/companions.js';
 import { updateCoastalFauna } from './game/fauna-costeira.js';
 import { state } from './game/state.js';
 
@@ -102,7 +103,8 @@ await loadSprites([
   { id: 'player_10x_lvl1', src: 'assets/sprites/player/player-10x-lvl1.png' },
   { id: 'veloz_ataque_direcional', src: 'assets/source-art/proximas-animacoes/veloz-ataque-alternativa.png' },
   { id: 'veloz_corrida_lateral', src: 'assets/source-art/proximas-animacoes/veloz-lateral.png' },
-  { id: 'hub_viajante', src: 'assets/sprites/saguao/viajante.png' },
+  { id: 'hub_nexo_lateral', src: 'assets/source-art/novos-sprites/nexo.png' },
+  { id: 'hub_viajante', src: 'assets/sprites/saguao/viajante-2026.png' },
   { id: 'hub_vaso_novo', src: 'assets/sprites/saguao/vaso.png' },
   { id: 'hub_reciclagem', src: 'assets/sprites/saguao/reciclagem.png' },
   { id: 'hub_carrinho', src: 'assets/sprites/saguao/carrinho.png' },
@@ -301,6 +303,7 @@ async function update(dt) {
 
   updateNpcBrains(dt);
   updateCoastalFauna(getFloor(), state.fauna, player, dt);
+  updateOwnedCompanion(state, getFloor(), dt, canStandAt);
   updateCamera(dt, player.x, player.y);
 }
 

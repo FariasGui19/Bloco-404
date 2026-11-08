@@ -825,6 +825,7 @@ function drawWorld(map, state) {
     o.y >= range.y0 - margem && o.y <= range.y1 + margem;
 
   for (const a of state.actors ?? []) drawList.push(a);
+  if (state.companion && state.progress.flags?.companheiro_lumeo) drawList.push(state.companion);
   for (const a of state.fauna ?? []) if (visivel(a)) drawList.push(a);
   for (const target of state.trainingTargets ?? []) if (visivel(target)) drawList.push(target);
 
@@ -847,6 +848,8 @@ function drawWorld(map, state) {
       drawMapObject(item, state);
     } else if (item.renderType === 'trainingTarget') {
       drawTrainingTarget(item);
+    } else if (item.renderType === 'companion') {
+      drawLumeo(item);
     } else if (item.renderType === 'fauna') {
       drawCoastalFauna(item);
     } else if (item.renderType === 'collectible') {
@@ -1678,6 +1681,19 @@ function drawFramePe(e, image, cfg, rc, ix, iy, S, flip, ajuste) {
 function drawNexoSprite(npc, ix, iy) {
   if (npc.sprite !== 'nexo_04' || !CONFIG.NEXO_04_SPRITE) return false;
 
+  // A nova folha só oferece passos laterais utilizáveis; frente e costas
+  // permanecem na folha original, sem forçar poses em direção incorreta.
+  const lateral = getSprite('hub_nexo_lateral');
+  if (npc.moving && lateral && ['left', 'right'].includes(npc.facing)) {
+    const col = [2, 3, 4, 3][Math.floor(performance.now() / 190) % 4];
+    const w = Math.floor(lateral.width / 6), h = Math.floor(lateral.height / 3);
+    const box = getVisibleBox(lateral, col * w, h, w, h), scale = .32;
+    ctx.save(); ctx.translate(ix, iy + 7);
+    if (npc.facing === 'left') ctx.scale(-1, 1);
+    ctx.drawImage(lateral, col * w, h, w, h, -(box.x + box.w / 2) * scale,
+      -(box.y + box.h) * scale, w * scale, h * scale);
+    ctx.restore(); npc._topo = 130; return true;
+  }
   const cfg = CONFIG.NEXO_04_SPRITE;
   const image = getSprite(cfg.ID);
   if (!image) return false;
@@ -1715,6 +1731,17 @@ function drawRobo(e, ix, iy) {
 // =====================================================================
 //  ENTIDADES
 // =====================================================================
+// Visual provisório: eco luminoso leve, sem dano nem colisão para o jogador.
+function drawLumeo(pet) {
+  const x = (pet.x - pet.y) * HW, y = (pet.x + pet.y) * HH;
+  const bob = Math.sin(performance.now() / 360) * 2;
+  ctx.save(); ctx.fillStyle = 'rgba(0,0,0,.25)'; ctx.beginPath(); ctx.ellipse(x,y,9,4,0,0,Math.PI*2); ctx.fill();
+  ctx.translate(x,y-15+bob); ctx.fillStyle = '#6bf6df'; ctx.strokeStyle = '#124c5a'; ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.arc(0,0,9,0,Math.PI*2); ctx.fill(); ctx.stroke();
+  ctx.fillStyle = '#12384a'; ctx.fillRect(-5,-2,2,3); ctx.fillRect(3,-2,2,3);
+  ctx.fillStyle = '#c8fff2'; ctx.beginPath(); ctx.arc(-3,-5,2,0,Math.PI*2); ctx.fill(); ctx.restore();
+}
+
 function drawShadow(ix, iy, alpha) {
   ctx.beginPath();
   ctx.ellipse(ix, iy, 13, 6, 0, 0, Math.PI * 2);
@@ -1886,11 +1913,10 @@ function drawEntity(entity, state) {
     const image = getSprite('hub_viajante');
     if (image) {
       drawShadow(ix, iy, .24);
-      const row = entity.facing === 'up' ? 1 : 0;
+      const row = { down: 0, right: 1, up: 2, left: 3 }[entity.facing] ?? 0;
       const frame = entity.moving ? Math.floor((entity.visitorRuntime?.clock ?? 0) * 7) % 6 : 0;
       ctx.save(); ctx.translate(ix, iy);
-      if (entity.facing === 'left') ctx.scale(-1, 1);
-      ctx.drawImage(image, frame * 160, row * 192, 160, 192, -53, -128, 106, 128);
+      ctx.drawImage(image, frame * 256, row * 256, 256, 256, -68, -129, 136, 136);
       ctx.restore(); entity._topo = 122; return;
     }
     return; // Sem arte, não desenha uma cópia do NEXO.

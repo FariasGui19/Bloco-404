@@ -21,7 +21,7 @@ A nova folha Bio possui nove quadros frontais com ferramenta/faíscas, sem vista
 
 ## Fundação dos Companheiros de Eco
 
-`js/game/companions.js` contém apenas definições e um protótipo puro de seguimento, ainda sem integração no mundo, interface, save, combate, inventário, captura ou aquisição. Bolt é o cachorro real do criador: precisa de sua própria folha e de uma regra de autorização/obtenção, ainda não decidida. Lúmeo, Marujo e Trisco são conceitos originais, não espécies prontas ou concedidas a jogadores. Antes de ligar ao jogo: arte direcional, animação e sombra/âncora; navegação com colisão e recuperação quando preso; portais e spawn seguro; vínculo ao jogador/conta e consentimento para Bolt; persistência versionada, progressão e acessibilidade. Não clonar franquias ou personagens conhecidos.
+`js/game/companions.js` contém definições e o seguimento provisório de Lúmeo, com aquisição opcional e vínculo salvo; ainda não há interface de troca, combate ou inventário de pets. Bolt é o cachorro real do criador: precisa de sua própria folha e de uma regra de autorização/obtenção, ainda não decidida. Lúmeo, Marujo e Trisco são conceitos originais, não espécies prontas ou concedidas a jogadores. Antes de ligar ao jogo: arte direcional, animação e sombra/âncora; navegação com colisão e recuperação quando preso; portais e spawn seguro; vínculo ao jogador/conta e consentimento para Bolt; persistência versionada, progressão e acessibilidade. Não clonar franquias ou personagens conhecidos.
 
 ## Cenário
 
@@ -30,3 +30,7 @@ O saguão recebeu vias luminosas e um selo procedural no piso, sem alterar objet
 ## Atualização visual da Forma Veloz
 
 Na forma sustentada, a folha nova fornece corrida lateral (espelhada para esquerda) e ataque básico em quatro direções. Frente e costas em movimento continuam com a pose provisória anterior. Q, R, transformação, duração, velocidade e regras de combate não foram modificados. As folhas de Domínio e Maré recebidas variam a identidade e o traje em comparação com o nível 1; ficam arquivadas até recebermos versões fiéis. Veja `docs/prompts-sprites-precisao.md`.
+
+## Lúmeo — encontro opcional
+
+Depois de registrar os três vestígios na Enseada, um pequeno eco aparece perto da trilha de retorno. Aproximar e interagir é uma escolha de acolhimento, sem substituir a missão principal. A flag do vínculo é salva; a posição é recriada ao carregar cada mapa. Por enquanto Lúmeo é visual procedural, segue sem bloquear o jogador, sem dano ou coleta automática; ao ficar preso reencontra o jogador em posição segura. Não existe ainda interface para dispensar/trocar ou evolução de pets. Bolt continua privado e não é concedido automaticamente.

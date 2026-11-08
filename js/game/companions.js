@@ -1,4 +1,4 @@
-// Fundação isolada e opt-in: não instancia pets nem altera saves ou colisões do jogo.
+// Espécies e movimento: o vínculo de Lúmeo é opcional; os demais permanecem conceitos.
 // Bolt representa o cachorro do criador; a autorização/obtenção será definida depois.
 export const COMPANION_SPECIES = Object.freeze({
   bolt: Object.freeze({ name: 'Bolt', kind: 'cão', art: null, availability: 'private-future' }),
@@ -12,7 +12,7 @@ export function createCompanion(speciesId, owner) {
   return { speciesId, x: owner.x, y: owner.y, facing: 'down', moving: false };
 }
 
-// Protótipo de movimento, NÃO ligado ao mundo. O integrador deve fornecer
+// Movimento isolado: o integrador deve fornecer
 // teste de trajetória/colisão; sem ele o companheiro permanece parado.
 export function updateCompanion(companion, owner, dt, canMove) {
   if (!companion || !Number.isFinite(owner?.x) || !Number.isFinite(owner?.y) || typeof canMove !== 'function') return;
@@ -25,4 +25,26 @@ export function updateCompanion(companion, owner, dt, canMove) {
   companion.x = x; companion.y = y; companion.moving = true;
   const sx = dx - dy, sy = dx + dy;
   companion.facing = Math.abs(sx) > Math.abs(sy) ? (sx > 0 ? 'right' : 'left') : (sy > 0 ? 'down' : 'up');
+}
+
+// Vínculo persistido em flags; posição é somente runtime e reinicia com o mapa.
+export function updateOwnedCompanion(state, map, dt, canStandAt) {
+  if (!state.progress?.flags?.companheiro_lumeo || !map || typeof canStandAt !== 'function') { state.companion = null; return; }
+  const player = state.player;
+  if (!state.companion || state.companion.mapId !== map.id) {
+    const pet = { ...createCompanion('lumeo', player), mapId: map.id, renderType: 'companion', blocked: 0 };
+    for (const [dx, dy] of [[-.8, 0], [0, .8], [.8, 0], [0, -.8]]) {
+      if (canStandAt(map, player.x + dx, player.y + dy, .15, pet)) { pet.x += dx; pet.y += dy; break; }
+    }
+    state.companion = pet;
+  }
+  const pet = state.companion;
+  const previous = { x: pet.x, y: pet.y };
+  updateCompanion(pet, player, dt, (_x, _y, x, y) => canStandAt(map, x, y, .15, pet));
+  const distance = Math.hypot(player.x - pet.x, player.y - pet.y);
+  pet.blocked = distance > 1.5 && pet.x === previous.x && pet.y === previous.y ? pet.blocked + dt : 0;
+  // Reencontro apenas em uma posição comprovadamente segura; não atravessa paredes.
+  if ((pet.blocked > 4 || distance > 8) && canStandAt(map, player.x, player.y, .15, pet)) {
+    pet.x = player.x; pet.y = player.y; pet.blocked = 0;
+  }
 }

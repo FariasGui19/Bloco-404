@@ -24,7 +24,7 @@ while (queue.length) {
 }
 for (const item of enseada.collectibles) assert(seen.has(`${item.x},${item.y}`), `${item.id} inacessível`);
 assert(seen.has(`${back.x},${back.y}`));
-assert.equal(enseada.collectibles.length, 3);
+assert.equal(enseada.collectibles.filter(i => i.id.startsWith('enseada_rastro_')).length, 3);
 assert(enseada.objects.filter(o => o.bloqueia).every(o => o.hitbox && o.sprite === 'vegetacao_tropical'));
 console.log('Enseada: ida, volta e três vestígios acessíveis OK.');
 
@@ -39,7 +39,7 @@ globalThis.window = { addEventListener() {} };
 state.save.loaded = false; state.save.activeSlot = null;
 state.progress = { flags: {}, inventory: [], activeQuest: { id: 'embarque_dimensional', status: 'active' } };
 assert(await loadMap(enseada.id, 'vindo_da_praia'));
-for (const [index, item] of state.collectibles.entries()) {
+for (const [index, item] of state.collectibles.filter(i => i.id.startsWith('enseada_rastro_')).entries()) {
   assert(collectItem(item));
   assert.equal(Boolean(state.progress.flags.enseada_ecos_mapeada), index === 2);
 }

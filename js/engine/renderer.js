@@ -566,15 +566,6 @@ function drawStationPaving(map) {
     ctx.strokeStyle='rgba(48,55,47,.32)'; ctx.lineWidth=.6; ctx.stroke();
     if (tone>.86) { ctx.strokeStyle='rgba(174,158,112,.35)'; ctx.beginPath(); ctx.moveTo(ix-10,iy+HH); ctx.lineTo(ix+4,iy+HH+4); ctx.stroke(); }
   }
-  // Corrimãos ancoram visualmente as duas travessias existentes sobre canais.
-  const rail = (x1,y1,x2,y2) => {
-    const p = (x,y) => ({x:(x-y)*HW,y:(x+y)*HH+HH});
-    const a=p(x1,y1), b=p(x2,y2);
-    ctx.strokeStyle='#414e43'; ctx.lineWidth=5; ctx.beginPath(); ctx.moveTo(a.x,a.y); ctx.lineTo(b.x,b.y); ctx.stroke();
-    ctx.strokeStyle='#b4a269'; ctx.lineWidth=1.5; ctx.beginPath(); ctx.moveTo(a.x,a.y-2); ctx.lineTo(b.x,b.y-2); ctx.stroke();
-  };
-  rail(24.7,17.1,27.4,17.1); rail(24.7,22.8,27.4,22.8);
-  rail(44.1,38.7,44.1,41.4); rail(48.8,38.7,48.8,41.4);
   ctx.restore();
 }
 
@@ -1080,7 +1071,7 @@ function drawWallProcedural(x, y, front) {
 // =====================================================================
 
 function getObjectSpriteConfig(spriteId) {
-  if (['bio_terminal', 'bio_reator'].includes(spriteId)) return { SHEET_COLS: 1, SHEET_ROWS: 1, DEFAULT_SCALE: 1, FEET_ANCHOR_Y: 1 };
+  if (['bio_terminal', 'bio_reator', 'bio_ponte', 'bio_estufa'].includes(spriteId)) return { SHEET_COLS: 1, SHEET_ROWS: 1, DEFAULT_SCALE: 1, FEET_ANCHOR_Y: 1 };
   if (['hub_vaso_novo', 'hub_reciclagem', 'hub_carrinho', 'hub_bebedouro'].includes(spriteId)) return { SHEET_COLS: 1, SHEET_ROWS: 1, DEFAULT_SCALE: .25, FEET_ANCHOR_Y: 1 };
   if (spriteId === 'costa_rochosa') return { SHEET_COLS: 4, SHEET_ROWS: 1, DEFAULT_SCALE: 1, FEET_ANCHOR_Y: 1 };
   if (spriteId === 'vegetacao_tropical') return { SHEET_COLS: 8, SHEET_ROWS: 1, DEFAULT_SCALE: 1, FEET_ANCHOR_Y: 1 };

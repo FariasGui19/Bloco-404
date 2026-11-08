@@ -1,4 +1,4 @@
-"""Extrai duas peças isométricas com fundo magenta. Requer Pillow e NumPy."""
+"""Extrai peças isométricas com fundo magenta. Requer Pillow e NumPy."""
 from pathlib import Path
 import numpy as np
 from PIL import Image
@@ -6,7 +6,7 @@ from PIL import Image
 source = Path('assets/source-art/estacao-bio')
 out = Path('assets/sprites/estacao-bio')
 out.mkdir(parents=True, exist_ok=True)
-for name in ('terminal', 'biorreator'):
+for name in ('terminal', 'biorreator', 'ponte-industrial', 'estufa'):
     image = np.array(Image.open(source / f'{name}.png').convert('RGB')).astype(np.float32)
     # O fundo é magenta; nenhum material das peças deve usar essa cor.
     excess = np.minimum(image[:,:,0], image[:,:,2]) - image[:,:,1]

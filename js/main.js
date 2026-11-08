@@ -25,7 +25,7 @@ import { updateCamera } from './engine/camera.js';
 
 import { input, initInput, endInputFrame } from './engine/input.js';
 import { initRenderer, render } from './engine/renderer.js';
-import { loadSprites } from './engine/sprites.js';
+import { loadSprites, getSprite } from './engine/sprites.js';
 
 import { initHud, updateHud } from './ui/hud.js';
 import { initTitleScreen } from './ui/menu.js';
@@ -103,6 +103,8 @@ await loadSprites([
   { id: 'player_10x_lvl1', src: 'assets/sprites/player/player-10x-lvl1.png' },
   { id: 'veloz_ataque_direcional', src: 'assets/source-art/proximas-animacoes/veloz-ataque-alternativa.png' },
   { id: 'veloz_corrida_lateral', src: 'assets/source-art/proximas-animacoes/veloz-lateral.png' },
+  { id: 'bio_ponte', src: 'assets/sprites/estacao-bio/ponte-industrial.png' },
+  { id: 'bio_estufa', src: 'assets/sprites/estacao-bio/estufa.png' },
   { id: 'bio_terminal', src: 'assets/sprites/estacao-bio/terminal.png' },
   { id: 'bio_reator', src: 'assets/sprites/estacao-bio/biorreator.png' },
   { id: 'pet_bolt', src: 'assets/sprites/companions/bolt.png' },
@@ -183,6 +185,16 @@ await loadSprites([
   { id: 'vegetacao_tropical', src: 'assets/sprites/objects/vegetacao-tropical.png' },
   { id: 'beach_props', src: 'assets/sprites/objects/beach-props.png' },
 ]);
+
+// Importações parciais deixam colisões sem arte; avise em vez de falhar silenciosamente.
+const bioMissing = ['bio_terminal', 'bio_reator', 'bio_ponte', 'bio_estufa'].filter(id => !getSprite(id));
+if (bioMissing.length) {
+  const warning = document.createElement('div');
+  warning.setAttribute('role', 'alert');
+  warning.textContent = `Arquivos da Estação Bio ausentes: ${bioMissing.join(', ')}. Reimporte o projeto completo e recarregue; seus saves não precisam ser apagados.`;
+  Object.assign(warning.style, { position: 'fixed', left: '1rem', right: '1rem', top: '1rem', zIndex: '9999', background: '#612c1a', color: 'white', padding: '1rem', font: 'bold 14px sans-serif' });
+  document.body.appendChild(warning);
+}
 
 // =====================================================================
 // UPDATE

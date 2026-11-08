@@ -4,12 +4,12 @@ Regra de produção: em cada atualização, gerar e integrar no máximo **duas f
 
 ## Rodada atual: Estação que Respira
 
-1. **Terminal de teleférico e biorreator:** duas peças isoladas inspiradas no conceito aprovado, com preparação de alpha em `tools/preparar-estacao-bio.py`. O terminal é uma estrutura estática sólida; dois biorreatores marcam as áreas de manutenção. Pavimentação e guarda-corpos são procedurais, não contam como folhas geradas.
+1. **Ponte industrial e estufa:** duas peças isoladas novas, preparadas com alpha em `tools/preparar-estacao-bio.py`. Uma ponte é reutilizada nas duas travessias; há uma estufa sólida e apenas um biorreator no pátio. As peças anteriores de terminal e biorreator permanecem. Piso procedural; ponte em camada de fundo, sem recorte de guarda-corpo para profundidade.
 2. Reorganizar vegetação e adicionar detritos, caminhos e pátios, mantendo a máscara do mapa e o acesso ao retorno e aos três objetivos. Os simuladores e diálogos seguem provisórios; a arte não transforma esses objetivos num puzzle real. A estrutura não é um interior caminhável.
 
 ## Próximas rodadas sugeridas (ordem ajustável depois do teste)
 
-1. **Estação Bio — continuidade espacial:** um conjunto de piso/ruínas modular e uma peça de passagem/ponte coerente com os canais, testados no jogo. Evitar gerar uma imagem plana e fingir que suas escadas são caminháveis. Corrigir a borda retangular da ilha, variedade de cenários e transições.
+1. **Estação Bio — continuidade espacial:** um conjunto de piso/ruínas modular e melhorias de profundidade e encaixe das passagens, testados no jogo. Evitar gerar uma imagem plana e fingir que suas escadas são caminháveis. Corrigir a borda retangular da ilha, variedade de cenários e transições.
 2. **Praia Inicial — travessias e teleférico:** uma folha de peças de teleférico/apoios e, se necessário, uma de obstáculos e animações de reconstrução. Preservar o R de diagnóstico e as rotas das quatro classes; trilhos não devem invadir a areia.
 3. **Bolt — animações reais:** uma direção por vez, ou até duas folhas se tiverem quadrícula e alpha válidos; validar identidade, patas e tamanho com o tutor. Hoje só existe uma pose, não caminhada real. Missão pessoal e autorização de conta continuam pendentes.
 4. **Saguão — NPCs:** NEXO de frente/costas e, numa rodada seguinte, gestos; preservar aparência já aprovada. Viajante só substituída se houver uma melhoria consistente com as quatro direções e a mala.

@@ -120,6 +120,16 @@ assert.equal(achar('bio_reparo_condutor').sprite, 'bio_condutor_ativo');
 assert.equal(achar('bio_reparo_regulador').sprite, 'bio_regulador_ativo');
 assert(state.progress.flags.collected_bio_estacao_estufa);
 
+// O portal de volta reflete a leitura registrada, sem trocar de destino.
+state.player.x = 8.5; state.player.y = 10.5;
+assert.equal(getInteractionPrompt(findNearestInteraction()), 'RETORNAR · LEITURA REGISTRADA');
+assert.equal(mapPortalId(), 'ilha_praia_inicial');
+
+function mapPortalId() {
+  const p = dadosMap.portals.find(portal => portal.id === 'estacao_voltar');
+  return p.destino.mapId;
+}
+
 // Arquétipo errado não abre a válvula, mesmo com a linha energizada.
 const gateOriginal = dadosMap.objects.find(o => o.id === 'bio_valvula_estufa').gate;
 state.progress.archetype = 'mare_astral';

@@ -78,8 +78,10 @@ export function render(map, state) {
     if (map.id === 'hub_saguao') drawHubFloorMarkings();
     if (map.id === 'ilha_estacao_bio') {
       drawStationPaving(map);
+      drawStationCanalRims(map);
       drawStationBridges(map);
       drawBioNetwork(map);
+      drawStationRoute(map);
       drawBioShadows(map);
     }
     if (map.aguaPraia) drawBeachShore(map);
@@ -571,13 +573,13 @@ const ehDeck = (map, x, y) => 'Bb'.includes(map.aguaPraia?.[y]?.[x] ?? ' ');
 function caminhoEstacao(map, x, y) {
   if (map.walkMask[y]?.[x] !== '.' || ehDeck(map, x, y)) return false;
   return (
-    (x >= 5 && x <= 16 && y >= 3 && y <= 14) ||   // avental do terminal
+    (x >= 3 && x <= 17 && y >= 3 && y <= 15) ||   // avental do terminal
     (x >= 8 && x <= 18 && y >= 10 && y <= 18) ||
     (x >= 14 && x <= 39 && y >= 17 && y <= 22) ||
     (x >= 35 && x <= 48 && y >= 18 && y <= 23) ||
     (x >= 30 && x <= 34 && y >= 22 && y <= 27) ||
     (x >= 44 && x <= 48 && y >= 18 && y <= 51) ||
-    (x >= 47 && x <= 63 && y >= 43 && y <= 55) ||  // avental da estufa
+    (x >= 47 && x <= 64 && y >= 40 && y <= 56) ||  // avental da estufa
     (x >= 45 && x <= 59 && y >= 46 && y <= 53) ||
     (x >= 53 && x <= 59 && y >= 42 && y <= 47));
 }
@@ -607,6 +609,62 @@ function drawStationPaving(map) {
   ctx.restore();
 }
 
+// Borda de pedra rente à água: o canal deixa de ser uma faixa ciana sem
+// limite e passa a ter margem dos dois lados. Só desenha arestas com terra
+// ou deck do outro lado; não altera máscara nem colisão.
+function drawStationCanalRims(map) {
+  const linhas = map.aguaPraia;
+  ctx.save();
+  for (let y = range.y0; y <= range.y1; y++) for (let x = range.x0; x <= range.x1; x++) {
+    if (linhas[y]?.[x] !== 'Y') continue;
+    const ix = (x - y) * HW, iy = (x + y) * HH;
+    const T = [ix, iy], R = [ix + HW, iy + HH], B = [ix, iy + TH], L = [ix - HW, iy + HH];
+    const C = [ix, iy + HH];
+    const vizinhos = [
+      [x - 1, y, L, T], [x, y - 1, T, R],
+      [x + 1, y, R, B], [x, y + 1, B, L],
+    ];
+    for (const [nx, ny, p, q] of vizinhos) {
+      const outro = linhas[ny]?.[nx];
+      if (!outro || 'YyDd'.includes(outro)) continue;
+      const interior = (v) => [v[0] + (C[0] - v[0]) * .17, v[1] + (C[1] - v[1]) * .17];
+      const pi = interior(p), qi = interior(q);
+      ctx.fillStyle = '#3a4740';
+      ctx.beginPath(); ctx.moveTo(p[0], p[1]); ctx.lineTo(q[0], q[1]);
+      ctx.lineTo(qi[0], qi[1]); ctx.lineTo(pi[0], pi[1]); ctx.closePath(); ctx.fill();
+      ctx.strokeStyle = 'rgba(178,190,160,.55)'; ctx.lineWidth = 1.2;
+      ctx.beginPath(); ctx.moveTo(pi[0], pi[1] - 1); ctx.lineTo(qi[0], qi[1] - 1); ctx.stroke();
+      ctx.strokeStyle = 'rgba(12,32,34,.55)'; ctx.lineWidth = 1.6;
+      ctx.beginPath(); ctx.moveTo(p[0], p[1]); ctx.lineTo(q[0], q[1]); ctx.stroke();
+    }
+  }
+  ctx.restore();
+}
+
+// Rota da primeira missão desenhada no piso: pequenos losangos e setas,
+// com os trechos já concluídos mais claros. É só orientação visual.
+function drawStationRoute(map) {
+  const rota = map.bioRoute;
+  if (!rota?.path?.length) return;
+  const flags = state.progress?.flags ?? {};
+  const ponto = ([x, y]) => [((x + .5) - (y + .5)) * HW, ((x + .5) + (y + .5)) * HH];
+  ctx.save();
+  stationClip(map, (x, y) => map.walkMask[y]?.[x] === '.' && !'YyDd'.includes(map.aguaPraia?.[y]?.[x] ?? ' '));
+  for (let i = 0; i < rota.path.length - 1; i++) {
+    const a = ponto(rota.path[i]), b = ponto(rota.path[i + 1]);
+    const etapa = (rota.stages ?? []).find(s => i < s.ate);
+    const feito = etapa ? !!flags[etapa.flag] : false;
+    const passos = Math.max(1, Math.ceil(Math.hypot(b[0] - a[0], b[1] - a[1]) / 46));
+    for (let p = 0; p <= passos; p++) {
+      const t = p / passos, px = a[0] + (b[0] - a[0]) * t, py = a[1] + (b[1] - a[1]) * t;
+      ctx.fillStyle = feito ? 'rgba(143,230,200,.75)' : 'rgba(116,155,146,.28)';
+      ctx.beginPath(); ctx.moveTo(px, py - 3); ctx.lineTo(px + 5, py);
+      ctx.lineTo(px, py + 3); ctx.lineTo(px - 5, py); ctx.closePath(); ctx.fill();
+    }
+  }
+  ctx.restore();
+}
+
 // Tabuleiros das duas travessias: geometria real sobre a água, com espessura
 // nas bordas. Guarda-corpos são desenhados depois, como objetos por trecho.
 function drawStationBridges(map) {
@@ -627,28 +685,67 @@ function drawStationBridges(map) {
     // Tampa do deck: tom quente separa a travessia do piso industrial escuro.
     ctx.fillStyle = '#6b6550';
     ctx.beginPath(); ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); ctx.lineTo(c[0], c[1]); ctx.lineTo(d[0], d[1]); ctx.closePath(); ctx.fill();
-    // Tábuas/réguas acompanhando o eixo longo da travessia.
+    // Tábuas/réguas acompanhando o eixo longo da travessia, com rebites.
     const alongX = ponte.axis === 'x';
+    const passosLongos = (alongX ? x1 - x0 : y1 - y0);
+    const passosCurtos = (alongX ? y1 - y0 : x1 - x0);
     ctx.lineWidth = 1.4;
-    ctx.strokeStyle = 'rgba(38,46,40,.55)';
-    for (let t = 0; t <= (alongX ? ponte.y1 - ponte.y0 : ponte.x1 - ponte.x0) + 1; t++) {
+    ctx.strokeStyle = 'rgba(38,46,40,.6)';
+    for (let t = 0; t <= passosCurtos; t++) {
       const p = alongX ? iso(x0, y0 + t) : iso(x0 + t, y0);
       const q = alongX ? iso(x1, y0 + t) : iso(x0 + t, y1);
       ctx.beginPath(); ctx.moveTo(p[0], p[1]); ctx.lineTo(q[0], q[1]); ctx.stroke();
     }
-    for (let t = 0; t <= (alongX ? ponte.x1 - ponte.x0 : ponte.y1 - ponte.y0) + 1; t++) {
+    for (let t = 0; t <= passosLongos; t++) {
       const p = alongX ? iso(x0 + t, y0) : iso(x0, y0 + t);
       const q = alongX ? iso(x0 + t, y1) : iso(x1, y0 + t);
       ctx.beginPath(); ctx.moveTo(p[0], p[1]); ctx.lineTo(q[0], q[1]); ctx.stroke();
     }
+    ctx.fillStyle = 'rgba(196,190,150,.5)';
+    for (let u = 0; u <= passosLongos; u++) for (let v = 0; v <= passosCurtos; v++) {
+      const p = alongX ? iso(x0 + u, y0 + v) : iso(x0 + v, y0 + u);
+      ctx.beginPath(); ctx.arc(p[0], p[1], 1.5, 0, Math.PI * 2); ctx.fill();
+    }
+    // Treliça sob as duas bordas longas: dá massa à ponte sem criar colisão.
+    const lados = alongX ? [[a, b], [d, c]] : [[a, d], [b, c]];
+    for (const [p, q] of lados) {
+      const trechos = Math.max(2, passosLongos);
+      ctx.strokeStyle = '#1d2a28'; ctx.lineWidth = 3;
+      ctx.beginPath(); ctx.moveTo(p[0], p[1] + 13); ctx.lineTo(q[0], q[1] + 13); ctx.stroke();
+      ctx.lineWidth = 1.8; ctx.strokeStyle = 'rgba(58,80,70,.9)';
+      for (let s = 0; s < trechos; s++) {
+        const t0 = s / trechos, t1 = (s + 1) / trechos;
+        const u0 = [p[0] + (q[0] - p[0]) * t0, p[1] + (q[1] - p[1]) * t0];
+        const u1 = [p[0] + (q[0] - p[0]) * t1, p[1] + (q[1] - p[1]) * t1];
+        ctx.beginPath(); ctx.moveTo(u0[0], u0[1]); ctx.lineTo(u1[0], u1[1] + 13); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(u0[0], u0[1] + 13); ctx.lineTo(u1[0], u1[1]); ctx.stroke();
+      }
+    }
     // Longarinas metálicas nas duas bordas longas.
     ctx.strokeStyle = '#22322e'; ctx.lineWidth = 4;
-    for (const [p, q] of alongX ? [[a, b], [d, c]] : [[a, d], [b, c]]) {
+    for (const [p, q] of lados) {
       ctx.beginPath(); ctx.moveTo(p[0], p[1]); ctx.lineTo(q[0], q[1]); ctx.stroke();
     }
     ctx.strokeStyle = 'rgba(178,193,155,.6)'; ctx.lineWidth = 1.4;
-    for (const [p, q] of alongX ? [[a, b], [d, c]] : [[a, d], [b, c]]) {
+    for (const [p, q] of lados) {
       ctx.beginPath(); ctx.moveTo(p[0], p[1] - 2); ctx.lineTo(q[0], q[1] - 2); ctx.stroke();
+    }
+    // Encontros baixos nas duas pontas: pedra rasa, não bloco alto.
+    const meioCurto = (y0 + y1) / 2, meioLongo = (x0 + x1) / 2;
+    const pontas = alongX ? [iso(x0, meioCurto), iso(x1, meioCurto)] : [iso(meioLongo, y0), iso(meioLongo, y1)];
+    for (const [px, py] of pontas) {
+      ctx.fillStyle = '#2a3632';
+      ctx.beginPath(); ctx.moveTo(px, py - 12); ctx.lineTo(px + 20, py - 2);
+      ctx.lineTo(px, py + 8); ctx.lineTo(px - 20, py - 2); ctx.closePath();
+      ctx.moveTo(px - 20, py - 2); ctx.lineTo(px - 20, py + 3);
+      ctx.lineTo(px, py + 13); ctx.lineTo(px + 20, py + 3);
+      ctx.lineTo(px + 20, py - 2); ctx.closePath(); ctx.fill();
+      ctx.fillStyle = '#8d9080';
+      ctx.beginPath(); ctx.moveTo(px, py - 12); ctx.lineTo(px + 20, py - 2);
+      ctx.lineTo(px, py + 8); ctx.lineTo(px - 20, py - 2); ctx.closePath(); ctx.fill();
+      ctx.strokeStyle = 'rgba(45,58,51,.8)'; ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(px - 20, py - 2); ctx.lineTo(px, py + 8);
+      ctx.lineTo(px + 20, py - 2); ctx.stroke();
     }
   }
   ctx.restore();
@@ -674,9 +771,18 @@ function drawBioNetwork(map) {
       }
       ctx.lineWidth = largura; ctx.strokeStyle = cor; ctx.lineJoin = 'round'; ctx.lineCap = 'round'; ctx.stroke();
     };
-    desenha(5, 'rgba(24,38,38,.75)');
-    desenha(3, energizada ? '#41705f' : '#46534e');
+    desenha(6, 'rgba(22,34,34,.8)');
+    desenha(3.5, energizada ? '#41705f' : '#46534e');
     desenha(1.2, energizada ? (fluxo ? '#a9f3d2' : '#77c9ad') : '#637069');
+    // Juntas e cotovelos: a linha lê como tubulação, não como risco no chão.
+    for (const [x, y] of path) {
+      const [px, py] = ponto([x, y]);
+      ctx.fillStyle = '#1b2b2b';
+      ctx.beginPath(); ctx.moveTo(px, py - 4); ctx.lineTo(px + 6, py);
+      ctx.lineTo(px, py + 4); ctx.lineTo(px - 6, py); ctx.closePath(); ctx.fill();
+      ctx.fillStyle = energizada ? '#7fc9ae' : '#586660';
+      ctx.beginPath(); ctx.arc(px, py, 1.6, 0, Math.PI * 2); ctx.fill();
+    }
   }
   for (const node of net.nodes) {
     const [px, py] = ponto([node.x, node.y]);
@@ -697,8 +803,11 @@ function drawBioShadows() {
   for (const o of state.objects ?? []) {
     if (!o.sombra || o.oculto) continue;
     const ix = (o.x - o.y) * HW, iy = (o.x + o.y) * HH;
+    // Sombra larga difusa + contato duro junto à base: a peça "assenta".
     ctx.fillStyle = 'rgba(10,26,27,.22)';
     ctx.beginPath(); ctx.ellipse(ix, iy + 2, o.sombra[0], o.sombra[1], 0, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = 'rgba(6,20,21,.38)';
+    ctx.beginPath(); ctx.ellipse(ix, iy + 2, o.sombra[0] * .55, o.sombra[1] * .55, 0, 0, Math.PI * 2); ctx.fill();
   }
   ctx.restore();
 }
@@ -1253,7 +1362,7 @@ function drawWallProcedural(x, y, front) {
 // =====================================================================
 
 function getObjectSpriteConfig(spriteId) {
-  if (['bio_terminal', 'bio_reator', 'bio_ponte', 'bio_estufa', 'bio_floreira', 'bio_tubos', 'bio_caixa', 'bio_luminaria', 'bio_plataforma', 'bio_margem_canto', 'bio_margem_cano', 'bio_margem_ruina', 'bio_margem_mureta', 'bio_condutor_quebrado', 'bio_condutor_ativo', 'bio_regulador_quebrado', 'bio_regulador_ativo', 'bio_mato_cano', 'bio_mato_ventilacao', 'bio_mato_barris', 'bio_mato_fissura', 'bio_cabeceira', 'bio_distribuidor'].includes(spriteId)) return { SHEET_COLS: 1, SHEET_ROWS: 1, DEFAULT_SCALE: 1, FEET_ANCHOR_Y: 1 };
+  if (['bio_terminal', 'bio_reator', 'bio_ponte', 'bio_estufa', 'bio_floreira', 'bio_tubos', 'bio_caixa', 'bio_luminaria', 'bio_plataforma', 'bio_margem_canto', 'bio_margem_cano', 'bio_margem_ruina', 'bio_margem_mureta', 'bio_condutor_quebrado', 'bio_condutor_ativo', 'bio_regulador_quebrado', 'bio_regulador_ativo', 'bio_mato_cano', 'bio_mato_ventilacao', 'bio_mato_barris', 'bio_mato_fissura', 'bio_cabeceira', 'bio_distribuidor', 'bio_margem_baixa', 'bio_fundacao'].includes(spriteId)) return { SHEET_COLS: 1, SHEET_ROWS: 1, DEFAULT_SCALE: 1, FEET_ANCHOR_Y: 1 };
   if (['hub_vaso_novo', 'hub_reciclagem', 'hub_carrinho', 'hub_bebedouro'].includes(spriteId)) return { SHEET_COLS: 1, SHEET_ROWS: 1, DEFAULT_SCALE: .25, FEET_ANCHOR_Y: 1 };
   if (spriteId === 'costa_rochosa') return { SHEET_COLS: 4, SHEET_ROWS: 1, DEFAULT_SCALE: 1, FEET_ANCHOR_Y: 1 };
   if (spriteId === 'vegetacao_tropical') return { SHEET_COLS: 8, SHEET_ROWS: 1, DEFAULT_SCALE: 1, FEET_ANCHOR_Y: 1 };

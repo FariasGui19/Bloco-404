@@ -21,4 +21,18 @@ closeQuestJournal(); assert(!isQuestJournalOpen()); assert(!classes.has('visible
 progress.flags.collected_enseada_rastro_pedra = true; progress.flags.collected_enseada_rastro_mata = true;
 openQuestJournal(progress, { id: 'hub_saguao' });
 assert.match(elements.get('#journalSideDescription').textContent, /Concluída/);
-console.log('Diário: consulta de principal e vestígios, sem mutação de progresso OK.');
+assert.match(elements.get('#journalBioTitle').textContent, /0\/4/);
+assert.match(elements.get('#journalBioDescription').textContent, /○ CONDUTOR/);
+closeQuestJournal();
+// A primeira missão da Estação Bio fecha no diário sem conceder recompensa.
+Object.assign(progress.flags, {
+  gate_bio_reparo_condutor: true, gate_bio_reparo_regulador: true,
+  bio_valvula_estufa_diagnostico: true, gate_bio_valvula_estufa: true,
+});
+const antesBio = JSON.stringify(progress);
+openQuestJournal(progress, { id: 'ilha_estacao_bio' });
+assert.match(elements.get('#journalBioTitle').textContent, /LEITURA REGISTRADA/);
+assert.match(elements.get('#journalBioDescription').textContent, /✓ FLUXO PARCIAL/);
+assert.match(elements.get('#journalBioDescription').textContent, /nenhuma recompensa/i);
+assert.equal(JSON.stringify(progress), antesBio, 'diário não altera save');
+console.log('Diário: principal, vestígios e primeira missão Bio, sem mutação de progresso OK.');

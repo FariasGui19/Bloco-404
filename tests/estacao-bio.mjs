@@ -98,28 +98,77 @@ for (const path of map.bioNetwork.paths) for (const [x, y] of path) {
 }
 assert.equal(map.bioNetwork.nodes.length, 3);
 
-// Peças novas: duas imagens estáticas, cada instância com apoio, escala e colisão.
-for (const arquivo of ['assets/sprites/estacao-bio/bio-cabeceira.png', 'assets/sprites/estacao-bio/bio-distribuidor.png']) {
+// Quatro imagens estáticas já implementadas (duas por rodada), todas registradas.
+for (const arquivo of [
+  'assets/sprites/estacao-bio/bio-cabeceira.png',
+  'assets/sprites/estacao-bio/bio-distribuidor.png',
+  'assets/sprites/estacao-bio/bio-margem-baixa.png',
+  'assets/sprites/estacao-bio/bio-fundacao.png',
+]) {
   assert(existsSync(new URL('../' + arquivo, import.meta.url)), `arquivo ${arquivo} presente`);
 }
 const main = readFileSync(new URL('../js/main.js', import.meta.url), 'utf8');
-for (const id of ['bio_cabeceira', 'bio_distribuidor']) {
+for (const id of ['bio_cabeceira', 'bio_distribuidor', 'bio_margem_baixa', 'bio_fundacao']) {
   assert(main.includes(`id: '${id}'`), `${id} registrado no carregamento`);
   assert(main.includes(`'${id}'`), `${id} conferido no aviso de arte ausente`);
 }
 const cabeceiras = state.objects.filter(o => o.sprite === 'bio_cabeceira');
 const distribuidores = state.objects.filter(o => o.sprite === 'bio_distribuidor');
-assert.equal(cabeceiras.length, 4);
+assert.equal(cabeceiras.length, 2, 'cabeceiras altas saíram das pontes');
 assert.equal(distribuidores.length, 3);
 for (const obj of [...cabeceiras, ...distribuidores]) {
   assert(obj.useCrop && obj.larguraPx && obj.sombra, `${obj.id}: escala e apoio declarados`);
   assert(obj.bloqueia && obj.hitbox, `${obj.id}: colisão declarada`);
   assert(!canStandAt(map, obj.x, obj.y, .28, state.player), `${obj.id}: centro bloqueado`);
 }
+const dentroDeDeck = (o) => map.bioBridges.some(b =>
+  o.x - .5 >= b.x0 && o.x - .5 <= b.x1 && o.y - .5 >= b.y0 && o.y - .5 <= b.y1);
+for (const obj of cabeceiras) {
+  assert(!dentroDeDeck(obj), `${obj.id}: nenhuma lápide sobre o tabuleiro`);
+  assert(obj.larguraPx <= 60, `${obj.id}: escala reduzida`);
+}
+
+// 0.3.6: margens baixas rente ao solo e fundações proporcionais sob as máquinas.
+const margens = state.objects.filter(o => o.sprite === 'bio_margem_baixa');
+const fundacoes = state.objects.filter(o => o.sprite === 'bio_fundacao');
+assert.equal(margens.length, 32);
+assert.equal(fundacoes.length, 9);
+for (const obj of [...margens, ...fundacoes]) {
+  assert(obj.useCrop && obj.larguraPx && obj.pivotY === 1, `${obj.id}: escala e apoio no chão`);
+  assert.equal(obj.bloqueia, false, `${obj.id}: peça rente ao solo não obstrui a rota`);
+  assert(obj.depthOffset < 0, `${obj.id}: desenhada atrás da estrutura`);
+}
+for (const obj of margens) assert(!dentroDeDeck(obj), `${obj.id}: margem fora do tabuleiro`);
+for (const obj of fundacoes) {
+  const alvo = state.objects.find(o => o.id === obj.id.replace('bio_fundacao_', ''));
+  assert(alvo, `${obj.id}: máquina correspondente existe`);
+  assert.equal(obj.x, alvo.x, `${obj.id}: mesma posição da máquina`);
+  assert.equal(obj.y, alvo.y, `${obj.id}: mesma posição da máquina`);
+  assert(obj.larguraPx >= 80 && obj.larguraPx <= 380, `${obj.id}: placa em escala de cenário`);
+  if (alvo.larguraPx) {
+    assert(obj.larguraPx <= alvo.larguraPx * 1.3,
+      `${obj.id}: fundação proporcional à máquina`);
+  }
+}
+
+// Rota e fechamento explícito da primeira missão do setor.
+assert(map.bioRoute.path.length >= 12);
+assert.equal(map.bioRoute.stages.length, 4);
+for (const [x, y] of map.bioRoute.path) {
+  assert.equal(map.walkMask[y]?.[x], '.', `rota em ${x},${y} apoiada no piso`);
+}
+const journal = readFileSync(new URL('../js/ui/quest-journal.js', import.meta.url), 'utf8');
+assert(journal.includes('ESTAÇÃO BIO · PRIMEIRA MISSÃO'), 'diário mostra as etapas da missão');
+assert(journal.includes('gate_bio_valvula_estufa'), 'diário lê a flag final');
+const portal = map.portals.find(p => p.id === 'estacao_voltar');
+assert.equal(portal.missaoFlag, 'gate_bio_valvula_estufa');
+assert(portal.labelConcluido);
 const valvula = state.objects.find(o => o.id === 'bio_valvula_estufa');
 assert.equal(valvula.moduleSystem.requiresFlag, 'gate_bio_reparo_regulador');
 assert.equal(valvula.gate.prerequisiteFlag, 'gate_bio_reparo_regulador');
-assert(valvula.gate.sucesso.join(' ').includes('AINDA'), 'não declara o sistema completo');
+const sucesso = valvula.gate.sucesso.join(' ');
+assert(sucesso.includes('PRIMEIRA MISSÃO DO SETOR INICIAL: CONCLUÍDA'), 'fecha a primeira missão');
+assert(sucesso.includes('NÚCLEO PROFUNDO') && sucesso.includes('SEM RECOMPENSA'), 'não declara o sistema geral completo');
 assert(!valvula.gate.spriteAberto, 'sem recompensa ou novo item disfarçado de sprite');
 
 assert(state.objects.find(o => o.id === 'bio_reator_patio').bloqueia);

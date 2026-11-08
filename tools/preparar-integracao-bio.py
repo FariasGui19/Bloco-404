@@ -1,8 +1,10 @@
-"""Prepara as duas peças estáticas da rodada de integração da Estação Bio.
+"""Prepara as peças estáticas das rodadas de integração da Estação Bio.
 
 Não são folhas de animação: cada PNG é uma única peça de cenário gerada sobre
 fundo magenta, recortada com alpha real. Execute na raiz do repositório.
 Requer Pillow e NumPy.
+
+0.3.5: cabeceira e distribuidor. 0.3.6: margem baixa de canal e fundação baixa.
 """
 from pathlib import Path
 
@@ -37,3 +39,5 @@ def limpar(nome_origem, nome_destino, limite=640):
 
 limpar('cabeceira-ponte.png', 'bio-cabeceira.png')
 limpar('distribuidor-pressao.png', 'bio-distribuidor.png')
+limpar('margem-canal-baixa.png', 'bio-margem-baixa.png', limite=512)
+limpar('fundacao-maquina.png', 'bio-fundacao.png', limite=512)

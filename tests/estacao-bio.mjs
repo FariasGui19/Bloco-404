@@ -34,6 +34,14 @@ for (const id of ['bio_ponte_patio','bio_ponte_estufa']) {
   assert(bridge && bridge.camada==='fundo' && !bridge.bloqueia, `${id}: travessia visual sem bloquear`);
   assert(canStandAt(map,bridge.x,bridge.y,.28,state.player),`${id}: centro atravessável`);
 }
+const modulos=state.objects.filter(o=>o.id.startsWith('bio_modulo_'));
+assert.equal(modulos.length,8);
+assert.deepEqual(new Set(modulos.map(o=>o.sprite)),new Set(['bio_floreira','bio_tubos','bio_caixa','bio_luminaria']));
+for (const obj of modulos) {
+  assert(obj.bloqueia && obj.hitbox, `${obj.id}: colisão declarada`);
+  assert(!canStandAt(map,obj.x,obj.y,.28,state.player),`${obj.id}: centro da peça bloqueado`);
+}
+assert(runtimeSeen.has('9,10'), 'spawn preservado');
 assert(!state.objects.some(o=>o.id==='bio_entrada_portal'), 'portal genérico antigo não deve voltar');
 assert(await loadMap('hub_saguao')); setZoom(.3); assert.equal(camera.targetZoom,.3);
 console.log('Estação Bio: caminhos, objetivos, retorno, gate e zoom OK.');

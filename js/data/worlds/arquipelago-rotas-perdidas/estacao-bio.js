@@ -20,6 +20,19 @@ const objects = [
   {id:'bio_ponte_patio',tipo:'decoracao',x:25.5,y:19.5,sprite:'bio_ponte',useCrop:true,larguraPx:240,pivotX:.5,pivotY:.50,espelhar:true,camada:'fundo',bloqueia:false},
   {id:'bio_ponte_estufa',tipo:'decoracao',x:45.5,y:39.5,sprite:'bio_ponte',useCrop:true,larguraPx:240,pivotX:.5,pivotY:.50,camada:'fundo',bloqueia:false},
 ];
+// Detalhes estáticos nas bordas dos pátios, sem interferir nos pontos de missão.
+// A folha foi recortada em quatro imagens para preservar a bobina separada da caixa.
+for (const [id,x,y,sprite,scale] of [
+  ['bio_modulo_floreira_entrada',18,11,'bio_floreira',.22],
+  ['bio_modulo_luz_entrada',19,18,'bio_luminaria',.22],
+  ['bio_modulo_tubos_patio',33,15,'bio_tubos',.22],
+  ['bio_modulo_caixa_patio',38,25,'bio_caixa',.20],
+  ['bio_modulo_floreira_patio',42,23,'bio_floreira',.21],
+  ['bio_modulo_luz_trilha',49,32,'bio_luminaria',.22],
+  ['bio_modulo_caixa_estufa',53,52,'bio_caixa',.20],
+  ['bio_modulo_floreira_estufa',56,50,'bio_floreira',.22],
+]) objects.push({id,tipo:'decoracao',x,y,sprite,scale,bloqueia:true,
+  hitbox:{offsetX:-.35,offsetY:-.35,width:.7,height:.7}});
 // Vegetação agrupada ao redor das instalações em vez de uma grade regular.
 for (let y=5; y<68; y+=6) for (let x=5; x<68; x+=6) {
   const n = (x * 97 + y * 131 + x * y * 17) % 11;

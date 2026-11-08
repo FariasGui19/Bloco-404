@@ -103,6 +103,11 @@ await loadSprites([
   { id: 'player_10x_lvl1', src: 'assets/sprites/player/player-10x-lvl1.png' },
   { id: 'veloz_ataque_direcional', src: 'assets/source-art/proximas-animacoes/veloz-ataque-alternativa.png' },
   { id: 'veloz_corrida_lateral', src: 'assets/source-art/proximas-animacoes/veloz-lateral.png' },
+  { id: 'bio_piso', src: 'assets/sprites/estacao-bio/piso-industrial-folha.png' },
+  { id: 'bio_floreira', src: 'assets/sprites/estacao-bio/detalhe-floreira.png' },
+  { id: 'bio_tubos', src: 'assets/sprites/estacao-bio/detalhe-tubos.png' },
+  { id: 'bio_caixa', src: 'assets/sprites/estacao-bio/detalhe-caixa-bobina.png' },
+  { id: 'bio_luminaria', src: 'assets/sprites/estacao-bio/detalhe-luminaria.png' },
   { id: 'bio_ponte', src: 'assets/sprites/estacao-bio/ponte-industrial.png' },
   { id: 'bio_estufa', src: 'assets/sprites/estacao-bio/estufa.png' },
   { id: 'bio_terminal', src: 'assets/sprites/estacao-bio/terminal.png' },
@@ -187,7 +192,7 @@ await loadSprites([
 ]);
 
 // Importações parciais deixam colisões sem arte; avise em vez de falhar silenciosamente.
-const bioMissing = ['bio_terminal', 'bio_reator', 'bio_ponte', 'bio_estufa'].filter(id => !getSprite(id));
+const bioMissing = ['bio_terminal', 'bio_reator', 'bio_ponte', 'bio_estufa', 'bio_piso', 'bio_floreira', 'bio_tubos', 'bio_caixa', 'bio_luminaria'].filter(id => !getSprite(id));
 if (bioMissing.length) {
   const warning = document.createElement('div');
   warning.setAttribute('role', 'alert');

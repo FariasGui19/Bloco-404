@@ -550,21 +550,38 @@ function drawFloorTile(type, x, y, map) {
 // Caminhos de manutenção e pátios são só tratamento visual sobre o piso;
 // a máscara e as pontes existentes seguem sendo a fonte de colisão.
 function drawStationPaving(map) {
+  const sheet = getSprite('bio_piso');
+  const onPath = (x, y) => map.walkMask[y]?.[x] === '.' && (
+    (x>=8 && x<=18 && y>=10 && y<=18) ||
+    (x>=14 && x<=39 && y>=17 && y<=22) ||
+    (x>=35 && x<=48 && y>=18 && y<=23) ||
+    (x>=44 && x<=48 && y>=18 && y<=51) ||
+    (x>=45 && x<=55 && y>=46 && y<=53));
   ctx.save();
+  // Clip da geometria real do caminho: a textura nunca invade canais ou areia.
+  ctx.beginPath();
   for (let y=range.y0; y<=range.y1; y++) for (let x=range.x0; x<=range.x1; x++) {
-    if (map.walkMask[y]?.[x] !== '.') continue;
-    const path = (x>=8 && x<=18 && y>=10 && y<=18) ||
-      (x>=14 && x<=39 && y>=17 && y<=22) ||
-      (x>=35 && x<=48 && y>=18 && y<=23) ||
-      (x>=44 && x<=48 && y>=18 && y<=51) ||
-      (x>=45 && x<=55 && y>=46 && y<=53);
-    if (!path) continue;
+    if (!onPath(x,y)) continue;
     const ix=(x-y)*HW, iy=(x+y)*HH;
-    const tone=hash(x,y);
-    ctx.fillStyle=tone < .18 ? '#807e6d' : tone < .52 ? '#878571' : '#8c8975';
+    ctx.moveTo(ix,iy); ctx.lineTo(ix+HW,iy+HH); ctx.lineTo(ix,iy+TH); ctx.lineTo(ix-HW,iy+HH); ctx.closePath();
+  }
+  ctx.clip();
+  // Base evita frestas transparentes nas bordas da arte gerada.
+  ctx.fillStyle='#4c5648';
+  for (let y=range.y0; y<=range.y1; y++) for (let x=range.x0; x<=range.x1; x++) {
+    if (!onPath(x,y)) continue;
+    const ix=(x-y)*HW, iy=(x+y)*HH;
     ctx.beginPath(); ctx.moveTo(ix,iy); ctx.lineTo(ix+HW,iy+HH); ctx.lineTo(ix,iy+TH); ctx.lineTo(ix-HW,iy+HH); ctx.closePath(); ctx.fill();
-    ctx.strokeStyle='rgba(48,55,47,.32)'; ctx.lineWidth=.6; ctx.stroke();
-    if (tone>.86) { ctx.strokeStyle='rgba(174,158,112,.35)'; ctx.beginPath(); ctx.moveTo(ix-10,iy+HH); ctx.lineTo(ix+4,iy+HH+4); ctx.stroke(); }
+  }
+  if (sheet) {
+    // Um módulo cobre 3×3 tiles lógicos, para não reduzir seus ladrilhos a ruído.
+    const span=3, sw=sheet.width/2, sh=sheet.height/2;
+    ctx.imageSmoothingEnabled=false;
+    for (let y=Math.floor(range.y0/span)*span; y<=range.y1; y+=span) for (let x=Math.floor(range.x0/span)*span; x<=range.x1; x+=span) {
+      const tone=hash(x,y), variant=tone < .62 ? 0 : tone < .76 ? 1 : tone < .88 ? 2 : 3;
+      const ix=(x-y)*HW, iy=(x+y)*HH;
+      ctx.drawImage(sheet,(variant%2)*sw,Math.floor(variant/2)*sh,sw,sh,ix-span*HW,iy,span*HW*2,span*TH);
+    }
   }
   ctx.restore();
 }
@@ -1071,7 +1088,7 @@ function drawWallProcedural(x, y, front) {
 // =====================================================================
 
 function getObjectSpriteConfig(spriteId) {
-  if (['bio_terminal', 'bio_reator', 'bio_ponte', 'bio_estufa'].includes(spriteId)) return { SHEET_COLS: 1, SHEET_ROWS: 1, DEFAULT_SCALE: 1, FEET_ANCHOR_Y: 1 };
+  if (['bio_terminal', 'bio_reator', 'bio_ponte', 'bio_estufa', 'bio_floreira', 'bio_tubos', 'bio_caixa', 'bio_luminaria'].includes(spriteId)) return { SHEET_COLS: 1, SHEET_ROWS: 1, DEFAULT_SCALE: 1, FEET_ANCHOR_Y: 1 };
   if (['hub_vaso_novo', 'hub_reciclagem', 'hub_carrinho', 'hub_bebedouro'].includes(spriteId)) return { SHEET_COLS: 1, SHEET_ROWS: 1, DEFAULT_SCALE: .25, FEET_ANCHOR_Y: 1 };
   if (spriteId === 'costa_rochosa') return { SHEET_COLS: 4, SHEET_ROWS: 1, DEFAULT_SCALE: 1, FEET_ANCHOR_Y: 1 };
   if (spriteId === 'vegetacao_tropical') return { SHEET_COLS: 8, SHEET_ROWS: 1, DEFAULT_SCALE: 1, FEET_ANCHOR_Y: 1 };

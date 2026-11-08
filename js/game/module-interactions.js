@@ -18,6 +18,7 @@ function distanceBetween(aX, aY, bX, bY) {
 
 function canDiagnose(item) {
   if (!item?.moduleSystem || isGateOpen(item)) return false;
+  if (item.moduleSystem.requiresFlag && !state.progress.flags?.[item.moduleSystem.requiresFlag]) return false;
   const allowed = item.moduleSystem.allowedArchetypes;
   if (!allowed) return true; // Qualquer módulo pode ler se o mapa não especificar
   return allowed.includes(state.progress.archetype);
@@ -258,7 +259,7 @@ function diagnoseCargoSecurityPanel() {
 
 function diagnoseGeneric(target) {
   const system = target.item.moduleSystem;
-  openDialogue({
+  showDiagnosis({
     speaker: system.speaker ?? 'LINK DE DIAGNÓSTICO',
     dialogue: system.dialogue ?? [
       'SISTEMA DETECTADO.',

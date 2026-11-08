@@ -39,6 +39,7 @@
 
   export function checkGate(gate) {
     if (!gate) return true;
+    if (gate.prerequisiteFlag && !state.progress.flags?.[gate.prerequisiteFlag]) return false;
     if (gate.requiresFlag && !state.progress.flags?.[gate.requiresFlag]) return false;
     if (!Array.isArray(gate.anyOf) || gate.anyOf.length === 0) return true;
 
@@ -54,6 +55,7 @@
 
   export function getGateFailureMessage(gate) {
     if (!gate) return ['ACESSO NEGADO.'];
+    if (gate.prerequisiteFlag && !state.progress.flags?.[gate.prerequisiteFlag]) return gate.falhaPrerequisito ?? ['OUTRO SISTEMA PRECISA SER REPARADO PRIMEIRO.'];
     if (gate.requiresFlag && !state.progress.flags?.[gate.requiresFlag] &&
         state.progress.archetype === gate.diagnosisArchetype) {
       return gate.falhaDiagnostico ?? ['USE R PARA DIAGNOSTICAR PRIMEIRO.'];
@@ -79,8 +81,11 @@
     object.aberto = true;
     // Barreiras de travessia permanecem visíveis e sólidas para caminhada.
     if (object.phaseAction || object.phaseActions) return;
-    object.bloqueia = false;
-    object.hitbox = { offsetX: 0, offsetY: 0, width: 0, height: 0 };
+    if (!object.gate?.manterColisao) {
+      object.bloqueia = false;
+      object.hitbox = { offsetX: 0, offsetY: 0, width: 0, height: 0 };
+    }
+    if (object.gate?.spriteAberto) object.sprite = object.gate.spriteAberto;
     object.oculto = object.gate?.manterVisivel ? false : true;
 
     if (object.gate?.frameAberto) {

@@ -30,6 +30,8 @@ assert(terminal.bloqueia);
 // Posição do print: o personagem está ao lado, deve ficar na frente da fachada.
 assert(canStandAt(map,14,6.9,.28,state.player));
 assert(terminal.x+terminal.y+terminal.depthOffset < 14+6.9);
+assert(canStandAt(map,13.1,5.7,.28,state.player));
+assert(terminal.x+terminal.y+terminal.depthOffset < 13.1+5.7, 'segundo ponto reportado deve desenhar o jogador à frente');
 assert(state.objects.find(o=>o.id==='bio_estufa_principal').depthOffset < 0);
 for (const id of ['bio_plataforma_tecnica','bio_margem_canto_entrada','bio_margem_cano_patio','bio_margem_ruina_trilha','bio_margem_mureta_estufa']) {
  const obj=state.objects.find(o=>o.id===id);
@@ -51,6 +53,10 @@ assert.deepEqual(new Set(modulos.map(o=>o.sprite)),new Set(['bio_floreira','bio_
 for (const obj of modulos) {
   assert(obj.bloqueia && obj.hitbox, `${obj.id}: colisão declarada`);
   assert(!canStandAt(map,obj.x,obj.y,.28,state.player),`${obj.id}: centro da peça bloqueado`);
+}
+for(const id of ['bio_reparo_condutor','bio_reparo_regulador']) {
+ const obj=state.objects.find(o=>o.id===id);
+ assert([...runtimeSeen].some(k=>{const [x,y]=k.split(',').map(Number);return Math.hypot(x+.5-obj.x,y+.5-obj.y)<=obj.interacao.distancia;}), `${id}: interação alcançável com colisões`);
 }
 assert(runtimeSeen.has('9,10'), 'spawn preservado');
 assert(!state.objects.some(o=>o.id==='bio_entrada_portal'), 'portal genérico antigo não deve voltar');

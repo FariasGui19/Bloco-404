@@ -2,11 +2,11 @@
 
 Regra de produção: em cada atualização, gerar e integrar no máximo **duas folhas ou peças visuais novas**, validar escala, direção, ponto de apoio, transparência, ordenação e colisão; guardar originais e não trocar o personagem por outro. Uma peça única não é uma folha de animação. Efeitos e gameplay só são considerados prontos depois dos testes de uso e do navegador.
 
-## Rodada atual: apoio e escala da Estação Bio
+## Rodada atual: diagnóstico e reparo na Estação Bio
 
-Duas artes estáticas: uma folha 2×2 de margens (canto, cano, ruína, mureta) e uma plataforma técnica. Os recortes são preparados por `tools/preparar-margens-bio.py`; não são folhas de animação. As peças têm colisões pequenas e estão distribuídas em pontos selecionados, não como paredes contínuas. Piso sob as estruturas conecta o terminal, plataforma e estufa aos caminhos.
+Duas folhas estáticas: estados danificado/reparado para condutor e regulador, e quatro peças de vegetação industrial. A primeira geração veio em 4×2, e os quadros extremos de cada linha são usados como estados; a segunda tem linhas que são excluídas no recorte. `tools/preparar-sistemas-bio.py` reproduz a preparação. Não são animações: o sprite troca instantaneamente ao reparar.
 
-Terminal e estufa foram ampliados e tiveram hitboxes e ordenação ajustadas. A ordenação de estruturas inteiras é uma aproximação, não divisão em paredes/frente/fundo: ainda pode haver inconsistências em alguns ângulos. A ponte segue em camada de fundo sem recorte individual dos guarda-corpos; margens da ilha, canais retos e transições da areia continuam provisórios. A rodada anterior trouxe uma folha de piso e outra de detalhes industriais.
+A sequência opcional usa R de Bio-Forja para diagnosticar e E para reparar o condutor da chegada e depois o regulador do pátio. Os reparos permanecem sólidos e visíveis e as flags sobrevivem à reentrada, sem substituir coletáveis antigos nem missão ativa. Ainda não ativam a estufa nem concedem recompensas. O cenário continua provisório; árvores, areia, água e bordas exigem refinamento. A aproximação de profundidade do terminal foi ajustada para o novo ponto do print, mas não substitui camadas reais.
 
 ## Próximas rodadas sugeridas (ordem ajustável depois do teste)
 

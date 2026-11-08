@@ -13,7 +13,9 @@ await loadMap('ilha_enseada_ecos','vindo_da_praia');
 const found=state.collectibles.find(i=>i.id==='lumeo_encontro'); assert(found);
 assert(!isCollectibleVisible(found)); assert(!collectItem(found));
 state.progress.flags.enseada_ecos_mapeada=true; assert(isCollectibleVisible(found));
-assert(collectItem(found)); assert(state.progress.flags.companheiro_lumeo);
+assert(collectItem(found)); assert(!state.progress.flags.companheiro_lumeo);
+const res=state.collectibles.find(i=>i.id==='lumeo_ressonancia'), bond=state.collectibles.find(i=>i.id==='lumeo_vinculo');
+assert(!collectItem(bond)); assert(collectItem(res)); assert(collectItem(bond)); assert(state.progress.flags.companheiro_lumeo);
 assert.equal(JSON.parse(storage.get('BLOCO404_SAVE_SLOT_1')).progress.flags.companheiro_lumeo, true);
 assert.equal(state.progress.activeQuest.id,'principal'); assert(!collectItem(found));
 updateOwnedCompanion(state,state.world.currentMap,.1,()=>true);
@@ -23,5 +25,6 @@ updateOwnedCompanion(state,state.world.currentMap,.1,()=>true); assert(state.com
 const px=state.companion.x; updateOwnedCompanion(state,state.world.currentMap,.1,()=>false); assert.equal(state.companion.x,px);
 await loadMap('hub_saguao','inicio'); updateOwnedCompanion(state,state.world.currentMap,.1,()=>true);
 assert.equal(state.companion.mapId,'hub_saguao'); assert(Math.hypot(state.companion.x-state.player.x,state.companion.y-state.player.y)<1);
+for (const item of [found,res,bond]) assert(!isCollectibleVisible(item), 'vínculo existente não reinicia a missão');
 state.progress.flags.companheiro_lumeo=false; updateOwnedCompanion(state,state.world.currentMap,.1,()=>true); assert.equal(state.companion,null);
 console.log('Lúmeo: descoberta opcional, vínculo persistível e seguimento seguro OK.');

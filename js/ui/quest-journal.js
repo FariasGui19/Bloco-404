@@ -23,7 +23,7 @@ export function openQuestJournal(progress, map) {
   const flags = progress?.flags ?? {};
   const found = ['mar','pedra','mata'].filter(id => flags[`collected_enseada_rastro_${id}`]).length;
   overlay.querySelector('#journalSideDescription').textContent = map?.id === 'ilha_enseada_ecos' || found > 0
-    ? (found === 3 ? (flags.companheiro_lumeo ? 'Concluída: três vestígios registrados. Lúmeo é seu companheiro.' : 'Concluída: três vestígios registrados. Procure Lúmeo perto da trilha de retorno e escolha se deseja acolhê-lo.') : `Investigue os vestígios da Enseada: ${found}/3.`)
+    ? (found === 3 ? (flags.companheiro_lumeo ? 'Concluída: três vestígios registrados. Lúmeo é seu companheiro.' : (flags.collected_lumeo_ressonancia ? 'Siga a luz até a mata e escolha se deseja oferecer companhia a Lúmeo.' : flags.collected_lumeo_encontro ? 'Investigue e acalme a ressonância nas ruínas a leste.' : 'Concluída: três vestígios registrados. Ouça o eco perto da trilha de retorno.')) : `Investigue os vestígios da Enseada: ${found}/3.`)
     : 'Descubra a Enseada dos Ecos para investigar seus vestígios.';
   opened = true; overlay.classList.add('visible');
   overlay.querySelector('#journalClose').focus();

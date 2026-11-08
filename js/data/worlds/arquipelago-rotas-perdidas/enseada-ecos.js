@@ -64,7 +64,9 @@ export const map = {
     prop('enseada_pedras', 19, 13, 2, 1, 57), prop('enseada_concha', 14, 9, 1, 3, 40),
   ],
   collectibles: [
-    { id: 'lumeo_encontro', nome: 'LÚMEO', tipo: 'eco', x: 10, y: 15, requiresFlag: 'enseada_ecos_mapeada', label: 'ACOLHER LÚMEO', speaker: 'LÚMEO', dialogue: ['OS TRÊS VESTÍGIOS RESPONDEM À LUZ DO PEQUENO ECO.', 'LÚMEO ESCOLHE ACOMPANHAR VOCÊ. ESTE VÍNCULO É OPCIONAL E NÃO ALTERA SUA MISSÃO PRINCIPAL.'] },
+    { id: 'lumeo_encontro', nome: 'SINAL DE LÚMEO', tipo: 'eco', x: 10, y: 15, requiresFlag: 'enseada_ecos_mapeada', label: 'OUVIR O ECO DISTANTE', speaker: 'ECO DISTANTE', dialogue: ['TRÊS SINAIS RESPONDEM ÀS SUAS DESCOBERTAS. UM PEQUENO ECO SE ESCONDE NA ENSEADA.', 'UMA VIBRAÇÃO INSTÁVEL VEM DAS RUÍNAS A LESTE. INVESTIGUE SEM ASSUSTÁ-LO.'] },
+    { id: 'lumeo_ressonancia', nome: 'RESSONÂNCIA', tipo: 'eco', x: 18, y: 13, requiresFlag: 'collected_lumeo_encontro', label: 'ACALMAR A RESSONÂNCIA', speaker: 'RESSONÂNCIA', dialogue: ['O PULSO AGITADO DIMINUI QUANDO VOCÊ SE APROXIMA SEM AGREDIR.', 'UMA LUZ PEQUENA SEGUE EM DIREÇÃO À MATA. VÁ ATÉ ELA.'] },
+    { id: 'lumeo_vinculo', nome: 'LÚMEO', tipo: 'eco', x: 20, y: 19, requiresFlag: 'collected_lumeo_ressonancia', label: 'OFERECER COMPANHIA A LÚMEO', speaker: 'LÚMEO', dialogue: ['VOCÊ ESPERA. O PEQUENO ECO SE APROXIMA POR VONTADE PRÓPRIA.', 'UMA LUZ ENTRELAÇA SEU CAMINHO AO DELE. LÚMEO ESCOLHE ACOMPANHAR VOCÊ.'] },
     { id: 'enseada_rastro_mar', nome: 'RASTRO DA MARÉ', tipo: 'fragmento', x: 10, y: 14, label: 'INVESTIGAR RASTRO DA MARÉ', dialogue: ['UM ECO SE MOVE COM A MARÉ.', 'ALGUÉM MARCOU UMA ROTA ANTES DE VOCÊ.'] },
     { id: 'enseada_rastro_pedra', nome: 'MARCA NO BASALTO', tipo: 'fragmento', x: 19, y: 12, label: 'EXAMINAR MARCA NA PEDRA', dialogue: ['UM SÍMBOLO DESCONHECIDO FOI GRAVADO NA PEDRA.', 'ELE APONTA PARA ALÉM DA ENSEADA.'] },
     { id: 'enseada_rastro_mata', nome: 'VESTÍGIO DA MATA', tipo: 'fragmento', x: 21, y: 20, label: 'EXAMINAR VESTÍGIO DA MATA', dialogue: ['FOLHAS E PEGADAS INDICAM UMA TRILHA PARA O INTERIOR.', 'O CAMINHO PARA O MANGUE AINDA PRECISA SER EXPLORADO.'] },

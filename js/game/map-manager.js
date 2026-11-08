@@ -46,6 +46,7 @@ export async function loadMap(mapId, spawnId = 'inicio') {
     if (!mapData) throw new Error(`O mapa '${mapId}' não exporta "map".`);
 
     state.actors = [];
+    state.companion = null; // posição do vínculo é runtime, não atravessa saves/mapas
     state.fauna = createCoastalFauna(mapData);
     state.trainingTargets = createTrainingTargets(mapData);
     state.player.combat = null;

@@ -76,6 +76,7 @@ export function collectItem(item) {
   }
 
   state.progress.flags[`collected_${item.id}`] = true;
+  if (item.id === 'lumeo_encontro') state.progress.flags.companheiro_lumeo = true;
 
   // Descobertas opcionais da Enseada não substituem a missão ativa.
   const tracks = ['enseada_rastro_mar', 'enseada_rastro_pedra', 'enseada_rastro_mata'];
@@ -100,7 +101,7 @@ export function collectItem(item) {
     speaker: item.speaker ?? 'ARQUIVO DE ECO',
 
     dialogue: item.id.startsWith('enseada_rastro_') && state.progress.flags.enseada_ecos_mapeada
-      ? [...(item.dialogue ?? []), 'TRÊS VESTÍGIOS REGISTRADOS. ENSEADA MAPEADA.']
+      ? [...(item.dialogue ?? []), 'TRÊS VESTÍGIOS REGISTRADOS. UM PEQUENO ECO SURGIU PERTO DA TRILHA DE RETORNO.']
       : item.dialogue ?? [
       `${item.nome ?? 'ITEM'} COLETADO.`,
     ],

@@ -582,7 +582,7 @@ function caminhoEstacao(map, x, y) {
     (x >= 53 && x <= 59 && y >= 42 && y <= 47));
 }
 
-function drawStationPaving(map) {
+function paintStationPaving(map) {
   const sheet = getSprite('bio_piso');
   const onPath = (x, y) => caminhoEstacao(map, x, y);
   ctx.save();
@@ -605,6 +605,51 @@ function drawStationPaving(map) {
     }
   }
   ctx.restore();
+}
+
+// Piso estático em blocos: o recorte e as centenas de losangos são pintados
+// uma vez por bloco, não novamente a cada frame. A rede continua independente.
+const stationPavingCache = new WeakMap();
+function drawStationPaving(map) {
+  const sheet = getSprite('bio_piso');
+  let cache = stationPavingCache.get(map);
+  if (!cache || cache.sheet !== sheet) {
+    cache = { sheet, chunks: new Map() };
+    stationPavingCache.set(map, cache);
+  }
+  const span = 12;
+  for (let cy = Math.floor(range.y0 / span); cy <= Math.floor(range.y1 / span); cy++) {
+    for (let cx = Math.floor(range.x0 / span); cx <= Math.floor(range.x1 / span); cx++) {
+      const key = `${cx},${cy}`;
+      if (!cache.chunks.has(key)) {
+        const x0 = cx * span, y0 = cy * span;
+        const x1 = Math.min(x0 + span - 1, map.layout[0].length - 1);
+        const y1 = Math.min(y0 + span - 1, map.layout.length - 1);
+        let hasPaving = false;
+        for (let y = y0; y <= y1 && !hasPaving; y++)
+          for (let x = x0; x <= x1; x++) if (caminhoEstacao(map, x, y)) { hasPaving = true; break; }
+        if (!hasPaving) { cache.chunks.set(key, null); continue; }
+        const left = (x0 - (y1 + 1)) * HW;
+        const top = (x0 + y0) * HH;
+        const tile = document.createElement('canvas');
+        tile.width = (x1 - x0 + y1 - y0 + 2) * HW;
+        tile.height = (x1 - x0 + y1 - y0 + 2) * HH;
+        const previousCtx = ctx, previousRange = { ...range };
+        try {
+          ctx = tile.getContext('2d');
+          ctx.translate(-left, -top);
+          Object.assign(range, { x0, y0, x1, y1 });
+          paintStationPaving(map);
+        } finally {
+          ctx = previousCtx;
+          Object.assign(range, previousRange);
+        }
+        cache.chunks.set(key, { tile, left, top });
+      }
+      const chunk = cache.chunks.get(key);
+      if (chunk) ctx.drawImage(chunk.tile, chunk.left, chunk.top);
+    }
+  }
 }
 
 // Tabuleiros das duas travessias: geometria real sobre a água, com espessura
@@ -663,7 +708,7 @@ function drawBioNetwork(map) {
   const energizada = !!flags.gate_bio_reparo_condutor && !!flags.gate_bio_reparo_regulador;
   const fluxo = !!flags.gate_bio_valvula_estufa;
   ctx.save();
-  stationClip(map, (x, y) => map.walkMask[y]?.[x] === '.' && !'YyDd'.includes(map.aguaPraia?.[y]?.[x] ?? ' '));
+  // Os percursos são validados sobre terra/deck; não recortar milhares de tiles por frame.
   const ponto = ([x, y]) => [((x + .5) - (y + .5)) * HW, ((x + .5) + (y + .5)) * HH];
   for (const path of net.paths) {
     const desenha = (largura, cor) => {
@@ -1390,6 +1435,27 @@ function drawHubHologram(object) {
   ctx.restore();
 }
 
+// Duas plataformas da mesma linha, decorativas e sem colisão extra.
+function drawCableStation(object) {
+  const x = (object.x - object.y) * HW, y = (object.x + object.y) * HH;
+  const active = !!state.progress?.flags?.gate_teleferico_quebrado;
+  ctx.save(); ctx.translate(x, y);
+  ctx.fillStyle = '#34463e'; ctx.strokeStyle = '#b5c0a0'; ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.moveTo(0, -15); ctx.lineTo(50, 9); ctx.lineTo(0, 32); ctx.lineTo(-50, 9); ctx.closePath(); ctx.fill(); ctx.stroke();
+  ctx.strokeStyle = '#273934'; ctx.lineWidth = 6;
+  for (const px of [-36, 36]) { ctx.beginPath(); ctx.moveTo(px, 8); ctx.lineTo(px, -77); ctx.stroke(); }
+  ctx.lineWidth = 3; ctx.strokeStyle = '#718b77';
+  ctx.beginPath(); ctx.moveTo(-48, -72); ctx.lineTo(48, -72); ctx.moveTo(0, -72); ctx.lineTo(0, -58); ctx.stroke();
+  ctx.fillStyle = '#314c48'; ctx.strokeStyle = active ? '#8fe4bd' : '#c99b67';
+  ctx.fillRect(-23, -58, 46, 38); ctx.strokeRect(-23, -58, 46, 38);
+  ctx.fillStyle = active ? '#81c9b5' : '#715e4d'; ctx.fillRect(-17, -52, 34, 18);
+  ctx.fillStyle = '#152d2c'; ctx.fillRect(-43, -99, 86, 19);
+  ctx.strokeStyle = '#92b6a0'; ctx.strokeRect(-43, -99, 86, 19);
+  ctx.fillStyle = '#e2f8d8'; ctx.font = 'bold 8px monospace'; ctx.textAlign = 'center';
+  ctx.fillText(object.cableStation, 0, -86);
+  ctx.restore();
+}
+
 // Filtro de estado: uma flag persistida pode acender uma peça sem trocar de sprite.
 export function filtroObjeto(object) {
   return object.filterOnFlag && state.progress?.flags?.[object.filterOnFlag]
@@ -1427,6 +1493,7 @@ function drawMapObject(object, state) {
     ctx.ellipse(x, y + 3, 30, 9, 0, 0, Math.PI * 2); ctx.fill(); ctx.restore();
   }
 
+  if (object.cableStation) { drawCableStation(object); return; }
   if (object.tipo === 'holograma_decorativo') { drawHubHologram(object); return; }
   if (object.porta) { drawDoor(object); return; }
   if (object.routeMarker) {

@@ -448,6 +448,8 @@ export const map = {
       sucesso: ['TRAVESSIA REGISTRADA.'],
     }),
 
+    { id: 'estacao_cabo_praia', tipo: 'decoracao', x: 8, y: 23, cableStation: 'ESTAÇÃO BIO', bloqueia: false },
+
     // A -> C (ponte no eixo Y, colunas 7-8)
     gate('teleferico_quebrado', 8, 18, 1, 2, 130, {
       nome: 'TELEFÉRICO QUEBRADO',
@@ -467,7 +469,7 @@ export const map = {
       diagnosisArchetype: 'motor_bio_forja',
       falhaDiagnostico: ['CONDUTOR ROMPIDO.', 'USE [R] PARA DIAGNOSTICAR ANTES DE RECONSTRUIR.'],
       falha: ['O CONDUTOR ESTÁ ROMPIDO.', 'UM OPERADOR DE RECONSTRUÇÃO PODERIA REPARAR.'],
-      sucesso: ['CONDUTOR RECONSTRUÍDO.', 'O CAMINHO ESTÁ LIVRE.'],
+      sucesso: ['CONDUTOR RECONSTRUÍDO.', 'SIGA PELA TRAVESSIA ATÉ A ESTAÇÃO DE EMBARQUE PARA A BIO-FORJA.'],
     }),
 
     // B -> D (ponte no eixo Y, colunas 30-31)
@@ -492,7 +494,7 @@ export const map = {
   ],
 
   portals: [
-    { id: 'trilha_estacao_bio', tipo: 'door', x: 8, y: 23, label: 'EXPLORAR ESTAÇÃO BIO-FORJA', requiresFlag: 'gate_teleferico_quebrado', interactionDistance: 1.4, destino: { mapId: 'ilha_estacao_bio', spawnId: 'inicio' }, transition: 'fade' },
+    { id: 'trilha_estacao_bio', tipo: 'door', x: 8, y: 23, label: 'EMBARCAR PARA ESTAÇÃO BIO', lockedLabel: 'TELEFÉRICO SEM ENERGIA', mensagemBloqueado: ['O TELEFÉRICO ESTÁ PARADO. DIAGNOSTIQUE E REPARE O CONDUTOR NA TRAVESSIA.'], requiresFlag: 'gate_teleferico_quebrado', interactionDistance: 1.4, destino: { mapId: 'ilha_estacao_bio', spawnId: 'inicio' }, transition: 'fade' },
     { id: 'trilha_enseada', tipo: 'door', x: 12, y: 11, label: 'EXPLORAR ENSEADA DOS ECOS', interactionDistance: 1.4, destino: { mapId: 'ilha_enseada_ecos', spawnId: 'vindo_da_praia' }, transition: 'fade' },
     {
       id: 'voltar_trem',

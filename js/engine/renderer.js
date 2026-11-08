@@ -552,11 +552,14 @@ function drawFloorTile(type, x, y, map) {
 function drawStationPaving(map) {
   const sheet = getSprite('bio_piso');
   const onPath = (x, y) => map.walkMask[y]?.[x] === '.' && (
+    (x>=7 && x<=14 && y>=3 && y<=10) ||
     (x>=8 && x<=18 && y>=10 && y<=18) ||
     (x>=14 && x<=39 && y>=17 && y<=22) ||
     (x>=35 && x<=48 && y>=18 && y<=23) ||
+    (x>=30 && x<=34 && y>=22 && y<=27) ||
     (x>=44 && x<=48 && y>=18 && y<=51) ||
-    (x>=45 && x<=55 && y>=46 && y<=53));
+    (x>=45 && x<=59 && y>=46 && y<=53) ||
+    (x>=53 && x<=59 && y>=42 && y<=47));
   ctx.save();
   // Clip da geometria real do caminho: a textura nunca invade canais ou areia.
   ctx.beginPath();
@@ -1088,7 +1091,7 @@ function drawWallProcedural(x, y, front) {
 // =====================================================================
 
 function getObjectSpriteConfig(spriteId) {
-  if (['bio_terminal', 'bio_reator', 'bio_ponte', 'bio_estufa', 'bio_floreira', 'bio_tubos', 'bio_caixa', 'bio_luminaria'].includes(spriteId)) return { SHEET_COLS: 1, SHEET_ROWS: 1, DEFAULT_SCALE: 1, FEET_ANCHOR_Y: 1 };
+  if (['bio_terminal', 'bio_reator', 'bio_ponte', 'bio_estufa', 'bio_floreira', 'bio_tubos', 'bio_caixa', 'bio_luminaria', 'bio_plataforma', 'bio_margem_canto', 'bio_margem_cano', 'bio_margem_ruina', 'bio_margem_mureta'].includes(spriteId)) return { SHEET_COLS: 1, SHEET_ROWS: 1, DEFAULT_SCALE: 1, FEET_ANCHOR_Y: 1 };
   if (['hub_vaso_novo', 'hub_reciclagem', 'hub_carrinho', 'hub_bebedouro'].includes(spriteId)) return { SHEET_COLS: 1, SHEET_ROWS: 1, DEFAULT_SCALE: .25, FEET_ANCHOR_Y: 1 };
   if (spriteId === 'costa_rochosa') return { SHEET_COLS: 4, SHEET_ROWS: 1, DEFAULT_SCALE: 1, FEET_ANCHOR_Y: 1 };
   if (spriteId === 'vegetacao_tropical') return { SHEET_COLS: 8, SHEET_ROWS: 1, DEFAULT_SCALE: 1, FEET_ANCHOR_Y: 1 };

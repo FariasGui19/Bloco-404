@@ -2,12 +2,11 @@
 
 Regra de produção: em cada atualização, gerar e integrar no máximo **duas folhas ou peças visuais novas**, validar escala, direção, ponto de apoio, transparência, ordenação e colisão; guardar originais e não trocar o personagem por outro. Uma peça única não é uma folha de animação. Efeitos e gameplay só são considerados prontos depois dos testes de uso e do navegador.
 
-## Rodada atual: continuidade da Estação que Respira
+## Rodada atual: apoio e escala da Estação Bio
 
-1. **Folha de piso:** quatro módulos estáticos (não animação) com alpha; projetados em módulos 3×3 tiles, recortados à área pavimentada, sem modificar máscara ou pontes. Não é piso perfeitamente contínuo em todas as emendas.
-2. **Folha de detalhes:** floreira, tubos, caixa com bobina e luminária recortados em arquivos individuais; posicionados nas bordas, com colisões pequenas e objetivos e retorno testados. `tools/preparar-modulos-bio.py` reproduz a preparação a partir dos originais. Não são objetos interativos. As áreas de areia, margens retas e profundidade dos guarda-corpos ainda são provisórias.
+Duas artes estáticas: uma folha 2×2 de margens (canto, cano, ruína, mureta) e uma plataforma técnica. Os recortes são preparados por `tools/preparar-margens-bio.py`; não são folhas de animação. As peças têm colisões pequenas e estão distribuídas em pontos selecionados, não como paredes contínuas. Piso sob as estruturas conecta o terminal, plataforma e estufa aos caminhos.
 
-A rodada anterior trouxe ponte e estufa; a ponte continua reutilizada nas duas travessias, na camada de fundo. Terminal, um biorreator, missão provisória e estrutura fechada permanecem.
+Terminal e estufa foram ampliados e tiveram hitboxes e ordenação ajustadas. A ordenação de estruturas inteiras é uma aproximação, não divisão em paredes/frente/fundo: ainda pode haver inconsistências em alguns ângulos. A ponte segue em camada de fundo sem recorte individual dos guarda-corpos; margens da ilha, canais retos e transições da areia continuam provisórios. A rodada anterior trouxe uma folha de piso e outra de detalhes industriais.
 
 ## Próximas rodadas sugeridas (ordem ajustável depois do teste)
 

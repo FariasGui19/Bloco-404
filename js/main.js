@@ -103,6 +103,11 @@ await loadSprites([
   { id: 'player_10x_lvl1', src: 'assets/sprites/player/player-10x-lvl1.png' },
   { id: 'veloz_ataque_direcional', src: 'assets/source-art/proximas-animacoes/veloz-ataque-alternativa.png' },
   { id: 'veloz_corrida_lateral', src: 'assets/source-art/proximas-animacoes/veloz-lateral.png' },
+  { id: 'bio_plataforma', src: 'assets/sprites/estacao-bio/plataforma-tecnica.png' },
+  { id: 'bio_margem_canto', src: 'assets/sprites/estacao-bio/margem-canto.png' },
+  { id: 'bio_margem_cano', src: 'assets/sprites/estacao-bio/margem-cano.png' },
+  { id: 'bio_margem_ruina', src: 'assets/sprites/estacao-bio/margem-ruina.png' },
+  { id: 'bio_margem_mureta', src: 'assets/sprites/estacao-bio/margem-mureta.png' },
   { id: 'bio_piso', src: 'assets/sprites/estacao-bio/piso-industrial-folha.png' },
   { id: 'bio_floreira', src: 'assets/sprites/estacao-bio/detalhe-floreira.png' },
   { id: 'bio_tubos', src: 'assets/sprites/estacao-bio/detalhe-tubos.png' },
@@ -192,7 +197,7 @@ await loadSprites([
 ]);
 
 // Importações parciais deixam colisões sem arte; avise em vez de falhar silenciosamente.
-const bioMissing = ['bio_terminal', 'bio_reator', 'bio_ponte', 'bio_estufa', 'bio_piso', 'bio_floreira', 'bio_tubos', 'bio_caixa', 'bio_luminaria'].filter(id => !getSprite(id));
+const bioMissing = ['bio_terminal', 'bio_reator', 'bio_ponte', 'bio_estufa', 'bio_piso', 'bio_floreira', 'bio_tubos', 'bio_caixa', 'bio_luminaria', 'bio_plataforma', 'bio_margem_canto', 'bio_margem_cano', 'bio_margem_ruina', 'bio_margem_mureta'].filter(id => !getSprite(id));
 if (bioMissing.length) {
   const warning = document.createElement('div');
   warning.setAttribute('role', 'alert');

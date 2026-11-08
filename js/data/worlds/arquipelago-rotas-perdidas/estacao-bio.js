@@ -13,13 +13,21 @@ const ground = buildGround({sheet:'BEACH_FLOOR_SPRITE', rows, legend:{
 }});
 const objects = [
   // A base sólida não ocupa o spawn nem os espaços de interação.
-  {id:'bio_terminal_principal',tipo:'decoracao',x:12,y:8,sprite:'bio_terminal',useCrop:true,larguraPx:420,pivotX:.5,pivotY:1,bloqueia:true,hitbox:{offsetX:-5.4,offsetY:-5.4,width:5.4,height:5.4}},
+  {id:'bio_terminal_principal',tipo:'decoracao',x:12,y:8,sprite:'bio_terminal',useCrop:true,larguraPx:460,pivotX:.5,pivotY:1,depthOffset:-2,bloqueia:true,hitbox:{offsetX:-6,offsetY:-6,width:6,height:6}},
   {id:'bio_reator_patio',tipo:'decoracao',x:38,y:17,sprite:'bio_reator',useCrop:true,larguraPx:130,pivotX:.5,pivotY:1,bloqueia:true,hitbox:{offsetX:-1.25,offsetY:-1.25,width:1.25,height:1.25}},
-  {id:'bio_estufa_principal',tipo:'decoracao',x:58,y:47,sprite:'bio_estufa',useCrop:true,larguraPx:340,pivotX:.5,pivotY:1,bloqueia:true,hitbox:{offsetX:-4.3,offsetY:-4.3,width:4.3,height:4.3}},
+  {id:'bio_estufa_principal',tipo:'decoracao',x:58,y:47,sprite:'bio_estufa',useCrop:true,larguraPx:400,pivotX:.5,pivotY:1,depthOffset:-2,bloqueia:true,hitbox:{offsetX:-5,offsetY:-5,width:5,height:5}},
   // As pontes ficam na camada de fundo, sob os pés, sobre os vãos já existentes.
   {id:'bio_ponte_patio',tipo:'decoracao',x:25.5,y:19.5,sprite:'bio_ponte',useCrop:true,larguraPx:240,pivotX:.5,pivotY:.50,espelhar:true,camada:'fundo',bloqueia:false},
   {id:'bio_ponte_estufa',tipo:'decoracao',x:45.5,y:39.5,sprite:'bio_ponte',useCrop:true,larguraPx:240,pivotX:.5,pivotY:.50,camada:'fundo',bloqueia:false},
 ];
+// As novas peças têm apoio no solo e pequenas áreas sólidas próprias.
+objects.push({id:'bio_plataforma_tecnica',tipo:'decoracao',x:33,y:26,sprite:'bio_plataforma',scale:.28,depthOffset:-.6,bloqueia:true,hitbox:{offsetX:-2,offsetY:-2,width:2,height:2}});
+for (const [id,x,y,sprite,scale] of [
+  ['bio_margem_canto_entrada',8,17,'bio_margem_canto',.19],
+  ['bio_margem_cano_patio',29,22,'bio_margem_cano',.18],
+  ['bio_margem_ruina_trilha',50,29,'bio_margem_ruina',.16],
+  ['bio_margem_mureta_estufa',48,54,'bio_margem_mureta',.18],
+]) objects.push({id,tipo:'decoracao',x,y,sprite,scale,depthOffset:-.4,bloqueia:true,hitbox:{offsetX:-.4,offsetY:-.4,width:.8,height:.8}});
 // Detalhes estáticos nas bordas dos pátios, sem interferir nos pontos de missão.
 // A folha foi recortada em quatro imagens para preservar a bobina separada da caixa.
 for (const [id,x,y,sprite,scale] of [
@@ -41,7 +49,7 @@ for (let y=5; y<68; y+=6) for (let x=5; x<68; x+=6) {
 }
 for (const [id,x,y,col,row,w] of [
   ['bio_destroc_1',14,10,3,1,62], ['bio_destroc_2',17,18,2,1,55],
-  ['bio_destroc_3',33,23,3,0,54], ['bio_destroc_4',48,52,2,1,64],
+  ['bio_destroc_4',48,52,2,1,64],
   ['bio_destroc_5',54,53,3,1,58], ['bio_destroc_6',41,25,3,0,48],
 ]) objects.push({id,tipo:'decoracao',x,y,sprite:'beach_props',frame:{col,row},useCrop:true,larguraPx:w,pivotX:.5,pivotY:1,bloqueia:false});
 for (const [id,x,y,label] of [['estacao_chegada',8,10,'CHEGADA'],['estacao_patio',36,20,'PÁTIO'],['estacao_estufa',50,50,'ESTUFA']]) objects.push({id,tipo:'decoracao',x,y,routeMarker:label,bloqueia:false});

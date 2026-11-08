@@ -4,7 +4,7 @@
 
 A primeira versão é um **setor explorável provisório 72 × 72**, conectado à Praia Inicial depois do diagnóstico e reconstrução do teleférico Bio-Forja. O zoom mínimo é maior só nessa área; volta ao padrão nos demais mapas. Há caminhos largos, canais bloqueados com duas travessias por trecho, elementos ambientais, dois simuladores de treino e três interações em sequência (condutor → regulador → estufa), além do caminho de volta. A missão principal e outros arquétipos não são substituídos; o progresso das interações usa as flags normais de coletáveis.
 
-**Não confundir com o objetivo final:** o setor ainda usa pisos e objetos existentes. A arte `assets/concepts/bio-forja-missao-mapa.png` é um conceito e **não** é a geometria do mapa. Para usá-la como cenário fiel, separar e redesenhar peças, construir máscaras de piso e colisão coerentes, escala, profundidade, passarelas, camadas e caminhos verificáveis. Não há ainda monstros agressivos, chefes, puzzles de habilidade reais, sons ou cenário completo; os alvos são inofensivos. O zoom limitado não garante que toda a área fique invisível em monitores de qualquer resolução. Fazer testes em diversos tamanhos de tela. Não usar essa primeira malha como mapa final aprovado.
+**Não confundir com o objetivo final:** o setor combina pisos/objetos existentes com um terminal e biorreatores gerados como peças isoladas; caminhos e guarda-corpos são procedurais. A arte `assets/concepts/bio-forja-missao-mapa.png` é um conceito e **não** é a geometria do mapa. As peças novas são interpretações do conceito, não cortes literais do mapa; ainda faltam camadas, peças modulares, geometria, escala, profundidade e caminhos que reproduzam sua ambição. Não há ainda monstros agressivos, chefes, puzzles de habilidade reais, sons ou cenário completo; os alvos são inofensivos. O zoom limitado não garante que toda a área fique invisível em monitores de qualquer resolução. Fazer testes em diversos tamanhos de tela. Não usar essa primeira malha como mapa final aprovado.
 
 ## Bolt
 
@@ -21,3 +21,7 @@ Cada pet selecionado recebe dados aditivos `level: 1`, `xp: 0`, `inventory: []` 
 3. Finalizar base de vida e adversários telegrafados antes de colocar monstros ou minibosses no mapa; só depois integrar recompensas, XP e equipamentos de pet. Ainda não existem ataques de inimigos, HUD de vida nem morte/respawn.
 4. Converter o conceito Bio em tiles/camadas com arte consistente, caminhos testados e obstáculos/puzzles que usem o diagnóstico R e reconstrução. Transformar o esboço de três pontos numa missão dramática real.
 5. Criar uma habilidade adicional por arquétipo somente com input, custo, cooldown, arte, colisão, travas e testes definidos; não inventar slots extras ou alterar Q/R já aprovados. As ideias e prompts estão em `docs/missoes-inimigos-habilidades-e-pets.md`.
+
+## Prioridades de arte
+
+O planejamento de peças e folhas, com limite de duas por rodada, está em `docs/ordem-de-arte-e-implementacao.md`.

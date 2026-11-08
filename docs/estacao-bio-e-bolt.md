@@ -4,7 +4,7 @@
 
 A primeira versão é um **setor explorável provisório 72 × 72**, conectado à Praia Inicial depois do diagnóstico e reconstrução do teleférico Bio-Forja. O zoom mínimo é maior só nessa área; volta ao padrão nos demais mapas. Há caminhos largos, canais bloqueados com duas travessias por trecho, elementos ambientais, dois simuladores de treino e três interações em sequência (condutor → regulador → estufa), além do caminho de volta. A missão principal e outros arquétipos não são substituídos; o progresso das interações usa as flags normais de coletáveis.
 
-**Não confundir com o objetivo final:** o setor combina pisos/objetos existentes com um terminal e biorreatores gerados como peças isoladas; caminhos e guarda-corpos são procedurais. A arte `assets/concepts/bio-forja-missao-mapa.png` é um conceito e **não** é a geometria do mapa. As peças novas são interpretações do conceito, não cortes literais do mapa; ainda faltam camadas, peças modulares, geometria, escala, profundidade e caminhos que reproduzam sua ambição. Não há ainda monstros agressivos, chefes, puzzles de habilidade reais, sons ou cenário completo; os alvos são inofensivos. O zoom limitado não garante que toda a área fique invisível em monitores de qualquer resolução. Fazer testes em diversos tamanhos de tela. Não usar essa primeira malha como mapa final aprovado.
+**Não confundir com o objetivo final:** o setor combina pisos/objetos existentes com um terminal, um biorreator, uma estufa e uma ponte gerados como peças isoladas; o piso continua procedural. A ponte é reutilizada nas duas travessias, na camada de fundo; seus guarda-corpos não têm recorte de profundidade individual, e a imagem não define colisão. A arte `assets/concepts/bio-forja-missao-mapa.png` é um conceito e **não** é a geometria do mapa. As peças novas são interpretações do conceito, não cortes literais do mapa; ainda faltam camadas, peças modulares, geometria, escala, profundidade e caminhos que reproduzam sua ambição. Não há ainda monstros agressivos, chefes, puzzles de habilidade reais, sons ou cenário completo; os alvos são inofensivos. O zoom limitado não garante que toda a área fique invisível em monitores de qualquer resolução. Fazer testes em diversos tamanhos de tela. Não usar essa primeira malha como mapa final aprovado.
 
 ## Bolt
 
@@ -25,3 +25,9 @@ Cada pet selecionado recebe dados aditivos `level: 1`, `xp: 0`, `inventory: []` 
 ## Prioridades de arte
 
 O planejamento de peças e folhas, com limite de duas por rodada, está em `docs/ordem-de-arte-e-implementacao.md`.
+
+## Conferir a versão após importar
+
+O print relatado mostrava um portal genérico e 122 objetos, enquanto a revisão posterior ao PR #25 já não tinha esse portal e registrava 64 objetos. Isso indica versões diferentes, mas não identifica se a origem foi importação, pasta, servidor ou cache. A versão desta rodada mostra `BASE V0.3.1-bio` no HUD, terminal na chegada, um único biorreator no pátio, estufa e duas pontes com o mesmo modelo. A versão no HUD não comprova, sozinha, que todos os arquivos vieram da mesma revisão.
+
+Confira se a cópia executada inclui o merge do PR #25 e esta atualização, incluindo `js/data/worlds/arquipelago-rotas-perdidas/estacao-bio.js` e os quatro PNGs de `assets/sprites/estacao-bio/`. Sirva a pasta correta e faça recarga forçada (Ctrl+Shift+R). Se aparecer aviso de arte ausente, reimporte o projeto completo. Se persistir, informe a versão do HUD e envie outro print. Não é necessário limpar armazenamento local, trocar a origem/endereço do jogo ou apagar saves; mudar origem pode fazer saves existentes deixarem de aparecer no navegador.

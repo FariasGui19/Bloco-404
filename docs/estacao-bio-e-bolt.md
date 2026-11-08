@@ -28,8 +28,12 @@ O planejamento de peças e folhas, com limite de duas por rodada, está em `docs
 
 ## Conferir a versão após importar
 
-O print relatado mostrava um portal genérico e 122 objetos, enquanto a revisão posterior ao PR #25 já não tinha esse portal e registrava 64 objetos. Isso indica versões diferentes, mas não identifica se a origem foi importação, pasta, servidor ou cache. A versão desta rodada mostra `BASE V0.3.3-bio` no HUD, terminal na chegada, um único biorreator no pátio, estufa, duas pontes com o mesmo modelo, piso modular, detalhes industriais, margens e plataforma técnica. A versão no HUD não comprova, sozinha, que todos os arquivos vieram da mesma revisão.
+O print relatado mostrava um portal genérico e 122 objetos, enquanto a revisão posterior ao PR #25 já não tinha esse portal e registrava 64 objetos. Isso indica versões diferentes, mas não identifica se a origem foi importação, pasta, servidor ou cache. A versão desta rodada mostra `BASE V0.3.4-bio` no HUD, terminal na chegada, um único biorreator no pátio, estufa, duas pontes com o mesmo modelo, piso modular, detalhes industriais, margens e plataforma técnica. A versão no HUD não comprova, sozinha, que todos os arquivos vieram da mesma revisão.
 
 Confira se a cópia executada inclui o merge do PR #25 e esta atualização, incluindo `js/data/worlds/arquipelago-rotas-perdidas/estacao-bio.js` e os PNGs em `assets/sprites/estacao-bio/`, incluindo a folha de piso, detalhes, margens e plataforma técnica. Sirva a pasta correta e faça recarga forçada (Ctrl+Shift+R). Se aparecer aviso de arte ausente, reimporte o projeto completo. Se persistir, informe a versão do HUD e envie outro print. Não é necessário limpar armazenamento local, trocar a origem/endereço do jogo ou apagar saves; mudar origem pode fazer saves existentes deixarem de aparecer no navegador.
 
 Na revisão 0.3.3, o terminal e a estufa receberam mais escala, piso de apoio e ajuste de profundidade; o ponto do print ao lado do terminal entrou nos testes. A ordenação por estrutura inteira continua aproximada, não uma solução de camadas completas. A nova plataforma é um objeto sólido e fechado, não uma superfície caminhável.
+
+## Reparo Bio opcional (0.3.4)
+
+Na chegada, aproxime-se do condutor danificado, use **R** para diagnosticar e **E** para reconstruir. Em seguida faça o mesmo com o regulador no pátio. O regulador exige o reparo do condutor, inclusive para o diagnóstico; ambos mantêm a colisão e mudam para arte restaurada. As flags são salvas e reaplicadas ao entrar no mapa. A sequência é independente dos três coletáveis antigos: saves que já os concluíram continuam válidos e ainda podem fazer os reparos. Não há recompensa, animação de reparo, mudança global da estufa ou inimigos ainda.

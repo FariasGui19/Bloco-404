@@ -76,6 +76,7 @@ export function render(map, state) {
     }
     drawFloors(map);
     if (map.id === 'hub_saguao') drawHubFloorMarkings();
+    if (map.id === 'ilha_estacao_bio') drawStationPaving(map);
     if (map.aguaPraia) drawBeachShore(map);
 
     if (map.metroTiles) {
@@ -544,6 +545,37 @@ function drawFloorTile(type, x, y, map) {
     if (y === 6) { ctx.moveTo(tx+HW*.76,ty+HH*.76); ctx.lineTo(tx-HW*.24,ty+HH*1.76); }
     ctx.stroke(); ctx.restore();
   }
+}
+
+// Caminhos de manutenção e pátios são só tratamento visual sobre o piso;
+// a máscara e as pontes existentes seguem sendo a fonte de colisão.
+function drawStationPaving(map) {
+  ctx.save();
+  for (let y=range.y0; y<=range.y1; y++) for (let x=range.x0; x<=range.x1; x++) {
+    if (map.walkMask[y]?.[x] !== '.') continue;
+    const path = (x>=8 && x<=18 && y>=10 && y<=18) ||
+      (x>=14 && x<=39 && y>=17 && y<=22) ||
+      (x>=35 && x<=48 && y>=18 && y<=23) ||
+      (x>=44 && x<=48 && y>=18 && y<=51) ||
+      (x>=45 && x<=55 && y>=46 && y<=53);
+    if (!path) continue;
+    const ix=(x-y)*HW, iy=(x+y)*HH;
+    const tone=hash(x,y);
+    ctx.fillStyle=tone < .18 ? '#807e6d' : tone < .52 ? '#878571' : '#8c8975';
+    ctx.beginPath(); ctx.moveTo(ix,iy); ctx.lineTo(ix+HW,iy+HH); ctx.lineTo(ix,iy+TH); ctx.lineTo(ix-HW,iy+HH); ctx.closePath(); ctx.fill();
+    ctx.strokeStyle='rgba(48,55,47,.32)'; ctx.lineWidth=.6; ctx.stroke();
+    if (tone>.86) { ctx.strokeStyle='rgba(174,158,112,.35)'; ctx.beginPath(); ctx.moveTo(ix-10,iy+HH); ctx.lineTo(ix+4,iy+HH+4); ctx.stroke(); }
+  }
+  // Corrimãos ancoram visualmente as duas travessias existentes sobre canais.
+  const rail = (x1,y1,x2,y2) => {
+    const p = (x,y) => ({x:(x-y)*HW,y:(x+y)*HH+HH});
+    const a=p(x1,y1), b=p(x2,y2);
+    ctx.strokeStyle='#414e43'; ctx.lineWidth=5; ctx.beginPath(); ctx.moveTo(a.x,a.y); ctx.lineTo(b.x,b.y); ctx.stroke();
+    ctx.strokeStyle='#b4a269'; ctx.lineWidth=1.5; ctx.beginPath(); ctx.moveTo(a.x,a.y-2); ctx.lineTo(b.x,b.y-2); ctx.stroke();
+  };
+  rail(24.7,17.1,27.4,17.1); rail(24.7,22.8,27.4,22.8);
+  rail(44.1,38.7,44.1,41.4); rail(48.8,38.7,48.8,41.4);
+  ctx.restore();
 }
 
 function drawHubFloorMarkings() {
@@ -1048,6 +1080,7 @@ function drawWallProcedural(x, y, front) {
 // =====================================================================
 
 function getObjectSpriteConfig(spriteId) {
+  if (['bio_terminal', 'bio_reator'].includes(spriteId)) return { SHEET_COLS: 1, SHEET_ROWS: 1, DEFAULT_SCALE: 1, FEET_ANCHOR_Y: 1 };
   if (['hub_vaso_novo', 'hub_reciclagem', 'hub_carrinho', 'hub_bebedouro'].includes(spriteId)) return { SHEET_COLS: 1, SHEET_ROWS: 1, DEFAULT_SCALE: .25, FEET_ANCHOR_Y: 1 };
   if (spriteId === 'costa_rochosa') return { SHEET_COLS: 4, SHEET_ROWS: 1, DEFAULT_SCALE: 1, FEET_ANCHOR_Y: 1 };
   if (spriteId === 'vegetacao_tropical') return { SHEET_COLS: 8, SHEET_ROWS: 1, DEFAULT_SCALE: 1, FEET_ANCHOR_Y: 1 };

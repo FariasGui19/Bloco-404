@@ -11,17 +11,23 @@ const rows = Array.from({length:size}, (_, y) => Array.from({length:size}, (_, x
 const ground = buildGround({sheet:'BEACH_FLOOR_SPRITE', rows, legend:{
   S:{tiles:[[0,0]],walk:true}, T:{tiles:[[1,0]],walk:true}, X:{tiles:[[1,1]],walk:false},
 }});
-const objects=[];
+const objects = [
+  // A base sólida não ocupa o spawn nem os espaços de interação.
+  {id:'bio_terminal_principal',tipo:'decoracao',x:12,y:8,sprite:'bio_terminal',useCrop:true,larguraPx:340,pivotX:.5,pivotY:1,bloqueia:true,hitbox:{offsetX:-4.3,offsetY:-4.3,width:4.3,height:4.3}},
+  {id:'bio_reator_patio',tipo:'decoracao',x:38,y:17,sprite:'bio_reator',useCrop:true,larguraPx:130,pivotX:.5,pivotY:1,bloqueia:true,hitbox:{offsetX:-1.25,offsetY:-1.25,width:1.25,height:1.25}},
+  {id:'bio_reator_estufa',tipo:'decoracao',x:53,y:47,sprite:'bio_reator',useCrop:true,larguraPx:145,pivotX:.5,pivotY:1,bloqueia:true,hitbox:{offsetX:-1.35,offsetY:-1.35,width:1.35,height:1.35}},
+];
+// Vegetação agrupada ao redor das instalações em vez de uma grade regular.
 for (let y=5; y<68; y+=6) for (let x=5; x<68; x+=6) {
-  // Manter as vias centrais e objetivos livres; árvores são decoração sem colisão.
-  if ((x>7 && x<20 && y>8 && y<22) || (x>42 && x<56 && y>42 && y<57)) continue;
-  objects.push({id:`estacao_planta_${x}_${y}`,tipo:'decoracao',x:x+((x*y)%5-2)*.4,y:y+((x+2*y)%5-2)*.4,sprite:'vegetacao_tropical',frame:{col:2+(x*y)%4,row:0},useCrop:true,larguraPx:65+(x*y)%35,pivotX:.5,pivotY:1,bloqueia:false});
+  const n = (x * 97 + y * 131 + x * y * 17) % 11;
+  if (n > 5 || (x<20 && y<22) || (x>29 && x<42 && y>12 && y<25) || (x>42 && x<58 && y>42 && y<57)) continue;
+  objects.push({id:`estacao_planta_${x}_${y}`,tipo:'decoracao',x:x+((x*y)%5-2)*.4,y:y+((x+2*y)%5-2)*.4,sprite:'vegetacao_tropical',frame:{col:n%2?2:3,row:0},useCrop:true,larguraPx:65+(x*y)%35,pivotX:.5,pivotY:1,bloqueia:false});
 }
-for (const [id,x,y,col,row,scale] of [
-  ['bio_entrada_portal',10,7,2,0,.50], ['bio_painel_chegada',14,12,0,1,.42],
-  ['bio_terminal_patio',34,17,0,1,.45], ['bio_terminal_estufa',48,47,0,1,.45],
-  ['bio_banco_1',31,23,1,1,.50], ['bio_banco_2',53,54,1,1,.50],
-]) objects.push({id,tipo:'decoracao',x,y,sprite:'hub_props',frame:{col,row},scale,anchorY:.94,bloqueia:false});
+for (const [id,x,y,col,row,w] of [
+  ['bio_destroc_1',14,10,3,1,62], ['bio_destroc_2',17,18,2,1,55],
+  ['bio_destroc_3',33,23,3,0,54], ['bio_destroc_4',48,52,2,1,64],
+  ['bio_destroc_5',54,53,3,1,58], ['bio_destroc_6',41,25,3,0,48],
+]) objects.push({id,tipo:'decoracao',x,y,sprite:'beach_props',frame:{col,row},useCrop:true,larguraPx:w,pivotX:.5,pivotY:1,bloqueia:false});
 for (const [id,x,y,label] of [['estacao_chegada',8,10,'CHEGADA'],['estacao_patio',36,20,'PÁTIO'],['estacao_estufa',50,50,'ESTUFA']]) objects.push({id,tipo:'decoracao',x,y,routeMarker:label,bloqueia:false});
 export const map={
   id:'ilha_estacao_bio', meta:{nome:'ESTAÇÃO QUE RESPIRA · SETOR INICIAL',tipo:'exterior',dimensao:'arquipelago',corFundo:'#1e6384',estiloPiso:'livre',useBackgroundWalls:true,ambiente:{poeira:8,cor:'#ffd98a'},minZoom:.85},

@@ -116,6 +116,8 @@ await loadSprites([
   { id: 'bio_margem_cano', src: 'assets/sprites/estacao-bio/margem-cano.png' },
   { id: 'bio_margem_ruina', src: 'assets/sprites/estacao-bio/margem-ruina.png' },
   { id: 'bio_margem_mureta', src: 'assets/sprites/estacao-bio/margem-mureta.png' },
+  { id: 'bio_piso_novo', src: 'assets/source-art/estacao-bio/piso-bio-08.png' },
+  { id: 'bio_jardim_novo', src: 'assets/source-art/estacao-bio/piso-bio-jardim-08.png' },
   { id: 'bio_piso', src: 'assets/sprites/estacao-bio/piso-industrial-folha.png' },
   { id: 'bio_floreira', src: 'assets/sprites/estacao-bio/detalhe-floreira.png' },
   { id: 'bio_tubos', src: 'assets/sprites/estacao-bio/detalhe-tubos.png' },

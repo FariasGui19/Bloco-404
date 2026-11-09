@@ -49,24 +49,18 @@ assert(runtimeSeen.has('9,10'), 'spawn preservado');
 // Terminal: hitbox medida, aproximação por vários lados e camadas reais de profundidade.
 const terminal = state.objects.find(o => o.id === 'bio_terminal_principal');
 assert(terminal.bloqueia);
-assert.equal(terminal.hitbox.width, 7);
-for (const [x, y] of [[14, 6.9], [13.1, 5.7], [12, 9.6], [5, 6], [3, 5], [16, 3], [15, 7]]) {
+assert.equal(terminal.hitbox.width, 8.1);
+for (const [x, y] of [[14, 6.9], [13.1, 5.7], [12, 9.6], [4, 6], [3, 5], [16, 3], [15, 7]]) {
   assert(canStandAt(map, x, y, .28, state.player), `aproximação livre em ${x},${y}`);
 }
-for (const [x, y] of [[9, 5], [12, 8], [7, 7], [12.6, 8.6]]) {
+for (const [x, y] of [[9, 5], [12, 8], [7, 7], [5, 6], [12.6, 8.6]]) {
   assert(!canStandAt(map, x, y, .28, state.player), `base sólida em ${x},${y}`);
 }
-const offsets = depthLayerOffsets(terminal.depthLayers);
-assert.equal(offsets.length, 6);
-const profundidades = offsets.map(o => terminal.x + terminal.y + o);
-const jogadorLateral = 14 + 6.9;
-assert(profundidades.some(d => d < jogadorLateral) && profundidades.some(d => d > jogadorLateral),
-  'o jogador lateral fica entre faixas da estrutura, não atrás do sprite inteiro');
-for (let i = 0; i < 6; i++) {
-  const f = fatiaObjeto({ __slice: { index: i, count: 6 } }, 532);
-  assert(f.sy >= 0 && f.sh > 0 && f.sy + f.sh <= 532, `faixa ${i} dentro da imagem`);
-}
-assert.equal(fatiaObjeto({}, 532).sh, 532, 'sem camadas desenha a imagem inteira');
+// O terminal é uma peça única: não corta o jogador com faixas horizontais.
+assert.equal(terminal.larguraPx, 520);
+assert(!terminal.depthLayers);
+assert(terminal.x + terminal.y + terminal.depthOffset < 13.1 + 7.2, 'jogador na frente não é recortado pela fachada');
+assert.equal(fatiaObjeto({}, 532).sh, 532);
 for (const id of ['bio_estufa_principal', 'bio_reator_patio']) {
   assert(state.objects.find(o => o.id === id).depthLayers?.count >= 4, `${id}: camadas reais`);
 }

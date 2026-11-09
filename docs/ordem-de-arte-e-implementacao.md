@@ -41,3 +41,7 @@ Por rodada, exatamente duas folhas ou imagens; cada ação/direção deve manter
 5. Para cada arquétipo, avaliar caminhada/idle em direções faltantes e transições/efeitos de habilidades em folhas separadas, somente depois de validar quais quadros realmente faltam. Novas habilidades exigem definição de input, custo e progressão antes de arte e implementação.
 
 O objetivo final está em `docs/missoes-inimigos-habilidades-e-pets.md` e `docs/roteiro-proximas-etapas.md`. A sequência não significa que todas as peças já existam; cada etapa deve ser aprovada antes de avançar.
+
+## Rodada 0.3.8 — piso e primeira sala
+
+Exatamente duas texturas geradas: piso industrial ortográfico e solo de jardim, aplicadas sobre a máscara caminhável e cacheadas em blocos; sem folhas de animação nesta rodada. O relato visual priorizou a unidade do chão e a escala/oclusão sobre novas poses. Os recortes seguintes devem validar o terminal e o novo piso em jogo, criar uma base de vida/dano/recuperação e telegraph antes de inimigos ou miniboss, e só então retomar as folhas direcionais de ataque e caminhada Bio com referência e quadros validados. A sala de controle e o puzzle R/Q/E são um primeiro recorte funcional, não a missão final nem um interior completo para todas as estruturas.

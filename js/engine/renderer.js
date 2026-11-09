@@ -17,6 +17,7 @@ import { isDebugEnabled, drawDebugWorld } from '../game/debug.js';
 import { ACTION_SPRITES } from '../data/action-sprites.js';
 import { drawHubScreenFx, hasHubScreenFx } from './hub-screen-fx.js';
 import { getVelozAnimation } from '../data/veloz-animation.js';
+import { getDominioWalk, getDominioAttack } from '../data/dominio-animation.js';
 import { getBasicAttackPose } from '../data/basic-attack-poses.js';
 import { state } from '../game/state.js';
 
@@ -1218,6 +1219,20 @@ function drawBeachRailTunnel(rail) {
   if (!frame) return;
   const end = beachTunnelAnchor(rail, frame);
   ctx.save(); ctx.translate(end.x, end.y); ctx.lineJoin = 'round';
+  // Volume se prolonga para trás, paralelo ao trilho, em vez de ser
+  // uma placa fina na diagonal. A abertura frontal continua atrás do trem.
+  const depthX = -42, depthY = -21;
+  const panel = (points, fill) => {
+    ctx.beginPath(); points.forEach(([x,y],i) => i ? ctx.lineTo(x,y) : ctx.moveTo(x,y));
+    ctx.closePath(); ctx.fillStyle = fill; ctx.fill(); ctx.strokeStyle = '#253a42'; ctx.lineWidth = 2; ctx.stroke();
+  };
+  panel([[-62,10],[-62,-82],[-62+depthX,-82+depthY],[-62+depthX,10+depthY]], '#1c2f38');
+  panel([[-62,-82],[-42,-112],[-42+depthX,-112+depthY],[-62+depthX,-82+depthY]], '#40565b');
+  panel([[-42,-112],[23,-105],[23+depthX,-105+depthY],[-42+depthX,-112+depthY]], '#51636a');
+  panel([[23,-105],[54,-75],[54+depthX,-75+depthY],[23+depthX,-105+depthY]], '#344a51');
+  // Ranhuras da carcaça reforçam a profundidade sem cobrir o trilho.
+  ctx.strokeStyle = '#73918d'; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(-71,-90); ctx.lineTo(-53,-116); ctx.lineTo(9,-109); ctx.stroke();
   // Moldura recuada enquadra a traseira do trem e a ponta real do trilho.
   ctx.fillStyle = '#243841'; ctx.strokeStyle = '#61777b'; ctx.lineWidth = 3;
   ctx.beginPath(); ctx.moveTo(-62, 10); ctx.lineTo(-62, -82);
@@ -1891,6 +1906,20 @@ function drawPlayerSprite(player, ix, iy) {
       return true;
     }
   }
+  const dominioAttack = getDominioAttack(state.progress, player);
+  if (dominioAttack) {
+    const sheet = getSprite('dominio_ataque_lateral_0316');
+    if (sheet) {
+      // Mesma escala em todas as poses: a espada pode ir acima da cabeça
+      // sem encolher o operador. Pivot comum medido no preparo da folha.
+      const w = sheet.width / 4, scale = .21, footY = 737;
+      ctx.save(); ctx.translate(ix, iy + 3);
+      if (dominioAttack.flip) ctx.scale(-1, 1);
+      drawSmooth(sheet, dominioAttack.col * w, 0, w, sheet.height,
+        -w * scale / 2, -footY * scale, w * scale, sheet.height * scale);
+      ctx.restore(); player._topo = 140; return true;
+    }
+  }
   const attackPose = getBasicAttackPose(state.progress, player);
   if (attackPose && drawArchetypeSheet(attackPose.sprite, attackPose.col, attackPose.row, ix, iy, attackPose.flip, { scale: attackPose.scale, anchor: attackPose.anchor })) {
     player._topo = 100;
@@ -2020,6 +2049,19 @@ function drawPlayerSprite(player, ix, iy) {
     // ===============================================
   // 3. ANDAR / PARADO
   // ===============================================
+  const dominioWalk = getDominioWalk(state.progress, player, performance.now());
+  if (dominioWalk) {
+    const sheet = getSprite('dominio_andar_frente_0316');
+    const frame = sheet && getFrame(sheet, dominioWalk.col, 0, 4, 1);
+    if (frame) {
+      const scale = 139.86 / frame.crop.h, base = iy + .36;
+      drawSmooth(frame.cell, 0, 0, frame.cell.width, frame.cell.height,
+        ix - 3 - frame.cell.width * scale / 2, base - (frame.crop.y + frame.crop.h) * scale,
+        frame.cell.width * scale, frame.cell.height * scale);
+      player._topo = iy - (base - frame.crop.h * scale);
+      return true;
+    }
+  }
   if (suit === 'dominio' || suit === 'mare') {
     const col = player.facing === 'up' ? 2 : player.facing === 'down' ? 0 : 1;
     if (drawArchetypeSheet(`player_${suit}_lvl1`, col, 0, ix, iy, player.facing === 'left', { walk: player.moving })) {

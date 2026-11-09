@@ -96,6 +96,8 @@ await loadSprites([
   { id: 'player_dominio_reference', src: 'assets/sprites/player/player-dominio-reference.png' },
   { id: 'player_mare_reference', src: 'assets/sprites/player/player-mare-reference.png' },
   { id: 'player_10x_reference', src: 'assets/sprites/player/player-10x-reference.png' },
+  { id: 'dominio_andar_frente_0316', src: 'assets/sprites/player/dominio-andar-frente-0316.png' },
+  { id: 'dominio_ataque_lateral_0316', src: 'assets/sprites/player/dominio-ataque-lateral-0316.png' },
   { id: 'player_dominio_lvl1', src: 'assets/sprites/player/player-dominio-lvl1.png' },
   { id: 'player_dominio_q', src: 'assets/sprites/player/player-dominio-q.png' },
   { id: 'player_dominio_r', src: 'assets/sprites/player/player-dominio-r.png' },

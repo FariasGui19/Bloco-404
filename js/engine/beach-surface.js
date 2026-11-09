@@ -20,15 +20,15 @@ export function createBeachSurface(rows, scale = 16) {
       shore = Math.min(shore, Math.hypot(ex, ey));
     }
     // Faixa molhada gradual, sem borda escura idêntica em cada célula.
-    const wet = 1 - smooth(shore / 1.05);
+    const wet = 1 - smooth(shore / 1.8);
     const broad = Math.sin(x * .55 + Math.sin(y * .43) * .85) * 3.6 + Math.sin(y * .62 - x * .18) * 2.4;
     const fine = Math.sin(x * 5.7 + Math.sin(y * 1.7) * 1.5) * 3.3 + Math.sin(y * 6.1 + x * 1.2) * 1.5;
     const grain = (Math.sin(x * 31.7 + y * 17.1) + Math.sin(x * 19.3 - y * 28.4)) * 1.3;
     // Veios largos e irregulares sugerem depósitos de areia, não tiles soltos.
     const drift = Math.max(0, Math.sin(x * .85 + Math.sin(y * .38) * 2.1 + y * .17) - .72) * (1 - wet) * 12;
-    let r = 229 + broad + fine + grain - wet * 21 - drift;
-    let g = 197 + broad + fine + grain - wet * 12 - drift * .8;
-    let b = 143 + broad + fine + grain - wet * 4 - drift * .45;
+    let r = 229 + broad + fine + grain - wet * 30 - drift;
+    let g = 197 + broad + fine + grain - wet * 18 - drift * .8;
+    let b = 143 + broad + fine + grain - wet * 7 - drift * .45;
     // As antigas poças quadradas viram manchas suaves na mesma área caminhável.
     if (tile === 'T') {
       const d = Math.hypot((x - ix - .5) / .32, (y - iy - .5) / .22);

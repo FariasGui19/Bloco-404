@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { getBioWalkFrame, bioWalkMetrics } from '../js/data/bio-walk.js';
+import { getBioWalkFrame, bioWalkMetrics, bioWalkRig } from '../js/data/bio-walk.js';
 import { CONFIG } from '../js/config.js';
 const progress = { archetype: 'motor_bio_forja' };
 const p = { equippedSuit: 'bio_forja', moving: true, facing: 'right', ability: {} };
@@ -23,7 +23,15 @@ assert(Math.abs(228 * CONFIG.PLAYER_BIO_FORJA_WALK_SPRITE.SCALE / (420 * CONFIG.
 for (const ability of [{ dash: {} }, { scanning: .3 }, { effect: { timeLeft: .2 } }]) {
   p.ability = ability; assert.equal(getBioWalkFrame(progress, p, 0), null);
 }
-p.ability = {}; p.combat = { timeLeft: .2 };
+p.ability = {};
+p.facing = 'down';
+const neutral = bioWalkRig(progress, p, 0), step = bioWalkRig(progress, p, 180), next = bioWalkRig(progress, p, 540);
+assert.equal(neutral.leftShear, 0);
+assert(step.leftShear > 0 && step.rightShear < 0);
+assert(next.leftShear < 0 && next.rightShear > 0);
+assert.equal(step.bob, next.bob);
+p.combat = { timeLeft: .2 };
+assert.equal(bioWalkRig(progress, p, 180), null);
 assert.equal(getBioWalkFrame(progress, p, 0), null);
 p.combat = null; p.moving = false; assert.equal(getBioWalkFrame(progress, p, 0), null);
 p.moving = true; p.equippedSuit = null; assert.equal(getBioWalkFrame(progress, p, 0), null);

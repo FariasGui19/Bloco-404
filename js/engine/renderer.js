@@ -9,7 +9,7 @@ import { camera, view, worldToScreen, isoToWorld } from './camera.js';
 import { getSprite } from './sprites.js';
 import { createBeachSurface } from './beach-surface.js';
 import { bridgeGateGeometry } from './bridge-geometry.js';
-import { getBioWalkFrame, bioWalkMetrics } from '../data/bio-walk.js';
+import { bioWalkRig } from '../data/bio-walk.js';
 import { faunaFootAnchor } from '../game/fauna-costeira.js';
 import { getFrame } from './sprite-clean.js';
 import { drawAmbientBack, drawAmbientFront } from './ambient.js';
@@ -595,18 +595,16 @@ function caminhoEstacao(map, x, y) {
 // Não altera a máscara: a faixa de trilhos R continua bloqueada.
 const beachStationCache = new WeakMap();
 function drawBeachStation(map) {
-  const cfg = CONFIG.METRO_PLATFORM_TILES, image = getSprite(cfg.ID);
   let entry = beachStationCache.get(map);
-  if (!entry || entry.image !== image) {
+  if (!entry) {
     // A plataforma é estática: compor uma vez, em coordenadas isométricas.
-    const left = -4 * HW, top = 4 * HH;
+    const left = -4 * HW, top = 3 * HH;
     const surface = document.createElement('canvas');
-    surface.width = 16 * HW; surface.height = 16 * HH + 18;
+    surface.width = 17 * HW; surface.height = 17 * HH + 18;
     const previous = ctx;
     ctx = surface.getContext('2d');
     try {
       ctx.translate(-left, -top);
-      const frames = image && [0, 1].map(col => getFrame(image, col, 0, cfg.SHEET_COLS, cfg.SHEET_ROWS)?.crop);
       ctx.imageSmoothingEnabled = false;
       // Faces estruturais sob o tabuleiro, com suportes e iluminação embutida.
       const p = (x, y) => [(x-y)*HW, (x+y)*HH];
@@ -617,25 +615,29 @@ function drawBeachStation(map) {
         ctx.beginPath(); ctx.moveTo(ax, ay+10); ctx.lineTo(bx, by+10); ctx.stroke();
       };
       for (let x = 2; x <= 13; x++) face([x, 6], [x+1, 6], '#3b4c4d');
-      for (let y = 2; y <= 5; y++) face([14, y], [14, y+1], '#30404b');
+      for (let y = 1; y <= 5; y++) face([14, y], [14, y+1], '#30404b');
       ctx.strokeStyle = '#5fd5cd'; ctx.lineWidth = 2;
       for (let x = 3; x <= 13; x += 3) {
         const [a,b] = p(x,6); ctx.beginPath(); ctx.moveTo(a-5,b+6); ctx.lineTo(a+5,b+11); ctx.stroke();
       }
-      for (let y = 2; y <= 5; y++) for (let x = 2; x <= 13; x++) {
+      for (let y = 1; y <= 5; y++) for (let x = 2; x <= 13; x++) {
         if (!'RPS'.includes(map.aguaPraia[y]?.[x] ?? ' ')) continue;
         const ix = (x-y)*HW, iy = (x+y)*HH;
+        // Placas alinhadas à grade, sem repetir recortes inteiros de máquinas.
         quad(ix, iy, ix+HW, iy+HH, ix, iy+TH, ix-HW, iy+HH,
-          (x+y)%3 ? '#4c5b58' : '#596760', '#354641', 1);
-        const frame = frames?.[y === 4 ? 1 : 0];
-        if (frame) ctx.drawImage(frame.canvas, 0, 0, frame.w, frame.h, ix-HW, iy, CONFIG.TILE_W, CONFIG.TILE_H);
+          (x+y)%3 ? '#44535a' : '#4c5c61', '#263840', 1);
+        if ((x+y)%3 === 0) {
+          ctx.strokeStyle = 'rgba(157,185,179,.3)'; ctx.lineWidth = 1;
+          ctx.beginPath(); ctx.moveTo(ix-HW*.55,iy+HH); ctx.lineTo(ix,iy+HH*1.55);
+          ctx.lineTo(ix+HW*.55,iy+HH); ctx.stroke();
+        }
         if (y === 4) {
           ctx.strokeStyle = '#e1bd73'; ctx.lineWidth = 2;
           ctx.beginPath(); ctx.moveTo(ix, iy+3); ctx.lineTo(ix+HW-3, iy+HH); ctx.stroke();
         }
       }
     } finally { ctx = previous; }
-    entry = { image, surface, left, top };
+    entry = { surface, left, top };
     beachStationCache.set(map, entry);
   }
   ctx.drawImage(entry.surface, entry.left, entry.top);
@@ -1194,8 +1196,8 @@ function drawWorld(map, state) {
 // Entrada dimensional na ponta oeste do trem; desenhada atrás do material
 // rodante e sem acrescentar colisão, portal ou promessa de túnel explorável.
 function drawBeachRailTunnel() {
-  const ix = (7.1 - 2) * HW - 168, iy = (7.1 + 2) * HH + 34;
-  ctx.save(); ctx.translate(ix, iy); ctx.lineJoin = 'round';
+  const ix = (7.1 - 2) * HW - 190, iy = (7.1 + 2) * HH - 12;
+  ctx.save(); ctx.translate(ix, iy); ctx.scale(.72, .72); ctx.lineJoin = 'round';
   // Portal industrial em perspectiva, com arco escuro e luminárias.
   ctx.fillStyle = '#182b33'; ctx.strokeStyle = '#50656a'; ctx.lineWidth = 5;
   ctx.beginPath(); ctx.moveTo(-75, 8); ctx.lineTo(-75, -82);
@@ -2007,25 +2009,6 @@ function drawPlayerSprite(player, ix, iy) {
       return true;
     }
   }
-  const walkFrame = getBioWalkFrame(state.progress, player, performance.now());
-  if (walkFrame) {
-    const cfg = CONFIG.PLAYER_BIO_FORJA_WALK_SPRITE;
-    const image = getSprite(cfg.ID);
-    if (image) {
-      const frame = getFrame(image, walkFrame.col, walkFrame.row, cfg.SHEET_COLS, cfg.SHEET_ROWS);
-      if (frame) {
-        const foot = pePos(frame);
-        // Normalização uniforme preserva proporções, sem squash entre quadros.
-        const metrics = bioWalkMetrics(player.facing, frame.crop.h);
-        const scale = metrics?.scale ?? cfg.SCALE, groundY = iy + (metrics?.footOffset ?? 0);
-        drawSmooth(frame.cell, 0, 0, frame.cell.width, frame.cell.height,
-          ix - foot.x * scale, groundY - foot.y * scale,
-          frame.cell.width * scale, frame.cell.height * scale);
-        player._topo = iy - (groundY - (foot.y - frame.crop.y) * scale);
-        return true;
-      }
-    }
-  }
   const useBioForja = player.equippedSuit === 'bio_forja';
   const sprite = useBioForja ? CONFIG.PLAYER_BIO_FORJA_SPRITE : CONFIG.PLAYER_SPRITE;
   const image = getSprite(sprite.ID);
@@ -2057,10 +2040,30 @@ function drawPlayerSprite(player, ix, iy) {
     ctx.shadowColor = player.equippedSuit === 'dominio' ? '#ffd264' : '#53d9f4';
     ctx.shadowBlur = 15;
   }
-  drawSmooth(fr.cell, insetX, insetY, sourceW, sourceH, drawX, drawY, drawW, drawH);
+  const rig = useBioForja ? bioWalkRig(state.progress, player, performance.now()) : null;
+  if (rig) {
+    // O tronco, rosto e traje são os pixels exatos da pose parada. A parte
+    // inferior tem leve cisalhamento alternado, não quadros redesenhados.
+    const hipY = Math.round(fr.crop.y + fr.crop.h * .60);
+    const midX = Math.round(fr.crop.x + fr.crop.w / 2);
+    ctx.translate(drawX, drawY - rig.bob);
+    ctx.scale(sprite.SCALE, sprite.SCALE);
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'medium';
+    ctx.save(); ctx.beginPath(); ctx.rect(0, 0, sourceW, hipY - insetY); ctx.clip();
+    ctx.drawImage(fr.cell, -insetX, -insetY); ctx.restore();
+    for (const [start, width, shear] of [[0, midX - insetX, rig.leftShear], [midX - insetX, sourceW - (midX - insetX), rig.rightShear]]) {
+      ctx.save();
+      ctx.transform(1, 0, shear, 1, -shear * (hipY - insetY), 0);
+      ctx.beginPath(); ctx.rect(start, hipY - insetY, width, sourceH - (hipY - insetY)); ctx.clip();
+      ctx.drawImage(fr.cell, -insetX, -insetY); ctx.restore();
+    }
+  } else {
+    drawSmooth(fr.cell, insetX, insetY, sourceW, sourceH, drawX, drawY, drawW, drawH);
+  }
   ctx.restore();
-  
-  player._topo = iy - (drawY + Math.max(0, fr.crop.y - insetY) * sprite.SCALE);
+
+  player._topo = iy - (drawY + Math.max(0, fr.crop.y - insetY) * sprite.SCALE) + (rig?.bob ?? 0);
   return true;
 }
 // =====================================================================

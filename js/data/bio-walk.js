@@ -16,3 +16,12 @@ export function bioWalkMetrics(facing, frameHeight) {
   if (!IDLE_HEIGHT[facing] || !Number.isFinite(frameHeight) || frameHeight <= 0) return null;
   return { scale: IDLE_HEIGHT[facing] / frameHeight, footOffset: IDLE_FOOT_OFFSET[facing] };
 }
+
+// Deformação de caminhada provisória da própria arte parada. Não é uma
+// folha de passos: a silhueta e a roupa são as mesmas do idle.
+export function bioWalkRig(progress, player, now) {
+  if (!getBioWalkFrame(progress, player, now)) return null;
+  const phase = Math.sin(now * Math.PI * 2 / 720);
+  return { leftShear: phase * .065, rightShear: -phase * .065,
+    bob: Math.abs(phase) * .7 };
+}

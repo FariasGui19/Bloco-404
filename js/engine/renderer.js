@@ -1221,31 +1221,33 @@ function drawBeachRailTunnel(rail) {
   ctx.save(); ctx.translate(end.x, end.y); ctx.lineJoin = 'round';
   // Volume se prolonga para trás, paralelo ao trilho, em vez de ser
   // uma placa fina na diagonal. A abertura frontal continua atrás do trem.
-  const depthX = -42, depthY = -21;
+  const depthX = -42, depthY = depthX * (rail.skewY ?? .5);
   const panel = (points, fill) => {
     ctx.beginPath(); points.forEach(([x,y],i) => i ? ctx.lineTo(x,y) : ctx.moveTo(x,y));
     ctx.closePath(); ctx.fillStyle = fill; ctx.fill(); ctx.strokeStyle = '#253a42'; ctx.lineWidth = 2; ctx.stroke();
   };
   panel([[-62,10],[-62,-82],[-62+depthX,-82+depthY],[-62+depthX,10+depthY]], '#1c2f38');
   panel([[-62,-82],[-42,-112],[-42+depthX,-112+depthY],[-62+depthX,-82+depthY]], '#40565b');
-  panel([[-42,-112],[23,-105],[23+depthX,-105+depthY],[-42+depthX,-112+depthY]], '#51636a');
-  panel([[23,-105],[54,-75],[54+depthX,-75+depthY],[23+depthX,-105+depthY]], '#344a51');
+  panel([[-42,-112],[23,-112],[23+depthX,-112+depthY],[-42+depthX,-112+depthY]], '#51636a');
+  panel([[23,-112],[54,-82],[54+depthX,-82+depthY],[23+depthX,-112+depthY]], '#344a51');
   // Ranhuras da carcaça reforçam a profundidade sem cobrir o trilho.
   ctx.strokeStyle = '#73918d'; ctx.lineWidth = 1;
-  ctx.beginPath(); ctx.moveTo(-71,-90); ctx.lineTo(-53,-116); ctx.lineTo(9,-109); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(-62 + depthX * .3, -82 + depthY * .3);
+  ctx.lineTo(-42 + depthX * .3, -112 + depthY * .3);
+  ctx.lineTo(23 + depthX * .3, -112 + depthY * .3); ctx.stroke();
   // Moldura recuada enquadra a traseira do trem e a ponta real do trilho.
   ctx.fillStyle = '#243841'; ctx.strokeStyle = '#61777b'; ctx.lineWidth = 3;
   ctx.beginPath(); ctx.moveTo(-62, 10); ctx.lineTo(-62, -82);
-  ctx.lineTo(-42, -112); ctx.lineTo(23, -105); ctx.lineTo(54, -75);
-  ctx.lineTo(54, 17); ctx.lineTo(34, 16); ctx.lineTo(34, -67);
-  ctx.lineTo(15, -87); ctx.lineTo(-34, -92); ctx.lineTo(-42, -77);
+  ctx.lineTo(-42, -112); ctx.lineTo(23, -112); ctx.lineTo(54, -82);
+  ctx.lineTo(54, 17); ctx.lineTo(34, 16); ctx.lineTo(34, -77);
+  ctx.lineTo(15, -92); ctx.lineTo(-34, -92); ctx.lineTo(-42, -77);
   ctx.lineTo(-42, 9); ctx.closePath(); ctx.fill(); ctx.stroke();
   ctx.fillStyle = '#0b1b24'; ctx.beginPath(); ctx.moveTo(-42,9);
-  ctx.lineTo(-42,-77); ctx.lineTo(-34,-92); ctx.lineTo(15,-87);
-  ctx.lineTo(34,-67); ctx.lineTo(34,16); ctx.closePath(); ctx.fill();
+  ctx.lineTo(-42,-77); ctx.lineTo(-34,-92); ctx.lineTo(15,-92);
+  ctx.lineTo(34,-77); ctx.lineTo(34,16); ctx.closePath(); ctx.fill();
   ctx.strokeStyle = '#4ad4d2'; ctx.lineWidth = 2;
   ctx.beginPath(); ctx.moveTo(-52,0); ctx.lineTo(-52,-79); ctx.lineTo(-38,-101);
-  ctx.lineTo(19,-95); ctx.lineTo(44,-71); ctx.lineTo(44,3); ctx.stroke();
+  ctx.lineTo(19,-101); ctx.lineTo(44,-79); ctx.lineTo(44,3); ctx.stroke();
   ctx.restore();
 }
 
@@ -1907,7 +1909,16 @@ function drawPlayerSprite(player, ix, iy) {
     }
   }
   const dominioAttack = getDominioAttack(state.progress, player);
-  if (dominioAttack) {
+  if (dominioAttack && ['up', 'down'].includes(player.facing)) {
+    const sheet = getSprite(player.facing === 'up' ? 'dominio_ataque_costas_0317' : 'dominio_ataque_frente_0317');
+    if (sheet) {
+      const w = sheet.width / 4, scale = .245;
+      drawSmooth(sheet, dominioAttack.col * w, 0, w, sheet.height,
+        ix - w * scale / 2, iy + 3 - 680 * scale, w * scale, sheet.height * scale);
+      player._topo = 140; return true;
+    }
+  }
+  if (dominioAttack && ['left', 'right'].includes(player.facing)) {
     const sheet = getSprite('dominio_ataque_lateral_0316');
     if (sheet) {
       // Mesma escala em todas as poses: a espada pode ir acima da cabeça
@@ -2050,7 +2061,18 @@ function drawPlayerSprite(player, ix, iy) {
   // 3. ANDAR / PARADO
   // ===============================================
   const dominioWalk = getDominioWalk(state.progress, player, performance.now());
-  if (dominioWalk) {
+  if (dominioWalk && player.facing !== 'down') {
+    const sheet = getSprite(player.facing === 'up' ? 'dominio_andar_costas_0317' : 'dominio_andar_lateral_0317');
+    if (sheet) {
+      const w = sheet.width / 4, scale = .245;
+      ctx.save(); ctx.translate(ix, iy + 3);
+      if (player.facing === 'left') ctx.scale(-1, 1);
+      drawSmooth(sheet, dominioWalk.col * w, 0, w, sheet.height,
+        -w * scale / 2, -680 * scale, w * scale, sheet.height * scale);
+      ctx.restore(); player._topo = 140; return true;
+    }
+  }
+  if (dominioWalk && player.facing === 'down') {
     const sheet = getSprite('dominio_andar_frente_0316');
     const frame = sheet && getFrame(sheet, dominioWalk.col, 0, 4, 1);
     if (frame) {

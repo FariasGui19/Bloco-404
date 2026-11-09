@@ -9,7 +9,7 @@ import { camera, view, worldToScreen, isoToWorld } from './camera.js';
 import { getSprite } from './sprites.js';
 import { createBeachSurface } from './beach-surface.js';
 import { bridgeGateGeometry } from './bridge-geometry.js';
-import { getBioWalkFrame } from '../data/bio-walk.js';
+import { getBioWalkFrame, bioWalkSheet } from '../data/bio-walk.js';
 import { faunaFootAnchor } from '../game/fauna-costeira.js';
 import { getFrame } from './sprite-clean.js';
 import { drawAmbientBack, drawAmbientFront } from './ambient.js';
@@ -1207,26 +1207,30 @@ export function beachRailEnd(rail, frame) {
     y: (rail.x + rail.y) * HH + (rail.ajusteY ?? 0) - half * (rail.skewY ?? 0)
       - height * (rail.pivotY ?? .5) * (rail.escalaY ?? 1) };
 }
+export function beachTunnelAnchor(rail, frame) {
+  const end = beachRailEnd(rail, frame);
+  return { x: end.x + HW, y: end.y };
+}
 function drawBeachRailTunnel(rail) {
   const image = getSprite(rail.sprite);
   const cfg = getObjectSpriteConfig(rail.sprite);
   const frame = getFrame(image, rail.frame?.col ?? 0, rail.frame?.row ?? 0, cfg.SHEET_COLS, cfg.SHEET_ROWS)?.crop;
   if (!frame) return;
-  const end = beachRailEnd(rail, frame);
+  const end = beachTunnelAnchor(rail, frame);
   ctx.save(); ctx.translate(end.x, end.y); ctx.lineJoin = 'round';
-  // Arco baixo enquadra a ponta real do trilho, sem pórtico sobre o passeio.
+  // Moldura recuada enquadra a traseira do trem e a ponta real do trilho.
   ctx.fillStyle = '#243841'; ctx.strokeStyle = '#61777b'; ctx.lineWidth = 3;
-  ctx.beginPath(); ctx.moveTo(-51, 10); ctx.lineTo(-51, -56);
-  ctx.lineTo(-34, -79); ctx.lineTo(15, -74); ctx.lineTo(39, -53);
-  ctx.lineTo(39, 11); ctx.lineTo(22, 13); ctx.lineTo(22, -45);
-  ctx.lineTo(9, -58); ctx.lineTo(-27, -62); ctx.lineTo(-34, -51);
-  ctx.lineTo(-34, 9); ctx.closePath(); ctx.fill(); ctx.stroke();
-  ctx.fillStyle = '#0b1b24'; ctx.beginPath(); ctx.moveTo(-34,9);
-  ctx.lineTo(-34,-51); ctx.lineTo(-27,-62); ctx.lineTo(9,-58);
-  ctx.lineTo(22,-45); ctx.lineTo(22,13); ctx.closePath(); ctx.fill();
+  ctx.beginPath(); ctx.moveTo(-62, 10); ctx.lineTo(-62, -82);
+  ctx.lineTo(-42, -112); ctx.lineTo(23, -105); ctx.lineTo(54, -75);
+  ctx.lineTo(54, 17); ctx.lineTo(34, 16); ctx.lineTo(34, -67);
+  ctx.lineTo(15, -87); ctx.lineTo(-34, -92); ctx.lineTo(-42, -77);
+  ctx.lineTo(-42, 9); ctx.closePath(); ctx.fill(); ctx.stroke();
+  ctx.fillStyle = '#0b1b24'; ctx.beginPath(); ctx.moveTo(-42,9);
+  ctx.lineTo(-42,-77); ctx.lineTo(-34,-92); ctx.lineTo(15,-87);
+  ctx.lineTo(34,-67); ctx.lineTo(34,16); ctx.closePath(); ctx.fill();
   ctx.strokeStyle = '#4ad4d2'; ctx.lineWidth = 2;
-  ctx.beginPath(); ctx.moveTo(-42,0); ctx.lineTo(-42,-53); ctx.lineTo(-30,-69);
-  ctx.lineTo(12,-65); ctx.lineTo(30,-49); ctx.lineTo(30,0); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(-52,0); ctx.lineTo(-52,-79); ctx.lineTo(-38,-101);
+  ctx.lineTo(19,-95); ctx.lineTo(44,-71); ctx.lineTo(44,3); ctx.stroke();
   ctx.restore();
 }
 
@@ -2025,16 +2029,20 @@ function drawPlayerSprite(player, ix, iy) {
   }
   const walk = getBioWalkFrame(state.progress, player, performance.now());
   if (walk) {
-    const sheet = getSprite('bio_frente_andar_0314');
+    const profile = bioWalkSheet(player.facing);
+    const sheet = getSprite(profile.id);
     const frame = sheet && getFrame(sheet, walk.col, 0, 4, 1);
     if (frame) {
-      // Tamanho da cabeça aos pés comparado ao idle de frente (~129 px).
+      // Altura por direção medida na folha parada, sem deformação não uniforme.
       // O eixo da célula e o mesmo nível de apoio são mantidos por quadro.
-      const scale = 128.65 / frame.crop.h;
-      const base = iy + 5;
+      const scale = profile.height / frame.crop.h;
+      const base = iy + profile.footOffset;
+      ctx.save(); ctx.translate(ix, 0);
+      if (profile.flip) ctx.scale(-1, 1);
       drawSmooth(frame.cell, 0, 0, frame.cell.width, frame.cell.height,
-        ix - frame.cell.width * scale / 2, base - (frame.crop.y + frame.crop.h) * scale,
+        -frame.cell.width * scale / 2, base - (frame.crop.y + frame.crop.h) * scale,
         frame.cell.width * scale, frame.cell.height * scale);
+      ctx.restore();
       player._topo = iy - (base - frame.crop.h * scale);
       return true;
     }
@@ -2070,8 +2078,7 @@ function drawPlayerSprite(player, ix, iy) {
     ctx.shadowColor = player.equippedSuit === 'dominio' ? '#ffd264' : '#53d9f4';
     ctx.shadowBlur = 15;
   }
-  // Sem folhas confiáveis nas outras direções: pose parada íntegra,
-  // sem cortar ou deformar as pernas. Não é uma animação de passos.
+  // Fallback seguro caso a folha direcional ainda não esteja carregada.
   drawSmooth(fr.cell, insetX, insetY, sourceW, sourceH, drawX, drawY, drawW, drawH);
   ctx.restore();
   player._topo = iy - (drawY + Math.max(0, fr.crop.y - insetY) * sprite.SCALE);

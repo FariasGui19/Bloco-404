@@ -377,8 +377,12 @@ export const map = {
     { id: 'praia_capivara_centro', species: 'capivara', x: 27.5, y: 26.5 },
     { id: 'praia_gaivota_farol', species: 'gaivota', x: 32.5, y: 44.5 },
     { id: 'praia_peixes_farol', species: 'peixes', x: 37.5, y: 42.5 },
+    { id: 'praia_peixes_largo', species: 'peixes', x: 42.5, y: 17.5 },
+    { id: 'praia_peixes_sul_largo', species: 'peixes', x: 17.5, y: 38.5 },
   ],
   objects: [
+    { id: 'recife_largo_leste', tipo: 'decoracao', x: 43, y: 23, sprite: 'costa_rochosa', frame: { col: 2, row: 0 }, useCrop: true, larguraPx: 68, pivotY: 1, bloqueia: false },
+    { id: 'recife_largo_sul', tipo: 'decoracao', x: 18, y: 42, sprite: 'costa_rochosa', frame: { col: 3, row: 0 }, useCrop: true, larguraPx: 64, pivotY: 1, bloqueia: false },
     { id: 'rochedos_praia_leste', tipo: 'decoracao', x: 40, y: 12, sprite: 'costa_rochosa', frame: { col: 1, row: 0 }, useCrop: true, larguraPx: 104, pivotY: 1, bloqueia: false },
     { id: 'rochedos_praia_sul', tipo: 'decoracao', x: 1, y: 27, sprite: 'costa_rochosa', frame: { col: 3, row: 0 }, useCrop: true, larguraPx: 79, pivotY: 1, bloqueia: false },
     { id: 'rochedos_praia_centro', tipo: 'decoracao', x: 40, y: 35, sprite: 'costa_rochosa', frame: { col: 2, row: 0 }, useCrop: true, larguraPx: 72, pivotY: 1, bloqueia: false },
@@ -390,6 +394,8 @@ export const map = {
       trem: { ajusteY: 68 }, // ajuste local para aproximar as rodas do trilho
     }),
 
+    { id: 'plataforma_pilar_oeste', tipo: 'decoracao', x: 2, y: 4, sprite: 'metro_structure', frame: { col: 1, row: 0 }, useCrop: true, larguraPx: 48, pivotY: 1, bloqueia: false },
+    { id: 'plataforma_pilar_leste', tipo: 'decoracao', x: 13, y: 4, sprite: 'metro_structure', frame: { col: 0, row: 0 }, useCrop: true, larguraPx: 48, pivotY: 1, bloqueia: false },
     // Plataforma de embarque: peças leves, fora do caminho do portal e do trem.
     { id: 'praia_placa_estacao', tipo: 'decoracao', x: 11, y: 5, routeMarker: 'ESTAÇÃO', bloqueia: false },
     { id: 'praia_luz_estacao', tipo: 'decoracao', x: 3, y: 5, sprite: 'bio_luminaria', useCrop: true, larguraPx: 40, pivotY: 1, bloqueia: false },
@@ -425,7 +431,7 @@ export const map = {
 
     // ---- GATES (um por ponte) ----
     // A -> B (ponte no eixo X, linhas 7-8)
-    gate('rocha_rachada', 18, 8, 0, 1, 110, {
+    gate('rocha_rachada', 18, 7.5, 0, 1, 110, {
       nome: 'ROCHA RACHADA',
       label: 'EXAMINAR • Q: ROMPER',
       requiredAction: 'golpe_ruptura',
@@ -436,7 +442,7 @@ export const map = {
     }),
 
     // Alternativas para Maré e 10X, acessíveis sem abrir a rocha ou o teleférico.
-    gate('travessia_mare_eco', 18, 11, 0, 2, 85, {
+    gate('travessia_mare_eco', 18, 11.5, 0, 2, 85, {
       nome: 'CORRENTE DE ECO', label: 'ATRAVESSAR COM Q', hitbox: HIT_PONTE_H,
       phaseActions: ['passo_corrente', 'forma_veloz'], phaseAxis: 'x', requiredAction: 'travessia',
       actionMessage: 'APONTE PARA A CORRENTE E USE [Q] PARA ATRAVESSAR.',
@@ -444,7 +450,7 @@ export const map = {
       falha: ['A CORRENTE EXIGE UM MOVIMENTO FLUIDO OU UMA FORMA VELOZ.'],
       sucesso: ['TRAVESSIA REGISTRADA.'],
     }),
-    gate('passagem_mare_eco', 36, 19, 2, 2, 85, {
+    gate('passagem_mare_eco', 36.5, 19, 2, 2, 85, {
       nome: 'PASSAGEM DE ECO', label: 'ATRAVESSAR COM Q', hitbox: HIT_PONTE_V,
       phaseActions: ['passo_corrente', 'forma_veloz'], phaseAxis: 'y', requiredAction: 'travessia',
       actionMessage: 'APONTE PARA A PASSAGEM E USE [Q] PARA ATRAVESSAR.',
@@ -456,7 +462,7 @@ export const map = {
     { id: 'estacao_cabo_praia', tipo: 'decoracao', x: 8, y: 23, cableStation: 'ESTAÇÃO BIO', bloqueia: false },
 
     // A -> C (ponte no eixo Y, colunas 7-8)
-    gate('teleferico_quebrado', 8, 18, 1, 2, 130, {
+    gate('teleferico_quebrado', 7.5, 18, 1, 2, 130, {
       nome: 'TELEFÉRICO QUEBRADO',
       moduleSystem: {
         id: 'beach_cable_car',
@@ -478,7 +484,7 @@ export const map = {
     }),
 
     // B -> D (ponte no eixo Y, colunas 30-31)
-    gate('caverna_alagada', 31, 19, 0, 2, 92, {
+    gate('caverna_alagada', 30.5, 19, 0, 2, 92, {
       nome: 'CAVERNA ALAGADA',
       label: 'DOMAR CORRENTEZA',
       hitbox: HIT_PONTE_V,
@@ -488,7 +494,7 @@ export const map = {
     }),
 
     // C -> D (ponte no eixo X, linhas 31-32)
-    gate('fenda_estreita', 19, 32, 2, 2, 80, {
+    gate('fenda_estreita', 19, 31.5, 2, 2, 80, {
       nome: 'FENDA ESTREITA',
       label: 'ATRAVESSAR FENDA',
       hitbox: HIT_PONTE_H,

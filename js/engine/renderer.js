@@ -8,7 +8,8 @@ import { CONFIG, TILE } from '../config.js';
 import { camera, view, worldToScreen, isoToWorld } from './camera.js';
 import { getSprite } from './sprites.js';
 import { createBeachSurface } from './beach-surface.js';
-import { bridgeThresholdGeometry } from './bridge-geometry.js';
+import { bridgeGateGeometry } from './bridge-geometry.js';
+import { getBioWalkFrame } from '../data/bio-walk.js';
 import { faunaFootAnchor } from '../game/fauna-costeira.js';
 import { getFrame } from './sprite-clean.js';
 import { drawAmbientBack, drawAmbientFront } from './ambient.js';
@@ -588,12 +589,15 @@ function caminhoEstacao(map, x, y) {
 // Não altera a máscara: a faixa de trilhos R continua bloqueada.
 function drawBeachStation(map) {
   ctx.save();
+  const cfg = CONFIG.METRO_PLATFORM_TILES, image = getSprite(cfg.ID);
   for (let y = 2; y <= 5; y++) for (let x = 2; x <= 13; x++) {
     if (x < range.x0 || x > range.x1 || y < range.y0 || y > range.y1) continue;
     if (!'RPS'.includes(map.aguaPraia[y]?.[x] ?? ' ')) continue;
     const ix = (x - y) * HW, iy = (x + y) * HH;
     quad(ix, iy, ix + HW, iy + HH, ix, iy + TH, ix - HW, iy + HH,
       (x + y) % 3 ? '#4c5b58' : '#596760', '#354641', 1);
+    const frame = image && getFrame(image, y === 4 ? 1 : 0, 0, cfg.SHEET_COLS, cfg.SHEET_ROWS)?.crop;
+    if (frame) { ctx.imageSmoothingEnabled = false; ctx.drawImage(frame.canvas, 0, 0, frame.w, frame.h, ix - HW, iy, CONFIG.TILE_W, CONFIG.TILE_H); }
     if (y === 4) {
       ctx.strokeStyle = '#e1bd73'; ctx.lineWidth = 2;
       ctx.beginPath(); ctx.moveTo(ix, iy + 3); ctx.lineTo(ix + HW - 3, iy + HH); ctx.stroke();
@@ -1420,51 +1424,42 @@ function getVisibleBox(image, sx, sy, sw, sh, threshold = 40) {
 // Limiares acompanhando a largura e o eixo do deck, em vez de uma caverna
 // ou rocha aparentemente solta sobre a ponte. Só muda o desenho do gate.
 function drawBridgeThreshold(object, map) {
-  const alongX = object.id === 'travessia_mare_eco' || object.id === 'fenda_estreita';
-  const fissure = object.id === 'fenda_estreita';
-  const broken = object.id === 'teleferico_quebrado';
-  const center = bridgeThresholdGeometry(map?.aguaPraia, object, alongX ? 'x' : 'y') ?? { x: object.x, y: object.y, halfWidth: .92 };
-  const x = (center.x - center.y) * HW, y = (center.x + center.y) * HH;
-  const dx = (alongX ? -1 : 1) * HW * center.halfWidth, dy = HH * center.halfWidth;
-  const t = performance.now() / 1000;
-  ctx.save(); ctx.translate(x, y + 2);
-  ctx.lineCap = 'round';
-  // Base sombreada ajuda a ancorar o efeito às tábuas.
-  ctx.strokeStyle = 'rgba(15,36,39,.7)'; ctx.lineWidth = 13;
-  ctx.beginPath(); ctx.moveTo(-dx, -dy); ctx.lineTo(dx, dy); ctx.stroke();
-  ctx.strokeStyle = broken ? '#dfae62' : fissure ? '#98edba' : '#66dfd8'; ctx.lineWidth = fissure ? 2 : 3;
-  ctx.beginPath(); ctx.moveTo(-dx, -dy - 8);
-  if (broken) {
-    ctx.quadraticCurveTo(-dx*.65, -dy*.65-3, -dx*.22, -dy*.22-3);
-    ctx.moveTo(dx*.22, dy*.22-3); ctx.quadraticCurveTo(dx*.65, dy*.65-3, dx, dy-8);
-  } else ctx.quadraticCurveTo(Math.sin(t * 2) * 4, -6 + Math.sin(t * 2.5) * 2, dx, dy - 4);
-  ctx.stroke();
-  ctx.strokeStyle = fissure ? 'rgba(157,255,192,.65)' : 'rgba(195,255,244,.75)'; ctx.lineWidth = 1;
-  for (let i = -1; i <= 1; i++) {
-    if (broken && i !== 0) continue;
-    const f = (i + Math.sin(t * 1.8 + i) * .15) / 2;
-    const px = dx * f, py = dy * f;
-    ctx.beginPath(); ctx.moveTo(px - (broken ? 2 : 7), py - 7); ctx.quadraticCurveTo(px, py - 11, px + (broken ? 2 : 7), py - 7); ctx.stroke();
-  }
-  // Símbolos distintos dão leitura por arquétipo sem alterar o obstáculo real.
-  if (broken) {
-    ctx.fillStyle = '#42524a'; ctx.strokeStyle = '#e2bd80'; ctx.lineWidth = 2;
-    ctx.fillRect(-13, -31, 26, 18); ctx.strokeRect(-13, -31, 26, 18);
-    ctx.beginPath(); ctx.moveTo(-7, -25); ctx.lineTo(0, -20); ctx.lineTo(7, -25); ctx.stroke();
-  } else if (fissure) {
-    ctx.strokeStyle = '#a8f8c5'; ctx.lineWidth = 2;
-    ctx.beginPath(); ctx.moveTo(0, -32); ctx.lineTo(8, -23); ctx.lineTo(0, -14); ctx.lineTo(-8, -23); ctx.closePath(); ctx.stroke();
+  const g = bridgeGateGeometry(map?.aguaPraia, object);
+  if (!g) return; // sem deck reconhecível, não inventar marca sobre água
+  const x = (g.x - g.y) * HW, y = (g.x + g.y) * HH;
+  // Pontas da faixa são recuadas das bordas físicas do deck.
+  const dx = (g.axis === 'x' ? -1 : 1) * HW * g.halfWidth, dy = HH * g.halfWidth;
+  ctx.save(); ctx.translate(x, y); ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+  const line = (color, width, ax, ay, bx, by) => { ctx.strokeStyle = color; ctx.lineWidth = width; ctx.beginPath(); ctx.moveTo(ax, ay); ctx.lineTo(bx, by); ctx.stroke(); };
+  if (g.kind === 'dominio') {
+    // Fragmento geológico com fenda de frequência: não é um arco tecnológico.
+    ctx.fillStyle = '#525053'; ctx.strokeStyle = '#292e30'; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(-dx*.72, -dy*.72); ctx.lineTo(-18, -30); ctx.lineTo(5, -43); ctx.lineTo(24, -26); ctx.lineTo(dx*.72,dy*.72); ctx.lineTo(0, 9); ctx.closePath(); ctx.fill(); ctx.stroke();
+    ctx.strokeStyle = '#edb85a'; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(-3,-38); ctx.lineTo(1,-28); ctx.lineTo(-6,-19); ctx.lineTo(3,-10); ctx.lineTo(-1,1); ctx.stroke();
+  } else if (g.kind === 'bio') {
+    // Um condutor rompido com extremidades mecânicas sobre a travessia.
+    line('#283e3b', 9, -dx, -dy, dx, dy);
+    line('#ce9c5f', 3, -dx, -dy, -dx*.24, -dy*.24);
+    line('#ce9c5f', 3, dx*.24, dy*.24, dx, dy);
+    for (const side of [-1, 1]) {
+      const px = dx * side, py = dy * side;
+      ctx.fillStyle = '#3f5750'; ctx.strokeStyle = '#aec9aa'; ctx.lineWidth = 1.5;
+      ctx.fillRect(px-5, py-8, 10, 8); ctx.strokeRect(px-5, py-8, 10, 8);
+    }
   } else {
-    ctx.strokeStyle = 'rgba(165,255,245,.9)'; ctx.lineWidth = 2;
-    for (let i = 0; i < 3; i++) { ctx.beginPath(); ctx.arc(0, -21, 7 + i * 5, Math.PI * 1.05, Math.PI * 1.95); ctx.stroke(); }
-  }
-  // Estacas baixas de cada lado deixam clara a entrada no limiar.
-  for (const side of [-1, 1]) {
-    const px = dx * side, py = dy * side;
-    ctx.strokeStyle = '#413f35'; ctx.lineWidth = 6;
-    ctx.beginPath(); ctx.moveTo(px, py + 3); ctx.lineTo(px, py - 18); ctx.stroke();
-    ctx.strokeStyle = broken ? '#edbc78' : fissure ? '#83f2ae' : '#75e9e1'; ctx.lineWidth = 2;
-    ctx.beginPath(); ctx.moveTo(px, py - 15); ctx.lineTo(px, py - 10); ctx.stroke();
+    // Maré = faixas de fluxo curvas; Núcleo = marcas cinéticas angulares.
+    line('#344c49', 8, -dx, -dy, dx, dy);
+    if (g.kind === 'mare' || g.kind === 'mare_nucleo') {
+      ctx.strokeStyle = '#74e6e4'; ctx.lineWidth = 2.5;
+      ctx.beginPath(); ctx.moveTo(-dx*.85,-dy*.85); ctx.quadraticCurveTo(-6,-8,0,0); ctx.quadraticCurveTo(6,8,dx*.85,dy*.85); ctx.stroke();
+    }
+    if (g.kind === 'nucleo' || g.kind === 'mare_nucleo') {
+      ctx.strokeStyle = '#9cefa2'; ctx.lineWidth = 2;
+      for (const f of [-.48, .48]) {
+        const px=dx*f, py=dy*f; ctx.beginPath(); ctx.moveTo(px-5,py-4); ctx.lineTo(px,py); ctx.lineTo(px+5,py-4); ctx.stroke();
+      }
+    }
   }
   ctx.restore();
 }
@@ -1554,7 +1549,7 @@ function drawMapObject(object, state) {
   if (object.hideWhenFlag && state.progress.flags?.[object.hideWhenFlag]) return;
   if (object.showWhenFlag && !state.progress.flags?.[object.showWhenFlag]) return; // NOVO
 
-  if (['travessia_mare_eco', 'passagem_mare_eco', 'caverna_alagada', 'fenda_estreita', 'teleferico_quebrado'].includes(object.id)) { drawBridgeThreshold(object, state.world?.currentMap); return; }
+  if (['rocha_rachada', 'travessia_mare_eco', 'passagem_mare_eco', 'caverna_alagada', 'fenda_estreita', 'teleferico_quebrado'].includes(object.id)) { drawBridgeThreshold(object, state.world?.currentMap); return; }
 
   if (object.gate) {
     const x = (object.x - object.y) * HW, y = (object.x + object.y) * HH;
@@ -1950,6 +1945,12 @@ function drawPlayerSprite(player, ix, iy) {
       player._topo = 100;
       return true;
     }
+  }
+  const walkFrame = getBioWalkFrame(state.progress, player, performance.now());
+  if (walkFrame) {
+    const cfg = CONFIG.PLAYER_BIO_FORJA_WALK_SPRITE;
+    const image = getSprite(cfg.ID);
+    if (image && drawFramePe(player, image, cfg, [walkFrame.row, walkFrame.col], ix, iy, cfg.SCALE, false)) return true;
   }
   const useBioForja = player.equippedSuit === 'bio_forja';
   const sprite = useBioForja ? CONFIG.PLAYER_BIO_FORJA_SPRITE : CONFIG.PLAYER_SPRITE;

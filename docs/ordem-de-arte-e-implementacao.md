@@ -49,3 +49,7 @@ Exatamente duas texturas geradas: piso industrial ortográfico e solo de jardim,
 ## Rodada 0.3.9 — retorno visual do jogador
 
 Duas texturas de chão pixel art geradas e integradas; as texturas anteriores foram preservadas como originais. O terminal foi recuado com fundação alinhada à hitbox; a sala ganhou decoração e circuito, e a praia recebeu plataforma de embarque e distinção dos limiares de travessia. São aproximações de código e peças existentes, não uma estação ferroviária final nem revisão de toda a costa. Próximos passos: testar em jogo os recuos, oclusão, legibilidade e desempenho; só depois prosseguir com folha de animação Bio ou peças específicas para a praia e iniciar vida/dano antes de inimigos.
+
+## 0.3.10 — inventário e prompts para produção externa
+
+Nenhuma imagem nova gerada. A prioridade mudou a pedido do criador: `docs/prompts-arquipelago-producao.md` contém instruções exatas e referências, começando por estação da praia e bordas de mar, depois Bio e animações. As folhas de ataque de Domínio e Maré arquivadas não preservam os trajes aprovados e continuam sem uso. A caminhada Bio usa apenas os dois passos laterais da folha já existente, com prioridade de ataque/Q/R; frente e costas ainda não têm ciclo validado. Os limiares das pontes usam identidades procedurais provisórias, alinhadas aos centros lógicos e físicos, com sinalização combinada nas rotas compartilhadas Maré/10X. O mar, plataformas e gates ainda precisam de aprovação em navegador.

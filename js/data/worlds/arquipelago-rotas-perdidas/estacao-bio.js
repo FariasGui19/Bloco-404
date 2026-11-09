@@ -48,8 +48,8 @@ function gerarGuardaCorpos(ponte) {
     for (const [side, coord] of [['longe', longínquo], ['perto', próximo]]) {
       trilhos.push({
         id: `${ponte.id}_${side}_${t}`,
-        x: alongX ? t + 0.5 : coord + 0.5,
-        y: alongX ? coord + 0.5 : t + 0.5,
+        x: alongX ? t : coord,
+        y: alongX ? coord : t,
         axis: ponte.axis, side, ultimo: t === fim, bridgeId: ponte.id,
         renderType: 'bioRail',
       });
@@ -167,9 +167,11 @@ for (const [id, x, y, sprite, scale] of [
   ['bio_vida_ventilacao_patio', 34, 16, 'bio_mato_ventilacao', .21],
   ['bio_vida_barris_patio', 40, 25, 'bio_mato_barris', .22],
   ['bio_vida_fissura_trilha', 43, 32, 'bio_mato_fissura', .20],
-  ['bio_vida_cano_estufa', 52, 44, 'bio_mato_cano', .23],
+  ['bio_vida_cano_estufa', 51, 48, 'bio_mato_cano', .23],
   ['bio_vida_barris_estufa', 57, 52, 'bio_mato_barris', .22],
 ]) objects.push({ id, tipo: 'decoracao', x, y, sprite, scale, bloqueia: true, hitbox: { offsetX: -.3, offsetY: -.3, width: .6, height: .6 } });
+
+objects.push({ id: 'estacao_cabo_chegada', tipo: 'decoracao', x: 8, y: 10, cableStation: 'PRAIA', bloqueia: false });
 
 objects.push({ id: 'bio_plataforma_tecnica', tipo: 'decoracao', x: 33, y: 26, sprite: 'bio_plataforma', scale: .28,
   depthOffset: -.6, sombra: [46, 18], bloqueia: true, hitbox: { offsetX: -2, offsetY: -2, width: 2, height: 2 } });
@@ -198,14 +200,16 @@ for (const [id, x, y, sprite, scale] of [
 for (let y = 5; y < 68; y += 6) for (let x = 5; x < 68; x += 6) {
   const n = (x * 97 + y * 131 + x * y * 17) % 11;
   if (n > 5 || (x > 20 && x < 32 && y > 12 && y < 28) || (x > 39 && x < 53 && y > 33 && y < 46) || (x < 20 && y < 22) || (x > 29 && x < 42 && y > 12 && y < 25) || (x > 42 && x < 58 && y > 42 && y < 57)) continue;
-  objects.push({ id: `estacao_planta_${x}_${y}`, tipo: 'decoracao', x: x + ((x * y) % 5 - 2) * .4, y: y + ((x + 2 * y) % 5 - 2) * .4, sprite: 'vegetacao_tropical', frame: { col: n % 2 ? 2 : 3, row: 0 }, useCrop: true, larguraPx: 65 + (x * y) % 35, pivotX: .5, pivotY: 1, bloqueia: false });
+  const px = x + ((x * y) % 5 - 2) * .4, py = y + ((x + 2 * y) % 5 - 2) * .4;
+  if (ground.walkMask[Math.floor(py + .5)]?.[Math.floor(px + .5)] !== '.') continue;
+  objects.push({ id: `estacao_planta_${x}_${y}`, tipo: 'decoracao', x: px, y: py, sprite: 'vegetacao_tropical', frame: { col: n % 2 ? 2 : 3, row: 0 }, useCrop: true, larguraPx: 65 + (x * y) % 35, pivotX: .5, pivotY: 1, bloqueia: false });
 }
 for (const [id, x, y, col, row, w] of [
   ['bio_destroc_1', 14, 10, 3, 1, 62], ['bio_destroc_2', 17, 18, 2, 1, 55],
   ['bio_destroc_4', 48, 52, 2, 1, 64],
   ['bio_destroc_5', 54, 53, 3, 1, 58], ['bio_destroc_6', 41, 25, 3, 0, 48],
 ]) objects.push({ id, tipo: 'decoracao', x, y, sprite: 'beach_props', frame: { col, row }, useCrop: true, larguraPx: w, pivotX: .5, pivotY: 1, bloqueia: false });
-for (const [id, x, y, label] of [['estacao_chegada', 8, 10, 'CHEGADA'], ['estacao_patio', 36, 20, 'PÁTIO'], ['estacao_estufa', 50, 50, 'ESTUFA']]) objects.push({ id, tipo: 'decoracao', x, y, routeMarker: label, bloqueia: false });
+for (const [id, x, y, label] of [['estacao_chegada', 13, 12, 'CHEGADA'], ['estacao_patio', 36, 20, 'PÁTIO'], ['estacao_estufa', 50, 50, 'ESTUFA']]) objects.push({ id, tipo: 'decoracao', x, y, routeMarker: label, bloqueia: false });
 
 export const map = {
   id: 'ilha_estacao_bio',
@@ -224,5 +228,5 @@ export const map = {
     { id: 'bio_estacao_regulador', nome: 'REGULADOR', tipo: 'fragmento', x: 36, y: 20, requiresFlag: 'collected_bio_estacao_condutor', label: 'AJUSTAR REGULADOR', dialogue: ['A PRESSÃO COMEÇA A ESTABILIZAR.', 'REATIVE A ESTUFA NO SETOR MAIS DISTANTE.'] },
     { id: 'bio_estacao_estufa', nome: 'ESTUFA', tipo: 'fragmento', x: 50, y: 50, requiresFlag: 'collected_bio_estacao_regulador', label: 'ESTABILIZAR ESTUFA', dialogue: ['O PULSO DA ESTAÇÃO SE ESTABILIZA.', 'SETOR INICIAL CONCLUÍDO. O SISTEMA AINDA EXIGE UMA RECONSTRUÇÃO MAIS PROFUNDA.'] },
   ],
-  portals: [{ id: 'estacao_voltar', tipo: 'door', x: 8, y: 10, label: 'VOLTAR À PRAIA', interactionDistance: 1.4, destino: { mapId: 'ilha_praia_inicial', spawnId: 'vindo_da_estacao' }, transition: 'fade' }],
+  portals: [{ id: 'estacao_voltar', tipo: 'door', x: 8, y: 10, label: 'EMBARCAR PARA A PRAIA', interactionDistance: 1.4, destino: { mapId: 'ilha_praia_inicial', spawnId: 'vindo_da_estacao' }, transition: 'fade' }],
 };

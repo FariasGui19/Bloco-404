@@ -89,6 +89,16 @@ ILHA_INICIAL.forEach((linha, y) => {
   }
 });
 
+// Amplia a faixa de areia da chegada sem remover qualquer célula antiga.
+// As cabeceiras das pontes permanecem livres e os gates não são contornados.
+for (const [y, spans] of [
+  [12, [[2, 6], [9, 13]]],
+  [13, [[3, 5], [10, 12]]],
+  [14, [[3, 4], [11, 12]]],
+]) for (const [x0, x1] of spans) for (let x = x0; x <= x1; x++) {
+  if (grid[y][x] === 'W') grid[y][x] = 'S';
+}
+
 function hash(x, y, seed = 0) {
   let h = Math.imul(x + seed * 131, 374761393) + Math.imul(y, 668265263);
   h = Math.imul(h ^ (h >>> 13), 1274126177);
@@ -381,6 +391,9 @@ export const map = {
     { id: 'praia_peixes_sul_largo', species: 'peixes', x: 17.5, y: 38.5 },
   ],
   objects: [
+    // Marcos costeiros em água, não bloqueantes; não são terreno jogável.
+    { id: 'cascata_costeira_chegada', tipo: 'decoracao', x: 0, y: 15, sprite: 'costa_rochosa', frame: { col: 0, row: 0 }, useCrop: true, larguraPx: 150, pivotY: 1, bloqueia: false },
+    { id: 'rocha_costeira_chegada', tipo: 'decoracao', x: 1, y: 16, sprite: 'costa_rochosa', frame: { col: 1, row: 0 }, useCrop: true, larguraPx: 94, pivotY: 1, bloqueia: false },
     { id: 'recife_largo_leste', tipo: 'decoracao', x: 43, y: 23, sprite: 'costa_rochosa', frame: { col: 2, row: 0 }, useCrop: true, larguraPx: 68, pivotY: 1, bloqueia: false },
     { id: 'recife_largo_sul', tipo: 'decoracao', x: 18, y: 42, sprite: 'costa_rochosa', frame: { col: 3, row: 0 }, useCrop: true, larguraPx: 64, pivotY: 1, bloqueia: false },
     { id: 'rochedos_praia_leste', tipo: 'decoracao', x: 40, y: 12, sprite: 'costa_rochosa', frame: { col: 1, row: 0 }, useCrop: true, larguraPx: 104, pivotY: 1, bloqueia: false },

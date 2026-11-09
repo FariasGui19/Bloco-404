@@ -355,7 +355,7 @@ function drawBeachSea(map) {
   const rows = map.aguaPraia;
   const width = rows[0].length, height = rows.length;
   if (!texture) {
-    const scale = 4;
+    const scale = 8;
     texture = document.createElement('canvas');
     texture.width = width * scale;
     texture.height = height * scale;
@@ -382,8 +382,12 @@ function drawBeachSea(map) {
         // Bancos submersos sutis unem visualmente as enseadas sem criar terra.
         const bank = (1 - smooth) * Math.max(0, Math.sin(wx * .65 + Math.sin(wy * .5) * 1.8) - .45) * 8;
         const detail = bank + (1 - smooth) * (Math.sin(wx * 4.1 + Math.sin(wy * 2.3)) * 3 + Math.sin(wy * 3.2 - wx * .7) * 2);
+        // Cintilações entrelaçadas somente no raso, assadas no cache.
+        const a = Math.sin(wx * 3.5 + Math.sin(wy * 2.2) * 1.4);
+        const b = Math.sin(wy * 3.1 + Math.sin(wx * 2.0) * 1.2);
+        const caustic = Math.max(0, (a + b) * .5 - .45) * 42 * (1 - smooth);
         const i = (py * texture.width + px) * 4;
-        for (let c = 0; c < 3; c++) image.data[i + c] = shallow[c] * (1 - smooth) + deep[c] * smooth + detail;
+        for (let c = 0; c < 3; c++) image.data[i + c] = shallow[c] * (1 - smooth) + deep[c] * smooth + detail + caustic;
         image.data[i + 3] = 255;
       }
     }
@@ -597,13 +601,27 @@ function drawBeachStation(map) {
     // A plataforma é estática: compor uma vez, em coordenadas isométricas.
     const left = -4 * HW, top = 4 * HH;
     const surface = document.createElement('canvas');
-    surface.width = 16 * HW; surface.height = 16 * HH;
+    surface.width = 16 * HW; surface.height = 16 * HH + 18;
     const previous = ctx;
     ctx = surface.getContext('2d');
     try {
       ctx.translate(-left, -top);
       const frames = image && [0, 1].map(col => getFrame(image, col, 0, cfg.SHEET_COLS, cfg.SHEET_ROWS)?.crop);
       ctx.imageSmoothingEnabled = false;
+      // Faces estruturais sob o tabuleiro, com suportes e iluminação embutida.
+      const p = (x, y) => [(x-y)*HW, (x+y)*HH];
+      const face = (a, b, color) => {
+        const [ax, ay] = p(...a), [bx, by] = p(...b);
+        quad(ax, ay, bx, by, bx, by+14, ax, ay+14, color, '#26333a', 1);
+        ctx.strokeStyle = '#202c34'; ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.moveTo(ax, ay+10); ctx.lineTo(bx, by+10); ctx.stroke();
+      };
+      for (let x = 2; x <= 13; x++) face([x, 6], [x+1, 6], '#3b4c4d');
+      for (let y = 2; y <= 5; y++) face([14, y], [14, y+1], '#30404b');
+      ctx.strokeStyle = '#5fd5cd'; ctx.lineWidth = 2;
+      for (let x = 3; x <= 13; x += 3) {
+        const [a,b] = p(x,6); ctx.beginPath(); ctx.moveTo(a-5,b+6); ctx.lineTo(a+5,b+11); ctx.stroke();
+      }
       for (let y = 2; y <= 5; y++) for (let x = 2; x <= 13; x++) {
         if (!'RPS'.includes(map.aguaPraia[y]?.[x] ?? ' ')) continue;
         const ix = (x-y)*HW, iy = (x+y)*HH;
@@ -1145,6 +1163,8 @@ function drawWorld(map, state) {
     }
   };
 
+  // Fachada no extremo do trilho, atrás do trem; é cenográfica, não portal.
+  if (map.id === 'ilha_praia_inicial') drawBeachRailTunnel();
   // Camada de fundo (trilho, trem): atrás de tudo, só acima do chão.
   for (const o of backList) drawMapObject(o, state);
 
@@ -1169,6 +1189,29 @@ function drawWorld(map, state) {
   }
 
   while (ei < drawList.length) drawItem(drawList[ei++]);
+}
+
+// Entrada dimensional na ponta oeste do trem; desenhada atrás do material
+// rodante e sem acrescentar colisão, portal ou promessa de túnel explorável.
+function drawBeachRailTunnel() {
+  const ix = (7.1 - 2) * HW - 168, iy = (7.1 + 2) * HH + 34;
+  ctx.save(); ctx.translate(ix, iy); ctx.lineJoin = 'round';
+  // Portal industrial em perspectiva, com arco escuro e luminárias.
+  ctx.fillStyle = '#182b33'; ctx.strokeStyle = '#50656a'; ctx.lineWidth = 5;
+  ctx.beginPath(); ctx.moveTo(-75, 8); ctx.lineTo(-75, -82);
+  ctx.lineTo(-50, -112); ctx.lineTo(15, -104); ctx.lineTo(45, -74);
+  ctx.lineTo(45, 16); ctx.lineTo(20, 23); ctx.lineTo(20, -53);
+  ctx.lineTo(4, -72); ctx.lineTo(-38, -78); ctx.lineTo(-49, -61);
+  ctx.lineTo(-49, 16); ctx.closePath(); ctx.fill(); ctx.stroke();
+  ctx.fillStyle = '#0a1922'; ctx.beginPath(); ctx.moveTo(-49,16);
+  ctx.lineTo(-49,-61); ctx.lineTo(-38,-78); ctx.lineTo(4,-72);
+  ctx.lineTo(20,-53); ctx.lineTo(20,23); ctx.closePath(); ctx.fill();
+  ctx.strokeStyle = '#46d8d5'; ctx.lineWidth = 3;
+  ctx.beginPath(); ctx.moveTo(-60,2); ctx.lineTo(-60,-68); ctx.lineTo(-44,-91);
+  ctx.lineTo(9,-85); ctx.lineTo(31,-64); ctx.lineTo(31,2); ctx.stroke();
+  ctx.strokeStyle = '#bba268'; ctx.lineWidth = 3;
+  ctx.beginPath(); ctx.moveTo(-70,-48); ctx.lineTo(-62,-47); ctx.moveTo(34,-42); ctx.lineTo(42,-40); ctx.stroke();
+  ctx.restore();
 }
 
 // Um trecho de guarda-corpo: poste + duas travessas até o poste seguinte.

@@ -45,3 +45,7 @@ O objetivo final está em `docs/missoes-inimigos-habilidades-e-pets.md` e `docs/
 ## Rodada 0.3.8 — piso e primeira sala
 
 Exatamente duas texturas geradas: piso industrial ortográfico e solo de jardim, aplicadas sobre a máscara caminhável e cacheadas em blocos; sem folhas de animação nesta rodada. O relato visual priorizou a unidade do chão e a escala/oclusão sobre novas poses. Os recortes seguintes devem validar o terminal e o novo piso em jogo, criar uma base de vida/dano/recuperação e telegraph antes de inimigos ou miniboss, e só então retomar as folhas direcionais de ataque e caminhada Bio com referência e quadros validados. A sala de controle e o puzzle R/Q/E são um primeiro recorte funcional, não a missão final nem um interior completo para todas as estruturas.
+
+## Rodada 0.3.9 — retorno visual do jogador
+
+Duas texturas de chão pixel art geradas e integradas; as texturas anteriores foram preservadas como originais. O terminal foi recuado com fundação alinhada à hitbox; a sala ganhou decoração e circuito, e a praia recebeu plataforma de embarque e distinção dos limiares de travessia. São aproximações de código e peças existentes, não uma estação ferroviária final nem revisão de toda a costa. Próximos passos: testar em jogo os recuos, oclusão, legibilidade e desempenho; só depois prosseguir com folha de animação Bio ou peças específicas para a praia e iniciar vida/dano antes de inimigos.

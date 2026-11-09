@@ -76,6 +76,8 @@ export function render(map, state) {
     }
     drawFloors(map);
     if (map.id === 'hub_saguao') drawHubFloorMarkings();
+    if (map.id === 'ilha_praia_inicial') drawBeachStation(map);
+    if (map.id === 'bio_sala_controle') drawBioControlFloor();
     if (map.id === 'ilha_estacao_bio') {
       drawStationPaving(map);
       drawStationBridges(map);
@@ -571,7 +573,7 @@ const ehDeck = (map, x, y) => 'Bb'.includes(map.aguaPraia?.[y]?.[x] ?? ' ');
 function caminhoEstacao(map, x, y) {
   if (map.walkMask[y]?.[x] !== '.' || ehDeck(map, x, y)) return false;
   return (
-    (x >= 5 && x <= 16 && y >= 3 && y <= 14) ||   // avental do terminal
+    (x >= 4 && x <= 18 && y >= 2 && y <= 16) ||   // avental do terminal
     (x >= 8 && x <= 18 && y >= 10 && y <= 18) ||
     (x >= 14 && x <= 39 && y >= 17 && y <= 22) ||
     (x >= 32 && x <= 48 && y >= 14 && y <= 25) ||
@@ -580,6 +582,38 @@ function caminhoEstacao(map, x, y) {
     (x >= 47 && x <= 63 && y >= 43 && y <= 55) ||  // avental da estufa
     (x >= 45 && x <= 59 && y >= 46 && y <= 53) ||
     (x >= 53 && x <= 59 && y >= 42 && y <= 47));
+}
+
+// Plataforma do trem é piso, não um sprite decorativo flutuando sobre a areia.
+// Não altera a máscara: a faixa de trilhos R continua bloqueada.
+function drawBeachStation(map) {
+  ctx.save();
+  for (let y = 2; y <= 5; y++) for (let x = 2; x <= 13; x++) {
+    if (x < range.x0 || x > range.x1 || y < range.y0 || y > range.y1) continue;
+    if (!'RPS'.includes(map.aguaPraia[y]?.[x] ?? ' ')) continue;
+    const ix = (x - y) * HW, iy = (x + y) * HH;
+    quad(ix, iy, ix + HW, iy + HH, ix, iy + TH, ix - HW, iy + HH,
+      (x + y) % 3 ? '#4c5b58' : '#596760', '#354641', 1);
+    if (y === 4) {
+      ctx.strokeStyle = '#e1bd73'; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.moveTo(ix, iy + 3); ctx.lineTo(ix + HW - 3, iy + HH); ctx.stroke();
+    }
+  }
+  ctx.restore();
+}
+
+// Circuito da sala conecta o registro, a placa e o painel de controle.
+function drawBioControlFloor() {
+  const live = !!state.progress?.flags?.gate_bio_pulso_interior;
+  const p = (x, y) => [(x-y)*HW, (x+y)*HH];
+  ctx.save(); ctx.lineJoin = 'round'; ctx.lineCap = 'round';
+  const route = [[3.5,5.5],[7.5,5.5],[10.5,5.5],[10.5,3.5]];
+  for (const [width, color] of [[7, '#192a29'], [3, live ? '#86dbb7' : '#a38858']]) {
+    ctx.strokeStyle = color; ctx.lineWidth = width; ctx.beginPath();
+    route.forEach(([x,y], i) => { const [a,b] = p(x,y); if (!i) ctx.moveTo(a,b); else ctx.lineTo(a,b); });
+    ctx.stroke();
+  }
+  ctx.restore();
 }
 
 // Texturas em coordenadas de mundo: ambas seguem a mesma projeção dos tiles.
@@ -593,7 +627,7 @@ function paintStationPaving(map) {
     ctx.fillRect(range.x0, range.y0, range.x1 - range.x0 + 1, range.y1 - range.y0 + 1);
     if (image) {
       const span = 6;
-      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingEnabled = false;
       for (let y = Math.floor(range.y0 / span) * span; y <= range.y1; y += span)
         for (let x = Math.floor(range.x0 / span) * span; x <= range.x1; x += span)
           ctx.drawImage(image, x, y, span, span);
@@ -736,6 +770,20 @@ function drawBioNetwork(map) {
 // Apoio no solo para as estruturas grandes: elipse escura antes dos objetos.
 function drawBioShadows() {
   ctx.save();
+  // Fundação projetada a partir da mesma hitbox sólida do terminal.
+  const terminal = (state.objects ?? []).find(o => o.id === 'bio_terminal_principal');
+  if (terminal?.hitbox) {
+    const h = terminal.hitbox, x0 = terminal.x + h.offsetX, y0 = terminal.y + h.offsetY;
+    const x1 = x0 + h.width, y1 = y0 + h.height;
+    const p = (x,y) => [(x-y)*HW,(x+y)*HH];
+    const [a,b,c,d] = [p(x0,y0),p(x1,y0),p(x1,y1),p(x0,y1)];
+    ctx.fillStyle = '#263d35'; ctx.strokeStyle = '#172b28'; ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.moveTo(...a); ctx.lineTo(...b); ctx.lineTo(c[0],c[1]+7); ctx.lineTo(d[0],d[1]+7); ctx.closePath(); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = '#58665a';
+    ctx.beginPath(); ctx.moveTo(...a); ctx.lineTo(...b); ctx.lineTo(...c); ctx.lineTo(...d); ctx.closePath(); ctx.fill(); ctx.stroke();
+    ctx.strokeStyle = '#8a9c83'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(...d); ctx.lineTo(...c); ctx.lineTo(...b); ctx.stroke();
+  }
   for (const o of state.objects ?? []) {
     if (!o.sombra || o.oculto) continue;
     const ix = (o.x - o.y) * HW, iy = (o.x + o.y) * HH;
@@ -1397,6 +1445,18 @@ function drawBridgeThreshold(object, map) {
     const f = (i + Math.sin(t * 1.8 + i) * .15) / 2;
     const px = dx * f, py = dy * f;
     ctx.beginPath(); ctx.moveTo(px - (broken ? 2 : 7), py - 7); ctx.quadraticCurveTo(px, py - 11, px + (broken ? 2 : 7), py - 7); ctx.stroke();
+  }
+  // Símbolos distintos dão leitura por arquétipo sem alterar o obstáculo real.
+  if (broken) {
+    ctx.fillStyle = '#42524a'; ctx.strokeStyle = '#e2bd80'; ctx.lineWidth = 2;
+    ctx.fillRect(-13, -31, 26, 18); ctx.strokeRect(-13, -31, 26, 18);
+    ctx.beginPath(); ctx.moveTo(-7, -25); ctx.lineTo(0, -20); ctx.lineTo(7, -25); ctx.stroke();
+  } else if (fissure) {
+    ctx.strokeStyle = '#a8f8c5'; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(0, -32); ctx.lineTo(8, -23); ctx.lineTo(0, -14); ctx.lineTo(-8, -23); ctx.closePath(); ctx.stroke();
+  } else {
+    ctx.strokeStyle = 'rgba(165,255,245,.9)'; ctx.lineWidth = 2;
+    for (let i = 0; i < 3; i++) { ctx.beginPath(); ctx.arc(0, -21, 7 + i * 5, Math.PI * 1.05, Math.PI * 1.95); ctx.stroke(); }
   }
   // Estacas baixas de cada lado deixam clara a entrada no limiar.
   for (const side of [-1, 1]) {

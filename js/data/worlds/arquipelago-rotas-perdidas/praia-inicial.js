@@ -390,6 +390,11 @@ export const map = {
       trem: { ajusteY: 68 }, // ajuste local para aproximar as rodas do trilho
     }),
 
+    // Plataforma de embarque: peças leves, fora do caminho do portal e do trem.
+    { id: 'praia_placa_estacao', tipo: 'decoracao', x: 11, y: 5, routeMarker: 'ESTAÇÃO', bloqueia: false },
+    { id: 'praia_luz_estacao', tipo: 'decoracao', x: 3, y: 5, sprite: 'bio_luminaria', useCrop: true, larguraPx: 40, pivotY: 1, bloqueia: false },
+    { id: 'praia_caixa_estacao', tipo: 'decoracao', x: 12, y: 5, sprite: 'bio_caixa', useCrop: true, larguraPx: 42, pivotY: 1, bloqueia: false },
+
     // ---- Ilha A (props originais, inalterados) ----
     prop('palmeira_1', 2, 7, 0, 0, 82, { bloqueia: true, hitbox: TRONCO }),
     prop('palmeira_2', 13, 8, 1, 0, 82, { bloqueia: true, hitbox: TRONCO }),

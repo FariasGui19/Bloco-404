@@ -1,40 +1,17 @@
 import assert from 'node:assert/strict';
-import { getBioWalkFrame, bioWalkMetrics, bioWalkRig } from '../js/data/bio-walk.js';
-import { CONFIG } from '../js/config.js';
+import { readFileSync } from 'node:fs';
+import { getBioWalkFrame } from '../js/data/bio-walk.js';
 const progress = { archetype: 'motor_bio_forja' };
-const p = { equippedSuit: 'bio_forja', moving: true, facing: 'right', ability: {} };
-for (const [facing, row] of Object.entries({ down: 0, right: 1, up: 2, left: 3 })) {
-  p.facing = facing;
-  for (let col = 0; col < 6; col++) assert.deepEqual(getBioWalkFrame(progress, p, col * 150), { row, col });
-  assert.deepEqual(getBioWalkFrame(progress, p, 900), { row, col: 0 });
-}
-assert.equal(CONFIG.PLAYER_BIO_FORJA_WALK_SPRITE.SHEET_COLS, 6);
-assert.equal(CONFIG.PLAYER_BIO_FORJA_WALK_SPRITE.SHEET_ROWS, 4);
-for (const [facing, height] of Object.entries({ down: 128.65, right: 132.68, up: 126.79, left: 132.68 })) {
-  for (const frameHeight of [213, 228, 237]) {
-    const m = bioWalkMetrics(facing, frameHeight);
-    assert(Math.abs(m.scale * frameHeight - height) < .001);
-    assert(Number.isFinite(m.footOffset));
-  }
-}
-assert.equal(bioWalkMetrics('left', 0), null);
-// Alturas reais aproximadas das duas folhas: diferença menor que 5%.
-assert(Math.abs(228 * CONFIG.PLAYER_BIO_FORJA_WALK_SPRITE.SCALE / (420 * CONFIG.PLAYER_BIO_FORJA_SPRITE.SCALE) - 1) < .05);
-for (const ability of [{ dash: {} }, { scanning: .3 }, { effect: { timeLeft: .2 } }]) {
-  p.ability = ability; assert.equal(getBioWalkFrame(progress, p, 0), null);
-}
-p.ability = {};
-p.facing = 'down';
-const neutral = bioWalkRig(progress, p, 0), step = bioWalkRig(progress, p, 180), next = bioWalkRig(progress, p, 540);
-assert.equal(neutral.leftShear, 0);
-assert(step.leftShear > 0 && step.rightShear < 0);
-assert(next.leftShear < 0 && next.rightShear > 0);
-assert.equal(step.bob, next.bob);
-p.combat = { timeLeft: .2 };
-assert.equal(bioWalkRig(progress, p, 180), null);
-assert.equal(getBioWalkFrame(progress, p, 0), null);
-p.combat = null; p.moving = false; assert.equal(getBioWalkFrame(progress, p, 0), null);
-p.moving = true; p.equippedSuit = null; assert.equal(getBioWalkFrame(progress, p, 0), null);
-assert.equal(getBioWalkFrame({ archetype: 'mare_astral' }, { ...p, equippedSuit: 'bio_forja' }, 0), null);
-assert.equal(getBioWalkFrame(progress, { ...p, equippedSuit: 'bio_forja', facing: 'invalid' }, 0), null);
-console.log('Bio: seis quadros por direção, proporção e prioridades OK.');
+const p = { equippedSuit: 'bio_forja', moving: true, facing: 'down', ability: {} };
+assert.deepEqual(getBioWalkFrame(progress,p,0),{ row: 0, col: 0 });
+assert.deepEqual(getBioWalkFrame(progress,p,220),{ row: 0, col: 1 });
+assert.deepEqual(getBioWalkFrame(progress,p,440),{ row: 0, col: 0 });
+for (const facing of ['up','left','right','invalid']) assert.equal(getBioWalkFrame(progress,{ ...p, facing },0),null);
+for (const ability of [{dash:{}},{active:'bio_dash'},{scanning:.3},{effect:{timeLeft:.2}}]) assert.equal(getBioWalkFrame(progress,{...p,ability},0),null);
+assert.equal(getBioWalkFrame(progress,{...p,combat:{timeLeft:.2}},0),null);
+assert.equal(getBioWalkFrame(progress,{...p,moving:false},0),null);
+assert.equal(getBioWalkFrame({archetype:'mare_astral'},p,0),null);
+assert.equal(getBioWalkFrame(progress,p,NaN),null);
+const png=readFileSync(new URL('../assets/sprites/player/bio-frente-andar-0314.png',import.meta.url));
+assert.equal(png.readUInt32BE(16),896); assert.equal(png.readUInt32BE(20),512); assert.equal(png[25],6);
+console.log('Bio: passos frontais, alpha, fallback íntegro e prioridades OK.');

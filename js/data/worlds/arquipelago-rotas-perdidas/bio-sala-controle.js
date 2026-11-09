@@ -7,6 +7,12 @@ export const map = {
   corChao: '#263b35', layout,
   spawnPoints: { inicio: { x: 2.5, y: 8.5 } },
   objects: [
+    { id: 'controle_saida_marco', tipo: 'decoracao', x: 2, y: 8, bioMarker: 'SAÍDA', bloqueia: false },
+    { id: 'controle_armario', tipo: 'decoracao', x: 11, y: 1, sprite: 'bio_caixa', useCrop: true, larguraPx: 55, pivotY: 1, bloqueia: false },
+    { id: 'controle_tanque', tipo: 'decoracao', x: 8, y: 1, sprite: 'bio_regulador_ativo', useCrop: true, larguraPx: 62, pivotY: 1, bloqueia: false },
+    { id: 'controle_luz_a', tipo: 'decoracao', x: 1, y: 3, sprite: 'bio_luminaria', useCrop: true, larguraPx: 40, pivotY: 1, bloqueia: false },
+    { id: 'controle_luz_b', tipo: 'decoracao', x: 12, y: 8, sprite: 'bio_luminaria', useCrop: true, larguraPx: 40, pivotY: 1, bloqueia: false },
+    { id: 'controle_cultivo', tipo: 'decoracao', x: 5, y: 1, sprite: 'bio_mato_fissura', useCrop: true, larguraPx: 52, pivotY: 1, bloqueia: false },
     { id: 'controle_instrucoes', tipo: 'painel', nome: 'REGISTRO DE MANUTENÇÃO', x: 3, y: 5,
       sprite: 'bio_distribuidor', useCrop: true, larguraPx: 70, bloqueia: false,
       interacao: { label: 'LER PROTOCOLO', distancia: 1.5, dialogue: [

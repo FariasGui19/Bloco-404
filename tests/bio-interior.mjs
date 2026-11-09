@@ -69,7 +69,7 @@ assert(state.progress.flags.gate_bio_pulso_interior, 'Q equipado atravessa placa
 assert.equal(state.progress.activeQuest.id, 'embarque_dimensional');
 await loadMap('ilha_estacao_bio', 'vindo_controle');
 assert(canStandAt(state.world.currentMap, state.player.x, state.player.y, .25, state.player));
-const exterior = reachable(state.world.currentMap, [9, 10]);
-assert(exterior.has('14,9'), 'porta do controle alcançável a partir da chegada');
-assert(exterior.has('8,10'), 'embarque de volta permanece alcançável');
+const exterior = reachable(state.world.currentMap, [9, 13]);
+assert(exterior.has('16,12'), 'porta do controle alcançável a partir da chegada');
+assert(exterior.has('8,13'), 'embarque de volta permanece alcançável');
 console.log('Bio interior: R, Q real, painel, persistência e retorno OK.');

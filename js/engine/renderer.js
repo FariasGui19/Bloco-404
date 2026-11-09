@@ -17,6 +17,7 @@ import { isDebugEnabled, drawDebugWorld } from '../game/debug.js';
 import { ACTION_SPRITES } from '../data/action-sprites.js';
 import { drawHubScreenFx, hasHubScreenFx } from './hub-screen-fx.js';
 import { getVelozAnimation } from '../data/veloz-animation.js';
+import { getMareWalk, getMareAttack, mareSheet } from '../data/mare-animation.js';
 import { getDominioWalk, getDominioAttack } from '../data/dominio-animation.js';
 import { getBasicAttackPose } from '../data/basic-attack-poses.js';
 import { state } from '../game/state.js';
@@ -1210,7 +1211,7 @@ export function beachRailEnd(rail, frame) {
 }
 export function beachTunnelAnchor(rail, frame) {
   const end = beachRailEnd(rail, frame);
-  return { x: end.x + HW, y: end.y };
+  return { x: end.x + HW + 16, y: end.y + 18 };
 }
 function drawBeachRailTunnel(rail) {
   const image = getSprite(rail.sprite);
@@ -1219,6 +1220,11 @@ function drawBeachRailTunnel(rail) {
   if (!frame) return;
   const end = beachTunnelAnchor(rail, frame);
   ctx.save(); ctx.translate(end.x, end.y); ctx.lineJoin = 'round';
+  // Sapata assentada sob a estrutura e estendida na direção do trilho.
+  ctx.fillStyle = '#344a50'; ctx.strokeStyle = '#1c2d34'; ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.moveTo(-104, 4); ctx.lineTo(-62, 20);
+  ctx.lineTo(40, 28); ctx.lineTo(54, 17); ctx.lineTo(12, 1);
+  ctx.lineTo(-62, -2); ctx.closePath(); ctx.fill(); ctx.stroke();
   // Volume se prolonga para trás, paralelo ao trilho, em vez de ser
   // uma placa fina na diagonal. A abertura frontal continua atrás do trem.
   const depthX = -42, depthY = depthX * (rail.skewY ?? .5);
@@ -1890,6 +1896,19 @@ function getVisualEffect(player) {
   return player.ability?.effect;
 }
 
+function drawMareFrame(player, ix, iy, col, kind) {
+  const profile = mareSheet(player.facing, kind);
+  const sheet = profile && getSprite(profile.id);
+  if (!sheet) return false;
+  const width = sheet.width / 4, scale = .37;
+  ctx.save(); ctx.translate(ix, iy);
+  if (profile.flip) ctx.scale(-1, 1);
+  drawSmooth(sheet, col * width, 0, width, sheet.height,
+    -width * scale / 2, -sheet.height * scale * .98,
+    width * scale, sheet.height * scale);
+  ctx.restore(); player._topo = 140; return true;
+}
+
 function drawPlayerSprite(player, ix, iy) {
   // As folhas de referência têm poses, não quadros sequenciais. Usamos uma
   // pose provisória com os pulsos animados, sem fingir que são animações finais.
@@ -1908,6 +1927,8 @@ function drawPlayerSprite(player, ix, iy) {
       return true;
     }
   }
+  const mareAttack = getMareAttack(state.progress, player);
+  if (mareAttack && drawMareFrame(player, ix, iy, mareAttack.col, 'ataque')) return true;
   const dominioAttack = getDominioAttack(state.progress, player);
   if (dominioAttack && ['up', 'down'].includes(player.facing)) {
     const sheet = getSprite(player.facing === 'up' ? 'dominio_ataque_costas_0317' : 'dominio_ataque_frente_0317');
@@ -2060,6 +2081,8 @@ function drawPlayerSprite(player, ix, iy) {
     // ===============================================
   // 3. ANDAR / PARADO
   // ===============================================
+  const mareWalk = getMareWalk(state.progress, player, performance.now());
+  if (mareWalk && drawMareFrame(player, ix, iy, mareWalk.col, 'andar')) return true;
   const dominioWalk = getDominioWalk(state.progress, player, performance.now());
   if (dominioWalk && player.facing !== 'down') {
     const sheet = getSprite(player.facing === 'up' ? 'dominio_andar_costas_0317' : 'dominio_andar_lateral_0317');

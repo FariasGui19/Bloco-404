@@ -88,6 +88,8 @@ await loadSprites([
     id: 'player',
     src: 'assets/sprites/player/player-sheet.png',
   },
+  { id: 'bio_lateral_andar_0315', src: 'assets/sprites/player/bio-andar-lateral-0315.png' },
+  { id: 'bio_costas_andar_0315', src: 'assets/sprites/player/bio-andar-costas-0315.png' },
   { id: 'bio_frente_andar_0314', src: 'assets/sprites/player/bio-frente-andar-0314.png' },
   { id: 'player_bio_forja', src: 'assets/sprites/player/player-bio-forja-lvl1.png' },
   { id: 'player_bio_forja_scan', src: 'assets/sprites/player/player-bio-forja-scan.png' },

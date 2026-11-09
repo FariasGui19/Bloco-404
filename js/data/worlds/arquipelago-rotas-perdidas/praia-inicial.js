@@ -411,11 +411,10 @@ export const map = {
       trem: { ajusteY: 68 }, // ajuste local para aproximar as rodas do trilho
     }),
 
-    { id: 'plataforma_pilar_oeste', tipo: 'decoracao', x: 2, y: 4, sprite: 'metro_structure', frame: { col: 1, row: 0 }, useCrop: true, larguraPx: 48, pivotY: 1, bloqueia: false },
-    { id: 'plataforma_pilar_leste', tipo: 'decoracao', x: 13, y: 4, sprite: 'metro_structure', frame: { col: 0, row: 0 }, useCrop: true, larguraPx: 48, pivotY: 1, bloqueia: false },
+    { id: 'plataforma_pilar_oeste', tipo: 'decoracao', x: 2, y: 5, sprite: 'praia_plataforma_kit', frame: { col: 0, row: 1 }, useCrop: true, larguraPx: 25, pivotY: 1, bloqueia: false },
+    { id: 'plataforma_pilar_leste', tipo: 'decoracao', x: 13, y: 5, sprite: 'praia_plataforma_kit', frame: { col: 0, row: 1 }, useCrop: true, larguraPx: 25, pivotY: 1, bloqueia: false },
     // Plataforma de embarque: peças leves, fora do caminho do portal e do trem.
     { id: 'praia_placa_estacao', tipo: 'decoracao', x: 11, y: 5, routeMarker: 'ESTAÇÃO', bloqueia: false },
-    { id: 'praia_luz_estacao', tipo: 'decoracao', x: 3, y: 5, sprite: 'praia_plataforma_kit', frame: { col: 2, row: 1 }, useCrop: true, larguraPx: 40, pivotY: 1, bloqueia: false },
     { id: 'praia_caixa_estacao', tipo: 'decoracao', x: 12, y: 5, sprite: 'bio_caixa', useCrop: true, larguraPx: 42, pivotY: 1, bloqueia: false },
 
     // ---- Ilha A (props originais, inalterados) ----

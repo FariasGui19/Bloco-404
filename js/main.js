@@ -89,7 +89,7 @@ await loadSprites([
     src: 'assets/sprites/player/player-sheet.png',
   },
   { id: 'player_bio_forja', src: 'assets/sprites/player/player-bio-forja-lvl1.png' },
-   { id: 'player_bio_forja_walk', src: 'assets/sprites/player/player-bio-forja-walk.png' },
+   { id: 'player_bio_forja_walk', src: 'assets/sprites/player/bio-caminhada-0311.png' },
   { id: 'player_bio_forja_scan', src: 'assets/sprites/player/player-bio-forja-scan.png' },
   { id: 'player_dominio_reference', src: 'assets/sprites/player/player-dominio-reference.png' },
   { id: 'player_mare_reference', src: 'assets/sprites/player/player-mare-reference.png' },
@@ -204,6 +204,7 @@ await loadSprites([
   { id: 'fauna_costeira', src: 'assets/sprites/fauna/fauna-costeira.png' },
   { id: 'fauna_caranguejo', src: 'assets/sprites/fauna/caranguejo.png' },
   { id: 'costa_rochosa', src: 'assets/sprites/objects/costa-rochosa.png' },
+  { id: 'praia_plataforma_kit', src: 'assets/sprites/praia/plataforma-kit-0311.png' },
   { id: 'vegetacao_tropical', src: 'assets/sprites/objects/vegetacao-tropical.png' },
   { id: 'beach_props', src: 'assets/sprites/objects/beach-props.png' },
 ]);

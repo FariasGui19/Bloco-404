@@ -388,6 +388,10 @@ export const map = {
     { id: 'rochedos_praia_centro', tipo: 'decoracao', x: 40, y: 35, sprite: 'costa_rochosa', frame: { col: 2, row: 0 }, useCrop: true, larguraPx: 72, pivotY: 1, bloqueia: false },
     { id: 'folha_costeira_a', tipo: 'decoracao', x: 2, y: 9, sprite: 'vegetacao_tropical', frame: { col: 1, row: 0 }, useCrop: true, larguraPx: 45, pivotY: 1, bloqueia: false },
     { id: 'folha_costeira_b', tipo: 'decoracao', x: 12, y: 10, sprite: 'vegetacao_tropical', frame: { col: 0, row: 0 }, useCrop: true, larguraPx: 45, pivotY: 1, bloqueia: false },
+    // Pequenos agrupamentos costeiros, exclusivamente visuais e fora da plataforma.
+    { id: 'vegetacao_chegada_a', tipo: 'decoracao', x: 3, y: 10, sprite: 'vegetacao_tropical', frame: { col: 0, row: 0 }, useCrop: true, larguraPx: 32, pivotY: 1, bloqueia: false },
+    { id: 'vegetacao_chegada_b', tipo: 'decoracao', x: 4, y: 10, sprite: 'vegetacao_tropical', frame: { col: 1, row: 0 }, useCrop: true, larguraPx: 26, pivotY: 1, bloqueia: false },
+    { id: 'vegetacao_chegada_c', tipo: 'decoracao', x: 12, y: 9, sprite: 'vegetacao_tropical', frame: { col: 1, row: 0 }, useCrop: true, larguraPx: 30, pivotY: 1, bloqueia: false },
     { id: 'marco_enseada', tipo: 'decoracao', x: 12, y: 11, routeMarker: 'ENSEADA', bloqueia: false },
     ...linhaDoTrem({
       trilho: { larguraPx: 390, ajusteX: 9, ajusteY: 31.5 },
@@ -398,7 +402,7 @@ export const map = {
     { id: 'plataforma_pilar_leste', tipo: 'decoracao', x: 13, y: 4, sprite: 'metro_structure', frame: { col: 0, row: 0 }, useCrop: true, larguraPx: 48, pivotY: 1, bloqueia: false },
     // Plataforma de embarque: peças leves, fora do caminho do portal e do trem.
     { id: 'praia_placa_estacao', tipo: 'decoracao', x: 11, y: 5, routeMarker: 'ESTAÇÃO', bloqueia: false },
-    { id: 'praia_luz_estacao', tipo: 'decoracao', x: 3, y: 5, sprite: 'bio_luminaria', useCrop: true, larguraPx: 40, pivotY: 1, bloqueia: false },
+    { id: 'praia_luz_estacao', tipo: 'decoracao', x: 3, y: 5, sprite: 'praia_plataforma_kit', frame: { col: 2, row: 1 }, useCrop: true, larguraPx: 40, pivotY: 1, bloqueia: false },
     { id: 'praia_caixa_estacao', tipo: 'decoracao', x: 12, y: 5, sprite: 'bio_caixa', useCrop: true, larguraPx: 42, pivotY: 1, bloqueia: false },
 
     // ---- Ilha A (props originais, inalterados) ----

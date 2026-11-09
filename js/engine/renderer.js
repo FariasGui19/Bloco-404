@@ -16,7 +16,7 @@ import { drawAmbientBack, drawAmbientFront } from './ambient.js';
 import { isDebugEnabled, drawDebugWorld } from '../game/debug.js';
 import { ACTION_SPRITES } from '../data/action-sprites.js';
 import { drawHubScreenFx, hasHubScreenFx } from './hub-screen-fx.js';
-import { getVelozAnimation } from '../data/veloz-animation.js';
+import { getVelozAnimation, getVelozPulse } from '../data/veloz-animation.js';
 import { getMareWalk, getMareAttack, mareSheet } from '../data/mare-animation.js';
 import { getDominioWalk, getDominioAttack } from '../data/dominio-animation.js';
 import { getBasicAttackPose } from '../data/basic-attack-poses.js';
@@ -1211,7 +1211,7 @@ export function beachRailEnd(rail, frame) {
 }
 export function beachTunnelAnchor(rail, frame) {
   const end = beachRailEnd(rail, frame);
-  return { x: end.x + HW + 16, y: end.y + 18 };
+  return { x: end.x + HW + 16, y: end.y + 24 };
 }
 function drawBeachRailTunnel(rail) {
   const image = getSprite(rail.sprite);
@@ -1222,7 +1222,7 @@ function drawBeachRailTunnel(rail) {
   ctx.save(); ctx.translate(end.x, end.y); ctx.lineJoin = 'round';
   // Sapata assentada sob a estrutura e estendida na direção do trilho.
   ctx.fillStyle = '#344a50'; ctx.strokeStyle = '#1c2d34'; ctx.lineWidth = 2;
-  ctx.beginPath(); ctx.moveTo(-104, 4); ctx.lineTo(-62, 20);
+  ctx.beginPath(); ctx.moveTo(-104, -6); ctx.lineTo(-104, 4); ctx.lineTo(-62, 20);
   ctx.lineTo(40, 28); ctx.lineTo(54, 17); ctx.lineTo(12, 1);
   ctx.lineTo(-62, -2); ctx.closePath(); ctx.fill(); ctx.stroke();
   // Alongar o pórtico para cima sem levantar sua base da plataforma.
@@ -1231,7 +1231,7 @@ function drawBeachRailTunnel(rail) {
   // uma placa fina na diagonal. A abertura frontal continua atrás do trem.
   // O desenho do trilho já é diagonal dentro do próprio PNG; skewY
   // sozinho não mede sua inclinação visual. O eixo do deck é 2:1.
-  const depthX = -42, depthY = depthX * HH / HW;
+  const depthX = -32, depthY = depthX * HH / HW;
   const panel = (points, fill) => {
     ctx.beginPath(); points.forEach(([x,y],i) => i ? ctx.lineTo(x,y) : ctx.moveTo(x,y));
     ctx.closePath(); ctx.fillStyle = fill; ctx.fill(); ctx.strokeStyle = '#253a42'; ctx.lineWidth = 2; ctx.stroke();
@@ -1967,6 +1967,27 @@ function drawPlayerSprite(player, ix, iy) {
     const frames = effect.activating ? [0, 1, 1, 2] : [2, 1, 3, 3];
     if (drawArchetypeSheet('player_10x_q', frames[Math.floor(t * 4)], 0, ix, iy, player.facing === 'left', { rows: 1, scale: 0.29, anchor: 0.78 })) { player._topo = 120; return true; }
   }
+  const pulseFrame = getVelozPulse(state.progress, player);
+  if (pulseFrame) {
+    const image = getSprite(pulseFrame.sprite);
+    if (image) {
+      const w = image.width / 6, h = image.height / 4, scale = .5;
+      ctx.save(); ctx.translate(ix, iy);
+      // As linhas acompanham a direção da ação, sem alterar deslocamento ou dano.
+      const direction = {right:[1,0],left:[-1,0],down:[0,1],up:[0,-1]}[player.facing];
+      ctx.strokeStyle = '#69ff9b'; ctx.globalAlpha = .7; ctx.lineWidth = 2; ctx.lineCap = 'round';
+      for (let i=0; i<3; i++) {
+        const x = -direction[0]*(16+i*7) + direction[1]*(i-1)*8;
+        const y = -25-direction[1]*(8+i*4) - direction[0]*(i-1)*6;
+        ctx.beginPath(); ctx.moveTo(x,y); ctx.lineTo(x-direction[0]*14,y-direction[1]*7); ctx.stroke();
+      }
+      ctx.globalAlpha = 1;
+      if (pulseFrame.flip) ctx.scale(-1, 1);
+      drawSmooth(image, pulseFrame.col * w, pulseFrame.row * h, w, h,
+        -w * scale / 2, -pulseFrame.footY * scale, w * scale, h * scale);
+      ctx.restore(); player._topo = 110; return true;
+    }
+  }
   const velozFrame = getVelozAnimation(state.progress, player, performance.now());
   if (velozFrame) {
     const image = getSprite(velozFrame.sprite);
@@ -1980,7 +2001,7 @@ function drawPlayerSprite(player, ix, iy) {
     }
   }
   if (state.progress.archetype === 'nucleo_dez_forma' && player.nucleoForm === 'forma_veloz') {
-    if (drawArchetypeSheet('player_10x_q', 2, 0, ix, iy, player.facing === 'left', { rows: 1, scale: 0.29, anchor: 0.78, walk: player.moving })) { player._topo = 120; return true; }
+    if (drawArchetypeSheet('player_10x_q', 2, 0, ix, iy, player.facing === 'left', { rows: 1, scale: 0.29, anchor: 0.75, walk: player.moving })) { player._topo = 120; return true; }
   }
   if (effect && state.progress.archetype === 'nucleo_dez_forma' && ['forma_veloz', 'eco_scan'].includes(effect.id)) {
     const elapsed = Math.max(0, Math.min(0.999, 1 - effect.timeLeft / effect.duration));

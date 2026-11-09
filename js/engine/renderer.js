@@ -1222,16 +1222,19 @@ function drawBeachRailTunnel(rail) {
   ctx.save(); ctx.translate(end.x, end.y); ctx.lineJoin = 'round';
   // Sapata assentada sob a estrutura e estendida na direção do trilho.
   ctx.fillStyle = '#344a50'; ctx.strokeStyle = '#1c2d34'; ctx.lineWidth = 2;
-  ctx.beginPath(); ctx.moveTo(-104, -6); ctx.lineTo(-104, 4); ctx.lineTo(-62, 20);
-  ctx.lineTo(40, 28); ctx.lineTo(54, 17); ctx.lineTo(12, 1);
-  ctx.lineTo(-62, -2); ctx.closePath(); ctx.fill(); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(-94, 20); ctx.lineTo(-62, 29);
+  ctx.lineTo(34, 4); ctx.lineTo(54, 0); ctx.lineTo(22, -16);
+  ctx.lineTo(-74, 9); ctx.closePath(); ctx.fill(); ctx.stroke();
   // Alongar o pórtico para cima sem levantar sua base da plataforma.
-  ctx.save(); ctx.translate(0, 15); ctx.scale(1, 1.18); ctx.translate(0, -15);
+  ctx.save(); ctx.translate(0, 15);
+  // A face transversal do portal acompanha o outro eixo isométrico do piso.
+  // A inclinação mantém as colunas verticais, sem rotacionar a estrutura.
+  ctx.transform(1, -0.32, 0, 1.18, 0, 0); ctx.translate(0, -15);
   // Volume se prolonga para trás, paralelo ao trilho, em vez de ser
   // uma placa fina na diagonal. A abertura frontal continua atrás do trem.
   // O desenho do trilho já é diagonal dentro do próprio PNG; skewY
   // sozinho não mede sua inclinação visual. O eixo do deck é 2:1.
-  const depthX = -32, depthY = depthX * HH / HW;
+  const depthX = -32, depthY = (depthX * HH / HW + 0.32 * depthX) / 1.18;
   const panel = (points, fill) => {
     ctx.beginPath(); points.forEach(([x,y],i) => i ? ctx.lineTo(x,y) : ctx.moveTo(x,y));
     ctx.closePath(); ctx.fillStyle = fill; ctx.fill(); ctx.strokeStyle = '#253a42'; ctx.lineWidth = 2; ctx.stroke();
@@ -1880,7 +1883,7 @@ function drawArchetypeSheet(spriteId, col, row, ix, iy, flip = false, options = 
   const w = (x1 - x0) * scale, h = (y1 - y0) * scale;
   ctx.save();
   const stride = options.walk ? Math.sin(performance.now() * 0.012) : 0;
-  ctx.translate(ix, iy - Math.abs(stride) * 1.8 + (options.offsetY ?? 0));
+  ctx.translate(ix + (options.offsetX ?? 0), iy - Math.abs(stride) * 1.8 + (options.offsetY ?? 0));
   if (flip) ctx.scale(-1, 1);
   if (options.walk) ctx.rotate(stride * 0.025);
   drawSmooth(image, x0, y0, x1 - x0, y1 - y0, -w / 2, -h * (options.anchor ?? 0.98), w, h);
@@ -2001,7 +2004,7 @@ function drawPlayerSprite(player, ix, iy) {
     }
   }
   if (state.progress.archetype === 'nucleo_dez_forma' && player.nucleoForm === 'forma_veloz') {
-    if (drawArchetypeSheet('player_10x_q', 2, 0, ix, iy, player.facing === 'left', { rows: 1, scale: 0.29, anchor: 0.75, walk: player.moving })) { player._topo = 120; return true; }
+    if (drawArchetypeSheet('player_10x_q', 2, 0, ix, iy, player.facing === 'left', { rows: 1, scale: 0.29, anchor: 0.75, offsetX: player.facing === 'left' ? 14 : -14, walk: player.moving })) { player._topo = 120; return true; }
   }
   if (effect && state.progress.archetype === 'nucleo_dez_forma' && ['forma_veloz', 'eco_scan'].includes(effect.id)) {
     const elapsed = Math.max(0, Math.min(0.999, 1 - effect.timeLeft / effect.duration));

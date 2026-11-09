@@ -118,3 +118,9 @@ O portal cenográfico passou a envolver melhor a traseira do trem: foi ampliado 
 - Ajustada a base e a profundidade do túnel, com a entrada ligeiramente mais baixa em relação ao trilho. Sem mudanças no trem, rotas ou gates.
 - **Ainda pendente:** corrida frontal e traseira da Forma Veloz. As novas tentativas não produziram ciclos fiéis de pernas alternadas; não foram integradas para evitar substituir a criatura por poses falsas ou deformadas. A corrida lateral e os ataques continuam os aprovados.
 - 39 testes passaram; capturas pontuais de túnel, idle e pulso em canvas Node foram verificadas. Ainda é necessário testar as transições em movimento no navegador.
+
+### 0.3.21 — tentativa de corrida e ajuste de apoio
+- A face do túnel foi alinhada ao eixo transversal isométrico do piso, com base refeita para acompanhar os cantos da fachada; a profundidade continua na direção do trilho. São ajustes cenográficos, sem mudar trem, plataforma ou colisões.
+- A pose sustentada da Forma Veloz foi deslocada horizontalmente para aproximar o corpo do centro da sombra; a altura da pose da 0.3.20 foi preservada. O Q transformado e os ataques básicos aprovados não foram modificados.
+- **Corrida frontal e traseira continuam pendentes.** Novas gerações repetiram poses de ataque/repouso, ângulos errados ou membros sem alternância; não foram integradas. A interface, transformação e corrida lateral existentes permanecem iguais. Não considerar este estudo uma corrida completa.
+- Capturas pontuais de estação e idle verificadas no renderer via canvas Node; ainda falta avaliação em navegador e em movimento.

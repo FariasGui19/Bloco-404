@@ -72,7 +72,7 @@ export function render(map, state) {
     if (map.aguaPraia) {
       drawBeachSea(map);
       drawBeachRipples(map);
-      drawBeachSurface(map);
+      if (map.id !== 'ilha_estacao_bio') drawBeachSurface(map);
     }
     drawFloors(map);
     if (map.id === 'hub_saguao') drawHubFloorMarkings();
@@ -574,7 +574,7 @@ function caminhoEstacao(map, x, y) {
     (x >= 5 && x <= 16 && y >= 3 && y <= 14) ||   // avental do terminal
     (x >= 8 && x <= 18 && y >= 10 && y <= 18) ||
     (x >= 14 && x <= 39 && y >= 17 && y <= 22) ||
-    (x >= 35 && x <= 48 && y >= 18 && y <= 23) ||
+    (x >= 32 && x <= 48 && y >= 14 && y <= 25) ||
     (x >= 30 && x <= 34 && y >= 22 && y <= 27) ||
     (x >= 44 && x <= 48 && y >= 18 && y <= 51) ||
     (x >= 47 && x <= 63 && y >= 43 && y <= 55) ||  // avental da estufa
@@ -582,39 +582,36 @@ function caminhoEstacao(map, x, y) {
     (x >= 53 && x <= 59 && y >= 42 && y <= 47));
 }
 
+// Texturas em coordenadas de mundo: ambas seguem a mesma projeção dos tiles.
+// Água e decks não recebem chão; caminhos permanecem legíveis sobre o jardim.
 function paintStationPaving(map) {
-  const sheet = getSprite('bio_piso');
-  const onPath = (x, y) => caminhoEstacao(map, x, y);
-  ctx.save();
-  stationClip(map, onPath);
-  // Base evita frestas transparentes nas bordas da arte gerada.
-  ctx.fillStyle = '#4c5648';
-  for (let y = range.y0; y <= range.y1; y++) for (let x = range.x0; x <= range.x1; x++) {
-    if (!onPath(x, y)) continue;
-    const ix = (x - y) * HW, iy = (x + y) * HH;
-    ctx.beginPath(); ctx.moveTo(ix, iy); ctx.lineTo(ix + HW, iy + HH); ctx.lineTo(ix, iy + TH); ctx.lineTo(ix - HW, iy + HH); ctx.closePath(); ctx.fill();
-  }
-  if (sheet) {
-    // Um módulo cobre 3×3 tiles lógicos, para não reduzir seus ladrilhos a ruído.
-    const span = 3, sw = sheet.width / 2, sh = sheet.height / 2;
-    ctx.imageSmoothingEnabled = false;
-    for (let y = Math.floor(range.y0 / span) * span; y <= range.y1; y += span) for (let x = Math.floor(range.x0 / span) * span; x <= range.x1; x += span) {
-      const tone = hash(x, y), variant = tone < .62 ? 0 : tone < .76 ? 1 : tone < .88 ? 2 : 3;
-      const ix = (x - y) * HW, iy = (x + y) * HH;
-      ctx.drawImage(sheet, (variant % 2) * sw, Math.floor(variant / 2) * sh, sw, sh, ix - span * HW, iy, span * HW * 2, span * TH);
+  const paintTexture = (image, predicate, fallback) => {
+    ctx.save();
+    stationClip(map, predicate);
+    ctx.transform(HW, HH, -HW, HH, 0, 0);
+    ctx.fillStyle = fallback;
+    ctx.fillRect(range.x0, range.y0, range.x1 - range.x0 + 1, range.y1 - range.y0 + 1);
+    if (image) {
+      const span = 6;
+      ctx.imageSmoothingEnabled = true;
+      for (let y = Math.floor(range.y0 / span) * span; y <= range.y1; y += span)
+        for (let x = Math.floor(range.x0 / span) * span; x <= range.x1; x += span)
+          ctx.drawImage(image, x, y, span, span);
     }
-  }
-  ctx.restore();
+    ctx.restore();
+  };
+  paintTexture(getSprite('bio_jardim_novo'), (x, y) => map.walkMask[y]?.[x] === '.' && !ehDeck(map, x, y), '#405247');
+  paintTexture(getSprite('bio_piso_novo'), (x, y) => caminhoEstacao(map, x, y), '#4c5648');
 }
 
 // Piso estático em blocos: o recorte e as centenas de losangos são pintados
 // uma vez por bloco, não novamente a cada frame. A rede continua independente.
 const stationPavingCache = new WeakMap();
 function drawStationPaving(map) {
-  const sheet = getSprite('bio_piso');
+  const sheet = getSprite('bio_piso_novo'), garden = getSprite('bio_jardim_novo');
   let cache = stationPavingCache.get(map);
-  if (!cache || cache.sheet !== sheet) {
-    cache = { sheet, chunks: new Map() };
+  if (!cache || cache.sheet !== sheet || cache.garden !== garden) {
+    cache = { sheet, garden, chunks: new Map() };
     stationPavingCache.set(map, cache);
   }
   const span = 12;
@@ -627,7 +624,7 @@ function drawStationPaving(map) {
         const y1 = Math.min(y0 + span - 1, map.layout.length - 1);
         let hasPaving = false;
         for (let y = y0; y <= y1 && !hasPaving; y++)
-          for (let x = x0; x <= x1; x++) if (caminhoEstacao(map, x, y)) { hasPaving = true; break; }
+          for (let x = x0; x <= x1; x++) if (map.walkMask[y]?.[x] === '.' && !ehDeck(map, x, y)) { hasPaving = true; break; }
         if (!hasPaving) { cache.chunks.set(key, null); continue; }
         const left = (x0 - (y1 + 1)) * HW;
         const top = (x0 + y0) * HH;
@@ -1435,6 +1432,18 @@ function drawHubHologram(object) {
   ctx.restore();
 }
 
+// Marcadores de acesso e de impulso têm posições reais e não bloqueiam o chão.
+function drawBioMarker(object) {
+  const x = (object.x - object.y) * HW, y = (object.x + object.y) * HH;
+  const active = object.dashSensor && !!state.progress?.flags?.gate_bio_pulso_interior;
+  ctx.save(); ctx.translate(x, y);
+  ctx.fillStyle = 'rgba(13,35,32,.8)'; ctx.strokeStyle = active ? '#a9f2bb' : '#e8ba70'; ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.ellipse(0, 0, 25, 11, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+  ctx.fillStyle = active ? '#a9f2bb' : '#ffcd80'; ctx.font = 'bold 9px monospace'; ctx.textAlign = 'center';
+  ctx.fillText(active ? 'PULSO OK' : object.bioMarker, 0, -16);
+  ctx.restore();
+}
+
 // Duas plataformas da mesma linha, decorativas e sem colisão extra.
 function drawCableStation(object) {
   const x = (object.x - object.y) * HW, y = (object.x + object.y) * HH;
@@ -1493,6 +1502,7 @@ function drawMapObject(object, state) {
     ctx.ellipse(x, y + 3, 30, 9, 0, 0, Math.PI * 2); ctx.fill(); ctx.restore();
   }
 
+  if (object.bioMarker) { drawBioMarker(object); return; }
   if (object.cableStation) { drawCableStation(object); return; }
   if (object.tipo === 'holograma_decorativo') { drawHubHologram(object); return; }
   if (object.porta) { drawDoor(object); return; }

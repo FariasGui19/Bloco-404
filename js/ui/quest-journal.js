@@ -13,6 +13,7 @@ export function openQuestJournal(progress, map) {
       <h2 id="journalTitle">DIÁRIO DE ROTAS</h2><p class="journal-caption">MISSÕES E DESCOBERTAS</p>
       <h3>PRINCIPAL</h3><strong id="journalMainTitle"></strong><p id="journalMainDescription"></p>
       <h3>EXPLORAÇÃO OPCIONAL</h3><strong id="journalSideTitle">ENSEADA DOS ECOS</strong><p id="journalSideDescription"></p>
+      <h3>ESTAÇÃO QUE RESPIRA</h3><p id="journalBioDescription"></p>
       <h3>COMPANHEIROS · PRÉVIA LOCAL</h3><p id="petInfo"></p><button type="button" id="petBolt">TESTAR BOLT NESTE SAVE</button><button type="button" id="petLumeo">ACOMPANHAR COM LÚMEO</button><p class="journal-note">Outras dimensões, atividades e modos serão adicionados futuramente.</p>
       <button type="button" id="journalClose">FECHAR · J / ESC</button></section>`;
     document.body.appendChild(overlay);
@@ -32,6 +33,15 @@ export function openQuestJournal(progress, map) {
   overlay.querySelector('#journalMainTitle').textContent = quest?.title ?? 'NENHUMA MISSÃO ATIVA';
   overlay.querySelector('#journalMainDescription').textContent = quest?.description ?? 'Continue explorando o Bloco 404.';
   const flags = progress?.flags ?? {};
+  overlay.querySelector('#journalBioDescription').textContent = flags.gate_bio_controle_central
+    ? 'Controle sincronizado. O fluxo parcial é monitorado; a reconstrução continua.'
+    : flags.gate_bio_pulso_interior ? 'Impulso registrado: ative o painel central na sala de controle.'
+    : flags.bio_pulso_diagnostico ? 'Na sala de controle, atravesse a placa com Q.'
+    : flags.gate_bio_valvula_estufa ? 'Fluxo parcial aberto. Entre no terminal e diagnostique a placa com R.'
+    : flags.gate_bio_reparo_regulador ? 'Diagnostique e abra a válvula junto à estufa.'
+    : flags.gate_bio_reparo_condutor ? 'Diagnostique e reconstrua o regulador no pátio.'
+    : map?.id === 'ilha_estacao_bio' || map?.id === 'bio_sala_controle' ? 'Diagnostique e reconstrua o condutor na chegada; consulte o terminal para o protocolo.'
+    : 'Repare o teleférico e explore a Estação Bio-Forja.';
   const found = ['mar','pedra','mata'].filter(id => flags[`collected_enseada_rastro_${id}`]).length;
   overlay.querySelector('#journalSideDescription').textContent = map?.id === 'ilha_enseada_ecos' || found > 0
     ? (found === 3 ? (flags.companheiro_lumeo ? 'Concluída: três vestígios registrados. Lúmeo é seu companheiro.' : (flags.collected_lumeo_ressonancia ? 'Siga a luz até a mata e escolha se deseja oferecer companhia a Lúmeo.' : flags.collected_lumeo_encontro ? 'Investigue e acalme a ressonância nas ruínas a leste.' : 'Concluída: três vestígios registrados. Ouça o eco perto da trilha de retorno.')) : `Investigue os vestígios da Enseada: ${found}/3.`)

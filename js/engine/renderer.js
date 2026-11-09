@@ -9,7 +9,7 @@ import { camera, view, worldToScreen, isoToWorld } from './camera.js';
 import { getSprite } from './sprites.js';
 import { createBeachSurface } from './beach-surface.js';
 import { bridgeGateGeometry } from './bridge-geometry.js';
-import { getBioWalkFrame } from '../data/bio-walk.js';
+import { getBioWalkFrame, bioWalkMetrics } from '../data/bio-walk.js';
 import { faunaFootAnchor } from '../game/fauna-costeira.js';
 import { getFrame } from './sprite-clean.js';
 import { drawAmbientBack, drawAmbientFront } from './ambient.js';
@@ -379,7 +379,9 @@ function drawBeachSea(map) {
         const border = Math.max(0, Math.min(1, edge / 1.6));
         const t = Math.max(Math.min(1, closest / 4.5), 1 - border * border * (3 - 2 * border));
         const smooth = t * t * (3 - 2 * t);
-        const detail = (1 - smooth) * (Math.sin(wx * 4.1 + Math.sin(wy * 2.3)) * 3 + Math.sin(wy * 3.2 - wx * .7) * 2);
+        // Bancos submersos sutis unem visualmente as enseadas sem criar terra.
+        const bank = (1 - smooth) * Math.max(0, Math.sin(wx * .65 + Math.sin(wy * .5) * 1.8) - .45) * 8;
+        const detail = bank + (1 - smooth) * (Math.sin(wx * 4.1 + Math.sin(wy * 2.3)) * 3 + Math.sin(wy * 3.2 - wx * .7) * 2);
         const i = (py * texture.width + px) * 4;
         for (let c = 0; c < 3; c++) image.data[i + c] = shallow[c] * (1 - smooth) + deep[c] * smooth + detail;
         image.data[i + 3] = 255;
@@ -587,23 +589,38 @@ function caminhoEstacao(map, x, y) {
 
 // Plataforma do trem é piso, não um sprite decorativo flutuando sobre a areia.
 // Não altera a máscara: a faixa de trilhos R continua bloqueada.
+const beachStationCache = new WeakMap();
 function drawBeachStation(map) {
-  ctx.save();
   const cfg = CONFIG.METRO_PLATFORM_TILES, image = getSprite(cfg.ID);
-  for (let y = 2; y <= 5; y++) for (let x = 2; x <= 13; x++) {
-    if (x < range.x0 || x > range.x1 || y < range.y0 || y > range.y1) continue;
-    if (!'RPS'.includes(map.aguaPraia[y]?.[x] ?? ' ')) continue;
-    const ix = (x - y) * HW, iy = (x + y) * HH;
-    quad(ix, iy, ix + HW, iy + HH, ix, iy + TH, ix - HW, iy + HH,
-      (x + y) % 3 ? '#4c5b58' : '#596760', '#354641', 1);
-    const frame = image && getFrame(image, y === 4 ? 1 : 0, 0, cfg.SHEET_COLS, cfg.SHEET_ROWS)?.crop;
-    if (frame) { ctx.imageSmoothingEnabled = false; ctx.drawImage(frame.canvas, 0, 0, frame.w, frame.h, ix - HW, iy, CONFIG.TILE_W, CONFIG.TILE_H); }
-    if (y === 4) {
-      ctx.strokeStyle = '#e1bd73'; ctx.lineWidth = 2;
-      ctx.beginPath(); ctx.moveTo(ix, iy + 3); ctx.lineTo(ix + HW - 3, iy + HH); ctx.stroke();
-    }
+  let entry = beachStationCache.get(map);
+  if (!entry || entry.image !== image) {
+    // A plataforma é estática: compor uma vez, em coordenadas isométricas.
+    const left = -4 * HW, top = 4 * HH;
+    const surface = document.createElement('canvas');
+    surface.width = 16 * HW; surface.height = 16 * HH;
+    const previous = ctx;
+    ctx = surface.getContext('2d');
+    try {
+      ctx.translate(-left, -top);
+      const frames = image && [0, 1].map(col => getFrame(image, col, 0, cfg.SHEET_COLS, cfg.SHEET_ROWS)?.crop);
+      ctx.imageSmoothingEnabled = false;
+      for (let y = 2; y <= 5; y++) for (let x = 2; x <= 13; x++) {
+        if (!'RPS'.includes(map.aguaPraia[y]?.[x] ?? ' ')) continue;
+        const ix = (x-y)*HW, iy = (x+y)*HH;
+        quad(ix, iy, ix+HW, iy+HH, ix, iy+TH, ix-HW, iy+HH,
+          (x+y)%3 ? '#4c5b58' : '#596760', '#354641', 1);
+        const frame = frames?.[y === 4 ? 1 : 0];
+        if (frame) ctx.drawImage(frame.canvas, 0, 0, frame.w, frame.h, ix-HW, iy, CONFIG.TILE_W, CONFIG.TILE_H);
+        if (y === 4) {
+          ctx.strokeStyle = '#e1bd73'; ctx.lineWidth = 2;
+          ctx.beginPath(); ctx.moveTo(ix, iy+3); ctx.lineTo(ix+HW-3, iy+HH); ctx.stroke();
+        }
+      }
+    } finally { ctx = previous; }
+    entry = { image, surface, left, top };
+    beachStationCache.set(map, entry);
   }
-  ctx.restore();
+  ctx.drawImage(entry.surface, entry.left, entry.top);
 }
 
 // Circuito da sala conecta o registro, a placa e o painel de controle.
@@ -1350,6 +1367,7 @@ function getObjectSpriteConfig(spriteId) {
   if (['bio_terminal', 'bio_reator', 'bio_ponte', 'bio_estufa', 'bio_floreira', 'bio_tubos', 'bio_caixa', 'bio_luminaria', 'bio_plataforma', 'bio_margem_canto', 'bio_margem_cano', 'bio_margem_ruina', 'bio_margem_mureta', 'bio_condutor_quebrado', 'bio_condutor_ativo', 'bio_regulador_quebrado', 'bio_regulador_ativo', 'bio_mato_cano', 'bio_mato_ventilacao', 'bio_mato_barris', 'bio_mato_fissura', 'bio_cabeceira', 'bio_distribuidor'].includes(spriteId)) return { SHEET_COLS: 1, SHEET_ROWS: 1, DEFAULT_SCALE: 1, FEET_ANCHOR_Y: 1 };
   if (['hub_vaso_novo', 'hub_reciclagem', 'hub_carrinho', 'hub_bebedouro'].includes(spriteId)) return { SHEET_COLS: 1, SHEET_ROWS: 1, DEFAULT_SCALE: .25, FEET_ANCHOR_Y: 1 };
   if (spriteId === 'costa_rochosa') return { SHEET_COLS: 4, SHEET_ROWS: 1, DEFAULT_SCALE: 1, FEET_ANCHOR_Y: 1 };
+  if (spriteId === 'praia_plataforma_kit') return { SHEET_COLS: 4, SHEET_ROWS: 2, DEFAULT_SCALE: 1, FEET_ANCHOR_Y: 1 };
   if (spriteId === 'vegetacao_tropical') return { SHEET_COLS: 8, SHEET_ROWS: 1, DEFAULT_SCALE: 1, FEET_ANCHOR_Y: 1 };
   if (spriteId === 'metro_props') {
     return CONFIG.METRO_PROPS_SPRITE;
@@ -1950,7 +1968,20 @@ function drawPlayerSprite(player, ix, iy) {
   if (walkFrame) {
     const cfg = CONFIG.PLAYER_BIO_FORJA_WALK_SPRITE;
     const image = getSprite(cfg.ID);
-    if (image && drawFramePe(player, image, cfg, [walkFrame.row, walkFrame.col], ix, iy, cfg.SCALE, false)) return true;
+    if (image) {
+      const frame = getFrame(image, walkFrame.col, walkFrame.row, cfg.SHEET_COLS, cfg.SHEET_ROWS);
+      if (frame) {
+        const foot = pePos(frame);
+        // Normalização uniforme preserva proporções, sem squash entre quadros.
+        const metrics = bioWalkMetrics(player.facing, frame.crop.h);
+        const scale = metrics?.scale ?? cfg.SCALE, groundY = iy + (metrics?.footOffset ?? 0);
+        drawSmooth(frame.cell, 0, 0, frame.cell.width, frame.cell.height,
+          ix - foot.x * scale, groundY - foot.y * scale,
+          frame.cell.width * scale, frame.cell.height * scale);
+        player._topo = iy - (groundY - (foot.y - frame.crop.y) * scale);
+        return true;
+      }
+    }
   }
   const useBioForja = player.equippedSuit === 'bio_forja';
   const sprite = useBioForja ? CONFIG.PLAYER_BIO_FORJA_SPRITE : CONFIG.PLAYER_SPRITE;

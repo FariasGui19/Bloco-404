@@ -99,3 +99,10 @@ O portal cenográfico passou a envolver melhor a traseira do trem: foi ampliado 
 - Novas folhas para caminhar de costas e para os lados (espelhada à esquerda), e para socar para frente e de costas. O ataque lateral de espada e a caminhada frontal aprovados continuam com seus quadros anteriores; também não há alterações na caminhada Bio.
 - As folhas novas são aproximações: na caminhada lateral os quadros 0/2 e 1/3 têm passadas semelhantes, sem alternância clara de pernas; no soco de costas o braço aponta para o lado. Ficam sujeitas à avaliação visual do usuário, não representam animação perfeita comprovada. Escala fixa por folha e apoio comum evitam normalizar a pose pelo tamanho do punho.
 - Testes automatizados cobrem seleção por direção e prioridade de habilidades. Capturas individuais verificadas no renderer com canvas Node; ainda é necessário avaliar a animação em movimento no navegador.
+
+### 0.3.18 — Maré Astral e encaixe do túnel
+- Integradas folhas de caminhada e ataque básico nas quatro direções do traje Maré de nível 1. As laterais são espelhadas; os ataques usam efeitos ciano desenhados nas poses, sem criar projéteis ou mudar o combate. Escala fixa e eixo da cabeça mantêm o porte e o apoio das folhas originais.
+- Q/R, dash, scan e demais efeitos têm prioridade visual; se faltar uma folha, é usado o desenho anterior. As folhas e seleções aprovadas de Bio e Domínio não foram alteradas.
+- A caminhada frontal tem dois passos alternados; a lateral alterna duas poses semelhantes e não mostra claramente as duas pernas alternando. A caminhada de costas tem quadros de passada e repouso. No ataque de costas o braço se projeta para o lado; não afirmar que esses movimentos são perfeitos sem avaliação em jogo.
+- Túnel deslocado para junto da traseira e baixado até o trilho, com sapata cenográfica de apoio. O ajuste continua relativo ao trilho e não altera a rota, o trem, a colisão nem o save.
+- Validação: testes de seleção, prioridades e folhas; capturas pontuais do renderer via canvas Node. Ainda é necessária a avaliação das animações em movimento e do encaixe do túnel no navegador.

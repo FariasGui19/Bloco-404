@@ -1225,9 +1225,13 @@ function drawBeachRailTunnel(rail) {
   ctx.beginPath(); ctx.moveTo(-104, 4); ctx.lineTo(-62, 20);
   ctx.lineTo(40, 28); ctx.lineTo(54, 17); ctx.lineTo(12, 1);
   ctx.lineTo(-62, -2); ctx.closePath(); ctx.fill(); ctx.stroke();
+  // Alongar o pórtico para cima sem levantar sua base da plataforma.
+  ctx.save(); ctx.translate(0, 15); ctx.scale(1, 1.18); ctx.translate(0, -15);
   // Volume se prolonga para trás, paralelo ao trilho, em vez de ser
   // uma placa fina na diagonal. A abertura frontal continua atrás do trem.
-  const depthX = -42, depthY = depthX * (rail.skewY ?? .5);
+  // O desenho do trilho já é diagonal dentro do próprio PNG; skewY
+  // sozinho não mede sua inclinação visual. O eixo do deck é 2:1.
+  const depthX = -42, depthY = depthX * HH / HW;
   const panel = (points, fill) => {
     ctx.beginPath(); points.forEach(([x,y],i) => i ? ctx.lineTo(x,y) : ctx.moveTo(x,y));
     ctx.closePath(); ctx.fillStyle = fill; ctx.fill(); ctx.strokeStyle = '#253a42'; ctx.lineWidth = 2; ctx.stroke();
@@ -1254,6 +1258,7 @@ function drawBeachRailTunnel(rail) {
   ctx.strokeStyle = '#4ad4d2'; ctx.lineWidth = 2;
   ctx.beginPath(); ctx.moveTo(-52,0); ctx.lineTo(-52,-79); ctx.lineTo(-38,-101);
   ctx.lineTo(19,-101); ctx.lineTo(44,-79); ctx.lineTo(44,3); ctx.stroke();
+  ctx.restore(); // escala do pórtico
   ctx.restore();
 }
 
@@ -1875,7 +1880,7 @@ function drawArchetypeSheet(spriteId, col, row, ix, iy, flip = false, options = 
   const w = (x1 - x0) * scale, h = (y1 - y0) * scale;
   ctx.save();
   const stride = options.walk ? Math.sin(performance.now() * 0.012) : 0;
-  ctx.translate(ix, iy - Math.abs(stride) * 1.8);
+  ctx.translate(ix, iy - Math.abs(stride) * 1.8 + (options.offsetY ?? 0));
   if (flip) ctx.scale(-1, 1);
   if (options.walk) ctx.rotate(stride * 0.025);
   drawSmooth(image, x0, y0, x1 - x0, y1 - y0, -w / 2, -h * (options.anchor ?? 0.98), w, h);
@@ -2109,7 +2114,7 @@ function drawPlayerSprite(player, ix, iy) {
   }
   if (suit === 'dominio' || suit === 'mare') {
     const col = player.facing === 'up' ? 2 : player.facing === 'down' ? 0 : 1;
-    if (drawArchetypeSheet(`player_${suit}_lvl1`, col, 0, ix, iy, player.facing === 'left', { walk: player.moving })) {
+    if (drawArchetypeSheet(`player_${suit}_lvl1`, col, 0, ix, iy, player.facing === 'left', { walk: player.moving, offsetY: suit === 'mare' ? 3 : 0 })) {
       player._topo = 100;
       return true;
     }

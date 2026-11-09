@@ -106,3 +106,9 @@ O portal cenográfico passou a envolver melhor a traseira do trem: foi ampliado 
 - A caminhada frontal tem dois passos alternados; a lateral alterna duas poses semelhantes e não mostra claramente as duas pernas alternando. A caminhada de costas tem quadros de passada e repouso. No ataque de costas o braço se projeta para o lado; não afirmar que esses movimentos são perfeitos sem avaliação em jogo.
 - Túnel deslocado para junto da traseira e baixado até o trilho, com sapata cenográfica de apoio. O ajuste continua relativo ao trilho e não altera a rota, o trem, a colisão nem o save.
 - Validação: testes de seleção, prioridades e folhas; capturas pontuais do renderer via canvas Node. Ainda é necessária a avaliação das animações em movimento e do encaixe do túnel no navegador.
+
+### 0.3.19 — apoio Maré, túnel e estudo da Forma Veloz
+- O idle do traje Maré foi baixado três unidades de tela ao equipar; folhas de caminhada e ataques aprovadas não foram alteradas. Verificar visualmente as transições em jogo.
+- O pórtico do túnel foi elevado a partir da mesma base e sua profundidade acompanha o eixo 2:1 do deck, não apenas o skew adicional do sprite do trilho. É cenográfico; posição do trem, colisões, rotas e saves não foram alterados.
+- A interface de seleção e transformação, os ataques e a corrida lateral já existentes da Forma Veloz permanecem intactos. O trabalho de corrida frontal e traseira **não está concluído**: as candidatas em `assets/source-art/veloz-corrida-frente-c-0319.png` e `assets/source-art/veloz-costas-b-0319.png` não mostram ciclo completo fiel (patas semelhantes, postura traseira inconsistente). Não foram integradas. Não se deve apresentar quadros de ação ou poses estáticas como corrida pronta.
+- 39 testes passaram; capturas pontuais do renderer de estação e idle Maré verificadas com canvas Node, sem validação de movimento no navegador.

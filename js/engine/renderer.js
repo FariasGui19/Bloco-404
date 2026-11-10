@@ -18,6 +18,8 @@ import { isDebugEnabled, drawDebugWorld } from '../game/debug.js';
 import { ACTION_SPRITES } from '../data/action-sprites.js';
 import { drawHubScreenFx, hasHubScreenFx } from './hub-screen-fx.js';
 import { getVelozAnimation, getVelozPulse } from '../data/veloz-animation.js';
+import { getBrutaAnimation } from '../data/bruta-animation.js';
+import { NUCLEO_BRUTA } from '../data/nucleo-forms.js';
 import { getMareWalk, getMareAttack, mareSheet } from '../data/mare-animation.js';
 import { getDominioWalk, getDominioAttack } from '../data/dominio-animation.js';
 import { getBasicAttackPose } from '../data/basic-attack-poses.js';
@@ -2128,11 +2130,65 @@ function drawMareFrame(player, ix, iy, col, kind) {
   ctx.restore(); player._topo = 140; return true;
 }
 
+// Peso da Quebra Sistemas: poeira no passo, vapor nos pistões e atrito das
+// marretas. É visual de runtime — nada muda em dano, velocidade ou colisão.
+function drawBrutaFx(player, ix, iy, gait) {
+  const now = performance.now();
+  ctx.save();
+  ctx.lineCap = 'round';
+  if (gait === 'walk') {
+    const cycle = (now % 600) / 600;
+    ctx.globalAlpha = .22 * (1 - cycle);
+    ctx.fillStyle = '#c9d3d8';
+    for (let i = 0; i < 3; i++) {
+      const ang = (i / 3) * Math.PI * 2;
+      ctx.beginPath();
+      ctx.ellipse(ix + Math.cos(ang) * (8 + cycle * 16), iy + 1 + Math.sin(ang) * (3 + cycle * 5),
+        4 + cycle * 5, 2 + cycle * 2.4, 0, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+  // Faíscas: a marreta arrasta no chão.
+  if (gait === 'walk' || gait === 'idle') {
+    ctx.globalAlpha = .75;
+    ctx.strokeStyle = '#ffb02e';
+    ctx.lineWidth = 1.4;
+    for (let i = 0; i < 2; i++) {
+      const flick = Math.sin(now * .03 + i * 2.1) * 2;
+      const bx = ix + (player.facing === 'left' ? 20 : -20) + i * 3;
+      ctx.beginPath();
+      ctx.moveTo(bx, iy - 2);
+      ctx.lineTo(bx + (player.facing === 'left' ? 8 : -8), iy - 3 + flick);
+      ctx.stroke();
+    }
+  }
+  // Exaustão: ao parar, os pistões soltam uma rajada de vapor.
+  const exhaust = player.nucleoRuntime?.exhaustion;
+  if (exhaust?.timeLeft > 0) {
+    const k = 1 - exhaust.timeLeft / (exhaust.duration || .9);
+    ctx.globalAlpha = .5 * (1 - k);
+    ctx.fillStyle = '#e8f2f4';
+    for (let i = 0; i < 4; i++) {
+      const lado = i % 2 === 0 ? 1 : -1;
+      const raio = 3 + k * 9 + (i % 2) * 2;
+      ctx.beginPath();
+      ctx.arc(ix + lado * (5 + k * 12), iy - 44 - k * 26 - i * 3, raio, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+  ctx.restore();
+}
+
 function drawPlayerSprite(player, ix, iy) {
   // As folhas de referência têm poses, não quadros sequenciais. Usamos uma
   // pose provisória com os pulsos animados, sem fingir que são animações finais.
   const effect = getVisualEffect(player);
   const suit = player.equippedSuit;
+  // A segunda forma do Núcleo (Quebra Sistemas) desenha o próprio peso:
+  // poeira no passo, faísca das marretas e vapor na exaustão.
+  if (player.nucleoForm === NUCLEO_BRUTA) {
+    drawBrutaFx(player, ix, iy, player.moving ? 'walk' : 'idle');
+  }
   // A folha nova é frontal: não a espelhamos nem fingimos vistas laterais/traseiras.
   const attack = player.combat;
   if (suit === 'bio_forja' && player.facing === 'down' && attack?.style === 'motor_bio_forja' && attack.timeLeft > 0 && !effect && !(player.ability?.scanning > 0)) {
@@ -2214,6 +2270,39 @@ function drawPlayerSprite(player, ix, iy) {
       drawSmooth(image, velozFrame.col * w, velozFrame.row * h, w, h,
         -w * scale / 2, -velozFrame.footY * scale, w * scale, h * scale);
       ctx.restore(); player._topo = 110; return true;
+    }
+  }
+  // Segunda forma do Núcleo: Quebra Sistemas. Folhas próprias de 4 colunas,
+  // apoio e escala comuns; o ataque tem prioridade sobre a caminhada.
+  const bruta = getBrutaAnimation(state.progress, player, performance.now());
+  if (bruta) {
+    // Onda de choque do impacto da marreta: anel rasteiro no chão, sem
+    // esconder o corpo. Ataque de costas também tem (o golpe existe mesmo
+    // sem folha traseira própria).
+    if (bruta.attack) {
+      const choque = Math.max(0, 1 - (player.combat?.timeLeft ?? 0) / (player.combat?.duration || .48));
+      if (choque > .45) {
+        const k = (choque - .45) / .55;
+        ctx.save();
+        ctx.globalAlpha = (1 - k) * .7;
+        ctx.strokeStyle = '#ffc94a';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.ellipse(ix, iy + 2, 14 + k * 40, 7 + k * 20, 0, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.restore();
+      }
+    }
+    const image = getSprite(bruta.sprite);
+    if (image) {
+      const w = image.width / bruta.cols, h = image.height / bruta.rows, scale = bruta.scale;
+      ctx.save(); ctx.translate(ix, iy);
+      if (bruta.flip) ctx.scale(-1, 1);
+      drawSmooth(image, bruta.col * w, bruta.row * h, w, h,
+        -w * scale / 2, -bruta.footY * scale, w * scale, h * scale);
+      ctx.restore();
+      player._topo = 125;
+      return true;
     }
   }
   if (state.progress.archetype === 'nucleo_dez_forma' && player.nucleoForm === 'forma_veloz') {
@@ -2883,7 +2972,29 @@ function drawEntity(entity, state) {
   const iy = (entity.x + entity.y) * HH;
 
   if (entity === state.player) {
-    drawShadow(ix, iy, 0.28);
+    // A Quebra Sistemas é ferro: sombra mais larga e mais densa que o operador.
+    if (entity.nucleoForm === NUCLEO_BRUTA) {
+      ctx.save();
+      ctx.fillStyle = 'rgba(0,0,0,.34)';
+      ctx.beginPath();
+      ctx.ellipse(ix, iy, 21, 9, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    } else drawShadow(ix, iy, 0.28);
+    // Passo pesado: a câmera sente o chão a cada passada da Quebra Sistemas.
+    // Tremor curto e fraco de propósito: some sozinho, sem quebrar leitura.
+    if (entity.nucleoForm === NUCLEO_BRUTA && entity.moving && !entity.ability?.dash) {
+      const passo = Math.floor(performance.now() / 150) % 4;
+      const chave = `${passo}:${Math.floor(performance.now() / 600)}`;
+      if (entity._brutaStep !== chave) {
+        entity._brutaStep = chave;
+        entity.ultimate ??= { cooldown: 0, buff: null, effect: null, casts: 0, charge: 0, shake: null, flash: null };
+        // Só dispara se o tremor da Ultimate não estiver ocupando a câmera.
+        if (!entity.ultimate.shake || entity.ultimate.shake.source === 'passo') {
+          entity.ultimate.shake = { timeLeft: .12, duration: .12, power: 2.2, source: 'passo' };
+        }
+      }
+    }
     if (state.progress.archetype === 'nucleo_dez_forma' && entity.nucleoForm === 'forma_veloz' && entity.moving && !entity.ability?.dash) {
       const dir = { left: [-1,0], right: [1,0], up: [0,-1], down: [0,1] }[entity.facing] ?? [1,0];
       const pulse = .45 + .2 * Math.sin(performance.now() * .02);

@@ -39,7 +39,10 @@ pegar export faltando antes de abrir o navegador.
 ## Sistemas em destaque
 
 - **Quatro arquétipos** com ataque básico, Q e R próprios.
-- **Forma Veloz (Núcleo 10X)** com locomoção nas quatro direções.
+- **Duas formas do Núcleo 10X** (tecla `T`): *Forma Veloz* (corrida, 1,8× de
+  velocidade) e *Quebra Sistemas* (ferro denso, 40% mais lenta, cada marretada
+  consome a barra de forma). Ambas com folhas próprias nas quatro direções e
+  ataque básico animado.
 - **Dano por arquétipo**: dano, golpes, recarga, alcance e crítico em
   [`js/data/combat-balance.js`](js/data/combat-balance.js).
 - **Maestria por uso** (sem pontos): ataque, fluxo, eco e locomoção sobem

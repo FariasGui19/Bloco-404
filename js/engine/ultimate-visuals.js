@@ -622,11 +622,96 @@ function horizonte(ctx, d) {
   return true;
 }
 
+// DEVORADOR DE TECTÔNICA — a Ultimate da segunda forma do Núcleo.
+// Diferente de tudo que existe no Núcleo (que é eco, anel e silhueta): aqui é
+// PESO. O corpo triplica, os ombros viram crosta magmática e o soco abre uma
+// fenda permanente na placa do mundo — placas se separando, magma no meio,
+// detritos caindo no abismo digital.
+function tectonica(ctx, d) {
+  const t = d.t;
+  const dir = d.dir ?? { x: 0, y: 1 };
+  const lateral = { x: -dir.y, y: dir.x };
+  // 1) Sombra de massa: o corpo triplicado pesa antes de bater.
+  ctx.globalAlpha = Math.max(0, 1 - t) * .16;
+  ctx.beginPath();
+  ctx.ellipse(d.x, d.y + 2, 34 + t * 44, 15 + t * 18, 0, 0, Math.PI * 2);
+  ctx.fill();
+  // 2) Ombros magmáticos: dois blocos quentes subindo e esfriando.
+  const alturaOmbro = 46 + Math.min(1, t * 2) * 26;
+  for (let lado = -1; lado <= 1; lado += 2) {
+    const bx = d.x + lateral.x * lado * (26 + t * 12);
+    const by = d.y - alturaOmbro + lateral.y * lado * 10;
+    ctx.globalAlpha = Math.max(0, 1 - t) * .55;
+    ctx.fillRect(bx - 11, by - 8, 22, 16);
+    // crosta rachada brilhando
+    ctx.globalAlpha = Math.max(0, 1 - t) * .9;
+    for (let rachadura = 0; rachadura < 3; rachadura++) {
+      ctx.fillRect(bx - 8 + rachadura * 6, by - 6 + (rachadura % 2) * 5, 2, 8);
+    }
+    // fumaça quente subindo do ombro
+    ctx.globalAlpha = Math.max(0, 1 - t) * .2;
+    for (let fumaca = 0; fumaca < 3; fumaca++) {
+      faisca(ctx, bx + (fumaca - 1) * 5, by - 12 - t * 30 - fumaca * 7, 4);
+    }
+  }
+  // 3) A fenda: abre da base do corpo no sentido do golpe.
+  const abertura = clamp01(t * 1.6);
+  const comprimento = 40 + abertura * (150 + (d.radius ?? 5) * 12);
+  const meia = 6 + abertura * 16;
+  ctx.globalAlpha = Math.max(0, 1 - t) * .95;
+  ctx.lineWidth = 2.5;
+  for (let lado = -1; lado <= 1; lado += 2) {
+    ctx.beginPath();
+    for (let i = 0; i <= 14; i++) {
+      const k = i / 14;
+      const tremor = Math.sin(k * 18 + t * 12) * (3 + k * 5);
+      const px = d.x + dir.x * comprimento * k + lateral.x * (lado * meia * k + tremor);
+      const py = d.y + 2 + dir.y * comprimento * k * .5 + lateral.y * (lado * meia * k) + lateral.y * tremor * .4;
+      if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+    }
+    ctx.stroke();
+  }
+  // 4) Magma no fundo da fenda, sumindo conforme esfria.
+  ctx.globalAlpha = Math.max(0, 1 - t) * .5;
+  ctx.beginPath();
+  ctx.moveTo(d.x - lateral.x * meia, d.y + 1 - lateral.y * meia * .4);
+  ctx.lineTo(d.x + dir.x * comprimento, d.y + 2 + dir.y * comprimento * .5);
+  ctx.lineTo(d.x + lateral.x * meia, d.y + 3 + lateral.y * meia * .4);
+  ctx.closePath();
+  ctx.fill();
+  // 5) Placas do mundo se separando: retângulos duros nas bordas da fenda.
+  ctx.globalAlpha = Math.max(0, 1 - t) * .8;
+  for (let placa = 0; placa < 6; placa++) {
+    const k = .25 + (placa / 6) * .8;
+    const lado = placa % 2 === 0 ? -1 : 1;
+    const px = d.x + dir.x * comprimento * k + lateral.x * lado * (meia + 6 + abertura * 10);
+    const py = d.y + 2 + dir.y * comprimento * k * .5 + lateral.y * lado * (meia + 6) * .4;
+    const giro = (placa % 3 - 1) * abertura * .5;
+    ctx.save();
+    ctx.translate(px, py);
+    ctx.rotate(giro);
+    ctx.fillRect(-7, -4, 14, 8);
+    ctx.restore();
+  }
+  // 6) Detritos caindo no abismo (pontos escuros afundando).
+  ctx.globalAlpha = Math.max(0, 1 - t) * .6;
+  for (let detrito = 0; detrito < 8; detrito++) {
+    const k = .2 + (detrito / 8) * .9;
+    const px = d.x + dir.x * comprimento * k + lateral.x * (detrito % 2 ? 1 : -1) * (4 + k * 12);
+    const py = d.y + 4 + dir.y * comprimento * k * .5 + abertura * 10 + (detrito % 3) * 4;
+    faisca(ctx, px, py, 3);
+  }
+  // 7) Onda de choque curta que acompanha a abertura.
+  anel(ctx, d.x + dir.x * 20, d.y - 2 + dir.y * 8, 22 + abertura * 120, 11 + abertura * 56, Math.max(0, 1 - t) * .45, 2);
+  return true;
+}
+
 const SIGNATURES = {
   serra, martelo, cabos, propulsores, forja_dome: forjaDome,
   lamina_vertical: laminaVertical, muralha_hex: muralhaHex, tita, trono, coroa,
   cupula_agua: cupulaAgua, vortice, chicote, sonar, estuario,
-  tempo, punho_eco: punhoEco, fenda, sobreposicao, horizonte,
+  tempo, fenda, sobreposicao, horizonte,
+  tectonica,
 };
 
 export const ULTIMATE_SIGNATURES = Object.freeze(Object.keys(SIGNATURES));

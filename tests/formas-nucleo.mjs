@@ -36,13 +36,13 @@ function novoPlayer(extra = {}) {
 }
 
 // ---------------------------------------------------------------
-// Catálogo: uma forma jogável, três em projeto
+// Catálogo: duas formas jogáveis, duas em projeto
 // ---------------------------------------------------------------
 const formas = getTools(NUCLEO);
 assert.equal(formas.length, 4, 'quatro formas desenhadas');
 const joggaveis = formas.filter(forma => forma.playable !== false);
-assert.deepEqual(joggaveis.map(forma => forma.id), ['nucleo_veloz'], 'só a forma veloz existe em jogo');
-for (const forma of formas.filter(item => item.id !== 'nucleo_veloz')) {
+assert.deepEqual(joggaveis.map(forma => forma.id), ['nucleo_veloz', 'nucleo_bruto'], 'Veloz e Quebra Sistemas existem em jogo');
+for (const forma of formas.filter(item => !joggaveis.includes(item))) {
   assert.equal(forma.playable, false, `${forma.id}: forma futura`);
   assert.equal(forma.project, 'FORMA EM PROJETO', `${forma.id}: rótulo de projeto`);
   assert(forma.ultimate?.id, `${forma.id}: Ultimate já desenhada no dado`);
@@ -50,7 +50,7 @@ for (const forma of formas.filter(item => item.id !== 'nucleo_veloz')) {
 
 const progress = novoProgress();
 const listadas = listTools(progress);
-assert.equal(listadas.filter(item => item.playable).length, 1);
+assert.equal(listadas.filter(item => item.playable).length, 2);
 for (const item of listadas.filter(forma => !forma.playable)) {
   assert.equal(item.locked, true, `${item.id}: não instalável`);
   assert.equal(selectTool(progress, item.id), null, `${item.id}: instalação recusada`);

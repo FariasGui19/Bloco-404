@@ -162,6 +162,13 @@ await loadSprites([
   { id: 'player_bio_ataque_frontal', src: 'assets/sprites/player/player-bio-ataque-frontal.png' },
   { id: 'player_10x_q', src: 'assets/sprites/player/player-10x-q.png' },
   { id: 'player_10x_r', src: 'assets/sprites/player/player-10x-r.png' },
+  // Segunda forma do Núcleo 10X — QUEBRA SISTEMAS (tools/preparar-quebra-sistemas.py).
+  { id: 'player_10x_bruta_parado', src: 'assets/sprites/player/player-10x-bruta-parado.png' },
+  { id: 'player_10x_bruta_andar_frente', src: 'assets/sprites/player/player-10x-bruta-andar-frente.png' },
+  { id: 'player_10x_bruta_andar_costas', src: 'assets/sprites/player/player-10x-bruta-andar-costas.png' },
+  { id: 'player_10x_bruta_andar_lateral', src: 'assets/sprites/player/player-10x-bruta-andar-lateral.png' },
+  { id: 'player_10x_bruta_ataque_lateral', src: 'assets/sprites/player/player-10x-bruta-ataque-lateral.png' },
+  { id: 'player_10x_bruta_ataque_frente', src: 'assets/sprites/player/player-10x-bruta-ataque-frente.png' },
   {
     id: 'elevator_door',
     src: 'assets/sprites/objects/elevator-door.png',

@@ -161,12 +161,15 @@ export const ARCHETYPE_TREES = Object.freeze({
           Object.freeze({ name: 'Eco de formas velozes', state: 'projeto' }),
         ]),
       }),
+      // Segunda forma jogável (T → Quebra Sistemas): a árvore diz o que já
+      // existe e o que ainda é horizonte, sem inflar o que está pronto.
       Object.freeze({
         id: 'bruta',
-        name: 'FORMA BRUTA',
-        state: 'projeto',
+        name: 'QUEBRA SISTEMAS',
+        state: 'pronto',
         nodes: Object.freeze([
-          Object.freeze({ name: 'Impacto de Eco', state: 'projeto', note: 'Ultimate desenhada, sem transformação ainda' }),
+          Object.freeze({ name: 'Demolição de peso', state: 'pronto', note: 'Golpe carregado abre portões travados por peso' }),
+          Object.freeze({ name: 'Devorador de Tectônica', state: 'pronto', note: 'Ultimate · fenda no chão · exige a forma ativa' }),
           Object.freeze({ name: 'Empurrar estruturas', state: 'projeto' }),
           Object.freeze({ name: 'Resistência a impacto', state: 'projeto' }),
         ]),

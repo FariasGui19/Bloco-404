@@ -23,6 +23,7 @@ import {
 import { moveWithCollision } from './collision.js';
 import { getDerivedStats } from './rpg.js';
 import { recordMastery } from './mastery.js';
+import { NUCLEO_FORMS, NUCLEO_VELOZ, getFormSpeedMultiplier } from '../data/nucleo-forms.js';
 
 const CLICK_SNAP_DIST = 1.0;
 // Aplicado apenas à locomoção da forma sustentada, não ao Q nem a trajes.
@@ -30,12 +31,18 @@ export const VELOZ_SPEED_MULTIPLIER = 1.8;
 
 // A maestria de locomoção soma velocidade. A Forma Veloz tem ainda o próprio
 // bônus cinético, que cresce conforme o jogador corre, anda e dá dash nela.
+// A Quebra Sistemas carrega a inércia extrema no dado da forma: multiplicador
+// abaixo de 1, aplicado do mesmo jeito (nada de número solto no renderer).
 export function getPlayerMoveSpeed(progress, player) {
   const stats = getDerivedStats(progress, player);
   if (!stats) return CONFIG.PLAYER_SPEED;
-  const veloz = progress?.archetype === 'nucleo_dez_forma' && player?.nucleoForm === 'forma_veloz';
+  const form = progress?.archetype === 'nucleo_dez_forma'
+    ? NUCLEO_FORMS[player?.nucleoForm] ?? null
+    : null;
+  const veloz = form?.id === NUCLEO_VELOZ;
   const mastery = 1 + stats.moveSpeedPct + (veloz ? stats.formSpeedPct : 0);
-  return CONFIG.PLAYER_SPEED * (veloz ? VELOZ_SPEED_MULTIPLIER : 1) * mastery;
+  const formMultiplier = veloz ? VELOZ_SPEED_MULTIPLIER : getFormSpeedMultiplier(form);
+  return CONFIG.PLAYER_SPEED * formMultiplier * mastery;
 }
 
 // Distância é acumulada e enviada em blocos para não recalcular maestria

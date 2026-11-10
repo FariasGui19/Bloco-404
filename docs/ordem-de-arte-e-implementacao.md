@@ -7,7 +7,35 @@ Gerar e implementar **exatamente duas folhas/imagens por atualização**, seguin
 3. Estação Bio / Bio-Forja (rodadas 0.3.5 e 0.3.6)
 4. Folha de sprites do Bolt (prévia opt-in, sem concessão automática)
 
-## Rodada atual (0.5.0): HUD enxuta, liberação por nível e execução da Ultimate
+## Rodada 0.6.1 — segunda forma do Núcleo 10X (Quebra Sistemas)
+
+Seis folhas de personagem novas, todas da mesma criatura original do jogador
+(bípede de ferro sem cabeça, núcleo âmbar, marretas telescópicas):
+
+1. `assets/source-art/nucleo/quebra-sistemas-turnaround.png` → pose parada
+   direcional (frente, direita, costas, esquerda).
+2. `quebra-sistemas-andar.png` → 4 passos de frente e 4 de costas (costas usa
+   duas fases alternadas: a arte original só tem duas vistas traseiras limpas).
+3. `quebra-corrida-faixa.png` → 4 passos de perfil virados à direita.
+4. `quebra-ataque-faixa.png` → marreta lateral em 4 fases (preparo → impacto).
+5. `quebra-ataque-frente-faixa.png` → marreta com as duas mãos, de frente.
+
+`tools/preparar-quebra-sistemas.py` remove o magenta, encontra as figuras sem
+confiar em grade fixa, normaliza altura/apoio e grava 256 px por célula. Nada
+de pose estática fingindo animação: a vista de costas do ataque usa a pose
+traseira e uma onda de choque procedural, porque ainda não existe folha
+própria para o golpe de costas.
+
+A Ultimate da forma tem assinatura própria (`tectonica`), com fenda e placas
+se separando; a `punho_eco` do Impacto de Eco saiu do catálogo visual para o
+Núcleo não ter duas formas desenhando o mesmo soco.
+
+**Ainda pendente:** ataque de costas da Quebra, som de pistões, destruição
+permanente de geometria do mapa (a Ultimate desenha a fenda e o dano radial,
+mas não altera o layout) e três folhas de execução de Ultimate por arquétipo
+(Bio, Domínio, Maré e Núcleo), que continuam na fila.
+
+## Rodada anterior (0.5.0): HUD enxuta, liberação por nível e execução da Ultimate
 
 Três frentes, nenhuma folha de sprite nova:
 

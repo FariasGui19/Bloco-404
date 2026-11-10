@@ -5,7 +5,8 @@
 // com pontos escolhidos. Aqui ficam só XP, nível e a soma dos bônus de
 // maestria em cima do perfil de combate do arquétipo.
 // =====================================================================
-import { COMBAT_BALANCE, ARCHETYPE_VITALS, getCombatProfile } from '../data/combat-balance.js';
+import { COMBAT_BALANCE, ARCHETYPE_VITALS, getCombatProfile, getFormCombatProfile } from '../data/combat-balance.js';
+import { NUCLEO_FORMS, NUCLEO_VELOZ } from '../data/nucleo-forms.js';
 import { ensureArchetypeProgress } from './progression.js';
 import { getMasteryBonuses } from './mastery.js';
 
@@ -60,25 +61,36 @@ export function grantArchetypeXp(progress, amount, archetype = progress?.archety
 export function getDerivedStats(progress, player = null, archetype = progress?.archetype) {
   const profile = getCombatProfile(archetype);
   if (!profile) return null;
+  // Forma sustentada com gesto próprio (Quebra Sistemas) troca rótulo,
+  // recarga, alcance e strain — o dano continua vindo do mesmo arquétipo.
+  const formProfile = getFormCombatProfile(player?.nucleoForm);
   const level = getArchetypeLevel(progress, archetype);
   const mastery = getMasteryBonuses(progress, archetype);
   // Bônus de Ultimate: temporário, vive no runtime do jogador (nunca no save).
   const buff = player?.ultimate?.buff?.timeLeft > 0 ? player.ultimate.buff : null;
 
-  const formMult = profile.formMult && player?.nucleoForm === 'forma_veloz' ? profile.formMult : 1;
+  // Cada forma tem o próprio peso no dano básico: a Veloz multiplica o pulso,
+  // a Quebra Sistemas troca o golpe por impacto de marreta (form.damageMult).
+  const form = NUCLEO_FORMS[player?.nucleoForm] ?? null;
+  const formMult = form
+    ? (profile.formMult ?? 1) * (form.form?.damageMult ?? 1)
+    : 1;
   const baseDamage = profile.damage * (1 + profile.perLevel * (level - 1));
   const vitals = ARCHETYPE_VITALS[archetype] ?? { health: 100 };
   return {
     archetype,
     level,
-    label: profile.label,
-    color: profile.color,
+    label: formProfile?.label ?? profile.label,
+    color: formProfile?.color ?? profile.color,
     hits: profile.hits,
-    range: profile.range,
+    range: formProfile?.range ?? profile.range,
+    windup: formProfile?.windup ?? 0,
+    strain: formProfile?.strain ?? profile.strain,
+    formId: formProfile ? player.nucleoForm : null,
     basicDamage: baseDamage * (1 + mastery.basicDamagePct) * (1 + (buff?.basicDamagePct ?? 0)) * formMult,
     critChance: Math.min(.75, profile.crit + mastery.critChance),
     critMult: profile.critMult,
-    cooldown: profile.cooldown * Math.max(.4, 1 - Math.min(.6, mastery.cooldownPct)),
+    cooldown: (formProfile?.cooldown ?? profile.cooldown) * Math.max(.4, 1 - Math.min(.6, mastery.cooldownPct)),
     cooldownPct: Math.min(.6, mastery.cooldownPct),
     energyRegen: mastery.energyRegen,
     abilityDamagePct: mastery.abilityDamagePct,

@@ -17,3 +17,7 @@ function loadSprite(id, src) {
 export function getSprite(id) {
   return sprites.get(id) ?? null;
 }
+
+// Vitrine: a roda do Núcleo desenha um quadro de folha dentro de um <canvas>.
+// Em vez de expor o Map inteiro, o carregador publica um leitor só de consulta.
+if (typeof window !== 'undefined') window.__blocoSprites = Object.freeze({ get: getSprite });

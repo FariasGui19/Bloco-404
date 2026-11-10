@@ -27,6 +27,7 @@ import { openGate, checkGate, isGateOpen } from './gates.js';
 import { saveGame } from './save.js';
 import { getDerivedStats } from './rpg.js';
 import { recordMastery } from './mastery.js';
+import { NUCLEO_FORMS } from '../data/nucleo-forms.js';
 
 // ---------------------------------------------------------------------
 // CONFIGURAÇÃO INTERNA DE HABILIDADES
@@ -64,6 +65,7 @@ export function getAbilityLabel(abilityId) {
     bio_dash: 'PROPULSOR DE IMPULSO',
     bio_diagnostic: 'LINK DE DIAGNÓSTICO',
     forma_veloz: 'PULSO VELOZ',
+    pancada_quebra: 'PANCADA DE PESO',
     eco_scan: 'LEITURA DE ECO',
     golpe_ruptura: 'GOLPE DE RUPTURA',
     postura_dominio: 'LEITURA DE FREQUÊNCIA',
@@ -265,6 +267,52 @@ function updateBioDash(dt) {
 }
 
 // ---------------------------------------------------------------------
+// PANCADA DE PESO — o "Q" da Quebra Sistemas
+//
+// Sem teleporte e sem atravessar parede: o corpo só se desloca se o caminho
+// estiver livre, e o golpe tem preparação longa (a forma sente o peso).
+// ---------------------------------------------------------------------
+export const BRUTA_SMASH = Object.freeze({
+  id: 'pancada_quebra',
+  cost: 20,
+  cooldown: 2.2,
+  // 0,55 s de preparação antes da marreta descer.
+  windup: .55,
+  reach: 1.7,
+  damageMult: 1.4,
+  knockback: 1.4,
+});
+
+function tryBrutaSmash(player) {
+  const perfil = BRUTA_SMASH;
+  if ((player.ability.cooldowns[perfil.id] ?? 0) > 0) {
+    showAbilityMessage('PISTÕES RECARREGANDO');
+    return true;
+  }
+  if (player.energy < perfil.cost) {
+    showAbilityMessage('ENERGIA INSUFICIENTE');
+    return true;
+  }
+  // Preparação: o corpo trava, o golpe básico dura mais e o dano sai no fim
+  // (o combate básico já aplica o dano quando a marreta desce).
+  player.ability.cooldowns[perfil.id] = perfil.cooldown;
+  recordMastery(state.progress, 'ability_use');
+  const form = NUCLEO_FORMS[player.nucleoForm];
+  player.energy -= perfil.cost;
+  player.ability.effect = {
+    id: perfil.id,
+    color: form?.color ?? '#ffc94a',
+    duration: perfil.windup,
+    timeLeft: perfil.windup,
+    form: player.nucleoForm,
+  };
+  player.moving = false;
+  player.target = null;
+  showAbilityMessage('PANCADA DE PESO • PREPARANDO');
+  return true;
+}
+
+// ---------------------------------------------------------------------
 // UPDATE GERAL
 //
 // Retorna true se o player está executando habilidade de movimento
@@ -329,6 +377,12 @@ export function updateAbilities(dt) {
   // Não faz nada sem módulo.
   if (!state.progress.archetype) {
     return false;
+  }
+
+  // Forma de força bruta: a marreta SUBSTITUI o pulso de arrancada. Não é um
+  // dash — é preparação longa e impacto que derruba estruturas por peso.
+  if (pressed('q', 'keyq') && player.nucleoForm === 'forma_bruta') {
+    return tryBrutaSmash(player);
   }
 
   // Q = habilidade primária.

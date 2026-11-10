@@ -1,12 +1,13 @@
 // =====================================================================
-// NÚCLEO DE RPG — nível, XP, pontos e efeitos da árvore
+// NÚCLEO DE RPG — nível, XP e estatísticas derivadas
 //
-// Funções puras sobre `progress`: nada aqui desenha, salva ou mexe no
-// loop. O save guarda apenas números pequenos em archetypeProgress[arch].
+// A progressão de poder é orgânica: sobe com o uso (ver mastery.js), não
+// com pontos escolhidos. Aqui ficam só XP, nível e a soma dos bônus de
+// maestria em cima do perfil de combate do arquétipo.
 // =====================================================================
 import { COMBAT_BALANCE, ARCHETYPE_VITALS, getCombatProfile } from '../data/combat-balance.js';
-import { getProgressionTree, getTreeNode } from '../data/progression-tree.js';
 import { ensureArchetypeProgress } from './progression.js';
+import { getMasteryBonuses } from './mastery.js';
 
 export const MAX_LEVEL = 20;
 
@@ -17,25 +18,14 @@ export function xpToNext(level) {
   return Math.round(40 * Math.pow(1.2, safe - 1));
 }
 
-export function getArchetypeKit(progress, archetype = progress?.archetype) {
-  if (!archetype || !Object.hasOwn(COMBAT_BALANCE, archetype)) return null;
-  ensureArchetypeProgress(progress, archetype);
-  return progress.archetypeProgress?.[archetype] ?? null;
-}
-
 export function getArchetypeLevel(progress, archetype = progress?.archetype) {
   const level = progress?.archetypeProgress?.[archetype]?.level;
   return Number.isInteger(level) && level >= 1 ? Math.min(MAX_LEVEL, level) : 1;
 }
 
-export function getTreePoints(progress, archetype = progress?.archetype) {
-  const points = progress?.archetypeProgress?.[archetype]?.points;
-  return Number.isInteger(points) && points > 0 ? points : 0;
-}
-
-export function getNodeRank(progress, archetype, nodeId) {
-  const rank = progress?.archetypeProgress?.[archetype]?.nodes?.[nodeId];
-  return Number.isInteger(rank) && rank > 0 ? rank : 0;
+export function getArchetypeXp(progress, archetype = progress?.archetype) {
+  const xp = progress?.archetypeProgress?.[archetype]?.xp;
+  return Number.isFinite(xp) && xp > 0 ? xp : 0;
 }
 
 // ---------------------------------------------------------------------
@@ -43,7 +33,7 @@ export function getNodeRank(progress, archetype, nodeId) {
 // ---------------------------------------------------------------------
 // Devolve o que mudou para a HUD/feedback poder comemorar sem recalcular.
 export function grantArchetypeXp(progress, amount, archetype = progress?.archetype) {
-  const result = { gained: 0, levels: 0, points: 0, level: getArchetypeLevel(progress, archetype), xp: 0 };
+  const result = { gained: 0, levels: 0, level: getArchetypeLevel(progress, archetype), xp: 0 };
   if (!archetype || !Object.hasOwn(COMBAT_BALANCE, archetype)) return result;
   if (!Number.isFinite(amount) || amount <= 0) return result;
   ensureArchetypeProgress(progress, archetype);
@@ -56,41 +46,12 @@ export function grantArchetypeXp(progress, amount, archetype = progress?.archety
   while (kit.level < MAX_LEVEL && kit.xp >= xpToNext(kit.level)) {
     kit.xp -= xpToNext(kit.level);
     kit.level += 1;
-    kit.points = (kit.points ?? 0) + 1;
     result.levels += 1;
-    result.points += 1;
   }
   if (kit.level >= MAX_LEVEL) kit.xp = Math.min(kit.xp, xpToNext(MAX_LEVEL - 1));
   result.level = kit.level;
   result.xp = kit.xp;
   return result;
-}
-
-// ---------------------------------------------------------------------
-// ÁRVORE
-// ---------------------------------------------------------------------
-export function canRankNode(progress, nodeId, archetype = progress?.archetype) {
-  const node = getTreeNode(archetype, nodeId);
-  if (!node) return { ok: false, reason: 'nó inexistente' };
-  const rank = getNodeRank(progress, archetype, nodeId);
-  if (rank >= node.maxRank) return { ok: false, reason: 'rank máximo' };
-  if (node.requires && getNodeRank(progress, archetype, node.requires.node) < node.requires.rank) {
-    return { ok: false, reason: 'requisito não cumprido' };
-  }
-  const cost = node.cost[rank] ?? node.cost[node.cost.length - 1];
-  if (getTreePoints(progress, archetype) < cost) return { ok: false, reason: 'pontos insuficientes' };
-  return { ok: true, cost, rank };
-}
-
-export function rankNode(progress, nodeId, archetype = progress?.archetype) {
-  const check = canRankNode(progress, nodeId, archetype);
-  if (!check.ok) return { ...check, ranked: false };
-  ensureArchetypeProgress(progress);
-  const kit = progress.archetypeProgress[archetype];
-  kit.points -= check.cost;
-  kit.nodes ??= {};
-  kit.nodes[nodeId] = check.rank + 1;
-  return { ok: true, ranked: true, rank: check.rank + 1, cost: check.cost };
 }
 
 // ---------------------------------------------------------------------
@@ -100,21 +61,7 @@ export function getDerivedStats(progress, player = null, archetype = progress?.a
   const profile = getCombatProfile(archetype);
   if (!profile) return null;
   const level = getArchetypeLevel(progress, archetype);
-  const nodes = progress?.archetypeProgress?.[archetype]?.nodes ?? {};
-
-  let basicDamagePct = 0, critChance = 0, cooldownPct = 0;
-  let energyRegen = 0, abilityDamagePct = 0, xpBonusPct = 0;
-  for (const node of getProgressionTree(archetype)) {
-    const rank = nodes[node.id] ?? 0;
-    if (rank <= 0) continue;
-    const effects = node.effects;
-    basicDamagePct += (effects.basicDamagePct ?? 0) * rank;
-    critChance += (effects.critChance ?? 0) * rank;
-    cooldownPct += (effects.cooldownPct ?? 0) * rank;
-    energyRegen += (effects.energyRegen ?? 0) * rank;
-    abilityDamagePct += (effects.abilityDamagePct ?? 0) * rank;
-    xpBonusPct += (effects.xpBonusPct ?? 0) * rank;
-  }
+  const mastery = getMasteryBonuses(progress, archetype);
 
   const formMult = profile.formMult && player?.nucleoForm === 'forma_veloz' ? profile.formMult : 1;
   const baseDamage = profile.damage * (1 + profile.perLevel * (level - 1));
@@ -126,15 +73,19 @@ export function getDerivedStats(progress, player = null, archetype = progress?.a
     color: profile.color,
     hits: profile.hits,
     range: profile.range,
-    basicDamage: baseDamage * (1 + basicDamagePct) * formMult,
-    critChance: Math.min(.75, profile.crit + critChance),
+    basicDamage: baseDamage * (1 + mastery.basicDamagePct) * formMult,
+    critChance: Math.min(.75, profile.crit + mastery.critChance),
     critMult: profile.critMult,
-    cooldown: profile.cooldown * Math.max(.4, 1 - Math.min(.6, cooldownPct)),
-    cooldownPct: Math.min(.6, cooldownPct),
-    energyRegen,
-    abilityDamagePct,
-    xpBonusPct,
+    cooldown: profile.cooldown * Math.max(.4, 1 - Math.min(.6, mastery.cooldownPct)),
+    cooldownPct: Math.min(.6, mastery.cooldownPct),
+    energyRegen: mastery.energyRegen,
+    abilityDamagePct: mastery.abilityDamagePct,
+    xpBonusPct: mastery.xpBonusPct,
+    moveSpeedPct: mastery.moveSpeedPct,
+    formSpeedPct: mastery.formSpeedPct,
+    formDuration: mastery.formDuration,
     maxHealth: vitals.health + (level - 1) * 8,
+    mastery,
   };
 }
 

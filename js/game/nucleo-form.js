@@ -1,17 +1,21 @@
 // Estado apenas de sessão: não concede módulos nem muda o esquema do save.
+// A duração base cresce com a maestria CINÉTICA (ver data/mastery.js).
+import { getDerivedStats } from './rpg.js';
+import { recordMastery } from './mastery.js';
+
 export const NUCLEO_FORM_DURATION = 30;
 export const NUCLEO_FORM_RECHARGE = 8;
 
-function changeForm(player, activating) {
+function changeForm(player, activating, duration = NUCLEO_FORM_DURATION) {
   player.ability ??= { cooldowns: {} };
   player.nucleoRuntime ??= { remaining: 0, recharge: 0 };
   player.nucleoForm = activating ? 'forma_veloz' : null;
-  player.nucleoRuntime.remaining = activating ? NUCLEO_FORM_DURATION : 0;
+  player.nucleoRuntime.remaining = activating ? duration : 0;
   player.nucleoRuntime.recharge = activating ? 0 : NUCLEO_FORM_RECHARGE;
   player.moving = false;
   player.target = null;
   player.ability.effect = { id: 'transformacao_10x', color: '#6bff92', duration: 1.05, timeLeft: 1.05, activating };
-  player.ability.lastMessage = activating ? 'FORMA VELOZ ATIVADA • 30s' : 'RETORNO AO OPERADOR • RECARGA 8s';
+  player.ability.lastMessage = activating ? `FORMA VELOZ ATIVADA • ${Math.round(duration)}s` : 'RETORNO AO OPERADOR • RECARGA 8s';
   player.ability.messageTimer = 2;
 }
 
@@ -19,7 +23,12 @@ export function toggleNucleoForm(progress, player) {
   if (progress?.archetype !== 'nucleo_dez_forma' || !progress.abilities?.includes('forma_veloz') || !player || player.ability?.dash || player.ability?.effect?.id === 'transformacao_10x') return false;
   const activating = player.nucleoForm !== 'forma_veloz';
   if (activating && (player.nucleoRuntime?.recharge ?? 0) > 0) return false;
-  changeForm(player, activating);
+  const stats = getDerivedStats(progress, player);
+  changeForm(player, activating, NUCLEO_FORM_DURATION + (stats?.formDuration ?? 0));
+  if (activating) {
+    const rankUps = recordMastery(progress, 'ability_use');
+    if (rankUps.length) player.ability.lastMessage = `MAESTRIA • ${rankUps.map(up => up.label).join(' + ')}`;
+  }
   return true;
 }
 

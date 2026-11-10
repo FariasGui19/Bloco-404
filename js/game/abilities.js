@@ -26,6 +26,7 @@ import { tryArchetypePower, POWER_PROFILES } from './archetype-powers.js';
 import { openGate, checkGate, isGateOpen } from './gates.js';
 import { saveGame } from './save.js';
 import { getDerivedStats } from './rpg.js';
+import { recordMastery } from './mastery.js';
 
 // ---------------------------------------------------------------------
 // CONFIGURAÇÃO INTERNA DE HABILIDADES
@@ -167,6 +168,8 @@ function tryStartBioDash() {
   player.energy -= profile.energyCost;
 
   ability.cooldowns.bio_dash = profile.cooldown;
+  recordMastery(state.progress, 'distance', 6); // o dash também treina locomoção
+  recordMastery(state.progress, 'ability_use');
 
   ability.active = 'bio_dash';
 

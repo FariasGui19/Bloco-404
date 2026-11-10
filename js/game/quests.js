@@ -7,6 +7,7 @@
 // =====================================================================
 import { getQuest } from '../data/quests.js';
 import { grantArchetypeXp } from './rpg.js';
+import { recordMastery } from './mastery.js';
 
 // `create` separa leitura (diário) de escrita (início/evento): abrir o
 // diário não pode alterar o save.
@@ -62,19 +63,11 @@ export function isQuestComplete(progress, id) {
 
 function grantRewards(progress, quest) {
   const rewards = quest.rewards ?? {};
-  const granted = { xp: 0, levels: 0, points: 0, items: [], flags: [] };
+  const granted = { xp: 0, levels: 0, items: [], flags: [], mastery: [] };
   if (rewards.xp) {
     const xp = grantArchetypeXp(progress, rewards.xp);
     granted.xp = xp.gained;
     granted.levels = xp.levels;
-    granted.points += xp.points;
-  }
-  if (rewards.points) {
-    const kit = progress.archetypeProgress?.[progress.archetype];
-    if (kit) {
-      kit.points = (kit.points ?? 0) + rewards.points;
-      granted.points += rewards.points;
-    }
   }
   progress.inventory ??= [];
   for (const item of rewards.items ?? []) {
@@ -117,6 +110,11 @@ export function recordQuestEvent(progress, event) {
     if (quest.objectives.every((objective, index) => (entry.counters[index] ?? 0) >= objective.count)) {
       entry.status = 'completed';
       const rewards = entry.claimed ? null : grantRewards(progress, quest);
+      if (!entry.claimed) {
+        // Concluir missão alimenta a trilha de eco do arquétipo.
+        const rankUps = recordMastery(progress, 'resonance', 2);
+        if (rewards) rewards.mastery = rankUps;
+      }
       entry.claimed = true;
       progress.completedQuests ??= [];
       if (!progress.completedQuests.includes(id)) progress.completedQuests.push(id);

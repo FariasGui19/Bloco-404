@@ -6,6 +6,7 @@ import { CONFIG } from '../config.js';
 import { ABILITY_DAMAGE, COMBAT_BALANCE, TRAINING_TARGET_XP, TRAINING_XP_LEVEL_CAP } from '../data/combat-balance.js';
 import { getArchetypeLevel, getDerivedStats, grantArchetypeXp, rollBasicAttack } from './rpg.js';
 import { recordQuestEvent } from './quests.js';
+import { recordMastery } from './mastery.js';
 import { pushCombatText, updateCombatFeedback } from './combat-feedback.js';
 
 // Compatibilidade: HUD e testes antigos leem rótulo e strain daqui.
@@ -64,15 +65,24 @@ export function applyAttackDamage(target, roll) {
 
 // Vitória sobre um alvo de treino: XP até o teto, missão contada, mensagem.
 // Usado pelo ataque básico e pelas habilidades de impacto.
+function applyMasteryRankUps(player, rankUps) {
+  if (!rankUps.length) return;
+  player.ability ??= {};
+  player.ability.lastMessage = `MAESTRIA • ${rankUps.map(up => up.label).join(' + ')}`;
+  player.ability.messageTimer = 3;
+}
+
 function registerDefeat(player, progress, target) {
   let xp = 0;
+  // Vitória conta para o eco do arquétipo (maestria), não gasta ponto nenhum.
+  applyMasteryRankUps(player, recordMastery(progress, 'resonance'));
   if (getDerivedStats(progress) && getArchetypeLevel(progress) < TRAINING_XP_LEVEL_CAP) {
     const gained = grantArchetypeXp(progress, TRAINING_TARGET_XP);
     xp = gained.gained;
     pushCombatText(target.x, target.y - .55, `+${xp} XP`, { color: '#9af9c8', kind: 'xp', duration: 1.2 });
     if (gained.levels > 0) {
       player.ability ??= {};
-      player.ability.lastMessage = `NÍVEL ${gained.level} • ${gained.points} PONTO DE ÁRVORE`;
+      player.ability.lastMessage = `NÍVEL ${gained.level} • ${getDerivedStats(progress).maxHealth} VIDA MÁXIMA`;
       player.ability.messageTimer = 2.4;
     }
   }
@@ -175,6 +185,7 @@ export function tryBasicAttack({ player, progress, map, targets, point, rng = Ma
   if (best) {
     player.combat.damage = roll.total;
     player.combat.crit = roll.crit;
+    applyMasteryRankUps(player, recordMastery(progress, 'basic_hit'));
     const outcome = applyAttackDamage(best, roll);
     // Um número por golpe dá leitura de ritmo a ataques múltiplos como a Maré.
     roll.hits.forEach((value, index) => {

@@ -22,8 +22,8 @@ assert.equal(behind.health, 60, 'habilidade não acerta atrás do operador');
 assert.equal(tryAbilityDamage({ player, progress, targets: [front], abilityId: 'eco_scan' }), null);
 assert.equal(tryAbilityDamage({ player, progress, targets: [], abilityId: 'golpe_ruptura' }), null);
 
-// Investir na árvore aumenta o dano das habilidades.
-const tree = { archetype: 'lamina_dominio_anciao', archetypeProgress: { lamina_dominio_anciao: { level: 1, xp: 0, points: 0, nodes: { eco_1: 3 } } } };
+// Maestria de eco (conquistada com uso) aumenta o dano das habilidades.
+const tree = { archetype: 'lamina_dominio_anciao', archetypeProgress: { lamina_dominio_anciao: { level: 1, xp: 0, mastery: { eco: 20 } } } };
 const treeStats = getDerivedStats(tree);
 assert(treeStats.abilityDamagePct > 0);
 const targetA = { x: 6.5, y: 3.5, health: 60, maxHealth: 60 };

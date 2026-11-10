@@ -1,0 +1,361 @@
+// =====================================================================
+// CÓDEX DE ROTAS
+//
+// Substitui o antigo diário monolítico por quatro abas independentes:
+// MISSÕES · PROGRESSÃO · INVENTÁRIO · ATRIBUTOS.
+//
+// Abrir o Códex nunca altera o progresso: leitura é pura. As únicas ações
+// são as que já existiam (testar companheiros) e elas salvam de propósito.
+// =====================================================================
+import { saveGame } from '../game/save.js';
+import { activateCompanion } from '../game/companion-progress.js';
+import { ARCHETYPES } from '../data/onboarding.js';
+import { getArchetypeLevel, getArchetypeXp, getDerivedStats, xpToNext } from '../game/rpg.js';
+import { getMasteryState, getMasterySummary } from '../game/mastery.js';
+import { listTrackedQuests } from '../game/quests.js';
+import { getItem, listInventory } from '../data/items.js';
+
+const ICONS = 'assets/sprites/ui/codex/icone-';
+
+const TABS = Object.freeze([
+  { id: 'missoes', label: 'MISSÕES', icon: 'missoes' },
+  { id: 'progressao', label: 'PROGRESSÃO', icon: 'progressao' },
+  { id: 'inventario', label: 'INVENTÁRIO', icon: 'inventario' },
+  { id: 'atributos', label: 'ATRIBUTOS', icon: 'vitais' },
+]);
+
+let overlay = null;
+let opened = false;
+let currentTab = 'missoes';
+let currentSelection = null; // item selecionado no inventário
+let context = { progress: null, map: null, player: null };
+
+const icon = (name, className = 'codex-icon') =>
+  `<img class="${className}" src="${ICONS}${name}.png" alt="" aria-hidden="true" draggable="false">`;
+
+const pct = value => `${Math.round(Math.max(0, Math.min(1, value)) * 100)}%`;
+
+function escapeHtml(value) {
+  return String(value ?? '').replace(/[&<>"']/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char]));
+}
+
+// ---------------------------------------------------------------------
+// ABAS
+// ---------------------------------------------------------------------
+function renderTabs() {
+  return `<nav class="codex-tabs" role="tablist" aria-label="Seções do Códex">
+    ${TABS.map((tab, index) => `<button type="button" role="tab" class="codex-tab${tab.id === currentTab ? ' active' : ''}"
+      id="codexTab-${tab.id}" aria-selected="${tab.id === currentTab}" aria-controls="codexPanel" data-tab="${tab.id}">
+      ${icon(tab.icon, 'codex-tab-icon')}
+      <span>${tab.label}</span>
+      <kbd>${index + 1}</kbd>
+    </button>`).join('')}
+  </nav>`;
+}
+
+function renderMissions(progress, map) {
+  const quest = progress?.activeQuest;
+  const main = quest
+    ? `<article class="codex-quest codex-quest-main">
+         <header><span class="codex-tag">PRINCIPAL</span><strong>${escapeHtml(quest.title ?? 'MISSÃO')}</strong></header>
+         <p>${escapeHtml(quest.description ?? 'Sem descrição.')}</p>
+       </article>`
+    : `<article class="codex-quest codex-quest-empty"><strong>NENHUMA MISSÃO PRINCIPAL</strong><p>Fale com o NEXO-04 no saguão para receber sua primeira rota.</p></article>`;
+
+  const tracked = listTrackedQuests(progress);
+  const cards = tracked.length
+    ? tracked.map(entry => {
+      const objectives = entry.objectives.map(objective => {
+        const ratio = objective.count ? objective.current / objective.count : 0;
+        return `<li class="${objective.done ? 'done' : ''}">
+          <span>${escapeHtml(objective.label)}</span>
+          <span class="codex-quest-count">${objective.current}/${objective.count}</span>
+          <i class="codex-quest-bar"><b style="width:${pct(ratio)}"></b></i>
+        </li>`;
+      }).join('');
+      return `<article class="codex-quest ${entry.status}">
+        <header><span class="codex-tag">${entry.status === 'completed' ? 'CONCLUÍDA' : 'ATIVA'}</span></header>
+        <ul>${objectives}</ul>
+      </article>`;
+    }).join('')
+    : `<article class="codex-quest codex-quest-empty"><strong>SEM MISSÕES CONTÁVEIS</strong><p>As rotas paralelas aparecem aqui conforme você as encontra.</p></article>`;
+
+  const flags = progress?.flags ?? {};
+  const found = ['mar', 'pedra', 'mata'].filter(id => flags[`collected_enseada_rastro_${id}`]).length;
+  const exploration = `<article class="codex-quest codex-quest-side">
+      <header><span class="codex-tag">EXPLORAÇÃO</span><strong>ENSEADA DOS ECOS</strong></header>
+      <p>${map?.id === 'ilha_enseada_ecos' || found > 0
+        ? `Vestígios registrados: ${found}/3.`
+        : 'A Enseada ainda não foi mapeada.'}</p>
+      ${flags.companheiro_lumeo ? '<p class="codex-note">LÚMEO ACOMPANHA VOCÊ.</p>' : ''}
+    </article>`;
+
+  return `<section class="codex-section" aria-label="Missões">
+    <div class="codex-columns">
+      <div class="codex-column">${main}${cards}</div>
+      <aside class="codex-column codex-column-side">${exploration}</aside>
+    </div>
+  </section>`;
+}
+
+function masteryPips(rank, maxRank) {
+  return `<span class="codex-pips" aria-hidden="true">${Array.from({ length: maxRank }, (_, index) => `<i class="${index < rank ? 'filled' : ''}"></i>`).join('')}</span>`;
+}
+
+function renderProgress(progress) {
+  const archetypeId = progress?.archetype;
+  const archetype = ARCHETYPES[archetypeId];
+  if (!archetypeId || !archetype) {
+    return `<section class="codex-section" aria-label="Progressão"><p class="codex-empty">Escolha um Módulo de Eco com o NEXO-04 para abrir a maestria.</p></section>`;
+  }
+  const level = getArchetypeLevel(progress, archetypeId);
+  const xp = getArchetypeXp(progress, archetypeId);
+  const next = xpToNext(level);
+  const stats = getDerivedStats(progress, context.player, archetypeId);
+  const summary = getMasterySummary(progress, archetypeId);
+  const tracks = getMasteryState(progress, archetypeId);
+
+  const rows = tracks.map(track => `<article class="codex-track" style="--track:${track.rank > 0 ? '#9af9c8' : '#4d6b64'}">
+      ${icon(track.icon, 'codex-track-icon')}
+      <div class="codex-track-body">
+        <header>
+          <strong>${escapeHtml(track.name)}</strong>
+          ${masteryPips(track.rank, track.maxRank)}
+          <span class="codex-track-rank">${track.rank > 0 ? track.rankLabel : '—'}</span>
+        </header>
+        <p>${escapeHtml(track.description)}</p>
+        <i class="codex-track-bar"><b style="width:${pct(track.progress)}"></b></i>
+        <footer>
+          <span>${track.nextAt === null ? 'RANK MÁXIMO' : `${Math.floor(track.counter)} / ${track.nextAt} · ${escapeHtml(track.hint)}`}</span>
+          <span class="codex-track-effect">${escapeHtml(track.effectText)}</span>
+        </footer>
+      </div>
+    </article>`).join('');
+
+  return `<section class="codex-section" aria-label="Progressão">
+    <header class="codex-level">
+      ${icon('xp', 'codex-level-icon')}
+      <div>
+        <strong>${escapeHtml(archetype.nome)} · NÍVEL ${level}</strong>
+        <span>${Number.isFinite(next) ? `${Math.floor(xp)} / ${next} XP` : 'NÍVEL MÁXIMO'} · MAESTRIA ${summary.total}</span>
+      </div>
+      <div class="codex-level-bars">
+        <i class="codex-xp-bar"><b style="width:${Number.isFinite(next) ? pct(xp / next) : '100%'}"></b></i>
+        <span>DANO ${stats.basicDamage.toFixed(1)} · CRÍTICO ${Math.round(stats.critChance * 100)}% · RECARGA ${stats.cooldown.toFixed(2)}s</span>
+      </div>
+    </header>
+    <p class="codex-note">A maestria sobe com o uso: golpes, habilidades, missões e distância percorrida. Não há pontos para gastar.</p>
+    <div class="codex-tracks">${rows}</div>
+  </section>`;
+}
+
+function companionBlock(progress) {
+  const pets = progress?.companions ?? { active: progress?.flags?.companheiro_lumeo ? 'lumeo' : null, pets: {} };
+  const active = pets.active;
+  const pet = pets.pets?.[active];
+  const label = active ? `${active === 'bolt' ? 'BOLT' : 'LÚMEO'} · NÍVEL ${pet?.level ?? 1} · ${(pet?.inventory ?? []).length} ITENS` : 'NENHUM COMPANHEIRO ATIVO';
+  return `<aside class="codex-companions">
+      <span class="codex-tag">COMPANHEIROS</span>
+      <strong>${label}</strong>
+      <div class="codex-companion-actions">
+        <button type="button" data-companion="bolt">${pets.active === 'bolt' ? 'BOLT ATIVO' : 'TESTAR BOLT'}</button>
+        <button type="button" data-companion="lumeo" ${progress?.flags?.companheiro_lumeo ? '' : 'disabled'}>${pets.active === 'lumeo' ? 'LÚMEO ATIVO' : 'CHAMAR LÚMEO'}</button>
+      </div>
+      <p class="codex-note">Companheiros ainda não entram em combate.</p>
+    </aside>`;
+}
+
+function renderInventory(progress) {
+  const ids = listInventory(progress);
+  if (currentSelection && !ids.includes(currentSelection)) currentSelection = null;
+  const selected = currentSelection ?? ids[0] ?? null;
+  currentSelection = selected;
+  const slots = Array.from({ length: 8 }, (_, index) => {
+    const id = ids[index];
+    if (!id) return '<div class="codex-slot empty" aria-hidden="true"></div>';
+    const item = getItem(id);
+    return `<button type="button" class="codex-slot${id === selected ? ' selected' : ''}" data-item="${escapeHtml(id)}" aria-label="${escapeHtml(item.name)}">
+      ${icon(item.icon, 'codex-slot-icon')}
+      <span>${escapeHtml(item.name)}</span>
+    </button>`;
+  }).join('');
+  const item = selected ? getItem(selected) : null;
+  const detail = item
+    ? `<article class="codex-item-detail">
+        ${icon(item.icon, 'codex-item-icon')}
+        <div><span class="codex-tag">${escapeHtml(item.kind)}</span><strong>${escapeHtml(item.name)}</strong><p>${escapeHtml(item.description)}</p></div>
+      </article>`
+    : `<article class="codex-item-detail empty"><p>Inventário vazio. Recolha vestígios e registros pelo arquipélago.</p></article>`;
+  return `<section class="codex-section" aria-label="Inventário">
+    <div class="codex-columns">
+      <div class="codex-column">
+        <div class="codex-inventory">${slots}</div>
+        ${detail}
+      </div>
+      ${companionBlock(progress)}
+    </div>
+  </section>`;
+}
+
+function statRow(label, value, hint = '') {
+  return `<li><span>${escapeHtml(label)}</span><strong>${escapeHtml(value)}</strong>${hint ? `<small>${escapeHtml(hint)}</small>` : ''}</li>`;
+}
+
+function renderAttributes(progress, player) {
+  const archetypeId = progress?.archetype;
+  const stats = getDerivedStats(progress, player, archetypeId);
+  if (!stats) return `<section class="codex-section"><p class="codex-empty">Sem módulo ativo.</p></section>`;
+  const health = Math.round(player?.health ?? stats.maxHealth);
+  const maxHealth = Math.round(player?.maxHealth ?? stats.maxHealth);
+  const healthRatio = maxHealth ? health / maxHealth : 1;
+  const energy = Math.round(player?.energy ?? 0);
+  const maxEnergy = Math.round(player?.maxEnergy ?? 100);
+  const speed = Math.round(100 * (1 + stats.moveSpeedPct));
+  const formSpeed = Math.round(100 * (1 + stats.moveSpeedPct + stats.formSpeedPct));
+  return `<section class="codex-section" aria-label="Atributos">
+    <div class="codex-columns">
+      <div class="codex-column">
+        <article class="codex-vitals">
+          <div class="codex-vital">
+            ${icon('vida', 'codex-vital-icon')}
+            <div><span>VIDA</span><strong>${health} / ${maxHealth}</strong></div>
+            <i class="codex-vital-bar health"><b style="width:${pct(healthRatio)}"></b></i>
+          </div>
+          <div class="codex-vital">
+            ${icon('energia', 'codex-vital-icon')}
+            <div><span>ENERGIA</span><strong>${energy} / ${maxEnergy}</strong></div>
+            <i class="codex-vital-bar energy"><b style="width:${pct(energy / Math.max(1, maxEnergy))}"></b></i>
+          </div>
+          <p class="codex-note">${player?.invulnerable > 0 ? 'INVULNERÁVEL POR ' + player.invulnerable.toFixed(1) + 's' : 'Vida regenera 5s depois do último dano.'}</p>
+        </article>
+        <ul class="codex-stats">
+          ${statRow('DANO BÁSICO', stats.basicDamage.toFixed(1), `${stats.hits} golpe(s) por gesto`)}
+          ${statRow('CRÍTICO', `${Math.round(stats.critChance * 100)}%`, `×${stats.critMult.toFixed(2)} de dano`)}
+          ${statRow('RECARGA', `${stats.cooldown.toFixed(2)}s`)}
+          ${statRow('ALCANCE', `${stats.range.toFixed(1)} tiles`)}
+        </ul>
+      </div>
+      <div class="codex-column">
+        <ul class="codex-stats">
+          ${statRow('DANO DE HABILIDADE', `+${Math.round(stats.abilityDamagePct * 100)}%`)}
+          ${statRow('XP RECEBIDO', `+${Math.round(stats.xpBonusPct * 100)}%`)}
+          ${statRow('VELOCIDADE', `${speed}%`)}
+          ${statRow('FORMA VELOZ', `${formSpeed}%`, `+${stats.formDuration.toFixed(1)}s de duração`)}
+        </ul>
+        <p class="codex-note">Morrer devolve você ao ponto seguro do mapa com parte da vida. Nenhum XP, item ou missão é perdido.</p>
+      </div>
+    </div>
+  </section>`;
+}
+
+function renderPanel() {
+  const { progress, map, player } = context;
+  if (!progress) return '';
+  if (currentTab === 'missoes') return renderMissions(progress, map);
+  if (currentTab === 'progressao') return renderProgress(progress);
+  if (currentTab === 'inventario') return renderInventory(progress);
+  return renderAttributes(progress, player);
+}
+
+function render() {
+  if (!overlay) return;
+  const { progress } = context;
+  const archetype = progress?.archetype ? ARCHETYPES[progress.archetype] : null;
+  overlay.querySelector('.codex-tabs').outerHTML = renderTabs();
+  const panel = overlay.querySelector('#codexPanel');
+  panel.innerHTML = renderPanel();
+  const chip = overlay.querySelector('#codexArchetype');
+  if (chip) chip.textContent = archetype ? `${archetype.nome} · NÍVEL ${getArchetypeLevel(progress)}` : 'SEM MÓDULO ATIVO';
+  bind(overlay, panel);
+}
+
+function bind(root, panel) {
+  root.querySelectorAll('.codex-tab').forEach(button => {
+    button.addEventListener('click', () => setTab(button.dataset.tab));
+  });
+  root.querySelectorAll('.codex-companion-actions button').forEach(button => {
+    button.addEventListener('click', () => {
+      if (activateCompanion(context.progress, button.dataset.companion)) saveGame();
+      render();
+    });
+  });
+  panel.querySelectorAll('.codex-slot[data-item]').forEach(button => {
+    button.addEventListener('click', () => {
+      currentSelection = button.dataset.item;
+      render();
+    });
+  });
+  const close = root.querySelector('#codexClose');
+  if (close && !close.dataset.bound) {
+    close.dataset.bound = '1';
+    close.addEventListener('click', closeCodex);
+  }
+}
+
+// ---------------------------------------------------------------------
+// API
+// ---------------------------------------------------------------------
+export function isCodexOpen() { return opened; }
+
+export function setTab(id) {
+  if (!TABS.some(tab => tab.id === id) || id === currentTab) return false;
+  currentTab = id;
+  render();
+  const body = overlay?.querySelector('#codexPanel');
+  if (body) body.scrollTop = 0;
+  overlay?.querySelector(`#codexTab-${id}`)?.focus({ preventScroll: true });
+  return true;
+}
+
+export function closeCodex() {
+  opened = false;
+  overlay?.classList.remove('visible');
+  overlay?.setAttribute('aria-hidden', 'true');
+}
+
+export function openCodex(progress, map, player) {
+  context = { progress, map, player };
+  if (!overlay) {
+    overlay = document.createElement('div');
+    overlay.id = 'codex';
+    overlay.setAttribute('role', 'dialog');
+    overlay.setAttribute('aria-modal', 'true');
+    overlay.setAttribute('aria-labelledby', 'codexTitle');
+    overlay.innerHTML = `<section class="codex-panel">
+      <header class="codex-header">
+        <div class="codex-title-block">
+          ${icon('emblema', 'codex-emblem')}
+          <div><h2 id="codexTitle">CÓDEX DE ROTAS</h2><span id="codexArchetype">SEM MÓDULO ATIVO</span></div>
+        </div>
+        <button type="button" id="codexClose" class="codex-close" aria-label="Fechar Códex">${icon('fechar', 'codex-close-icon')}<kbd>J</kbd></button>
+      </header>
+      ${renderTabs()}
+      <div class="codex-body" id="codexPanel" role="tabpanel" tabindex="-1"></div>
+      <footer class="codex-footer">
+        <span>J / ESC fechar · 1–4 trocar aba · ← → navegar</span>
+        <span id="codexHint">A maestria cresce com o uso.</span>
+      </footer>
+    </section>`;
+    document.body.appendChild(overlay);
+    overlay.addEventListener('click', event => { if (event.target === overlay) closeCodex(); });
+  }
+  opened = true;
+  overlay.classList.add('visible');
+  overlay.setAttribute('aria-hidden', 'false');
+  render();
+  overlay.querySelector('#codexClose')?.focus({ preventScroll: true });
+}
+
+// Consome apenas as teclas que o Códex usa; devolve true quando tratou.
+export function handleCodexInput(pressed) {
+  if (!opened || !pressed?.size) return false;
+  const has = (...keys) => keys.some(key => pressed.has(key));
+  if (has('escape', 'j', 'keyj')) { closeCodex(); return true; }
+  const index = TABS.findIndex((_, i) => has(String(i + 1)));
+  if (index >= 0) { setTab(TABS[index].id); return true; }
+  if (has('arrowright', 'd')) { setTab(TABS[(TABS.findIndex(tab => tab.id === currentTab) + 1) % TABS.length].id); return true; }
+  if (has('arrowleft', 'a')) { setTab(TABS[(TABS.findIndex(tab => tab.id === currentTab) + TABS.length - 1) % TABS.length].id); return true; }
+  return false;
+}
+
+export const CODEX_TABS = TABS;

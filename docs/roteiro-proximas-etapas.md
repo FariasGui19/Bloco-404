@@ -42,17 +42,31 @@ Veja `docs/estacao-bio-e-bolt.md` para o setor explorável provisório e a prév
 A Estação Bio ganhou decks caminháveis sobre os canais, guarda-corpos com profundidade por trecho, camadas de desenho para as estruturas grandes, hitbox do terminal medida, aventais de piso, sombras de apoio e uma rede de pressão que torna os reparos existentes perceptíveis e leva a uma válvula opcional na estufa. Foram geradas e implementadas exatamente duas imagens estáticas (cabeceira e distribuidor), não folhas de animação; a ordem e a justificativa estão em `docs/ordem-de-arte-e-implementacao.md`. O ciclo de vida do jogador, inimigos telegrafados, minibosses, nave e voo contínuo seguem nas etapas acima: nada disso foi antecipado ou declarado pronto. O passo da válvula não concede recompensa nem conclui o setor; é apenas a primeira consequência jogável dos reparos.
 
 
-## Atualização — sistemas de RPG (dano, XP, missões e árvore)
+## Atualização — RPG orgânico, vida e Códex
 
-O ataque básico deixou de causar "1 de dano" fixo. Cada arquétipo tem dano,
-número de golpes, recarga, alcance e crítico próprios; alvos de treino têm
-vida real, derrubam, dão XP e contam missões. Nível, pontos e ranks da árvore
-são salvos em `progress.archetypeProgress`, com migração aditiva para saves
-antigos. As habilidades de impacto (Ruptura, Passo de Corrente, pulso da
-Forma Veloz e Propulsor) também causam dano; varreduras continuam sem dano.
+O ataque básico tem dano próprio por arquétipo, alvos de treino têm vida real,
+e o progresso de poder deixou de ser "escolher ponto na árvore": agora existe
+**maestria por uso** — quatro trilhas (ataque, fluxo, eco e locomoção) que sobem
+com golpes, habilidades, missões e distância percorrida. No Núcleo 10X, a
+trilha CINÉTICA deixa a Forma Veloz mais rápida e mais longa conforme o jogador
+anda, corre e dá dash nela.
 
-Detalhes, tabela de números e pendências: [`sistemas-rpg-dano-xp-missoes.md`](sistemas-rpg-dano-xp-missoes.md).
+O diário `J` foi dividido em um **Códex** com quatro abas (missões, progressão,
+inventário, atributos), com fundo e ícones em pixel art gerados para a
+interface. O jogador também ganhou **vida**: dano, invulnerabilidade,
+regeneração fora de combate e retorno seguro ao morrer — sem perder XP, itens
+ou missões. A primeira fonte de dano são zonas de eco instável na Enseada.
 
-O que **não** está pronto: inimigos agressivos, vida do jogador com fonte de
-dano, morte/invulnerabilidade, resistências e a UI dedicada da árvore. O
-balanceamento definitivo depende do primeiro inimigo real.
+Detalhes, números e testes: [`sistemas-rpg-dano-xp-missoes.md`](sistemas-rpg-dano-xp-missoes.md).
+
+O que **não** está pronto: inimigos agressivos, cura por itens, resistências,
+UI de rank com histórico e balanceamento final.
+
+## Futuro — multiverso dinâmico
+
+A direção de dimensões com gêneros diferentes (survival, terror, corrida, FPS),
+viagem fluida de nave, procurados com escolha entre matar e prender, e regras de
+habilidade por dimensão está registrada em
+[`manifesto-multiverso.md`](manifesto-multiverso.md), com o terreno técnico que
+já existe e a ordem sugerida de implementação. Nada disso está prometido como
+pronto.

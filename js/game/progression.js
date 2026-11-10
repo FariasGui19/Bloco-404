@@ -1,6 +1,7 @@
 // Progressão persistente por arquétipo escolhido.
-// Guarda slots de habilidade, nível, XP, pontos e ranks da árvore.
-// A migração é aditiva: saves antigos ganham os campos com valores neutros.
+// Guarda slots de habilidade, nível, XP e os contadores de maestria.
+// A migração é aditiva: saves antigos ganham os campos com valores neutros;
+// `points`/`nodes` de versões anteriores ficam apenas como dado morto.
 import { ARCHETYPE_KITS, KIT_SLOTS } from '../data/archetype-kits.js';
 
 export function ensureArchetypeProgress(progress, archetype = progress?.archetype) {
@@ -17,11 +18,7 @@ export function ensureArchetypeProgress(progress, archetype = progress?.archetyp
   }
   if (!Number.isInteger(kit.level) || kit.level < 1) kit.level = 1;
   if (!Number.isFinite(kit.xp) || kit.xp < 0) kit.xp = 0;
-  if (!Number.isInteger(kit.points) || kit.points < 0) kit.points = 0;
-  if (!kit.nodes || typeof kit.nodes !== 'object' || Array.isArray(kit.nodes)) kit.nodes = {};
-  for (const [id, rank] of Object.entries(kit.nodes)) {
-    if (!Number.isInteger(rank) || rank < 1) delete kit.nodes[id];
-  }
+  if (!kit.mastery || typeof kit.mastery !== 'object' || Array.isArray(kit.mastery)) kit.mastery = {};
   return progress;
 }
 

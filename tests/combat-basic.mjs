@@ -91,7 +91,7 @@ assert(tryBasicAttack({ player, progress: state.progress, map: wallMap, targets:
 assert.equal(blocked[0].health, 60, 'golpe não atravessa parede');
 
 // XP para de render no treino depois do nível 5.
-const high = { archetype: 'mare_astral', archetypeProgress: { mare_astral: { level: 5, xp: 0, points: 0, nodes: {}, slots: {} } } };
+const high = { archetype: 'mare_astral', archetypeProgress: { mare_astral: { level: 5, xp: 0, mastery: {}, slots: {} } } };
 assert.equal(grantArchetypeXp(high, 25).gained, 25, 'nível 5 ainda aceita XP de outras fontes');
 assert.equal(high.archetypeProgress.mare_astral.xp, 25);
 

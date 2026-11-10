@@ -142,6 +142,8 @@ node --experimental-default-type=module tests/vida.mjs
 node --experimental-default-type=module tests/codex.mjs
 node --experimental-default-type=module tests/missoes.mjs
 node --experimental-default-type=module tests/dano-habilidades.mjs
+node --experimental-default-type=module tests/estrutura.mjs
+node --experimental-default-type=module tests/boot.mjs
 ```
 
 ## 8. Pendências honestas

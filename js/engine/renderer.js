@@ -24,6 +24,7 @@ import { getBioUltimateFrame } from '../data/bio-ultimate-animation.js';
 import { getBioAttackFrame, getBioPropulsorFrame } from '../data/bio-action-animation.js';
 import { getMareUltimateFrame } from '../data/mare-ultimate-animation.js';
 import { getMarePropulsorFrame } from '../data/mare-action-animation.js';
+import { getTransformFrame, getNucleoBraceletFrame } from '../data/transform-animation.js';
 import { getSelectedToolId } from '../game/tools.js';
 import { NUCLEO_BRUTA } from '../data/nucleo-forms.js';
 import { getFissures } from '../game/scars.js';
@@ -2502,6 +2503,53 @@ function drawPlayerSprite(player, ix, iy) {
   if (attackPose && drawArchetypeSheet(attackPose.sprite, attackPose.col, attackPose.row, ix, iy, attackPose.flip, { scale: attackPose.scale, anchor: attackPose.anchor })) {
     player._topo = 100;
     return true;
+  }
+  // TRANSFORMAÇÃO DO T — a sequência de 4 quadros que faltava. Antes o traje
+  // trocava de folha no mesmo quadro, sem leitura nenhuma. Entrar corre a
+  // folha 0→3; sair corre a mesma arte ao contrário (desmonta).
+  const transformFrame = getTransformFrame(state.progress, player);
+  if (transformFrame) {
+    const sheet = getSprite(transformFrame.sprite);
+    if (sheet) {
+      const cell = 320, escala = .57;
+      const w = cell * escala, h = cell * escala;
+      // Clarão da cor do arquétipo no quadro de energia (1 e 2).
+      if (transformFrame.phase === 'build') {
+        ctx.save();
+        ctx.globalAlpha = .22;
+        ctx.fillStyle = transformFrame.color;
+        ctx.beginPath();
+        ctx.ellipse(ix, iy - h * .45, w * .42, h * .42, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      }
+      ctx.save();
+      ctx.translate(ix, iy);
+      if (player.facing === 'left') ctx.scale(-1, 1);
+      drawSmooth(sheet, transformFrame.col * cell, 0, cell, cell,
+        -w / 2, -276 * escala, w, h);
+      ctx.restore();
+      player._topo = Math.round(276 * escala);
+      return true;
+    }
+  }
+  // NÚCLEO: a identidade do arquétipo é o BRACELETE. Enquanto o corpo humano
+  // está sendo digitalizado (primeiros 70% da transformação), quem desenha é
+  // o operador acionando o bracelete; depois entra a criatura/placas.
+  const braceletFrame = getNucleoBraceletFrame(state.progress, player);
+  if (braceletFrame) {
+    const sheet = getSprite(braceletFrame.sprite);
+    if (sheet) {
+      const cell = 320, escala = .57;
+      const w = cell * escala, h = cell * escala;
+      ctx.save();
+      ctx.translate(ix, iy);
+      if (player.facing === 'left') ctx.scale(-1, 1);
+      drawSmooth(sheet, braceletFrame.col * cell, 0, cell, cell, -w / 2, -276 * escala, w, h);
+      ctx.restore();
+      player._topo = Math.round(276 * escala);
+      return true;
+    }
   }
   // Transformação do Núcleo: uma decisão só, escolhida por `effect.form`.
   // Aqui estava o defeito visual relatado: QUALQUER transformação desenhava a

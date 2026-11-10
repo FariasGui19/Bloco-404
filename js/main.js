@@ -116,6 +116,12 @@ await loadSprites([
   { id: 'player_dominio_q', src: 'assets/sprites/player/player-dominio-q.png' },
   { id: 'player_dominio_r', src: 'assets/sprites/player/player-dominio-r.png' },
   { id: 'player_mare_lvl1', src: 'assets/sprites/player/player-mare-lvl1.png' },
+  // Transformação do T (tools/preparar-transformacao.py): o traje se veste e
+  // se desmonta em 4 quadros. O Núcleo usa o bracelete como identidade.
+  { id: 'player_t_bio', src: 'assets/sprites/player/player-t-bio.png' },
+  { id: 'player_t_mare', src: 'assets/sprites/player/player-t-mare.png' },
+  { id: 'player_t_dominio', src: 'assets/sprites/player/player-t-dominio.png' },
+  { id: 'player_t_nucleo', src: 'assets/sprites/player/player-t-nucleo.png' },
   // Execução da Ultimate do MARÉ ASTRAL (F): uma folha por corrente, mais o
   // Q de costas (tools/preparar-mare-ultimate.py).
   { id: 'player_mare_ult_cupula', src: 'assets/sprites/player/player-mare-ult-cupula.png' },

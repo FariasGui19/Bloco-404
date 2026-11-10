@@ -11,6 +11,23 @@
 - Núcleo 10X: Ultimate só com a forma ativa; formas futuras listadas como projeto.
 - Maré Astral: rotas de maré no Códex (leitura de mapa).
 
+## Concluído na 0.7.1 — Transformação do T (quatro módulos)
+
+Sequência de quatro quadros para o `T`, com ida e volta na mesma folha.
+Teste novo: `tests/transformacao-t.mjs`.
+
+1. **Bio, Maré e Domínio** — o traje sendo vestido: exo se monta com vapor,
+   água sobe e substitui o macacão, anéis de frequência montam as placas de
+   ouro. Tirar o traje desmonta na ordem inversa.
+2. **Núcleo 10X** — o bracelete é a identidade do arquétipo: o operador (de
+   macacão cinza, a forma base) aciona o bracelete, o anel de glifos abre e o
+   corpo começa a se digitalizar; a criatura entra no fim, com as folhas que
+   já existiam.
+3. Tudo com o mesmo relógio (1,05 s) e o mesmo tamanho de corpo, para nenhum
+   arquétipo "parecer melhor" na leitura.
+
+Versão `0.7.1-transformacao-t`.
+
 ## Concluído na 0.7.0 — Maré Astral com o mesmo carinho do Bio
 
 Cinco folhas de execução (uma por assinatura de Ultimate) e uma de ação, no

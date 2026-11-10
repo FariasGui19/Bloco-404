@@ -95,6 +95,8 @@ function confirmWheel() {
       if (status) status.innerHTML = `RETORNE PRIMEIRO<br><small>Confirme <strong>${NUCLEO_FORMS[ativa]?.name ?? 'A FORMA ATIVA'}</strong> para voltar ao operador, depois escolha outra.</small>`;
       return;
     }
+    // Fecha sempre: o efeito da transformação nasce dentro de
+    // `toggleNucleoForm`, então checar o efeito aqui barraria o fechamento.
     if (toggleNucleoForm(currentProgress, currentPlayer)) closeWheel();
     return;
   }

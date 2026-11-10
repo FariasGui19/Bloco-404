@@ -11,13 +11,38 @@
 - Núcleo 10X: Ultimate só com a forma ativa; formas futuras listadas como projeto.
 - Maré Astral: rotas de maré no Códex (leitura de mapa).
 
+## Concluído na 0.6.1 — segunda forma do Núcleo 10X
+- **QUEBRA SISTEMAS** (`nucleo_bruto`) deixou de ser projeto e virou a segunda
+  forma jogável do Núcleo. Identidade do criador: bípede atarracado de liga de
+  ferro, sem cabeça, bloco de colisão com núcleo âmbar, marretas telescópicas
+  arrastando e pistões soltando vapor.
+- Dados em `js/data/archetype-tools.js` (forma, duração 20 s, recarga 10 s,
+  velocidade 0,6×, custo de 3 s de barra por golpe) e leitura única em
+  `js/data/nucleo-forms.js`. A escolha no Códex decide o que o `T` ativa.
+- Arte: `tools/preparar-quebra-sistemas.py` → `assets/sprites/player/player-10x-bruta-*`
+  (parado direcional, andar frente/costas/lateral, ataque lateral e frontal),
+  todas PNG RGBA 4×1 com células de 256 px, apoio dos pés normalizado.
+- Runtime: `js/data/bruta-animation.js` (pose, locomoção e marreta),
+  poeira/faísca/vapor e tremor de passo no renderer, sombra mais larga.
+- Ultimate própria **DEVORADOR DE TECTÔNICA** com assinatura `tectonica` em
+  `js/engine/ultimate-visuals.js`: ombros magmáticos, fenda aberta no chão,
+  placas se separando e detritos caindo.
+- Interface: a roda do `T` passou a listar as formas do dado (duas jogáveis,
+  duas em projeto), com seleção por teclado/clique, miniatura de cada forma e
+  estado ATIVA; HUD mostra o nome e a cor da forma ativa; Códex lista a nova
+  Ultimate e os atributos da forma.
+- Utilidade de demolição: golpe carregado abre portões com
+  `gate.breaksWith: 'peso'` (mecânica pronta; nenhum portão do mapa usa a
+  marcação ainda) e o `Q` da forma virou **PANCADA DE PESO**, com preparação
+  longa.
+
 ## Em fila (prioridade)
 1. Animações dos arquétipos (Saguão → Arquétipos → Bio-Forja → Bolt)
    - Arquétipo 1: ataque básico adaptativo, 4 habilidades (Q/R + Ultimate), direção, escala, pés, transparência (conferir `docs/prompts-sprites-precisao.md`).
    - Arquétipo 2: ...
 2. Navegação marítima da Maré (em projeto): nado livre e fluido, correntes
    entre ilhas, portos e missões de travessia. Hoje só o mapa no Códex.
-3. Formas Bruta, Fluida e Núcleo do 10X, cada uma com transformação própria.
+3. Formas Fluida e Núcleo do 10X — a Bruta virou *Quebra Sistemas* jogável.
 4. Bolt (cachorro real): prévia opt-in no diário (não conceder automaticamente), obtenção, autorização, animações, progressão.
 
 ## Missão completa (primeira missão visual/mecanicamente pronta)

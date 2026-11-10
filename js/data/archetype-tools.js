@@ -369,6 +369,18 @@ export const ARCHETYPE_TOOLS = Object.freeze({
         color: '#8cff9e',
         kind: 'surge',
         playable: true,
+        // Primeira forma: corrida, 1,8× de velocidade, 30 s de barra e 8 s de
+        // recarga. Golpe não consome a barra (diferente da Quebra).
+        form: Object.freeze({
+          slug: 'veloz',
+          duration: 30,
+          recharge: 8,
+          speedMult: 1.8,
+          hitCost: 0,
+          color: '#6bff92',
+          coreColor: '#8cff9e',
+          echoColor: '#6bff92',
+        }),
         tagline: 'Dash e corrida; o primeiro eco do Núcleo.',
         ultimate: Object.freeze({
           id: 'velocidade_temporal',
@@ -389,30 +401,54 @@ export const ARCHETYPE_TOOLS = Object.freeze({
       }),
       Object.freeze({
         id: 'nucleo_bruto',
-        name: 'FORMA BRUTA',
-        short: 'BRUTA',
-        color: '#ffd465',
-        // A forma ainda não existe em jogo: o galho aparece na árvore, mas
-        // não pode ser instalado — evita F morto por escolha impossível.
-        playable: false,
-        project: 'FORMA EM PROJETO',
+        name: 'QUEBRA SISTEMAS',
+        short: 'QUEBRA',
+        color: '#ffc94a',
+        // Segunda forma jogável: bípede atarracado de ferro, sem cabeça, com
+        // bloco de colisão no lugar do rosto e marretas telescópicas.
+        playable: true,
         kind: 'burst',
-        tagline: 'Massa de eco concentrada num impacto.',
+        form: Object.freeze({
+          // slug usado em IDs de sprite, efeito e texto
+          slug: 'bruta',
+          // Duração base e recarga próprias: a forma é mais curta que a Veloz
+          // porque cada golpe consome a barra de transformação.
+          duration: 20,
+          recharge: 10,
+          // Inércia extrema: 40% mais lento que o operador, sem o multiplicador da Veloz.
+          speedMult: .6,
+          // Marreta acerta mais forte que o pulso do operador (a Veloz usa o
+          // formMult do perfil de combate; aqui o peso fica na própria forma).
+          damageMult: 1.9,
+          // Cada golpe carregado consome a barra: 3 s por impacto.
+          hitCost: 3,
+          // Preparação longa (sensação de peso) e pancada que derruba estruturas.
+          attackWindup: .55,
+          // Só a Quebra abre portões travados por peso e escudos de impacto.
+          breaksWeight: true,
+          // Visual: passo pesado treme a câmera; parar solta exaustão.
+          stompShake: 2.6,
+          color: '#ffc94a',
+          coreColor: '#ffb02e',
+          echoColor: '#6bff92',
+        }),
+        tagline: 'Ferro denso, pistões e marretas: demolição de peso.',
         ultimate: Object.freeze({
-          id: 'impacto_de_eco',
+          id: 'devorador_de_tectonica',
           tier: 'tool',
-          signature: 'punho_eco',
-          name: 'IMPACTO DE ECO',
-          color: '#ffd465',
+          // Assinatura própria: ombros magmáticos e fenda de placa tectônica.
+          signature: 'tectonica',
+          name: 'DEVORADOR DE TECTÔNICA',
+          color: '#ff7a3c',
           kind: 'burst',
-          cost: 54,
-          cooldown: 25,
-          radius: 4.8,
-          damage: 36,
-          healPct: .14,
-          buff: Object.freeze({ id: 'impacto_de_eco', label: 'MASSA DE ECO', duration: 8, basicDamagePct: .18 }),
-          effectText: '+18% dano básico por 8 s',
-          description: 'A forma incha e desce como um martelo de eco.',
+          cost: 56,
+          cooldown: 27,
+          radius: 5.6,
+          damage: 40,
+          healPct: .18,
+          buff: Object.freeze({ id: 'devorador_de_tectonica', label: 'OMBROS MAGMÁTICOS', duration: 9, basicDamagePct: .24 }),
+          effectText: '+24% dano básico por 9 s',
+          description: 'O corpo triplica, os ombros viram magma e o soco abre uma fenda no chão.',
         }),
       }),
       Object.freeze({

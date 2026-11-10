@@ -3,7 +3,7 @@
 import { TOOL_ULTIMATE_IDS } from './archetype-tools.js';
 
 export const ARCHETYPE_KITS = {
-  nucleo_dez_forma: { q: 'forma_veloz', r: 'eco_scan', utility: null, support: null, ultimate: 'horizonte_dez_ecos' },
+  nucleo_dez_forma: { q: 'forma_veloz', r: 'eco_scan', utility: 'pancada_quebra', support: null, ultimate: 'horizonte_dez_ecos' },
   lamina_dominio_anciao: { q: 'golpe_ruptura', r: 'postura_dominio', utility: null, support: null, ultimate: 'coroa_da_falha' },
   motor_bio_forja: { q: 'bio_dash', r: 'bio_diagnostic', utility: null, support: null, ultimate: 'pulso_forja_viva' },
   mare_astral: { q: 'passo_corrente', r: 'senso_corrente', utility: null, support: null, ultimate: 'sinfonia_estuario' },

@@ -1,7 +1,7 @@
 // js/config.js
 export const CONFIG = {
   GAME_NAME: 'BLOCO 404',
-  VERSION: '0.6.0-formas-e-arvores',
+  VERSION: '0.6.1-quebra-sistemas',
 
   TILE_W: 64,
   TILE_H: 32,

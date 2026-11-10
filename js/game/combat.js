@@ -2,6 +2,7 @@
 // Inimigos agressivos e dano ao jogador continuam pendentes; aqui o
 // jogador só ataca alvos explícitos de treino.
 import { canStandAt } from './collision.js';
+import { state } from './state.js';
 import { CONFIG } from '../config.js';
 import { ABILITY_DAMAGE, COMBAT_BALANCE, TRAINING_TARGET_XP, TRAINING_XP_LEVEL_CAP } from '../data/combat-balance.js';
 import { getArchetypeLevel, getDerivedStats, grantArchetypeXp, rollBasicAttack } from './rpg.js';
@@ -10,6 +11,9 @@ import { recordMastery } from './mastery.js';
 import { pushCombatText, updateCombatFeedback } from './combat-feedback.js';
 import { applyUnlocks } from './unlocks.js';
 import { ARCHETYPE_KITS } from '../data/archetype-kits.js';
+import { chargeFormHit } from './nucleo-form.js';
+import { checkGate, isGateOpen, openGate } from './gates.js';
+import { saveGame } from './save.js';
 
 // Compatibilidade: HUD e testes antigos leem rótulo e strain daqui.
 export const BASIC_ATTACKS = COMBAT_BALANCE;
@@ -168,6 +172,27 @@ export function tryAbilityDamage({ player, progress, targets, abilityId, rng = M
   return { damage, hits: hit, total: hit.reduce((sum, item) => sum + item.damage, 0) };
 }
 
+// Portões/estruturas que só cedem a impacto físico (gate.breaksWith = 'peso').
+// A procura é curta e à frente do corpo, como o alcance da marreta; abrir
+// grava a flag do save, então a demolição é permanente.
+function breakWeightGates(player, dx, dy) {
+  const alcance = 1.9;
+  for (const object of state.objects ?? []) {
+    if (!object?.gate || isGateOpen(object) || !checkGate(object.gate)) continue;
+    if (object.gate.breaksWith !== 'peso') continue;
+    if (!Number.isFinite(object.x) || !Number.isFinite(object.y)) continue;
+    const ox = object.x - player.x, oy = object.y - player.y;
+    const distancia = Math.hypot(ox, oy);
+    if (distancia > alcance || distancia < .001) continue;
+    if ((ox * dx + oy * dy) / distancia < .35) continue;
+    openGate(object);
+    saveGame();
+    player.ability ??= {};
+    player.ability.lastMessage = 'ESTRUTURA DEMOLIDA • PESO CEDEU';
+    player.ability.messageTimer = 2.2;
+  }
+}
+
 export function tryBasicAttack({ player, progress, map, targets, point, rng = Math.random }) {
   const profile = BASIC_ATTACKS[progress?.archetype];
   if (!profile || !map || !point || !Number.isFinite(point.x) || !Number.isFinite(point.y)) return false;
@@ -196,28 +221,45 @@ export function tryBasicAttack({ player, progress, map, targets, point, rng = Ma
   player.target = null;
 
   const stats = getDerivedStats(progress, player);
+  // O strain e a preparação vêm do perfil ativo: o operador e a Quebra
+  // Sistemas não compartilham o mesmo ritmo de golpe.
+  const strainProfile = stats.strain ?? profile.strain;
+  const windup = stats.windup ?? 0;
   const previous = player.combat;
   const chain = previous?.style === progress.archetype && previous.chainWindow > 0 ? (previous.chain ?? 0) + 1 : 1;
-  const strained = chain >= profile.strain.hits;
+  const strained = chain >= strainProfile.hits;
+  // Golpe com preparação dura mais na tela para o peso ser legível.
+  const duration = .32 + windup * .6;
   player.combat = {
-    cooldown: stats.cooldown + (strained ? profile.strain.extra : 0),
-    duration: .32,
-    timeLeft: .32,
+    cooldown: stats.cooldown + (strained ? strainProfile.extra : 0),
+    duration,
+    timeLeft: duration,
     dx,
     dy,
-    color: profile.color,
+    color: stats.color ?? profile.color,
     chain: strained ? 0 : chain,
     chainWindow: strained ? 0 : 1.3,
     strained,
     style: progress.archetype,
+    form: stats.formId ?? null,
     transformed: player.nucleoForm === 'forma_veloz',
     equipped: !!player.equippedSuit,
   };
   if (strained) {
     player.ability ??= {};
-    player.ability.lastMessage = `${profile.strain.label} • RECUPERAÇÃO DO ATAQUE`;
+    player.ability.lastMessage = `${strainProfile.label} • RECUPERAÇÃO DO ATAQUE`;
     player.ability.messageTimer = 1.8;
   }
+  // Cada golpe carregado da Quebra Sistemas começa a comer a barra de forma.
+  const formaGasta = chargeFormHit(player);
+  if (formaGasta > 0 && (player.nucleoRuntime?.remaining ?? 0) > 0) {
+    player.ability ??= {};
+    player.ability.lastMessage = `IMPACTO • FORMA −${formaGasta.toFixed(0)}s`;
+    player.ability.messageTimer = 1.2;
+  }
+  // Forma de força bruta: a marreta abre portões travados por peso e escudos
+  // de impacto que nenhum outro golpe move. Mesma economia de gate do Q.
+  if (stats.formId === 'forma_bruta') breakWeightGates(player, dx, dy);
 
   let best = null, nearest = Infinity;
   for (const target of targets ?? []) {

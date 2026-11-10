@@ -34,14 +34,28 @@ function contextoFalso() {
     stroke() { log.push(['stroke']); },
     fillRect(...a) { log.push(['fillRect', ...a]); },
     strokeRect(...a) { log.push(['strokeRect', ...a]); },
+    // Placas da tectônica giram: o contexto falso precisa das duas.
+    translate(...a) { log.push(['translate', ...a]); },
+    rotate(...a) { log.push(['rotate', ...a]); },
   };
   return ctx;
 }
 
-const CORES = Object.fromEntries(
-  [...Object.values(ULTIMATES), ...TOOL_ULTIMATES].map(ultimate => [ultimate.signature, ultimate.color]),
-);
+// Cor de cada assinatura. `TOOL_ULTIMATES` (exportado pelas ferramentas
+// jogáveis) deixou de listar as formas em projeto; por isso a cor vem direto
+// do catálogo de cada arquétipo — arte desenhada existe, transformação não.
+const CORES = {};
+for (const tools of Object.values(ARCHETYPE_TOOLS)) {
+  for (const tool of tools.tools) CORES[tool.ultimate.signature] = tool.ultimate.color;
+}
+for (const ultimate of [...Object.values(ULTIMATES), ...TOOL_ULTIMATES]) {
+  CORES[ultimate.signature] ??= ultimate.color;
+}
 
+// Vinte assinaturas: quatro ferramentas + base de cada arquétipo. A
+// `punho_eco` (Impacto de Eco) saiu do catálogo com a chegada da Quebra
+// Sistemas — duas formas do Núcleo não podem desenhar o mesmo soco. A
+// `tectonica` é a Ultimate da segunda forma jogável e tem desenho próprio.
 assert.equal(ULTIMATE_SIGNATURES.length, 20, 'quatro arquétipos × (4 ferramentas + 1 base)');
 assert.equal(new Set(ULTIMATE_SIGNATURES).size, ULTIMATE_SIGNATURES.length, 'nomes de assinatura únicos');
 
@@ -108,9 +122,16 @@ for (const archetype of ARQUETIPOS) {
     ULTIMATES[archetype].signature,
     ...ARCHETYPE_TOOLS[archetype].tools.map(tool => tool.ultimate.signature),
   ];
-  assert.equal(familia[archetype].length, 5, `${archetype} tem cinco assinaturas`);
-  assert.equal(new Set(familia[archetype]).size, 5, `${archetype}: cinco assinaturas distintas`);
+  // Cinco por arquétipo (base + quatro ferramentas). O Núcleo trocou o
+  // punho de eco pela tectônica: continua com cinco, todas distintas.
+  const esperado = 5;
+  assert.equal(familia[archetype].length, esperado, `${archetype} tem ${esperado} assinaturas`);
+  assert.equal(new Set(familia[archetype]).size, esperado, `${archetype}: assinaturas distintas`);
 }
+// A segunda forma do Núcleo tem Ultimate própria: não é o mesmo desenho da
+// Sobreposição 10X nem da Velocidade Temporal.
+assert(familia.nucleo_dez_forma.includes('tectonica'), 'Quebra Sistemas tem assinatura própria');
+assert(!familia.nucleo_dez_forma.includes('punho_eco'), 'o soco antigo saiu do catálogo');
 const todas = Object.values(familia).flat();
 assert.equal(new Set(todas).size, todas.length, 'assinaturas não se repetem entre arquétipos');
 

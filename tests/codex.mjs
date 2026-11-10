@@ -64,7 +64,9 @@ assert.match(panel.innerHTML, /HORIZONTE DE DEZ ECOS/, 'Ultimate base no cartão
 assert.match(panel.innerHTML, /SÓ COM A FORMA ATIVA/, 'Núcleo avisa que a Ultimate pede transformação');
 assert.match(panel.innerHTML, /ÁRVORE DE FORMAS/, 'árvore do arquétipo aparece na progressão');
 assert.match(panel.innerHTML, /codex-branch projeto/, 'galho futuro marcado como projeto');
-assert.match(panel.innerHTML, /FORMA BRUTA/, 'forma futura listada na árvore');
+// A segunda forma foi implementada como QUEBRA SISTEMAS: a árvore mostra o
+// galho jogável e mantém a nomenclatura oficial usada no jogo.
+assert.match(panel.innerHTML, /QUEBRA SISTEMAS/, 'segunda forma listada na árvore');
 assert.match(panel.innerHTML, /EM PROJETO/, 'nós futuros têm rótulo honesto');
 assert.match(panel.innerHTML, /1\/4 GALHOS PRONTOS|2\/4 GALHOS PRONTOS/, 'resumo da árvore');
 assert.equal(JSON.stringify(progress), before, 'ler o Códex não instala ferramenta');

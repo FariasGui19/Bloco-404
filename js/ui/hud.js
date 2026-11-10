@@ -24,6 +24,7 @@ import { getBioDashProfile } from '../game/ability-context.js';
 import { getArchetypeLevel, getArchetypeXp, xpToNext } from '../game/rpg.js';
 import { getMasterySummary } from '../game/mastery.js';
 import { getUltimateStatus } from '../game/ultimate.js';
+import { NUCLEO_FORMS } from '../data/nucleo-forms.js';
 import { TOOL_LABELS } from '../data/archetype-tools.js';
 import { describeNextUnlock, getUnlockState } from '../game/unlocks.js';
 
@@ -128,11 +129,21 @@ function updateAbilityHud(state) {
   if (!shouldShow) return;
 
   const runtime = state.player.nucleoRuntime;
-  const active = archetypeId === 'nucleo_dez_forma' && state.player.nucleoForm === 'forma_veloz';
+  // A forma ativa pode ser a Veloz ou a Quebra Sistemas: o nome vem do dado,
+  // nunca de um texto fixo (era o que fazia a segunda forma se apresentar
+  // como "Forma Veloz" na HUD).
+  const form = NUCLEO_FORMS[state.player.nucleoForm] ?? null;
+  const active = archetypeId === 'nucleo_dez_forma' && Boolean(form);
   const recharge = archetypeId === 'nucleo_dez_forma' && !active ? runtime?.recharge ?? 0 : 0;
-  const timerText = active ? (runtime?.remaining <= 0 ? 'FORMA VELOZ • RETORNO ASSIM QUE SEGURO' : `FORMA VELOZ • ${Math.ceil(runtime?.remaining ?? 0)}s`) : recharge > 0 ? `NÚCLEO RECARREGANDO • ${Math.ceil(recharge)}s` : '';
+  const rotulo = form?.name ?? 'FORMA';
+  const timerText = active
+    ? (runtime?.remaining <= 0 ? `${rotulo} • RETORNO ASSIM QUE SEGURO` : `${rotulo} • ${Math.ceil(runtime?.remaining ?? 0)}s`)
+    : recharge > 0 ? `NÚCLEO RECARREGANDO • ${Math.ceil(recharge)}s` : '';
   setText('nucleoTimer', timerText);
   el.nucleoTimer?.classList.toggle('visible', Boolean(timerText));
+  // Cor própria por forma: âmbar na Quebra, verde na Veloz.
+  el.nucleoTimer?.style.setProperty('--form-color', form?.color ?? '#a7ffbb');
+  el.nucleoTimer?.classList.toggle('bruta', state.player.nucleoForm === 'forma_bruta');
 
   // Nível, XP e maestria do arquétipo atual.
   const level = getArchetypeLevel(state.progress, archetypeId);
@@ -183,7 +194,9 @@ function updateAbilityHud(state) {
     const bioProfile = primaryId === 'bio_dash' ? getBioDashProfile(state.progress, state.player) : null;
     const readyText = bioProfile
       ? `${bioProfile.mode === 'equipped' ? 'TRAJE ATIVO' : 'MODO RÁPIDO'} • ${bioProfile.energyCost} ENERGIA`
-      : (state.progress.archetype === 'nucleo_dez_forma' && state.player.nucleoForm === 'forma_veloz' ? 'FORMA VELOZ ATIVA' : ['dominio', 'mare'].includes(state.player.equippedSuit) ? 'TRAJE ATIVO' : 'PRONTO');
+      : (state.progress.archetype === 'nucleo_dez_forma' && NUCLEO_FORMS[state.player.nucleoForm]
+        ? `${NUCLEO_FORMS[state.player.nucleoForm].name} ATIVA`
+        : ['dominio', 'mare'].includes(state.player.equippedSuit) ? 'TRAJE ATIVO' : 'PRONTO');
 
     el.abilityPrimary.innerHTML = `
       <kbd>Q</kbd>

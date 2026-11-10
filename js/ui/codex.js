@@ -18,6 +18,7 @@ import { describeNextUnlock, getUnlockState, getUnlockStepFor } from '../game/un
 import { getPath, LEVEL_TITLES, PATH_STATES } from '../data/archetype-progression.js';
 import { getTree, getTreeSummary, TREE_STATE_LABELS } from '../data/archetype-trees.js';
 import { TOOL_LABELS } from '../data/archetype-tools.js';
+import { NUCLEO_FORMS } from '../data/nucleo-forms.js';
 import { listTrackedQuests } from '../game/quests.js';
 import { ARQUIPELAGO_REGIONS } from '../data/arquipelago-regioes.js';
 import { getItem, listInventory } from '../data/items.js';
@@ -398,7 +399,11 @@ function renderAttributes(progress, player) {
           ${statRow('DANO DE HABILIDADE', `+${Math.round(stats.abilityDamagePct * 100)}%`)}
           ${statRow('XP RECEBIDO', `+${Math.round(stats.xpBonusPct * 100)}%`)}
           ${statRow('VELOCIDADE', `${speed}%`)}
-          ${statRow('FORMA VELOZ', `${formSpeed}%`, `+${stats.formDuration.toFixed(1)}s de duração`)}
+          ${statRow(stats.formId ? 'FORMA ATIVA' : 'FORMA VELOZ', stats.formId
+            ? `${NUCLEO_FORMS[stats.formId]?.short ?? 'FORMA'} · ${Math.round(100 * (stats.cooldown))}% de recarga`
+            : `${formSpeed}%`, stats.formId
+            ? `${stats.range.toFixed(1)} tiles · preparo ${stats.windup.toFixed(2)}s`
+            : `+${stats.formDuration.toFixed(1)}s de duração`)}
         </ul>
         <p class="codex-note">Morrer devolve você ao ponto seguro do mapa com parte da vida. Nenhum XP, item ou missão é perdido.</p>
       </div>

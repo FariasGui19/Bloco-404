@@ -55,7 +55,10 @@ for (const archetype of ARQUETIPOS) {
   // Toda assinatura de ferramenta jogável aparece na árvore: nome igual ao dado.
   for (const tool of ARCHETYPE_TOOLS[archetype].tools) {
     const citados = tree.branches.flatMap(branch => branch.nodes.map(node => semCaixa(`${node.name} ${node.note ?? ''}`))).join(' | ');
-    assert(citados.includes(semCaixa(tool.ultimate.name)), `${archetype}: árvore cita "${tool.ultimate.name}"`);
+    // Forma jogável precisa estar na árvore: ou pela Ultimate, ou pelo nome do
+    // galho (a Quebra Sistemas aparece como FORMA BRUTA, nome da ferramenta).
+    const naArvore = citados.includes(semCaixa(tool.ultimate.name)) || citados.includes(semCaixa(tool.name));
+    assert(naArvore, `${archetype}: árvore cita "${tool.ultimate.name}"`);
   }
 
   const resumo = getTreeSummary(archetype);
@@ -81,7 +84,14 @@ const veloz = nucleo.branches.find(branch => branch.id === 'veloz');
 assert.equal(veloz.state, 'pronto');
 assert(veloz.nodes.some(node => node.state === 'pronto' && /Velocidade Temporal/.test(node.name)));
 assert(veloz.nodes.some(node => /exige estar transformado/.test(node.note ?? '')), 'árvore avisa a regra da forma');
-for (const id of ['bruta', 'fluida', 'puro']) {
+// Quebra Sistemas já tem transformação (T) e Ultimate próprias: o galho é
+// 'pronto' nos nós que existem e mantém o resto como projeto.
+const bruta = nucleo.branches.find(branch => branch.id === 'bruta');
+assert.equal(bruta.state, 'pronto', 'bruta: forma jogável');
+assert(bruta.nodes.some(node => node.state === 'pronto' && /Devorador de Tectônica/.test(node.name)), 'bruta: Ultimate própria');
+assert(bruta.nodes.some(node => node.state === 'pronto' && /Demolição de peso/.test(node.name)), 'bruta: utilidade jogável');
+assert(bruta.nodes.some(node => node.state === 'projeto'), 'bruta: ainda tem horizonte');
+for (const id of ['fluida', 'puro']) {
   const forma = nucleo.branches.find(branch => branch.id === id);
   assert.equal(forma.state, 'projeto', `${id}: forma futura`);
   assert(forma.nodes.some(node => /Ultimate/.test(node.note ?? '')), `${id}: ultimate desenhada, sem forma`);

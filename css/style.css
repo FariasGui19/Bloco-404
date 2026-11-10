@@ -2263,10 +2263,39 @@ body.in-menu #controls {
 .nucleo-form b, .nucleo-form small { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
 .nucleo-art-ready .nucleo-orbit .nucleo-form { width: 29%; height: 32%; }
 @keyframes nucleo-preview-float { 50% { transform: translateY(-5px) scale(1.04); filter: drop-shadow(0 0 12px #8dffa7); } }
-#nucleoTimer { display: none; margin-bottom: 7px; color: #a7ffbb; font-size: 10px; font-weight: bold; letter-spacing: .05em; }
+#nucleoTimer { display: none; margin-bottom: 7px; color: var(--form-color, #a7ffbb); font-size: 10px; font-weight: bold; letter-spacing: .05em; }
+/* Quebra Sistemas: barra de forma em âmbar, com a leitura de peso do metal. */
+#nucleoTimer.bruta { color: #ffcf6b; text-shadow: 0 0 10px #ffb02e55; letter-spacing: .07em; }
 #nucleoTimer.visible { display: block; }
 @media (prefers-reduced-motion: reduce) { .nucleo-preview { animation: none; } }
 .attack-strain { margin-top: 5px; color: #b7cabf; font-size: 9px; line-height: 1.35; letter-spacing: .02em; }
+
+/* =====================================================================
+   SELETOR DO NÚCLEO — DUAS FORMAS JOGÁVEIS
+   O anel agora lista as formas do dado: Veloz e Quebra Sistemas podem ser
+   escolhidas; Fluida e Núcleo continuam como projeto, com cadeado.
+   ===================================================================== */
+.nucleo-form-0 { top: 0; left: 50%; transform: translateX(-50%); }
+.nucleo-form-1 { top: 50%; right: 0; left: auto; transform: translateY(-50%); }
+.nucleo-form-2 { bottom: 0; left: 50%; top: auto; transform: translateX(-50%); }
+.nucleo-form-3 { top: 50%; left: 0; transform: translateY(-50%); }
+.nucleo-form .nucleo-form-lock { display: block; font-size: 20px; color: #47695c; line-height: 1.1; }
+.nucleo-form[disabled] { cursor: not-allowed; opacity: .55; border-color: #3b6a58; background: #0d241d; box-shadow: none; }
+.nucleo-form[disabled]:hover, .nucleo-form[disabled]:focus-visible { outline: none; background: #0d241d; }
+.nucleo-form.selected:not([disabled]) { border-color: #e8ffe0; box-shadow: 0 0 22px #8dffa7, inset 0 0 12px #62ffa522; }
+.nucleo-form.active:not([disabled]) { border-color: #ffd465; box-shadow: 0 0 24px #ffc94a99; }
+.nucleo-form.active:not([disabled])::after { content: 'ATIVA'; position: absolute; bottom: -13px; left: 50%; transform: translateX(-50%); font-size: 8px; letter-spacing: .12em; color: #ffd465; }
+.nucleo-form-1.active:not([disabled])::after, .nucleo-form-3.active:not([disabled])::after { bottom: auto; top: 50%; left: auto; right: -20px; transform: translateY(-50%) rotate(90deg); }
+/* A Quebra Sistemas é âmbar: o cartão avisa a identidade antes do clique. */
+.nucleo-form[data-tool="nucleo_bruto"]:not([disabled]) { color: #ffe6b0; border-color: #d8a44a; background: #2a2113; box-shadow: 0 0 18px #ffc94a66; }
+.nucleo-form[data-tool="nucleo_bruto"]:not([disabled]):hover,
+.nucleo-form[data-tool="nucleo_bruto"]:not([disabled]):focus-visible { background: #4a3618; outline: 2px solid #fff0cf; }
+/* Miniatura vinda de uma folha de sprites: sem flutuar, ela é retrato. */
+.nucleo-preview-sheet { filter: drop-shadow(0 0 5px #ffbf4a); animation: none; }
+@media (max-width: 520px) {
+  .nucleo-form { width: 76px; height: 62px; }
+  .nucleo-form small { display: none; }
+}
 
 /* =====================================================================
    DIÁRIO — MISSÕES CONTÁVEIS E ÁRVORE DE PROGRESSÃO

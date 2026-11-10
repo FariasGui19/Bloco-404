@@ -25,6 +25,7 @@ import { getBioDashProfile } from './ability-context.js';
 import { tryArchetypePower, POWER_PROFILES } from './archetype-powers.js';
 import { openGate } from './gates.js';
 import { saveGame } from './save.js';
+import { getDerivedStats } from './rpg.js';
 
 // ---------------------------------------------------------------------
 // CONFIGURAÇÃO INTERNA DE HABILIDADES
@@ -267,10 +268,11 @@ export function updateAbilities(dt) {
     );
   }
 
-  // Regeneração de energia.
+  // Regeneração de energia (a árvore do arquétipo pode somar aqui).
+  const energyRegen = CONFIG.ABILITIES.ENERGY_REGEN + (getDerivedStats(state.progress)?.energyRegen ?? 0);
   player.energy = Math.min(
     player.maxEnergy,
-    player.energy + CONFIG.ABILITIES.ENERGY_REGEN * dt
+    player.energy + energyRegen * dt
   );
   // NOVO: Controla o tempo que o player fica ajoelhado escaneando
   if (player.ability.scanning > 0) {

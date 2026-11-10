@@ -1919,6 +1919,57 @@ body.in-menu #controls {
   transform: translateX(0);
 }
 
+.ability-level-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+
+  margin-bottom: 5px;
+}
+
+#abilityLevel {
+  color: #ffe98a;
+  font-size: 11px;
+  letter-spacing: 0.10em;
+}
+
+#abilityTreePoints {
+  color: #9af9c8;
+  font-size: 9px;
+  letter-spacing: 0.10em;
+}
+
+.ability-xp-track {
+  height: 4px;
+  overflow: hidden;
+
+  background: rgba(255, 233, 138, 0.14);
+  border-radius: 999px;
+}
+
+#abilityXpFill {
+  width: 0%;
+  height: 100%;
+
+  background: linear-gradient(90deg, #d7b13f, #ffe98a);
+  border-radius: inherit;
+
+  box-shadow: 0 0 8px rgba(255, 233, 138, 0.55);
+
+  transition: width 0.18s linear;
+}
+
+.ability-xp-text {
+  display: block;
+
+  margin: 3px 0 8px;
+
+  color: #8ca2a7;
+  font-size: 8px;
+  letter-spacing: 0.12em;
+  text-align: right;
+}
+
 .ability-energy-row {
   display: flex;
   align-items: center;
@@ -2216,3 +2267,128 @@ body.in-menu #controls {
 #nucleoTimer.visible { display: block; }
 @media (prefers-reduced-motion: reduce) { .nucleo-preview { animation: none; } }
 .attack-strain { margin-top: 5px; color: #b7cabf; font-size: 9px; line-height: 1.35; letter-spacing: .02em; }
+
+/* =====================================================================
+   DIÁRIO — MISSÕES CONTÁVEIS E ÁRVORE DE PROGRESSÃO
+   ===================================================================== */
+
+.journal-progress-head {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+
+  margin-bottom: 10px;
+
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+.journal-progress-head strong {
+  color: #91f4da;
+  letter-spacing: 0.08em;
+}
+
+.journal-progress-stats {
+  color: #f4d77e;
+  font-size: 9px;
+  letter-spacing: 0.06em;
+}
+
+.journal-tree {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 8px;
+}
+
+/* Botões de nó: a cor da borda identifica o ramo (ataque/fluxo/eco). */
+#questJournal .tree-node {
+  display: grid;
+  gap: 2px;
+
+  padding: 8px 9px;
+
+  border: 1px solid var(--branch, #65bba7);
+  border-left-width: 4px;
+  border-radius: 6px;
+
+  background: rgba(6, 26, 30, 0.9);
+
+  font: inherit;
+  font-size: 10px;
+  text-align: left;
+}
+
+#questJournal .tree-node strong {
+  color: #eafff7;
+  font-size: 10px;
+  letter-spacing: 0.04em;
+}
+
+#questJournal .tree-node small {
+  color: #8fb6ae;
+  font-size: 8.5px;
+  line-height: 1.4;
+}
+
+.tree-node-branch {
+  color: var(--branch, #65bba7);
+  font-size: 8px;
+  letter-spacing: 0.14em;
+}
+
+.tree-node-rank {
+  color: #ffe98a;
+  font-size: 9px;
+}
+
+.tree-node-status {
+  color: #9af9c8;
+  font-size: 8.5px;
+  letter-spacing: 0.06em;
+}
+
+#questJournal .tree-node.locked {
+  opacity: 0.55;
+  cursor: not-allowed;
+  border-style: dashed;
+}
+
+#questJournal .tree-node.locked .tree-node-status {
+  color: #c98d7d;
+}
+
+#questJournal .tree-node.maxed {
+  border-color: #ffe98a;
+  background: rgba(28, 26, 8, 0.75);
+}
+
+.journal-quest {
+  margin-bottom: 8px;
+  padding: 8px 10px;
+
+  border: 1px solid rgba(101, 187, 167, 0.4);
+  border-radius: 6px;
+
+  background: rgba(6, 26, 30, 0.7);
+  font-size: 11px;
+}
+
+.journal-quest strong {
+  color: #f4d77e;
+  font-size: 9px;
+  letter-spacing: 0.12em;
+}
+
+.journal-quest.completed strong {
+  color: #9af9c8;
+}
+
+.journal-quest ul {
+  margin: 5px 0 0;
+  padding-left: 16px;
+}
+
+.journal-quest li.done {
+  color: #9af9c8;
+  text-decoration: line-through;
+}

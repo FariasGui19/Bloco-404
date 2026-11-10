@@ -6,7 +6,8 @@ for (const [archetype, profile] of Object.entries(BASIC_ATTACKS)) {
   const player = { x: 3, y: 3, facing: 'down', ability: {} };
   for (let i = 0; i < profile.strain.hits; i++) {
     assert(tryBasicAttack({player, progress: { archetype }, map, targets: [], point: {x: 4, y: 4}}));
-    if (i < profile.strain.hits - 1) updateBasicCombat(player, [], .5);
+    // Cada arquétipo tem recarga própria; avance o suficiente para o próximo golpe.
+    if (i < profile.strain.hits - 1) updateBasicCombat(player, [], profile.cooldown + .01);
   }
   assert.equal(player.combat.strained, true);
   assert.equal(player.combat.cooldown, profile.cooldown + profile.strain.extra);

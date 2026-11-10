@@ -103,6 +103,9 @@ await loadSprites([
   { id: 'player_10x_lvl1', src: 'assets/sprites/player/player-10x-lvl1.png' },
   { id: 'veloz_ataque_direcional', src: 'assets/source-art/proximas-animacoes/veloz-ataque-alternativa.png' },
   { id: 'veloz_corrida_lateral', src: 'assets/source-art/proximas-animacoes/veloz-lateral.png' },
+  // Caminhada vertical da Forma Veloz (4 quadros por direção, alpha real).
+  { id: 'veloz_andar_frente', src: 'assets/sprites/player/player-10x-veloz-andar-frente.png' },
+  { id: 'veloz_andar_costas', src: 'assets/sprites/player/player-10x-veloz-andar-costas.png' },
   { id: 'bio_condutor_quebrado', src: 'assets/sprites/estacao-bio/reparo-condutor-quebrado.png' },
   { id: 'bio_condutor_ativo', src: 'assets/sprites/estacao-bio/reparo-condutor-ativo.png' },
   { id: 'bio_regulador_quebrado', src: 'assets/sprites/estacao-bio/reparo-regulador-quebrado.png' },

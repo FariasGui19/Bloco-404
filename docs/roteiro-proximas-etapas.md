@@ -8,7 +8,7 @@ Uma ilha compartilhada, um arquétipo por personagem e progressão contínua. O 
 
 - Refinar saguão, NEXO, viajante e leitura de direções; validar com o jogador em câmera, zoom e deslocamento reais.
 - **Lúmeo — primeiro vínculo opcional:** investigar três vestígios da Enseada, ouvir um sinal junto à trilha, acalmar a ressonância nas ruínas e oferecer companhia ao eco na mata. O diário aponta o encontro; ele acompanha sem bloquear ou atacar, com visual procedural provisório. O vínculo é salvo, sem substituir a missão principal. Ainda faltam recolher/dispensar, tela de companheiros, arte definitiva e comportamento mais robusto. Bolt tem prévia local opt-in no diário; autenticação e missão pessoal continuam pendentes, sem concessão automática.
-- Completar caminhadas coerentes das quatro direções da Forma Veloz e NEXO. A nova folha da Forma Veloz contém vistas predominantemente laterais; não fingir que são frente/costas. Novas folhas de Domínio/Maré são referências de poses, não sequências completas; usar somente quando não trocarem a identidade do traje.
+- ~~Completar caminhadas coerentes das quatro direções da Forma Veloz~~ — feito: as direções frente e costas agora têm folhas próprias de 4 quadros em PNG com alpha (`player-10x-veloz-andar-frente/costas.png`) e o renderer não assume mais grade fixa. O ataque básico vertical da forma ainda usa pose lateral provisória. A caminhada do NEXO continua pendente. Novas folhas de Domínio/Maré são referências de poses, não sequências completas; usar somente quando não trocarem a identidade do traje.
 - Consolidar primeiro objetivo da ilha: missão própria por arquétipo que leva da calibração à Enseada, com retorno, diário, recompensa útil, teste de saves antigos e nenhuma segunda escolha de arquétipo.
 
 ## 2. Primeiro inimigo, depois chefe
@@ -40,3 +40,19 @@ Veja `docs/estacao-bio-e-bolt.md` para o setor explorável provisório e a prév
 ## Atualização 0.3.5: base espacial antes de mais conteúdo
 
 A Estação Bio ganhou decks caminháveis sobre os canais, guarda-corpos com profundidade por trecho, camadas de desenho para as estruturas grandes, hitbox do terminal medida, aventais de piso, sombras de apoio e uma rede de pressão que torna os reparos existentes perceptíveis e leva a uma válvula opcional na estufa. Foram geradas e implementadas exatamente duas imagens estáticas (cabeceira e distribuidor), não folhas de animação; a ordem e a justificativa estão em `docs/ordem-de-arte-e-implementacao.md`. O ciclo de vida do jogador, inimigos telegrafados, minibosses, nave e voo contínuo seguem nas etapas acima: nada disso foi antecipado ou declarado pronto. O passo da válvula não concede recompensa nem conclui o setor; é apenas a primeira consequência jogável dos reparos.
+
+
+## Atualização — sistemas de RPG (dano, XP, missões e árvore)
+
+O ataque básico deixou de causar "1 de dano" fixo. Cada arquétipo tem dano,
+número de golpes, recarga, alcance e crítico próprios; alvos de treino têm
+vida real, derrubam, dão XP e contam missões. Nível, pontos e ranks da árvore
+são salvos em `progress.archetypeProgress`, com migração aditiva para saves
+antigos. As habilidades de impacto (Ruptura, Passo de Corrente, pulso da
+Forma Veloz e Propulsor) também causam dano; varreduras continuam sem dano.
+
+Detalhes, tabela de números e pendências: [`sistemas-rpg-dano-xp-missoes.md`](sistemas-rpg-dano-xp-missoes.md).
+
+O que **não** está pronto: inimigos agressivos, vida do jogador com fonte de
+dano, morte/invulnerabilidade, resistências e a UI dedicada da árvore. O
+balanceamento definitivo depende do primeiro inimigo real.

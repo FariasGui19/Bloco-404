@@ -222,7 +222,7 @@ export const map = {
   bioBridges, bioBridgeRails, bioNetwork,
   spawnPoints: { inicio: { x: 9.5, y: 10.5 } },
   objects,
-  trainingTargets: [{ id: 'simulador_bio_1', x: 33, y: 18, maxHealth: 3 }, { id: 'simulador_bio_2', x: 48, y: 51, maxHealth: 3 }],
+  trainingTargets: [{ id: 'simulador_bio_1', x: 33, y: 18, maxHealth: 60 }, { id: 'simulador_bio_2', x: 48, y: 51, maxHealth: 60 }],
   collectibles: [
     { id: 'bio_estacao_condutor', nome: 'CONDUTOR', tipo: 'fragmento', x: 15, y: 15, label: 'EXAMINAR CONDUTOR', dialogue: ['UM CONDUTOR FALHOU NA ESTAÇÃO.', 'PROCURE O REGULADOR NO PÁTIO.'] },
     { id: 'bio_estacao_regulador', nome: 'REGULADOR', tipo: 'fragmento', x: 36, y: 20, requiresFlag: 'collected_bio_estacao_condutor', label: 'AJUSTAR REGULADOR', dialogue: ['A PRESSÃO COMEÇA A ESTABILIZAR.', 'REATIVE A ESTUFA NO SETOR MAIS DISTANTE.'] },

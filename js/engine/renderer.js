@@ -9,6 +9,7 @@ import { camera, view, worldToScreen, isoToWorld } from './camera.js';
 import { drawUltimateSignature } from './ultimate-visuals.js';
 import { getSprite } from './sprites.js';
 import { createBeachSurface } from './beach-surface.js';
+import { getSeaCanvas, foamArcs } from './beach-water.js';
 import { bridgeGateGeometry } from './bridge-geometry.js';
 import { getBioWalkFrame, bioWalkSheet } from '../data/bio-walk.js';
 import { faunaFootAnchor } from '../game/fauna-costeira.js';
@@ -94,9 +95,12 @@ export function render(map, state) {
   // O metrô modular volta a usar chão e tiles.
   if (!map.meta?.backgroundCoversFloor) {
     if (map.aguaPraia) {
+      // AREIA primeiro, MAR por cima: o mar recorta a própria borda pelo campo
+      // de costa (`beach-water.js`), então a linha d'água é curva em vez de
+      // seguir a borda quadrada das células de areia.
+      if (map.id !== 'ilha_estacao_bio') drawBeachSurface(map);
       drawBeachSea(map);
       drawBeachRipples(map);
-      if (map.id !== 'ilha_estacao_bio') drawBeachSurface(map);
     }
     drawFloors(map);
     drawHazards(state.hazards);
@@ -111,7 +115,6 @@ export function render(map, state) {
       drawStationRoute(map);
       drawBioShadows(map);
     }
-    if (map.aguaPraia) drawBeachShore(map);
 
     if (map.metroTiles) {
       drawMetroPlatformTiles(map);
@@ -386,57 +389,17 @@ function drawFloors(map) {
   }
 }
 
-// Textura de mar contínua em coordenadas de mundo. A distância é calculada
-// até a areia (não até pontes), sem modificar a máscara de colisão.
-const beachSeaCache = new WeakMap();
+// O mar é uma textura única ASSADA por mapa (js/engine/beach-water.js):
+// degradê, bancos submersos, cáusticas, espuma da margem e linha de espuma
+// recuada vêm todos dela. Antes isso era recalculado pixel a pixel no
+// primeiro frame e as ondas/espuma eram redesenhadas a cada quadro.
 function drawBeachSea(map) {
-  let texture = beachSeaCache.get(map);
-  const rows = map.aguaPraia;
-  const width = rows[0].length, height = rows.length;
-  if (!texture) {
-    const scale = 8;
-    texture = document.createElement('canvas');
-    texture.width = width * scale;
-    texture.height = height * scale;
-    const sea = texture.getContext('2d');
-    const image = sea.createImageData(texture.width, texture.height);
-    const shallow = [111, 200, 184], deep = [30, 99, 132];
-    for (let py = 0; py < texture.height; py++) {
-      for (let px = 0; px < texture.width; px++) {
-        const wx = (px + 0.5) / scale, wy = (py + 0.5) / scale;
-        let closest = 5;
-        for (let y = Math.max(0, Math.floor(wy) - 5); y <= Math.min(height - 1, Math.floor(wy) + 5); y++) {
-          for (let x = Math.max(0, Math.floor(wx) - 5); x <= Math.min(width - 1, Math.floor(wx) + 5); x++) {
-            if (!'SMTPR'.includes(rows[y][x])) continue;
-            const dx = Math.max(x - wx, 0, wx - (x + 1));
-            const dy = Math.max(y - wy, 0, wy - (y + 1));
-            closest = Math.min(closest, Math.hypot(dx, dy));
-          }
-        }
-        // Degradê contínuo entre a margem e o mar aberto.
-        const edge = Math.min(wx, wy, width - wx, height - wy);
-        const border = Math.max(0, Math.min(1, edge / 1.6));
-        const t = Math.max(Math.min(1, closest / 4.5), 1 - border * border * (3 - 2 * border));
-        const smooth = t * t * (3 - 2 * t);
-        // Bancos submersos sutis unem visualmente as enseadas sem criar terra.
-        const bank = (1 - smooth) * Math.max(0, Math.sin(wx * .65 + Math.sin(wy * .5) * 1.8) - .45) * 8;
-        const detail = bank + (1 - smooth) * (Math.sin(wx * 4.1 + Math.sin(wy * 2.3)) * 3 + Math.sin(wy * 3.2 - wx * .7) * 2);
-        // Cintilações entrelaçadas somente no raso, assadas no cache.
-        const a = Math.sin(wx * 3.5 + Math.sin(wy * 2.2) * 1.4);
-        const b = Math.sin(wy * 3.1 + Math.sin(wx * 2.0) * 1.2);
-        const caustic = Math.max(0, (a + b) * .5 - .45) * 42 * (1 - smooth);
-        const i = (py * texture.width + px) * 4;
-        for (let c = 0; c < 3; c++) image.data[i + c] = shallow[c] * (1 - smooth) + deep[c] * smooth + detail + caustic;
-        image.data[i + 3] = 255;
-      }
-    }
-    sea.putImageData(image, 0, 0);
-    beachSeaCache.set(map, texture);
-  }
+  const sea = getSeaCanvas(map);
+  if (!sea) return;
   ctx.save();
   ctx.transform(HW, HH, -HW, HH, 0, 0);
   ctx.imageSmoothingEnabled = true;
-  ctx.drawImage(texture, 0, 0, width, height);
+  ctx.drawImage(sea.canvas, 0, 0, map.aguaPraia[0].length, map.aguaPraia.length);
   ctx.restore();
 }
 
@@ -454,7 +417,7 @@ function drawBeachSurface(map) {
     image.data.set(data.pixels);
     paint.putImageData(image, 0, 0);
     // Grãos e sulcos sutis são assados no cache, não redesenhados por frame.
-    const rows = map.aguaPraia, scale = data.width / rows[0].length;
+    const rows = map.aguaPraia, scale = data.scale;
     paint.strokeStyle = 'rgba(145,101,58,.20)'; paint.lineWidth = .8;
     paint.lineCap = 'round'; paint.beginPath();
     for (let y = 0; y < rows.length; y++) for (let x = 0; x < rows[y].length; x++) {
@@ -476,78 +439,35 @@ function drawBeachSurface(map) {
   ctx.drawImage(texture, 0, 0, map.aguaPraia[0].length, map.aguaPraia.length);
   ctx.restore();
 }
-
-// Reflexos também no mar além dos limites do mapa: o fundo deixa de ser
-// um vazio chapado, sem criar terrenos jogáveis nem alterar a colisão.
+// MOVIMENTO DA ÁGUA — só a animação aditiva, em orçamento fixo.
+// A espuma e as ondulações estáticas já estão na textura assada; aqui sobram
+// alguns arcos que sobem e descem na beira. `foamArcs` devolve no máximo
+// `limit` itens por quadro, então afastar a câmera não aumenta o custo.
+const SHORE_ARC_BUDGET = 72;
 function drawBeachRipples(map) {
-  const halfW = view.w / (2 * camera.zoom);
-  const halfH = view.h / (2 * camera.zoom);
-  const corners = [
-    isoToWorld(camera.x - halfW, camera.y - halfH),
-    isoToWorld(camera.x + halfW, camera.y - halfH),
-    isoToWorld(camera.x + halfW, camera.y + halfH),
-    isoToWorld(camera.x - halfW, camera.y + halfH),
-  ];
-  const spacing = 1.6;
-  const x0 = Math.floor(Math.min(...corners.map(p => p.x)) / spacing) - 1;
-  const x1 = Math.ceil(Math.max(...corners.map(p => p.x)) / spacing) + 1;
-  const y0 = Math.floor(Math.min(...corners.map(p => p.y)) / spacing) - 1;
-  const y1 = Math.ceil(Math.max(...corners.map(p => p.y)) / spacing) + 1;
   const rows = map.aguaPraia;
-
+  const time = performance.now() / 1000;
+  const arcs = foamArcs(rows, range, time, SHORE_ARC_BUDGET);
+  if (!arcs.length) return;
   ctx.save();
-  const waveTime = performance.now() / 1000;
-  ctx.strokeStyle = `rgba(176, 238, 226, ${0.22 + 0.05 * Math.sin(waveTime * 0.9)})`;
-  ctx.lineWidth = 1;
   ctx.lineCap = 'round';
-  ctx.beginPath();
-  for (let y = y0; y <= y1; y++) {
-    for (let x = x0; x <= x1; x++) {
-      if (hash(x + 319, y - 871) > 0.58) continue;
-      const wx = (x + hash(x + 29, y + 17)) * spacing;
-      const wy = (y + hash(x - 37, y + 53)) * spacing;
-      const tile = rows[Math.floor(wy)]?.[Math.floor(wx)];
-      if (tile && 'SMTPRBb'.includes(tile)) continue;
-      const ix = (wx - wy) * HW + Math.sin(waveTime * 0.7 + x * 0.8 + y) * 2, iy = (wx + wy) * HH;
-      const length = 6 + hash(x + 117, y - 62) * 10;
-      ctx.moveTo(ix - length / 2, iy);
-      ctx.quadraticCurveTo(ix, iy - 2.2, ix + length / 2, iy);
-      if (hash(x - 19, y + 23) < 0.22) {
-        ctx.moveTo(ix - length * 0.18, iy + 3);
-        ctx.lineTo(ix + length * 0.22, iy + 3);
-      }
-    }
+  for (const { x, y, phase, seed } of arcs) {
+    const ix = (x - y) * HW, iy = (x + y) * HH;
+    const rise = Math.sin(phase * Math.PI);
+    const alpha = .5 * (1 - rise) * (.55 + seed * .45);
+    if (alpha <= .02) continue;
+    const len = 7 + seed * 7;
+    const off = (1 - rise) * 3.2;
+    ctx.strokeStyle = `rgba(232,255,247,${alpha.toFixed(3)})`;
+    ctx.lineWidth = 1 + seed * .8;
+    ctx.beginPath();
+    ctx.moveTo(ix - len / 2, iy + off);
+    ctx.quadraticCurveTo(ix, iy + off - 2.4, ix + len / 2, iy + off);
+    ctx.stroke();
   }
-  ctx.stroke();
   ctx.restore();
 }
 
-// Pequenos arcos de espuma interrompidos, em água junto à areia. Evita
-// sublinhar os dentes da máscara com uma linha geométrica contínua.
-function drawBeachShore(map) {
-  const rows = map.aguaPraia;
-  const sand = (x, y) => 'SMT'.includes(rows[y]?.[x] ?? ' ');
-  ctx.save(); ctx.strokeStyle = 'rgba(222,255,240,.44)';
-  ctx.lineWidth = 1.25; ctx.lineCap = 'round';
-  const wave = performance.now() / 1000;
-  for (let y = range.y0; y <= range.y1; y++) for (let x = range.x0; x <= range.x1; x++) {
-    if (!'Yy'.includes(rows[y]?.[x] ?? ' ')) continue;
-    const tx = (x-y)*HW, ty = (x+y)*HH;
-    const edges = [
-      [x-1,y,tx-HW,ty+HH,tx,ty], [x,y-1,tx,ty,tx+HW,ty+HH],
-      [x+1,y,tx+HW,ty+HH,tx,ty+TH], [x,y+1,tx,ty+TH,tx-HW,ty+HH],
-    ];
-    for (const [nx,ny,ax,ay,bx,by] of edges) {
-      if (!sand(nx,ny) || hash(x + nx*7, y + ny*11) < .22) continue;
-      const shift = Math.sin(wave * .8 + x * .5 + y) * 1.5;
-      const sx = ax*.8+bx*.2, sy = ay*.8+by*.2;
-      const ex = ax*.2+bx*.8, ey = ay*.2+by*.8;
-      ctx.beginPath(); ctx.moveTo(sx, sy + shift);
-      ctx.quadraticCurveTo((ax+bx)/2, (ay+by)/2 + shift - 2, ex, ey + shift); ctx.stroke();
-    }
-  }
-  ctx.restore();
-}
 
 function drawFloorTile(type, x, y, map) {
   const tx = (x - y) * HW;

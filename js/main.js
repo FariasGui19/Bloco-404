@@ -13,6 +13,8 @@ import { canStandAt } from './game/collision.js';
 import { dispararPropulsao } from './game/nado.js';
 import { desenharMedidorAr } from './ui/nado-hud.js';
 import { atualizarMissaoMare, criarFragmentosDeMare } from './game/mare-missao.js';
+import { alternarMorfador, manterInfinitos, autorizado } from './game/morfador.js';
+import { alternarPainel, morfadorAberto, promoverAutoria } from './ui/morfador-panel.js';
 import { getCoastFieldForMap } from './engine/coast-field.js';
 import { CONFIG } from './config.js';
 import { isCodexOpen, openCodex, closeCodex, handleCodexInput } from './ui/codex.js';
@@ -398,6 +400,19 @@ async function update(dt) {
       return;
     }
 
+    // MORFADOR DE RESSONÂNCIA — modo criador. Só para save de autoria:
+    // sem a flag, a tecla não faz absolutamente nada (nem loga).
+    if (input.pressed.has('m') || input.pressed.has('keym')) {
+      if (autorizado(state.progress)) {
+        alternarPainel(state.progress, player);
+        player.moving = false; player.target = null;
+        return;
+      }
+    }
+    // O painel aberto prende o mouse como um menu, mas o jogo segue vivo:
+    // é assim que se testa habilidade com o painel à vista.
+    if (player.morfador?.ativo) manterInfinitos(state.progress, player);
+
     // Durante a carga da Ultimate o corpo está tomado: sem ataque básico.
     const carregandoUltimate = (player.ultimate?.charge ?? 0) > 0;
     if (!carregandoUltimate) updateBasicCombat(player, state.trainingTargets, dt);
@@ -473,6 +488,18 @@ async function update(dt) {
   }
   updateOwnedCompanion(state, getFloor(), dt, canStandAt);
   updateCamera(dt, player.x, player.y);
+}
+
+// =====================================================================
+// AUTORIA — comando do criador
+//
+// O Morfador não abre sozinho. O criador digita, UMA vez, no console:
+//     __morfador("morfador_de_ressonancia")
+// e este save passa a ser de autoria. A chave é o nome da própria flag: não
+// é senha, é um gesto explícito, e por isso nunca aparece em save novo.
+// =====================================================================
+if (typeof window !== 'undefined') {
+  window.__morfador = (chave) => promoverAutoria(state.progress, chave);
 }
 
 // =====================================================================

@@ -29,6 +29,7 @@ import { ARCHETYPE_KITS } from '../data/archetype-kits.js';
 import { applyUnlocks } from './unlocks.js';
 import { ensureArchetypeProgress } from './progression.js';
 import { startQuest } from './quests.js';
+import { podeEscolherArquetipo, arquetiposEmUso } from './personas.js';
 
 function createEmptyScores() {
   return {
@@ -202,6 +203,25 @@ function openVisualPreview(actor, archetypeId, recommendedId) {
 
 function finalizeArchetype(actor, archetypeId) {
   const archetype = ARCHETYPES[archetypeId];
+
+  // UM MÓDULO DE CADA entre os 4 operadores. Se outro save já usa este
+  // arquétipo, o Núcleo recusa a instalação em vez de duplicar.
+  const slot = state.save?.activeSlot;
+  if (!podeEscolherArquetipo(archetypeId, slot)) {
+    const dono = arquetiposEmUso(slot).get(archetypeId);
+    openDialogue({
+      speaker: 'NEXO-04',
+      speakerId: actor?.id,
+      dialogue: [
+        'INSTALAÇÃO RECUSADA.',
+        `O MÓDULO ${archetype.nome} JÁ ESTÁ EM USO PELO OPERADOR ${String(dono).padStart(2, '0')}.`,
+        'CADA UM DOS QUATRO OPERADORES CARREGA UM MÓDULO DIFERENTE.',
+        'ESCOLHA OUTRO ARQUÉTIPO.',
+      ],
+      onFinish: () => {},
+    });
+    return;
+  }
 
   state.progress.archetype = archetypeId;
   // Libera o kit inicial de habilidades do módulo escolhido. 

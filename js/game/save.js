@@ -17,7 +17,9 @@ import { applyUnlocks } from './unlocks.js';
 import { ARCHETYPE_KITS } from '../data/archetype-kits.js';
 
 const SAVE_VERSION = 1;
-const SLOT_COUNT = 3;
+// 4 personas criáveis: um arquétipo por save, no máximo.
+// (O criador pediu para poder criar um de cada.)
+const SLOT_COUNT = 4;
 const SAVE_PREFIX = 'BLOCO404_SAVE_SLOT_';
 
 function getSlotKey(slot) {

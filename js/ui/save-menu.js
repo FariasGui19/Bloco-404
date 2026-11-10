@@ -14,6 +14,7 @@ import {
 } from '../game/save.js';
 
 import { ARCHETYPES } from '../data/onboarding.js';
+import { arquetiposEmUso, PERSONAS_MAX } from '../game/personas.js';
 
 let root;
 let slotsContainer;
@@ -56,9 +57,16 @@ export function closeSaveMenu() {
 }
 
 function renderSlots() {
-  const saves = listSaves();
+  const saves = listSaves().slice(0, PERSONAS_MAX);
+  const uso = arquetiposEmUso();
 
   slotsContainer.innerHTML = '';
+
+  // Cabeçalho: deixa claro que são 4 operadores e que cada módulo é único.
+  const nota = document.createElement('p');
+  nota.className = 'save-slots-note';
+  nota.textContent = `${saves.filter(s => s.save).length}/${PERSONAS_MAX} OPERADORES • UM MÓDULO DE CADA`;
+  slotsContainer.appendChild(nota);
 
   for (const { slot, save } of saves) {
     const card = document.createElement('article');

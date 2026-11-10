@@ -412,6 +412,29 @@ O portal cenográfico passou a envolver melhor a traseira do trem: foi ampliado 
 - Maré Astral: bloco **ROTAS DE MARÉ** na aba Missões do Códex (região atual, vizinhas `ROTA ABERTA`/`EM PROJETO`) e três modos listados como plano — nado livre, navegação e missões de travessia. É leitura de mapa: não cria portal, não move o jogador, não altera save.
 - **Pendente:** o sistema de navegação em si (nado livre, rotas com destino, portos, missões de travessia) e as transformações Bruta/Fluida/Núcleo. Avaliação visual das novas assinaturas em movimento continua no navegador.
 
+### 0.8.0 — Domínio Ancião fecha a série
+
+O quarto módulo ganhou execução desenhada do `F`: cinco folhas de quatro
+quadros (1280×320), uma por assinatura — `coroa`, `lamina_vertical`,
+`muralha_hex`, `tita` e `trono`. Código em
+`js/data/dominio-ultimate-animation.js`, arte em `assets/source-art/dominio/`,
+preparador em `tools/preparar-dominio-ultimate.py`.
+
+A lição técnica da rodada está em `tools/dominio_arte.py`: com efeito dourado
+sólido, medir o corpo pela caixa do desenho encolhe o operador justo no quadro
+do impacto (a parede da muralha cobre o tronco). O corpo passou a ser medido
+pelo cabelo (topo e centro) e pela sola da bota, com UMA escala por folha.
+
+`drawDominioFx` acrescenta a leitura ambiental (faíscas, anel e runas na cor da
+ferramenta). O Códex mostra a pose de preparo de cada arma. Teste novo:
+`tests/dominio-ultimate.mjs`, que também protege o dash da INVESTIDA — mesmo
+bug que matou a CORRENTE ABISSAL do Maré.
+
+**Pendente:** a parede hex cobre o peito no quadro do impacto (regerar no
+futuro com a parede na cintura) e a cor da ferramenta no HUD durante o bônus.
+Validação: 64 testes automatizados; a leitura em movimento continua no
+navegador do jogador.
+
 ## Justificativa da fila
 
 A Estação Bio (0.3.5 e 0.3.6) foi priorizada para consolidar o ciclo terrestre

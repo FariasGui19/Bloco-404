@@ -23,6 +23,7 @@ import { getUltimateFrame } from '../data/nucleo-ultimate-animation.js';
 import { getBioUltimateFrame } from '../data/bio-ultimate-animation.js';
 import { getBioAttackFrame, getBioPropulsorFrame } from '../data/bio-action-animation.js';
 import { getMareUltimateFrame } from '../data/mare-ultimate-animation.js';
+import { getDominioUltimateFrame } from '../data/dominio-ultimate-animation.js';
 import { getMarePropulsorFrame } from '../data/mare-action-animation.js';
 import { getTransformFrame, getNucleoBraceletFrame } from '../data/transform-animation.js';
 import { getSelectedToolId } from '../game/tools.js';
@@ -2375,6 +2376,53 @@ function drawMareFx(player, ix, iy, gait) {
   ctx.restore();
 }
 
+// A FREQUÊNCIA DO DOMÍNIO anda com o corpo: faíscas douradas que sobem das
+// botas, um anel geométrico raso no chão e duas runas pequenas orbitando os
+// ombros. É a leitura do arquétipo (peso, geometria, ouro antigo), no mesmo
+// papel do vapor do Bio e da água do Maré: desenho, não regra.
+const DOMINIO_TOOL_GLOW = {
+  espada_de_dominio: { cor: '#ffd465' },
+  escudo_de_dominio: { cor: '#b78cff' },
+  postura_de_dominio: { cor: '#ff7d8f' },
+  investida_de_dominio: { cor: '#ff9a5c' },
+};
+
+function drawDominioFx(player, ix, iy, gait) {
+  const now = performance.now();
+  const arma = DOMINIO_TOOL_GLOW[getSelectedToolId(state.progress)] ?? { cor: '#ffd465' };
+  const forca = gait === 'walk' ? 1 : .55;
+  ctx.save();
+  // Faíscas douradas subindo das botas, com estalo no passo.
+  for (let i = 0; i < 3; i++) {
+    const ciclo = ((now * .0007) + i / 3) % 1;
+    const lado = i === 1 ? 1 : -1;
+    const px = ix + lado * (6 + ciclo * 5);
+    const py = iy - 2 - ciclo * 26;
+    ctx.globalAlpha = (1 - ciclo) * .7 * forca;
+    ctx.fillStyle = arma.cor;
+    ctx.fillRect(Math.round(px), Math.round(py), 1.6, 1.6 + (1 - ciclo) * 1.4);
+  }
+  // Anel geométrico raso: o traje carrega uma frequência antiga.
+  const pulso = .5 + Math.sin(now * .0032) * .22;
+  ctx.globalAlpha = pulso * .28 * forca;
+  ctx.strokeStyle = arma.cor;
+  ctx.lineWidth = 1.1;
+  ctx.beginPath();
+  ctx.ellipse(ix, iy + 1, 13, 5.6, 0, 0, Math.PI * 2);
+  ctx.stroke();
+  // Duas runas pequenas orbitando a altura do ombro, sempre de perfil.
+  for (let i = 0; i < 2; i++) {
+    const ang = now * .0009 + i * Math.PI;
+    const px = ix + Math.cos(ang) * 12;
+    const py = iy - 30 + Math.sin(ang) * 4;
+    ctx.globalAlpha = (.32 + Math.sin(ang) * .18) * forca;
+    ctx.fillStyle = arma.cor;
+    ctx.fillRect(Math.round(px) - 1, Math.round(py) - 3, 2.4, 5);
+    ctx.fillRect(Math.round(px) - 2, Math.round(py) - 4, 4.6, 1.4);
+  }
+  ctx.restore();
+}
+
 function drawPlayerSprite(player, ix, iy) {
   // As folhas de referência têm poses, não quadros sequenciais. Usamos uma
   // pose provisória com os pulsos animados, sem fingir que são animações finais.
@@ -2385,12 +2433,13 @@ function drawPlayerSprite(player, ix, iy) {
   // MOTOR BIO-FORJA: a Ultimate nível 1 é a ferramenta escolhida executando
   // o próprio golpe — cada uma tem folha (cúpula, serra, marreta, cabos,
   // propulsores). Fica antes do corpo parado do exo para o gesto aparecer.
-  // Três módulos já têm execução desenhada do F: Núcleo 10X (por forma),
-  // Bio-Forja (por ferramenta) e Maré (por corrente). A ordem importa
-  // porque só um deles pode desenhar o corpo.
+  // Os QUATRO arquétipos têm execução desenhada do F: Núcleo 10X (por
+  // forma), Bio-Forja (por ferramenta), Maré (por corrente) e Domínio (por
+  // arma/postura). A ordem importa porque só um deles pode desenhar o corpo.
   const ultimateFrame = getUltimateFrame(state.progress, player)
     ?? getBioUltimateFrame(state.progress, player)
-    ?? getMareUltimateFrame(state.progress, player);
+    ?? getMareUltimateFrame(state.progress, player)
+    ?? getDominioUltimateFrame(state.progress, player);
   if (ultimateFrame) {
     const imagem = getSprite(ultimateFrame.sprite);
     if (imagem) {
@@ -2421,6 +2470,8 @@ function drawPlayerSprite(player, ix, iy) {
   if (suit === 'bio_forja') drawBioForjaFx(player, ix, iy, player.moving ? 'walk' : 'idle');
   // O Maré carrega água: gotas orbitando as botas e anel de correnteza.
   if (suit === 'mare') drawMareFx(player, ix, iy, player.moving ? 'walk' : 'idle');
+  // O Domínio carrega frequência: faíscas de ouro, anel no chão e runas.
+  if (suit === 'dominio') drawDominioFx(player, ix, iy, player.moving ? 'walk' : 'idle');
   // A segunda forma do Núcleo (Quebra Sistemas) desenha o próprio peso:
   // poeira no passo, faísca das marretas e vapor na exaustão.
   if (player.nucleoForm === NUCLEO_BRUTA) {

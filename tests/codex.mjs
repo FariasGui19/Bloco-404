@@ -53,7 +53,24 @@ assert.match(panel.innerHTML, /PULSO SINTONIZADO/);
 assert.match(panel.innerHTML, /CINÉTICA/);
 assert.match(panel.innerHTML, /Não há pontos para gastar/);
 assert.match(panel.innerHTML, /NÍVEL 1/);
-assert.equal(JSON.stringify(progress), before);
+assert.match(panel.innerHTML, /ESCOLHA UMA FORMA|TROQUE A SOBRECARGA/, 'escolha de ferramenta/forma aparece');
+assert.match(panel.innerHTML, /FORMA VELOZ/, 'formas do Núcleo listadas');
+assert.match(panel.innerHTML, /data-tool="nucleo_veloz"/, 'botão de escolha existe');
+assert.match(panel.innerHTML, /CAMINHO · NÍVEIS 0–5/, 'escada do caminho aparece');
+assert.match(panel.innerHTML, /DISPONÍVEL/, 'degrau pronto marcado');
+assert.match(panel.innerHTML, /PLANEJADO/, 'degrau futuro marcado');
+assert.match(panel.innerHTML, /HORIZONTE DE DEZ ECOS/, 'Ultimate base no cartão');
+assert.equal(JSON.stringify(progress), before, 'ler o Códex não instala ferramenta');
+
+// Com ferramenta escolhida, o cartão vira a sobrecarga nível 1.
+progress.tools = { nucleo_dez_forma: 'nucleo_veloz' };
+openCodex(progress, { id: 'hub_saguao' }, player);
+assert.match(panel.innerHTML, /VELOCIDADE TEMPORAL/, 'Ultimate da forma escolhida');
+assert.match(panel.innerHTML, /TROQUE A SOBRECARGA/, 'cabeçalho muda quando já há escolha');
+assert.match(panel.innerHTML, /class="codex-tool selected"/, 'cartão da forma marcado como selecionado');
+delete progress.tools;
+
+assert.equal(JSON.stringify(progress), before, 'Códex continua só leitura');
 
 // Inventário: catálogo dá nome e descrição, item desconhecido não quebra.
 progress.inventory.push('artefato_misterioso');

@@ -73,7 +73,20 @@ Detalhes, números e testes: [`sistemas-rpg-dano-xp-missoes.md`](sistemas-rpg-da
 O que **não** está pronto: inimigos agressivos, cura por itens, resistências,
 UI de rank com histórico e balanceamento final.
 
-## Atualização — Ultimate e cor por função
+## Atualização — caminho 0–5 e sobrecarga de ferramenta
+
+Cada arquétipo ganhou o caminho de seis degraus dentro do jogo (Códex →
+Progressão): o que está disponível, o que está em teste e o que ainda é plano.
+A Ultimate nível 1 é a **sobrecarga da ferramenta** — Bio-Forja escolhe entre
+lâmina, punho, gancho e asa; Domínio entre espada, escudo, postura e investida;
+Maré entre cúpula, corrente, chicote e senso; Núcleo entre quatro formas. A
+escolha fica no save e muda a Ultimate do `F`, o cartão do Códex e a cor da HUD.
+
+O que **não** está pronto: degrau 4 (combinação/modo avançado), as Ultimates de
+arquétipo definitivas (nível 5), pose de execução, inimigo agressivo, utilidade e
+suporte.
+
+## Atualização anterior — Ultimate e cor por função
 
 A Ultimate de cada arquétipo entrou no lugar previsto pelo documento de direção
 (slot 5, tecla **F**): onda radial com dano, cura proporcional e bônus temporário

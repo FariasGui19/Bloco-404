@@ -79,6 +79,9 @@ export const state = {
 
     abilities: [],
     archetypeProgress: {},
+
+    // Ferramenta/corrente/forma escolhida por arquétipo (Ultimate nível 1).
+    tools: {},
     inventory: [],
 
     activeQuest: null,

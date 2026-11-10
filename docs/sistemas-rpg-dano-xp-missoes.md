@@ -104,11 +104,18 @@ nenhuma zona nasce sobre spawn, alvo de treino ou parede.
 
 ## 4.5 Ultimate (`F`) — o quinto slot
 
-A Ultimate estava prevista no documento de direção ("cada kit tem ataque, Q, R,
-utilidade, suporte e Ultimate, todos no nível 1") e agora está implementada.
-Ela não depende de direção: atinge tudo dentro do raio, cura o operador e deixa
-um bônus temporário do arquétipo. Recarga, bônus e efeito são de sessão — nada
-disso vai para o save.
+A Ultimate tem **duas camadas** desde a 0.4.0:
+
+1. **Ultimate de arquétipo (base)** — todo operador tem, mesmo sem ferramenta.
+   Atinge tudo dentro do raio, cura e deixa um bônus temporário.
+2. **Sobrecarga de ferramenta (nível 1)** — ao instalar uma ferramenta,
+   corrente ou forma no Códex, o `F` passa a usar a sobrecarga dela: corte em
+   linha, impacto curto, onda larga, avanço, guarda ou sintonia, com custo e
+   recarga próprios.
+
+A escolha fica em `progress.tools[arquétipo]`, é saneada ao carregar (id
+inválido volta para a base) e muda a Ultimate na HUD e no Códex na hora.
+Recarga, bônus e efeito são de sessão — nada disso vai para o save.
 
 | Arquétipo | Ultimate | Custo | Recarga | Raio | Dano | Cura | Bônus |
 | --- | --- | --- | --- | --- | --- | --- | --- |
@@ -117,9 +124,16 @@ disso vai para o save.
 | Maré | SINFONIA DO ESTUÁRIO | 54 | 24 s | 7 | 20 | 25% | +1,5 energia/s por 8 s |
 | Núcleo 10X | HORIZONTE DE DEZ ECOS | 50 | 22 s | 6 | 24 | 20% | +35% velocidade e +0,8 energia/s por 7 s |
 
-Regras verificadas por `tests/ultimate.mjs`:
+As 16 sobrecargas (quatro por arquétipo), com custo, recarga e tipo de efeito,
+estão em `docs/modos-e-habilidades.md`; os dados vivem em
+`js/data/archetype-tools.js`.
+
+Regras verificadas por `tests/ultimate.mjs` e `tests/ferramentas.mjs`:
 
 - bloqueia sem arquétipo, com vida zerada, em recarga e sem energia (sem cobrar nada);
+- corte só atinge o cone à frente; onda larga alcança o que o impacto curto não alcança;
+- guarda aplica invulnerabilidade real; avanço cria o dash do mapa (colisão manda);
+- a escolha da ferramenta sobrevive ao ciclo salvar → carregar e é saneada se o id não existir;
 - dano radial ignora a direção e não atinge quem está fora do raio;
 - cura proporcional à vida máxima do arquétipo/nível, limitada ao máximo;
 - bônus entra em `getDerivedStats` (dano básico, velocidade) e expira sozinho;
@@ -176,6 +190,7 @@ node --experimental-default-type=module tests/codex.mjs
 node --experimental-default-type=module tests/missoes.mjs
 node --experimental-default-type=module tests/dano-habilidades.mjs
 node --experimental-default-type=module tests/ultimate.mjs
+node --experimental-default-type=module tests/ferramentas.mjs
 node --experimental-default-type=module tests/estrutura.mjs
 node --experimental-default-type=module tests/boot.mjs
 ```

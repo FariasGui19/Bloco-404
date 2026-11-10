@@ -113,6 +113,31 @@ export function applyRadialDamage({ player, progress, targets, radius, damage, c
   return { total: hits.reduce((sum, item) => sum + item.damage, 0), hits };
 }
 
+// Dano em cone: usado pelas sobrecargas de ferramenta que cortam/avançam
+// (lâmina, investida, corrente, chicote). `arc` é o cosseno mínimo do ângulo:
+// 0 = meio plano, .25 = cone de ~75°, .5 = cone de 60°.
+// Devolve o total e os alvos atingidos para HUD/testes.
+export function applyConeDamage({ player, progress, targets, range, arc = .25, damage, color = '#ffffff', rng = Math.random }) {
+  const hits = [];
+  if (!targets?.length || !(range > 0) || !(damage > 0)) return { total: 0, hits };
+  const vectors = { down: [1, 1], up: [-1, -1], left: [-1, 1], right: [1, -1] };
+  const [fx, fy] = vectors[player.facing] ?? vectors.down;
+  const length = Math.hypot(fx, fy) || 1;
+  for (const target of targets) {
+    if (!target || target.health <= 0) continue;
+    const dx = target.x - player.x, dy = target.y - player.y;
+    const distance = Math.hypot(dx, dy);
+    if (distance > range || distance < .001) continue;
+    if ((dx * fx + dy * fy) / (distance * length) < arc) continue;
+    const rolagem = Math.max(1, Math.round(damage * (.94 + rng() * .12)));
+    const outcome = applyAttackDamage(target, { hits: [rolagem], total: rolagem });
+    pushCombatText(target.x, target.y, String(rolagem), { color, duration: 1.1 });
+    if (outcome?.defeated) registerDefeat(player, progress, target);
+    hits.push({ target, damage: rolagem });
+  }
+  return { total: hits.reduce((sum, item) => sum + item.damage, 0), hits };
+}
+
 // Habilidade de impacto: atinge alvos de treino à frente, no raio do gesto.
 // Devolve o total causado para a HUD/testes; não altera a mobilidade do Q.
 export function tryAbilityDamage({ player, progress, targets, abilityId, rng = Math.random }) {

@@ -24,6 +24,7 @@ import { getBioDashProfile } from '../game/ability-context.js';
 import { getArchetypeLevel, getArchetypeXp, xpToNext } from '../game/rpg.js';
 import { getMasterySummary } from '../game/mastery.js';
 import { getUltimateStatus } from '../game/ultimate.js';
+import { TOOL_LABELS } from '../data/archetype-tools.js';
 
 const el = {};
 const cache = {};
@@ -60,6 +61,7 @@ export function initHud() {
     'abilityUltimate',
     'ultimateIcon',
     'ultimateName',
+    'ultimateTool',
     'ultimateState',
     'ultimateBuff',
     'ultimateFill',
@@ -78,6 +80,8 @@ export function initHud() {
       `${CONFIG.GAME_NAME} - BASE V${CONFIG.VERSION}`;
   }
 }
+
+const getToolLabel = archetypeId => TOOL_LABELS[archetypeId] ?? 'FERRAMENTA';
 
 function setText(key, value) {
   if (cache[key] === value) return;
@@ -208,6 +212,10 @@ function updateAbilityHud(state) {
     if (ultimate) {
       el.ultimateIcon.src = `assets/sprites/ui/codex/ultimate-${archetypeId}.png`;
       setText('ultimateName', ultimate.definition.name);
+      setText('ultimateTool', ultimate.tool
+        ? `${getToolLabel(archetypeId)} · ${ultimate.tool.short}`
+        : 'ULTIMATE DE ARQUÉTIPO');
+      el.abilityUltimate.style.setProperty('--ultimate-color', ultimate.definition.color);
       const faltando = ultimate.definition.cost - ultimate.energy;
       setText('ultimateState', ultimate.cooldown > 0
         ? `RECARREGANDO ${ultimate.cooldown.toFixed(1)}s`
@@ -217,6 +225,7 @@ function updateAbilityHud(state) {
       el.abilityUltimate.classList.toggle('ready', ultimate.ready);
       el.abilityUltimate.classList.toggle('unaffordable', ultimate.cooldown <= 0 && !ultimate.energyOk);
       el.abilityUltimate.classList.toggle('buffed', Boolean(ultimate.buff));
+      el.abilityUltimate.classList.toggle('toolbound', Boolean(ultimate.tool));
     }
   }
 

@@ -10,6 +10,10 @@ import { updateHealth } from './game/health.js';
 import { updateHazards } from './game/hazards.js';
 import { updateNucleoForm } from './game/nucleo-form.js';
 import { canStandAt } from './game/collision.js';
+import { dispararPropulsao } from './game/nado.js';
+import { desenharMedidorAr } from './ui/nado-hud.js';
+import { atualizarMissaoMare, criarFragmentosDeMare } from './game/mare-missao.js';
+import { getCoastFieldForMap } from './engine/coast-field.js';
 import { CONFIG } from './config.js';
 import { isCodexOpen, openCodex, closeCodex, handleCodexInput } from './ui/codex.js';
 import { updateOwnedCompanion } from './game/companions.js';
@@ -427,6 +431,13 @@ async function update(dt) {
     }
 
     if (!abilityLocksMovement) {
+      // Propulsão do Maré: SHIFT na água. Antes do movimento para o
+      // multiplicador de velocidade já valer neste quadro.
+      const nado = player.nado;
+      if (nado?.ativo && (input.pressed.has('shift') || input.pressed.has('shiftleft'))) {
+        const mareAlinhado = state.progress?.archetype === 'mare_astral';
+        dispararPropulsao(nado, mareAlinhado);
+      }
       updatePlayer(dt);
     }
 
@@ -444,6 +455,22 @@ async function update(dt) {
 
   updateNpcBrains(dt);
   updateCoastalFauna(getFloor(), state.fauna, player, dt);
+
+  // Missão do Maré: eventos de mergulho e coleta saem do estado real do
+  // nado, nunca de um contador de tempo.
+  const mapaAtual = getFloor();
+  if (mapaAtual?.aguaPraia && player.nado) {
+    player.fragmentosMare ??= criarFragmentosDeMare(mapaAtual, getCoastFieldForMap(mapaAtual));
+    const res = atualizarMissaoMare({
+      map: mapaAtual, player, nado: player.nado, progress: state.progress,
+      fragmentos: player.fragmentosMare,
+    });
+    if (res.coletou) {
+      player.ability ??= {};
+      player.ability.lastMessage = 'FRAGMENTO DE MARÉ RECOLHIDO';
+      player.ability.messageTimer = 2.2;
+    }
+  }
   updateOwnedCompanion(state, getFloor(), dt, canStandAt);
   updateCamera(dt, player.x, player.y);
 }
@@ -468,6 +495,8 @@ async function frame(now) {
 
   render(map, state);
   updateHud(map, state);
+  // Fôlego só aparece quando importa (nadando); em terra não ocupa tela.
+  if (state.player?.nado?.ativo) desenharMedidorAr(state.player.nado);
 
   endInputFrame();
 }

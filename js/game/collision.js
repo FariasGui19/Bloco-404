@@ -376,7 +376,25 @@ export function findNearestStandable(
 // Tenta diagonal, depois deslize X, depois deslize Y.
 // =====================================================================
 
-export function moveWithCollision(map, entity, dx, dy, radius) {
+// ---------------------------------------------------------------------
+// MOVIMENTO COM ÁGUA
+//
+// A regra de chão continua sendo `walkMask` (via `tileAt`). A diferença é
+// que água nadável conta como superfície válida: o resto da checagem
+// (objetos sólidos, atores, passos pequenos, deslize) é idêntico.
+//
+// `nado.destinoValido` é quem sabe o que é água — colisão não importa
+// `nado.js` para não criar ciclo (nado não importa colisão tampouco).
+// ---------------------------------------------------------------------
+function podeIrPara(map, x, y, radius, ignore, agua) {
+  if (canStandAt(map, x, y, radius, ignore)) return true;
+  if (!agua || !agua(map, x, y)) return false;
+  // Na água: não pode entrar em objeto sólido nem em outro ator, mas o
+  // "chão" da grade não bloqueia.
+  return !hitsSolidObject(x, y, radius, ignore) && !hitsActor(x, y, radius, ignore);
+}
+
+export function moveWithCollision(map, entity, dx, dy, radius, agua = null) {
   const distance = Math.hypot(dx, dy);
 
   if (!distance || !map) return false;
@@ -388,7 +406,7 @@ export function moveWithCollision(map, entity, dx, dy, radius) {
   let moved = false;
 
   for (let i = 0; i < steps; i++) {
-    if (canStandAt(map, entity.x + stepX, entity.y + stepY, radius, entity)) {
+    if (podeIrPara(map, entity.x + stepX, entity.y + stepY, radius, entity, agua)) {
       entity.x += stepX;
       entity.y += stepY;
       moved = true;
@@ -397,7 +415,7 @@ export function moveWithCollision(map, entity, dx, dy, radius) {
 
     if (
       stepX !== 0 &&
-      canStandAt(map, entity.x + stepX, entity.y, radius, entity)
+      podeIrPara(map, entity.x + stepX, entity.y, radius, entity, agua)
     ) {
       entity.x += stepX;
       moved = true;
@@ -405,7 +423,7 @@ export function moveWithCollision(map, entity, dx, dy, radius) {
 
     if (
       stepY !== 0 &&
-      canStandAt(map, entity.x, entity.y + stepY, radius, entity)
+      podeIrPara(map, entity.x, entity.y + stepY, radius, entity, agua)
     ) {
       entity.y += stepY;
       moved = true;

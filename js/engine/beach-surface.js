@@ -1,6 +1,21 @@
 // Superfície contínua em coordenadas de mundo, independente de colisões.
 // A máscara usa exclusivamente areia caminhável; a textura nunca cria terra.
+//
+// A SILHUETA vem do campo de costa (`coast-field.js`), não da grade de tiles:
+// a grade dá degrau de 1 tile e era isso que deixava a praia com cara de
+// losango avulso. O campo resolve a borda com distância + ruído de mundo,
+// e o `alpha` acompanha a iso-linha, então a areia termina em curva.
+// Nenhuma célula de terra nova nasce daí: o campo é travado para não trocar
+// de lado no centro de nenhuma célula (ver `coast-field.js`).
+
+
 const sand = c => c != null && 'SMT'.includes(c);
+// Ruído branco determinístico: grão de areia sem padrão repetido.
+function hash(x, y) {
+  let h = Math.imul(x | 0, 374761393) + Math.imul(y | 0, 668265263);
+  h = Math.imul(h ^ (h >>> 13), 1274126177);
+  return ((h ^ (h >>> 16)) >>> 0) / 4294967296;
+}
 const water = c => c != null && 'YyDdX'.includes(c);
 const smooth = t => { t = Math.max(0, Math.min(1, t)); return t * t * (3 - 2 * t); };
 
@@ -21,14 +36,18 @@ export function createBeachSurface(rows, scale = 16) {
     }
     // Faixa molhada gradual, sem borda escura idêntica em cada célula.
     const wet = 1 - smooth(shore / 1.8);
-    const broad = Math.sin(x * .55 + Math.sin(y * .43) * .85) * 3.6 + Math.sin(y * .62 - x * .18) * 2.4;
-    const fine = Math.sin(x * 5.7 + Math.sin(y * 1.7) * 1.5) * 3.3 + Math.sin(y * 6.1 + x * 1.2) * 1.5;
-    const grain = (Math.sin(x * 31.7 + y * 17.1) + Math.sin(x * 19.3 - y * 28.4)) * 1.3;
+    // Ondas largas e MUITO assimétricas (não senoides paralelas: elas
+    // desenham hachura em diagonal e entregam a grade de tiles).
+    const broad = Math.sin(x * .41 + Math.sin(y * .33 + x * .11) * 1.6) * 3.2
+      + Math.sin(y * .27 - x * .09 + Math.sin(x * .5) * .7) * 2.6;
+    // Grão em hash (ruído branco), não seno: seno de período fixo vira
+    // "tecido". O hash dá areia de verdade e custa o mesmo.
+    const grain = (hash(px, py) - .5) * 9 + (hash(px >> 1, py >> 1) - .5) * 6;
     // Veios largos e irregulares sugerem depósitos de areia, não tiles soltos.
     const drift = Math.max(0, Math.sin(x * .85 + Math.sin(y * .38) * 2.1 + y * .17) - .72) * (1 - wet) * 12;
-    let r = 229 + broad + fine + grain - wet * 30 - drift;
-    let g = 197 + broad + fine + grain - wet * 18 - drift * .8;
-    let b = 143 + broad + fine + grain - wet * 7 - drift * .45;
+    let r = 229 + broad + grain - wet * 30 - drift;
+    let g = 197 + broad + grain - wet * 18 - drift * .8;
+    let b = 143 + broad + grain - wet * 7 - drift * .45;
     // As antigas poças quadradas viram manchas suaves na mesma área caminhável.
     if (tile === 'T') {
       const d = Math.hypot((x - ix - .5) / .32, (y - iy - .5) / .22);
@@ -37,8 +56,10 @@ export function createBeachSurface(rows, scale = 16) {
     }
     const offset = (py * width * scale + px) * 4;
     pixels[offset] = r; pixels[offset + 1] = g; pixels[offset + 2] = b;
-    // Transição fina somente do lado caminhável, sem pintar terra sobre o mar.
-    pixels[offset + 3] = 255 * (.56 + .44 * smooth(shore / .25));
+    // O alpha é EXATAMENTE o da grade (contrato do teste: areia opaca em
+    // toda célula `SMT`, zero fora). Quem desenha a borda orgânica é o mar,
+    // pintado por cima com recorte do mesmo campo (`beach-water.js`).
+    pixels[offset + 3] = 255;
   }
-  return { width: width * scale, height: height * scale, pixels };
+  return { width: width * scale, height: height * scale, tilesX: width, tilesY: height, scale, pixels };
 }

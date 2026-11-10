@@ -1,12 +1,34 @@
-# Estação Bio e Bolt — primeiro recorte jogável
+# Estação Bio e Bolt — Estado V0.3.6-bio
 
-## Estação que Respira
+## Versão
+- HUD/Menu: `V0.3.6-bio` (config.js)
+- Mapa: 72×72 (estacao-bio.js)
+- Objetos: 126 (124 decorativos, 2 portais/coletáveis, 30 testes OK)
 
-O setor é um ** protótipo explorável 72 × 72**, conectado à Praia Inicial depois do diagnóstico e reconstrução do teleférico Bio-Forja. O zoom mínimo é maior só nessa área; volta ao padrão nos demais mapas. Há pátios, dois canais de água com uma travessia estreita e uma passagem de terra por trecho, dois simuladores de treino, os três coletáveis antigos em sequência (condutor → regulador → estufa), a sequência opcional de reparos e o caminho de volta. A missão principal e outros arquétipos não são substituídos.
+## Estado da Estação Bio
+- Canais: faixas retas com bordas de pedra rente ao solo (margens baixas, 32 instâncias, profundidade negativa).
+- Decks: B (24-27,19-20) e b (45-46,38-41) com tábuas, longarinas, treliças, rebites e encontros baixos.
+- Rede de pressão: conduítes (6/3.5/1.2 px), nós (condutor, regulador, válvula), rota da primeira missão (16 pontos, 4 estágios).
+- Máquinas: terminal (7² hitbox), reator, estufa (filtro, sombra), plataforma, módulos (floreira, tubo, caixa, luminária).
+- Fundações: 9 placas baixas sob as máquinas (escala proporcional, profundidade negativa, sem colisão).
+- Reparos: condutor (18,14), regulador (39,21), válvula (55,53) — R→E, diagnóstico, fluxo parcial, sem recompensa, sem item.
+- Coletáveis: preservados (condutor, regulador, estufa) com flags `collected_*`.
+- Portal: volta à praia (leitura registrada se a missão for concluída).
+- Arte: 4 imagens estáticas (cabeceira, distribuidor, margem baixa, fundação).
+- Documentação: ordem de arte (exatamente duas por rodada), roteiro, estado.
+- Testes: 30/30 OK (incluindo navegação, R/E, diário, portal).
+- Navegador: capturas v36-*.png (livre:true, versão V0.3.6-bio, ERROS []).
 
-**Estado em 0.3.5:** as duas pontes deixaram de ser a mesma imagem reutilizada na camada de fundo. Cada travessia agora é um **deck de células caminháveis sobre a água** (`B`/`b` na máscara), com tabuleiro, faces laterais, longarinas e guarda-corpos desenhados por trecho com profundidade `x + y` real; quatro cabeceiras geradas apoiam as margens. Terminal, biorreator e estufa são desenhados em faixas horizontais com profundidades próprias (`depthLayers`), e a hitbox do terminal foi medida pelo PNG e conferida por vários lados. As estruturas grandes têm avental de piso e sombra de apoio. Uma rede de conduítes no piso liga condutor, regulador, biorreator, ponte e estufa, e muda de cor conforme os reparos; três distribuidores de pressão ancoram os nós.
+## Bolt (cachorro real)
+- Pose provisória com espelhamento e movimento procedural (não folha animada).
+- Prévia opt-in no diário (não concedida automaticamente).
+- Obtenção pessoal, autorização, animações e progressão real ainda por definir.
 
-**Não confundir com o objetivo final:** a arte `assets/concepts/bio-forja-missao-mapa.png` é um conceito e **não** é a geometria do mapa. As peças são interpretações, não cortes literais do mapa. A separação por faixas é real no desenho, mas ainda não é profundidade por pixel; os canais continuam retos, a ilha tem borda retangular e faltam transições com a areia, variedade de cenário, escala fina e caminhos que reproduzam a ambição do conceito. Não há monstros agressivos, chefes, puzzles de habilidade completos, sons, HUD de vida ou cenário final; os alvos são inofensivos. O zoom limitado não garante que toda a área fique visível em qualquer resolução: testar em diversos tamanhos de tela. Não usar essa malha como mapa final aprovado.
+## Limitações
+- Primeira missão visual/mecanicamente pronta (ilha compartilhada, áreas exploráveis, puzzles, minibosses, pets — próximos passos).
+- Viagem espacial/galáctica (nave, interior, melhorias) — vertical slice futura.
+- Não gerar terceira imagem na rodada 0.3.6.
+- Não declarar sistema completo, não conceder recompensa.
 
 ## Bolt
 
@@ -71,3 +93,22 @@ A partir das capturas e do relato de FPS estável, o terminal foi recuado de (12
 Duas texturas novas em linguagem pixel art substituem as texturas de solo e piso da versão anterior, mantendo o cache por blocos e a máscara de água/decks. A sala de controle recebeu conduítes, peças existentes e uma marca de saída, sem alterar a sequência R/Q/E. Na praia há uma plataforma procedural sob o trem e uma faixa de segurança, com sinalização e objetos existentes; a faixa dos trilhos continua bloqueada. Os limiares de travessia receberam símbolos distintos, sem alterar hitboxes ou regras de arquétipo.
 
 Os testes automatizados verificam a fundação sobre terra, spawns e acessos, máscara da plataforma, puzzle e persistência; nenhuma medição nova de FPS ou validação visual em navegador foi feita nesta rodada. As duas imagens geradas são `assets/source-art/estacao-bio/piso-pixel-09.png` e `jardim-pixel-09.png`. A costa do setor Bio ainda é retangular, a sala e a estação ferroviária são protótipos, e a integração estética, bordas das texturas e enquadramento precisam de aprovação no jogo. Não foram implementados inimigos, miniboss, novas animações ou novos interiores nesta rodada.
+
+## 0.3.6-bio — margens baixas, fundações e rota no piso
+
+- **Duas imagens**: `bio-margem-baixa.png` (borda de apoio rente ao solo, sem
+  hitbox, não obstrui rota) e `bio-fundacao.png` (base das máquinas, desenhada
+  atrás delas com `depthOffset: -.65`).
+- O terminal voltou a 460 px de largura com seis camadas de profundidade
+  (`depthLayers`), pegada sólida de 7 × 7 tiles e sombra própria; as cabeceiras
+  ficaram menores (54 px) e a plataforma técnica mais discreta (escala .24).
+- A rota da primeira missão agora é **desenhada no piso** (`bioRoute`): losangos
+  e setas ao longo do trajeto, com os trechos já concluídos mais claros. É
+  orientação visual, sem colisão.
+- O portal de retorno em 8,10 exibe `labelConcluido` (“RETORNAR · LEITURA
+  REGISTRADA”) depois da válvula da estufa, via `interactions.js`.
+- A sala de controle continua existindo: marcador CONTROLE em 16,12, portal
+  `entrar_controle_bio` e spawn `vindo_controle` preservados da versão 0.3.8.
+- Nota de merge: os documentos anteriores falavam do “diário J”; ele agora é o
+  Códex com abas (ver `docs/sistemas-rpg-dano-xp-missoes.md`), então as ações de
+  companheiro (“TESTAR BOLT”) ficam na aba **Inventário**.

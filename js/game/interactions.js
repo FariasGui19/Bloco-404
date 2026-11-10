@@ -112,6 +112,9 @@ export function getInteractionPrompt(interaction) {
     if (isPortalBlockedByRequirement(data)) {
       return data.lockedLabel ?? data.label ?? 'ACESSO BLOQUEADO';
     }
+    if (data.labelConcluido && state.progress.flags?.[data.missaoFlag ?? 'gate_bio_valvula_estufa']) {
+      return data.labelConcluido;
+    }
     return data.label ?? 'USAR PORTAL';
   }
 

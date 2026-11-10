@@ -14,6 +14,7 @@ import { getArchetypeLevel, getArchetypeXp, getDerivedStats, xpToNext } from '..
 import { getMasteryState, getMasterySummary } from '../game/mastery.js';
 import { getUltimateStatus } from '../game/ultimate.js';
 import { listTools, selectTool } from '../game/tools.js';
+import { describeNextUnlock, getUnlockState, getUnlockStepFor } from '../game/unlocks.js';
 import { getPath, LEVEL_TITLES, PATH_STATES } from '../data/archetype-progression.js';
 import { TOOL_LABELS } from '../data/archetype-tools.js';
 import { listTrackedQuests } from '../game/quests.js';
@@ -117,11 +118,12 @@ function ultimateCard(progress) {
   const status = getUltimateStatus(context.player, progress);
   if (!status) return '';
   const { definition, tool } = status;
-  const estado = status.cooldown > 0 ? `RECARREGANDO ${status.cooldown.toFixed(0)}s`
+  const estado = status.locked ? `BLOQUEADA · NÍVEL ${status.requiredLevel}`
+    : status.cooldown > 0 ? `RECARREGANDO ${status.cooldown.toFixed(0)}s`
     : !status.energyOk ? `FALTA ${Math.max(0, definition.cost - status.energy)} ENERGIA`
     : 'PRONTA';
   const camada = tool ? `SOBRECARGA · ${tool.short}` : 'ULTIMATE DE ARQUÉTIPO · BASE';
-  return `<article class="codex-ultimate${status.ready ? ' ready' : ''}" style="--ultimate:${definition.color}">
+  return `<article class="codex-ultimate${status.ready ? ' ready' : ''}${status.locked ? ' locked' : ''}" style="--ultimate:${definition.color}">
     <img class="codex-ultimate-icon" src="${ULTIMATE_ICONS}${progress.archetype}.png" alt="" aria-hidden="true" draggable="false">
     <div>
       <header><span class="codex-tag">F · ${camada}</span><strong>${escapeHtml(definition.name)}</strong><em>${estado}</em></header>
@@ -136,21 +138,26 @@ function toolPicker(progress) {
   const tools = listTools(progress);
   if (!tools.length) return '';
   const label = TOOL_LABELS[progress.archetype] ?? 'FERRAMENTA';
-  const hint = getPath(progress.archetype)?.levels?.find(entry => entry.level === 2)?.note
-    ?? 'A escolha vale para todo o perfil.';
-  const cards = tools.map(tool => `<button type="button" class="codex-tool${tool.selected ? ' selected' : ''}"
+  const acesso = getUnlockState(progress);
+  const hint = acesso.features.tool
+    ? (getPath(progress.archetype)?.levels?.find(entry => entry.level === 2)?.note ?? 'A escolha vale para todo o perfil.')
+    : `Instalar ${label.toLowerCase()} abre no nível ${getUnlockStepFor(2)?.level ?? 2}. Suba de nível com combate e missões.`;
+  const titulo = !acesso.features.tool
+    ? `${escapeHtml(label)} BLOQUEADA`
+    : tools.some(tool => tool.selected) ? 'TROQUE A SOBRECARGA' : `ESCOLHA UMA ${escapeHtml(label)}`;
+  const cards = tools.map(tool => `<button type="button" class="codex-tool${tool.selected ? ' selected' : ''}${tool.locked ? ' locked' : ''}"
       data-tool="${escapeHtml(tool.id)}" style="--tool:${tool.color}"
-      aria-pressed="${tool.selected}">
+      aria-pressed="${tool.selected}" ${tool.locked ? 'disabled aria-disabled="true"' : ''}>
       <span class="codex-tool-tag">${escapeHtml(tool.short)}</span>
       <strong>${escapeHtml(tool.name)}</strong>
       <small>NÍVEL 1 · ${escapeHtml(tool.ultimate.name)}</small>
       <em>${escapeHtml(tool.tagline)}</em>
-      <i class="codex-tool-cost">${tool.ultimate.cost} EN · ${tool.ultimate.cooldown}s</i>
+      <i class="codex-tool-cost">${tool.locked ? `BLOQUEADA · NÍVEL ${tool.requiredLevel}` : `${tool.ultimate.cost} EN · ${tool.ultimate.cooldown}s`}</i>
     </button>`).join('');
   return `<section class="codex-tools" aria-label="Escolha de ${escapeHtml(label)}">
     <header>
       <span class="codex-tag">ESPECIALIZAÇÃO · ${escapeHtml(label)}</span>
-      <strong>${tools.some(tool => tool.selected) ? 'TROQUE A SOBRECARGA' : 'ESCOLHA UMA ' + escapeHtml(label)}</strong>
+      <strong>${titulo}</strong>
       <p>${escapeHtml(hint)}</p>
     </header>
     <div class="codex-tool-grid">${cards}</div>
@@ -161,12 +168,18 @@ function toolPicker(progress) {
 function pathLadder(progress) {
   const path = getPath(progress?.archetype);
   if (!path) return '';
+  const unlockState = getUnlockState(progress);
   const steps = path.levels.map(entry => {
     const items = entry.items.map(item => `<li>${escapeHtml(item)}</li>`).join('');
-    return `<li class="codex-step ${entry.state}">
+    const unlockStep = getUnlockStepFor(entry.level);
+    const estado = entry.state === 'futuro' || unlockStep?.planned
+      ? PATH_STATES[entry.state] ?? 'PLANEJADO'
+      : unlockState.level >= (unlockStep?.level ?? unlockState.level) ? 'DISPONÍVEL' : `NÍVEL ${unlockStep.level} · FALTAM ${unlockStep.level - unlockState.level}`;
+    const classe = estado === 'DISPONÍVEL' ? 'pronto' : estado.startsWith('NÍVEL') ? 'travado' : entry.state;
+    return `<li class="codex-step ${classe}">
       <span class="codex-step-level">${entry.level}</span>
       <div class="codex-step-body">
-        <header><strong>${escapeHtml(entry.title)}</strong><em>${escapeHtml(PATH_STATES[entry.state] ?? '')}</em></header>
+        <header><strong>${escapeHtml(entry.title)}</strong><em>${escapeHtml(estado)}</em></header>
         <ul>${items}</ul>
         ${entry.note ? `<small>${escapeHtml(entry.note)}</small>` : ''}
       </div>
@@ -214,6 +227,7 @@ function renderProgress(progress) {
       <div>
         <strong>${escapeHtml(archetype.nome)} · NÍVEL ${level}</strong>
         <span>${Number.isFinite(next) ? `${Math.floor(xp)} / ${next} XP` : 'NÍVEL MÁXIMO'} · MAESTRIA ${summary.total}</span>
+        <span class="codex-unlock-next">${escapeHtml(describeNextUnlock(progress))}</span>
       </div>
       <div class="codex-level-bars">
         <i class="codex-xp-bar"><b style="width:${Number.isFinite(next) ? pct(xp / next) : '100%'}"></b></i>

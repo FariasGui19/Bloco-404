@@ -8,6 +8,8 @@ import { getArchetypeLevel, getDerivedStats, grantArchetypeXp, rollBasicAttack }
 import { recordQuestEvent } from './quests.js';
 import { recordMastery } from './mastery.js';
 import { pushCombatText, updateCombatFeedback } from './combat-feedback.js';
+import { applyUnlocks } from './unlocks.js';
+import { ARCHETYPE_KITS } from '../data/archetype-kits.js';
 
 // Compatibilidade: HUD e testes antigos leem rótulo e strain daqui.
 export const BASIC_ATTACKS = COMBAT_BALANCE;
@@ -82,8 +84,11 @@ function registerDefeat(player, progress, target) {
     pushCombatText(target.x, target.y - .55, `+${xp} XP`, { color: '#9af9c8', kind: 'xp', duration: 1.2 });
     if (gained.levels > 0) {
       player.ability ??= {};
-      player.ability.lastMessage = `NÍVEL ${gained.level} • ${getDerivedStats(progress).maxHealth} VIDA MÁXIMA`;
-      player.ability.messageTimer = 2.4;
+      const liberado = applyUnlocks(progress, ARCHETYPE_KITS[progress.archetype]);
+      player.ability.lastMessage = liberado.length
+        ? `NÍVEL ${gained.level} • ${liberado.map(entry => entry.label).join(' + ')} LIBERADO`
+        : `NÍVEL ${gained.level} • ${getDerivedStats(progress).maxHealth} VIDA MÁXIMA`;
+      player.ability.messageTimer = 3;
     }
   }
   const completed = recordQuestEvent(progress, { type: 'defeat', target: 'training' });

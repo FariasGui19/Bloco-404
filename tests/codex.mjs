@@ -34,6 +34,7 @@ const progress = {
 };
 ensureArchetypeProgress(progress);
 progress.archetypeProgress.nucleo_dez_forma.mastery = { ataque: 80, locomocao: 500 };
+progress.archetypeProgress.nucleo_dez_forma.level = 3;
 startQuest(progress, 'calibracao_de_campo');
 const player = { health: 90, maxHealth: 120, energy: 70, maxEnergy: 100, invulnerable: 0 };
 const before = JSON.stringify(progress);
@@ -69,6 +70,17 @@ assert.match(panel.innerHTML, /VELOCIDADE TEMPORAL/, 'Ultimate da forma escolhid
 assert.match(panel.innerHTML, /TROQUE A SOBRECARGA/, 'cabeçalho muda quando já há escolha');
 assert.match(panel.innerHTML, /class="codex-tool selected"/, 'cartão da forma marcado como selecionado');
 delete progress.tools;
+
+// Nível 1: ferramenta e Ultimate aparecem travadas com o nível exigido.
+const jovem = { ...progress, archetypeProgress: JSON.parse(JSON.stringify(progress.archetypeProgress)), tools: {} };
+jovem.archetypeProgress.nucleo_dez_forma.level = 1;
+openCodex(jovem, { id: 'hub_saguao' }, player);
+assert.match(panel.innerHTML, /FORMA BLOQUEADA/, 'escolha travada no nível 1');
+assert.match(panel.innerHTML, /BLOQUEADA · NÍVEL 2/, 'cartão avisa o nível da ferramenta');
+assert.match(panel.innerHTML, /BLOQUEADA · NÍVEL 3/, 'cartão avisa o nível da Ultimate');
+assert.match(panel.innerHTML, /NÍVEL 3 · FALTAM 2/, 'escada mostra o que falta');
+assert.match(panel.innerHTML, /disabled/, 'cartões travados não são clicáveis');
+assert.match(panel.innerHTML, /PRÓXIMO: FERRAMENTA · NÍVEL 2/, 'cabeçalho aponta o próximo degrau');
 
 assert.equal(JSON.stringify(progress), before, 'Códex continua só leitura');
 

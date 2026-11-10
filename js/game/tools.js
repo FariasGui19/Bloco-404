@@ -9,6 +9,18 @@
 // save antigo continua jogável e nada é concedido de graça.
 // =====================================================================
 import { getTools, getTool, ARCHETYPE_TOOLS } from '../data/archetype-tools.js';
+import { getFeatureLevel, isFeatureUnlocked } from '../data/archetype-unlocks.js';
+import { getArchetypeLevel } from './rpg.js';
+
+// A ferramenta só pode ser instalada no degrau 2 do caminho (nível 2).
+export function getToolAccess(progress, archetype = progress?.archetype) {
+  const level = getArchetypeLevel(progress, archetype);
+  return {
+    level,
+    requiredLevel: getFeatureLevel('tool'),
+    unlocked: isFeatureUnlocked(level, 'tool'),
+  };
+}
 
 // Escolha válida para o arquétipo ativo. Ids desconhecidos (save antigo,
 // arquétipo trocado) simplesmente não valem nada.
@@ -24,9 +36,12 @@ export function getSelectedTool(progress, archetype = progress?.archetype) {
 // Lista pronta para a HUD/Códex.
 export function listTools(progress, archetype = progress?.archetype) {
   const selected = getSelectedToolId(progress, archetype);
+  const access = getToolAccess(progress, archetype);
   return getTools(archetype).map(tool => ({
     ...tool,
     selected: tool.id === selected,
+    locked: !access.unlocked,
+    requiredLevel: access.requiredLevel,
     ultimate: tool.ultimate,
   }));
 }
@@ -35,6 +50,7 @@ export function listTools(progress, archetype = progress?.archetype) {
 // Devolve a ferramenta escolhida ou null quando o id não pertence ao módulo.
 export function selectTool(progress, toolId, archetype = progress?.archetype) {
   if (!progress || !ARCHETYPE_TOOLS[archetype]) return null;
+  if (!getToolAccess(progress, archetype).unlocked) return null;
   if (toolId === null || toolId === undefined) {
     if (progress.tools) delete progress.tools[archetype];
     return null;

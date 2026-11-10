@@ -73,7 +73,21 @@ Detalhes, números e testes: [`sistemas-rpg-dano-xp-missoes.md`](sistemas-rpg-da
 O que **não** está pronto: inimigos agressivos, cura por itens, resistências,
 UI de rank com histórico e balanceamento final.
 
-## Atualização — caminho 0–5 e sobrecarga de ferramenta
+## Atualização — HUD enxuta, nível abrindo o kit e Ultimate com execução
+
+A HUD deixou de ter cartões em posições fixas: virou uma coluna única
+(mapa → módulo → vitais/habilidades → missão) e o aviso de habilidade foi para
+o centro da tela. Nada mais se sobrepõe quando o kit cresce.
+
+O caminho agora **tranca de verdade**: nível 1 dá Q/R, nível 2 abre a
+ferramenta, nível 3 acorda a Ultimate. A HUD mostra o próximo degrau e o
+Códex marca cada cartão como bloqueado com o nível exigido.
+
+A Ultimate ganhou execução: carga de 0,42 s com partículas por arquétipo e
+movimento travado, seguida de soltura com tremor de câmera e clarão. Falta a
+pose em folha — ela continua na fila de arte.
+
+## Atualização anterior — caminho 0–5 e sobrecarga de ferramenta
 
 Cada arquétipo ganhou o caminho de seis degraus dentro do jogo (Códex →
 Progressão): o que está disponível, o que está em teste e o que ainda é plano.

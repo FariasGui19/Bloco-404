@@ -7,7 +7,29 @@ Gerar e implementar **exatamente duas folhas/imagens por atualização**, seguin
 3. Estação Bio / Bio-Forja (rodadas 0.3.5 e 0.3.6)
 4. Folha de sprites do Bolt (prévia opt-in, sem concessão automática)
 
-## Rodada atual (0.4.0): caminho 0–5 e sobrecarga por ferramenta
+## Rodada atual (0.5.0): HUD enxuta, liberação por nível e execução da Ultimate
+
+Três frentes, nenhuma folha de sprite nova:
+
+1. **HUD sem sobreposição.** Os cartões tinham `position: fixed` com `top`
+   fixo; quando vida, Ultimate e ferramenta entraram, um caiu em cima do
+   outro. Agora existe uma coluna flex (`#hudLeft`) com mapa, módulo, vitais e
+   missão empilhados, cada card só ocupando espaço quando está visível, e a
+   mensagem de habilidade virou aviso central em pílula. Nada de conteúdo
+   escondido: os mesmos dados, com hierarquia e respiro.
+2. **Liberação por nível.** Q/R no nível 1, ferramenta no 2, Ultimate no 3.
+   Sem nível, sem poder — e a HUD diz o que falta.
+3. **Execução da Ultimate.** Carga de 0,42 s com partículas por arquétipo
+   (placas, runas, gotas e silhuetas), corpo afundando, anéis convergindo,
+   depois soltura com tremor de câmera e clarão na cor da sobrecarga. É
+   animação de runtime, não pose estática fingindo movimento.
+
+A **pose de execução em folha** (uma por arquétipo) continua na fila de arte:
+ela precisa de frames desenhados na mesma linguagem do traje, e o efeito
+procedural atual não substitui isso — só segura o lugar sem mentir. Depois
+dela: inimigo agressivo e a evolução visual do traje por degrau.
+
+## Rodada anterior (0.4.0): caminho 0–5 e sobrecarga por ferramenta
 
 **Nada de arte nova nesta rodada** — e isso é deliberado. O caminho dos
 arquétipos (0 a 5) entrou no jogo como estrutura de dados e painel no Códex, e a

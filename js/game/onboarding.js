@@ -25,6 +25,8 @@ import {
   stopActorTalking,
 } from './actors.js';
 import { getArchetypeAbilities } from './abilities.js';
+import { ARCHETYPE_KITS } from '../data/archetype-kits.js';
+import { applyUnlocks } from './unlocks.js';
 import { ensureArchetypeProgress } from './progression.js';
 import { startQuest } from './quests.js';
 
@@ -204,6 +206,8 @@ function finalizeArchetype(actor, archetypeId) {
   state.progress.archetype = archetypeId;
   // Libera o kit inicial de habilidades do módulo escolhido. 
   state.progress.abilities = getArchetypeAbilities(archetypeId);
+  // Confirma o degrau 1 (Q/R). Ferramenta e Ultimate dependem do nível.
+  applyUnlocks(state.progress, ARCHETYPE_KITS[archetypeId]);
   ensureArchetypeProgress(state.progress);
   state.progress.onboardingCompleted = true;
   state.progress.onboardingStarted = true;

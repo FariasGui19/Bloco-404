@@ -8,6 +8,8 @@
 import { getQuest } from '../data/quests.js';
 import { grantArchetypeXp } from './rpg.js';
 import { recordMastery } from './mastery.js';
+import { applyUnlocks } from './unlocks.js';
+import { ARCHETYPE_KITS } from '../data/archetype-kits.js';
 
 // `create` separa leitura (diário) de escrita (início/evento): abrir o
 // diário não pode alterar o save.
@@ -68,6 +70,10 @@ function grantRewards(progress, quest) {
     const xp = grantArchetypeXp(progress, rewards.xp);
     granted.xp = xp.gained;
     granted.levels = xp.levels;
+    // Missão que sobe de nível também abre o degrau correspondente.
+    if (xp.levels > 0) {
+      granted.unlocks = applyUnlocks(progress, ARCHETYPE_KITS[progress.archetype]).map(entry => entry.label);
+    }
   }
   progress.inventory ??= [];
   for (const item of rewards.items ?? []) {

@@ -80,8 +80,10 @@ for (const arquetipo of ARCHETIPOS) {
 // ---------------------------------------------------------------
 // Escolha: padrão, troca, isolamento por arquétipo e limpeza
 // ---------------------------------------------------------------
+// Ferramenta abre no nível 2; Ultimate no 3.
 const progress = { archetype: 'motor_bio_forja', archetypeProgress: {}, tools: {} };
 ensureArchetypeProgress(progress);
+progress.archetypeProgress.motor_bio_forja.level = 3;
 
 assert.equal(getSelectedTool(progress), null, 'sem escolha não há ferramenta');
 assert.equal(getActiveUltimate(progress).tier, 'module', 'a base vale até escolher');
@@ -101,6 +103,8 @@ assert.equal(progress.tools.motor_bio_forja, 'lamina_de_forja', 'recusa não tro
 
 // Trocar de arquétipo usa a escolha daquele arquétipo, não a do anterior.
 const outro = { archetype: 'mare_astral', archetypeProgress: {}, tools: {} };
+ensureArchetypeProgress(outro);
+outro.archetypeProgress.mare_astral.level = 3;
 assert.equal(getSelectedToolId(outro), null);
 selectTool(outro, 'escudo_liquido');
 assert.equal(getSelectedToolId(outro), 'escudo_liquido');
@@ -164,6 +168,7 @@ assert.equal(lado.health, 200, 'corte não abre para o lado');
 const bio = (toolId) => {
   const p = { archetype: 'motor_bio_forja', archetypeProgress: {}, tools: { motor_bio_forja: toolId } };
   ensureArchetypeProgress(p);
+  p.archetypeProgress.motor_bio_forja.level = 3;
   return p;
 };
 const distante = () => alvo(16, 10);
@@ -182,6 +187,7 @@ assert.equal(alvoCurto.health, 200, 'martelo de forja não alcança o mesmo alvo
 // ---------------------------------------------------------------
 const dominio = { archetype: 'lamina_dominio_anciao', archetypeProgress: {}, tools: { lamina_dominio_anciao: 'escudo_de_dominio' } };
 ensureArchetypeProgress(dominio);
+dominio.archetypeProgress.lamina_dominio_anciao.level = 3;
 const guardiao = criarPlayer({ health: 20, invulnerable: 0 });
 const colado = alvo(11.2, 11.2);
 const longe = alvo(18, 18);
@@ -198,6 +204,7 @@ assert.equal(longe.health, 200, 'guarda não é ataque de longo alcance');
 // ---------------------------------------------------------------
 const mare = { archetype: 'mare_astral', archetypeProgress: {}, tools: { mare_astral: 'passo_abissal' } };
 ensureArchetypeProgress(mare);
+mare.archetypeProgress.mare_astral.level = 3;
 const corredor = criarPlayer({ facing: 'right', health: 100 });
 const naFrente = alvo(14, 8);
 const avanco = tryUltimate({ player: corredor, progress: mare, targets: [naFrente], showMessage: () => {}, rng: () => .5 });
@@ -213,6 +220,7 @@ assert(naFrente.health < 200, 'corrente corta quem está na frente');
 // ---------------------------------------------------------------
 const nucleo = { archetype: 'nucleo_dez_forma', archetypeProgress: {}, tools: { nucleo_dez_forma: 'nucleo_veloz' } };
 ensureArchetypeProgress(nucleo);
+nucleo.archetypeProgress.nucleo_dez_forma.level = 3;
 const veloz = criarPlayer({ energy: 100 });
 const impulso = tryUltimate({ player: veloz, progress: nucleo, targets: [], showMessage: () => {}, rng: () => .5 });
 assert.equal(impulso.kind, 'surge');
@@ -245,6 +253,8 @@ const { getSave, loadSaveIntoState, saveGame, startNewSave } = await import('../
 
 startNewSave(1, 'TESTE');
 state.progress.archetype = 'motor_bio_forja';
+ensureArchetypeProgress(state.progress, 'motor_bio_forja');
+state.progress.archetypeProgress.motor_bio_forja.level = 2;
 selectTool(state.progress, 'gancho_magnetico');
 assert.equal(saveGame(), true);
 assert.equal(getSave(1).progress.tools.motor_bio_forja, 'gancho_magnetico', 'escolha no save');

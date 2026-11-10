@@ -88,12 +88,26 @@ await loadSprites([
     id: 'player',
     src: 'assets/sprites/player/player-sheet.png',
   },
+  { id: 'bio_lateral_andar_0315', src: 'assets/sprites/player/bio-andar-lateral-0315.png' },
+  { id: 'bio_costas_andar_0315', src: 'assets/sprites/player/bio-andar-costas-0315.png' },
+  { id: 'bio_frente_andar_0314', src: 'assets/sprites/player/bio-frente-andar-0314.png' },
   { id: 'player_bio_forja', src: 'assets/sprites/player/player-bio-forja-lvl1.png' },
-   { id: 'player_bio_forja_walk', src: 'assets/sprites/player/player-bio-forja-walk.png' },
   { id: 'player_bio_forja_scan', src: 'assets/sprites/player/player-bio-forja-scan.png' },
   { id: 'player_dominio_reference', src: 'assets/sprites/player/player-dominio-reference.png' },
   { id: 'player_mare_reference', src: 'assets/sprites/player/player-mare-reference.png' },
   { id: 'player_10x_reference', src: 'assets/sprites/player/player-10x-reference.png' },
+  { id: 'dominio_andar_lateral_0317', src: 'assets/sprites/player/dominio-andar-lateral-0317.png' },
+  { id: 'dominio_andar_costas_0317', src: 'assets/sprites/player/dominio-andar-costas-0317.png' },
+  { id: 'dominio_ataque_frente_0317', src: 'assets/sprites/player/dominio-ataque-frente-0317.png' },
+  { id: 'dominio_ataque_costas_0317', src: 'assets/sprites/player/dominio-ataque-costas-0317.png' },
+  { id: 'mare_andar_frente_0318', src: 'assets/sprites/player/mare-andar-frente-0318.png' },
+  { id: 'mare_andar_costas_0318', src: 'assets/sprites/player/mare-andar-costas-0318.png' },
+  { id: 'mare_andar_lateral_0318', src: 'assets/sprites/player/mare-andar-lateral-0318.png' },
+  { id: 'mare_ataque_frente_0318', src: 'assets/sprites/player/mare-ataque-frente-0318.png' },
+  { id: 'mare_ataque_costas_0318', src: 'assets/sprites/player/mare-ataque-costas-0318.png' },
+  { id: 'mare_ataque_lateral_0318', src: 'assets/sprites/player/mare-ataque-lateral-0318.png' },
+  { id: 'dominio_andar_frente_0316', src: 'assets/sprites/player/dominio-andar-frente-0316.png' },
+  { id: 'dominio_ataque_lateral_0316', src: 'assets/sprites/player/dominio-ataque-lateral-0316.png' },
   { id: 'player_dominio_lvl1', src: 'assets/sprites/player/player-dominio-lvl1.png' },
   { id: 'player_dominio_q', src: 'assets/sprites/player/player-dominio-q.png' },
   { id: 'player_dominio_r', src: 'assets/sprites/player/player-dominio-r.png' },
@@ -119,6 +133,8 @@ await loadSprites([
   { id: 'bio_margem_cano', src: 'assets/sprites/estacao-bio/margem-cano.png' },
   { id: 'bio_margem_ruina', src: 'assets/sprites/estacao-bio/margem-ruina.png' },
   { id: 'bio_margem_mureta', src: 'assets/sprites/estacao-bio/margem-mureta.png' },
+  { id: 'bio_piso_novo', src: 'assets/source-art/estacao-bio/piso-pixel-09.png' },
+  { id: 'bio_jardim_novo', src: 'assets/source-art/estacao-bio/jardim-pixel-09.png' },
   { id: 'bio_piso', src: 'assets/sprites/estacao-bio/piso-industrial-folha.png' },
   { id: 'bio_floreira', src: 'assets/sprites/estacao-bio/detalhe-floreira.png' },
   { id: 'bio_tubos', src: 'assets/sprites/estacao-bio/detalhe-tubos.png' },
@@ -205,12 +221,13 @@ await loadSprites([
   { id: 'fauna_costeira', src: 'assets/sprites/fauna/fauna-costeira.png' },
   { id: 'fauna_caranguejo', src: 'assets/sprites/fauna/caranguejo.png' },
   { id: 'costa_rochosa', src: 'assets/sprites/objects/costa-rochosa.png' },
+  { id: 'praia_plataforma_kit', src: 'assets/sprites/praia/plataforma-kit-0311.png' },
   { id: 'vegetacao_tropical', src: 'assets/sprites/objects/vegetacao-tropical.png' },
   { id: 'beach_props', src: 'assets/sprites/objects/beach-props.png' },
 ]);
 
 // Importações parciais deixam colisões sem arte; avise em vez de falhar silenciosamente.
-const bioMissing = ['bio_terminal', 'bio_reator', 'bio_estufa', 'bio_piso', 'bio_cabeceira', 'bio_distribuidor', 'bio_floreira', 'bio_tubos', 'bio_caixa', 'bio_luminaria', 'bio_plataforma', 'bio_margem_canto', 'bio_margem_cano', 'bio_margem_ruina', 'bio_margem_mureta', 'bio_condutor_quebrado', 'bio_condutor_ativo', 'bio_regulador_quebrado', 'bio_regulador_ativo', 'bio_mato_cano', 'bio_mato_ventilacao', 'bio_mato_barris', 'bio_mato_fissura'].filter(id => !getSprite(id));
+const bioMissing = ['bio_piso_novo', 'bio_jardim_novo', 'bio_terminal', 'bio_reator', 'bio_estufa', 'bio_piso', 'bio_cabeceira', 'bio_distribuidor', 'bio_floreira', 'bio_tubos', 'bio_caixa', 'bio_luminaria', 'bio_plataforma', 'bio_margem_canto', 'bio_margem_cano', 'bio_margem_ruina', 'bio_margem_mureta', 'bio_condutor_quebrado', 'bio_condutor_ativo', 'bio_regulador_quebrado', 'bio_regulador_ativo', 'bio_mato_cano', 'bio_mato_ventilacao', 'bio_mato_barris', 'bio_mato_fissura'].filter(id => !getSprite(id));
 if (bioMissing.length) {
   const warning = document.createElement('div');
   warning.setAttribute('role', 'alert');

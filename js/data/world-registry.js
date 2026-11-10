@@ -35,6 +35,7 @@ export const WORLD_REGISTRY = {
   // ==========================================
   // ARQUIPÉLAGO DAS ROTAS PERDIDAS (Futuro)
   // ==========================================
+    bio_sala_controle: { nome: 'Sala de Controle Bio', dimensao: 'arquipelago', load: () => import('./worlds/arquipelago-rotas-perdidas/bio-sala-controle.js') },
     ilha_estacao_bio: { nome: 'Estação que Respira', dimensao: 'arquipelago', load: () => import('./worlds/arquipelago-rotas-perdidas/estacao-bio.js') },
     ilha_enseada_ecos: { nome: 'Enseada dos Ecos', dimensao: 'arquipelago', load: () => import('./worlds/arquipelago-rotas-perdidas/enseada-ecos.js') },
     ilha_praia_inicial: {

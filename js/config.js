@@ -1,7 +1,7 @@
 // js/config.js
 export const CONFIG = {
   GAME_NAME: 'BLOCO 404',
-  VERSION: '0.3.7-bio',
+  VERSION: '0.3.21-veloz',
 
   TILE_W: 64,
   TILE_H: 32,
@@ -81,14 +81,13 @@ export const CONFIG = {
     },
   },
 
-    PLAYER_BIO_FORJA_WALK_SPRITE: {
+  PLAYER_BIO_FORJA_WALK_SPRITE: {
     ID: 'player_bio_forja_walk',
-    SHEET_COLS: 4,
-    SHEET_ROWS: 2,
-    SCALE: 0.31,          
-    FEET_ANCHOR_Y: 0.96,  // <-- Aumentado para descer e colar no chão
-    SOURCE_INSET_X: 10,
-    SOURCE_INSET_Y: 10,
+    SHEET_COLS: 6,
+    SHEET_ROWS: 4,
+    // A folha tem células de 256px de altura, contra 512px da pose parada.
+    // Altura visível: ~228*.57 = 130px, frente ao idle ~420*.31 = 130px.
+    SCALE: 0.57,
   },
 
   PLAYER_BIO_FORJA_SCAN_SPRITE: {

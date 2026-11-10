@@ -46,3 +46,18 @@ export function getVelozAnimation(progress, player, now) {
   }
   return null;
 }
+
+// Pulso apenas quando a Forma Veloz já está sustentada. A sequência lateral
+// é a fileira de deslocamento acelerado existente; frente/costas usam poses
+// direcionais da mesma criatura, não a transformação humana de Q rápido.
+export function getVelozPulse(progress, player) {
+  const effect = player?.ability?.effect;
+  if (progress?.archetype !== 'nucleo_dez_forma' || player?.nucleoForm !== 'forma_veloz' ||
+      effect?.id !== 'forma_veloz' || !(effect.timeLeft > 0) || !(effect.duration > 0) ||
+      !['down','up','left','right'].includes(player.facing) || player.ability?.scanning > 0) return null;
+  const t = Math.max(0, Math.min(.9999, 1 - effect.timeLeft / effect.duration));
+  const lateral = ['left','right'].includes(player.facing);
+  return lateral
+    ? { sprite: 'veloz_corrida_lateral', row: 1, col: Math.floor(t * 6), flip: player.facing === 'left', footY: 210 }
+    : { sprite: 'veloz_ataque_direcional', row: player.facing === 'up' ? 2 : 0, col: [0,1,1,0][Math.floor(t*4)], flip: false, footY: 230 };
+}

@@ -40,6 +40,26 @@ let safeToReturn = () => true;
 // Qual cartão está sob foco dentro da roda (id da ferramenta).
 let focusToolId = null;
 
+// POSIÇÕES DOS ENCAIXES DO ANEL.
+// A arte do anel (assets/sprites/ui/nucleo-roda.png, 1536×1024) tem quatro
+// hexágonos: topo (766,320), direita (1187,529), base (765,680) e esquerda
+// (345,529). Em porcentagem da imagem:
+//     topo 50%/31% · direita 77%/52% · base 50%/66% · esquerda 22%/52%
+// Era aqui que a segunda forma "não trocava de foto": os quatro cartões eram
+// pintados no MESMO ponto (50%/46%), um por cima do outro — só a última arte
+// aparecia e os nomes ficavam empilhados. Cada forma agora mora no seu slot.
+const SLOT_ANCHOR = Object.freeze([
+  { left: '50%', top: '31%' }, // 0 · topo      → FORMA VELOZ
+  { left: '77%', top: '53%' }, // 1 · direita   → QUEBRA SISTEMAS
+  { left: '50%', top: '67%' }, // 2 · base      → FLUIDA (projeto)
+  { left: '22%', top: '53%' }, // 3 · esquerda  → NÚCLEO (projeto)
+]);
+
+function slotStyle(index) {
+  const slot = SLOT_ANCHOR[index % SLOT_ANCHOR.length];
+  return `--slot-x: ${slot.left}; --slot-y: ${slot.top};`;
+}
+
 const RUNTIME_FOR_TOOL = Object.freeze({
   nucleo_veloz: NUCLEO_VELOZ,
   nucleo_bruto: NUCLEO_BRUTA,
@@ -165,7 +185,7 @@ export function openNucleoWheel(progress, player, isSafeToReturn = () => true) {
         <div class="nucleo-ring ring-outer"></div><div class="nucleo-ring ring-inner"></div>
         <div class="nucleo-core"><span>10</span><small>ECO ATIVO</small></div>
         ${cards.map((tool, index) => `
-          <button class="nucleo-form nucleo-form-${index}" type="button" data-tool="${tool.id}"
+          <button class="nucleo-form nucleo-form-${index}" type="button" data-tool="${tool.id}" style="${slotStyle(index)}"
             ${tool.playable === false ? 'disabled aria-disabled="true"' : ''}
             aria-label="${tool.playable === false ? `Forma em projeto: ${tool.name}` : `Escolher ${tool.name}`}">
             ${tool.playable === false ? '<span class="nucleo-form-lock" aria-hidden="true">◆</span>' : previewFor(tool)}

@@ -7,6 +7,34 @@ Gerar e implementar **exatamente duas folhas/imagens por atualização**, seguin
 3. Estação Bio / Bio-Forja (rodadas 0.3.5 e 0.3.6)
 4. Folha de sprites do Bolt (prévia opt-in, sem concessão automática)
 
+## Rodada 0.6.3 — execução da Ultimate das formas do Núcleo
+
+Duas folhas novas de quatro quadros, geradas a partir das referências já
+aprovadas (turnaround da Quebra e andar frontal da Veloz):
+
+1. `assets/source-art/nucleo/bruta-ultimate-v3.png` →
+   `assets/sprites/player/player-10x-bruta-ultimate.png` (1024×256).
+   Marretas baixas → erguidas com rachadura magmática nos ombros → pancada
+   dupla abrindo a fenda → corpo alto com a marreta apoiada.
+2. `assets/source-art/nucleo/veloz-ultimate-v3.png` →
+   `assets/sprites/player/player-10x-veloz-ultimate.png` (896×224).
+   Círculo de relógio → corpo encolhido e faiscando → arrancada com riscos de
+   velocidade → recuperação.
+
+O gerador insistiu em duplicar a criatura como "afterimage" na corrida: a
+terceira tentativa foi aceita porque ficou **um corpo por coluna** com riscos
+de velocidade, que é o que a leitura do jogo pede. As tentativas anteriores
+foram descartadas e apagadas.
+
+Aprendizados do script (já aplicados): o gerador às vezes desenha a linha da
+grade em volta de cada quadro — o recorte em grade precisa de `inset`; e
+detritos soltos viram faixas próprias, então nesses casos a grade é a verdade,
+não a detecção automática.
+
+**Ainda pendente do Núcleo:** ataque de costas da Quebra, som de pistões e a
+fenda permanente no cenário (a Ultimate desenha e aplica o dano, mas não altera
+o layout do mapa).
+
 ## Rodada 0.6.2 — correções da Quebra Sistemas em jogo
 
 Nada de folha nova de personagem além de uma: a **transformação**.

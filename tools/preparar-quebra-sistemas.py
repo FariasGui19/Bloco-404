@@ -117,18 +117,24 @@ def tight(rgba, box):
     return patch[ys.min():ys.max() + 1, xs.min():xs.max() + 1]
 
 
-def compose(frames, out_name):
+def compose(frames, out_name, cell=CELL, height=TARGET_HEIGHT, baseline=BASELINE):
     """Células iguais: altura normalizada, pés na base, corpo centralizado."""
     heights = [f.shape[0] for f in frames]
-    scale = TARGET_HEIGHT / float(np.median(heights))
-    sheet = Image.new('RGBA', (CELL * len(frames), CELL), (0, 0, 0, 0))
+    scale = height / float(np.median(heights))
+    sheet = Image.new('RGBA', (cell * len(frames), cell), (0, 0, 0, 0))
+    limite = cell - 12
     for col, frame in enumerate(frames):
         h, w = frame.shape[:2]
-        nw, nh = max(1, round(w * scale)), max(1, round(h * scale))
+        escala_local = scale
+        # Rastro de velocidade e fenda alargam o quadro: nada de sangrar na
+        # célula vizinha, então a escala cai até caber na largura útil.
+        if round(w * escala_local) > limite:
+            escala_local = limite / float(w)
+        nw, nh = max(1, round(w * escala_local)), max(1, round(h * escala_local))
         art = Image.fromarray(frame).resize((nw, nh), Image.LANCZOS)
-        dx = CELL // 2 - nw // 2
-        dy = BASELINE - nh
-        sheet.alpha_composite(art, (col * CELL + dx, dy))
+        dx = cell // 2 - nw // 2
+        dy = baseline - nh
+        sheet.alpha_composite(art, (col * cell + dx, dy))
     target = OUT / f'{out_name}.png'
     sheet.save(target, optimize=True)
     print(f'{target.relative_to(ROOT)} → {sheet.width}×{sheet.height}, '
@@ -159,6 +165,15 @@ SHEETS = [
     # primeira linha (as de baixo são poses extras do gerador) e limpa o
     # halo rosa-claro que sobrou do feixe de luz.
     {'file': 'quebra-transformacao.png', 'prefix': 'player-10x-bruta-transformacao', 'rows': [0], 'cols': 4, 'pink': True},
+    # Ultimate da forma (DEVORADOR DE TECTÔNICA): marretas sobem, rachadura
+    # magmática abre nos ombros, as duas descem no chão e a fenda fica. Só a
+    # primeira linha é execução; a de baixo são poses de catálogo.
+    {'file': 'bruta-ultimate-v3.png', 'prefix': 'player-10x-bruta-ultimate', 'rows': [0], 'cols': 4,
+     'grid': True, 'inset': 7},
+    # Ultimate da Forma Veloz (VELOCIDADE TEMPORAL). A criatura é mais baixa
+    # que a Quebra, então a altura normalizada é a dela, não a de ferro.
+    {'file': 'veloz-ultimate-v3.png', 'prefix': 'player-10x-veloz-ultimate', 'rows': [0], 'cols': 4,
+     'grid': True, 'inset': 6, 'cell': 224, 'height': 150},
 ]
 
 # Ícone da forma para a roda do T: o bloco de cabeça com o núcleo aceso,
@@ -207,12 +222,23 @@ def main():
             band = mask[y0:y1]
             colunas = content_bands(band, 0)
             if cfg.get('cols'):
-                colunas = fit_bands(colunas, cfg['cols'], band.sum(axis=0))
+                if cfg.get('grid'):
+                    # O gerador distribui as poses em colunas iguais; quando
+                    # detritos soltos viram faixas próprias, a detecção parte
+                    # a figura no meio. Aqui a grade é a verdade — com um
+                    # recuo nas bordas, porque o gerador desenha a linha do
+                    # quadro e ela não é arte.
+                    passo = band.shape[1] / cfg['cols']
+                    borda = cfg.get('inset', 0)
+                    colunas = [(round(i * passo) + borda, round((i + 1) * passo) - borda)
+                               for i in range(cfg['cols'])]
+                else:
+                    colunas = fit_bands(colunas, cfg['cols'], band.sum(axis=0))
             escolhidas = cfg.get('cells') or range(len(colunas))
             for index in escolhidas:
                 x0, x1 = colunas[index]
                 pics.append(tight(rgba, (x0, y0, x1, y1)))
-        compose(pics, cfg['prefix'])
+        compose(pics, cfg['prefix'], cfg.get('cell', CELL), cfg.get('height', TARGET_HEIGHT))
     make_icon(ICON)
 
 

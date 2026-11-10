@@ -79,6 +79,19 @@ assert.match(overlay.innerHTML, /disponível|VELOZ/, 'a roda mantém a forma vel
 assert.equal(buttons.length, 4, 'quatro formas no anel');
 assert.equal(buttons.filter(b => b.disabled).length, 2, 'fluida e núcleo continuam em projeto');
 
+// CADA CARTA NO SEU ENCAIXE. O relato "só muda o nome, a foto fica de um" era
+// exatamente isto: as quatro cartas no mesmo ponto do anel. As posições são
+// quatro pares diferentes, e as duas formas jogáveis têm a SUA miniatura.
+const posicoes = [...overlay.innerHTML.matchAll(/--slot-x: ([\d.]+%); --slot-y: ([\d.]+%)/g)]
+  .map(m => `${m[1]}/${m[2]}`);
+assert.equal(posicoes.length, 4, 'quatro cartas com posição declarada');
+assert.equal(new Set(posicoes).size, 4, 'nenhuma carta divide o mesmo encaixe');
+const arts = [...overlay.innerHTML.matchAll(/class="nucleo-preview" src="([^"]+)"/g)].map(m => m[1]);
+assert.equal(arts.length, 2, 'uma arte por forma jogável');
+assert.equal(new Set(arts).size, 2, 'a Veloz e a Quebra têm imagens DIFERENTES');
+assert.match(arts.join(' '), /nucleo-forma-veloz\.png/);
+assert.match(arts.join(' '), /nucleo-quebra-sistemas\.png/);
+
 // Fecha com ESC.
 input.pressed.add('escape'); updateNucleoWheel(); input.pressed.clear();
 assert(!isNucleoWheelOpen() && !visible);

@@ -42,9 +42,11 @@ pegar export faltando antes de abrir o navegador.
 - **Duas formas do Núcleo 10X** (tecla `T`): *Forma Veloz* (corrida, 1,8× de
   velocidade) e *Quebra Sistemas* (ferro denso, 40% mais lenta, cada marretada
   consome a barra de forma). Ambas com folhas próprias nas quatro direções,
-  ataque básico animado e metamorfose desenhada com a própria arte. Na Quebra,
-  `Q` sobe e desce a marreta (dano à frente, empurrão, tremor de câmera) e a
-  Ultimate `DEVORADOR DE TECTÔNICA` abre uma fenda no chão.
+  ataque básico animado, metamorfose desenhada com a própria arte e **execução
+  de Ultimate em quatro quadros** por forma. Na Quebra, `Q` sobe e desce a
+  marreta (dano à frente, empurrão, tremor de câmera) e a Ultimate
+  `DEVORADOR DE TECTÔNICA` abre uma fenda no chão; na Veloz, o `F`
+  (`VELOCIDADE TEMPORAL`) dispara em relâmpago com riscos de velocidade.
 - **Dano por arquétipo**: dano, golpes, recarga, alcance e crítico em
   [`js/data/combat-balance.js`](js/data/combat-balance.js).
 - **Maestria por uso** (sem pontos): ataque, fluxo, eco e locomoção sobem

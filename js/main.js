@@ -170,6 +170,9 @@ await loadSprites([
   { id: 'player_10x_bruta_ataque_lateral', src: 'assets/sprites/player/player-10x-bruta-ataque-lateral.png' },
   { id: 'player_10x_bruta_ataque_frente', src: 'assets/sprites/player/player-10x-bruta-ataque-frente.png' },
   { id: 'player_10x_bruta_transformacao', src: 'assets/sprites/player/player-10x-bruta-transformacao.png' },
+  // Execução da Ultimate das duas formas (F): antes só existia o efeito.
+  { id: 'player_10x_bruta_ultimate', src: 'assets/sprites/player/player-10x-bruta-ultimate.png' },
+  { id: 'player_10x_veloz_ultimate', src: 'assets/sprites/player/player-10x-veloz-ultimate.png' },
   {
     id: 'elevator_door',
     src: 'assets/sprites/objects/elevator-door.png',

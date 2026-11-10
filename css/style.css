@@ -2222,7 +2222,7 @@ body.in-menu #controls {
 /* Núcleo 10X — seletor radial original; uma única forma está disponível. */
 #nucleoWheel { position: fixed; inset: 0; z-index: 90; display: none; align-items: center; justify-content: center; background: rgba(3, 12, 14, .77); backdrop-filter: blur(5px); color: #d9ffec; font-family: monospace; }
 #nucleoWheel.visible { display: flex; }
-.nucleo-panel { text-align: center; width: min(500px, 95vw); padding: 22px; border: 1px solid #357d59; border-radius: 18px; background: radial-gradient(circle at 50% 40%, #123e31, #071619 74%); box-shadow: 0 0 65px #2aff9255, inset 0 0 35px #39ff8014; }
+.nucleo-panel { text-align: center; width: min(560px, 96vw); padding: 22px; border: 1px solid #357d59; border-radius: 18px; background: radial-gradient(circle at 50% 40%, #123e31, #071619 74%); box-shadow: 0 0 65px #2aff9255, inset 0 0 35px #39ff8014; }
 .nucleo-panel h2 { letter-spacing: .3em; margin: 6px 0; color: #c7ffe0; }
 .nucleo-panel h2 span, .nucleo-panel strong { color: #75ff9d; }
 .nucleo-eyebrow, .nucleo-help { font-size: 10px; letter-spacing: .15em; color: #9abdae; }
@@ -2241,12 +2241,18 @@ body.in-menu #controls {
 @media (prefers-reduced-motion: reduce) { .ring-outer { animation: none; } }
 
 /* Arte fornecida para a roda: o centro seleciona a única forma disponível. */
-.nucleo-art-ready .nucleo-orbit { background: url('../assets/sprites/ui/nucleo-roda.png') center / contain no-repeat; width: 360px; height: 300px; max-width: 78vw; max-height: 65vw; }
+.nucleo-art-ready .nucleo-orbit { background: url('../assets/sprites/ui/nucleo-roda.png') center / contain no-repeat; width: min(470px, 84vw); aspect-ratio: 3 / 2; height: auto; max-height: none; }
 .nucleo-art-ready .nucleo-orbit .nucleo-ring, .nucleo-art-ready .nucleo-orbit .nucleo-core, .nucleo-art-ready .nucleo-orbit .nucleo-locked { display: none; }
-.nucleo-art-ready .nucleo-orbit .nucleo-form { left: 50%; top: 46%; transform: translate(-50%,-50%); width: 25%; height: 30%; border-radius: 50%; background: transparent; border: 1px solid transparent; box-shadow: none; }
+.nucleo-art-ready .nucleo-orbit .nucleo-form { left: var(--slot-x, 50%); top: var(--slot-y, 50%); transform: translate(-50%,-50%); width: 27%; height: 34%; border-radius: 50%; background: transparent; border: 1px solid transparent; box-shadow: none; }
 .nucleo-art-ready .nucleo-orbit .nucleo-form span, .nucleo-art-ready .nucleo-orbit .nucleo-form small { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
 /* Com a arte carregada, o nome fica como legenda pequena sob o corpo. */
-.nucleo-art-ready .nucleo-orbit .nucleo-form b { position: static; width: auto; height: auto; overflow: visible; clip-path: none; margin-top: 2px; font-size: 8px; letter-spacing: .08em; line-height: 1.1; text-align: center; text-shadow: 0 1px 2px #000, 0 0 8px #0a1a13; pointer-events: none; }
+.nucleo-art-ready .nucleo-orbit .nucleo-form b {
+  position: static; width: auto; height: auto; overflow: visible; clip-path: none;
+  margin-top: 1px; padding: 1px 5px; border-radius: 6px;
+  font-size: 8px; letter-spacing: .08em; line-height: 1.2; text-align: center;
+  white-space: nowrap; color: #eafff2; background: #04140fbb;
+  text-shadow: 0 1px 2px #000; pointer-events: none;
+}
 .nucleo-art-ready .nucleo-orbit .nucleo-form:hover, .nucleo-art-ready .nucleo-orbit .nucleo-form:focus-visible { outline: 2px solid #dcffac; box-shadow: 0 0 20px #62ffa5; background: #58ff991c; }
 
 /* Diário de missões: somente consulta; não altera a missão ativa. */
@@ -2265,9 +2271,20 @@ body.in-menu #controls {
    única pista textual de qual forma o jogador está escolhendo no T. */
 .nucleo-form { display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: 2px; padding: 4px 2px; }
 .nucleo-form .nucleo-preview { flex: 1 1 auto; min-height: 0; }
+/* No modo com arte o corpo da forma é o herói do cartão: ocupa o hexágono
+   inteiro e o nome fica como etiqueta embaixo. */
+.nucleo-art-ready .nucleo-orbit .nucleo-form .nucleo-preview { width: 88%; height: calc(100% - 13px); filter: drop-shadow(0 0 6px #6aff9688) drop-shadow(0 2px 3px #000); }
+/* O anel já desenha o cadeado das formas em projeto: o ◆ some para não
+   duplicar (ele só existe no modo sem arte). */
+.nucleo-art-ready .nucleo-orbit .nucleo-form .nucleo-form-lock { display: none; }
+/* Selecionado cresce um pouco: a escolha do T tem que ser óbvia de longe. */
+.nucleo-art-ready .nucleo-orbit .nucleo-form.selected .nucleo-preview { transform: scale(1.06); }
+.nucleo-form.selected .nucleo-preview { filter: drop-shadow(0 0 10px #d8ffe0) drop-shadow(0 2px 3px #000); }
+.nucleo-form[data-tool="nucleo_bruto"] .nucleo-preview { filter: drop-shadow(0 0 7px #ffc94acc) drop-shadow(0 2px 3px #000); }
+.nucleo-form[data-tool="nucleo_bruto"].selected .nucleo-preview { filter: drop-shadow(0 0 12px #ffb02e) drop-shadow(0 2px 3px #000); }
 .nucleo-form { overflow: visible; }
 .nucleo-form b, .nucleo-form small { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
-.nucleo-art-ready .nucleo-orbit .nucleo-form { width: 29%; height: 32%; }
+.nucleo-art-ready .nucleo-orbit .nucleo-form { width: 30%; height: 36%; }
 @keyframes nucleo-preview-float { 50% { transform: translateY(-5px) scale(1.04); filter: drop-shadow(0 0 12px #8dffa7); } }
 #nucleoTimer { display: none; margin-bottom: 7px; color: var(--form-color, #a7ffbb); font-size: 10px; font-weight: bold; letter-spacing: .05em; }
 /* Quebra Sistemas: barra de forma em âmbar, com a leitura de peso do metal. */
@@ -2281,10 +2298,14 @@ body.in-menu #controls {
    O anel agora lista as formas do dado: Veloz e Quebra Sistemas podem ser
    escolhidas; Fluida e Núcleo continuam como projeto, com cadeado.
    ===================================================================== */
-.nucleo-form-0 { top: 0; left: 50%; transform: translateX(-50%); }
-.nucleo-form-1 { top: 50%; right: 0; left: auto; transform: translateY(-50%); }
-.nucleo-form-2 { bottom: 0; left: 50%; top: auto; transform: translateX(-50%); }
-.nucleo-form-3 { top: 50%; left: 0; transform: translateY(-50%); }
+/* Posição por DADO (--slot-x / --slot-y vêm do JS, medidos na arte do anel).
+   As regras antigas usavam bordas de uma caixa quadrada e, com a arte do
+   anel, todos os cartões coincidiam no centro. */
+.nucleo-form { left: var(--slot-x, 50%); top: var(--slot-y, 50%); transform: translate(-50%, -50%); }
+.nucleo-form-0 { --fallback-x: 50%; --fallback-y: 0%; }
+.nucleo-form-1 { --fallback-x: 100%; --fallback-y: 50%; }
+.nucleo-form-2 { --fallback-x: 50%; --fallback-y: 100%; }
+.nucleo-form-3 { --fallback-x: 0%; --fallback-y: 50%; }
 .nucleo-form .nucleo-form-lock { display: block; font-size: 20px; color: #47695c; line-height: 1.1; }
 .nucleo-form[disabled] { cursor: not-allowed; opacity: .55; border-color: #3b6a58; background: #0d241d; box-shadow: none; }
 .nucleo-form[disabled]:hover, .nucleo-form[disabled]:focus-visible { outline: none; background: #0d241d; }

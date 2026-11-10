@@ -420,8 +420,20 @@ export const map = {
     { id: 'vegetacao_chegada_c', tipo: 'decoracao', x: 12, y: 9, sprite: 'vegetacao_tropical', frame: { col: 1, row: 0 }, useCrop: true, larguraPx: 30, pivotY: 1, bloqueia: false },
     { id: 'marco_enseada', tipo: 'decoracao', x: 12, y: 11, routeMarker: 'ENSEADA', bloqueia: false },
     ...linhaDoTrem({
-      trilho: { larguraPx: 390, ajusteX: 9, ajusteY: 31.5 },
-      trem: { ajusteY: 68 }, // ajuste local para aproximar as rodas do trilho
+      // O trem padrão desenha 622x359 px (9,7 x 11,2 tiles): com o topo em
+      // y=-110 ele saía CORTADO pela borda da tela, e o trilho atravessava
+      // a cena. Reduzir só a largura deixaria as rodas altas demais, então
+      // `escalaY` encolhe a altura junto e o ajusteY desce o conjunto para
+      // assentar as rodas no chão.
+      // O trem sai de cima da areia andável: ele fica na ORLA NORTE, sobre
+      // a borda do mar, com as rodas encostando na areia. Assim o jogador
+      // nunca "entra na imagem" — a água é que fica embaixo dele.
+      global: { y: -1.1 },
+      // O totem fica na AREIA, à frente do trem: o embarque tem que ser
+      // alcançável a pé (ele é o ponto de interação do trem).
+      totem: { x: 7.2, y: 5.0, ajusteY: 12 },
+      trilho: { larguraPx: 300, ajusteX: 6, ajusteY: 26 },
+      trem: { larguraPx: 286, escalaY: .60, ajusteY: 40 },
     }),
 
     // ---- ESTAÇÃO DO TREM ----
@@ -431,27 +443,27 @@ export const map = {
     // acima, pilares na frente, escada descendo para a praia.
     // Tudo `bloqueia: false` — a estação é cenário, as rotas e o save não
     // mudam. O totem de embarque continua sendo o único bloqueio.
-    { id: 'estacao_plataforma', tipo: 'decoracao', x: 7.1, y: 2.0, camada: 'fundo', ordem: 2,
+    { id: 'estacao_plataforma', tipo: 'decoracao', x: 6.8, y: 0.6, camada: 'fundo', ordem: 2,
       sprite: 'praia_plataforma_kit', frame: { col: 1, row: 0 }, useCrop: true,
-      larguraPx: 300, pivotX: .5, pivotY: 1, ajusteY: 40, bloqueia: false },
-    { id: 'estacao_dossel', tipo: 'decoracao', x: 7.1, y: 2.0, camada: 'fundo', ordem: 3,
+      larguraPx: 196, pivotX: .5, pivotY: 1, ajusteY: 32, escalaY: .50, bloqueia: false },
+    { id: 'estacao_dossel', tipo: 'decoracao', x: 7.3, y: 0.8, camada: 'fundo', ordem: 3,
       sprite: 'praia_plataforma_kit', frame: { col: 2, row: 0 }, useCrop: true,
-      larguraPx: 150, pivotX: .5, pivotY: 1, ajusteY: 96, bloqueia: false },
+      larguraPx: 142, pivotX: .5, pivotY: 1, ajusteY: 74, escalaY: .78, bloqueia: false },
     // Os dois pilares do contrato 0314: mesmo id, mesmo y=5, em chão firme.
-    { id: 'plataforma_pilar_oeste', tipo: 'decoracao', x: 2, y: 5, sprite: 'praia_plataforma_kit', frame: { col: 0, row: 1 }, useCrop: true, larguraPx: 34, pivotY: 1, bloqueia: false },
-    { id: 'plataforma_pilar_leste', tipo: 'decoracao', x: 13, y: 5, sprite: 'praia_plataforma_kit', frame: { col: 0, row: 1 }, useCrop: true, larguraPx: 34, pivotY: 1, bloqueia: false },
-    { id: 'praia_placa_estacao', tipo: 'decoracao', x: 9.6, y: 4.5,
+    { id: 'plataforma_pilar_oeste', tipo: 'decoracao', x: 2, y: 5, sprite: 'praia_plataforma_kit', frame: { col: 0, row: 1 }, useCrop: true, larguraPx: 30, pivotY: 1, escalaY: .86, bloqueia: false },
+    { id: 'plataforma_pilar_leste', tipo: 'decoracao', x: 13, y: 5, sprite: 'praia_plataforma_kit', frame: { col: 0, row: 1 }, useCrop: true, larguraPx: 30, pivotY: 1, escalaY: .86, bloqueia: false },
+    { id: 'praia_placa_estacao', tipo: 'decoracao', x: 9.6, y: 3.4,
       sprite: 'praia_plataforma_kit', frame: { col: 1, row: 1 }, useCrop: true,
-      larguraPx: 96, pivotY: 1, bloqueia: false, routeMarker: 'ESTAÇÃO' },
-    { id: 'estacao_luminaria', tipo: 'decoracao', x: 12.0, y: 2.6,
+      larguraPx: 82, pivotY: 1, escalaY: .82, bloqueia: false, routeMarker: 'ESTAÇÃO' },
+    { id: 'estacao_luminaria', tipo: 'decoracao', x: 12.0, y: 1.5,
       sprite: 'praia_plataforma_kit', frame: { col: 2, row: 1 }, useCrop: true,
-      larguraPx: 52, pivotY: 1, bloqueia: false },
-    { id: 'estacao_escada', tipo: 'decoracao', x: 4.6, y: 5.2,
+      larguraPx: 44, pivotY: 1, escalaY: .80, bloqueia: false },
+    { id: 'estacao_escada', tipo: 'decoracao', x: 4.6, y: 4.1,
       sprite: 'praia_plataforma_kit', frame: { col: 3, row: 0 }, useCrop: true,
-      larguraPx: 108, pivotY: 1, bloqueia: false },
-    { id: 'estacao_guarda_corpo', tipo: 'decoracao', x: 10.4, y: 5.6,
+      larguraPx: 86, pivotY: 1, escalaY: .72, bloqueia: false },
+    { id: 'estacao_guarda_corpo', tipo: 'decoracao', x: 10.4, y: 4.5,
       sprite: 'praia_plataforma_kit', frame: { col: 3, row: 1 }, useCrop: true,
-      larguraPx: 130, pivotY: 1, bloqueia: false },
+      larguraPx: 104, pivotY: 1, escalaY: .74, bloqueia: false },
     { id: 'praia_caixa_estacao', tipo: 'decoracao', x: 12.4, y: 5.4, sprite: 'bio_caixa', useCrop: true, larguraPx: 42, pivotY: 1, bloqueia: false },
 
     // ---- Ilha A (props originais, inalterados) ----

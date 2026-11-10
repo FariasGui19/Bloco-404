@@ -11,6 +11,33 @@
 - Núcleo 10X: Ultimate só com a forma ativa; formas futuras listadas como projeto.
 - Maré Astral: rotas de maré no Códex (leitura de mapa).
 
+## Concluído na 0.7.0 — Maré Astral com o mesmo carinho do Bio
+
+Cinco folhas de execução (uma por assinatura de Ultimate) e uma de ação, no
+padrão de tamanho e de fase do Bio-Forja e do Núcleo 10X. Teste próprio:
+`tests/mare-ultimate.mjs`.
+
+1. **A Ultimate que a corrente instala** — cúpula, vórtice, chicote, sonar e a
+   sinfonia do módulo. A carga já veste a corrente escolhida (a assinatura vai
+   em `chargeDefinition`, igual ao Bio).
+2. **Bug fechado: CORRENTE ABISSAL nunca aparecia.** Ela é `kind: 'dash'`;
+   enquanto o corpo avançava, a animação descartava a folha e só o efeito
+   procedural saía. Agora o avanço da Ultimate carrega `mode: 'ultimate'` e a
+   arte sobrevive ao deslocamento — só o dash de habilidade (Q) manda no corpo.
+3. **Q de costas** — o avanço para cima desenhava a pose lateral e o corpo
+   virava de perfil. Folha própria de quatro fases; as outras direções seguem
+   com a lateral aprovada.
+4. **Água viva** (`drawMareFx`) — gotas orbitando as botas e anel de correnteza
+   na cor da corrente instalada, o equivalente do vapor do Bio.
+5. **Códex** — o cartão de cada corrente mostra a pose de preparo da folha,
+   com um resolvedor por arquétipo (`poseDaFerramenta`), sem duplicar código.
+
+Versão `0.7.0-mare-astral`.
+
+**Próximo da fila:** o mesmo tratamento no **Domínio Ancião** (que ainda não
+tem folha de Ultimate por arma/postura) e a cor da ferramenta no HUD durante o
+bônus do `F` nos três módulos.
+
 ## Concluído na 0.6.6 — Motor Bio-Forja fechado
 
 Faltavam duas ações para o exo ficar completo (teste `tests/bio-acoes.mjs`):

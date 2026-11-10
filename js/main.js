@@ -116,6 +116,14 @@ await loadSprites([
   { id: 'player_dominio_q', src: 'assets/sprites/player/player-dominio-q.png' },
   { id: 'player_dominio_r', src: 'assets/sprites/player/player-dominio-r.png' },
   { id: 'player_mare_lvl1', src: 'assets/sprites/player/player-mare-lvl1.png' },
+  // Execução da Ultimate do MARÉ ASTRAL (F): uma folha por corrente, mais o
+  // Q de costas (tools/preparar-mare-ultimate.py).
+  { id: 'player_mare_ult_cupula', src: 'assets/sprites/player/player-mare-ult-cupula.png' },
+  { id: 'player_mare_ult_vortice', src: 'assets/sprites/player/player-mare-ult-vortice.png' },
+  { id: 'player_mare_ult_chicote', src: 'assets/sprites/player/player-mare-ult-chicote.png' },
+  { id: 'player_mare_ult_sonar', src: 'assets/sprites/player/player-mare-ult-sonar.png' },
+  { id: 'player_mare_ult_estuario', src: 'assets/sprites/player/player-mare-ult-estuario.png' },
+  { id: 'player_mare_propulsor_costas', src: 'assets/sprites/player/player-mare-propulsor-costas.png' },
   { id: 'player_mare_q', src: 'assets/sprites/player/player-mare-q.png' },
   { id: 'player_mare_r', src: 'assets/sprites/player/player-mare-r.png' },
   { id: 'player_10x_lvl1', src: 'assets/sprites/player/player-10x-lvl1.png' },

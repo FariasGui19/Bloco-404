@@ -22,6 +22,8 @@ import { getBrutaAnimation, BRUTA_SCALE, BRUTA_FOOT_Y } from '../data/bruta-anim
 import { getUltimateFrame } from '../data/nucleo-ultimate-animation.js';
 import { getBioUltimateFrame } from '../data/bio-ultimate-animation.js';
 import { getBioAttackFrame, getBioPropulsorFrame } from '../data/bio-action-animation.js';
+import { getMareUltimateFrame } from '../data/mare-ultimate-animation.js';
+import { getMarePropulsorFrame } from '../data/mare-action-animation.js';
 import { getSelectedToolId } from '../game/tools.js';
 import { NUCLEO_BRUTA } from '../data/nucleo-forms.js';
 import { getFissures } from '../game/scars.js';
@@ -2333,6 +2335,45 @@ function drawBioForjaFx(player, ix, iy, gait) {
   ctx.restore();
 }
 
+// A ÁGUA DO MARÉ anda com o corpo: gotas que sobem e caem em volta das botas,
+// um respingo no passo e um fio de vapor frio na exaustão do Q. É o mesmo
+// carinho do vapor do Bio — leitura, não regra: nada muda em dano/colisão.
+const MARE_TOOL_GLOW = {
+  escudo_liquido: { cor: '#54ccff' },
+  passo_abissal: { cor: '#73e9fa' },
+  chicote_de_mare: { cor: '#a6f0ff' },
+  senso_de_corrente: { cor: '#8cff9e' },
+};
+
+function drawMareFx(player, ix, iy, gait) {
+  const now = performance.now();
+  const corrente = MARE_TOOL_GLOW[getSelectedToolId(state.progress)] ?? { cor: '#53d9f4' };
+  ctx.save();
+  // Bolhas/drops orbitando os tornozelos, mais intensos no passo.
+  const forca = gait === 'walk' ? 1 : .5;
+  for (let i = 0; i < 4; i++) {
+    const ciclo = ((now * .00045) + i / 4) % 1;
+    const ang = (i / 4) * Math.PI * 2 + now * .0006;
+    const raio = 9 + ciclo * 7;
+    const px = ix + Math.cos(ang) * raio;
+    const py = iy - 4 - ciclo * 22;
+    ctx.globalAlpha = (1 - ciclo) * .55 * forca;
+    ctx.fillStyle = corrente.cor;
+    ctx.beginPath();
+    ctx.ellipse(px, py, 1.6 + (1 - ciclo), 2.4 + (1 - ciclo) * 1.4, 0, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  // Anel de correnteza raso no chão: lembra que o traje mexe com água.
+  const pulso = .5 + Math.sin(now * .004) * .2;
+  ctx.globalAlpha = pulso * .3 * forca;
+  ctx.strokeStyle = corrente.cor;
+  ctx.lineWidth = 1.2;
+  ctx.beginPath();
+  ctx.ellipse(ix, iy + 1, 15, 6.5, 0, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.restore();
+}
+
 function drawPlayerSprite(player, ix, iy) {
   // As folhas de referência têm poses, não quadros sequenciais. Usamos uma
   // pose provisória com os pulsos animados, sem fingir que são animações finais.
@@ -2343,7 +2384,12 @@ function drawPlayerSprite(player, ix, iy) {
   // MOTOR BIO-FORJA: a Ultimate nível 1 é a ferramenta escolhida executando
   // o próprio golpe — cada uma tem folha (cúpula, serra, marreta, cabos,
   // propulsores). Fica antes do corpo parado do exo para o gesto aparecer.
-  const ultimateFrame = getUltimateFrame(state.progress, player) ?? getBioUltimateFrame(state.progress, player);
+  // Três módulos já têm execução desenhada do F: Núcleo 10X (por forma),
+  // Bio-Forja (por ferramenta) e Maré (por corrente). A ordem importa
+  // porque só um deles pode desenhar o corpo.
+  const ultimateFrame = getUltimateFrame(state.progress, player)
+    ?? getBioUltimateFrame(state.progress, player)
+    ?? getMareUltimateFrame(state.progress, player);
   if (ultimateFrame) {
     const imagem = getSprite(ultimateFrame.sprite);
     if (imagem) {
@@ -2372,6 +2418,8 @@ function drawPlayerSprite(player, ix, iy) {
   const suit = player.equippedSuit;
   // O exo do Bio-FORJA respira: vapor de pistão e a bobina da ferramenta.
   if (suit === 'bio_forja') drawBioForjaFx(player, ix, iy, player.moving ? 'walk' : 'idle');
+  // O Maré carrega água: gotas orbitando as botas e anel de correnteza.
+  if (suit === 'mare') drawMareFx(player, ix, iy, player.moving ? 'walk' : 'idle');
   // A segunda forma do Núcleo (Quebra Sistemas) desenha o próprio peso:
   // poeira no passo, faísca das marretas e vapor na exaustão.
   if (player.nucleoForm === NUCLEO_BRUTA) {
@@ -2551,6 +2599,20 @@ function drawPlayerSprite(player, ix, iy) {
     const id = effect.id === 'forma_veloz' ? 'player_10x_q' : 'player_10x_r';
     if (drawArchetypeSheet(id, col, 0, ix, iy, player.facing === 'left', { rows: 1, scale: 0.29, anchor: 0.78 })) {
       player._topo = 120;
+      return true;
+    }
+  }
+  // PASSO DE CORRENTE de costas: a folha lateral aprovada virava o corpo de
+  // perfil no meio do avanço. Só a direção de cima tem esta troca — as outras
+  // continuam com a folha lateral, que já está certa.
+  const propulsorMare = getMarePropulsorFrame(state.progress, player);
+  if (propulsorMare) {
+    const sheet = getSprite(propulsorMare.sprite);
+    if (sheet) {
+      const w = propulsorMare.cell * propulsorMare.scale, h = propulsorMare.cell * propulsorMare.scale;
+      drawSmooth(sheet, propulsorMare.col * propulsorMare.cell, 0, propulsorMare.cell, propulsorMare.cell,
+        ix - w / 2, iy - propulsorMare.footY * propulsorMare.scale, w, h);
+      player._topo = Math.round(propulsorMare.footY * propulsorMare.scale);
       return true;
     }
   }

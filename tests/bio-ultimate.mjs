@@ -186,8 +186,12 @@ for (const sheet of Object.values(BIO_ULTIMATE_SHEETS)) {
 // ---------------------------------------------------------------
 const renderer = readFileSync(new URL('../js/engine/renderer.js', import.meta.url), 'utf8');
 assert.match(renderer, /getBioUltimateFrame/, 'o renderer consulta a animação do Bio');
-assert.match(renderer, /getUltimateFrame\(state\.progress, player\) \?\? getBioUltimateFrame/,
-  'Núcleo primeiro, Bio como segundo caminho — sem brigar pela forma');
+// Agora são três módulos com execução desenhada; a ordem é Núcleo → Bio → Maré.
+const posNucleo = renderer.indexOf('getUltimateFrame(state.progress, player)');
+const posBio = renderer.indexOf('getBioUltimateFrame(state.progress, player)');
+const posMare = renderer.indexOf('getMareUltimateFrame(state.progress, player)');
+assert(posNucleo > 0 && posBio > posNucleo && posMare > posBio,
+  'Núcleo, depois Bio, depois Maré — sem brigar pelo corpo');
 
 // ---------------------------------------------------------------
 // 7. CÓDEX — a ferramenta mostra a própria execução antes de gastar energia

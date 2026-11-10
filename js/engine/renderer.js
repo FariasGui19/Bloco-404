@@ -10,6 +10,7 @@ import { drawUltimateSignature } from './ultimate-visuals.js';
 import { getSprite } from './sprites.js';
 import { createBeachSurface } from './beach-surface.js';
 import { getSeaCanvas, foamArcs } from './beach-water.js';
+import { getVidaAquatica, atualizarCardumes, atualizarBolhas, CORES_CARDUME } from '../game/vida-aquatica.js';
 import { bridgeGateGeometry } from './bridge-geometry.js';
 import { getBioWalkFrame, bioWalkSheet } from '../data/bio-walk.js';
 import { faunaFootAnchor } from '../game/fauna-costeira.js';
@@ -100,6 +101,7 @@ export function render(map, state) {
       // seguir a borda quadrada das células de areia.
       if (map.id !== 'ilha_estacao_bio') drawBeachSurface(map);
       drawBeachSea(map);
+      drawVidaAquatica(map, state);
       drawBeachRipples(map);
     }
     drawFloors(map);
@@ -468,6 +470,156 @@ function drawBeachRipples(map) {
   ctx.restore();
 }
 
+
+// =====================================================================
+// VIDA SUBAQUÁTICA
+//
+// Tudo é opaco sob a água? Não: o mar assado é desenhado ANTES, então o
+// que aparece aqui é o que está "embaixo" da lâmina. A leitura funciona
+// porque cada elemento é desenhado com alpha baixo, como se a água o
+// tingisse — recifes mais apagados, cardumes um pouco mais vivos (estão
+// mais perto da superfície).
+//
+// Custo: cardumes são um número FIXO por mapa (7); recifes e raios são
+// listas estáticas. Só os visíveis são desenhados.
+// =====================================================================
+const vidaCache = new WeakMap();
+
+function drawVidaAquatica(map, state) {
+  if (!map.aguaPraia) return;
+  let vida = vidaCache.get(map);
+  if (!vida) { vida = getVidaAquatica(map); vidaCache.set(map, vida); }
+  if (!vida) return;
+
+  const t = performance.now() / 1000;
+  const player = state.player;
+  const nado = player?.nado;
+  const submerso = !!nado?.ativo && nado.profundidade > 1.25;
+
+  // Atualiza simulação uma vez por frame (não por item visível).
+  atualizarCardumes(vida.cardumes, player ?? { x: 0, y: 0 }, 1 / 60, submerso);
+  atualizarBolhas(vida.bolhas, player ?? { x: 0, y: 0 }, nado, 1 / 60, map);
+
+  const dentro = (x, y, margem = 4) =>
+    x >= range.x0 - margem && x <= range.x1 + margem &&
+    y >= range.y0 - margem && y <= range.y1 + margem;
+
+  ctx.save();
+
+  // ---- Raios de sol: só quando o jogador mergulha (é o "wow" do mergulho)
+  if (submerso) {
+    ctx.globalCompositeOperation = 'lighter';
+    for (const raio of vida.raios) {
+      if (!dentro(raio.x, raio.y, 8)) continue;
+      const pulsar = .06 + .05 * Math.sin(t * raio.vel + raio.fase);
+      const ix = (raio.x - raio.y) * HW, iy = (raio.x + raio.y) * HH;
+      const g = ctx.createLinearGradient(ix, iy - 120, ix, iy + 40);
+      g.addColorStop(0, `rgba(190,240,255,${pulsar.toFixed(3)})`);
+      g.addColorStop(1, 'rgba(190,240,255,0)');
+      ctx.fillStyle = g;
+      ctx.beginPath();
+      ctx.moveTo(ix - raio.largura * 9, iy - 120);
+      ctx.lineTo(ix + raio.largura * 9, iy - 120);
+      ctx.lineTo(ix + raio.largura * 22, iy + 40);
+      ctx.lineTo(ix - raio.largura * 22, iy + 40);
+      ctx.closePath();
+      ctx.fill();
+    }
+    ctx.globalCompositeOperation = 'source-over';
+  }
+
+  // ---- Recifes: coral, rocha submersa e alga alta
+  for (const r of vida.recifes) {
+    if (!dentro(r.x, r.y)) continue;
+    const ix = (r.x - r.y) * HW, iy = (r.x + r.y) * HH;
+    const balanco = Math.sin(t * 1.1 + r.fase) * 1.6;
+    const s = r.tamanho;
+    if (r.tipo === 0) {
+      // Coral: três hastes curvas, rosa/coral, balançando.
+      ctx.strokeStyle = 'rgba(232,132,120,.62)';
+      ctx.lineWidth = 2.4 * s;
+      ctx.lineCap = 'round';
+      ctx.beginPath();
+      for (let k = -1; k <= 1; k++) {
+        ctx.moveTo(ix + k * 5 * s, iy);
+        ctx.quadraticCurveTo(ix + k * 7 * s + balanco, iy - 9 * s, ix + k * 9 * s + balanco * 1.4, iy - 16 * s);
+      }
+      ctx.stroke();
+      ctx.strokeStyle = 'rgba(255,190,150,.30)';
+      ctx.lineWidth = 1.1 * s;
+      ctx.beginPath();
+      ctx.moveTo(ix + balanco * .5, iy);
+      ctx.lineTo(ix + balanco * .9, iy - 20 * s);
+      ctx.stroke();
+    } else if (r.tipo === 1) {
+      // Rocha submersa: mancha escura e arredondada, com brilho de topo.
+      ctx.fillStyle = 'rgba(24,58,76,.42)';
+      ctx.beginPath();
+      ctx.ellipse(ix, iy + 2, 11 * s, 6.5 * s, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = 'rgba(120,160,170,.20)';
+      ctx.beginPath();
+      ctx.ellipse(ix - 2 * s, iy, 6 * s, 3 * s, -.3, 0, Math.PI * 2);
+      ctx.fill();
+    } else {
+      // Alga alta: lâminas finas subindo e voltando com a corrente.
+      ctx.strokeStyle = 'rgba(96,178,132,.50)';
+      ctx.lineWidth = 1.7 * s;
+      ctx.lineCap = 'round';
+      ctx.beginPath();
+      for (let k = -1; k <= 1; k++) {
+        ctx.moveTo(ix + k * 4, iy);
+        ctx.quadraticCurveTo(ix + k * 5 + balanco * 1.5, iy - 12 * s, ix + k * 4 + balanco * 2.6, iy - 24 * s);
+      }
+      ctx.stroke();
+    }
+  }
+
+  // ---- Cardumes: peixinhos em vaivém, apagados pela água
+  for (const c of vida.cardumes) {
+    if (!dentro(c.x, c.y, 2)) continue;
+    const cor = CORES_CARDUME[c.cor];
+    const base = submerso ? .78 : .5;
+    ctx.fillStyle = `rgba(${cor[0]},${cor[1]},${cor[2]},${base})`;
+    for (const p of c.peixes) {
+      const bal = Math.sin(t * 3.4 + p.fase) * .06;
+      const px = c.x + p.ox + bal;
+      const py = c.y + p.oy + Math.sin(t * 2.1 + p.fase) * .03;
+      const ix = (px - py) * HW, iy = (px + py) * HH;
+      const flip = c.flip ? -1 : 1;
+      // Corpo do peixe: losango curto e cauda.
+      ctx.beginPath();
+      ctx.moveTo(ix - 4 * flip, iy);
+      ctx.lineTo(ix, iy - 1.8);
+      ctx.lineTo(ix + 3 * flip, iy);
+      ctx.lineTo(ix, iy + 1.8);
+      ctx.closePath();
+      ctx.fill();
+      ctx.beginPath();
+      ctx.moveTo(ix - 4 * flip, iy);
+      ctx.lineTo(ix - 6.5 * flip, iy - 2.2);
+      ctx.lineTo(ix - 6.5 * flip, iy + 2.2);
+      ctx.closePath();
+      ctx.fill();
+    }
+  }
+
+  // ---- Bolhas: só do jogador, sobem e estouram
+  if (vida.bolhas.length) {
+    ctx.strokeStyle = 'rgba(226,252,255,.62)';
+    ctx.lineWidth = .9;
+    for (const b of vida.bolhas) {
+      const ix = (b.x - b.y) * HW, iy = (b.x + b.y) * HH;
+      ctx.globalAlpha = Math.max(0, b.vida) * .8;
+      ctx.beginPath();
+      ctx.arc(ix, iy, b.raio * 64, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+    ctx.globalAlpha = 1;
+  }
+
+  ctx.restore();
+}
 
 function drawFloorTile(type, x, y, map) {
   const tx = (x - y) * HW;

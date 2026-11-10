@@ -2286,7 +2286,14 @@ body.in-menu #controls {
 .nucleo-form b, .nucleo-form small { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
 .nucleo-art-ready .nucleo-orbit .nucleo-form { width: 30%; height: 36%; }
 @keyframes nucleo-preview-float { 50% { transform: translateY(-5px) scale(1.04); filter: drop-shadow(0 0 12px #8dffa7); } }
-#nucleoTimer { display: none; margin-bottom: 7px; color: var(--form-color, #a7ffbb); font-size: 10px; font-weight: bold; letter-spacing: .05em; }
+#nucleoTimer { display: none; margin-bottom: 4px; color: var(--form-color, #a7ffbb); font-size: 10px; font-weight: bold; letter-spacing: .05em; }
+/* Relógio + barra da forma: segundos e proporção, juntos. */
+.nucleo-clock { display: none; margin-bottom: 7px; }
+.nucleo-clock.visible { display: block; }
+.nucleo-bar { display: block; height: 3px; border-radius: 2px; background: #ffffff1f; overflow: hidden; }
+.nucleo-bar b { display: block; height: 100%; width: 0%; background: var(--form-color, #a7ffbb); box-shadow: 0 0 8px var(--form-color, #a7ffbb); transition: width .18s linear; }
+/* Quebra: cada segmento lembra o custo de uma marretada (3 s). */
+.nucleo-clock.bruta .nucleo-bar.hit-cost { background: repeating-linear-gradient(90deg, #ffffff14 0 calc(100% / 7), transparent calc(100% / 7) calc(100% / 7 + 1px)); }
 /* Quebra Sistemas: barra de forma em âmbar, com a leitura de peso do metal. */
 #nucleoTimer.bruta { color: #ffcf6b; text-shadow: 0 0 10px #ffb02e55; letter-spacing: .07em; }
 #nucleoTimer.visible { display: block; }
@@ -3951,3 +3958,9 @@ body.in-menu #controls {
 .codex-mare-mode b { color: #cfeaf3; font-size: 9px; font-weight: 600; letter-spacing: .08em; }
 .codex-mare-mode em { color: #5d7c85; font-size: 7px; font-style: normal; letter-spacing: .12em; }
 .codex-mare-mode small { grid-column: 1 / -1; color: #7fa3ad; font-size: 8.5px; line-height: 1.35; }
+
+/* Códex: barra da forma do Núcleo (acompanha o relógio da HUD). */
+.codex-form-row { display: grid; grid-template-columns: auto auto 1fr; align-items: center; gap: 8px; }
+.codex-form-row small { grid-column: 1 / -1; color: #a2c6b2; }
+.codex-form-bar { display: block; height: 4px; min-width: 90px; border-radius: 2px; background: #ffffff18; overflow: hidden; }
+.codex-form-bar b { display: block; height: 100%; transition: width .2s linear; }

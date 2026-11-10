@@ -446,6 +446,9 @@ export const ARCHETYPE_TOOLS = Object.freeze({
           name: 'DEVORADOR DE TECTÔNICA',
           color: '#ff7a3c',
           kind: 'burst',
+          // Marca a Ultimate que deixa CICATRIZ no mapa (js/game/scars.js):
+          // a fenda aberta pelo impacto continua lá depois do efeito passar.
+          blast: 'tectonica',
           cost: 56,
           cooldown: 27,
           radius: 5.6,

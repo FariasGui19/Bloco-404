@@ -45,8 +45,10 @@ pegar export faltando antes de abrir o navegador.
   ataque básico animado, metamorfose desenhada com a própria arte e **execução
   de Ultimate em quatro quadros** por forma. Na Quebra, `Q` sobe e desce a
   marreta (dano à frente, empurrão, tremor de câmera) e a Ultimate
-  `DEVORADOR DE TECTÔNICA` abre uma fenda no chão; na Veloz, o `F`
-  (`VELOCIDADE TEMPORAL`) dispara em relâmpago com riscos de velocidade.
+  `DEVORADOR DE TECTÔNICA` abre uma fenda **que fica no mapa** (e no save);
+  na Veloz, o `F` (`VELOCIDADE TEMPORAL`) dispara em relâmpago com riscos de
+  velocidade. A barra da forma mostra o tempo restante e, na Quebra, quantas
+  marretadas ainda cabem.
 - **Dano por arquétipo**: dano, golpes, recarga, alcance e crítico em
   [`js/data/combat-balance.js`](js/data/combat-balance.js).
 - **Maestria por uso** (sem pontos): ataque, fluxo, eco e locomoção sobem

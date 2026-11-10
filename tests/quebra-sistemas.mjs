@@ -44,6 +44,8 @@ function jogador() {
     nucleoForm: null,
     moving: false,
     combat: null,
+    ultimate: { cooldown: 0, buff: null, effect: null, casts: 0, charge: 0, shake: null, flash: null },
+    facingUp: null,
   };
 }
 
@@ -105,6 +107,27 @@ assert(BRUTA_SCALE > .85 && BRUTA_SCALE <= 1, 'escala dentro do crível para o m
 assert(220 - 178 * BRUTA_SCALE >= 40, 'a cabeça do bloco continua dentro da célula');
 // E ainda é menor que a Forma Veloz em corrida, que é a forma rápida do kit.
 assert(alturaBruta > 260 * .5 * .7, 'a Quebra não pode encolher abaixo da Veloz');
+
+// ---------------------------------------------------------------
+// 3b. ATAQUE DE COSTAS — folha própria nas quatro fases
+// ---------------------------------------------------------------
+const costas = 'assets/sprites/player/player-10x-bruta-ataque-costas.png';
+assert(existsSync(costas), 'folha de ataque de costas existe');
+const pngCostas = readFileSync(costas);
+assert.equal(pngCostas.readUInt32BE(16), 1024, '4 quadros de 256 px');
+assert.equal(pngCostas.readUInt32BE(20), 256);
+assert(readFileSync(new URL('../js/main.js', import.meta.url), 'utf8').includes("player_10x_bruta_ataque_costas'"),
+  'folha de costas no manifesto');
+const { getBrutaAnimation: mover } = await import('../js/data/bruta-animation.js');
+const subindo = jogador();
+subindo.nucleoForm = NUCLEO_BRUTA;
+subindo.facing = 'up';
+subindo.combat = { style: 'nucleo_dez_forma', timeLeft: .4, duration: .48, dx: 1, dy: 1 };
+assert.equal(mover(progressoBruto(), subindo, 0).sprite, 'player_10x_bruta_ataque_costas',
+  'golpe para cima usa a arte de costas (era a pose parada)');
+subindo.combat = null;
+assert.equal(mover(progressoBruto(), subindo, 0).sprite, 'player_10x_bruta_parado',
+  'parado de costas continua na pose de costas');
 
 // ---------------------------------------------------------------
 // 4a. Q — a pancada NÃO reaproveita o id da transformação

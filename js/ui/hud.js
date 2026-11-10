@@ -21,7 +21,8 @@ import {
 import { ARCHETYPE_ABILITIES, getAbilityLabel } from '../game/abilities.js';
 import { IMPLEMENTED_ABILITIES } from '../data/archetype-kits.js';
 import { getBioDashProfile } from '../game/ability-context.js';
-import { getArchetypeLevel, getArchetypeXp, xpToNext } from '../game/rpg.js';
+import { getArchetypeLevel, getArchetypeXp, getDerivedStats, xpToNext } from '../game/rpg.js';
+import { getFormDuration } from '../data/nucleo-forms.js';
 import { getMasterySummary } from '../game/mastery.js';
 import { getUltimateStatus } from '../game/ultimate.js';
 import { NUCLEO_FORMS } from '../data/nucleo-forms.js';
@@ -53,6 +54,8 @@ export function initHud() {
     'moduleHudSubtitle',
     'abilityHud',
     'nucleoTimer',
+    'nucleoClock',
+    'nucleoBar',
     'attackStrain',
     'abilityEnergyText',
     'abilityEnergyFill',
@@ -144,6 +147,24 @@ function updateAbilityHud(state) {
   // Cor própria por forma: âmbar na Quebra, verde na Veloz.
   el.nucleoTimer?.style.setProperty('--form-color', form?.color ?? '#a7ffbb');
   el.nucleoTimer?.classList.toggle('bruta', state.player.nucleoForm === 'forma_bruta');
+
+  // BARRA DA FORMA: quanto tempo ainda dá para ser a forma, em porcentagem da
+  // duração dela — não em segundos soltos. A Quebra gasta 3 s por marretada,
+  // então a barra é o medidor honesto de quantos golpes ainda cabem.
+  el.nucleoClock?.classList.toggle('visible', Boolean(timerText));
+  el.nucleoClock?.style.setProperty('--form-color', form?.color ?? '#a7ffbb');
+  el.nucleoClock?.classList.toggle('bruta', state.player.nucleoForm === 'forma_bruta');
+  if (el.nucleoBar) {
+    const total = form ? getFormDuration(form, runtime?.formDuration ?? getDerivedStats(state.progress)?.formDuration ?? 0) : 0;
+    const restantePct = active && total > 0 ? Math.max(0, Math.min(100, (runtime.remaining / total) * 100)) : 0;
+    const preenchimento = el.nucleoBar.querySelector?.('b');
+    if (preenchimento) preenchimento.style.width = `${restantePct}%`;
+    el.nucleoBar.setAttribute?.('aria-valuenow', String(Math.round(restantePct)));
+    // Golpe caro (Quebra) mostra quantos cabem; a Veloz não cobra nada.
+    const custo = form?.form?.hitCost ?? 0;
+    el.nucleoBar.classList.toggle('hit-cost', custo > 0 && active);
+    el.nucleoBar.title = custo > 0 ? `Cada golpe carregado gasta ${custo}s da forma` : 'Duração da forma';
+  }
 
   // Nível, XP e maestria do arquétipo atual.
   const level = getArchetypeLevel(state.progress, archetypeId);

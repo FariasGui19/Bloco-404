@@ -24,6 +24,7 @@ export const BRUTA_SPRITES = Object.freeze({
   andarLateral: 'player_10x_bruta_andar_lateral',
   ataqueLateral: 'player_10x_bruta_ataque_lateral',
   ataqueFrente: 'player_10x_bruta_ataque_frente',
+  ataqueCostas: 'player_10x_bruta_ataque_costas',
 });
 
 const FRAME_MS = 150;
@@ -62,10 +63,9 @@ function brutaLivre(progress, player) {
     !(player.ability?.effect?.timeLeft > 0);
 }
 
-// Ataque básico: marreta desce. Lateral usa a folha de perfil; frente usa a
-// de duas mãos. Costas ainda não têm folha própria — o corpo permanece na
-// pose traseira e quem conta o golpe é a onda de choque procedural, sem
-// fingir uma animação que não existe.
+// Ataque básico: marreta desce. Cada direção tem a sua folha: perfil à
+// esquerda/direita, duas mãos de frente e, agora, a vista de costas (antes o
+// golpe para cima usava a pose parada e só a onda de choque contava).
 export function getBrutaAttack(progress, player) {
   if (!brutaLivre(progress, player)) return null;
   // Preparação da Pancada de Peso: a marreta SOBE antes de descer. Usa as duas
@@ -77,7 +77,8 @@ export function getBrutaAttack(progress, player) {
     const col = k < .55 ? 0 : 1;
     const lateral = player.facing === 'left' || player.facing === 'right';
     return pose(
-      lateral ? BRUTA_SPRITES.ataqueLateral : BRUTA_SPRITES.ataqueFrente,
+      lateral ? BRUTA_SPRITES.ataqueLateral
+        : player.facing === 'up' ? BRUTA_SPRITES.ataqueCostas : BRUTA_SPRITES.ataqueFrente,
       col,
       player.facing === 'left',
       { attack: true, windup: true }
@@ -91,7 +92,8 @@ export function getBrutaAttack(progress, player) {
     return pose(BRUTA_SPRITES.ataqueLateral, col, player.facing === 'left', { attack: true });
   if (player.facing === 'down')
     return pose(BRUTA_SPRITES.ataqueFrente, col, false, { attack: true });
-  return pose(BRUTA_SPRITES.parado, IDLE_COL.up, false, { attack: true, backAttack: true });
+  // Costas: folha própria, com o mesmo ciclo de quatro fases do golpe.
+  return pose(BRUTA_SPRITES.ataqueCostas, col, false, { attack: true });
 }
 
 // Locomoção e espera.

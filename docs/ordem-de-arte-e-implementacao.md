@@ -7,6 +7,20 @@ Gerar e implementar **exatamente duas folhas/imagens por atualização**, seguin
 3. Estação Bio / Bio-Forja (rodadas 0.3.5 e 0.3.6)
 4. Folha de sprites do Bolt (prévia opt-in, sem concessão automática)
 
+## Rodada 0.6.4 — costas da Quebra e cicatriz no chão
+
+- `assets/source-art/nucleo/quebra-ataque-costas-v2.png` →
+  `assets/sprites/player/player-10x-bruta-ataque-costas.png` (1024×256).
+  A primeira tentativa foi descartada: no terceiro quadro o gerador virou o
+  corpo para a frente (de frente com o núcleo aceso no meio de uma folha de
+  costas). A segunda mantém as quatro vistas estritamente por trás.
+- A fenda da Ultimate não é mais arte de sprite: é decalque procedural no
+  chão (`drawWorldScars`), com semente estável por fenda para o desenho não
+  ferver e placas levantadas nas margens.
+
+**Ainda pendente do Núcleo:** som de pistões/steam (o jogo não tem camada de
+áudio ainda) e as formas Fluida e Núcleo, que seguem como projeto no galho.
+
 ## Rodada 0.6.3 — execução da Ultimate das formas do Núcleo
 
 Duas folhas novas de quatro quadros, geradas a partir das referências já

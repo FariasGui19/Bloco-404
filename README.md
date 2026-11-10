@@ -41,8 +41,10 @@ pegar export faltando antes de abrir o navegador.
 - **Quatro arquétipos** com ataque básico, Q e R próprios.
 - **Duas formas do Núcleo 10X** (tecla `T`): *Forma Veloz* (corrida, 1,8× de
   velocidade) e *Quebra Sistemas* (ferro denso, 40% mais lenta, cada marretada
-  consome a barra de forma). Ambas com folhas próprias nas quatro direções e
-  ataque básico animado.
+  consome a barra de forma). Ambas com folhas próprias nas quatro direções,
+  ataque básico animado e metamorfose desenhada com a própria arte. Na Quebra,
+  `Q` sobe e desce a marreta (dano à frente, empurrão, tremor de câmera) e a
+  Ultimate `DEVORADOR DE TECTÔNICA` abre uma fenda no chão.
 - **Dano por arquétipo**: dano, golpes, recarga, alcance e crítico em
   [`js/data/combat-balance.js`](js/data/combat-balance.js).
 - **Maestria por uso** (sem pontos): ataque, fluxo, eco e locomoção sobem

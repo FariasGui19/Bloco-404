@@ -45,6 +45,26 @@ def remove_magenta(rgb):
     return np.dstack([out, (alpha * 255).round().astype(np.uint8)])
 
 
+def remove_pink_light(rgba):
+    """Corrige o halo rosa-claro onde o gerador misturou magenta com âmbar.
+
+    O feixe de luz da transformação veio rosa-salmão em vez de âmbar. Em vez de
+    apagar (o feixe é bonito e some o efeito), a cor é reescrita para âmbar
+    mantendo o brilho: o que é claro, avermelhado e com azul alto demais para
+    ser âmbar vira dourado; ferrugem escura e âmbar legítimo não são tocados.
+    """
+    out = rgba.copy()
+    r = rgba[:, :, 0].astype(np.int16)
+    g = rgba[:, :, 1].astype(np.int16)
+    b = rgba[:, :, 2].astype(np.int16)
+    # Rosa-salmão do feixe: claro, avermelhado e com azul alto demais para
+    # ser âmbar (o âmbar de verdade tem o azul quase zerado).
+    rosa = (r >= 165) & ((r - g) >= 45) & ((g - b) <= 62)
+    out[rosa, 1] = np.clip(0.72 * g[rosa] + 0.30 * r[rosa], 0, 255).astype(np.uint8)
+    out[rosa, 2] = np.clip(0.12 * b[rosa], 0, 255).astype(np.uint8)
+    return out
+
+
 def content_bands(mask, axis, min_share=.004, max_gap=6):
     """Faixas contínuas com conteúdo no eixo pedido (0 = linhas, 1 = colunas)."""
     profile = mask.sum(axis=axis)
@@ -135,12 +155,46 @@ SHEETS = [
     {'file': 'quebra-ataque-faixa.png', 'prefix': 'player-10x-bruta-ataque-lateral', 'rows': [0], 'cols': 5, 'cells': [0, 1, 2, 3]},
     # Ataque frontal, duas marretas (4 fases).
     {'file': 'quebra-ataque-frente-faixa.png', 'prefix': 'player-10x-bruta-ataque-frente', 'rows': [0], 'cols': 4},
+    # Transformação: o corpo se monta em placas de luz âmbar. Usa só a
+    # primeira linha (as de baixo são poses extras do gerador) e limpa o
+    # halo rosa-claro que sobrou do feixe de luz.
+    {'file': 'quebra-transformacao.png', 'prefix': 'player-10x-bruta-transformacao', 'rows': [0], 'cols': 4, 'pink': True},
 ]
+
+# Ícone da forma para a roda do T: o bloco de cabeça com o núcleo aceso,
+# recortado da própria folha de referência — sem desenhar um ícone novo.
+ICON = {'file': 'quebra-sistemas-turnaround.png', 'prefix': 'ui/nucleo-quebra-sistemas',
+        'row': 0, 'col': 0, 'box': (.24, .02, .76, .44), 'size': 192}
+
+
+def make_icon(cfg):
+    """Recorte quadrado do bloco de cabeça, com alpha, para o cartão da roda."""
+    rgba = remove_magenta(np.asarray(Image.open(SOURCE / cfg['file']).convert('RGB')))
+    mask = rgba[:, :, 3] > 8
+    rows = content_bands(mask, 1)
+    y0, y1 = rows[cfg['row']]
+    x0, x1 = content_bands(mask[y0:y1], 0)[cfg['col']]
+    figure = tight(rgba, (x0, y0, x1, y1))
+    h, w = figure.shape[:2]
+    bx0, by0, bx1, by1 = cfg['box']
+    crop = figure[int(by0 * h):int(by1 * h), int(bx0 * w):int(bx1 * w)]
+    art = Image.fromarray(crop)
+    # Quadrado, com respiro, e sem esticar o pixel: só redimensiona.
+    lado = max(art.size)
+    canvas = Image.new('RGBA', (lado, lado), (0, 0, 0, 0))
+    canvas.alpha_composite(art, ((lado - art.width) // 2, (lado - art.height) // 2))
+    canvas = canvas.resize((cfg['size'], cfg['size']), Image.LANCZOS)
+    target = ROOT / 'assets/sprites' / f"{cfg['prefix']}.png"
+    target.parent.mkdir(parents=True, exist_ok=True)
+    canvas.save(target, optimize=True)
+    print(f'{target.relative_to(ROOT)} → {canvas.width}×{canvas.height} (ícone da forma)')
 
 
 def main():
     for cfg in SHEETS:
         rgba = remove_magenta(np.asarray(Image.open(SOURCE / cfg['file']).convert('RGB')))
+        if cfg.get('pink'):
+            rgba = remove_pink_light(rgba)
         mask = rgba[:, :, 3] > 8
         rows = content_bands(mask, 1)
         if not rows:
@@ -159,6 +213,7 @@ def main():
                 x0, x1 = colunas[index]
                 pics.append(tight(rgba, (x0, y0, x1, y1)))
         compose(pics, cfg['prefix'])
+    make_icon(ICON)
 
 
 if __name__ == '__main__':

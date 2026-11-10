@@ -2244,7 +2244,9 @@ body.in-menu #controls {
 .nucleo-art-ready .nucleo-orbit { background: url('../assets/sprites/ui/nucleo-roda.png') center / contain no-repeat; width: 360px; height: 300px; max-width: 78vw; max-height: 65vw; }
 .nucleo-art-ready .nucleo-orbit .nucleo-ring, .nucleo-art-ready .nucleo-orbit .nucleo-core, .nucleo-art-ready .nucleo-orbit .nucleo-locked { display: none; }
 .nucleo-art-ready .nucleo-orbit .nucleo-form { left: 50%; top: 46%; transform: translate(-50%,-50%); width: 25%; height: 30%; border-radius: 50%; background: transparent; border: 1px solid transparent; box-shadow: none; }
-.nucleo-art-ready .nucleo-orbit .nucleo-form span, .nucleo-art-ready .nucleo-orbit .nucleo-form b, .nucleo-art-ready .nucleo-orbit .nucleo-form small { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+.nucleo-art-ready .nucleo-orbit .nucleo-form span, .nucleo-art-ready .nucleo-orbit .nucleo-form small { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+/* Com a arte carregada, o nome fica como legenda pequena sob o corpo. */
+.nucleo-art-ready .nucleo-orbit .nucleo-form b { position: static; width: auto; height: auto; overflow: visible; clip-path: none; margin-top: 2px; font-size: 8px; letter-spacing: .08em; line-height: 1.1; text-align: center; text-shadow: 0 1px 2px #000, 0 0 8px #0a1a13; pointer-events: none; }
 .nucleo-art-ready .nucleo-orbit .nucleo-form:hover, .nucleo-art-ready .nucleo-orbit .nucleo-form:focus-visible { outline: 2px solid #dcffac; box-shadow: 0 0 20px #62ffa5; background: #58ff991c; }
 
 /* Diário de missões: somente consulta; não altera a missão ativa. */
@@ -2259,6 +2261,10 @@ body.in-menu #controls {
 .journal-panel button:focus-visible { outline: 2px solid white; }
 /* A arte da roda não deve ocultar a única forma selecionável. */
 .nucleo-preview { display: block; width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 0 6px #6aff96); animation: nucleo-preview-float 1.8s ease-in-out infinite; pointer-events: none; }
+/* Cartão da forma: arte em cima, nome embaixo. O nome NUNCA é escondido — é a
+   única pista textual de qual forma o jogador está escolhendo no T. */
+.nucleo-form { display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: 2px; padding: 4px 2px; }
+.nucleo-form .nucleo-preview { flex: 1 1 auto; min-height: 0; }
 .nucleo-form { overflow: visible; }
 .nucleo-form b, .nucleo-form small { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
 .nucleo-art-ready .nucleo-orbit .nucleo-form { width: 29%; height: 32%; }
@@ -2287,6 +2293,7 @@ body.in-menu #controls {
 .nucleo-form.active:not([disabled])::after { content: 'ATIVA'; position: absolute; bottom: -13px; left: 50%; transform: translateX(-50%); font-size: 8px; letter-spacing: .12em; color: #ffd465; }
 .nucleo-form-1.active:not([disabled])::after, .nucleo-form-3.active:not([disabled])::after { bottom: auto; top: 50%; left: auto; right: -20px; transform: translateY(-50%) rotate(90deg); }
 /* A Quebra Sistemas é âmbar: o cartão avisa a identidade antes do clique. */
+.nucleo-form[data-tool="nucleo_bruto"]:not([disabled]) b { color: #ffd88a; }
 .nucleo-form[data-tool="nucleo_bruto"]:not([disabled]) { color: #ffe6b0; border-color: #d8a44a; background: #2a2113; box-shadow: 0 0 18px #ffc94a66; }
 .nucleo-form[data-tool="nucleo_bruto"]:not([disabled]):hover,
 .nucleo-form[data-tool="nucleo_bruto"]:not([disabled]):focus-visible { background: #4a3618; outline: 2px solid #fff0cf; }

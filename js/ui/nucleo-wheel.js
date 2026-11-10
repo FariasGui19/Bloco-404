@@ -15,17 +15,21 @@ import { getTools } from '../data/archetype-tools.js';
 import { getSelectedTool } from '../game/tools.js';
 import {
   NUCLEO_BRUTA,
+  NUCLEO_FORMS,
   NUCLEO_VELOZ,
   getSelectedNucleoForm,
 } from '../data/nucleo-forms.js';
 
 const NUCLEO = 'nucleo_dez_forma';
 
-// Célula da pose de vitrine, buscada da folha completa (4 colunas direcionais).
-// A roda mostra o corpo de frente para o jogador reconhecer a forma.
+// Miniatura de cada forma. As duas usam o MESMO mecanismo (uma imagem pronta):
+// antes a Veloz vinha de um PNG e a Quebra tentava recortar a folha em runtime,
+// então o cartão ficava vazio e parecia que a imagem nunca trocava.
+// A fonte é o dado da ferramenta (`tool.preview`); este mapa é só a reserva
+// para progresso antigo, sem campo novo no save.
 const SHOWCASE = Object.freeze({
-  [NUCLEO_VELOZ]: { src: 'assets/sprites/ui/nucleo-forma-veloz.png', plain: true },
-  [NUCLEO_BRUTA]: { sprite: 'player_10x_bruta_parado', col: 0, cols: 4 },
+  [NUCLEO_VELOZ]: 'assets/sprites/ui/nucleo-forma-veloz.png',
+  [NUCLEO_BRUTA]: 'assets/sprites/ui/nucleo-quebra-sistemas.png',
 });
 
 let overlay = null;
@@ -52,23 +56,29 @@ function playableCards(progress) {
   return getTools(NUCLEO).filter(tool => tool.playable !== false);
 }
 
-// Confirma o cartão em foco: escolhe a forma e transforma (ou retorna).
+// Confirma o cartão em foco. A regra é simples e previsível:
+//   - transformado e confirmando a MESMA forma → volta ao operador;
+//   - transformado e confirmando OUTRA forma       → não troca no ar (o corpo
+//     precisa voltar primeiro); a roda avisa em vez de fingir;
+//   - parado → escolhe a forma e transforma nela.
 function confirmWheel() {
   if (!opened) return;
-  const cards = playableCards(currentProgress);
-  const alvo = cards.find(tool => tool.id === focusToolId) ?? null;
-  if (currentPlayer.nucleoForm && !safeToReturn()) return;
-  // Já transformado na forma do cartão: confirmação volta ao operador.
+  const alvo = playableCards(currentProgress).find(tool => tool.id === focusToolId) ?? null;
   const runtimeId = alvo ? RUNTIME_FOR_TOOL[alvo.id] : null;
-  if (currentPlayer.nucleoForm && (!alvo || runtimeId === currentPlayer.nucleoForm)) {
-    if (currentPlayer.nucleoForm && !safeToReturn()) return;
+  const ativa = currentPlayer.nucleoForm ?? null;
+  if (!safeToReturn() && (ativa || alvo)) return;
+  if (ativa) {
+    // Só a forma ativa pode ser confirmada de novo: é o retorno.
+    if (runtimeId && runtimeId !== ativa) {
+      const status = overlay?.querySelector('#nucleo-status');
+      if (status) status.innerHTML = `RETORNE PRIMEIRO<br><small>Confirme <strong>${NUCLEO_FORMS[ativa]?.name ?? 'A FORMA ATIVA'}</strong> para voltar ao operador, depois escolha outra.</small>`;
+      return;
+    }
     if (toggleNucleoForm(currentProgress, currentPlayer)) closeWheel();
     return;
   }
-  // Escolhe a forma no progresso (mesma API do Códex) e transforma nela.
-  if (alvo && currentProgress.tools) {
-    currentProgress.tools[NUCLEO] = alvo.id;
-  }
+  if (!alvo || !currentProgress.tools) return;
+  currentProgress.tools[NUCLEO] = alvo.id;
   if (toggleNucleoForm(currentProgress, currentPlayer, runtimeId)) closeWheel();
 }
 
@@ -122,31 +132,11 @@ function paintWheel() {
   }
 }
 
-// Miniatura de cada cartão jogável: imagem própria ou célula da folha.
+// Miniatura de cada cartão jogável: uma imagem pronta por forma.
 function previewFor(tool) {
-  const show = SHOWCASE[RUNTIME_FOR_TOOL[tool.id]];
-  if (!show) return '';
-  if (show.plain) return `<img class="nucleo-preview" src="${show.src}" alt="">`;
-  return `<img class="nucleo-preview nucleo-preview-sheet" data-sprite="${show.sprite}" data-col="${show.col}" data-cols="${show.cols}" alt="">`;
-}
-
-// Depois que as folhas carregam, cada <img> de célula recebe o recorte real.
-function hydrateSheetPreviews() {
-  if (!overlay || typeof document === 'undefined') return;
-  for (const img of overlay.querySelectorAll('img[data-sprite]')) {
-    if (img.dataset.ready === '1') continue;
-    const sheet = window.__blocoSprites?.get?.(img.dataset.sprite);
-    if (!sheet) continue;
-    const cols = Number(img.dataset.cols) || 4;
-    const w = sheet.width / cols;
-    try {
-      const canvas = document.createElement('canvas');
-      canvas.width = w; canvas.height = sheet.height;
-      canvas.getContext('2d').drawImage(sheet, Number(img.dataset.col) * w, 0, w, sheet.height, 0, 0, w, sheet.height);
-      img.src = canvas.toDataURL();
-      img.dataset.ready = '1';
-    } catch { /* imagem externa: mantém o cartão sem miniatura */ }
-  }
+  const src = tool.preview ?? SHOWCASE[RUNTIME_FOR_TOOL[tool.id]];
+  if (!src) return '';
+  return `<img class="nucleo-preview" src="${src}" alt="">`;
 }
 
 export function isNucleoWheelOpen() { return opened; }
@@ -187,11 +177,29 @@ export function openNucleoWheel(progress, player, isSafeToReturn = () => true) {
       <div class="nucleo-help">TAB / ← → alternar · ESPAÇO / ENTER / E ou clique para confirmar · T / ESC cancelar</div>
     </div>`;
   for (const button of overlay.querySelectorAll('.nucleo-form')) {
-    button.addEventListener('click', () => {
+    // `pointerdown` cobre clique, toque e caneta; o `click` cai no mesmo
+    // caminho e é ignorado se o ponteiro já resolveu aquele cartão. Antes o
+    // cartão dependia de um único evento, e um clique seco no card podia não
+    // registrar a troca de imagem.
+    const confirmar = event => {
       if (button.disabled) return;
+      event?.preventDefault?.();
       focusToolId = button.dataset.tool;
       paintWheel();
       confirmWheel();
+    };
+    button.addEventListener('pointerdown', confirmar);
+    button.addEventListener('click', confirmar);
+    // Teclado: primeiro passo marca a escolha, segundo confirma.
+    button.addEventListener('keydown', event => {
+      if (!event || (event.key !== 'Enter' && event.key !== ' ')) return;
+      event.preventDefault();
+      if (focusToolId !== button.dataset.tool) {
+        focusToolId = button.dataset.tool;
+        paintWheel();
+        return;
+      }
+      confirmar(event);
     });
   }
   if (typeof Image !== 'undefined') {
@@ -199,7 +207,6 @@ export function openNucleoWheel(progress, player, isSafeToReturn = () => true) {
     art.onload = () => overlay.classList.add('nucleo-art-ready');
     art.src = 'assets/sprites/ui/nucleo-roda.png';
   }
-  hydrateSheetPreviews();
   paintWheel();
   input.click = null;
   opened = true;
@@ -210,7 +217,6 @@ export function openNucleoWheel(progress, player, isSafeToReturn = () => true) {
 
 export function updateNucleoWheel() {
   if (!opened) return;
-  hydrateSheetPreviews();
   const pressed = (keys) => keys.some(key => input.pressed.has(key));
   if (pressed(['escape', 't', 'keyt'])) { closeWheel(); return; }
   if (pressed(['arrowright', 'd', 'keyd', 'tab'])) { cycleFocus(1); return; }

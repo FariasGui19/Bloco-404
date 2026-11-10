@@ -27,6 +27,8 @@ import { openGate, checkGate, isGateOpen } from './gates.js';
 import { saveGame } from './save.js';
 import { getDerivedStats } from './rpg.js';
 import { recordMastery } from './mastery.js';
+import { executeBrutaSmash } from './combat.js';
+import { chargeFormHit } from './nucleo-form.js';
 import { NUCLEO_FORMS } from '../data/nucleo-forms.js';
 
 // ---------------------------------------------------------------------
@@ -299,12 +301,16 @@ function tryBrutaSmash(player) {
   recordMastery(state.progress, 'ability_use');
   const form = NUCLEO_FORMS[player.nucleoForm];
   player.energy -= perfil.cost;
-  player.ability.effect = {
+  // O efeito usa id PRÓPRIO. Antes ele reaproveitava o id da transformação e,
+  // com forma já ativa, o jogo desfazia e refazia a metamorfose em vez de
+  // socar — era o "me destransforma e transforma de novo" do relato.
+  player.ability.cast = {
     id: perfil.id,
     color: form?.color ?? '#ffc94a',
     duration: perfil.windup,
     timeLeft: perfil.windup,
     form: player.nucleoForm,
+    windup: true,
   };
   player.moving = false;
   player.target = null;
@@ -325,6 +331,24 @@ export function updateAbilities(dt) {
   const player = state.player;
   const ability = player.ability;
 
+  // O relógio da pancada de peso é separado do efeito de transformação.
+  if (ability.cast) {
+    ability.cast.timeLeft = Math.max(0, ability.cast.timeLeft - dt);
+    // A preparação pode ser cancelada pela própria transformação de volta:
+    // aí a marreta não desce, some junto com o corpo.
+    if (!(player.nucleoForm === 'forma_bruta')) ability.cast = null;
+    else if (ability.cast.timeLeft === 0) {
+      const cast = ability.cast;
+      ability.cast = null;
+      // A marreta desce: dano em disco à frente, empurrão e tremor.
+      executeBrutaSmash({ player, progress: state.progress, targets: state.trainingTargets });
+      // Corpo e animação de golpe: a folha de ataque da Quebra é escolhida
+      // pelo estilo do arquétipo, então o mesmo ataque básico anima a marreta.
+      player.combat = { ...(player.combat ?? {}), style: 'nucleo_dez_forma', dx: cast.dx ?? 1, dy: cast.dy ?? 1, duration: .48, timeLeft: .48, cooldown: 0 };
+      // O peso do impacto consome barra além do custo de energia.
+      chargeFormHit(player);
+    }
+  }
   for (const key of ['effect', 'reveal']) {
     if (!ability[key]) continue;
     ability[key].timeLeft -= dt;
@@ -368,6 +392,9 @@ export function updateAbilities(dt) {
 
   // A transição de forma é uma ação curta e não permite interromper com Q/T.
   if (ability.effect?.id === 'transformacao_10x') return true;
+  // A preparação da marreta também finca o corpo no chão: o golpe sai de onde
+  // o jogador mirou, e o peso aparece no tempo de resposta.
+  if (ability.cast?.id === 'pancada_quebra') return true;
 
   // Dash ativo tem prioridade.
   if (ability.dash) {

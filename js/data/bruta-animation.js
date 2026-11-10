@@ -30,7 +30,11 @@ const FRAME_MS = 150;
 const ATTACK_FRAMES = 4;
 // Apoio dos pés dentro da célula de 256 px (ver BASELINE no script de arte).
 const FOOT_Y = 220;
-const SCALE = .55;
+// Escala: a criatura ocupa ~178 px de célula. Em .55 ela ficava com 98 px de
+// altura na tela, MENOR que o operador (~142 px) — o criador reclamou com
+// razão. Em .95 ela fica com ~169 px: um corpo de ferro claramente maior que
+// o operador, sem estourar a célula (a arte termina em y=42 de 256).
+const SCALE = .95;
 
 // Célula da pose parada por direção. A folha é um turnaround, não um ciclo.
 const IDLE_COL = Object.freeze({ down: 0, right: 1, up: 2, left: 3 });
@@ -64,6 +68,21 @@ function brutaLivre(progress, player) {
 // fingir uma animação que não existe.
 export function getBrutaAttack(progress, player) {
   if (!brutaLivre(progress, player)) return null;
+  // Preparação da Pancada de Peso: a marreta SOBE antes de descer. Usa as duas
+  // primeiras colunas da folha de ataque (levantar), para o Q ter leitura
+  // mesmo antes de qualquer impacto.
+  const cast = player.ability?.cast;
+  if (cast?.id === 'pancada_quebra' && cast.timeLeft > 0) {
+    const k = 1 - Math.max(0, Math.min(1, cast.timeLeft / (cast.duration || .55)));
+    const col = k < .55 ? 0 : 1;
+    const lateral = player.facing === 'left' || player.facing === 'right';
+    return pose(
+      lateral ? BRUTA_SPRITES.ataqueLateral : BRUTA_SPRITES.ataqueFrente,
+      col,
+      player.facing === 'left',
+      { attack: true, windup: true }
+    );
+  }
   const attack = player.combat;
   if (!attack || attack.style !== 'nucleo_dez_forma' || !(attack.timeLeft > 0) || !(attack.duration > 0)) return null;
   const phase = Math.max(0, Math.min(.999, 1 - attack.timeLeft / attack.duration));

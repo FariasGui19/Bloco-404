@@ -20,6 +20,8 @@ import { drawHubScreenFx, hasHubScreenFx } from './hub-screen-fx.js';
 import { getVelozAnimation, getVelozPulse } from '../data/veloz-animation.js';
 import { getBrutaAnimation, BRUTA_SCALE, BRUTA_FOOT_Y } from '../data/bruta-animation.js';
 import { getUltimateFrame } from '../data/nucleo-ultimate-animation.js';
+import { getBioUltimateFrame } from '../data/bio-ultimate-animation.js';
+import { getSelectedToolId } from '../game/tools.js';
 import { NUCLEO_BRUTA } from '../data/nucleo-forms.js';
 import { getFissures } from '../game/scars.js';
 import { getMareWalk, getMareAttack, mareSheet } from '../data/mare-animation.js';
@@ -2275,6 +2277,61 @@ function drawBrutaFx(player, ix, iy, gait) {
   ctx.restore();
 }
 
+// Vapor e faísca da ferramenta: o Bio-FORJA é biomecânica viva, então ele
+// respira vapor mesmo parado, e cada ferramenta puxa uma cor de brilho.
+// Puro enfeite de leitura — dano, velocidade e colisão não mudam.
+const BIO_TOOL_GLOW = {
+  lamina_de_forja: { cor: '#8ff2ff', lado: 'direita' },
+  punho_de_impacto: { cor: '#ffc23d', lado: 'ambos' },
+  gancho_magnetico: { cor: '#7dffd8', lado: 'esquerda' },
+  asa_de_impulso: { cor: '#3fd0ff', lado: 'baixo' },
+};
+
+function drawBioForjaFx(player, ix, iy, gait) {
+  const now = performance.now();
+  // A ferramenta instalada muda a cor da bobina: o exo mostra o que carrega.
+  const ferramenta = BIO_TOOL_GLOW[getSelectedToolId(state.progress)] ?? { cor: '#3fd0ff', lado: 'ambos' };
+  ctx.save();
+  ctx.lineCap = 'round';
+  // Vapor dos pistões: sobe devagar, mais forte no passo.
+  const sopro = gait === 'walk' ? 1 : .55;
+  ctx.globalAlpha = .2 * sopro;
+  ctx.fillStyle = '#dff0f2';
+  for (let i = 0; i < 3; i++) {
+    const ciclo = ((now * .0006) + i / 3) % 1;
+    const lado = i % 2 === 0 ? -1 : 1;
+    ctx.beginPath();
+    ctx.ellipse(ix + lado * (7 + ciclo * 10), iy - 12 - ciclo * 26,
+      2 + ciclo * 4, 1.6 + ciclo * 3, 0, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  // Espira da bobina da ferramenta: brilho curto, ritmado.
+  const pulso = .45 + Math.sin(now * .006) * .25;
+  ctx.globalAlpha = pulso * .8;
+  ctx.strokeStyle = ferramenta.cor;
+  ctx.lineWidth = 1.4;
+  const lados = ferramenta.lado === 'ambos' ? [-1, 1] : ferramenta.lado === 'esquerda' ? [-1] : [1];
+  if (ferramenta.lado === 'baixo') {
+    for (let i = 0; i < 2; i++) {
+      const bx = ix + (i === 0 ? -6 : 6);
+      ctx.beginPath();
+      ctx.moveTo(bx, iy - 2);
+      ctx.lineTo(bx + (i === 0 ? -3 : 3), iy + 3);
+      ctx.stroke();
+    }
+  } else {
+    for (const lado of lados) {
+      const bx = ix + lado * 13;
+      ctx.beginPath();
+      ctx.moveTo(bx, iy - 30);
+      ctx.lineTo(bx + lado * 3, iy - 22);
+      ctx.lineTo(bx - lado * 1, iy - 16);
+      ctx.stroke();
+    }
+  }
+  ctx.restore();
+}
+
 function drawPlayerSprite(player, ix, iy) {
   // As folhas de referência têm poses, não quadros sequenciais. Usamos uma
   // pose provisória com os pulsos animados, sem fingir que são animações finais.
@@ -2282,7 +2339,10 @@ function drawPlayerSprite(player, ix, iy) {
   // ULTIMATE DAS FORMAS DO NÚCLEO: execução desenhada, não só o efeito.
   // Carga (0,42 s) usa os dois primeiros quadros da folha da forma; a soltura
   // usa o impacto e a recuperação. Sem isso o F era só um anel procedural.
-  const ultimateFrame = getUltimateFrame(state.progress, player);
+  // MOTOR BIO-FORJA: a Ultimate nível 1 é a ferramenta escolhida executando
+  // o próprio golpe — cada uma tem folha (cúpula, serra, marreta, cabos,
+  // propulsores). Fica antes do corpo parado do exo para o gesto aparecer.
+  const ultimateFrame = getUltimateFrame(state.progress, player) ?? getBioUltimateFrame(state.progress, player);
   if (ultimateFrame) {
     const imagem = getSprite(ultimateFrame.sprite);
     if (imagem) {
@@ -2309,6 +2369,8 @@ function drawPlayerSprite(player, ix, iy) {
     }
   }
   const suit = player.equippedSuit;
+  // O exo do Bio-FORJA respira: vapor de pistão e a bobina da ferramenta.
+  if (suit === 'bio_forja') drawBioForjaFx(player, ix, iy, player.moving ? 'walk' : 'idle');
   // A segunda forma do Núcleo (Quebra Sistemas) desenha o próprio peso:
   // poeira no passo, faísca das marretas e vapor na exaustão.
   if (player.nucleoForm === NUCLEO_BRUTA) {

@@ -13,6 +13,7 @@ import { ARCHETYPES } from '../data/onboarding.js';
 import { getArchetypeLevel, getArchetypeXp, getDerivedStats, xpToNext } from '../game/rpg.js';
 import { getMasteryState, getMasterySummary } from '../game/mastery.js';
 import { getUltimateStatus } from '../game/ultimate.js';
+import { getBioUltimatePosePath } from '../data/bio-ultimate-animation.js';
 import { listTools, selectTool } from '../game/tools.js';
 import { describeNextUnlock, getUnlockState, getUnlockStepFor } from '../game/unlocks.js';
 import { getPath, LEVEL_TITLES, PATH_STATES } from '../data/archetype-progression.js';
@@ -179,15 +180,28 @@ function toolPicker(progress) {
   const titulo = !acesso.features.tool
     ? `${escapeHtml(label)} BLOQUEADA`
     : tools.some(tool => tool.selected) ? 'TROQUE A SOBRECARGA' : `ESCOLHA UMA ${escapeHtml(label)}`;
-  const cards = tools.map(tool => `<button type="button" class="codex-tool${tool.selected ? ' selected' : ''}${tool.locked ? ' locked' : ''}"
-      data-tool="${escapeHtml(tool.id)}" style="--tool:${tool.color}"
+  const cards = tools.map(tool => {
+    // A execução da Ultimate é arte de verdade: o cartão mostra a primeira pose
+    // da folha da ferramenta (preparo), não um ícone genérico.
+    const pose = getBioUltimatePosePath(tool.ultimate?.signature);
+    // `src` é a folha inteira; o CSS recorta o quadro do preparo. Assim a
+    // mesma arte serve de miniatura e de referência do golpe, sem gerar PNG
+    // só para o menu.
+    const execucao = pose
+      ? `<img class="codex-tool-pose" src="${pose}" alt="" aria-hidden="true" draggable="false"
+          style="--pose-sheet:url('${pose}')">`
+      : '';
+    return `<button type="button" class="codex-tool${tool.selected ? ' selected' : ''}${tool.locked ? ' locked' : ''}"
+      data-tool="${escapeHtml(tool.id)}" style="--tool:${tool.color};--poses:4;--pose:0"
       aria-pressed="${tool.selected}" ${tool.locked ? 'disabled aria-disabled="true"' : ''}>
+      ${execucao}
       <span class="codex-tool-tag">${escapeHtml(tool.short)}</span>
       <strong>${escapeHtml(tool.name)}</strong>
       <small>${tool.playable ? 'NÍVEL 1' : 'EM PROJETO'} · ${escapeHtml(tool.ultimate.name)}</small>
       <em>${escapeHtml(tool.tagline)}</em>
       <i class="codex-tool-cost">${!tool.playable ? 'FORMA EM PROJETO' : tool.locked ? `BLOQUEADA · NÍVEL ${tool.requiredLevel}` : `${tool.ultimate.cost} EN · ${tool.ultimate.cooldown}s`}</i>
-    </button>`).join('');
+    </button>`;
+  }).join('');
   return `<section class="codex-tools" aria-label="Escolha de ${escapeHtml(label)}">
     <header>
       <span class="codex-tag">ESPECIALIZAÇÃO · ${escapeHtml(label)}</span>

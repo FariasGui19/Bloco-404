@@ -270,7 +270,12 @@ export function beginUltimate({ player, progress, targets = [], showMessage, rng
   if (!instant) {
     runtime.charge = ULTIMATE_WINDUP;
     runtime.chargeDuration = ULTIMATE_WINDUP;
-    runtime.chargeDefinition = { id: definition.id, color: definition.color, kind, name: definition.name };
+    // A assinatura vai junto: no Bio cada ferramenta tem folha própria e a
+    // carga precisa vestir o gesto certo antes de o efeito existir.
+    runtime.chargeDefinition = {
+      id: definition.id, color: definition.color, kind, name: definition.name,
+      signature: definition.signature ?? null,
+    };
     showMessage?.(definition.name);
     return { started: true, definition, kind, tool: check.tool, tier: check.tier };
   }

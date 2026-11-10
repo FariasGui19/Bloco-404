@@ -160,6 +160,14 @@ await loadSprites([
   { id: 'hub_carrinho', src: 'assets/sprites/saguao/carrinho.png' },
   { id: 'hub_bebedouro', src: 'assets/sprites/saguao/bebedouro.png' },
   { id: 'player_bio_ataque_frontal', src: 'assets/sprites/player/player-bio-ataque-frontal.png' },
+  // Execução da Ultimate do MOTOR BIO-FORJA (F): uma folha por ferramenta
+  // (tools/preparar-bio-ultimate.py). A nível 1 a ferramenta instala a
+  // própria Ultimate; a base do módulo é a cúpula.
+  { id: 'player_bio_ult_forja_dome', src: 'assets/sprites/player/player-bio-ult-forja-dome.png' },
+  { id: 'player_bio_ult_serra', src: 'assets/sprites/player/player-bio-ult-serra.png' },
+  { id: 'player_bio_ult_martelo', src: 'assets/sprites/player/player-bio-ult-martelo.png' },
+  { id: 'player_bio_ult_cabos', src: 'assets/sprites/player/player-bio-ult-cabos.png' },
+  { id: 'player_bio_ult_propulsores', src: 'assets/sprites/player/player-bio-ult-propulsores.png' },
   { id: 'player_10x_q', src: 'assets/sprites/player/player-10x-q.png' },
   { id: 'player_10x_r', src: 'assets/sprites/player/player-10x-r.png' },
   // Segunda forma do Núcleo 10X — QUEBRA SISTEMAS (tools/preparar-quebra-sistemas.py).

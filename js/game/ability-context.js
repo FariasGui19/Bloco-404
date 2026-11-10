@@ -1,3 +1,5 @@
+import { startTransformEffect } from '../data/transform-animation.js';
+
 // Contexto de uso, independente da escolha do arquétipo no save.
 // T alterna trajes; as formas do 10X terão seleção própria.
 export function getAbilityContext(progress, player) {
@@ -13,14 +15,20 @@ export function toggleArchetypeSuit(progress, player) {
   if (!player || player.ability?.dash) return false;
   const suits = { motor_bio_forja: 'bio_forja', lamina_dominio_anciao: 'dominio', mare_astral: 'mare' };
   const suit = suits[progress?.archetype];
-  if (!suit) return false; // 10X usará uma interface própria.
-  player.equippedSuit = player.equippedSuit === suit ? null : suit;
+  if (!suit) return false; // 10X usa a roda de formas (T abre o seletor).
+  const activating = player.equippedSuit !== suit;
+  player.equippedSuit = activating ? suit : null;
+  // O T deixa de ser instantâneo: a sequência de 4 quadros mostra o traje
+  // sendo vestido (ou desmontado, no sentido inverso) sem tocar em regra.
+  startTransformEffect(player, progress?.archetype, activating);
   return true;
 }
 
 export function toggleBioSuit(progress, player) {
   if (progress?.archetype !== 'motor_bio_forja' || !player || player.ability?.dash) return false;
-  player.equippedSuit = player.equippedSuit === 'bio_forja' ? null : 'bio_forja';
+  const activating = player.equippedSuit !== 'bio_forja';
+  player.equippedSuit = activating ? 'bio_forja' : null;
+  startTransformEffect(player, 'motor_bio_forja', activating);
   return true;
 }
 

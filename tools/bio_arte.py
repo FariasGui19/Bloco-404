@@ -24,6 +24,7 @@ ROOT = Path(__file__).resolve().parent.parent
 # sempre assets/sprites/player porque é de lá que o jogo carrega.
 SOURCE_BIO = ROOT / 'assets/source-art/bio'
 SOURCE_MARE = ROOT / 'assets/source-art/mare'
+SOURCE_TRANSFORMA = ROOT / 'assets/source-art/transformacao'
 SOURCE = SOURCE_BIO
 OUT = ROOT / 'assets/sprites/player'
 
@@ -119,6 +120,23 @@ def disc_mask(frame, feather=.06):
     return out
 
 
+def edge_fade(frame, frac=.1):
+    """Suaviza as bordas de um quadro com painel/volume grande.
+
+    O quadro do bracelete do Núcleo vem com um cilindro holográfico de borda
+    dura. Em jogo ele leria como um retângulo verde sobre o mapa; desvanecer a
+    borda mantém o volume sem a moldura reta.
+    """
+    h, w = frame.shape[:2]
+    ys, xs = np.mgrid[0:h, 0:w]
+    margem_x, margem_y = max(1, int(w * frac)), max(1, int(h * frac))
+    fx = np.clip(np.minimum(xs, w - 1 - xs) / margem_x, 0, 1)
+    fy = np.clip(np.minimum(ys, h - 1 - ys) / margem_y, 0, 1)
+    out = frame.copy()
+    out[:, :, 3] = (frame[:, :, 3].astype(np.float32) * fx * fy).round().astype(np.uint8)
+    return out
+
+
 def compose(frames, out_name, cell=CELL, baseline=BASELINE, target_height=230, limite=None, out_dir=None, body_height=None):
     """Células iguais: altura normalizada, pés na base, corpo centralizado.
 
@@ -160,7 +178,7 @@ def compose(frames, out_name, cell=CELL, baseline=BASELINE, target_height=230, l
     return target
 
 
-def load_frames(file_name, count, alpha_min=8, source=None):
+def load_frames(file_name, count, alpha_min=8, source=None, pick=None):
     """Abre uma folha-fonte e devolve os `count` quadros recortados.
 
     `source` permite apontar outra pasta de fontes (Maré usa `mare/`), sem
@@ -177,5 +195,13 @@ def load_frames(file_name, count, alpha_min=8, source=None):
     colunas = content_bands(band, 0)
     minimo = band.shape[1] * .02
     colunas = [c for c in colunas if (c[1] - c[0]) >= minimo] or colunas
-    colunas = fit_bands(colunas, count, band.sum(axis=0))
+    if pick:
+        # Alguns geradores entregam uma figura a mais (quadro repetido no
+        # final). `pick` escolhe as faixas certas em vez de juntar duas
+        # figuras numa célula.
+        colunas = [colunas[i] for i in pick if i < len(colunas)]
+        if len(colunas) != count:
+            raise SystemExit(f'{file_name}: pick não devolveu {count} quadros')
+    else:
+        colunas = fit_bands(colunas, count, band.sum(axis=0))
     return [tight(rgba, (x0, 0, x1, rgba.shape[0]), alpha_min) for x0, x1 in colunas]

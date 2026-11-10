@@ -7,6 +7,28 @@ Gerar e implementar **exatamente duas folhas/imagens por atualização**, seguin
 3. Estação Bio / Bio-Forja (rodadas 0.3.5 e 0.3.6)
 4. Folha de sprites do Bolt (prévia opt-in, sem concessão automática)
 
+## Rodada 0.7.1 — a transformação do T nos quatro módulos
+
+O `T` funcionava, mas era instantâneo: o corpo trocava de folha no mesmo
+quadro. Agora cada módulo tem sequência de quatro quadros (320 px, pés em 276,
+corpo de 249 px de arte = 142 px em jogo, o tamanho do operador civil).
+
+| Arquétipo | Folha | O que a sequência mostra |
+| --- | --- | --- |
+| Motor Bio-Forja | `player-t-bio.png` | grampos abrem, placas fecham com vapor, pistão traseiro gira |
+| Maré Astral | `player-t-mare.png` | água sobe pelas pernas e substitui o traje |
+| Domínio Ancião | `player-t-dominio.png` | anéis de frequência, placas de ouro, núcleo ciano acendendo |
+| Núcleo 10X | `player-t-nucleo.png` | **o bracelete**: operador de macacão projetando a Forma de Eco |
+
+Regras (em `js/data/transform-animation.js`): entrar corre 0→3, sair corre a
+MESMA folha ao contrário (3→0); 1,05 s nos quatro; não empilha se apertar de
+novo; e o efeito é só visual — equipar continua sendo uma linha de estado.
+
+O Núcleo é o caso especial: a identidade do arquétipo é o **bracelete**, então
+nos primeiros 70 % da transformação quem desenha é o operador usando o
+bracelete (quatro quadros) e só no fim a criatura/placas assume — sem tocar no
+efeito `transformacao_10x`, que já escolhia certo entre Veloz e Quebra.
+
 ## Rodada 0.7.0 — Ultimate do Maré Astral (as cinco execuções)
 
 Mesmo contrato do Bio-Forja: no Maré o `F` de nível 1 é da CORRENTE

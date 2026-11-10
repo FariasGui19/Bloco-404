@@ -22,8 +22,9 @@ Cada arquétipo é um **módulo** com o mesmo desenho de jogo:
 | leitura ambiental | partículas desenhadas no canvas | `js/engine/renderer.js` (`draw*Fx`) |
 | Códex | mostra a pose de preparo da escolha | `js/ui/codex.js` |
 
-O que falta: **Domínio Ancião** nas camadas F e leitura ambiental própria
-(o T dele já existe). `nucleo_dez_forma` é o caso especial (formas, não traje).
+Estado na 0.8.0: **os quatro arquétipos estão completos** — caminhada, ataque,
+Q, R, T e F com arte própria. `nucleo_dez_forma` é o caso especial (formas, não
+traje). O que sobra é polimento, não lacuna: ver §8.
 
 ---
 
@@ -101,6 +102,7 @@ Tudo em pixels de arte; a conversão para jogo é uma multiplicação.
 | caminhada Maré 0318 | 460×448 | base da célula | `.37` | 142 px |
 | caminhada Bio | 256 px | `FEET_ANCHOR_Y` própria | `.57` | ~130 px |
 | **Ultimates / T** | **320** | **276** | **`.57`** | corpo de **249 px** de arte |
+| **Ultimate do Domínio** | **320** | **276** | **`.57`** | corpo de **247 px** de arte |
 | Quebra Sistemas | 256 | 220 | `.95` (`BRUTA_SCALE`) | 178 px |
 
 Regra que resolveu dois bugs: **a altura de referência é o CORPO, não a caixa
@@ -131,11 +133,15 @@ Uma biblioteca só, usada por todos os preparadores. Funções:
 Preparadores existentes (copie o mais parecido):
 
 ```bash
-python3 tools/preparar-bio-ultimate.py     # 5 folhas de F do Bio
-python3 tools/preparar-bio-acoes.py        # ataque 4 direções + Q
-python3 tools/preparar-mare-ultimate.py    # 5 folhas de F do Maré + Q de costas
-python3 tools/preparar-transformacao.py    # 4 folhas de T (uma por arquétipo)
+python3 tools/preparar-bio-ultimate.py       # 5 folhas de F do Bio
+python3 tools/preparar-bio-acoes.py          # ataque 4 direções + Q
+python3 tools/preparar-mare-ultimate.py      # 5 folhas de F do Maré + Q de costas
+python3 tools/preparar-dominio-ultimate.py   # 5 folhas de F do Domínio (0.8.0)
+python3 tools/preparar-transformacao.py      # 4 folhas de T (uma por arquétipo)
 ```
+
+O preparador do Domínio usa um helper próprio, `tools/dominio_arte.py`, porque
+o recorte padrão não dá conta de efeito dourado sólido — ver §5.4.
 
 O preparador imprime a escala usada — **confira** se ficou perto de `.57`
 para célula de 320. Se estiver longe (ex.: `.42`), alguma figura veio com
@@ -191,6 +197,39 @@ Cada bloco devolve `true` e sai; o primeiro que desenha manda no corpo.
 
 ---
 
+### 5.4 Medir o corpo quando o efeito é sólido (lição do Domínio, 0.8.0)
+
+O `compose` do `bio_arte` mede o corpo pelo **quadro de menor bbox**. Isso
+funciona quando o efeito é vapor, água ou um anel fino. No Domínio, não:
+
+- a parede hex da MURALHA cobre o tronco inteiro;
+- a lâmina do CORTE cobre o corpo todo;
+- o CORPO DE TITÂNIO tem placas de ouro no lugar de metade do traje.
+
+Com a regra antiga o corpo do quadro do impacto era medido em 354 px contra
+423 px dos outros: o operador **encolhia 16% justo no golpe**.
+
+O que resolveu (em `tools/dominio_arte.py`):
+
+1. **Topo e centro pelo CABELO.** O black power é o único blob quase preto
+   grande no alto da figura (`rgb.max < 70`, alpha > 160). Ele dá o topo do
+   corpo e o centro x — e o centro não muda quando a espada vai para o lado.
+2. **Sola por contagem de linha, não por conectividade.** O ouro corta o
+   traje em pedaços; um `ndimage.label` acha só o pedaço de cima e a perna
+   "some" (medi 200 px num corpo de 430). A conta certa é: última linha com
+   ≥ 28 px de traje escuro na faixa central.
+3. **UMA escala por folha, a mediana das quatro.** As poses do Domínio mudam
+   de verdade (agachado no preparo, ereto na recuperação). Normalizar cada
+   quadro pelo próprio corpo transforma o agachamento num gigante. O tamanho
+   do operador é propriedade da FOLHA; a pose é do quadro.
+4. **Pivô no corpo, não no centro do desenho.** Ao compor, o centro x do
+   cabelo cai no centro da célula. Sem isso a lâmina que sai para a esquerda
+   empurra o operador para a direita (e corta o quadro na borda).
+
+Atenção: `compose_body` reduz um quadro só quando o efeito não cabe na
+célula, e **imprime o percentual**. Se aparecer aviso de mais de 10%, é sinal
+de que a folha-fonte veio grande demais — regerar é melhor que encolher.
+
 ## 6. Como testar (o que cada teste protege)
 
 ```bash
@@ -204,6 +243,7 @@ Testes de referência, por papel:
 | `tests/bio-ultimate.mjs` | ferramenta → assinatura → folha → quadro → bônus → tamanho |
 | `tests/bio-acoes.mjs` | ataque nas 4 direções + Q, ordem no renderer |
 | `tests/mare-ultimate.mjs` | corrente → folha, bug do dash, Q de costas, tamanho |
+| `tests/dominio-ultimate.mjs` | arma/postura → folha, dash da investida, tamanho, frequência |
 | `tests/transformacao-t.mjs` | T dos quatro módulos, ida/volta, bracelete, não empilha |
 | `tests/nucleo-wheel.mjs`, `roda-encaixes.mjs` | roda do T (encaixe dos hexágonos) |
 
@@ -213,47 +253,38 @@ quadros**, **canal alpha no byte 25**, e a presença do id no manifesto
 
 ---
 
-## 7. Passo a passo para o DOMÍNIO ANCIÃO (próxima rodada)
+## 7. DOMÍNIO ANCIÃO — feito na 0.8.0 (referência do padrão)
 
-Dados já prontos (não mexer): `js/data/archetype-tools.js` →
-`lamina_dominio_anciao.tools` com as quatro armas/posturas e
-`ultimate.signature` de cada uma:
+As cinco assinaturas confirmadas em `js/data/archetype-tools.js` e
+`js/data/ultimates.js`, e a folha de cada uma:
 
-| Ferramenta | Assinatura | Ultimate |
-| --- | --- | --- |
-| `espada_de_dominio` | `lamina_vertical` | CORTE DE RUPTURA |
-| `escudo_de_dominio` | `muralha_hex` | MURALHA DE FREQUÊNCIA |
-| `postura_de_dominio` | `tita` | CORPO DE TITÂNIO |
-| `investida_de_dominio` | `trono` | IMPACTO DO TRONO ANTIGO |
+| Ferramenta | Assinatura | Ultimate | Folha |
+| --- | --- | --- | --- |
+| `espada_de_dominio` | `lamina_vertical` | CORTE DE RUPTURA | `player-dominio-ult-lamina.png` |
+| `escudo_de_dominio` | `muralha_hex` | MURALHA DE FREQUÊNCIA | `player-dominio-ult-muralha.png` |
+| `postura_de_dominio` | `tita` | CORPO DE TITÂNIO | `player-dominio-ult-tita.png` |
+| `investida_de_dominio` | `trono` | IMPACTO DO TRONO ANTIGO | `player-dominio-ult-trono.png` |
+| — (base do módulo) | `coroa` | COROA DA FALHA | `player-dominio-ult-coroa.png` |
 
-(também ver `ultimates.js`: a base do módulo é `coroa_da_falha`, assinatura
-`coroa`. São **5** folhas, como no Bio e no Maré.)
+Cadeia final no renderer (a ordem importa, só um desenha o corpo):
 
-Roteiro:
+```js
+const ultimateFrame = getUltimateFrame(...)          // Núcleo (por forma)
+  ?? getBioUltimateFrame(...)                        // Bio (por ferramenta)
+  ?? getMareUltimateFrame(...)                       // Maré (por corrente)
+  ?? getDominioUltimateFrame(...);                   // Domínio (por arma/postura)
+```
 
-1. **Gerar 5 folhas** de 4 quadros com o template de §2, referência
-   `assets/sprites/player/player-dominio-reference.png` (turnaround dourado).
-   Paleta: grafite + dourado `#ffd465` + núcleo ciano.
-2. Salvar em `assets/source-art/dominio/` e criar
-   `tools/preparar-dominio-ultimate.py` copiando o do Maré (2 linhas de
-   configuração + `body_height`).
-3. Criar `js/data/dominio-ultimate-animation.js` copiando
-   `mare-ultimate-animation.js` e trocando os nomes.
-4. Ligar no renderer **depois** do Maré na cadeia de `??`.
-5. Registrar `lamina_dominio_anciao: getDominioUltimatePosePath` em
-   `POSE_RESOLVERS` (`js/ui/codex.js`) — uma linha.
-6. Adicionar `drawDominioFx` ao lado de `drawBioForjaFx`/`drawMareFx`
-   (faíscas douradas + runas orbitando).
-7. Criar `tests/dominio-ultimate.mjs` copiando `mare-ultimate.mjs` e ajustando
-   as quatro assinaturas.
-8. Versão: `0.8.0-dominio`, entrada em `docs/ordem-de-arte-e-implementacao.md`
-   e `docs/roteiro-proximas-etapas.md`.
-9. Rodar a suíte inteira, `git push`, PR e merge (o padrão das rodadas).
+O que esta rodada ensinou e vale para o próximo arquétipo:
 
-Depois disso os **quatro** arquétipos ficam no mesmo nível, que é a meta que o
-criador pediu: *"nenhum parecer melhor que o outro"*.
-
----
+- **`kind: 'dash'` + folha de Ultimate**: a INVESTIDA do Domínio (`trono`) é
+  dash, como a CORRENTE ABISSAL do Maré. A checagem de dash **precisa** deixar
+  passar `mode === 'ultimate'`; senão o gesto nunca aparece. Já está no teste.
+- **O gerador entrega figura a mais** (o TITÂNIO veio com 6 figuras, uma
+  repetida; o CORTE com uma faixa-suspiro de 7 px). `pick` escolhe as faixas
+  reais; `figure_bands(min_width=150)` descarta respingo.
+- **Efeito com borda dura** na parede hex: `disc_mask` no quadro 2. Em jogo,
+  sem isso, vira um retângulo de ouro.
 
 ## 8. Pendências conhecidas (honestas)
 
@@ -265,7 +296,15 @@ criador pediu: *"nenhum parecer melhor que o outro"*.
   desenhado (a roda só fecha e o efeito começa).
 - **Áudio**: o jogo não tem camada de som. Pistão, água e zumbido de
   frequência estão fora de escopo até existir áudio.
-- **HUD**: a cor da ferramenta/corrente não aparece durante o bônus do `F`.
-- **Domínio**: nenhuma folha de F, nenhuma leitura ambiental (é o §7).
+- **Domínio — MURALHA DE FREQUÊNCIA**: a parede hex fechada cobre o peito do
+  operador no quadro do impacto. Lê como parede, mas esconde o núcleo ciano e
+  o rosto. Próxima geração do quadro 3: parede na ALTURA DA CINTURA, com
+  pedido explícito de "face, glasses, chest and cyan core stay visible".
+- **Domínio — CORPO DE TITÂNIO, quadro 4**: o ouro recolhe pelas pernas
+  (leitura correta de "voltando ao normal"), mas o quadro 3 é o único com
+  ombros de titã. Se incomodar no playtest, um quadro 4 com o ouro ainda nos
+  ombros fecharia a leitura de "dissipando" em vez de "já voltou".
+- **HUD**: a cor da ferramenta/corrente/arma não aparece no bônus do `F` — a
+  pendência mais antiga e a única igual nos quatro módulos.
 - O quadro 3 do vórtice do Maré (túnel) é o mais "cheio" dos cinco; candidato
   a regerar se incomodar no playtest.

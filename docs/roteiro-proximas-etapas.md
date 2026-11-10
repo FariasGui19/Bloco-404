@@ -11,6 +11,52 @@
 - Núcleo 10X: Ultimate só com a forma ativa; formas futuras listadas como projeto.
 - Maré Astral: rotas de maré no Códex (leitura de mapa).
 
+## Concluído na 0.8.0 — Domínio Ancião fecha a série dos quatro módulos
+
+O quarto e último arquétipo ganhou as três camadas que faltavam, no mesmo
+padrão de Bio-Forja (0.6.5) e Maré (0.7.0). Teste próprio:
+`tests/dominio-ultimate.mjs`.
+
+1. **Cinco folhas de execução do `F`** (`assets/sprites/player/player-dominio-ult-*.png`),
+   uma por assinatura confirmada no código: `coroa` (base do módulo, COROA DA
+   FALHA), `lamina_vertical` (CORTE DE RUPTURA), `muralha_hex` (MURALHA DE
+   FREQUÊNCIA), `tita` (CORPO DE TITÂNIO) e `trono` (IMPACTO DO TRONO ANTIGO).
+   Fonte em `assets/source-art/dominio/`, preparador em
+   `tools/preparar-dominio-ultimate.py`.
+2. **Animação presa ao estado real** (`js/data/dominio-ultimate-animation.js`):
+   carga usa os quadros 0 e 1, impacto o 2, recuperação o 3. A escolha é pela
+   ASSINATURA, não pelo id da ferramenta.
+3. **Medida do corpo pelo cabelo** (`tools/dominio_arte.py`) — a novidade
+   desta rodada. Nos outros três módulos o corpo era medido pela caixa do
+   desenho, o que funciona quando o efeito é vapor, água ou um anel fino. No
+   Domínio o efeito é OURO SÓLIDO e grande: a parede da muralha cobre o tronco
+   e a medida caía pela metade bem no quadro do impacto. Agora o corpo é
+   medido pelo black power (blob escuro compacto no alto) e pela sola da bota,
+   e a escala é UMA por folha (mediana dos quatro quadros) — pose agachada
+   continua agachada em vez de virar gigante.
+4. **Frequência viva** (`drawDominioFx`) — faíscas douradas subindo das botas,
+   anel geométrico raso no chão e duas runas orbitando o ombro, na cor da
+   ferramenta instalada. É leitura, não regra: nada muda em dano/colisão.
+5. **Códex** — o cartão de cada arma/postura mostra a pose de preparo da folha
+   (`lamina_dominio_anciao: getDominioUltimatePosePath` em `POSE_RESOLVERS`).
+6. **A INVESTIDA não perde a arte**: `trono` é `kind: 'dash'`, o mesmo caso
+   que matou a CORRENTE ABISSAL do Maré. A folha sobrevive ao avanço da
+   própria Ultimate; só dash de habilidade (Q) e varredura mandam no corpo.
+
+Versão `0.8.0-dominio`. Com isso os **quatro** arquétipos estão no mesmo
+nível: caminhada, ataque, Q, R, T e F com arte própria.
+
+**Ainda pendente (honesto):**
+- **HUD** — a cor da ferramenta/corrente/arma não aparece durante o bônus do
+  `F` (vale para os quatro módulos).
+- **MURALHA DE FREQUÊNCIA** — a parede hex fechada cobre o peito do operador
+  no quadro do impacto. Lê bem como parede, mas esconde a identidade do traje;
+  a próxima geração deve pedir a parede na altura da cintura (ver o guia).
+- **Áudio** — o jogo não tem camada de som; sino de frequência e impacto
+  ficam fora de escopo até existir áudio.
+- **Núcleo 10X** — a emenda entre a arte do bracelete e a criatura na
+  transformação do T continua seca (um quadro de mistura fecharia).
+
 ## Concluído na 0.7.1 — Transformação do T (quatro módulos)
 
 Sequência de quatro quadros para o `T`, com ida e volta na mesma folha.

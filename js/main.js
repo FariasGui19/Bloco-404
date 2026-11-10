@@ -130,6 +130,13 @@ await loadSprites([
   { id: 'player_mare_ult_sonar', src: 'assets/sprites/player/player-mare-ult-sonar.png' },
   { id: 'player_mare_ult_estuario', src: 'assets/sprites/player/player-mare-ult-estuario.png' },
   { id: 'player_mare_propulsor_costas', src: 'assets/sprites/player/player-mare-propulsor-costas.png' },
+  // Execução da Ultimate do DOMÍNIO ANCIÃO (F): uma folha por arma/postura,
+  // mais a coroa da base do módulo (tools/preparar-dominio-ultimate.py).
+  { id: 'player_dominio_ult_coroa', src: 'assets/sprites/player/player-dominio-ult-coroa.png' },
+  { id: 'player_dominio_ult_lamina', src: 'assets/sprites/player/player-dominio-ult-lamina.png' },
+  { id: 'player_dominio_ult_muralha', src: 'assets/sprites/player/player-dominio-ult-muralha.png' },
+  { id: 'player_dominio_ult_tita', src: 'assets/sprites/player/player-dominio-ult-tita.png' },
+  { id: 'player_dominio_ult_trono', src: 'assets/sprites/player/player-dominio-ult-trono.png' },
   { id: 'player_mare_q', src: 'assets/sprites/player/player-mare-q.png' },
   { id: 'player_mare_r', src: 'assets/sprites/player/player-mare-r.png' },
   { id: 'player_10x_lvl1', src: 'assets/sprites/player/player-10x-lvl1.png' },

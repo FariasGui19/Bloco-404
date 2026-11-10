@@ -15,6 +15,7 @@ import { getMasteryState, getMasterySummary } from '../game/mastery.js';
 import { getUltimateStatus } from '../game/ultimate.js';
 import { getBioUltimatePosePath } from '../data/bio-ultimate-animation.js';
 import { getMareUltimatePosePath } from '../data/mare-ultimate-animation.js';
+import { getDominioUltimatePosePath } from '../data/dominio-ultimate-animation.js';
 import { listTools, selectTool } from '../game/tools.js';
 import { describeNextUnlock, getUnlockState, getUnlockStepFor } from '../game/unlocks.js';
 import { getPath, LEVEL_TITLES, PATH_STATES } from '../data/archetype-progression.js';
@@ -151,6 +152,7 @@ function masteryPips(rank, maxRank) {
 const POSE_RESOLVERS = {
   motor_bio_forja: getBioUltimatePosePath,
   mare_astral: getMareUltimatePosePath,
+  lamina_dominio_anciao: getDominioUltimatePosePath,
 };
 
 function poseDaFerramenta(arquetipo, signature) {

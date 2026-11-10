@@ -399,6 +399,19 @@ export const map = {
     { id: 'rochedos_praia_leste', tipo: 'decoracao', x: 40, y: 12, sprite: 'costa_rochosa', frame: { col: 1, row: 0 }, useCrop: true, larguraPx: 104, pivotY: 1, bloqueia: false },
     { id: 'rochedos_praia_sul', tipo: 'decoracao', x: 1, y: 27, sprite: 'costa_rochosa', frame: { col: 3, row: 0 }, useCrop: true, larguraPx: 79, pivotY: 1, bloqueia: false },
     { id: 'rochedos_praia_centro', tipo: 'decoracao', x: 40, y: 35, sprite: 'costa_rochosa', frame: { col: 2, row: 0 }, useCrop: true, larguraPx: 72, pivotY: 1, bloqueia: false },
+    // ---- MARCOS DA ILHA GRANDE ----
+    // O kit `costa_rochosa` da referência (falésia com palmeiras, montinho e
+    // pilar) entra na BEIRA da areia, não na água: dá relevo e faz a ilha
+    // parecer grande em vez de um monte de losango chapado. Tudo decorativo
+    // e não bloqueante — nada de rota muda.
+    // O contrato da praia exige `costa_rochosa` SEMPRE em água: então as
+    // falésias ficam na orla submersa, emoldurando a ilha vista do mar.
+    { id: 'falésia_norte', tipo: 'decoracao', x: 16, y: 1, sprite: 'costa_rochosa', frame: { col: 1, row: 0 }, useCrop: true, larguraPx: 190, pivotY: 1, bloqueia: false },
+    { id: 'falésia_oeste', tipo: 'decoracao', x: 13, y: 16, sprite: 'costa_rochosa', frame: { col: 1, row: 0 }, useCrop: true, larguraPx: 170, pivotY: 1, bloqueia: false },
+    { id: 'pilar_palmeiras_leste', tipo: 'decoracao', x: 45, y: 2, sprite: 'costa_rochosa', frame: { col: 3, row: 0 }, useCrop: true, larguraPx: 78, pivotY: 1, bloqueia: false },
+    { id: 'pilar_palmeiras_sul', tipo: 'decoracao', x: 24, y: 47, sprite: 'costa_rochosa', frame: { col: 3, row: 0 }, useCrop: true, larguraPx: 74, pivotY: 1, bloqueia: false },
+    { id: 'montinho_orla_leste', tipo: 'decoracao', x: 43, y: 15, sprite: 'costa_rochosa', frame: { col: 2, row: 0 }, useCrop: true, larguraPx: 62, pivotY: 1, bloqueia: false },
+    { id: 'montinho_orla_sul', tipo: 'decoracao', x: 22, y: 41, sprite: 'costa_rochosa', frame: { col: 2, row: 0 }, useCrop: true, larguraPx: 58, pivotY: 1, bloqueia: false },
     { id: 'folha_costeira_a', tipo: 'decoracao', x: 2, y: 9, sprite: 'vegetacao_tropical', frame: { col: 1, row: 0 }, useCrop: true, larguraPx: 45, pivotY: 1, bloqueia: false },
     { id: 'folha_costeira_b', tipo: 'decoracao', x: 12, y: 10, sprite: 'vegetacao_tropical', frame: { col: 0, row: 0 }, useCrop: true, larguraPx: 45, pivotY: 1, bloqueia: false },
     // Pequenos agrupamentos costeiros, exclusivamente visuais e fora da plataforma.
@@ -411,11 +424,35 @@ export const map = {
       trem: { ajusteY: 68 }, // ajuste local para aproximar as rodas do trilho
     }),
 
-    { id: 'plataforma_pilar_oeste', tipo: 'decoracao', x: 2, y: 5, sprite: 'praia_plataforma_kit', frame: { col: 0, row: 1 }, useCrop: true, larguraPx: 25, pivotY: 1, bloqueia: false },
-    { id: 'plataforma_pilar_leste', tipo: 'decoracao', x: 13, y: 5, sprite: 'praia_plataforma_kit', frame: { col: 0, row: 1 }, useCrop: true, larguraPx: 25, pivotY: 1, bloqueia: false },
-    // Plataforma de embarque: peças leves, fora do caminho do portal e do trem.
-    { id: 'praia_placa_estacao', tipo: 'decoracao', x: 11, y: 5, routeMarker: 'ESTAÇÃO', bloqueia: false },
-    { id: 'praia_caixa_estacao', tipo: 'decoracao', x: 12, y: 5, sprite: 'bio_caixa', useCrop: true, larguraPx: 42, pivotY: 1, bloqueia: false },
+    // ---- ESTAÇÃO DO TREM ----
+    // Antes eram dois pilares soltos a 6 tiles do trem, e o trem ficava
+    // plantado no meio da areia. A estação agora é construída EM VOLTA dele
+    // (que fica em 7.1, 2.0, camada 'fundo'): plataforma atrás, dossel
+    // acima, pilares na frente, escada descendo para a praia.
+    // Tudo `bloqueia: false` — a estação é cenário, as rotas e o save não
+    // mudam. O totem de embarque continua sendo o único bloqueio.
+    { id: 'estacao_plataforma', tipo: 'decoracao', x: 7.1, y: 2.0, camada: 'fundo', ordem: 2,
+      sprite: 'praia_plataforma_kit', frame: { col: 1, row: 0 }, useCrop: true,
+      larguraPx: 300, pivotX: .5, pivotY: 1, ajusteY: 40, bloqueia: false },
+    { id: 'estacao_dossel', tipo: 'decoracao', x: 7.1, y: 2.0, camada: 'fundo', ordem: 3,
+      sprite: 'praia_plataforma_kit', frame: { col: 2, row: 0 }, useCrop: true,
+      larguraPx: 150, pivotX: .5, pivotY: 1, ajusteY: 96, bloqueia: false },
+    // Os dois pilares do contrato 0314: mesmo id, mesmo y=5, em chão firme.
+    { id: 'plataforma_pilar_oeste', tipo: 'decoracao', x: 2, y: 5, sprite: 'praia_plataforma_kit', frame: { col: 0, row: 1 }, useCrop: true, larguraPx: 34, pivotY: 1, bloqueia: false },
+    { id: 'plataforma_pilar_leste', tipo: 'decoracao', x: 13, y: 5, sprite: 'praia_plataforma_kit', frame: { col: 0, row: 1 }, useCrop: true, larguraPx: 34, pivotY: 1, bloqueia: false },
+    { id: 'praia_placa_estacao', tipo: 'decoracao', x: 9.6, y: 4.5,
+      sprite: 'praia_plataforma_kit', frame: { col: 1, row: 1 }, useCrop: true,
+      larguraPx: 96, pivotY: 1, bloqueia: false, routeMarker: 'ESTAÇÃO' },
+    { id: 'estacao_luminaria', tipo: 'decoracao', x: 12.0, y: 2.6,
+      sprite: 'praia_plataforma_kit', frame: { col: 2, row: 1 }, useCrop: true,
+      larguraPx: 52, pivotY: 1, bloqueia: false },
+    { id: 'estacao_escada', tipo: 'decoracao', x: 4.6, y: 5.2,
+      sprite: 'praia_plataforma_kit', frame: { col: 3, row: 0 }, useCrop: true,
+      larguraPx: 108, pivotY: 1, bloqueia: false },
+    { id: 'estacao_guarda_corpo', tipo: 'decoracao', x: 10.4, y: 5.6,
+      sprite: 'praia_plataforma_kit', frame: { col: 3, row: 1 }, useCrop: true,
+      larguraPx: 130, pivotY: 1, bloqueia: false },
+    { id: 'praia_caixa_estacao', tipo: 'decoracao', x: 12.4, y: 5.4, sprite: 'bio_caixa', useCrop: true, larguraPx: 42, pivotY: 1, bloqueia: false },
 
     // ---- Ilha A (props originais, inalterados) ----
     prop('palmeira_1', 2, 7, 0, 0, 82, { bloqueia: true, hitbox: TRONCO }),

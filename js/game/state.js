@@ -121,6 +121,14 @@ export const state = {
     equippedSuit: null, // 'bio_forja', etc.
     nucleoForm: null, // estado temporário, não salvo
 
+    // Ultimate: recarga, bônus e efeito são de sessão, não vão para o save.
+    ultimate: {
+      cooldown: 0,
+      buff: null,
+      effect: null,
+      casts: 0,
+    },
+
     ability: {
       active: null,
       cooldowns: {},

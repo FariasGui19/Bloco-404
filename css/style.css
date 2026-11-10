@@ -3294,3 +3294,138 @@ body.in-menu #controls {
   #codex .codex-emblem { animation: none; }
   #codex .codex-tab:hover { transform: none; }
 }
+
+/* =====================================================================
+   COR POR FUNÇÃO — o Códex deixa de ser um bloco só verde
+   Cada aba tem seu acento; cada trilha usa a cor do seu ícone.
+   ===================================================================== */
+
+#codex {
+  --accent: #8bf3d8;
+  --accent-soft: rgba(139, 243, 216, 0.18);
+}
+#codex[data-tab="missoes"] { --accent: #ffc861; --accent-soft: rgba(255, 200, 97, 0.16); }
+#codex[data-tab="progressao"] { --accent: #b78cff; --accent-soft: rgba(183, 140, 255, 0.16); }
+#codex[data-tab="inventario"] { --accent: #ff9a5c; --accent-soft: rgba(255, 154, 92, 0.16); }
+#codex[data-tab="atributos"] { --accent: #ff7d8f; --accent-soft: rgba(255, 125, 143, 0.16); }
+
+#codex .codex-panel { border-color: color-mix(in srgb, var(--accent) 55%, #2f7a6a); }
+
+#codex .codex-tab.active {
+  color: #0a1412;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--accent) 88%, #ffffff), var(--accent));
+  border-color: color-mix(in srgb, var(--accent) 70%, #ffffff);
+}
+
+#codex .codex-tab:hover { color: color-mix(in srgb, var(--accent) 60%, #ffffff); }
+
+#codex .codex-tag {
+  color: var(--accent);
+  border-color: color-mix(in srgb, var(--accent) 45%, transparent);
+  background: var(--accent-soft);
+}
+
+#codex .codex-tab.active kbd { color: #0a1412; }
+
+/* Barras por assunto: XP dourado, vida vermelha, energia ciano, missão âmbar. */
+#codex .codex-xp-bar b { background: linear-gradient(90deg, #7a5a12, #ffd86b); }
+#codex .codex-quest-bar b { background: linear-gradient(90deg, #7a5a12, #ffc861); }
+#codex .codex-vital-bar.health b { background: linear-gradient(90deg, #8f2020, #ff6b6b); }
+#codex .codex-vital-bar.energy b { background: linear-gradient(90deg, #14607a, #54ccff); }
+#codex .codex-track-bar b { background: linear-gradient(90deg, rgba(0, 0, 0, 0.45), var(--track)); }
+#codex .codex-track-effect { color: var(--track); }
+#codex .codex-slot.selected { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-soft); }
+
+/* Cartão da Ultimate na aba de progressão. */
+.codex-ultimate {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+
+  margin: 10px 0 12px;
+  padding: 10px 12px;
+
+  background: linear-gradient(120deg, rgba(12, 32, 34, .92), rgba(8, 22, 24, .78));
+  border: 1px solid rgba(122, 226, 198, .22);
+  border-left: 3px solid var(--accent);
+  border-radius: 4px;
+}
+.codex-ultimate.ready { box-shadow: inset 0 0 0 1px var(--accent-soft); }
+.codex-ultimate-icon {
+  width: 48px;
+  height: 48px;
+  flex: none;
+  image-rendering: pixelated;
+  filter: drop-shadow(0 0 6px rgba(0, 0, 0, .6));
+}
+.codex-ultimate header { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.codex-ultimate strong { color: #f2efe4; font-size: 12px; letter-spacing: .06em; }
+.codex-ultimate em {
+  font-style: normal;
+  font-size: 9px;
+  letter-spacing: .12em;
+  color: var(--accent);
+  border: 1px solid color-mix(in srgb, var(--accent) 40%, transparent);
+  border-radius: 3px;
+  padding: 1px 5px;
+}
+.codex-ultimate p { margin: 6px 0 4px; color: #9fc4ba; font-size: 11px; line-height: 1.45; }
+.codex-ultimate footer { color: #7fa79c; font-size: 10px; letter-spacing: .04em; }
+
+/* =====================================================================
+   HUD — bloco da Ultimate (F)
+   ===================================================================== */
+#abilityUltimate {
+  display: none;
+  align-items: center;
+  gap: 9px;
+
+  margin-top: 8px;
+  padding: 7px 9px;
+
+  background: linear-gradient(90deg, rgba(46, 30, 12, 0.85), rgba(12, 26, 28, 0.75));
+  border: 1px solid rgba(255, 200, 97, 0.28);
+  border-left: 3px solid #6b5a3a;
+  border-radius: 3px;
+}
+#abilityUltimate.visible { display: flex; }
+#abilityUltimate.ready { border-left-color: #ffd465; box-shadow: 0 0 12px rgba(255, 200, 97, 0.18); }
+#abilityUltimate.buffed { border-color: rgba(154, 249, 200, 0.5); }
+#abilityUltimate.unaffordable { opacity: .72; }
+
+.ability-ultimate-icon {
+  width: 30px;
+  height: 30px;
+  flex: none;
+  image-rendering: pixelated;
+  opacity: .55;
+  transition: opacity .2s ease, filter .2s ease;
+}
+#abilityUltimate.ready .ability-ultimate-icon { opacity: 1; filter: drop-shadow(0 0 6px rgba(255, 212, 101, .55)); }
+
+.ability-ultimate-body { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.ability-ultimate-body strong { color: #ffe9b8; font-size: 10px; letter-spacing: .08em; }
+.ability-ultimate-body span { color: #c2b189; font-size: 9px; letter-spacing: .06em; }
+.ability-ultimate-buff { color: #9af9c8 !important; }
+
+.ability-ultimate-track {
+  display: block;
+  width: 118px;
+  height: 4px;
+  margin-top: 3px;
+  overflow: hidden;
+
+  background: rgba(255, 255, 255, .10);
+  border-radius: 999px;
+}
+.ability-ultimate-track b {
+  display: block;
+  height: 100%;
+  width: 0;
+  background: linear-gradient(90deg, #a9701f, #ffd465);
+  transition: width .18s linear;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ability-ultimate-track b { transition: none; }
+}

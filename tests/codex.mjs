@@ -20,6 +20,7 @@ globalThis.document = {
   body: { appendChild() {} },
 };
 
+const { readFileSync, existsSync } = await import('node:fs');
 const { openCodex, closeCodex, isCodexOpen, setTab, handleCodexInput, CODEX_TABS } = await import('../js/ui/codex.js');
 const { startQuest } = await import('../js/game/quests.js');
 const { ensureArchetypeProgress } = await import('../js/game/progression.js');
@@ -86,4 +87,15 @@ closeCodex();
 assert(!isCodexOpen());
 
 assert.deepEqual(CODEX_TABS.map(tab => tab.id), ['missoes', 'progressao', 'inventario', 'atributos']);
+
+// Cada aba/cartão tem ícone próprio, e cada um tem cor (não é mais tudo verde).
+for (const name of ['missoes', 'progressao', 'inventario', 'vitais', 'vida', 'energia', 'xp', 'fechar', 'emblema']) {
+  const url = new URL(`../assets/sprites/ui/codex/icone-${name}.png`, import.meta.url);
+  assert(existsSync(url), `ícone ${name} presente`);
+}
+const css = readFileSync(new URL('../css/style.css', import.meta.url), 'utf8');
+for (const aba of ['missoes', 'progressao', 'inventario', 'atributos']) {
+  assert(css.includes(`#codex[data-tab="${aba}"]`), `acento de cor da aba ${aba}`);
+}
+assert(css.includes('.codex-ultimate'), 'cartão da Ultimate estilizado');
 console.log('Códex: abas, missões, maestria, inventário, atributos, teclado e leitura sem mutação OK.');

@@ -45,7 +45,10 @@ pegar export faltando antes de abrir o navegador.
 - **Maestria por uso** (sem pontos): ataque, fluxo, eco e locomoção sobem
   conforme você golpeia, usa habilidades, conclui missões e percorre o mapa.
 - **Vida** com dano, invulnerabilidade, regeneração e retorno seguro ao morrer.
-- **Códex (`J`)** com abas de missões, progressão, inventário e atributos.
+- **Códex (`J`)** com abas de missões, progressão, inventário e atributos, cada
+  uma com sua cor (âmbar, violeta, laranja e rosa) para não cansar a vista.
+- **Ultimate (`F`)** por arquétipo: onda radial, cura e bônus temporário, com
+  custo alto de energia e recarga longa.
 - Detalhes em [`docs/sistemas-rpg-dano-xp-missoes.md`](docs/sistemas-rpg-dano-xp-missoes.md).
 
 ## Futuro

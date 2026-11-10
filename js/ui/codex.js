@@ -12,10 +12,17 @@ import { activateCompanion } from '../game/companion-progress.js';
 import { ARCHETYPES } from '../data/onboarding.js';
 import { getArchetypeLevel, getArchetypeXp, getDerivedStats, xpToNext } from '../game/rpg.js';
 import { getMasteryState, getMasterySummary } from '../game/mastery.js';
+import { getUltimateStatus } from '../game/ultimate.js';
 import { listTrackedQuests } from '../game/quests.js';
 import { getItem, listInventory } from '../data/items.js';
 
 const ICONS = 'assets/sprites/ui/codex/icone-';
+const ULTIMATE_ICONS = 'assets/sprites/ui/codex/ultimate-';
+
+// Cada trilha tem sua cor, igual ao ícone que a representa no Códex.
+export const TRACK_COLORS = Object.freeze({
+  ataque: '#ffd86b', fluxo: '#54ccff', eco: '#ffc861', locomocao: '#b78cff',
+});
 
 const TABS = Object.freeze([
   { id: 'missoes', label: 'MISSÕES', icon: 'missoes' },
@@ -102,6 +109,24 @@ function masteryPips(rank, maxRank) {
   return `<span class="codex-pips" aria-hidden="true">${Array.from({ length: maxRank }, (_, index) => `<i class="${index < rank ? 'filled' : ''}"></i>`).join('')}</span>`;
 }
 
+// Ultimate: nome, custo e estado atual, com o sigilo do arquétipo.
+function ultimateCard(progress) {
+  const status = getUltimateStatus(context.player, progress);
+  if (!status) return '';
+  const { definition } = status;
+  const estado = status.cooldown > 0 ? `RECARREGANDO ${status.cooldown.toFixed(0)}s`
+    : !status.energyOk ? `FALTA ${Math.max(0, definition.cost - status.energy)} ENERGIA`
+    : 'PRONTA';
+  return `<article class="codex-ultimate${status.ready ? ' ready' : ''}">
+    <img class="codex-ultimate-icon" src="${ULTIMATE_ICONS}${progress.archetype}.png" alt="" aria-hidden="true" draggable="false">
+    <div>
+      <header><span class="codex-tag">ULTIMATE · F</span><strong>${escapeHtml(definition.name)}</strong><em>${estado}</em></header>
+      <p>${escapeHtml(definition.description)}</p>
+      <footer>${definition.cost} ENERGIA · RECARGA ${definition.cooldown}s · ${escapeHtml(definition.effectText)}</footer>
+    </div>
+  </article>`;
+}
+
 function renderProgress(progress) {
   const archetypeId = progress?.archetype;
   const archetype = ARCHETYPES[archetypeId];
@@ -115,7 +140,7 @@ function renderProgress(progress) {
   const summary = getMasterySummary(progress, archetypeId);
   const tracks = getMasteryState(progress, archetypeId);
 
-  const rows = tracks.map(track => `<article class="codex-track" style="--track:${track.rank > 0 ? '#9af9c8' : '#4d6b64'}">
+  const rows = tracks.map(track => `<article class="codex-track" style="--track:${track.rank > 0 ? TRACK_COLORS[track.id] ?? '#9af9c8' : '#4d6b64'}">
       ${icon(track.icon, 'codex-track-icon')}
       <div class="codex-track-body">
         <header>
@@ -145,6 +170,7 @@ function renderProgress(progress) {
       </div>
     </header>
     <p class="codex-note">A maestria sobe com o uso: golpes, habilidades, missões e distância percorrida. Não há pontos para gastar.</p>
+    ${ultimateCard(progress)}
     <div class="codex-tracks">${rows}</div>
   </section>`;
 }
@@ -261,6 +287,7 @@ function render() {
   if (!overlay) return;
   const { progress } = context;
   const archetype = progress?.archetype ? ARCHETYPES[progress.archetype] : null;
+  if (overlay) overlay.dataset.tab = currentTab;
   overlay.querySelector('.codex-tabs').outerHTML = renderTabs();
   const panel = overlay.querySelector('#codexPanel');
   panel.innerHTML = renderPanel();

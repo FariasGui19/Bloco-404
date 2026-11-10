@@ -95,8 +95,12 @@ for (const fonte of ['bio-ultimate', 'bio-ult-lamina', 'bio-ult-punho', 'bio-ult
   assert(existsSync(new URL(`../assets/source-art/bio/${fonte}.png`, import.meta.url)), `fonte ${fonte}`);
 }
 const preparador = readFileSync(new URL('../tools/preparar-bio-ultimate.py', import.meta.url), 'utf8');
-assert.match(preparador, /remove_magenta/, 'o preparador limpa o fundo magenta');
-assert.match(preparador, /fit_bands/, 'o preparador descarta a linha de grade');
+// O recorte vive em tools/bio_arte.py, compartilhado com as folhas de ação.
+const recorte = readFileSync(new URL('../tools/bio_arte.py', import.meta.url), 'utf8');
+assert.match(preparador, /load_frames/, 'o preparador usa o recorte compartilhado');
+assert.match(preparador, /compose/, 'o preparador compõe células iguais');
+assert.match(recorte, /def remove_magenta/, 'o recorte limpa o fundo magenta');
+assert.match(recorte, /def fit_bands/, 'o recorte descarta a linha de grade');
 
 // ---------------------------------------------------------------
 // 3. QUADRO POR ESTADO REAL — carga, impacto, recuperação

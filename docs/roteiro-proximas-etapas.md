@@ -11,6 +11,39 @@
 - Núcleo 10X: Ultimate só com a forma ativa; formas futuras listadas como projeto.
 - Maré Astral: rotas de maré no Códex (leitura de mapa).
 
+## Concluído na 0.6.3 — Ultimate das duas formas e roda do T consertada
+
+Dois pedidos do playtest, fechados com teste próprio em
+`tests/ultimate-formas.mjs`:
+
+1. **Execução da Ultimate das duas formas.** Antes o `F` só desenhava o efeito
+   procedural; o corpo continuava na pose de andar. Agora cada forma tem folha
+   de execução em quatro quadros:
+
+   | forma | folha | quadros |
+   | --- | --- | --- |
+   | FORMA VELOZ | `player-10x-veloz-ultimate.png` (896×224) | círculo de relógio → corpo encolhido e faiscando → arrancada com riscos → recuperação |
+   | QUEBRA SISTEMAS | `player-10x-bruta-ultimate.png` (1024×256) | marretas baixas → erguidas com rachadura magmática → pancada dupla abrindo a fenda → corpo alto, marreta apoiada |
+
+   `js/data/nucleo-ultimate-animation.js` escolhe o quadro pelo estado REAL da
+   Ultimate: carga (0,42 s) usa os quadros 0 e 1, a soltura usa 2 no impacto e
+   3 na recuperação. O renderer desenha isso ANTES de qualquer pose de
+   locomoção, e o efeito carrega a forma que o soltou (a Veloz não veste a arte
+   da Quebra).
+
+2. **Roda do T mostrando só uma imagem.** A causa era CSS: no modo com a arte
+   do anel, os quatro cartões eram pintados no MESMO ponto (50%/46%), um sobre
+   o outro — só a última miniatura aparecia e os nomes ficavam empilhados. As
+   posições agora vêm de dado (`--slot-x`/`--slot-y`), medidas nos quatro
+   hexágonos da arte do anel: topo 50%/31% (Veloz), direita 77%/52% (Quebra),
+   base 50%/67% (Fluida), esquerda 22%/53% (Núcleo). O anel ficou maior
+   (470 px, proporção 3:2), a miniatura cresce no cartão selecionado, o nome
+   ganhou etiqueta legível e o `◆` duplicado saiu no modo com arte.
+
+Arte: `tools/preparar-quebra-sistemas.py` agora aceita recorte em grade
+(`grid`/`inset`), altura e célula por folha, e nunca deixa um quadro sangrar na
+célula vizinha. Versão `0.6.3-nucleo-completo`.
+
 ## Concluído na 0.6.2 — Quebra Sistemas jogável de verdade
 
 O criador jogou a 0.6.1 e apontou cinco defeitos. Todos foram fechados, cada

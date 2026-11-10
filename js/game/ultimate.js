@@ -167,6 +167,9 @@ function resolveUltimate({ player, progress, targets = [], definition, kind, che
     radius: definition.radius ?? 0,
     range: definition.range ?? 0,
     facing: player.facing ?? 'down',
+    // Qual forma executou: a arte de execução da Quebra não pode ser usada
+    // pela Veloz (e vice-versa).
+    form: player.nucleoForm ?? null,
     timeLeft: duration,
     duration,
   };
@@ -306,7 +309,9 @@ export function updateUltimate(player, progress, dt, options = {}) {
     if (runtime.flash.timeLeft === 0) runtime.flash = null;
   }
 
-  if (runtime.effect) {
+  // No quadro da soltura o efeito nasce cheio e NÃO consome o dt: senão a
+  // janela de impacto da arte de execução já começa pela metade.
+  if (!resolvedNow && runtime.effect) {
     runtime.effect.timeLeft = Math.max(0, runtime.effect.timeLeft - elapsed);
     if (runtime.effect.timeLeft === 0) runtime.effect = null;
   }

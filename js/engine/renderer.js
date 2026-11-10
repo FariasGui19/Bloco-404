@@ -19,6 +19,7 @@ import { ACTION_SPRITES } from '../data/action-sprites.js';
 import { drawHubScreenFx, hasHubScreenFx } from './hub-screen-fx.js';
 import { getVelozAnimation, getVelozPulse } from '../data/veloz-animation.js';
 import { getBrutaAnimation, BRUTA_SCALE, BRUTA_FOOT_Y } from '../data/bruta-animation.js';
+import { getUltimateFrame } from '../data/nucleo-ultimate-animation.js';
 import { NUCLEO_BRUTA } from '../data/nucleo-forms.js';
 import { getMareWalk, getMareAttack, mareSheet } from '../data/mare-animation.js';
 import { getDominioWalk, getDominioAttack } from '../data/dominio-animation.js';
@@ -2183,6 +2184,35 @@ function drawPlayerSprite(player, ix, iy) {
   // As folhas de referência têm poses, não quadros sequenciais. Usamos uma
   // pose provisória com os pulsos animados, sem fingir que são animações finais.
   const effect = getVisualEffect(player);
+  // ULTIMATE DAS FORMAS DO NÚCLEO: execução desenhada, não só o efeito.
+  // Carga (0,42 s) usa os dois primeiros quadros da folha da forma; a soltura
+  // usa o impacto e a recuperação. Sem isso o F era só um anel procedural.
+  const ultimateFrame = getUltimateFrame(state.progress, player);
+  if (ultimateFrame) {
+    const imagem = getSprite(ultimateFrame.sprite);
+    if (imagem) {
+      const w = imagem.width / ultimateFrame.cols, h = imagem.height;
+      const escala = ultimateFrame.scale;
+      // Um flash curto da cor da Ultimate no quadro do impacto dá o "estalo".
+      if (ultimateFrame.phase === 'impact' && (player.ultimate?.flash?.timeLeft ?? 0) > 0) {
+        ctx.save();
+        ctx.globalAlpha = .28;
+        ctx.fillStyle = ultimateFrame.flash ?? '#ffffff';
+        ctx.beginPath();
+        ctx.ellipse(ix, iy - h * escala * .45, w * escala * .55, h * escala * .55, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      }
+      ctx.save();
+      ctx.translate(ix, iy);
+      if (player.facing === 'left') ctx.scale(-1, 1);
+      drawSmooth(imagem, ultimateFrame.col * w, 0, w, h,
+        -w * escala / 2, -ultimateFrame.footY * escala, w * escala, h * escala);
+      ctx.restore();
+      player._topo = Math.round(ultimateFrame.footY * escala);
+      return true;
+    }
+  }
   const suit = player.equippedSuit;
   // A segunda forma do Núcleo (Quebra Sistemas) desenha o próprio peso:
   // poeira no passo, faísca das marretas e vapor na exaustão.

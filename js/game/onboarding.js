@@ -26,6 +26,7 @@ import {
 } from './actors.js';
 import { getArchetypeAbilities } from './abilities.js';
 import { ensureArchetypeProgress } from './progression.js';
+import { startQuest } from './quests.js';
 
 function createEmptyScores() {
   return {
@@ -217,6 +218,8 @@ function finalizeArchetype(actor, archetypeId) {
 
   state.progress.flags ??= {};
   state.progress.flags.nexoEvaluationCompleted = true;
+  // Primeira missão contável: apresenta o motor de objetivos e recompensas.
+  startQuest(state.progress, 'calibracao_de_campo');
 
   saveGame();
 

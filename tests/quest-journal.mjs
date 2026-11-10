@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 const elements = new Map();
-const item = () => ({ textContent: '', focus() {}, addEventListener() {} });
+const item = () => ({ textContent: '', innerHTML: '', focus() {}, addEventListener() {}, querySelectorAll: () => [] });
 const classes = new Set();
 const overlay = {
   innerHTML: '',
@@ -21,4 +21,19 @@ closeQuestJournal(); assert(!isQuestJournalOpen()); assert(!classes.has('visible
 progress.flags.collected_enseada_rastro_pedra = true; progress.flags.collected_enseada_rastro_mata = true;
 openQuestJournal(progress, { id: 'hub_saguao' });
 assert.match(elements.get('#journalSideDescription').textContent, /Concluída/);
-console.log('Diário: consulta de principal e vestígios, sem mutação de progresso OK.');
+
+// Com arquétipo escolhido, o diário também mostra nível e árvore, sem investir sozinho.
+const ranked = {
+  activeQuest: null,
+  flags: {},
+  archetype: 'nucleo_dez_forma',
+  archetypeProgress: { nucleo_dez_forma: { level: 3, xp: 12, points: 2, nodes: {} } },
+};
+const rankedBefore = JSON.stringify(ranked);
+openQuestJournal(ranked, { id: 'hub_saguao' });
+assert.match(elements.get('#journalProgress').innerHTML, /NÍVEL 3/);
+assert.match(elements.get('#journalProgress').innerHTML, /PULSO SINTONIZADO/);
+assert.match(elements.get('#journalProgress').innerHTML, /2 PONTOS/);
+assert.equal(JSON.stringify(ranked), rankedBefore, 'abrir a árvore não gasta pontos');
+closeQuestJournal();
+console.log('Diário: principal, vestígios, nível e árvore sem mutação de progresso OK.');

@@ -20,6 +20,7 @@ import { getVelozAnimation, getVelozPulse } from '../data/veloz-animation.js';
 import { getMareWalk, getMareAttack, mareSheet } from '../data/mare-animation.js';
 import { getDominioWalk, getDominioAttack } from '../data/dominio-animation.js';
 import { getBasicAttackPose } from '../data/basic-attack-poses.js';
+import { listCombatFeedback } from '../game/combat-feedback.js';
 import { state } from '../game/state.js';
 
 const HW = CONFIG.TILE_W / 2;
@@ -1196,6 +1197,30 @@ function drawWorld(map, state) {
   }
 
   while (ei < drawList.length) drawItem(drawList[ei++]);
+
+  drawCombatFeedback();
+}
+
+// Números de dano/crítico/XP sobem e desaparecem acima do alvo.
+function drawCombatFeedback() {
+  const items = listCombatFeedback();
+  if (!items.length) return;
+  ctx.save();
+  ctx.textAlign = 'center';
+  ctx.lineJoin = 'round';
+  for (const item of items) {
+    const t = 1 - Math.max(0, item.life) / item.duration;
+    const x = (item.x - item.y) * HW;
+    const y = (item.x + item.y) * HH - 42 - t * 24;
+    ctx.globalAlpha = Math.min(1, item.life / (item.duration * .45));
+    ctx.font = `bold ${item.crit ? 13 : 10}px monospace`;
+    ctx.lineWidth = 3;
+    ctx.strokeStyle = 'rgba(4,16,12,.85)';
+    ctx.strokeText(item.text, x, y);
+    ctx.fillStyle = item.color;
+    ctx.fillText(item.text, x, y);
+  }
+  ctx.restore();
 }
 
 // Entrada dimensional na ponta oeste do trem; desenhada atrás do material
@@ -1995,7 +2020,9 @@ function drawPlayerSprite(player, ix, iy) {
   if (velozFrame) {
     const image = getSprite(velozFrame.sprite);
     if (image) {
-      const w = image.width / 6, h = image.height / 4, scale = .5;
+      // As folhas verticais têm 4 quadros em uma linha; as laterais, 6 × 4.
+      const cols = velozFrame.cols ?? 6, rows = velozFrame.rows ?? 4;
+      const w = image.width / cols, h = image.height / rows, scale = .5;
       ctx.save(); ctx.translate(ix, iy);
       if (velozFrame.flip) ctx.scale(-1, 1);
       drawSmooth(image, velozFrame.col * w, velozFrame.row * h, w, h,

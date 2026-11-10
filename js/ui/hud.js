@@ -21,6 +21,7 @@ import {
 import { ARCHETYPE_ABILITIES, getAbilityLabel } from '../game/abilities.js';
 import { IMPLEMENTED_ABILITIES } from '../data/archetype-kits.js';
 import { getBioDashProfile } from '../game/ability-context.js';
+import { getArchetypeLevel, getTreePoints, xpToNext } from '../game/rpg.js';
 
 const el = {};
 const cache = {};
@@ -50,6 +51,10 @@ export function initHud() {
     'attackStrain',
     'abilityEnergyText',
     'abilityEnergyFill',
+    'abilityLevel',
+    'abilityTreePoints',
+    'abilityXpFill',
+    'abilityXpText',
     'abilityPrimary',
     'abilityMessage',
     'abilitySecondary',
@@ -112,6 +117,20 @@ function updateAbilityHud(state) {
   const timerText = active ? (runtime?.remaining <= 0 ? 'FORMA VELOZ • RETORNO ASSIM QUE SEGURO' : `FORMA VELOZ • ${Math.ceil(runtime?.remaining ?? 0)}s`) : recharge > 0 ? `NÚCLEO RECARREGANDO • ${Math.ceil(recharge)}s` : '';
   setText('nucleoTimer', timerText);
   el.nucleoTimer?.classList.toggle('visible', Boolean(timerText));
+
+  // Nível, XP e pontos de árvore do arquétipo atual.
+  const level = getArchetypeLevel(state.progress, archetypeId);
+  const kit = state.progress.archetypeProgress?.[archetypeId] ?? {};
+  const xp = Number.isFinite(kit.xp) ? kit.xp : 0;
+  const points = getTreePoints(state.progress, archetypeId);
+  const next = xpToNext(level);
+  setText('abilityLevel', `NÍVEL ${level} • ${BASIC_ATTACKS[archetypeId]?.label ?? ''}`.trim());
+  setText('abilityTreePoints', points > 0 ? `ÁRVORE: ${points} PONTO${points > 1 ? 'S' : ''}` : 'ÁRVORE: J');
+  setText('abilityXpText', Number.isFinite(next) ? `${xp} / ${next} XP` : 'NÍVEL MÁXIMO');
+  if (el.abilityXpFill) {
+    const xpPercent = Number.isFinite(next) ? Math.max(0, Math.min(100, (xp / next) * 100)) : 100;
+    el.abilityXpFill.style.width = `${xpPercent}%`;
+  }
 
   const strain = BASIC_ATTACKS[archetypeId]?.strain;
   const chain = state.player.combat?.style === archetypeId ? state.player.combat.chain ?? 0 : 0;

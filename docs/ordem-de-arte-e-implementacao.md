@@ -7,6 +7,28 @@ Gerar e implementar **exatamente duas folhas/imagens por atualização**, seguin
 3. Estação Bio / Bio-Forja (rodadas 0.3.5 e 0.3.6)
 4. Folha de sprites do Bolt (prévia opt-in, sem concessão automática)
 
+## Rodada 0.6.6 — o Motor Bio-Forja fechado (soco nas quatro direções e Q)
+
+Duas folgas que sobravam no exo, com teste próprio em `tests/bio-acoes.mjs`:
+
+1. **Soco de costas e de lado.** A folha frontal (9 quadros de 355 px) era a
+   única arte de ataque: de costas e de lado o dano saía e o corpo continuava
+   na caminhada. Agora existem `player-bio-ataque-costas.png` (vista de trás,
+   nunca espelhada) e `player-bio-ataque-lateral.png` (perfil, espelhado para
+   a esquerda), ambas de 4 quadros.
+2. **Propulsor do Q.** O avanço usava a célula de caminhada com alpha .8, o
+   que lia como deslize. `player-bio-propulsor.png` traz as quatro fases
+   reais do impulso: agachar → acender → avanço → pouso.
+
+`js/data/bio-action-animation.js` prende as duas coisas ao estado real
+(`player.combat` e `ability.dash`), e o renderer desenha essas ações ANTES da
+caminhada. O trecho antigo continua no código como fallback: sem folha
+carregada, o jogo não quebra nem pisca.
+
+O recorte de arte virou módulo (`tools/bio_arte.py`) usado pelos dois
+preparadores (`preparar-bio-ultimate.py` e `preparar-bio-acoes.py`): magenta →
+alpha, recorte por conteúdo, células de 320 px com pés em 276.
+
 ## Rodada 0.6.5 — Ultimate do Motor Bio-Forja (as cinco execuções)
 
 O Bio é o único módulo em que o `F` é da FERRAMENTA: a nível 1 a ferramenta

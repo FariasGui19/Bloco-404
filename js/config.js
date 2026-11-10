@@ -1,7 +1,7 @@
 // js/config.js
 export const CONFIG = {
   GAME_NAME: 'BLOCO 404',
-  VERSION: '0.6.5-bio-forja-ultimate',
+  VERSION: '0.6.6-bio-forja-fechado',
 
   TILE_W: 64,
   TILE_H: 32,

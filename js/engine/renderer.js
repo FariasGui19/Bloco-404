@@ -21,6 +21,7 @@ import { getVelozAnimation, getVelozPulse } from '../data/veloz-animation.js';
 import { getBrutaAnimation, BRUTA_SCALE, BRUTA_FOOT_Y } from '../data/bruta-animation.js';
 import { getUltimateFrame } from '../data/nucleo-ultimate-animation.js';
 import { getBioUltimateFrame } from '../data/bio-ultimate-animation.js';
+import { getBioAttackFrame, getBioPropulsorFrame } from '../data/bio-action-animation.js';
 import { getSelectedToolId } from '../game/tools.js';
 import { NUCLEO_BRUTA } from '../data/nucleo-forms.js';
 import { getFissures } from '../game/scars.js';
@@ -2405,16 +2406,22 @@ function drawPlayerSprite(player, ix, iy) {
     ctx.fill();
     ctx.restore();
   }
-  // A folha nova é frontal: não a espelhamos nem fingimos vistas laterais/traseiras.
-  const attack = player.combat;
-  if (suit === 'bio_forja' && player.facing === 'down' && attack?.style === 'motor_bio_forja' && attack.timeLeft > 0 && !effect && !(player.ability?.scanning > 0)) {
-    const sheet = getSprite('player_bio_ataque_frontal');
+  // ATAQUE DO EXO — quatro direções. Antes só existia a folha frontal: de
+  // costas e de lado o soco acontecia sem arte. A lateral é espelhada para a
+  // esquerda; a de costas é vista de trás, nunca espelhada.
+  const attackFrame = getBioAttackFrame(state.progress, player);
+  if (attackFrame && !effect) {
+    const sheet = getSprite(attackFrame.sprite);
     if (sheet) {
-      const phase = Math.max(0, Math.min(.9999, 1 - attack.timeLeft / attack.duration));
-      const col = Math.floor(phase * 9), x0 = Math.round(col * sheet.width / 9), x1 = Math.round((col + 1) * sheet.width / 9);
-      const scale = .19, w = (x1 - x0) * scale, h = sheet.height * scale;
-      drawSmooth(sheet, x0, 0, x1 - x0, sheet.height, ix - w / 2, iy - h * .92, w, h);
-      player._topo = 125;
+      const escala = attackFrame.scale;
+      const w = attackFrame.cell * escala, h = attackFrame.height * escala;
+      ctx.save();
+      ctx.translate(ix, iy);
+      if (attackFrame.flip) ctx.scale(-1, 1);
+      drawSmooth(sheet, attackFrame.col * attackFrame.cell, 0, attackFrame.cell, attackFrame.height,
+        -w / 2, -attackFrame.footY * escala, w, h);
+      ctx.restore();
+      player._topo = Math.round(attackFrame.footY * escala);
       return true;
     }
   }
@@ -2607,6 +2614,26 @@ function drawPlayerSprite(player, ix, iy) {
   // ===============================================
   // 2. ANIMAÇÃO DE DASH (Q)
   // ===============================================
+  // PROPULSOR DE IMPULSO (Q): folha própria de avanço. Antes o exo deslizava
+  // na célula de caminhada, com alpha .8, e o rastro era a única leitura.
+  const propulsor = getBioPropulsorFrame(state.progress, player);
+  if (propulsor) {
+    const sheet = getSprite(propulsor.sprite);
+    if (sheet) {
+      const escala = propulsor.scale;
+      const w = propulsor.cell * escala, h = propulsor.height * escala;
+      ctx.save();
+      ctx.translate(ix, iy);
+      if (player.facing === 'left') ctx.scale(-1, 1);
+      // Quadros de arranque ainda no chão; o pico do avanço sai do chão.
+      const lift = propulsor.col === 2 ? 4 : propulsor.col === 1 ? 1 : 0;
+      drawSmooth(sheet, propulsor.col * propulsor.cell, 0, propulsor.cell, propulsor.height,
+        -w / 2, -propulsor.footY * escala - lift, w, h);
+      ctx.restore();
+      player._topo = Math.round(propulsor.footY * escala + lift);
+      return true;
+    }
+  }
   if (player.ability?.active === 'bio_dash') {
     const config = CONFIG.PLAYER_BIO_FORJA_SPRITE;
     const image = getSprite(config.ID);

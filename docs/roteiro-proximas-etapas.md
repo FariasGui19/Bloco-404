@@ -11,6 +11,30 @@
 - Núcleo 10X: Ultimate só com a forma ativa; formas futuras listadas como projeto.
 - Maré Astral: rotas de maré no Códex (leitura de mapa).
 
+## Concluído na 0.6.6 — Motor Bio-Forja fechado
+
+Faltavam duas ações para o exo ficar completo (teste `tests/bio-acoes.mjs`):
+
+1. **Soco nas quatro direções.** Antes só a vista frontal tinha arte; de
+   costas e de lado o golpe era invisível. `player-bio-ataque-costas.png` e
+   `player-bio-ataque-lateral.png` (4 quadros cada) fecham isso, com a lateral
+   esquerda vindo de espelho e a de costas desenhada por trás (nunca espelhada,
+   porque não é um perfil).
+2. **Propulsor do Q.** O avanço deixou de reaproveitar a célula de caminhada:
+   `player-bio-propulsor.png` tem agachar, acender, avanço e pouso, presos ao
+   tempo real do dash.
+
+`js/data/bio-action-animation.js` decide quadro e fase; o renderer desenha as
+ações antes da caminhada e mantém o caminho antigo como fallback.
+
+Versão `0.6.6-bio-forja-fechado`. Com isso o ciclo do Bio-Forja está redondo:
+caminhada (4 direções), soco (4 direções), Q com arte, R de varredura, F com
+uma execução por ferramenta, exo respirando e Códex mostrando a execução.
+
+**Pendências que não são desta rodada:** camada de áudio (pistão e vapor) —
+o jogo ainda não tem áudio — e a leitura da cor da ferramenta no HUD durante o
+bônus do F.
+
 ## Concluído na 0.6.5 — o Motor Bio-Forja ganhou corpo
 
 Até aqui o Bio-Forja tinha as quatro ferramentas definidas em dados

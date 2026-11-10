@@ -160,6 +160,11 @@ await loadSprites([
   { id: 'hub_carrinho', src: 'assets/sprites/saguao/carrinho.png' },
   { id: 'hub_bebedouro', src: 'assets/sprites/saguao/bebedouro.png' },
   { id: 'player_bio_ataque_frontal', src: 'assets/sprites/player/player-bio-ataque-frontal.png' },
+  // Ataque nas outras direções e o avanço do Q (tools/preparar-bio-acoes.py):
+  // o exo tinha arte só de frente e deslizava andando durante o propulsor.
+  { id: 'player_bio_ataque_costas', src: 'assets/sprites/player/player-bio-ataque-costas.png' },
+  { id: 'player_bio_ataque_lateral', src: 'assets/sprites/player/player-bio-ataque-lateral.png' },
+  { id: 'player_bio_propulsor', src: 'assets/sprites/player/player-bio-propulsor.png' },
   // Execução da Ultimate do MOTOR BIO-FORJA (F): uma folha por ferramenta
   // (tools/preparar-bio-ultimate.py). A nível 1 a ferramenta instala a
   // própria Ultimate; a base do módulo é a cúpula.

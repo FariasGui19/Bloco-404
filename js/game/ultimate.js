@@ -24,6 +24,8 @@ import { recordMastery } from './mastery.js';
 import { getDerivedStats } from './rpg.js';
 import { isNucleoFormId } from '../data/nucleo-forms.js';
 import { pushCombatText } from './combat-feedback.js';
+import { state } from './state.js';
+import { addTectonicFissure } from './scars.js';
 
 const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
 
@@ -217,6 +219,24 @@ function resolveUltimate({ player, progress, targets = [], definition, kind, che
       player, progress, targets,
       radius: definition.radius, damage: definition.damage, color: definition.color, rng,
     });
+  }
+
+  // A Ultimate da Quebra não é só dano: ela RACHA O CHÃO. A fenda fica no
+  // mapa (e no save) como decalque permanente — antes o golpe abria e fechava.
+  if (kind === 'burst' && definition.kind === 'burst' && definition.blast === 'tectonica') {
+    const fissura = addTectonicFissure({
+      progress,
+      mapId: state.world?.currentMapId ?? 'hub_saguao',
+      x: player.x,
+      y: player.y,
+      facing: player.facing ?? 'down',
+      radius: definition.radius,
+    });
+    if (fissura) {
+      runtime.effect.fissureId = fissura.id;
+      // O chão rachado vale também para a leitura do jogador: um aviso curto.
+      pushCombatText(player.x, player.y - .4, 'CHÃO RACHADO', { color: '#ff9b58', duration: 1.4 });
+    }
   }
 
   const rankUps = recordMastery(progress, 'ability_use', 2);

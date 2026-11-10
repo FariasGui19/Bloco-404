@@ -21,6 +21,7 @@ import { getVelozAnimation, getVelozPulse } from '../data/veloz-animation.js';
 import { getBrutaAnimation, BRUTA_SCALE, BRUTA_FOOT_Y } from '../data/bruta-animation.js';
 import { getUltimateFrame } from '../data/nucleo-ultimate-animation.js';
 import { NUCLEO_BRUTA } from '../data/nucleo-forms.js';
+import { getFissures } from '../game/scars.js';
 import { getMareWalk, getMareAttack, mareSheet } from '../data/mare-animation.js';
 import { getDominioWalk, getDominioAttack } from '../data/dominio-animation.js';
 import { getBasicAttackPose } from '../data/basic-attack-poses.js';
@@ -120,6 +121,8 @@ export function render(map, state) {
   }
 
   drawAmbientBack(ctx, state, HW, HH);
+  // Chão antes de tudo: as fendas ficam embaixo de objetos e personagens.
+  drawWorldScars(state);
   drawWorld(map, state);
   drawBasicAttack(state.player);
   drawAbilityEffects(state);
@@ -1237,6 +1240,98 @@ function drawFloorSprite(rc, tx, ty) {
 const depthOf = (item) => item.x + item.y + (item.depthOffset ?? 0);
 
 const backList = [];
+
+// =====================================================================
+// CICATRIZES DO CHÃO — a fenda que a Quebra Sistemas deixa
+// =====================================================================
+// Decalque isométrico, não objeto de colisão: o jogador atravessa, mas o mapa
+// lembra do golpe. A semente estável de cada fenda evita o desenho "ferver".
+function drawWorldScars(state) {
+  const mapa = state.world?.currentMapId;
+  const fissuras = getFissures(state.progress, mapa);
+  if (!fissuras.length) return;
+  ctx.save();
+  // O laço principal já aplicou zoom, câmera e tremor no contexto: aqui só
+  // projetamos as coordenadas do mundo, igual ao resto do chão. (Uma
+  // transformação extra aqui faria a fenda flutuar fora do mapa.)
+  for (const f of fissuras) {
+    const sx = (f.x - f.y) * HW;
+    const sy = (f.x + f.y) * HH;
+    // Comprimento do traço em pixels de mundo; a direção vem do dado do golpe
+    // (facing é uma direção ISO: [1,1] desce, [-1,-1] sobe...). A escala é
+    // calibrada pelo tile (64 px): a fenda cobre de 2 a 4 tiles, é o que dá
+    // para ler como chão rachado sem virar um buraco do tamanho do mapa.
+    const escala = 62;
+    const dx = (f.dx ?? 1) * escala, dy = (f.dy ?? 1) * escala * .5;
+    const comprimento = (f.len ?? 3) * .5;
+    const semente = f.seed ?? 1;
+    const tremor = (i) => {
+      // Ruído determinístico, sem aleatório por quadro.
+      const n = Math.sin(semente * .017 + i * 2.7) * 43758.5453;
+      return (n - Math.floor(n) - .5) * 2;
+    };
+    // 1) Sombra funda sob a fenda: dá a sensação de abismo.
+    ctx.globalAlpha = .55;
+    ctx.strokeStyle = '#05090c';
+    ctx.lineWidth = 7;
+    ctx.beginPath();
+    for (let i = 0; i <= 10; i++) {
+      const k = i / 10;
+      const px = sx + dx * k * comprimento + tremor(i) * 2;
+      const py = sy + dy * k * comprimento + tremor(i + 5) * 1.2;
+      if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+    }
+    ctx.stroke();
+    // 2) Magma esfriando: halo laranja largo + miolo quente quase branco.
+    ctx.globalAlpha = .35;
+    ctx.strokeStyle = '#ff7a3c';
+    ctx.lineWidth = 9;
+    ctx.beginPath();
+    for (let i = 0; i <= 10; i++) {
+      const k = i / 10;
+      const px = sx + dx * k * comprimento + tremor(i) * 1.6;
+      const py = sy + dy * k * comprimento + tremor(i + 5) * 1;
+      if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+    }
+    ctx.stroke();
+    ctx.globalAlpha = .95;
+    ctx.strokeStyle = '#ffd08a';
+    ctx.lineWidth = 2.4;
+    ctx.beginPath();
+    for (let i = 0; i <= 10; i++) {
+      const k = i / 10;
+      const px = sx + dx * k * comprimento + tremor(i) * 1.4;
+      const py = sy + dy * k * comprimento + tremor(i + 5) * .8;
+      if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+    }
+    ctx.stroke();
+    // 3) Placas levantadas nas margens (retângulos duros, como na Ultimate).
+    ctx.globalAlpha = .8;
+    ctx.fillStyle = '#2a3138';
+    // Perpendicular normalizada no espaço da tela: as placas ficam ENCOSTADAS
+    // na fenda (antes flutuavam longe dela, parecendo lixo no chão).
+    const perpLen = Math.hypot(dy, dx) || 1;
+    const perpX = -dy / perpLen, perpY = dx / perpLen;
+    for (let placa = 0; placa < 4; placa++) {
+      const k = .18 + placa * .2;
+      const lado = placa % 2 === 0 ? -1 : 1;
+      const px = sx + dx * k * comprimento + perpX * lado * 9 + tremor(placa) * 1.5;
+      const py = sy + dy * k * comprimento + perpY * lado * 9 + tremor(placa + 3) * 1.5;
+      ctx.save();
+      ctx.translate(px, py);
+      ctx.rotate((tremor(placa) * .5));
+      ctx.fillRect(-7, -3, 14, 6);
+      // Brilho na quina da placa: lembra que o chão acabou de ser partido.
+      ctx.fillStyle = '#ff7a3c';
+      ctx.globalAlpha = .5;
+      ctx.fillRect(-7, -3, 14, 1.5);
+      ctx.fillStyle = '#2a3138';
+      ctx.globalAlpha = .8;
+      ctx.restore();
+    }
+  }
+  ctx.restore();
+}
 
 function drawWorld(map, state) {
   drawList.length = 0;

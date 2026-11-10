@@ -11,6 +11,29 @@
 - Núcleo 10X: Ultimate só com a forma ativa; formas futuras listadas como projeto.
 - Maré Astral: rotas de maré no Códex (leitura de mapa).
 
+## Concluído na 0.6.4 — o Núcleo 10X fechado
+
+Três pendências antigas do Núcleo, todas em jogo:
+
+1. **Ataque de costas da Quebra.** Folha própria de quatro fases
+   (`player-10x-bruta-ataque-costas.png`): marretas baixas → erguidas pelas
+   costas → descida com anel de poeira → recuperação. Antes, socar de costas
+   usava a pose parada e só a onda de choque contava o golpe.
+2. **Fenda permanente no mapa.** A Ultimate `DEVORADOR DE TECTÔNICA` agora
+   registra a cicatriz em `progress.scars.fissuras` (`js/game/scars.js`), o que
+   entra no save de graça (o save clona o progresso). O renderer desenha a
+   fenda como decalque de chão — mesma projeção isométrica e mesmo zoom da
+   câmera — antes do mundo, então ela fica embaixo de tudo. Regras: 24 fendas
+   por save, mesma cova é REFORÇADA (alarga) em vez de duplicar, e nada de
+   colisão: é chão, não parede.
+3. **Leitura da forma na interface.** O relógio do `T` ganhou barra
+   proporcional à duração da forma (`#nucleoBar`), com faixas visíveis na
+   Quebra para lembrar o custo de 3 s por marretada; o Códex mostra a mesma
+   informação com nome, segundos e "quantas marretadas ainda cabem".
+
+Versão `0.6.4-nucleo-fechado`. Testes novos: `tests/cicatrizes.mjs` e
+`tests/formas-ui.mjs`.
+
 ## Concluído na 0.6.3 — Ultimate das duas formas e roda do T consertada
 
 Dois pedidos do playtest, fechados com teste próprio em

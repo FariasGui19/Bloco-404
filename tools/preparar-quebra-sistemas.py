@@ -159,6 +159,9 @@ SHEETS = [
     # Ataque lateral (5 fases: preparo, subida, impacto, recuo, retorno):
     # a folha final usa quatro, na ordem em que o golpe acontece.
     {'file': 'quebra-ataque-faixa.png', 'prefix': 'player-10x-bruta-ataque-lateral', 'rows': [0], 'cols': 5, 'cells': [0, 1, 2, 3]},
+    # Ataque de COSTAS: a marreta sobe pelas costas e desce à frente do corpo.
+    # A segunda linha (giro de perfil) é catálogo do gerador, não execução.
+    {'file': 'quebra-ataque-costas-v2.png', 'prefix': 'player-10x-bruta-ataque-costas', 'rows': [0], 'cols': 4, 'grid': True, 'inset': 6},
     # Ataque frontal, duas marretas (4 fases).
     {'file': 'quebra-ataque-frente-faixa.png', 'prefix': 'player-10x-bruta-ataque-frente', 'rows': [0], 'cols': 4},
     # Transformação: o corpo se monta em placas de luz âmbar. Usa só a

@@ -30,7 +30,10 @@
 
       <!-- HUD DE VITAIS E HABILIDADES -->
       <div id="abilityHud" class="hud-card">
-        <div id="nucleoTimer" aria-live="polite"></div>
+        <div id="nucleoClock" class="nucleo-clock">
+          <div id="nucleoTimer" aria-live="polite"></div>
+          <i id="nucleoBar" class="nucleo-bar" role="progressbar" aria-label="Barra da forma do Núcleo" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><b></b></i>
+        </div>
 
         <header class="ability-head">
           <strong id="abilityLevel">NÍVEL 1</strong>

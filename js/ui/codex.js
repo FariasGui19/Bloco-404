@@ -356,6 +356,32 @@ function renderInventory(progress) {
   </section>`;
 }
 
+// Linha da forma do Núcleo 10X: mesma informação da HUD, mas com a barra
+// desenhada — o jogador vê quanto ainda cabe de forma e quantos golpes da
+// Quebra ainda dá para pagar (3 s cada).
+function formRow(progress, player, stats) {
+  if (progress?.archetype !== 'nucleo_dez_forma') return '';
+  const runtime = player?.nucleoRuntime;
+  const ativa = NUCLEO_FORMS[player?.nucleoForm] ?? null;
+  const base = ativa ?? NUCLEO_FORMS[stats?.formId] ?? null;
+  if (!base) return '';
+  const duracao = base.form?.duration ?? 20;
+  const restante = ativa ? Math.max(0, runtime?.remaining ?? 0) : 0;
+  const fracao = ativa ? Math.max(0, Math.min(1, restante / duracao)) : 0;
+  const custo = ativa?.form?.hitCost ?? 0;
+  // Quantos golpes carregados ainda cabem na barra.
+  const golpes = custo > 0 ? Math.floor(restante / custo) : null;
+  const detalhe = ativa
+    ? `${restante.toFixed(1)}s de ${duracao}s${golpes !== null ? ` · ${golpes} marretada(s) ainda cabem` : ''}`
+    : `aguardando o T (${base.form?.recharge ?? 8}s de recarga)`;
+  return `<li class="codex-form-row">
+    <span>FORMA</span>
+    <strong style="color:${base.color}">${escapeHtml(base.name)}</strong>
+    <i class="codex-form-bar" aria-hidden="true"><b style="width:${Math.round(fracao * 100)}%;background:${base.color}"></b></i>
+    <small>${escapeHtml(detalhe)}</small>
+  </li>`;
+}
+
 function statRow(label, value, hint = '') {
   return `<li><span>${escapeHtml(label)}</span><strong>${escapeHtml(value)}</strong>${hint ? `<small>${escapeHtml(hint)}</small>` : ''}</li>`;
 }
@@ -404,6 +430,7 @@ function renderAttributes(progress, player) {
             : `${formSpeed}%`, stats.formId
             ? `${stats.range.toFixed(1)} tiles · preparo ${stats.windup.toFixed(2)}s`
             : `+${stats.formDuration.toFixed(1)}s de duração`)}
+          ${formRow(progress, player, stats)}
         </ul>
         <p class="codex-note">Morrer devolve você ao ponto seguro do mapa com parte da vida. Nenhum XP, item ou missão é perdido.</p>
       </div>
@@ -529,3 +556,7 @@ export function handleCodexInput(pressed) {
 }
 
 export const CODEX_TABS = TABS;
+
+// Exposto para teste: a linha da forma do Núcleo (barra, tempo restante e
+// quantas marretadas ainda cabem) não pode voltar a depender de sorte.
+export const __codexInternals = Object.freeze({ formRow, renderAttributes });

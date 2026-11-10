@@ -1,7 +1,7 @@
 // js/config.js
 export const CONFIG = {
   GAME_NAME: 'BLOCO 404',
-  VERSION: '0.6.6-bio-forja-fechado',
+  VERSION: '0.7.0-mare-astral',
 
   TILE_W: 64,
   TILE_H: 32,

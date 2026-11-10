@@ -14,6 +14,7 @@ import { getArchetypeLevel, getArchetypeXp, getDerivedStats, xpToNext } from '..
 import { getMasteryState, getMasterySummary } from '../game/mastery.js';
 import { getUltimateStatus } from '../game/ultimate.js';
 import { getBioUltimatePosePath } from '../data/bio-ultimate-animation.js';
+import { getMareUltimatePosePath } from '../data/mare-ultimate-animation.js';
 import { listTools, selectTool } from '../game/tools.js';
 import { describeNextUnlock, getUnlockState, getUnlockStepFor } from '../game/unlocks.js';
 import { getPath, LEVEL_TITLES, PATH_STATES } from '../data/archetype-progression.js';
@@ -144,6 +145,19 @@ function masteryPips(rank, maxRank) {
   return `<span class="codex-pips" aria-hidden="true">${Array.from({ length: maxRank }, (_, index) => `<i class="${index < rank ? 'filled' : ''}"></i>`).join('')}</span>`;
 }
 
+// De onde sai a arte de execução de uma escolha: cada arquétipo que já tem
+// folhas de Ultimate própria aponta seu resolvedor. Quem ainda não tem cai em
+// null e o cartão fica só com o texto (sem ícone inventado).
+const POSE_RESOLVERS = {
+  motor_bio_forja: getBioUltimatePosePath,
+  mare_astral: getMareUltimatePosePath,
+};
+
+function poseDaFerramenta(arquetipo, signature) {
+  const resolver = POSE_RESOLVERS[arquetipo];
+  return resolver && signature ? resolver(signature) : null;
+}
+
 // Ultimate: nome, custo e estado atual, com o sigilo do arquétipo.
 function ultimateCard(progress) {
   const status = getUltimateStatus(context.player, progress);
@@ -182,8 +196,10 @@ function toolPicker(progress) {
     : tools.some(tool => tool.selected) ? 'TROQUE A SOBRECARGA' : `ESCOLHA UMA ${escapeHtml(label)}`;
   const cards = tools.map(tool => {
     // A execução da Ultimate é arte de verdade: o cartão mostra a primeira pose
-    // da folha da ferramenta (preparo), não um ícone genérico.
-    const pose = getBioUltimatePosePath(tool.ultimate?.signature);
+    // da folha da ferramenta/corrente (preparo), não um ícone genérico.
+    // A busca é por arquétipo — a corrente `escudo_liquido` desenha o próprio
+    // gesto, não o do Bio.
+    const pose = poseDaFerramenta(progress.archetype, tool.ultimate?.signature);
     // `src` é a folha inteira; o CSS recorta o quadro do preparo. Assim a
     // mesma arte serve de miniatura e de referência do golpe, sem gerar PNG
     // só para o menu.

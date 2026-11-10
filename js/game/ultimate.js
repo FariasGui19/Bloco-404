@@ -151,6 +151,10 @@ function startUltimateDash(player, definition) {
     timeLeft: duration,
     speed: (definition.range ?? 4) / duration,
     mode: 'ultimate',
+    // De qual Ultimate é o avanço. A CORRENTE ABISSAL do Maré é um dash: a
+    // arte de execução não pode ser descartada só porque o corpo está se
+    // deslocando — é justamente o gesto que a folha desenha.
+    source: definition.id,
     phaseGateId: null,
   };
 }

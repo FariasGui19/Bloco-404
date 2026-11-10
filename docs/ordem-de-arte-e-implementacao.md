@@ -7,6 +7,36 @@ Gerar e implementar **exatamente duas folhas/imagens por atualização**, seguin
 3. Estação Bio / Bio-Forja (rodadas 0.3.5 e 0.3.6)
 4. Folha de sprites do Bolt (prévia opt-in, sem concessão automática)
 
+## Rodada 0.7.0 — Ultimate do Maré Astral (as cinco execuções)
+
+Mesmo contrato do Bio-Forja: no Maré o `F` de nível 1 é da CORRENTE
+instalada, então cada corrente tem a própria execução.
+
+| Assinatura | Corrente | Ultimate | Folha (1280×320) |
+| --- | --- | --- | --- |
+| `cupula_agua` | Escudo Líquido | CÚPULA DE PRESSÃO | `player-mare-ult-cupula.png` |
+| `vortice` | Passo de Corrente | CORRENTE ABISSAL | `player-mare-ult-vortice.png` |
+| `chicote` | Chicote de Maré | ONDA CORTANTE | `player-mare-ult-chicote.png` |
+| `sonar` | Senso de Corrente | CHAMADO DA MARÉ | `player-mare-ult-sonar.png` |
+| `estuario` | — (base do módulo) | SINFONIA DO ESTUÁRIO | `player-mare-ult-estuario.png` |
+
+Ordem dos quadros: preparo → arma → impacto → recuperação. O preparador
+(`tools/preparar-mare-ultimate.py`) reaproveita o recorte do Bio
+(`tools/bio_arte.py`) e acrescenta duas coisas que só o Maré precisava:
+
+* **`body_height`** — a altura de referência é o CORPO, não a caixa da figura
+  com efeito. A caminhada aprovada desenha 142 px em jogo; sem fixar isso o
+  personagem encolhia ~13 % durante o `F` e quebrava a comparação com Bio e
+  Núcleo. `CORPO = 249` px de arte × .57 = 142 px.
+* **`disc_mask`** — o quadro de impacto do vórtice vem com o túnel preenchendo
+  a célula inteira. Em jogo isso viraria um retângulo de água; o disco dissolve
+  a borda e o desenho lê como redemoinho em volta do corpo.
+
+Também entrou o **PASSO DE CORRENTE de costas**
+(`player-mare-propulsor-costas.png`): a folha lateral aprovada virava o corpo
+de perfil no meio do avanço para cima. As outras direções continuam com a
+folha lateral, que já é a leitura certa.
+
 ## Rodada 0.6.6 — o Motor Bio-Forja fechado (soco nas quatro direções e Q)
 
 Duas folgas que sobravam no exo, com teste próprio em `tests/bio-acoes.mjs`:

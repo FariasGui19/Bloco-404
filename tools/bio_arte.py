@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Ferramentas de recorte para a arte do MOTOR BIO-FORJA.
+"""Ferramentas de recorte para a arte dos arquétipos (Bio-Forja e Maré).
 
 O gerador devolve RGB com fundo magenta chapado, os quadros em faixas e uma
 linha de grade em volta de cada coluna. Todo preparador do Bio passa por aqui:
@@ -10,8 +10,9 @@ linha de grade em volta de cada coluna. Todo preparador do Bio passa por aqui:
   * `tight`         — recorta o miolo da figura dentro de uma faixa;
   * `compose`       — células iguais com pés na base e nada invadindo vizinho.
 
-É importado por `preparar-bio-ultimate.py` (as cinco execuções do F) e por
-`preparar-bio-acoes.py` (ataque nas quatro direções e o propulsor do Q).
+É importado por `preparar-bio-ultimate.py`, `preparar-bio-acoes.py` e
+`preparar-mare-ultimate.py`. Todos usam as mesmas regras de célula (320 px,
+pés em 276) para os corpos ficarem do mesmo tamanho em jogo.
 """
 from pathlib import Path
 
@@ -19,7 +20,11 @@ import numpy as np
 from PIL import Image
 
 ROOT = Path(__file__).resolve().parent.parent
-SOURCE = ROOT / 'assets/source-art/bio'
+# Cada arquétipo guarda as fontes na própria pasta (bio/ e mare/); o destino é
+# sempre assets/sprites/player porque é de lá que o jogo carrega.
+SOURCE_BIO = ROOT / 'assets/source-art/bio'
+SOURCE_MARE = ROOT / 'assets/source-art/mare'
+SOURCE = SOURCE_BIO
 OUT = ROOT / 'assets/sprites/player'
 
 # Célula padrão da arte do Bio: quadrada, 320 px, pés apoiados em 276 — sobra
@@ -93,10 +98,50 @@ def tight(rgba, box, alpha_min=8):
     return patch[ys.min():ys.max() + 1, xs.min():xs.max() + 1]
 
 
-def compose(frames, out_name, cell=CELL, baseline=BASELINE, target_height=230, limite=None):
-    """Células iguais: altura normalizada, pés na base, corpo centralizado."""
+def disc_mask(frame, feather=.06):
+    """Fecha um quadro de efeito em disco, com borda suave.
+
+    Alguns geradores desenham o efeito preenchendo a célula (o túnel do vórtice
+    do Maré, por exemplo). Em jogo isso viraria um retângulo de água. O disco
+    inscreve o efeito na elipse da célula e dissolve a borda, então o desenho
+    lê como redemoinho em volta do corpo.
+    """
+    h, w = frame.shape[:2]
+    ys, xs = np.mgrid[0:h, 0:w]
+    # Elipse inscrita, levemente maior que a altura (o efeito precisa cobrir o corpo).
+    nx = (xs - w / 2) / (w / 2)
+    ny = (ys - h / 2) / (h / 2)
+    dist = np.sqrt(nx * nx + ny * ny)
+    borda = 1 - feather
+    alpha = np.clip((1 - dist) / feather, 0, 1)
+    out = frame.copy()
+    out[:, :, 3] = (frame[:, :, 3].astype(np.float32) * alpha).round().astype(np.uint8)
+    return out
+
+
+def compose(frames, out_name, cell=CELL, baseline=BASELINE, target_height=230, limite=None, out_dir=None, body_height=None):
+    """Células iguais: altura normalizada, pés na base, corpo centralizado.
+
+    A altura de referência é a do quadro MENOS decorado (o corpo), não a média:
+    quando um quadro tem cachoeira ou túnel de efeito em volta, a média inflava
+    a arte e o personagem encolhia em relação aos outros arquétipos.
+
+    `body_height` fixa a altura do CORPO em pixels (a caixa da figura sem o
+    efeito). O Maré já tem caminhada medida em 142 px em jogo; a Ultimate tem
+    que devolver o mesmo corpo, então a escala sai de `body_height / altura`.
+    """
     heights = [f.shape[0] for f in frames]
-    scale = target_height / float(np.median(heights))
+    altura_corpo = float(min(heights))
+    if body_height:
+        # O quadro de referência é o mais "limpo" (menor bbox): a altura dele é
+        # praticamente só corpo, então a escala vem daí.
+        scale = body_height / altura_corpo
+    if not body_height:
+        scale = target_height / altura_corpo
+    # Efeitos muito altos não podem estourar a célula: o limite manda mais que
+    # a altura do corpo, mas avisamos quando isso acontece.
+    if max(heights) * scale > cell - 8:
+        scale = (cell - 8) / float(max(heights))
     sheet = Image.new('RGBA', (cell * len(frames), cell), (0, 0, 0, 0))
     limite = limite or cell - 16
     for col, frame in enumerate(frames):
@@ -108,16 +153,21 @@ def compose(frames, out_name, cell=CELL, baseline=BASELINE, target_height=230, l
         nw, nh = max(1, round(w * escala_local)), max(1, round(h * escala_local))
         art = Image.fromarray(frame).resize((nw, nh), Image.LANCZOS)
         sheet.alpha_composite(art, (col * cell + cell // 2 - nw // 2, baseline - nh))
-    target = OUT / f'{out_name}.png'
+    target = (out_dir or OUT) / f'{out_name}.png'
     sheet.save(target, optimize=True)
     print(f'{target.relative_to(ROOT)} → {sheet.width}×{sheet.height}, '
           f'escala {scale:.3f}, {len(frames)} quadros')
     return target
 
 
-def load_frames(file_name, count, alpha_min=8):
-    """Abre uma folha-fonte e devolve os `count` quadros recortados."""
-    rgba = remove_magenta(np.asarray(Image.open(SOURCE / file_name).convert('RGB')))
+def load_frames(file_name, count, alpha_min=8, source=None):
+    """Abre uma folha-fonte e devolve os `count` quadros recortados.
+
+    `source` permite apontar outra pasta de fontes (Maré usa `mare/`), sem
+    duplicar o recorte: magenta, faixas de grade e células são os mesmos.
+    """
+    pasta = source or SOURCE
+    rgba = remove_magenta(np.asarray(Image.open(pasta / file_name).convert('RGB')))
     mask = rgba[:, :, 3] > alpha_min
     rows = content_bands(mask, 1)
     if not rows:

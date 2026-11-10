@@ -63,10 +63,19 @@ export function render(map, state) {
   ctx.fillRect(0, 0, view.w, view.h);
 
   const z = camera.zoom * dpr;
+  // Tremor da Ultimate: desloca a câmera e volta sozinho.
+  const shake = state.player?.ultimate?.shake;
+  let shakeX = 0, shakeY = 0;
+  if (shake && shake.timeLeft > 0) {
+    const k = shake.timeLeft / (shake.duration || .34);
+    const power = (shake.power ?? 8) * k;
+    shakeX = Math.sin(shake.timeLeft * 143) * power;
+    shakeY = Math.cos(shake.timeLeft * 117) * power * .6;
+  }
   ctx.setTransform(
     z, 0, 0, z,
-    (view.w / 2 - camera.x * camera.zoom) * dpr,
-    (view.h / 2 - camera.y * camera.zoom) * dpr
+    (view.w / 2 - camera.x * camera.zoom + shakeX) * dpr,
+    (view.h / 2 - camera.y * camera.zoom + shakeY) * dpr
   );
 
   updateVisibleRange(map);
@@ -110,6 +119,7 @@ export function render(map, state) {
   drawWorld(map, state);
   drawBasicAttack(state.player);
   drawAbilityEffects(state);
+  drawUltimateCharge(state);
   drawUltimateEffect(state);
   drawAmbientFront(ctx, map, HW, HH);
   drawTarget(state.player);
@@ -117,6 +127,15 @@ export function render(map, state) {
   if (isDebugEnabled()) drawDebugWorld(ctx, map, state, CONFIG.TILE_W, CONFIG.TILE_H);
 
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  // Clarão curto no instante da soltura (não cobre a HUD, que é DOM).
+  const flash = state.player?.ultimate?.flash;
+  if (flash && flash.timeLeft > 0) {
+    ctx.save();
+    ctx.globalAlpha = (flash.timeLeft / (flash.duration || .26)) * .34;
+    ctx.fillStyle = flash.color ?? '#ffffff';
+    ctx.fillRect(0, 0, view.w, view.h);
+    ctx.restore();
+  }
   drawLabels(state);
   drawBubbles(state);
 }
@@ -2674,6 +2693,87 @@ function drawAbilityEffects(state) {
 //   guard            → cúpula fechada no corpo
 const ULTIMATE_FACING = { down: [1, 1], up: [-1, -1], left: [-1, 1], right: [1, -1] };
 
+// Carga da Ultimate: a energia converge no corpo antes da soltura.
+function drawUltimateCharge(state) {
+  const ultimate = state.player?.ultimate;
+  if (!ultimate?.charge) return;
+  const player = state.player;
+  const x = (player.x - player.y) * HW, y = (player.x + player.y) * HH;
+  const duration = ultimate.chargeDuration || .42;
+  const t = Math.max(0, Math.min(1, 1 - ultimate.charge / duration));
+  const color = ultimate.chargeDefinition?.color ?? '#ffd465';
+  ctx.save();
+  ctx.shadowColor = color;
+  ctx.shadowBlur = 12;
+  ctx.strokeStyle = color;
+  ctx.fillStyle = color;
+  // Anéis que encolhem até o peito.
+  for (let anel = 0; anel < 3; anel++) {
+    const raio = (74 - t * 52) * (1 - anel * .22);
+    ctx.globalAlpha = (.25 + t * .55) * (1 - anel * .25);
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.ellipse(x, y - 12, Math.max(4, raio), Math.max(2, raio * .42), 0, 0, Math.PI * 2);
+    ctx.stroke();
+  }
+  // Cada arquétipo converge à sua maneira.
+  ctx.globalAlpha = .35 + t * .5;
+  const arquetipo = state.progress?.archetype;
+  if (arquetipo === 'motor_bio_forja') {
+    // Placas de forja girando e fechando.
+    for (let i = 0; i < 8; i++) {
+      const ang = i * Math.PI / 4 + t * 3;
+      const raio = 46 - t * 32;
+      const px = x + Math.cos(ang) * raio;
+      const py = y - 12 + Math.sin(ang) * raio * .45;
+      ctx.save();
+      ctx.translate(px, py);
+      ctx.rotate(ang + t * 2);
+      ctx.fillRect(-3, -3, 6, 6);
+      ctx.restore();
+    }
+  } else if (arquetipo === 'lamina_dominio_anciao') {
+    // Runas verticais que se alinham.
+    for (let i = 0; i < 6; i++) {
+      const xr = x - 30 + i * 12;
+      const altura = 10 + (i % 3) * 8;
+      ctx.fillRect(xr, y - 26 - t * 10 - altura * (1 - t), 2, altura);
+    }
+  } else if (arquetipo === 'mare_astral') {
+    // Gotas subindo em espiral.
+    for (let i = 0; i < 10; i++) {
+      const ang = i * Math.PI * 2 / 10 + t * 4;
+      const raio = 44 - t * 30;
+      ctx.beginPath();
+      ctx.arc(x + Math.cos(ang) * raio, y - 6 + Math.sin(ang) * raio * .4 - t * 18, 2, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  } else if (arquetipo === 'nucleo_dez_forma') {
+    // Silhuetas de eco piscando atrás do corpo.
+    for (let i = 0; i < 4; i++) {
+      ctx.globalAlpha = (.10 + t * .18) * (1 - i * .18);
+      ctx.beginPath();
+      ctx.ellipse(x - i * 6 + t * 4, y - 12 + i * 2, 12 - i, 22 - i * 2, 0, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  } else {
+    for (let i = 0; i < 10; i++) {
+      const ang = i * Math.PI * 2 / 10 + t * 2.4;
+      const raio = 42 - t * 30;
+      ctx.fillRect(x + Math.cos(ang) * raio - 1, y - 10 + Math.sin(ang) * raio * .42 - t * 14, 2, 2);
+    }
+  }
+  ctx.globalAlpha = .35 + t * .5;
+  if (t > .85) {
+    // Último instante: halo branco quente.
+    ctx.globalAlpha = (t - .85) / .15 * .85;
+    ctx.beginPath();
+    ctx.ellipse(x, y - 12, 16 + (t - .85) * 260, 8 + (t - .85) * 120, 0, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.restore();
+}
+
 function drawUltimateEffect(state) {
   const ultimate = state.player?.ultimate;
   if (!ultimate?.effect) return;
@@ -2785,7 +2885,12 @@ function drawEntity(entity, state) {
     const push = attack?.timeLeft > 0 ? Math.sin(Math.PI * t) * 4 : 0;
     const dx = attack ? (attack.dx - attack.dy) : 0, dy = attack ? (attack.dx + attack.dy) * .5 : 0;
     const length = Math.hypot(dx, dy) || 1;
-    if (drawPlayerSprite(entity, ix + dx / length * push, iy + dy / length * push)) return;
+    // Corpo se prepara durante a carga da Ultimate: peso para baixo e aura.
+    const carga = entity.ultimate?.charge > 0
+      ? 1 - entity.ultimate.charge / (entity.ultimate.chargeDuration || .42)
+      : 0;
+    const afundar = carga > 0 ? Math.sin(Math.PI * Math.min(1, carga)) * 3 : 0;
+    if (drawPlayerSprite(entity, ix + dx / length * push, iy + dy / length * push + afundar)) return;
 
     ctx.beginPath();
     ctx.arc(ix, iy - 14, 9, 0, Math.PI * 2);

@@ -47,6 +47,8 @@ for (const id of ARCHETIPOS) {
 // ---------------------------------------------------------------
 const progress = { archetype: 'lamina_dominio_anciao', archetypeProgress: {} };
 ensureArchetypeProgress(progress);
+// A Ultimate abre no nível 3 do caminho.
+progress.archetypeProgress.lamina_dominio_anciao.level = 3;
 const ultimate = getUltimate('lamina_dominio_anciao');
 
 const player = {
@@ -101,6 +103,8 @@ assert.equal(player.energy, energiaAntes, 'bloqueio não cobra energia');
 // Bônus também soma velocidade quando a Ultimate é do Núcleo.
 const nucleoPlayer = { x: 0, y: 0, health: 100, maxHealth: 100, energy: 100, maxEnergy: 100, ability: {} };
 const nucleoProgress = { archetype: 'nucleo_dez_forma', archetypeProgress: {} };
+ensureArchetypeProgress(nucleoProgress);
+nucleoProgress.archetypeProgress.nucleo_dez_forma.level = 3;
 tryUltimate({ player: nucleoPlayer, progress: nucleoProgress, targets: [], rng: () => .5 });
 const nucleoSem = getDerivedStats(nucleoProgress, { ultimate: { buff: null } });
 const nucleoCom = getDerivedStats(nucleoProgress, nucleoPlayer);
@@ -117,6 +121,8 @@ assert(nucleoPlayer.ultimate.buff.timeLeft < getUltimate('nucleo_dez_forma').buf
 
 const bioPlayer = { x: 0, y: 0, health: 10, maxHealth: 100, energy: 100, maxEnergy: 100, ability: {} };
 const bioProgress = { archetype: 'motor_bio_forja', archetypeProgress: {} };
+ensureArchetypeProgress(bioProgress);
+bioProgress.archetypeProgress.motor_bio_forja.level = 3;
 tryUltimate({ player: bioPlayer, progress: bioProgress, targets: [], rng: () => .5 });
 const vidaAposCura = bioPlayer.health;
 updateUltimate(bioPlayer, bioProgress, 2);

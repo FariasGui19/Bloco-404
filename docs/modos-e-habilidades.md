@@ -8,18 +8,47 @@ Cada operador escolhe um arquétipo; um possível morfador mestre futuro não é
 
 O caminho vale para os quatro módulos, com nomes próprios em cada degrau:
 
-| Nível | O que é | Estado em 0.4.0 |
-| --- | --- | --- |
-| 0 | Módulo instalado | disponível |
-| 1 | Kit básico (Q/R) | disponível |
-| 2 | Especialização de ferramenta | disponível (escolha no Códex) |
-| 3 | Ultimate de ferramenta | disponível (tecla F) |
-| 4 | Combinação / modo avançado | planejado |
-| 5 | Ultimate de arquétipo | planejado (a base atual ocupa o lugar) |
+| Nível do caminho | O que é | Nível do arquétipo | Estado em 0.5.0 |
+| --- | --- | --- | --- |
+| 0 | Módulo instalado | — | disponível |
+| 1 | Kit básico (Q/R) | 1 | disponível |
+| 2 | Especialização de ferramenta | 2 | disponível (escolha no Códex) |
+| 3 | Ultimate de ferramenta | 3 | disponível (tecla F) |
+| 4 | Combinação / modo avançado | 5 | planejado |
+| 5 | Ultimate de arquétipo | 8 | planejado (a base atual ocupa o lugar) |
 
 O Códex → **Progressão** mostra a escada inteira e marca cada degrau como
-`DISPONÍVEL`, `EM TESTE` ou `PLANEJADO`; nada ali concede poder por conta
-própria. O jogador não precisa desbloquear tudo de uma vez.
+`DISPONÍVEL`, `NÍVEL X · FALTAM Y` ou `PLANEJADO`; nada ali concede poder por
+conta própria. O jogador não precisa desbloquear tudo de uma vez.
+
+### Liberação por nível (0.5.0)
+
+O nível do arquétipo (XP de combate, missões e maestria) abre o caminho:
+
+| Nível | Libera | O que muda no jogo |
+| --- | --- | --- |
+| 1 | Q e R | kit básico desde o primeiro minuto |
+| 2 | Ferramenta | os cartões do Códex saem de "BLOQUEADA" e o F já sabe qual sobrecarga usar |
+| 3 | Ultimate | o F acorda; antes disso a HUD mostra `BLOQUEADA · NÍVEL 3` |
+| 5 | — | degrau planejado: não entrega poder |
+| 8 | — | degrau planejado: não entrega poder |
+
+A HUD avisa o próximo degrau em uma linha (`PRÓXIMO: ULTIMATE · NÍVEL 3 (FALTAM 1)`),
+e subir de nível mostra `NÍVEL 3 • ULTIMATE LIBERADO` no aviso central. A
+checagem é sempre pelo nível atual: save antigo volta a ter F apenas quando
+chegar ao nível 3.
+
+### Execução da Ultimate (animação)
+
+Apertei F, o corpo **não** solta na hora:
+
+1. **carga (0,42 s)** — o operador afunda o peso, a energia converge em anéis
+   que encolhem e cada arquétipo tem sua partícula: placas de forja girando
+   (Bio), runas verticais (Domínio), gotas em espiral (Maré), silhuetas de eco
+   (Núcleo). Movimento e ataque ficam travados nesse intervalo.
+2. **soltura** — a geometria da sobrecarga (cone, onda, guarda, avanço ou
+   sintonia) aparece junto com tremor de câmera e clarão curto na cor da
+   Ultimate; a recarga já começou na carga, então não dá para empilhar.
 
 ## Ultimate — duas camadas
 

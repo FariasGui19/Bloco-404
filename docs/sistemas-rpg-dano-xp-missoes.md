@@ -144,6 +144,30 @@ HUD: bloco próprio com o sigilo do arquétipo, recarga, energia faltando e o
 bônus ativo. Códex → **Progressão** mostra o cartão da Ultimate com custo,
 recarga e estado.
 
+## 4.6 Liberações por nível
+
+O nível do arquétipo não serve só para números: ele abre o caminho.
+
+| Nível | Libera | Verificação |
+| --- | --- | --- |
+| 1 | Q e R | `applyUnlocks` garante o kit ao instalar o módulo |
+| 2 | Ferramenta/corrente/forma | `selectTool` recusa antes disso e o Códex marca `BLOQUEADA` |
+| 3 | Ultimate (F) | `canCastUltimate` responde `ULTIMATE BLOQUEADA · NÍVEL 3` |
+| 5 e 8 | degraus planejados | `features: []` — não entregam nada |
+
+Regras:
+
+- a fonte única é `js/data/archetype-unlocks.js` (degrau, nível, o que libera);
+- `applyUnlocks` sincroniza `progress.abilities` de forma cumulativa, então
+  saves antigos não perdem Q/R;
+- subir de nível por combate **ou por missão** aplica as liberações e devolve
+  um aviso (`NÍVEL 3 • ULTIMATE LIBERADO`) para a HUD;
+- degrau planejado nunca vira poder: o Códex mostra `PLANEJADO` e para por aí.
+
+A Ultimate também tem **execução**: 0,42 s de carga (corpo afundado, energia
+convergindo, movimento travado), depois a soltura com geometria própria, tremor
+de câmera e clarão. A recarga começa na carga, então não existe gatilho duplo.
+
 ## 5. Códex de Rotas (`J`)
 
 Substitui o antigo diário monolítico. Quatro abas com ícones próprios:
@@ -191,6 +215,7 @@ node --experimental-default-type=module tests/missoes.mjs
 node --experimental-default-type=module tests/dano-habilidades.mjs
 node --experimental-default-type=module tests/ultimate.mjs
 node --experimental-default-type=module tests/ferramentas.mjs
+node --experimental-default-type=module tests/liberacoes.mjs
 node --experimental-default-type=module tests/estrutura.mjs
 node --experimental-default-type=module tests/boot.mjs
 ```

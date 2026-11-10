@@ -13,6 +13,8 @@
 import { state } from './state.js';
 import { ensureArchetypeProgress } from './progression.js';
 import { ensureTools } from './tools.js';
+import { applyUnlocks } from './unlocks.js';
+import { ARCHETYPE_KITS } from '../data/archetype-kits.js';
 
 const SAVE_VERSION = 1;
 const SLOT_COUNT = 3;
@@ -190,12 +192,13 @@ export function loadSaveIntoState(slot) {
 
   state.progress = clone(save.progress);
   ensureTools(state.progress);
+  applyUnlocks(state.progress, ARCHETYPE_KITS[state.progress.archetype]);
 
   state.player.facing = save.player?.facing ?? 'down';
   state.player.nucleoForm = null;
   state.player.nucleoRuntime = null;
   // Vida e Ultimate são de sessão: cada carregamento começa limpo.
-  state.player.ultimate = { cooldown: 0, buff: null, effect: null, casts: 0 };
+  state.player.ultimate = { cooldown: 0, buff: null, effect: null, casts: 0, charge: 0, shake: null, flash: null };
   state.player.health = null;
   state.player.maxHealth = null;
   state.player.invulnerable = 0;
@@ -220,12 +223,13 @@ export function startNewSave(slot, profileName = null) {
 
   state.progress = clone(save.progress);
   ensureTools(state.progress);
+  applyUnlocks(state.progress, ARCHETYPE_KITS[state.progress.archetype]);
 
   state.player.facing = save.player.facing;
   state.player.nucleoForm = null;
   state.player.nucleoRuntime = null;
   // Vida e Ultimate são de sessão: cada partida começa limpa.
-  state.player.ultimate = { cooldown: 0, buff: null, effect: null, casts: 0 };
+  state.player.ultimate = { cooldown: 0, buff: null, effect: null, casts: 0, charge: 0, shake: null, flash: null };
   state.player.health = null;
   state.player.maxHealth = null;
   state.player.invulnerable = 0;

@@ -25,6 +25,7 @@ import { getArchetypeLevel, getArchetypeXp, xpToNext } from '../game/rpg.js';
 import { getMasterySummary } from '../game/mastery.js';
 import { getUltimateStatus } from '../game/ultimate.js';
 import { TOOL_LABELS } from '../data/archetype-tools.js';
+import { describeNextUnlock, getUnlockState } from '../game/unlocks.js';
 
 const el = {};
 const cache = {};
@@ -67,6 +68,7 @@ export function initHud() {
     'ultimateFill',
     'abilityXpFill',
     'abilityXpText',
+    'abilityUnlockHint',
     'abilityPrimary',
     'abilityMessage',
     'abilitySecondary',
@@ -140,6 +142,10 @@ function updateAbilityHud(state) {
   setText('abilityLevel', `NÍVEL ${level} • ${BASIC_ATTACKS[archetypeId]?.label ?? ''}`.trim());
   setText('abilityTreePoints', mastery.total > 0 ? `MAESTRIA · ${mastery.label}` : 'MAESTRIA · J');
   setText('abilityXpText', Number.isFinite(next) ? `${Math.floor(xp)} / ${next} XP` : 'NÍVEL MÁXIMO');
+  // Próximo degrau do caminho: a HUD avisa o que o próximo nível libera.
+  const unlock = getUnlockState(state.progress, archetypeId);
+  setText('abilityUnlockHint', unlock.next ? describeNextUnlock(state.progress, archetypeId) : '');
+  el.abilityUnlockHint?.classList.toggle('proximo', Boolean(unlock.next));
 
   // Vida: barra própria, com aviso pulsante em estado crítico.
   const player = state.player;
@@ -212,18 +218,33 @@ function updateAbilityHud(state) {
     if (ultimate) {
       el.ultimateIcon.src = `assets/sprites/ui/codex/ultimate-${archetypeId}.png`;
       setText('ultimateName', ultimate.definition.name);
-      setText('ultimateTool', ultimate.tool
-        ? `${getToolLabel(archetypeId)} · ${ultimate.tool.short}`
-        : 'ULTIMATE DE ARQUÉTIPO');
       el.abilityUltimate.style.setProperty('--ultimate-color', ultimate.definition.color);
       const faltando = ultimate.definition.cost - ultimate.energy;
-      setText('ultimateState', ultimate.cooldown > 0
-        ? `RECARREGANDO ${ultimate.cooldown.toFixed(1)}s`
-        : !ultimate.energyOk ? `FALTA ${Math.max(0, faltando)} ENERGIA` : `F · ${ultimate.definition.cost} ENERGIA`);
-      setText('ultimateBuff', ultimate.buff ? `${ultimate.buff.label} · ${Math.ceil(ultimate.buff.timeLeft)}s` : '');
-      if (el.ultimateFill) el.ultimateFill.style.width = `${Math.round(ultimate.charge * 100)}%`;
+      if (ultimate.locked) {
+        // Bloqueada por nível: mostra o requisito, não a recarga.
+        setText('ultimateTool', 'BLOQUEADA');
+        setText('ultimateState', `NÍVEL ${ultimate.requiredLevel}`);
+        setText('ultimateBuff', '');
+        if (el.ultimateFill) el.ultimateFill.style.width = '0%';
+      } else if (ultimate.charging) {
+        setText('ultimateTool', ultimate.tool ? `${getToolLabel(archetypeId)} · ${ultimate.tool.short}` : 'ULTIMATE DE ARQUITETURA');
+        setText('ultimateState', 'CARREGANDO');
+        setText('ultimateBuff', '');
+        if (el.ultimateFill) el.ultimateFill.style.width = `${Math.round(ultimate.windup * 100)}%`;
+      } else {
+        setText('ultimateTool', ultimate.tool
+          ? `${getToolLabel(archetypeId)} · ${ultimate.tool.short}`
+          : 'ULTIMATE DE ARQUÉTIPO');
+        setText('ultimateState', ultimate.cooldown > 0
+          ? `RECARREGANDO ${ultimate.cooldown.toFixed(1)}s`
+          : !ultimate.energyOk ? `FALTA ${Math.max(0, faltando)} ENERGIA` : `F · ${ultimate.definition.cost} ENERGIA`);
+        setText('ultimateBuff', ultimate.buff ? `${ultimate.buff.label} · ${Math.ceil(ultimate.buff.timeLeft)}s` : '');
+        if (el.ultimateFill) el.ultimateFill.style.width = `${Math.round(ultimate.charge * 100)}%`;
+      }
       el.abilityUltimate.classList.toggle('ready', ultimate.ready);
-      el.abilityUltimate.classList.toggle('unaffordable', ultimate.cooldown <= 0 && !ultimate.energyOk);
+      el.abilityUltimate.classList.toggle('locked', ultimate.locked);
+      el.abilityUltimate.classList.toggle('charging', ultimate.charging);
+      el.abilityUltimate.classList.toggle('unaffordable', !ultimate.locked && ultimate.cooldown <= 0 && !ultimate.energyOk);
       el.abilityUltimate.classList.toggle('buffed', Boolean(ultimate.buff));
       el.abilityUltimate.classList.toggle('toolbound', Boolean(ultimate.tool));
     }

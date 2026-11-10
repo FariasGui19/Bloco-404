@@ -130,6 +130,9 @@ export const state = {
       buff: null,
       effect: null,
       casts: 0,
+      charge: 0,      // carga em andamento (0 = livre)
+      shake: null,    // tremor de câmera da soltura
+      flash: null,    // clarão da soltura
     },
 
     ability: {

@@ -21,7 +21,7 @@ import { loadMap, getSafeSpawn } from './game/map-manager.js';
 
 import { updatePlayer } from './game/player.js';
 import { updateAbilities, showAbilityMessage } from './game/abilities.js';
-import { tryUltimate, updateUltimate } from './game/ultimate.js';
+import { beginUltimate, updateUltimate } from './game/ultimate.js';
 import { toggleArchetypeSuit } from './game/ability-context.js';
 import { openNucleoWheel, isNucleoWheelOpen, updateNucleoWheel } from './ui/nucleo-wheel.js';
 import { updateCamera } from './engine/camera.js';
@@ -348,7 +348,9 @@ async function update(dt) {
       return;
     }
 
-    updateBasicCombat(player, state.trainingTargets, dt);
+    // Durante a carga da Ultimate o corpo está tomado: sem ataque básico.
+    const carregandoUltimate = (player.ultimate?.charge ?? 0) > 0;
+    if (!carregandoUltimate) updateBasicCombat(player, state.trainingTargets, dt);
     let abilityLocksMovement = updateAbilities(dt);
 
     // F = Ultimate do módulo. Peso alto: energia cheia, recarga longa e
@@ -356,14 +358,19 @@ async function update(dt) {
     // Com debug/calibração ligados, o F pertence às ferramentas de cenário.
     const fLivre = !isDebugEnabled() && !isBackgroundCalibrationEnabled();
     if (fLivre && (input.pressed.has('f') || input.pressed.has('keyf')) && !abilityLocksMovement && !state.world.isLoading) {
-      tryUltimate({
+      beginUltimate({
         player,
         progress: state.progress,
         targets: state.trainingTargets,
         showMessage: showAbilityMessage,
       });
     }
-    updateUltimate(player, state.progress, dt);
+    // A carga da Ultimate trava o corpo até a soltura.
+    updateUltimate(player, state.progress, dt, {
+      targets: state.trainingTargets,
+      showMessage: showAbilityMessage,
+    });
+    abilityLocksMovement ||= player.ultimate?.charge > 0;
     updateNucleoForm(state.progress, player, dt, canStandAt(getFloor(), player.x, player.y, CONFIG.PLAYER_RADIUS, player));
     abilityLocksMovement ||= player.ability?.effect?.id === 'transformacao_10x';
     if (input.attackClick) {

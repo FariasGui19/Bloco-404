@@ -50,8 +50,10 @@ pegar export faltando antes de abrir o navegador.
 - **Ultimate (`F`)** em duas camadas: a base de cada arquétipo e a sobrecarga da
   ferramenta instalada (corte, impacto, onda, avanço, guarda ou sintonia), com
   custo alto de energia e recarga longa.
-- **Caminho 0–5** por arquétipo no Códex: o que já está disponível, o que está em
-  teste e o que ainda é planejado.
+- **Caminho 0–5** por arquétipo no Códex, com liberação por nível: Q/R no nível 1,
+  ferramenta no 2, Ultimate no 3.
+- **HUD em coluna única** (mapa, módulo, vitais, habilidades e missão), sem
+  cartões sobrepostos; a Ultimate tem carga de 0,42 s antes da soltura.
 - Detalhes em [`docs/sistemas-rpg-dano-xp-missoes.md`](docs/sistemas-rpg-dano-xp-missoes.md).
 
 ## Futuro

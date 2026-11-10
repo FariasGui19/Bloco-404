@@ -56,7 +56,11 @@ function rebuildButtons() {
         add: n => classes.add(n), remove: n => classes.delete(n), contains: n => classes.has(n),
         toggle(n, on) { if (on) classes.add(n); else classes.delete(n); },
       },
-      setAttribute() {}, addEventListener(event, fn) { this.click = fn; }, focus() {},
+      setAttribute() {},
+      // A roda registra três eventos no mesmo cartão; o teste guarda todos e
+      // expõe .click como o caminho de ponteiro (pointerdown/click).
+      addEventListener(event, fn) { this[event] = fn; if (event !== 'keydown') this.click = fn; },
+      focus() {},
     };
     buttons.push(button);
   }

@@ -18,7 +18,7 @@ import { isDebugEnabled, drawDebugWorld } from '../game/debug.js';
 import { ACTION_SPRITES } from '../data/action-sprites.js';
 import { drawHubScreenFx, hasHubScreenFx } from './hub-screen-fx.js';
 import { getVelozAnimation, getVelozPulse } from '../data/veloz-animation.js';
-import { getBrutaAnimation } from '../data/bruta-animation.js';
+import { getBrutaAnimation, BRUTA_SCALE, BRUTA_FOOT_Y } from '../data/bruta-animation.js';
 import { NUCLEO_BRUTA } from '../data/nucleo-forms.js';
 import { getMareWalk, getMareAttack, mareSheet } from '../data/mare-animation.js';
 import { getDominioWalk, getDominioAttack } from '../data/dominio-animation.js';
@@ -2189,6 +2189,35 @@ function drawPlayerSprite(player, ix, iy) {
   if (player.nucleoForm === NUCLEO_BRUTA) {
     drawBrutaFx(player, ix, iy, player.moving ? 'walk' : 'idle');
   }
+  // Pancada de Peso (Q da Quebra): fagulhas elétricas nos pistões durante a
+  // preparação. O efeito é separado da transformação — antes o id era o mesmo
+  // e o jogo refazia a metamorfose em vez de socar.
+  const cast = player.ability?.cast;
+  if (cast?.id === 'pancada_quebra' && cast.timeLeft > 0) {
+    const k = 1 - cast.timeLeft / (cast.duration || .55);
+    ctx.save();
+    ctx.globalAlpha = .35 + k * .6;
+    ctx.strokeStyle = '#ffd45c';
+    ctx.lineWidth = 1.6;
+    for (let i = 0; i < 3; i++) {
+      const lado = i === 1 ? 1 : -1;
+      const base = i * 2.1;
+      ctx.beginPath();
+      for (let seg = 0; seg < 3; seg++) {
+        const px = ix + lado * (10 + seg * 4) + Math.sin(base + seg) * 2;
+        const py = iy - 18 - seg * 9 - k * 6;
+        if (seg === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+      }
+      ctx.stroke();
+    }
+    // Brilho no bloco de cabeça: a energia concentra antes do impacto.
+    ctx.globalAlpha = .2 + k * .35;
+    ctx.fillStyle = '#ffb02e';
+    ctx.beginPath();
+    ctx.ellipse(ix, iy - 46, 8 + k * 6, 10 + k * 7, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  }
   // A folha nova é frontal: não a espelhamos nem fingimos vistas laterais/traseiras.
   const attack = player.combat;
   if (suit === 'bio_forja' && player.facing === 'down' && attack?.style === 'motor_bio_forja' && attack.timeLeft > 0 && !effect && !(player.ability?.scanning > 0)) {
@@ -2232,10 +2261,22 @@ function drawPlayerSprite(player, ix, iy) {
     player._topo = 100;
     return true;
   }
+  // Transformação do Núcleo: uma decisão só, escolhida por `effect.form`.
+  // Aqui estava o defeito visual relatado: QUALQUER transformação desenhava a
+  // folha do Pulso Veloz (o operador virando criatura), inclusive a da Quebra
+  // Sistemas — que tem folha própria de placas de ferro se montando.
   if (state.progress.archetype === 'nucleo_dez_forma' && effect?.id === 'transformacao_10x') {
     const t = Math.max(0, Math.min(0.999, 1 - effect.timeLeft / effect.duration));
-    const frames = effect.activating ? [0, 1, 1, 2] : [2, 1, 3, 3];
-    if (drawArchetypeSheet('player_10x_q', frames[Math.floor(t * 4)], 0, ix, iy, player.facing === 'left', { rows: 1, scale: 0.29, anchor: 0.78 })) { player._topo = 120; return true; }
+    const quadro = Math.floor(t * 4);
+    if (effect.form === NUCLEO_BRUTA) {
+      // Entrando, a montagem corre 0 → 3; retornando, o corpo se desfaz na
+      // mesma arte ao contrário (sem inventar quadro que não existe).
+      const col = effect.activating === false ? 3 - quadro : quadro;
+      if (drawArchetypeSheet('player_10x_bruta_transformacao', col, 0, ix, iy, false, { rows: 1, scale: BRUTA_SCALE, anchor: BRUTA_FOOT_Y / 256 })) { player._topo = 150; return true; }
+    } else {
+      const frames = effect.activating ? [0, 1, 1, 2] : [2, 1, 3, 3];
+      if (drawArchetypeSheet('player_10x_q', frames[quadro], 0, ix, iy, player.facing === 'left', { rows: 1, scale: 0.29, anchor: 0.78 })) { player._topo = 120; return true; }
+    }
   }
   const pulseFrame = getVelozPulse(state.progress, player);
   if (pulseFrame) {
@@ -2757,7 +2798,7 @@ function drawAbilityEffects(state) {
         const radius = 18 + ((t + ring / 3) % 1) * 76;
         ctx.beginPath(); ctx.ellipse(x, y - 8, radius, radius * 0.42, 0, 0, Math.PI * 2); ctx.stroke();
       }
-      ctx.fillStyle = '#9cffbc';
+      ctx.fillStyle = effect.color ?? '#9cffbc';
       for (let i = 0; i < 16; i++) {
         const angle = i * Math.PI * 2 / 16 + t * 2;
         const r = 22 + 40 * t + (i % 3) * 7;

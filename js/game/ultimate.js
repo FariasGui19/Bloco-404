@@ -22,6 +22,7 @@ import { applyConeDamage, applyRadialDamage } from './combat.js';
 import { healPlayer } from './health.js';
 import { recordMastery } from './mastery.js';
 import { getDerivedStats } from './rpg.js';
+import { isNucleoFormId } from '../data/nucleo-forms.js';
 import { pushCombatText } from './combat-feedback.js';
 
 const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
@@ -34,8 +35,10 @@ const IMPACT_SHAKE = { burst: 11, wave: 9, line: 7, dash: 6, guard: 4, surge: 5 
 
 // Núcleo 10X: as Ultimates são de FORMA, não de operador. Sem transformação
 // ativa elas não existem — o corpo base não aguenta a sobrecarga.
+// A pergunta é "existe forma ativa?", não "é a Veloz?": com a Quebra Sistemas
+// o F também solta (era o bug que deixava a Ultimate da segunda forma morta).
 function precisaDeForma(progress, player) {
-  return progress?.archetype === 'nucleo_dez_forma' && player?.nucleoForm !== 'forma_veloz';
+  return progress?.archetype === 'nucleo_dez_forma' && !isNucleoFormId(player?.nucleoForm);
 }
 
 const FACING = {

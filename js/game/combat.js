@@ -12,6 +12,8 @@ import { pushCombatText, updateCombatFeedback } from './combat-feedback.js';
 import { applyUnlocks } from './unlocks.js';
 import { ARCHETYPE_KITS } from '../data/archetype-kits.js';
 import { chargeFormHit } from './nucleo-form.js';
+import { BRUTA_SMASH } from './abilities.js';
+import { NUCLEO_FORMS } from '../data/nucleo-forms.js';
 import { checkGate, isGateOpen, openGate } from './gates.js';
 import { saveGame } from './save.js';
 
@@ -193,9 +195,59 @@ function breakWeightGates(player, dx, dy) {
   }
 }
 
+// =====================================================================
+// PANCADA DE PESO — o Q da Quebra Sistemas, executado de verdade
+// =====================================================================
+// Na preparação (js/game/abilities.js) o corpo trava e as fagulhas correm nos
+// pistões; aqui a marreta desce de fato: dano em disco à frente do corpo,
+// empurrão, onda de choque e tremor de câmera. Sem alvo, o golpe ainda sai —
+// quebrar o chão já é o ponto da forma.
+export function executeBrutaSmash({ player, progress, targets, rng = Math.random }) {
+  if (!player) return null;
+  const perfil = BRUTA_SMASH;
+  const fx = { down: [1, 1], up: [-1, -1], left: [-1, 1], right: [1, -1] }[player.facing] ?? [1, 1];
+  const comprimento = Math.hypot(fx[0], fx[1]) || 1;
+  const centro = {
+    x: player.x + (fx[0] / comprimento) * perfil.reach * .6,
+    y: player.y + (fx[1] / comprimento) * perfil.reach * .6,
+  };
+  const dano = Math.max(1, Math.round(getDerivedStats(progress, player).basicDamage * perfil.damageMult));
+  const hits = [];
+  let total = 0;
+  for (const target of targets ?? []) {
+    if (!target || target.health <= 0) continue;
+    if (Math.hypot(target.x - centro.x, target.y - centro.y) > perfil.reach) continue;
+    const rolagem = Math.max(1, Math.round(dano * (.94 + rng() * .12)));
+    const outcome = applyAttackDamage(target, { hits: [rolagem], total: rolagem });
+    pushCombatText(target.x, target.y, String(rolagem), { color: '#ffc94a', duration: 1.1 });
+    // Impacto cinético: o alvo é arremessado para longe do corpo.
+    const ddx = target.x - player.x, ddy = target.y - player.y;
+    const dl = Math.hypot(ddx, ddy) || 1;
+    target.x += (ddx / dl) * perfil.knockback * .18;
+    target.y += (ddy / dl) * perfil.knockback * .18;
+    if (outcome?.defeated) registerDefeat(player, progress, target);
+    hits.push({ target, damage: rolagem });
+    total += rolagem;
+  }
+  // Câmera e chão sentem o peso mesmo quando não há ninguém por perto.
+  player.ultimate ??= { cooldown: 0, buff: null, effect: null, casts: 0, charge: 0 };
+  const tremor = NUCLEO_FORMS[player.nucleoForm]?.form?.stompShake ?? 2.4;
+  if (!player.ultimate.shake || (player.ultimate.shake.power ?? 0) <= tremor) {
+    player.ultimate.shake = { timeLeft: .26, duration: .26, power: tremor, source: 'pancada' };
+  }
+  player.ability ??= {};
+  player.ability.lastMessage = total > 0 ? `PANCADA DE PESO • ${total} DE DANO` : 'PANCADA DE PESO • CHÃO RACHADO';
+  player.ability.messageTimer = 1.4;
+  return { total, hits, center: centro, knockback: perfil.knockback };
+}
+
 export function tryBasicAttack({ player, progress, map, targets, point, rng = Math.random }) {
   const profile = BASIC_ATTACKS[progress?.archetype];
   if (!profile || !map || !point || !Number.isFinite(point.x) || !Number.isFinite(point.y)) return false;
+  // A preparação da Pancada de Peso (Q da Quebra Sistemas) bloqueia o ataque
+  // comum e só libera quando a marreta termina de subir: é a janela de peso
+  // que dá leitura ao golpe, e o `cast` segura o corpo sem travar o resto.
+  if (player.ability?.cast?.id === 'pancada_quebra') return false;
   if (player.ability?.dash || player.ability?.scanning > 0 || player.ability?.effect?.timeLeft > 0 || (player.combat?.cooldown ?? 0) > 0) return false;
 
   // Um clique na parte alta do holograma deve mirar na base do alvo.

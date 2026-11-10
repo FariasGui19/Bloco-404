@@ -364,6 +364,7 @@ export const ARCHETYPE_TOOLS = Object.freeze({
     tools: Object.freeze([
       Object.freeze({
         id: 'nucleo_veloz',
+        preview: 'assets/sprites/ui/nucleo-forma-veloz.png',
         name: 'FORMA VELOZ',
         short: 'VELOZ',
         color: '#8cff9e',
@@ -404,6 +405,10 @@ export const ARCHETYPE_TOOLS = Object.freeze({
         name: 'QUEBRA SISTEMAS',
         short: 'QUEBRA',
         color: '#ffc94a',
+        // Miniatura da roda do T: bloco de cabeça recortado da folha de
+        // referência em tools/preparar-quebra-sistemas.py. A arte é DADO, para
+        // não existir um mapa escondido entre forma e imagem no código da UI.
+        preview: 'assets/sprites/ui/nucleo-quebra-sistemas.png',
         // Segunda forma jogável: bípede atarracado de ferro, sem cabeça, com
         // bloco de colisão no lugar do rosto e marretas telescópicas.
         playable: true,

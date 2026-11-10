@@ -11,6 +11,37 @@
 - Núcleo 10X: Ultimate só com a forma ativa; formas futuras listadas como projeto.
 - Maré Astral: rotas de maré no Códex (leitura de mapa).
 
+## Concluído na 0.6.2 — Quebra Sistemas jogável de verdade
+
+O criador jogou a 0.6.1 e apontou cinco defeitos. Todos foram fechados, cada
+um com teste próprio em `tests/quebra-sistemas.mjs`:
+
+1. **Roda do `T` não trocava a imagem.** As duas formas agora usam o mesmo
+   mecanismo (uma imagem PNG por forma): a Quebra ganhou
+   `assets/sprites/ui/nucleo-quebra-sistemas.png`, recortado do bloco de
+   cabeça da folha de referência pelo próprio script de arte. O recorte em
+   runtime (que deixava o cartão vazio) saiu. O nome da forma também deixou de
+   ser escondido quando a arte carrega, e o cartão responde a ponteiro e clique.
+2. **Transformação com a animação errada.** A transformação era decidida por
+   qualquer efeito `transformacao_10x` e desenhava sempre a folha do Pulso
+   Veloz. Agora quem decide é `effect.form`: a Quebra usa a folha nova
+   `player-10x-bruta-transformacao.png` (4 quadros: blocos soltos → corpo
+   montado), e o retorno ao operador é a mesma arte ao contrário.
+3. **Forma pequena demais.** Escala da Quebra de `.55` para `.95`: ela fica com
+   ~169 px de altura contra ~142 px do operador (antes eram 98 px, menores que
+   o próprio personagem).
+4. **`Q` não fazia nada.** Dois problemas: o efeito da pancada reutilizava o
+   id da transformação (o jogo desfazia e refazia a metamorfose) e não havia
+   dano nenhum. Agora `ability.cast` tem id próprio, trava o corpo, sobe a
+   marreta na folha de ataque e, ao fim da preparação, `executeBrutaSmash`
+   aplica dano em disco à frente, empurrão, tremor de câmera, fagulhas nos
+   pistões e consumo de 3 s da barra.
+5. **Ultimate (`F`) morta na forma.** `precisaDeForma` comparava com
+   `'forma_veloz'`; com a Quebra o jogo achava que não havia forma ativa.
+   Agora aceita qualquer forma do Núcleo (`isNucleoFormId`).
+
+Versão `0.6.2-quebra-jogavel`.
+
 ## Concluído na 0.6.1 — segunda forma do Núcleo 10X
 - **QUEBRA SISTEMAS** (`nucleo_bruto`) deixou de ser projeto e virou a segunda
   forma jogável do Núcleo. Identidade do criador: bípede atarracado de liga de

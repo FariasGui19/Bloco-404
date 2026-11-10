@@ -169,6 +169,7 @@ await loadSprites([
   { id: 'player_10x_bruta_andar_lateral', src: 'assets/sprites/player/player-10x-bruta-andar-lateral.png' },
   { id: 'player_10x_bruta_ataque_lateral', src: 'assets/sprites/player/player-10x-bruta-ataque-lateral.png' },
   { id: 'player_10x_bruta_ataque_frente', src: 'assets/sprites/player/player-10x-bruta-ataque-frente.png' },
+  { id: 'player_10x_bruta_transformacao', src: 'assets/sprites/player/player-10x-bruta-transformacao.png' },
   {
     id: 'elevator_door',
     src: 'assets/sprites/objects/elevator-door.png',

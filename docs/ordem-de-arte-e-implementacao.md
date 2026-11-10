@@ -7,6 +7,25 @@ Gerar e implementar **exatamente duas folhas/imagens por atualização**, seguin
 3. Estação Bio / Bio-Forja (rodadas 0.3.5 e 0.3.6)
 4. Folha de sprites do Bolt (prévia opt-in, sem concessão automática)
 
+## Rodada 0.6.2 — correções da Quebra Sistemas em jogo
+
+Nada de folha nova de personagem além de uma: a **transformação**.
+
+- `assets/source-art/nucleo/quebra-transformacao.png` → 4 quadros de frente
+  (blocos soltos no feixe → corpo montado). Recortado pelo mesmo
+  `tools/preparar-quebra-sistemas.py`, que ganhou dois passos:
+  - `remove_pink_light`: o feixe de luz saiu rosa-salmão do gerador; a cor é
+    reescrita para âmbar mantendo o brilho (apagar mataria o efeito).
+  - `make_icon`: recorta o bloco de cabeça da folha de referência e grava
+    `assets/sprites/ui/nucleo-quebra-sistemas.png`, a miniatura da roda do `T`.
+- `assets/sprites/player/player-10x-bruta-transformacao.png` (1024×256, 4
+  quadros de 256 px, RGBA), carregada no manifesto de `js/main.js`.
+- Escala de exibição da forma: `.95` (era `.55`), ainda apoiada em
+  `BRUTA_FOOT_Y 220` para os pés não flutuarem.
+
+O ataque de costas continua pendente: o golpe existe (onda de choque
+procedural), mas ainda não há folha traseira própria.
+
 ## Rodada 0.6.1 — segunda forma do Núcleo 10X (Quebra Sistemas)
 
 Seis folhas de personagem novas, todas da mesma criatura original do jogador
@@ -33,7 +52,8 @@ Núcleo não ter duas formas desenhando o mesmo soco.
 **Ainda pendente:** ataque de costas da Quebra, som de pistões, destruição
 permanente de geometria do mapa (a Ultimate desenha a fenda e o dano radial,
 mas não altera o layout) e três folhas de execução de Ultimate por arquétipo
-(Bio, Domínio, Maré e Núcleo), que continuam na fila.
+(Bio, Domínio, Maré e Núcleo), que continuam na fila. A transformação da
+Quebra, que estava nesta lista, foi feita na 0.6.2.
 
 ## Rodada anterior (0.5.0): HUD enxuta, liberação por nível e execução da Ultimate
 

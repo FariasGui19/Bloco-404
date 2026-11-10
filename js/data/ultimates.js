@@ -12,10 +12,15 @@
 //   - buff temporário do arquétipo (dano, velocidade, energia ou vida/s);
 //   - uso conta para a maestria de fluxo e não gasta nada do save.
 // =====================================================================
+import { TOOL_ULTIMATE_IDS, TOOL_ULTIMATES } from './archetype-tools.js';
 
+// Ultimate de arquétipo (base): é o que todo operador tem antes de escolher
+// uma ferramenta. A sobrecarga de ferramenta (nível 1) fica em
+// data/archetype-tools.js e substitui esta quando o jogador se especializa.
 export const ULTIMATES = Object.freeze({
   motor_bio_forja: Object.freeze({
     id: 'pulso_forja_viva',
+    tier: 'module',
     name: 'PULSO DA FORJA VIVA',
     color: '#ffb45c',
     cost: 58,
@@ -29,6 +34,7 @@ export const ULTIMATES = Object.freeze({
   }),
   lamina_dominio_anciao: Object.freeze({
     id: 'coroa_da_falha',
+    tier: 'module',
     name: 'COROA DA FALHA',
     color: '#ffd465',
     cost: 62,
@@ -42,6 +48,7 @@ export const ULTIMATES = Object.freeze({
   }),
   mare_astral: Object.freeze({
     id: 'sinfonia_estuario',
+    tier: 'module',
     name: 'SINFONIA DO ESTUÁRIO',
     color: '#7ce8ff',
     cost: 54,
@@ -55,6 +62,7 @@ export const ULTIMATES = Object.freeze({
   }),
   nucleo_dez_forma: Object.freeze({
     id: 'horizonte_dez_ecos',
+    tier: 'module',
     name: 'HORIZONTE DE DEZ ECOS',
     color: '#8cff9e',
     cost: 50,
@@ -68,14 +76,19 @@ export const ULTIMATES = Object.freeze({
   }),
 });
 
-export const ULTIMATE_IDS = Object.freeze(Object.values(ULTIMATES).map(ultimate => ultimate.id));
+export const MODULE_ULTIMATE_IDS = Object.freeze(Object.values(ULTIMATES).map(ultimate => ultimate.id));
+
+// Todos os ids de Ultimate do jogo: base + sobrecargas de ferramenta.
+export const ULTIMATE_IDS = Object.freeze([...MODULE_ULTIMATE_IDS, ...TOOL_ULTIMATE_IDS]);
 
 export function getUltimate(archetypeId) {
   return ULTIMATES[archetypeId] ?? null;
 }
 
 export function getUltimateById(id) {
-  return Object.values(ULTIMATES).find(ultimate => ultimate.id === id) ?? null;
+  return Object.values(ULTIMATES).find(ultimate => ultimate.id === id)
+    ?? TOOL_ULTIMATES.find(ultimate => ultimate.id === id)
+    ?? null;
 }
 
 // Texto curto para HUD e Códex.

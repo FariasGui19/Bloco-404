@@ -12,6 +12,7 @@
 
 import { state } from './state.js';
 import { ensureArchetypeProgress } from './progression.js';
+import { ensureTools } from './tools.js';
 
 const SAVE_VERSION = 1;
 const SLOT_COUNT = 3;
@@ -43,6 +44,7 @@ function createDefaultProgress() {
 
     abilities: [],
     archetypeProgress: {},
+    tools: {},
     inventory: [],
 
     activeQuest: null,
@@ -144,6 +146,7 @@ function migrateSave(save, slot) {
   };
 
   ensureArchetypeProgress(safeSave.progress);
+  ensureTools(safeSave.progress);
   return safeSave;
 }
 
@@ -186,6 +189,7 @@ export function loadSaveIntoState(slot) {
   state.save.loaded = true;
 
   state.progress = clone(save.progress);
+  ensureTools(state.progress);
 
   state.player.facing = save.player?.facing ?? 'down';
   state.player.nucleoForm = null;
@@ -215,6 +219,7 @@ export function startNewSave(slot, profileName = null) {
   state.save.loaded = true;
 
   state.progress = clone(save.progress);
+  ensureTools(state.progress);
 
   state.player.facing = save.player.facing;
   state.player.nucleoForm = null;

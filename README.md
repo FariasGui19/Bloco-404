@@ -47,8 +47,11 @@ pegar export faltando antes de abrir o navegador.
 - **Vida** com dano, invulnerabilidade, regeneração e retorno seguro ao morrer.
 - **Códex (`J`)** com abas de missões, progressão, inventário e atributos, cada
   uma com sua cor (âmbar, violeta, laranja e rosa) para não cansar a vista.
-- **Ultimate (`F`)** por arquétipo: onda radial, cura e bônus temporário, com
+- **Ultimate (`F`)** em duas camadas: a base de cada arquétipo e a sobrecarga da
+  ferramenta instalada (corte, impacto, onda, avanço, guarda ou sintonia), com
   custo alto de energia e recarga longa.
+- **Caminho 0–5** por arquétipo no Códex: o que já está disponível, o que está em
+  teste e o que ainda é planejado.
 - Detalhes em [`docs/sistemas-rpg-dano-xp-missoes.md`](docs/sistemas-rpg-dano-xp-missoes.md).
 
 ## Futuro

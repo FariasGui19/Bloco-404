@@ -1,6 +1,6 @@
 # Primeiras missões, adversários, habilidades e vínculos
 
-Documento de direção e prompts: nomes, requisitos, custos, duração e balanceamento são propostas. Nada aqui garante que mapas, inimigos, chefes ou novas habilidades já existam no jogo. Uma ilha compartilhada; cada operador escolhe um único arquétipo e um módulo por vez. O futuro morfador mestre é outro sistema e não deve conceder trocas agora. Cada kit tem ataque adaptativo, Q, R, utilidade, suporte e Ultimate; todos os slots começam no nível 1, inclusive a Ultimate, ainda sem poderes adicionais implementados.
+Documento de direção e prompts: nomes, requisitos, custos, duração e balanceamento são propostas. Nada aqui garante que mapas, inimigos, chefes ou novas habilidades já existam no jogo. Uma ilha compartilhada; cada operador escolhe um único arquétipo e um módulo por vez. O futuro morfador mestre é outro sistema e não deve conceder trocas agora. Cada kit tem ataque adaptativo, Q, R, utilidade, suporte e Ultimate; todos os slots começam no nível 1, inclusive a Ultimate. Em 0.4.0 entraram a Ultimate base e as 16 sobrecargas de ferramenta (Ultimate nível 1); utilidade e suporte continuam só no papel.
 
 ## Padrão técnico de imagens
 

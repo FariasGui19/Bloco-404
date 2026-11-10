@@ -13,6 +13,9 @@ import { ARCHETYPES } from '../data/onboarding.js';
 import { getArchetypeLevel, getArchetypeXp, getDerivedStats, xpToNext } from '../game/rpg.js';
 import { getMasteryState, getMasterySummary } from '../game/mastery.js';
 import { getUltimateStatus } from '../game/ultimate.js';
+import { listTools, selectTool } from '../game/tools.js';
+import { getPath, LEVEL_TITLES, PATH_STATES } from '../data/archetype-progression.js';
+import { TOOL_LABELS } from '../data/archetype-tools.js';
 import { listTrackedQuests } from '../game/quests.js';
 import { getItem, listInventory } from '../data/items.js';
 
@@ -113,18 +116,66 @@ function masteryPips(rank, maxRank) {
 function ultimateCard(progress) {
   const status = getUltimateStatus(context.player, progress);
   if (!status) return '';
-  const { definition } = status;
+  const { definition, tool } = status;
   const estado = status.cooldown > 0 ? `RECARREGANDO ${status.cooldown.toFixed(0)}s`
     : !status.energyOk ? `FALTA ${Math.max(0, definition.cost - status.energy)} ENERGIA`
     : 'PRONTA';
-  return `<article class="codex-ultimate${status.ready ? ' ready' : ''}">
+  const camada = tool ? `SOBRECARGA · ${tool.short}` : 'ULTIMATE DE ARQUÉTIPO · BASE';
+  return `<article class="codex-ultimate${status.ready ? ' ready' : ''}" style="--ultimate:${definition.color}">
     <img class="codex-ultimate-icon" src="${ULTIMATE_ICONS}${progress.archetype}.png" alt="" aria-hidden="true" draggable="false">
     <div>
-      <header><span class="codex-tag">ULTIMATE · F</span><strong>${escapeHtml(definition.name)}</strong><em>${estado}</em></header>
+      <header><span class="codex-tag">F · ${camada}</span><strong>${escapeHtml(definition.name)}</strong><em>${estado}</em></header>
       <p>${escapeHtml(definition.description)}</p>
       <footer>${definition.cost} ENERGIA · RECARGA ${definition.cooldown}s · ${escapeHtml(definition.effectText)}</footer>
     </div>
   </article>`;
+}
+
+// Escolha de ferramenta/corrente/forma: é ela que define a Ultimate nível 1.
+function toolPicker(progress) {
+  const tools = listTools(progress);
+  if (!tools.length) return '';
+  const label = TOOL_LABELS[progress.archetype] ?? 'FERRAMENTA';
+  const hint = getPath(progress.archetype)?.levels?.find(entry => entry.level === 2)?.note
+    ?? 'A escolha vale para todo o perfil.';
+  const cards = tools.map(tool => `<button type="button" class="codex-tool${tool.selected ? ' selected' : ''}"
+      data-tool="${escapeHtml(tool.id)}" style="--tool:${tool.color}"
+      aria-pressed="${tool.selected}">
+      <span class="codex-tool-tag">${escapeHtml(tool.short)}</span>
+      <strong>${escapeHtml(tool.name)}</strong>
+      <small>NÍVEL 1 · ${escapeHtml(tool.ultimate.name)}</small>
+      <em>${escapeHtml(tool.tagline)}</em>
+      <i class="codex-tool-cost">${tool.ultimate.cost} EN · ${tool.ultimate.cooldown}s</i>
+    </button>`).join('');
+  return `<section class="codex-tools" aria-label="Escolha de ${escapeHtml(label)}">
+    <header>
+      <span class="codex-tag">ESPECIALIZAÇÃO · ${escapeHtml(label)}</span>
+      <strong>${tools.some(tool => tool.selected) ? 'TROQUE A SOBRECARGA' : 'ESCOLHA UMA ' + escapeHtml(label)}</strong>
+      <p>${escapeHtml(hint)}</p>
+    </header>
+    <div class="codex-tool-grid">${cards}</div>
+  </section>`;
+}
+
+// Caminho 0–5 do arquétipo: o que já dá para jogar e o que ainda é plano.
+function pathLadder(progress) {
+  const path = getPath(progress?.archetype);
+  if (!path) return '';
+  const steps = path.levels.map(entry => {
+    const items = entry.items.map(item => `<li>${escapeHtml(item)}</li>`).join('');
+    return `<li class="codex-step ${entry.state}">
+      <span class="codex-step-level">${entry.level}</span>
+      <div class="codex-step-body">
+        <header><strong>${escapeHtml(entry.title)}</strong><em>${escapeHtml(PATH_STATES[entry.state] ?? '')}</em></header>
+        <ul>${items}</ul>
+        ${entry.note ? `<small>${escapeHtml(entry.note)}</small>` : ''}
+      </div>
+    </li>`;
+  }).join('');
+  return `<section class="codex-path" aria-label="Caminho do arquétipo">
+    <header><span class="codex-tag">CAMINHO · NÍVEIS 0–5</span><p>${escapeHtml(path.tagline)}</p></header>
+    <ol class="codex-steps">${steps}</ol>
+  </section>`;
 }
 
 function renderProgress(progress) {
@@ -170,8 +221,10 @@ function renderProgress(progress) {
       </div>
     </header>
     <p class="codex-note">A maestria sobe com o uso: golpes, habilidades, missões e distância percorrida. Não há pontos para gastar.</p>
+    ${toolPicker(progress)}
     ${ultimateCard(progress)}
     <div class="codex-tracks">${rows}</div>
+    ${pathLadder(progress)}
   </section>`;
 }
 
@@ -306,6 +359,12 @@ function bind(root, panel) {
       render();
     });
   });
+  panel.querySelectorAll('.codex-tool[data-tool]').forEach(button => {
+    button.addEventListener('click', () => {
+      if (selectTool(context.progress, button.dataset.tool)) saveGame();
+      render();
+    });
+  });
   panel.querySelectorAll('.codex-slot[data-item]').forEach(button => {
     button.addEventListener('click', () => {
       currentSelection = button.dataset.item;
@@ -360,7 +419,7 @@ export function openCodex(progress, map, player) {
       <div class="codex-body" id="codexPanel" role="tabpanel" tabindex="-1"></div>
       <footer class="codex-footer">
         <span>J / ESC fechar · 1–4 trocar aba · ← → navegar</span>
-        <span id="codexHint">A maestria cresce com o uso.</span>
+        <span id="codexHint">Clique numa ferramenta para trocar a Ultimate do F.</span>
       </footer>
     </section>`;
     document.body.appendChild(overlay);

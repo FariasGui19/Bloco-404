@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { ARCHETYPE_KITS, IMPLEMENTED_ABILITIES, KIT_SLOTS } from '../js/data/archetype-kits.js';
-import { ULTIMATES, ULTIMATE_IDS, getUltimate, getUltimateById } from '../js/data/ultimates.js';
+import { MODULE_ULTIMATE_IDS, ULTIMATES, ULTIMATE_IDS, getUltimate, getUltimateById } from '../js/data/ultimates.js';
+import { TOOL_ULTIMATES, TOOL_ULTIMATE_IDS } from '../js/data/archetype-tools.js';
 import {
   canCastUltimate, ensureUltimate, getUltimateBuff, getUltimateStatus, tryUltimate, updateUltimate,
 } from '../js/game/ultimate.js';
@@ -14,7 +15,11 @@ const ARCHETIPOS = ['motor_bio_forja', 'lamina_dominio_anciao', 'mare_astral', '
 // Catálogo
 // ---------------------------------------------------------------
 assert.deepEqual(Object.keys(ULTIMATES).sort(), [...ARCHETIPOS].sort());
-assert.equal(new Set(ULTIMATE_IDS).size, 4, 'IDs de Ultimate únicos');
+assert.equal(MODULE_ULTIMATE_IDS.length, 4, 'quatro Ultimates de arquétipo');
+assert.equal(TOOL_ULTIMATE_IDS.length, TOOL_ULTIMATES.length, 'toda sobrecarga tem id');
+assert.equal(new Set(ULTIMATE_IDS).size, ULTIMATE_IDS.length, 'IDs de Ultimate únicos');
+assert.equal(ULTIMATE_IDS.length, 4 + TOOL_ULTIMATES.length, 'catálogo = base + sobrecargas');
+assert.equal(getUltimateById('corte_de_reconfiguracao')?.tier, 'tool', 'sobrecarga encontrada por id');
 for (const id of ARCHETIPOS) {
   const ultimate = getUltimate(id);
   assert(ultimate, `${id} precisa de Ultimate`);

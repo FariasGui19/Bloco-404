@@ -2667,7 +2667,13 @@ function drawAbilityEffects(state) {
   ctx.restore();
 }
 
-// Ultimate: onda radial grande, no raio real do efeito, com faíscas subindo.
+// Ultimate: a forma do efeito segue o tipo da sobrecarga ativa.
+//   burst/wave/surge → anéis no raio real
+//   line             → cunha na direção apontada
+//   dash             → rastro atrás do avanço
+//   guard            → cúpula fechada no corpo
+const ULTIMATE_FACING = { down: [1, 1], up: [-1, -1], left: [-1, 1], right: [1, -1] };
+
 function drawUltimateEffect(state) {
   const ultimate = state.player?.ultimate;
   if (!ultimate?.effect) return;
@@ -2675,25 +2681,83 @@ function drawUltimateEffect(state) {
   const player = state.player;
   const x = (player.x - player.y) * HW, y = (player.x + player.y) * HH;
   const t = Math.max(0, Math.min(1, 1 - effect.timeLeft / effect.duration));
+  const kind = effect.kind ?? 'burst';
+  const [fx, fy] = ULTIMATE_FACING[effect.facing] ?? ULTIMATE_FACING.down;
+  const length = Math.hypot(fx, fy) || 1;
+  const screenX = (fx - fy) / length * HW;
+  const screenY = (fx + fy) / length * HH;
+  const fxUnit = screenX / (Math.hypot(screenX, screenY) || 1);
+  const fyUnit = screenY / (Math.hypot(screenX, screenY) || 1);
+
   ctx.save();
   ctx.shadowColor = effect.color;
   ctx.shadowBlur = 18;
   ctx.strokeStyle = effect.color;
-  for (let ring = 0; ring < 3; ring++) {
-    const progresso = Math.min(1, t * 1.25 + ring * .12);
-    const raio = 26 + progresso * 190;
-    ctx.globalAlpha = Math.max(0, (1 - progresso) * .9);
-    ctx.lineWidth = 3 - ring * .6;
-    ctx.beginPath();
-    ctx.ellipse(x, y, raio, raio * .5, 0, 0, Math.PI * 2);
-    ctx.stroke();
-  }
-  ctx.globalAlpha = Math.max(0, 1 - t) * .85;
   ctx.fillStyle = effect.color;
-  for (let i = 0; i < 18; i++) {
-    const angle = i * Math.PI * 2 / 18;
-    const raio = 30 + (i % 5) * 16 + t * 120;
-    ctx.fillRect(x + Math.cos(angle) * raio - 1, y + Math.sin(angle) * raio * .5 - 2 - t * 24, 3, 3);
+
+  if (kind === 'line') {
+    const alcance = Math.max(40, (effect.range ?? 6) * 34) * (0.35 + t * 0.75);
+    const largura = alcance * 0.3;
+    ctx.globalAlpha = Math.max(0, 1 - t) * .9;
+    ctx.lineWidth = 3;
+    for (let faixa = -1; faixa <= 1; faixa++) {
+      const desvio = faixa * largura * 0.45;
+      ctx.beginPath();
+      ctx.moveTo(x + (-fyUnit) * desvio, y - 6 + fxUnit * desvio);
+      ctx.lineTo(x + fxUnit * alcance + (-fyUnit) * desvio * 0.3, y + fyUnit * alcance - 6 + fxUnit * desvio * 0.3);
+      ctx.stroke();
+    }
+    ctx.globalAlpha = Math.max(0, 1 - t) * .55;
+    ctx.fillRect(x + fxUnit * alcance - 3, y - 8 + fyUnit * alcance, 6, 6);
+  } else if (kind === 'dash') {
+    ctx.globalAlpha = Math.max(0, 1 - t) * .85;
+    ctx.lineWidth = 3;
+    for (let i = 0; i < 4; i++) {
+      const recuo = 18 + i * 16 + t * 26;
+      ctx.globalAlpha = Math.max(0, 1 - t) * (.8 - i * .16);
+      ctx.beginPath();
+      ctx.moveTo(x - fxUnit * recuo - fyUnit * 7, y - 12 - fyUnit * recuo - fxUnit * 3);
+      ctx.lineTo(x - fxUnit * recuo + fyUnit * 7, y - 12 - fyUnit * recuo + fxUnit * 3);
+      ctx.stroke();
+    }
+    ctx.globalAlpha = Math.max(0, 1 - t) * .5;
+    for (let i = 0; i < 10; i++) {
+      ctx.fillRect(x + (i % 5) * 11 - 22, y - 6 - (i % 3) * 9 - t * 12, 3, 3);
+    }
+  } else if (kind === 'guard') {
+    const abertura = Math.PI * (.15 + t * .85);
+    const raio = 30 + t * 26;
+    ctx.globalAlpha = Math.max(0, 1 - t) * .95;
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.ellipse(x, y - 10, raio, raio * .78, 0, Math.PI, Math.PI * 2);
+    ctx.stroke();
+    ctx.globalAlpha = Math.max(0, 1 - t) * .4;
+    ctx.beginPath();
+    ctx.ellipse(x, y - 2, raio * 1.15, raio * .34, 0, 0, abertura * 2);
+    ctx.stroke();
+    ctx.globalAlpha = Math.max(0, 1 - t) * .6;
+    for (let i = 0; i < 6; i++) {
+      const angle = Math.PI + i * Math.PI / 5;
+      ctx.fillRect(x + Math.cos(angle) * raio, y - 10 + Math.sin(angle) * raio * .78, 3, 3);
+    }
+  } else {
+    const raioBase = Math.max(70, (effect.radius ?? 5) * 34);
+    for (let ring = 0; ring < 3; ring++) {
+      const progresso = Math.min(1, t * 1.25 + ring * .12);
+      const raio = 26 + progresso * raioBase;
+      ctx.globalAlpha = Math.max(0, (1 - progresso) * .9);
+      ctx.lineWidth = 3 - ring * .6;
+      ctx.beginPath();
+      ctx.ellipse(x, y, raio, raio * .5, 0, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+    ctx.globalAlpha = Math.max(0, 1 - t) * .85;
+    for (let i = 0; i < 18; i++) {
+      const angle = i * Math.PI * 2 / 18;
+      const raio = 30 + (i % 5) * 16 + t * (raioBase * .65);
+      ctx.fillRect(x + Math.cos(angle) * raio - 1, y + Math.sin(angle) * raio * .5 - 2 - t * 24, 3, 3);
+    }
   }
   ctx.restore();
 }

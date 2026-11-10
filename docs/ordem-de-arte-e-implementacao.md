@@ -7,7 +7,24 @@ Gerar e implementar **exatamente duas folhas/imagens por atualização**, seguin
 3. Estação Bio / Bio-Forja (rodadas 0.3.5 e 0.3.6)
 4. Folha de sprites do Bolt (prévia opt-in, sem concessão automática)
 
-## Rodada atual (0.3.23): cor por função e sigilos de Ultimate
+## Rodada atual (0.4.0): caminho 0–5 e sobrecarga por ferramenta
+
+**Nada de arte nova nesta rodada** — e isso é deliberado. O caminho dos
+arquétipos (0 a 5) entrou no jogo como estrutura de dados e painel no Códex, e a
+Ultimate nível 1 passou a ser a sobrecarga da ferramenta escolhida, reusando os
+quatro sigilos que já existem. O efeito em jogo continua procedural, agora com
+seis geometrias (`burst`, `wave`, `line`, `dash`, `guard`, `surge`), porque
+inventar folhas para 16 sobrecargas antes de o combate existir seria arte
+descartável.
+
+A próxima peça de arte honesta é a **pose de execução da Ultimate**, uma por
+arquétipo e não uma por ferramenta: o corpo se prepara igual e o efeito muda.
+Depois disso, a fila continua a mesma — inimigo agressivo (o que falta para o
+combate deixar de ser treino) e a evolução visual do traje por degrau do
+caminho, que o jogador pediu e que só faz sentido quando o degrau tiver
+gameplay.
+
+## Rodada anterior (0.3.23): cor por função e sigilos de Ultimate
 
 Duas peças visuais, dentro da regra: **(1)** uma folha 2×2 com os quatro sigilos
 de Ultimate (`assets/source-art/ui/codex-ultimates.png`), recortada em

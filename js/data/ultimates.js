@@ -21,6 +21,7 @@ export const ULTIMATES = Object.freeze({
   motor_bio_forja: Object.freeze({
     id: 'pulso_forja_viva',
     tier: 'module',
+    signature: 'forja_dome',
     name: 'PULSO DA FORJA VIVA',
     color: '#ffb45c',
     cost: 58,
@@ -35,6 +36,7 @@ export const ULTIMATES = Object.freeze({
   lamina_dominio_anciao: Object.freeze({
     id: 'coroa_da_falha',
     tier: 'module',
+    signature: 'coroa',
     name: 'COROA DA FALHA',
     color: '#ffd465',
     cost: 62,
@@ -49,6 +51,7 @@ export const ULTIMATES = Object.freeze({
   mare_astral: Object.freeze({
     id: 'sinfonia_estuario',
     tier: 'module',
+    signature: 'estuario',
     name: 'SINFONIA DO ESTUÁRIO',
     color: '#7ce8ff',
     cost: 54,
@@ -63,6 +66,7 @@ export const ULTIMATES = Object.freeze({
   nucleo_dez_forma: Object.freeze({
     id: 'horizonte_dez_ecos',
     tier: 'module',
+    signature: 'horizonte',
     name: 'HORIZONTE DE DEZ ECOS',
     color: '#8cff9e',
     cost: 50,

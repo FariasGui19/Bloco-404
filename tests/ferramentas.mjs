@@ -222,6 +222,8 @@ const nucleo = { archetype: 'nucleo_dez_forma', archetypeProgress: {}, tools: { 
 ensureArchetypeProgress(nucleo);
 nucleo.archetypeProgress.nucleo_dez_forma.level = 3;
 const veloz = criarPlayer({ energy: 100 });
+// Ultimate do Núcleo exige a forma ativa (regra do 10X).
+veloz.nucleoForm = 'forma_veloz';
 const impulso = tryUltimate({ player: veloz, progress: nucleo, targets: [], showMessage: () => {}, rng: () => .5 });
 assert.equal(impulso.kind, 'surge');
 assert(impulso.buff.moveSpeedPct > .4, 'forma veloz acelera de verdade');

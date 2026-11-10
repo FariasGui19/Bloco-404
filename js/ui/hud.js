@@ -226,6 +226,12 @@ function updateAbilityHud(state) {
         setText('ultimateState', `NÍVEL ${ultimate.requiredLevel}`);
         setText('ultimateBuff', '');
         if (el.ultimateFill) el.ultimateFill.style.width = '0%';
+      } else if (ultimate.needsForm) {
+        // Núcleo 10X: a Ultimate é da FORMA, não do operador base.
+        setText('ultimateTool', `${getToolLabel(archetypeId)} · ${ultimate.tool?.short ?? 'NÚCLEO'}`);
+        setText('ultimateState', 'TRANSFORME-SE · T');
+        setText('ultimateBuff', '');
+        if (el.ultimateFill) el.ultimateFill.style.width = '0%';
       } else if (ultimate.charging) {
         setText('ultimateTool', ultimate.tool ? `${getToolLabel(archetypeId)} · ${ultimate.tool.short}` : 'ULTIMATE DE ARQUITETURA');
         setText('ultimateState', 'CARREGANDO');
@@ -243,6 +249,7 @@ function updateAbilityHud(state) {
       }
       el.abilityUltimate.classList.toggle('ready', ultimate.ready);
       el.abilityUltimate.classList.toggle('locked', ultimate.locked);
+      el.abilityUltimate.classList.toggle('needs-form', Boolean(ultimate.needsForm));
       el.abilityUltimate.classList.toggle('charging', ultimate.charging);
       el.abilityUltimate.classList.toggle('unaffordable', !ultimate.locked && ultimate.cooldown <= 0 && !ultimate.energyOk);
       el.abilityUltimate.classList.toggle('buffed', Boolean(ultimate.buff));

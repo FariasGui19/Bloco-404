@@ -61,6 +61,12 @@ assert.match(panel.innerHTML, /CAMINHO · NÍVEIS 0–5/, 'escada do caminho apa
 assert.match(panel.innerHTML, /DISPONÍVEL/, 'degrau pronto marcado');
 assert.match(panel.innerHTML, /PLANEJADO/, 'degrau futuro marcado');
 assert.match(panel.innerHTML, /HORIZONTE DE DEZ ECOS/, 'Ultimate base no cartão');
+assert.match(panel.innerHTML, /SÓ COM A FORMA ATIVA/, 'Núcleo avisa que a Ultimate pede transformação');
+assert.match(panel.innerHTML, /ÁRVORE DE FORMAS/, 'árvore do arquétipo aparece na progressão');
+assert.match(panel.innerHTML, /codex-branch projeto/, 'galho futuro marcado como projeto');
+assert.match(panel.innerHTML, /FORMA BRUTA/, 'forma futura listada na árvore');
+assert.match(panel.innerHTML, /EM PROJETO/, 'nós futuros têm rótulo honesto');
+assert.match(panel.innerHTML, /1\/4 GALHOS PRONTOS|2\/4 GALHOS PRONTOS/, 'resumo da árvore');
 assert.equal(JSON.stringify(progress), before, 'ler o Códex não instala ferramenta');
 
 // Com ferramenta escolhida, o cartão vira a sobrecarga nível 1.
@@ -69,6 +75,8 @@ openCodex(progress, { id: 'hub_saguao' }, player);
 assert.match(panel.innerHTML, /VELOCIDADE TEMPORAL/, 'Ultimate da forma escolhida');
 assert.match(panel.innerHTML, /TROQUE A SOBRECARGA/, 'cabeçalho muda quando já há escolha');
 assert.match(panel.innerHTML, /class="codex-tool selected"/, 'cartão da forma marcado como selecionado');
+assert.match(panel.innerHTML, /codex-tool locked/, 'formas em projeto ficam travadas');
+assert.match(panel.innerHTML, /FORMA EM PROJETO/, 'forma sem transformação não instala');
 delete progress.tools;
 
 // Nível 1: ferramenta e Ultimate aparecem travadas com o nível exigido.
@@ -108,8 +116,29 @@ assert.match(panel.innerHTML, /DANO BÁSICO/, 'seta direita avança para atribut
 assert(handleCodexInput(new Set(['escape'])));
 assert(!isCodexOpen(), 'ESC fecha o Códex');
 
+// Maré Astral: a árvore já mostra navegação, nado e travessias como plano.
+const mare = { archetype: 'mare_astral', archetypeProgress: {}, abilities: [], tools: {}, flags: {}, inventory: [] };
+ensureArchetypeProgress(mare);
+mare.archetypeProgress.mare_astral.level = 3;
+openCodex(mare, { id: 'ilha_enseada_ecos' }, player);
+assert.equal(setTab('missoes'), true);
+assert.match(panel.innerHTML, /ROTAS DE MARÉ/, 'mapa marítimo aparece na aba de missões');
+assert.match(panel.innerHTML, /ENSEADA|PRAIA INICIAL/, 'região atual nomeada');
+assert.match(panel.innerHTML, /Manguezal Sussurrante/);
+assert.match(panel.innerHTML, /ROTA ABERTA|EM PROJETO/);
+assert.match(panel.innerHTML, /NADO LIVRE/);
+assert.match(panel.innerHTML, /MISSÕES DE TRAVESSIA/);
+assert.equal(setTab('progressao'), true);
+assert.match(panel.innerHTML, /ÁRVORE DE CORRENTES/);
+assert.match(panel.innerHTML, /NAVEGAÇÃO/, 'galho de navegação no Códex');
+assert.match(panel.innerHTML, /Nado livre e fluido/);
+assert.match(panel.innerHTML, /Rotas marítimas no mapa/);
+assert.match(panel.innerHTML, /Missões de travessia/);
+assert.doesNotMatch(panel.innerHTML, /SÓ COM A FORMA ATIVA/, 'a regra da forma é só do Núcleo');
+
 // Sem arquétipo o painel orienta em vez de quebrar.
 openCodex({ flags: {}, inventory: [], archetype: null }, null, player);
+assert(setTab('missoes'));
 assert(setTab('progressao'));
 assert.match(panel.innerHTML, /Escolha um Módulo de Eco/);
 closeCodex();
@@ -127,4 +156,6 @@ for (const aba of ['missoes', 'progressao', 'inventario', 'atributos']) {
   assert(css.includes(`#codex[data-tab="${aba}"]`), `acento de cor da aba ${aba}`);
 }
 assert(css.includes('.codex-ultimate'), 'cartão da Ultimate estilizado');
+assert(css.includes('.codex-tree') && css.includes('.codex-branch') && css.includes('.codex-node'), 'árvore estilizada');
+assert(css.includes('#abilityUltimate.needs-form'), 'HUD marca a Ultimate esperando a forma');
 console.log('Códex: abas, missões, maestria, inventário, atributos, teclado e leitura sem mutação OK.');

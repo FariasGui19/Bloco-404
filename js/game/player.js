@@ -21,6 +21,12 @@ import {
 } from './world.js';
 
 import { moveWithCollision } from './collision.js';
+import {
+  criarEstadoNado, atualizarNado, multiplicadorVelocidade,
+  podeNadar, destinoValido, NADO,
+} from './nado.js';
+import { getCoastFieldForMap } from '../engine/coast-field.js';
+import { damagePlayer } from './health.js';
 import { getDerivedStats } from './rpg.js';
 import { recordMastery } from './mastery.js';
 import { NUCLEO_FORMS, NUCLEO_VELOZ, getFormSpeedMultiplier } from '../data/nucleo-forms.js';
@@ -113,8 +119,18 @@ export function updatePlayer(dt) {
 
   if (!map) return;
 
+  // ---- NADO ----
+  // `nado` vive no player (e não no mapa) porque o fôlego e a propulsão
+  // são do personagem: trocar de mapa não devolve ar.
+  player.nado ??= criarEstadoNado();
+  const nado = player.nado;
+  const campoCosta = getCoastFieldForMap(map);
+  const efeitoNado = atualizarNado(nado, {
+    map, x: player.x, y: player.y, field: campoCosta, dt,
+  });
+
   const radius = CONFIG.PLAYER_RADIUS;
-  const speed = getPlayerMoveSpeed(state.progress, player);
+  const speed = multiplicadorVelocidade(nado, getPlayerMoveSpeed(state.progress, player));
   const maxStep = speed * dt;
 
   let dx = 0;
@@ -130,17 +146,22 @@ export function updatePlayer(dt) {
     const clicked = input.click;
     input.click = null;
 
-    const spot = nearestStandable(
-      map,
-      clicked.x,
-      clicked.y,
-      radius,
-      CLICK_SNAP_DIST,
-      player
-    );
+    if (podeNadar(map, clicked.x, clicked.y)) {
+      // Clique no mar: nada até lá. `nearestStandable` só conhece terra.
+      player.target = { x: clicked.x, y: clicked.y };
+    } else {
+      const spot = nearestStandable(
+        map,
+        clicked.x,
+        clicked.y,
+        radius,
+        CLICK_SNAP_DIST,
+        player
+      );
 
-    if (spot) {
-      player.target = spot;
+      if (spot) {
+        player.target = spot;
+      }
     }
   }
 
@@ -180,7 +201,8 @@ export function updatePlayer(dt) {
     player,
     dx,
     dy,
-    radius
+    radius,
+    podeNadar
   );
 
   player.moving = moved;
@@ -192,5 +214,14 @@ export function updatePlayer(dt) {
 
   if (!moved && player.target && !keyboardDirection) {
     player.target = null;
+  }
+
+  // Afogamento: usa o mesmo caminho de dano do resto do jogo (invencibilidade,
+  // texto de dano, morte e respawn já vêm de graça). O "pulo" de ~1 s evita
+  // drenar vida quadro a quadro e deixar o dano ilegível.
+  player.afogamentoAcumulado = (player.afogamentoAcumulado ?? 0) + efeitoNado.dano;
+  if (player.afogamentoAcumulado >= 12) {
+    player.afogamentoAcumulado = 0;
+    damagePlayer(player, state.progress, NADO.danoAfogamento, 'afogamento');
   }
 }

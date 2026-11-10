@@ -10,6 +10,8 @@ import { updateHealth } from './game/health.js';
 import { updateHazards } from './game/hazards.js';
 import { updateNucleoForm } from './game/nucleo-form.js';
 import { canStandAt } from './game/collision.js';
+import { dispararPropulsao } from './game/nado.js';
+import { desenharMedidorAr } from './ui/nado-hud.js';
 import { CONFIG } from './config.js';
 import { isCodexOpen, openCodex, closeCodex, handleCodexInput } from './ui/codex.js';
 import { updateOwnedCompanion } from './game/companions.js';
@@ -420,6 +422,13 @@ async function update(dt) {
     }
 
     if (!abilityLocksMovement) {
+      // Propulsão do Maré: SHIFT na água. Antes do movimento para o
+      // multiplicador de velocidade já valer neste quadro.
+      const nado = player.nado;
+      if (nado?.ativo && (input.pressed.has('shift') || input.pressed.has('shiftleft'))) {
+        const mareAlinhado = state.progress?.archetype === 'mare_astral';
+        dispararPropulsao(nado, mareAlinhado);
+      }
       updatePlayer(dt);
     }
 
@@ -461,6 +470,8 @@ async function frame(now) {
 
   render(map, state);
   updateHud(map, state);
+  // Fôlego só aparece quando importa (nadando); em terra não ocupa tela.
+  if (state.player?.nado?.ativo) desenharMedidorAr(state.player.nado);
 
   endInputFrame();
 }

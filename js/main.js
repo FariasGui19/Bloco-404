@@ -12,6 +12,8 @@ import { updateNucleoForm } from './game/nucleo-form.js';
 import { canStandAt } from './game/collision.js';
 import { dispararPropulsao } from './game/nado.js';
 import { desenharMedidorAr } from './ui/nado-hud.js';
+import { atualizarMissaoMare, criarFragmentosDeMare } from './game/mare-missao.js';
+import { getCoastFieldForMap } from './engine/coast-field.js';
 import { CONFIG } from './config.js';
 import { isCodexOpen, openCodex, closeCodex, handleCodexInput } from './ui/codex.js';
 import { updateOwnedCompanion } from './game/companions.js';
@@ -446,6 +448,22 @@ async function update(dt) {
 
   updateNpcBrains(dt);
   updateCoastalFauna(getFloor(), state.fauna, player, dt);
+
+  // Missão do Maré: eventos de mergulho e coleta saem do estado real do
+  // nado, nunca de um contador de tempo.
+  const mapaAtual = getFloor();
+  if (mapaAtual?.aguaPraia && player.nado) {
+    player.fragmentosMare ??= criarFragmentosDeMare(mapaAtual, getCoastFieldForMap(mapaAtual));
+    const res = atualizarMissaoMare({
+      map: mapaAtual, player, nado: player.nado, progress: state.progress,
+      fragmentos: player.fragmentosMare,
+    });
+    if (res.coletou) {
+      player.ability ??= {};
+      player.ability.lastMessage = 'FRAGMENTO DE MARÉ RECOLHIDO';
+      player.ability.messageTimer = 2.2;
+    }
+  }
   updateOwnedCompanion(state, getFloor(), dt, canStandAt);
   updateCamera(dt, player.x, player.y);
 }

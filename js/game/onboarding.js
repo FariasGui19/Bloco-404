@@ -224,6 +224,9 @@ function finalizeArchetype(actor, archetypeId) {
   state.progress.flags.nexoEvaluationCompleted = true;
   // Primeira missão contável: apresenta o motor de objetivos e recompensas.
   startQuest(state.progress, 'calibracao_de_campo');
+  // O Maré Astral já nasce com a missão da maré aberta: é o arquétipo que
+  // respira embaixo d'água e o que mais ganha com a praia nova.
+  if (archetypeId === 'mare_astral') startQuest(state.progress, 'mare_profunda');
 
   saveGame();
 

@@ -11,6 +11,8 @@ import { getSprite } from './sprites.js';
 import { createBeachSurface } from './beach-surface.js';
 import { getSeaCanvas, foamArcs } from './beach-water.js';
 import { getVidaAquatica, atualizarCardumes, atualizarBolhas, CORES_CARDUME } from '../game/vida-aquatica.js';
+import { criarFragmentosDeMare, fragmentosColetados } from '../game/mare-missao.js';
+import { createCoastField } from './coast-field.js';
 import { bridgeGateGeometry } from './bridge-geometry.js';
 import { getBioWalkFrame, bioWalkSheet } from '../data/bio-walk.js';
 import { faunaFootAnchor } from '../game/fauna-costeira.js';
@@ -484,6 +486,7 @@ function drawBeachRipples(map) {
 // listas estáticas. Só os visíveis são desenhados.
 // =====================================================================
 const vidaCache = new WeakMap();
+const fragmentosCache = new WeakMap();
 
 function drawVidaAquatica(map, state) {
   if (!map.aguaPraia) return;
@@ -601,6 +604,40 @@ function drawVidaAquatica(map, state) {
       ctx.lineTo(ix - 6.5 * flip, iy + 2.2);
       ctx.closePath();
       ctx.fill();
+    }
+  }
+
+  // ---- Fragmentos de maré: o prêmio do mergulho, girando devagar
+  let frags = fragmentosCache.get(map);
+  if (!frags) {
+    frags = criarFragmentosDeMare(map, createCoastField(map.aguaPraia, 8));
+    fragmentosCache.set(map, frags);
+  }
+  if (frags.length) {
+    const pegos = fragmentosColetados(state.progress);
+    for (const frag of frags) {
+      if (pegos.has(frag.id) || !dentro(frag.x, frag.y, 2)) continue;
+      const ix = (frag.x - frag.y) * HW;
+      const iy = (frag.x + frag.y) * HH + Math.sin(t * 1.6 + frag.fase) * 3;
+      const brilho = .62 + .28 * Math.sin(t * 2.4 + frag.fase);
+      // Halo.
+      const halo = ctx.createRadialGradient(ix, iy, 0, ix, iy, 16);
+      halo.addColorStop(0, `rgba(120,236,255,${(brilho * .5).toFixed(3)})`);
+      halo.addColorStop(1, 'rgba(120,236,255,0)');
+      ctx.fillStyle = halo;
+      ctx.beginPath();
+      ctx.arc(ix, iy, 16, 0, Math.PI * 2);
+      ctx.fill();
+      // Cristal.
+      ctx.fillStyle = `rgba(196,248,255,${brilho.toFixed(3)})`;
+      ctx.beginPath();
+      ctx.moveTo(ix, iy - 7); ctx.lineTo(ix + 4.5, iy);
+      ctx.lineTo(ix, iy + 7); ctx.lineTo(ix - 4.5, iy);
+      ctx.closePath();
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(72,190,220,.75)';
+      ctx.lineWidth = .8;
+      ctx.stroke();
     }
   }
 

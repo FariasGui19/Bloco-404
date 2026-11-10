@@ -93,6 +93,29 @@ Gaivotas pousando e levantando voo (os 8 quadros já cobrem), caranguejos com
 rotina de beira de água, capivaras na borda da mata. Orçamento por região e
 simulação resumida fora da tela, como o `visao-expansao-arquipelago.md` pede.
 
+## Estado real da entrega
+
+Todas as fases do plano foram implementadas e commitadas, cada uma com
+teste-contrato próprio:
+
+| Fase | O que entrou | Teste |
+|---|---|---|
+| 1 | costa contínua (`coast-field.js`), mar assado, areia sem tecido | `beach-surface.mjs`, `praia-performance.mjs` |
+| 2 | estação em volta do trem + 6 marcos de orla | `estacao-praia-0314.mjs`, `arquipelago-polimento.mjs` |
+| 3 | natação, fôlego, afogamento, propulsão do Maré | `praia-nado.mjs` |
+| 4 | recifes, cardumes, raios, bolhas, fragmentos | `praia-vida-aquatica.mjs` |
+| 5 | missão MARÉ PROFUNDA (mergulho → coleta → recompensa) | `praia-missao-mare.mjs` |
+
+Duas decisões mudaram em relação ao plano original, e por bons motivos:
+
+- **Não existe `map.aguaNado`.** A água nadável é lida de `aguaPraia` e a
+  profundidade vem do campo de costa. Criar uma segunda grade de verdade
+  sobre o chão seria justamente o tipo de duplicação que gera divergência
+  entre o que se vê e o que se anda.
+- **Nadar é mais lento que andar** (0,82× no raso, 0,92× no fundo). O plano
+  não previa isso; sem essa trava a água virava atalho e furava o desenho
+  de rotas.
+
 ## Regras que não mudam
 
 - A máscara de colisão continua sendo a única fonte de caminhabilidade.

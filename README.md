@@ -18,6 +18,12 @@ Os testes são scripts Node, sem dependências:
 for f in tests/*.mjs; do node --experimental-default-type=module "$f" || break; done
 ```
 
+`tests/estrutura.mjs` confere que todo import relativo e todo asset citado no
+HTML/CSS existem com a caixa certa (import quebrado é a causa clássica de
+`Uncaught SyntaxError: Unexpected token '<'`: o servidor devolve HTML no lugar
+do `.js`). `tests/boot.mjs` importa `js/main.js` inteiro com um DOM falso para
+pegar export faltando antes de abrir o navegador.
+
 ## Organização
 
 | Pasta | Conteúdo |

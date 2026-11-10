@@ -16,8 +16,10 @@ import { getUltimateStatus } from '../game/ultimate.js';
 import { listTools, selectTool } from '../game/tools.js';
 import { describeNextUnlock, getUnlockState, getUnlockStepFor } from '../game/unlocks.js';
 import { getPath, LEVEL_TITLES, PATH_STATES } from '../data/archetype-progression.js';
+import { getTree, getTreeSummary, TREE_STATE_LABELS } from '../data/archetype-trees.js';
 import { TOOL_LABELS } from '../data/archetype-tools.js';
 import { listTrackedQuests } from '../game/quests.js';
+import { ARQUIPELAGO_REGIONS } from '../data/arquipelago-regioes.js';
 import { getItem, listInventory } from '../data/items.js';
 
 const ICONS = 'assets/sprites/ui/codex/icone-';
@@ -64,6 +66,33 @@ function renderTabs() {
   </nav>`;
 }
 
+// Rotas marítimas da Maré Astral: mapa do arquipélago com o que já navega e o
+// que ainda é projeto. Nada aqui move o jogador — é leitura de mapa.
+function mareRoutes(progress, map) {
+  if (progress?.archetype !== 'mare_astral') return '';
+  const atual = ARQUIPELAGO_REGIONS.find(region => region.mapId && region.mapId === map?.id)
+    ?? ARQUIPELAGO_REGIONS.find(region => region.id === 'praia_inicial');
+  const vizinhas = ARQUIPELAGO_REGIONS.filter(region => atual.neighbours.includes(region.id));
+  const rota = region => `<li class="codex-route ${region.status === 'jogavel' ? 'pronto' : 'projeto'}">
+      <span class="codex-route-pin" aria-hidden="true">${region.status === 'jogavel' ? '◆' : '◇'}</span>
+      <strong>${escapeHtml(region.nome)}</strong>
+      <em>${region.status === 'jogavel' ? 'ROTA ABERTA' : 'EM PROJETO'}</em>
+      <small>${escapeHtml(region.biome)}</small>
+    </li>`;
+  const lista = vizinhas.length ? vizinhas.map(rota).join('') : '<li class="codex-route projeto"><strong>Nenhuma vizinha mapeada</strong></li>';
+  return `<aside class="codex-mare" aria-label="Rotas de maré">
+      <span class="codex-tag">ROTAS DE MARÉ</span>
+      <strong>${escapeHtml(atual.nome)}</strong>
+      <ul>${lista}</ul>
+      <div class="codex-mare-modes">
+        <span class="codex-mare-mode projeto"><b>NADO LIVRE</b><em>EM PROJETO</em><small>movimento fluido contínuo na água funda</small></span>
+        <span class="codex-mare-mode projeto"><b>NAVEGAÇÃO</b><em>EM PROJETO</em><small>correntes levam a ilhas e portos</small></span>
+        <span class="codex-mare-mode projeto"><b>MISSÕES DE TRAVESSIA</b><em>EM PROJETO</em><small>rotas com carga e pouso</small></span>
+      </div>
+      <p class="codex-note">Mapa do arquipélago já registra as ilhas; navegar entre elas fica para o sistema de navegação.</p>
+    </aside>`;
+}
+
 function renderMissions(progress, map) {
   const quest = progress?.activeQuest;
   const main = quest
@@ -104,7 +133,7 @@ function renderMissions(progress, map) {
   return `<section class="codex-section" aria-label="Missões">
     <div class="codex-columns">
       <div class="codex-column">${main}${cards}</div>
-      <aside class="codex-column codex-column-side">${exploration}</aside>
+      <aside class="codex-column codex-column-side">${exploration}${mareRoutes(progress, map)}</aside>
     </div>
   </section>`;
 }
@@ -123,11 +152,15 @@ function ultimateCard(progress) {
     : !status.energyOk ? `FALTA ${Math.max(0, definition.cost - status.energy)} ENERGIA`
     : 'PRONTA';
   const camada = tool ? `SOBRECARGA · ${tool.short}` : 'ULTIMATE DE ARQUÉTIPO · BASE';
+  const avisoForma = status.needsForm
+    ? '<p class="codex-form-warning">SÓ COM A FORMA ATIVA · TRANSFORME-SE COM <kbd>T</kbd> ANTES DE SOLTAR.</p>'
+    : '';
   return `<article class="codex-ultimate${status.ready ? ' ready' : ''}${status.locked ? ' locked' : ''}" style="--ultimate:${definition.color}">
     <img class="codex-ultimate-icon" src="${ULTIMATE_ICONS}${progress.archetype}.png" alt="" aria-hidden="true" draggable="false">
     <div>
       <header><span class="codex-tag">F · ${camada}</span><strong>${escapeHtml(definition.name)}</strong><em>${estado}</em></header>
       <p>${escapeHtml(definition.description)}</p>
+      ${avisoForma}
       <footer>${definition.cost} ENERGIA · RECARGA ${definition.cooldown}s · ${escapeHtml(definition.effectText)}</footer>
     </div>
   </article>`;
@@ -150,9 +183,9 @@ function toolPicker(progress) {
       aria-pressed="${tool.selected}" ${tool.locked ? 'disabled aria-disabled="true"' : ''}>
       <span class="codex-tool-tag">${escapeHtml(tool.short)}</span>
       <strong>${escapeHtml(tool.name)}</strong>
-      <small>NÍVEL 1 · ${escapeHtml(tool.ultimate.name)}</small>
+      <small>${tool.playable ? 'NÍVEL 1' : 'EM PROJETO'} · ${escapeHtml(tool.ultimate.name)}</small>
       <em>${escapeHtml(tool.tagline)}</em>
-      <i class="codex-tool-cost">${tool.locked ? `BLOQUEADA · NÍVEL ${tool.requiredLevel}` : `${tool.ultimate.cost} EN · ${tool.ultimate.cooldown}s`}</i>
+      <i class="codex-tool-cost">${!tool.playable ? 'FORMA EM PROJETO' : tool.locked ? `BLOQUEADA · NÍVEL ${tool.requiredLevel}` : `${tool.ultimate.cost} EN · ${tool.ultimate.cooldown}s`}</i>
     </button>`).join('');
   return `<section class="codex-tools" aria-label="Escolha de ${escapeHtml(label)}">
     <header>
@@ -188,6 +221,37 @@ function pathLadder(progress) {
   return `<section class="codex-path" aria-label="Caminho do arquétipo">
     <header><span class="codex-tag">CAMINHO · NÍVEIS 0–5</span><p>${escapeHtml(path.tagline)}</p></header>
     <ol class="codex-steps">${steps}</ol>
+  </section>`;
+}
+
+// Árvore do arquétipo: o horizonte de cada galho, sem prometer o que não existe.
+function treePanel(progress) {
+  const tree = getTree(progress?.archetype);
+  if (!tree) return '';
+  const resumo = getTreeSummary(progress.archetype);
+  const galhos = tree.branches.map(branch => {
+    const estado = TREE_STATE_LABELS[branch.state] ?? 'PLANEJADO';
+    const nos = branch.nodes.map(node => {
+      const rotulo = TREE_STATE_LABELS[node.state] ?? 'PLANEJADO';
+      return `<li class="codex-node ${node.state}">
+        <strong>${escapeHtml(node.name)}</strong>
+        <em>${escapeHtml(rotulo)}</em>
+        ${node.note ? `<small>${escapeHtml(node.note)}</small>` : ''}
+      </li>`;
+    }).join('');
+    return `<article class="codex-branch ${branch.state}">
+      <header><strong>${escapeHtml(branch.name)}</strong><em>${escapeHtml(estado)}</em></header>
+      <ul>${nos}</ul>
+    </article>`;
+  }).join('');
+  return `<section class="codex-tree" aria-label="Árvore do arquétipo">
+    <header>
+      <span class="codex-tag">ÁRVORE · ${resumo.prontos}/${resumo.branches} GALHOS PRONTOS</span>
+      <strong>${escapeHtml(tree.title)}</strong>
+      <p>${escapeHtml(tree.tagline)}</p>
+    </header>
+    <div class="codex-branches">${galhos}</div>
+    <p class="codex-note">${resumo.nodesProntos} de ${resumo.nodes} nós já existem em jogo. Nós <em>EM PROJETO</em> aparecem para mostrar o horizonte — não dão poder nenhum ainda.</p>
   </section>`;
 }
 
@@ -238,6 +302,7 @@ function renderProgress(progress) {
     ${toolPicker(progress)}
     ${ultimateCard(progress)}
     <div class="codex-tracks">${rows}</div>
+    ${treePanel(progress)}
     ${pathLadder(progress)}
   </section>`;
 }

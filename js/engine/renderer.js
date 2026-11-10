@@ -6,6 +6,7 @@
 // =====================================================================
 import { CONFIG, TILE } from '../config.js';
 import { camera, view, worldToScreen, isoToWorld } from './camera.js';
+import { drawUltimateSignature } from './ultimate-visuals.js';
 import { getSprite } from './sprites.js';
 import { createBeachSurface } from './beach-surface.js';
 import { bridgeGateGeometry } from './bridge-geometry.js';
@@ -2794,6 +2795,21 @@ function drawUltimateEffect(state) {
   ctx.shadowBlur = 18;
   ctx.strokeStyle = effect.color;
   ctx.fillStyle = effect.color;
+
+  // Cada Ultimate tem desenho próprio; o tipo (linha/onda/guarda...) é só o
+  // formato do dano. Sem assinatura, cai no desenho genérico abaixo.
+  if (drawUltimateSignature(ctx, {
+    signature: effect.signature,
+    kind,
+    color: effect.color,
+    x, y, t,
+    dir: { x: fxUnit, y: fyUnit },
+    radius: effect.radius ?? 0,
+    range: effect.range ?? 0,
+  })) {
+    ctx.restore();
+    return;
+  }
 
   if (kind === 'line') {
     const alcance = Math.max(40, (effect.range ?? 6) * 34) * (0.35 + t * 0.75);

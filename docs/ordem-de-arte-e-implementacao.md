@@ -214,6 +214,14 @@ O portal cenográfico passou a envolver melhor a traseira do trem: foi ampliado 
 - **Corrida frontal e traseira continuam pendentes.** Novas gerações repetiram poses de ataque/repouso, ângulos errados ou membros sem alternância; não foram integradas. A interface, transformação e corrida lateral existentes permanecem iguais. Não considerar este estudo uma corrida completa.
 - Capturas pontuais de estação e idle verificadas no renderer via canvas Node; ainda falta avaliação em navegador e em movimento.
 
+### 0.6.0 — assinaturas visuais, árvores e forma do Núcleo
+- Cada Ultimate ganhou **desenho próprio** (`js/engine/ultimate-visuals.js`, 20 assinaturas). O `kind` continua definindo o dano; a assinatura define o visual. Sem assinatura, o renderer usa o desenho antigo. Nenhum sprite novo: tudo procedural.
+- Validação honesta: `tests/visual-ultimates.mjs` prova que as 20 desenham sem número inválido e que nenhuma repete a sequência de outra. Isso é **verificação de comandos de desenho**, não avaliação estética — a leitura final é no navegador.
+- Árvores por arquétipo no Códex (`js/data/archetype-trees.js`): galho `pronto` existe em jogo; nó `EM PROJETO` é horizonte e não entrega poder. Nenhum nó carrega dano/custo.
+- Núcleo 10X: só a **Forma Veloz** tem transformação. Bruta, Fluida e Núcleo ficam `playable: false` (aparecem na árvore e no seletor como `FORMA EM PROJETO`), porque instalar uma forma sem transformação daria um F morto. Sem forma ativa, a Ultimate do Núcleo não solta: HUD mostra `TRANSFORME-SE · T` e o Códex avisa `SÓ COM A FORMA ATIVA`.
+- Maré Astral: bloco **ROTAS DE MARÉ** na aba Missões do Códex (região atual, vizinhas `ROTA ABERTA`/`EM PROJETO`) e três modos listados como plano — nado livre, navegação e missões de travessia. É leitura de mapa: não cria portal, não move o jogador, não altera save.
+- **Pendente:** o sistema de navegação em si (nado livre, rotas com destino, portos, missões de travessia) e as transformações Bruta/Fluida/Núcleo. Avaliação visual das novas assinaturas em movimento continua no navegador.
+
 ## Justificativa da fila
 
 A Estação Bio (0.3.5 e 0.3.6) foi priorizada para consolidar o ciclo terrestre

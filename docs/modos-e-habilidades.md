@@ -8,7 +8,7 @@ Cada operador escolhe um arquétipo; um possível morfador mestre futuro não é
 
 O caminho vale para os quatro módulos, com nomes próprios em cada degrau:
 
-| Nível do caminho | O que é | Nível do arquétipo | Estado em 0.5.0 |
+| Nível do caminho | O que é | Nível do arquétipo | Estado em 0.6.0 |
 | --- | --- | --- | --- |
 | 0 | Módulo instalado | — | disponível |
 | 1 | Kit básico (Q/R) | 1 | disponível |
@@ -21,7 +21,7 @@ O Códex → **Progressão** mostra a escada inteira e marca cada degrau como
 `DISPONÍVEL`, `NÍVEL X · FALTAM Y` ou `PLANEJADO`; nada ali concede poder por
 conta própria. O jogador não precisa desbloquear tudo de uma vez.
 
-### Liberação por nível (0.5.0)
+### Liberação por nível (0.6.0)
 
 O nível do arquétipo (XP de combate, missões e maestria) abre o caminho:
 
@@ -49,6 +49,64 @@ Apertei F, o corpo **não** solta na hora:
 2. **soltura** — a geometria da sobrecarga (cone, onda, guarda, avanço ou
    sintonia) aparece junto com tremor de câmera e clarão curto na cor da
    Ultimate; a recarga já começou na carga, então não dá para empilhar.
+
+### Assinaturas visuais (0.6.0)
+
+Cada Ultimate tem **desenho próprio**, não só a geometria do dano. O
+`kind` (`burst`, `wave`, `line`, `dash`, `guard`, `surge`) continua decidindo o
+**dano**; a assinatura decide o **visual**. São 20 desenhos procedurais em
+`js/engine/ultimate-visuals.js` (16 sobrecargas + 4 base), sem sprite novo:
+
+| Arquétipo | Assinaturas |
+| --- | --- |
+| Bio-Forja | `serra` (lâmina girando + corte serrilhado), `martelo` (cabeça desce e racha o chão), `cabos` (seis cabos ancorando), `propulsores` (jatos + linhas de impulso), `forja_dome` (cúpula de placas) |
+| Domínio | `lamina_vertical` (lâmina cai do alto e corta o chão), `muralha_hex` (muralha de hexágonos), `tita` (silhueta de titã subindo), `trono` (trono antigo + onda quadrada), `coroa` (coroa de runas) |
+| Maré | `cupula_agua` (domo líquido com gotas), `vortice` (espiral abissal), `chicote` (três açoites em leque), `sonar` (anéis + cardume), `estuario` (leque de maré) |
+| Núcleo | `tempo` (relógio + ecos atrasados), `punho_eco` (punho duplicado), `fenda` (rasgo entre dois ecos), `sobreposicao` (dez silhuetas em órbita), `horizonte` (anéis de dez ecos) |
+
+O desenho é chamado com o tempo normalizado do efeito (`t` 0 → 1), a direção
+apontada e a cor da Ultimate. Se a assinatura não existir, o renderer cai no
+desenho genérico antigo — nada some se um dado novo esquecer o campo.
+`tests/visual-ultimates.mjs` garante que as 20 desenham sem número inválido e
+que nenhuma repete a sequência de outra.
+
+## Árvores dos arquétipos (0.6.0)
+
+O caminho 0–5 diz **em que degrau** o operador está; a árvore diz **para onde
+cada galho vai**. Ela aparece no Códex → **Progressão**, abaixo da escada
+(`js/data/archetype-trees.js`):
+
+| Arquétipo | Galhos |
+| --- | --- |
+| Bio-Forja | Ferramentas (pronto) · Protocolo de sobreposição (projeto) · Arquiteto de eco (projeto) |
+| Domínio | Armas (pronto) · Guarda longa (projeto) · Coroa do Domínio (projeto) |
+| Maré | Fluxo (pronto) · Pressão (pronto) · Navegação (projeto) · Chamado (pronto) |
+| Núcleo 10X | Forma Veloz (pronto) · Forma Bruta · Forma Fluida · Forma Núcleo (projeto) |
+
+Regra de honestidade: nó `pronto` existe em jogo; nó `EM PROJETO` é horizonte
+desenhado e **não entrega poder**. Nenhum nó carrega dano, custo ou bônus — isso
+continua nas tabelas de habilidade.
+
+### Núcleo 10X: forma é pré-requisito
+
+As Ultimates do Núcleo são da **forma**, não do operador base:
+
+- **só a Forma Veloz tem transformação** hoje (tecla T); Bruta, Fluida e Núcleo
+  aparecem na árvore e no seletor como `FORMA EM PROJETO` e **não podem ser
+  instaladas** (`playable: false`) — assim ninguém escolhe uma forma e fica com
+  um F morto;
+- sem forma ativa, o F não solta: a HUD mostra `TRANSFORME-SE · T` e o Códex
+  avisa `SÓ COM A FORMA ATIVA`; tentar não cobra energia nem conta uso;
+- com a forma ativa, a Ultimate sai normalmente e a assinatura visual viaja no
+  efeito (`effect.signature`).
+
+### Maré Astral: rotas no Códex
+
+A aba **Missões** do Códex ganhou o bloco **ROTAS DE MARÉ** (só para quem usa a
+Maré): região atual, vizinhas com `ROTA ABERTA` (◆) ou `EM PROJETO` (◇), e três
+modos listados como plano — **nado livre**, **navegação** e **missões de
+travessia**. É leitura de mapa: nada liga portal, não move o jogador e não
+altera save. O sistema de navegação em si continua pendente.
 
 ## Ultimate — duas camadas
 

@@ -101,10 +101,19 @@ assert.equal(tryUltimate({ player, progress, targets: [perto] }), null);
 assert.equal(player.energy, energiaAntes, 'bloqueio não cobra energia');
 
 // Bônus também soma velocidade quando a Ultimate é do Núcleo.
-const nucleoPlayer = { x: 0, y: 0, health: 100, maxHealth: 100, energy: 100, maxEnergy: 100, ability: {} };
+// O Núcleo só solta Ultimate transformado: a forma é pré-requisito.
+const nucleoPlayer = { x: 0, y: 0, health: 100, maxHealth: 100, energy: 100, maxEnergy: 100, ability: {}, nucleoForm: null };
 const nucleoProgress = { archetype: 'nucleo_dez_forma', archetypeProgress: {} };
 ensureArchetypeProgress(nucleoProgress);
 nucleoProgress.archetypeProgress.nucleo_dez_forma.level = 3;
+const semForma = canCastUltimate(nucleoPlayer, nucleoProgress);
+assert.equal(semForma.ok, false, 'Núcleo sem forma não solta Ultimate');
+assert.equal(semForma.needsForm, true);
+assert.match(semForma.reason, /TRANSFORME-SE/);
+assert.equal(getUltimateStatus(nucleoPlayer, nucleoProgress).ready, false, 'HUD mostra espera pela forma');
+assert.equal(tryUltimate({ player: nucleoPlayer, progress: nucleoProgress, targets: [], rng: () => .5 }), null);
+assert.equal(nucleoPlayer.energy, 100, 'tentar sem forma não cobra energia');
+nucleoPlayer.nucleoForm = 'forma_veloz';
 tryUltimate({ player: nucleoPlayer, progress: nucleoProgress, targets: [], rng: () => .5 });
 const nucleoSem = getDerivedStats(nucleoProgress, { ultimate: { buff: null } });
 const nucleoCom = getDerivedStats(nucleoProgress, nucleoPlayer);

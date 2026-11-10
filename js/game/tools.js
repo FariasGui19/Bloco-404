@@ -40,7 +40,8 @@ export function listTools(progress, archetype = progress?.archetype) {
   return getTools(archetype).map(tool => ({
     ...tool,
     selected: tool.id === selected,
-    locked: !access.unlocked,
+    playable: tool.playable !== false,
+    locked: !access.unlocked || tool.playable === false,
     requiredLevel: access.requiredLevel,
     ultimate: tool.ultimate,
   }));
@@ -56,7 +57,7 @@ export function selectTool(progress, toolId, archetype = progress?.archetype) {
     return null;
   }
   const tool = getTool(archetype, toolId);
-  if (!tool) return null;
+  if (!tool || tool.playable === false) return null;
   progress.tools ??= {};
   progress.tools[archetype] = tool.id;
   return tool;
@@ -71,7 +72,8 @@ export function ensureTools(progress) {
   }
   for (const archetype of Object.keys(ARCHETYPE_TOOLS)) {
     if (progress.tools[archetype] === undefined) continue;
-    if (!getTool(archetype, progress.tools[archetype])) delete progress.tools[archetype];
+    const escolhida = getTool(archetype, progress.tools[archetype]);
+    if (!escolhida || escolhida.playable === false) delete progress.tools[archetype];
   }
   return progress;
 }

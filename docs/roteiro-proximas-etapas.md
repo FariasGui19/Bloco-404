@@ -5,11 +5,20 @@
 - Estação Bio 0.3.5-bio (cabeceira, distribuidor, rede, válvula, 30/30 testes, PR #30 mesclada)
 - Estação Bio 0.3.6-bio (margem baixa, fundação, rota da missão, diário, portal, 30/30 testes, capturas v36-*.png)
 
+## Concluído na 0.6.0
+- Assinaturas visuais das 20 Ultimates (Bio-Forja, Domínio, Maré, Núcleo) em `js/engine/ultimate-visuals.js`.
+- Árvores por arquétipo no Códex (`js/data/archetype-trees.js`), com nós prontos e em projeto.
+- Núcleo 10X: Ultimate só com a forma ativa; formas futuras listadas como projeto.
+- Maré Astral: rotas de maré no Códex (leitura de mapa).
+
 ## Em fila (prioridade)
 1. Animações dos arquétipos (Saguão → Arquétipos → Bio-Forja → Bolt)
    - Arquétipo 1: ataque básico adaptativo, 4 habilidades (Q/R + Ultimate), direção, escala, pés, transparência (conferir `docs/prompts-sprites-precisao.md`).
    - Arquétipo 2: ...
-2. Bolt (cachorro real): prévia opt-in no diário (não conceder automaticamente), obtenção, autorização, animações, progressão.
+2. Navegação marítima da Maré (em projeto): nado livre e fluido, correntes
+   entre ilhas, portos e missões de travessia. Hoje só o mapa no Códex.
+3. Formas Bruta, Fluida e Núcleo do 10X, cada uma com transformação própria.
+4. Bolt (cachorro real): prévia opt-in no diário (não conceder automaticamente), obtenção, autorização, animações, progressão.
 
 ## Missão completa (primeira missão visual/mecanicamente pronta)
 - Ilha compartilhada, ampla e coerente (áreas exploráveis, missões próprias, marcantes).

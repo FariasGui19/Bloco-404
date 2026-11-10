@@ -45,6 +45,7 @@ export const ARCHETYPE_TOOLS = Object.freeze({
         ultimate: Object.freeze({
           id: 'corte_de_reconfiguracao',
           tier: 'tool',
+          signature: 'serra',
           name: 'CORTE DE RECONFIGURAÇÃO',
           color: '#ff8a4c',
           kind: 'line',
@@ -69,6 +70,7 @@ export const ARCHETYPE_TOOLS = Object.freeze({
         ultimate: Object.freeze({
           id: 'martelo_de_forja',
           tier: 'tool',
+          signature: 'martelo',
           name: 'MARTELO DE FORJA',
           color: '#ffc861',
           kind: 'burst',
@@ -92,6 +94,7 @@ export const ARCHETYPE_TOOLS = Object.freeze({
         ultimate: Object.freeze({
           id: 'rede_de_ancoragem',
           tier: 'tool',
+          signature: 'cabos',
           name: 'REDE DE ANCORAGEM',
           color: '#b78cff',
           kind: 'wave',
@@ -115,6 +118,7 @@ export const ARCHETYPE_TOOLS = Object.freeze({
         ultimate: Object.freeze({
           id: 'quebra_limite_cinetico',
           tier: 'tool',
+          signature: 'propulsores',
           name: 'QUEBRA-LIMITE CINÉTICO',
           color: '#54ccff',
           kind: 'dash',
@@ -149,6 +153,7 @@ export const ARCHETYPE_TOOLS = Object.freeze({
         ultimate: Object.freeze({
           id: 'corte_de_ruptura',
           tier: 'tool',
+          signature: 'lamina_vertical',
           name: 'CORTE DE RUPTURA',
           color: '#ffd465',
           kind: 'line',
@@ -173,6 +178,7 @@ export const ARCHETYPE_TOOLS = Object.freeze({
         ultimate: Object.freeze({
           id: 'muralha_de_frequencia',
           tier: 'tool',
+          signature: 'muralha_hex',
           name: 'MURALHA DE FREQUÊNCIA',
           color: '#b78cff',
           kind: 'guard',
@@ -197,6 +203,7 @@ export const ARCHETYPE_TOOLS = Object.freeze({
         ultimate: Object.freeze({
           id: 'corpo_de_titanio',
           tier: 'tool',
+          signature: 'tita',
           name: 'CORPO DE TITÂNIO',
           color: '#ff7d8f',
           kind: 'guard',
@@ -221,6 +228,7 @@ export const ARCHETYPE_TOOLS = Object.freeze({
         ultimate: Object.freeze({
           id: 'impacto_do_trono_antigo',
           tier: 'tool',
+          signature: 'trono',
           name: 'IMPACTO DO TRONO ANTIGO',
           color: '#ff9a5c',
           kind: 'dash',
@@ -255,6 +263,7 @@ export const ARCHETYPE_TOOLS = Object.freeze({
         ultimate: Object.freeze({
           id: 'cupula_de_pressao',
           tier: 'tool',
+          signature: 'cupula_agua',
           name: 'CÚPULA DE PRESSÃO',
           color: '#54ccff',
           kind: 'guard',
@@ -279,6 +288,7 @@ export const ARCHETYPE_TOOLS = Object.freeze({
         ultimate: Object.freeze({
           id: 'corrente_abissal',
           tier: 'tool',
+          signature: 'vortice',
           name: 'CORRENTE ABISSAL',
           color: '#73e9fa',
           kind: 'dash',
@@ -303,6 +313,7 @@ export const ARCHETYPE_TOOLS = Object.freeze({
         ultimate: Object.freeze({
           id: 'onda_cortante',
           tier: 'tool',
+          signature: 'chicote',
           name: 'ONDA CORTANTE',
           color: '#a6f0ff',
           kind: 'line',
@@ -327,6 +338,7 @@ export const ARCHETYPE_TOOLS = Object.freeze({
         ultimate: Object.freeze({
           id: 'chamado_da_mare',
           tier: 'tool',
+          signature: 'sonar',
           name: 'CHAMADO DA MARÉ',
           color: '#8cff9e',
           kind: 'surge',
@@ -356,10 +368,12 @@ export const ARCHETYPE_TOOLS = Object.freeze({
         short: 'VELOZ',
         color: '#8cff9e',
         kind: 'surge',
+        playable: true,
         tagline: 'Dash e corrida; o primeiro eco do Núcleo.',
         ultimate: Object.freeze({
           id: 'velocidade_temporal',
           tier: 'tool',
+          signature: 'tempo',
           name: 'VELOCIDADE TEMPORAL',
           color: '#8cff9e',
           kind: 'surge',
@@ -378,11 +392,16 @@ export const ARCHETYPE_TOOLS = Object.freeze({
         name: 'FORMA BRUTA',
         short: 'BRUTA',
         color: '#ffd465',
+        // A forma ainda não existe em jogo: o galho aparece na árvore, mas
+        // não pode ser instalado — evita F morto por escolha impossível.
+        playable: false,
+        project: 'FORMA EM PROJETO',
         kind: 'burst',
         tagline: 'Massa de eco concentrada num impacto.',
         ultimate: Object.freeze({
           id: 'impacto_de_eco',
           tier: 'tool',
+          signature: 'punho_eco',
           name: 'IMPACTO DE ECO',
           color: '#ffd465',
           kind: 'burst',
@@ -401,11 +420,16 @@ export const ARCHETYPE_TOOLS = Object.freeze({
         name: 'FORMA FLUIDA',
         short: 'FLUIDA',
         color: '#54ccff',
+        // A forma ainda não existe em jogo: o galho aparece na árvore, mas
+        // não pode ser instalado — evita F morto por escolha impossível.
+        playable: false,
+        project: 'FORMA EM PROJETO',
         kind: 'dash',
         tagline: 'Deslizar entre obstáculos em vez de batê-los.',
         ultimate: Object.freeze({
           id: 'fenda_de_eco',
           tier: 'tool',
+          signature: 'fenda',
           name: 'FENDA DE ECO',
           color: '#54ccff',
           kind: 'dash',
@@ -425,11 +449,16 @@ export const ARCHETYPE_TOOLS = Object.freeze({
         name: 'FORMA NÚCLEO',
         short: 'NÚCLEO',
         color: '#c9a4ff',
+        // A forma ainda não existe em jogo: o galho aparece na árvore, mas
+        // não pode ser instalado — evita F morto por escolha impossível.
+        playable: false,
+        project: 'FORMA EM PROJETO',
         kind: 'burst',
         tagline: 'Os dez ecos reunidos num corpo só.',
         ultimate: Object.freeze({
           id: 'sobreposicao_10x',
           tier: 'tool',
+          signature: 'sobreposicao',
           name: 'SOBREPOSIÇÃO 10X',
           color: '#c9a4ff',
           kind: 'burst',

@@ -32,6 +32,12 @@ export const ULTIMATE_WINDUP = .42;
 // Tremor de câmera e clarão no instante da soltura, por tipo.
 const IMPACT_SHAKE = { burst: 11, wave: 9, line: 7, dash: 6, guard: 4, surge: 5 };
 
+// Núcleo 10X: as Ultimates são de FORMA, não de operador. Sem transformação
+// ativa elas não existem — o corpo base não aguenta a sobrecarga.
+function precisaDeForma(progress, player) {
+  return progress?.archetype === 'nucleo_dez_forma' && player?.nucleoForm !== 'forma_veloz';
+}
+
 const FACING = {
   down: [1, 1], up: [-1, -1], left: [-1, 1], right: [1, -1],
 };
@@ -83,6 +89,7 @@ export function getUltimateStatus(player, progress) {
   const ratio = definition.cooldown > 0 ? clamp(1 - runtime.cooldown / definition.cooldown, 0, 1) : 1;
   const unlock = getUnlockState(progress);
   const locked = !unlock.features.ultimate;
+  const needsForm = !locked && precisaDeForma(progress, player);
   const windupDuration = runtime.chargeDuration || ULTIMATE_WINDUP;
   return {
     definition,
@@ -90,8 +97,10 @@ export function getUltimateStatus(player, progress) {
     tier: ativo.tier,
     cooldown: runtime.cooldown,
     charge: ratio,
-    ready: !locked && runtime.cooldown <= 0 && energy >= definition.cost,
+    ready: !locked && !needsForm && runtime.cooldown <= 0 && energy >= definition.cost,
     locked,
+    needsForm,
+    formHint: needsForm ? 'TRANSFORME-SE (T) PARA USAR' : null,
     requiredLevel: getFeatureLevel('ultimate'),
     level: unlock.level,
     charging: runtime.charge > 0,
@@ -117,6 +126,7 @@ export function canCastUltimate(player, progress) {
   if (!unlock.features.ultimate) {
     return { ok: false, reason: `ULTIMATE BLOQUEADA · NÍVEL ${getFeatureLevel('ultimate')}`, locked: true };
   }
+  if (precisaDeForma(progress, player)) return { ok: false, reason: 'TRANSFORME-SE (T) PARA USAR', needsForm: true };
   if ((player?.health ?? 1) <= 0) return { ok: false, reason: 'ECO DISPERSO' };
   if (runtime.cooldown > 0) return { ok: false, reason: `RECARREGANDO ${runtime.cooldown.toFixed(1)}s`, cooldown: runtime.cooldown };
   if ((player?.energy ?? 0) < definition.cost) return { ok: false, reason: 'ENERGIA INSUFICIENTE' };
@@ -149,6 +159,7 @@ function resolveUltimate({ player, progress, targets = [], definition, kind, che
   runtime.effect = {
     id: definition.id,
     kind,
+    signature: definition.signature ?? null,
     color: definition.color,
     radius: definition.radius ?? 0,
     range: definition.range ?? 0,

@@ -586,11 +586,7 @@ const ehDeck = (map, x, y) => 'Bb'.includes(map.aguaPraia?.[y]?.[x] ?? ' ');
 function caminhoEstacao(map, x, y) {
   if (map.walkMask[y]?.[x] !== '.' || ehDeck(map, x, y)) return false;
   return (
-<<<<<<< HEAD
     (x >= 3 && x <= 17 && y >= 3 && y <= 15) ||   // avental do terminal
-=======
-    (x >= 4 && x <= 18 && y >= 2 && y <= 16) ||   // avental do terminal
->>>>>>> e5736762ec637ebe671540515d65b30b7c6323f4
     (x >= 8 && x <= 18 && y >= 10 && y <= 18) ||
     (x >= 14 && x <= 39 && y >= 17 && y <= 22) ||
     (x >= 32 && x <= 48 && y >= 14 && y <= 25) ||
@@ -667,7 +663,6 @@ function drawBioControlFloor() {
   ctx.restore();
 }
 
-<<<<<<< HEAD
 // Borda de pedra rente à água: o canal deixa de ser uma faixa ciana sem
 // limite e passa a ter margem dos dois lados. Só desenha arestas com terra
 // ou deck do outro lado; não altera máscara nem colisão.
@@ -722,7 +717,8 @@ function drawStationRoute(map) {
     }
   }
   ctx.restore();
-=======
+}
+
 // Texturas em coordenadas de mundo: ambas seguem a mesma projeção dos tiles.
 // Água e decks não recebem chão; caminhos permanecem legíveis sobre o jardim.
 function paintStationPaving(map) {
@@ -788,7 +784,6 @@ function drawStationPaving(map) {
       if (chunk) ctx.drawImage(chunk.tile, chunk.left, chunk.top);
     }
   }
->>>>>>> e5736762ec637ebe671540515d65b30b7c6323f4
 }
 
 // Tabuleiros das duas travessias: geometria real sobre a água, com espessura

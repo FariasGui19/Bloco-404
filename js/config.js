@@ -1,11 +1,7 @@
 // js/config.js
 export const CONFIG = {
   GAME_NAME: 'BLOCO 404',
-<<<<<<< HEAD
-  VERSION: '0.3.6-bio',
-=======
-  VERSION: '0.3.21-veloz',
->>>>>>> e5736762ec637ebe671540515d65b30b7c6323f4
+  VERSION: '0.3.22-bio-codex',
 
   TILE_W: 64,
   TILE_H: 32,

@@ -148,6 +148,8 @@ await loadSprites([
   { id: 'bio_reator', src: 'assets/sprites/estacao-bio/biorreator.png' },
   { id: 'bio_cabeceira', src: 'assets/sprites/estacao-bio/bio-cabeceira.png' },
   { id: 'bio_distribuidor', src: 'assets/sprites/estacao-bio/bio-distribuidor.png' },
+  { id: 'bio_margem_baixa', src: 'assets/sprites/estacao-bio/bio-margem-baixa.png' },
+  { id: 'bio_fundacao', src: 'assets/sprites/estacao-bio/bio-fundacao.png' },
   { id: 'pet_bolt', src: 'assets/sprites/companions/bolt.png' },
   { id: 'hub_nexo_lateral', src: 'assets/sprites/saguao/nexo-lateral-limpo.png' },
   { id: 'hub_viajante', src: 'assets/sprites/saguao/viajante-2026.png' },
@@ -229,7 +231,7 @@ await loadSprites([
 ]);
 
 // Importações parciais deixam colisões sem arte; avise em vez de falhar silenciosamente.
-const bioMissing = ['bio_piso_novo', 'bio_jardim_novo', 'bio_terminal', 'bio_reator', 'bio_estufa', 'bio_piso', 'bio_cabeceira', 'bio_distribuidor', 'bio_floreira', 'bio_tubos', 'bio_caixa', 'bio_luminaria', 'bio_plataforma', 'bio_margem_canto', 'bio_margem_cano', 'bio_margem_ruina', 'bio_margem_mureta', 'bio_condutor_quebrado', 'bio_condutor_ativo', 'bio_regulador_quebrado', 'bio_regulador_ativo', 'bio_mato_cano', 'bio_mato_ventilacao', 'bio_mato_barris', 'bio_mato_fissura'].filter(id => !getSprite(id));
+const bioMissing = ['bio_piso_novo', 'bio_jardim_novo', 'bio_terminal', 'bio_reator', 'bio_estufa', 'bio_piso', 'bio_cabeceira', 'bio_distribuidor', 'bio_floreira', 'bio_tubos', 'bio_caixa', 'bio_luminaria', 'bio_plataforma', 'bio_margem_canto', 'bio_margem_cano', 'bio_margem_ruina', 'bio_margem_mureta', 'bio_condutor_quebrado', 'bio_condutor_ativo', 'bio_regulador_quebrado', 'bio_regulador_ativo', 'bio_mato_cano', 'bio_mato_ventilacao', 'bio_mato_barris', 'bio_mato_fissura', 'bio_terminal', 'bio_reator', 'bio_estufa', 'bio_piso', 'bio_cabeceira', 'bio_distribuidor', 'bio_margem_baixa', 'bio_fundacao', 'bio_floreira', 'bio_tubos', 'bio_caixa', 'bio_luminaria', 'bio_plataforma', 'bio_margem_canto', 'bio_margem_cano', 'bio_margem_ruina', 'bio_margem_mureta', 'bio_condutor_quebrado', 'bio_condutor_ativo', 'bio_regulador_quebrado', 'bio_regulador_ativo', 'bio_mato_cano', 'bio_mato_ventilacao', 'bio_mato_barris', 'bio_mato_fissura'].filter(id => !getSprite(id));
 if (bioMissing.length) {
   const warning = document.createElement('div');
   warning.setAttribute('role', 'alert');

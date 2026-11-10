@@ -17,24 +17,6 @@
 - Pets com níveis, progressão e inventário reais.
 - Viagem espacial/galáctica contínua (nave, interior interativo, melhorias) — vertical slice entre dois destinos.
 
-<<<<<<< HEAD
-## Restrições
-- Exatamente duas folhas/imagens por atualização.
-- Preservar saves, progresso, interações, caminhos, portais.
-- Clique esquerdo ataca; Shift + clique move.
-- Bio-Forja Q aprovado (2,15 tiles / 28 energia; com traje 2,80 tiles / 22 energia; recarga 1,25 s).
-- Um arquétipo e um módulo por vez.
-- T alterna roupa civil/armadura.
-- Núcleo 10X: roda própria; Forma Veloz mais rápida.
-- Portal e animação interior: não animar a estrutura inteira, apenas o interior/tela.
-- Consultar `docs/prompts-sprites-precisao.md` antes de gerar animações.
-- Bolt: semelhança aprovada, pose provisória, prévia opt-in.
-
-## Próxima ação
-- Retomar fila de animações dos arquétipos (conforme `docs/ordem-de-arte-e-implementacao.md`).
-- Gerar exatamente duas folhas/imagens para o próximo arquétipo (prioridade: Saguão → Arquétipos).
-- Implementar, testar (30/30), capturar (Chromium real), documentar, commit, push, PR.
-=======
 - Refinar saguão, NEXO, viajante e leitura de direções; validar com o jogador em câmera, zoom e deslocamento reais.
 - **Lúmeo — primeiro vínculo opcional:** investigar três vestígios da Enseada, ouvir um sinal junto à trilha, acalmar a ressonância nas ruínas e oferecer companhia ao eco na mata. O diário aponta o encontro; ele acompanha sem bloquear ou atacar, com visual procedural provisório. O vínculo é salvo, sem substituir a missão principal. Ainda faltam recolher/dispensar, tela de companheiros, arte definitiva e comportamento mais robusto. Bolt tem prévia local opt-in no diário; autenticação e missão pessoal continuam pendentes, sem concessão automática.
 - ~~Completar caminhadas coerentes das quatro direções da Forma Veloz~~ — feito: as direções frente e costas agora têm folhas próprias de 4 quadros em PNG com alpha (`player-10x-veloz-andar-frente/costas.png`) e o renderer não assume mais grade fixa. O ataque básico vertical da forma ainda usa pose lateral provisória. A caminhada do NEXO continua pendente. Novas folhas de Domínio/Maré são referências de poses, não sequências completas; usar somente quando não trocarem a identidade do traje.
@@ -99,4 +81,32 @@ habilidade por dimensão está registrada em
 [`manifesto-multiverso.md`](manifesto-multiverso.md), com o terreno técnico que
 já existe e a ordem sugerida de implementação. Nada disso está prometido como
 pronto.
->>>>>>> e5736762ec637ebe671540515d65b30b7c6323f4
+
+## Restrições de produção (mantidas)
+
+- Exatamente duas folhas/imagens por atualização.
+- Preservar saves, progresso, interações, caminhos e portais.
+- Clique esquerdo ataca; Shift + clique move.
+- Bio-Forja Q aprovado (2,15 tiles / 28 energia; com traje 2,80 tiles / 22 energia; recarga 1,25 s).
+- Um arquétipo e um módulo por vez.
+- T alterna roupa civil/armadura.
+- Núcleo 10X: roda própria; Forma Veloz mais rápida.
+- Portal e animação interior: não animar a estrutura inteira, apenas o interior/tela.
+- Consultar `docs/prompts-sprites-precisao.md` antes de gerar animações.
+- Bolt: semelhança aprovada, pose provisória, prévia opt-in.
+
+## Atualização 0.3.6-bio — margens baixas, fundações e rota
+
+Duas imagens novas: `assets/sprites/estacao-bio/bio-margem-baixa.png` (apoio
+rente ao solo, sem hitbox) e `bio-fundacao.png` (base sob as máquinas, ordenada
+atrás delas por `depthOffset` negativo). O terminal ganhou pegada de 460 px com
+camadas de profundidade, as cabeceiras foram reduzidas, a rota da primeira
+missão passou a ser desenhada no piso (losangos e setas, trechos concluídos mais
+claros) e o portal de retorno mostra `labelConcluido` quando a missão do setor
+termina. A sala de controle continua acessível pelo marcador CONTROLE em 16,12.
+
+## Próxima ação
+
+- Retomar a fila de animações dos arquétipos (`docs/ordem-de-arte-e-implementacao.md`).
+- Gerar exatamente duas folhas/imagens por rodada.
+- Implementar, testar a suíte inteira, capturar, documentar, commit, push, PR.

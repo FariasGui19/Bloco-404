@@ -43,10 +43,6 @@ Gerar e implementar **exatamente duas folhas/imagens por atualização**, seguin
 - Viagem espacial/galáctica (nave, interior, melhorias) — vertical slice futura.
 - Não gerar terceira imagem na rodada 0.3.6.
 
-<<<<<<< HEAD
-## Justificativa da fila
-A Estação Bio (0.3.5 e 0.3.6) foi priorizada para consolidar o ciclo terrestre (piso, canais, rede, missão inicial) antes de retomar as animações dos arquétipos e o Bolt. A ordem de prioridade (Saguão → Arquétipos → Bio-Forja → Bolt) é mantida.
-=======
 A sequência opcional usa R de Bio-Forja para diagnosticar e E para reparar o condutor da chegada e depois o regulador do pátio. Os reparos permanecem sólidos e visíveis e as flags sobrevivem à reentrada, sem substituir coletáveis antigos nem missão ativa. Ainda não ativam a estufa nem concedem recompensas. O cenário continua provisório; árvores, areia, água e bordas exigem refinamento. A aproximação de profundidade do terminal foi ajustada para o novo ponto do print, mas não substitui camadas reais.
 
 ## Próximas rodadas sugeridas (ordem ajustável depois do teste)
@@ -157,4 +153,10 @@ O portal cenográfico passou a envolver melhor a traseira do trem: foi ampliado 
 - A pose sustentada da Forma Veloz foi deslocada horizontalmente para aproximar o corpo do centro da sombra; a altura da pose da 0.3.20 foi preservada. O Q transformado e os ataques básicos aprovados não foram modificados.
 - **Corrida frontal e traseira continuam pendentes.** Novas gerações repetiram poses de ataque/repouso, ângulos errados ou membros sem alternância; não foram integradas. A interface, transformação e corrida lateral existentes permanecem iguais. Não considerar este estudo uma corrida completa.
 - Capturas pontuais de estação e idle verificadas no renderer via canvas Node; ainda falta avaliação em navegador e em movimento.
->>>>>>> e5736762ec637ebe671540515d65b30b7c6323f4
+
+## Justificativa da fila
+
+A Estação Bio (0.3.5 e 0.3.6) foi priorizada para consolidar o ciclo terrestre
+(piso, canais, rede, missão inicial e rota desenhada) antes de retomar as
+animações dos arquétipos e o Bolt. A ordem de prioridade (Saguão → Arquétipos →
+Bio-Forja → Bolt) é mantida.

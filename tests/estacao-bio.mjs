@@ -12,14 +12,14 @@ assert.equal(map.layout.length, 72);
 assert(map.layout.every(row => row.length === 72));
 
 // Conectividade pela máscara e, depois, pela colisão real em runtime.
-const seen = new Set(), q = [[9, 13]];
+const seen = new Set(), q = [[9, 10]];
 for (let i = 0; i < q.length; i++) {
   const [x, y] = q[i], k = `${x},${y}`;
   if (seen.has(k) || map.walkMask[y]?.[x] !== '.') continue;
   seen.add(k); q.push([x + 1, y], [x - 1, y], [x, y + 1], [x, y - 1]);
 }
 for (const item of map.collectibles) assert(seen.has(`${item.x},${item.y}`), `objetivo ${item.id} acessível`);
-assert(seen.has('8,13'));
+assert(seen.has('8,10'));
 assert.equal(praia.portals.find(p => p.id === 'trilha_estacao_bio').requiresFlag, 'gate_teleferico_quebrado');
 assert(praia.spawnPoints.vindo_da_estacao);
 
@@ -28,7 +28,7 @@ state.progress = { flags: {}, inventory: [], archetype: 'motor_bio_forja' };
 assert(await loadMap(map.id));
 setZoom(.3); assert.equal(camera.targetZoom, .85);
 
-const runtimeSeen = new Set(), queue = [[9, 13]];
+const runtimeSeen = new Set(), queue = [[9, 10]];
 for (let i = 0; i < queue.length; i++) {
   const [x, y] = queue[i], key = `${x},${y}`;
   if (runtimeSeen.has(key) || !canStandAt(map, x + .5, y + .5, .28, state.player)) continue;
@@ -43,23 +43,23 @@ for (const id of ['bio_reparo_condutor', 'bio_reparo_regulador', 'bio_valvula_es
   const obj = state.objects.find(o => o.id === id);
   assert(perto(obj.x - .5, obj.y - .5, obj.interacao?.distancia ?? 2.2), `${id}: interação alcançável`);
 }
-assert(runtimeSeen.has('8,13'), 'retorno acessível mesmo com as estruturas');
-assert(runtimeSeen.has('9,13'), 'spawn preservado');
+assert(runtimeSeen.has('8,10'), 'retorno acessível mesmo com as estruturas');
+assert(runtimeSeen.has('9,10'), 'spawn preservado');
 
 // Terminal: hitbox medida, aproximação por vários lados e camadas reais de profundidade.
 const terminal = state.objects.find(o => o.id === 'bio_terminal_principal');
 assert(terminal.bloqueia);
-assert.equal(terminal.hitbox.width, 8.1);
-for (const [x, y] of [[16, 8], [15.5, 7], [12, 12.5], [5, 6], [3, 5], [16, 3], [15.5, 10]]) {
+assert.equal(terminal.hitbox.width, 7);
+for (const [x, y] of [[16, 9], [15.5, 8], [13, 13], [15, 11], [6, 12], [5, 10], [3, 5], [16, 4]]) {
   assert(canStandAt(map, x, y, .28, state.player), `aproximação livre em ${x},${y}`);
 }
-for (const [x, y] of [[9, 5], [12, 8], [7, 7], [8, 6], [14.6, 11.6]]) {
+for (const [x, y] of [[9, 6], [11, 6], [7, 8], [8, 7], [11, 5], [6, 4]]) {
   assert(!canStandAt(map, x, y, .28, state.player), `base sólida em ${x},${y}`);
 }
 // O terminal é uma peça única: não corta o jogador com faixas horizontais.
-assert.equal(terminal.larguraPx, 520);
-assert(!terminal.depthLayers);
-assert(terminal.x + terminal.y + terminal.depthOffset < 15.7 + 10.2, 'jogador na frente não é recortado pela fachada');
+assert.equal(terminal.larguraPx, 460);
+assert.equal(terminal.depthLayers?.count, 6, 'fachada desenhada em camadas');
+assert(terminal.depthLayers.back <= -9 && terminal.depthLayers.front >= 1.5, 'camadas cobrem trás e frente do jogador');
 assert.equal(fatiaObjeto({}, 532).sh, 532);
 for (const id of ['bio_estufa_principal', 'bio_reator_patio']) {
   assert(state.objects.find(o => o.id === id).depthLayers?.count >= 4, `${id}: camadas reais`);
@@ -151,9 +151,10 @@ assert.equal(map.bioRoute.stages.length, 4);
 for (const [x, y] of map.bioRoute.path) {
   assert.equal(map.walkMask[y]?.[x], '.', `rota em ${x},${y} apoiada no piso`);
 }
-const journal = readFileSync(new URL('../js/ui/quest-journal.js', import.meta.url), 'utf8');
-assert(journal.includes('ESTAÇÃO BIO · PRIMEIRA MISSÃO'), 'diário mostra as etapas da missão');
-assert(journal.includes('gate_bio_valvula_estufa'), 'diário lê a flag final');
+// O antigo diário virou Códex com abas; o acompanhamento da missão continua.
+const codex = readFileSync(new URL('../js/ui/codex.js', import.meta.url), 'utf8');
+assert(codex.includes('MISSÕES') && codex.includes('listTrackedQuests'), 'Códex mostra as missões');
+assert(!existsSync(new URL('../js/ui/quest-journal.js', import.meta.url)), 'diário único removido');
 const portal = map.portals.find(p => p.id === 'estacao_voltar');
 assert.equal(portal.missaoFlag, 'gate_bio_valvula_estufa');
 assert(portal.labelConcluido);

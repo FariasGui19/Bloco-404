@@ -6,16 +6,18 @@
 // =====================================================================
 
 import { updateBasicCombat, tryBasicAttack } from './game/combat.js';
+import { updateHealth } from './game/health.js';
+import { updateHazards } from './game/hazards.js';
 import { updateNucleoForm } from './game/nucleo-form.js';
 import { canStandAt } from './game/collision.js';
 import { CONFIG } from './config.js';
-import { isQuestJournalOpen, openQuestJournal, closeQuestJournal } from './ui/quest-journal.js';
+import { isCodexOpen, openCodex, closeCodex, handleCodexInput } from './ui/codex.js';
 import { updateOwnedCompanion } from './game/companions.js';
 import { updateCoastalFauna } from './game/fauna-costeira.js';
 import { state } from './game/state.js';
 
 import { getFloor } from './game/world.js';
-import { loadMap } from './game/map-manager.js';
+import { loadMap, getSafeSpawn } from './game/map-manager.js';
 
 import { updatePlayer } from './game/player.js';
 import { updateAbilities } from './game/abilities.js';
@@ -303,14 +305,14 @@ async function update(dt) {
     return;
   }
 
-  if (isQuestJournalOpen()) {
-    if (input.pressed.has('j') || input.pressed.has('keyj') || input.pressed.has('escape')) closeQuestJournal();
+  if (isCodexOpen()) {
+    handleCodexInput(input.pressed);
     player.moving = false; player.target = null;
     input.click = null; input.attackClick = null;
     updateCamera(dt, player.x, player.y); return;
   }
   if (!isElevatorMenuOpen() && (input.pressed.has('j') || input.pressed.has('keyj'))) {
-    openQuestJournal(state.progress, getFloor());
+    openCodex(state.progress, getFloor(), player);
     player.moving = false; player.target = null;
     input.click = null; input.attackClick = null;
     return;
@@ -334,6 +336,14 @@ async function update(dt) {
         }
       } else toggleArchetypeSuit(state.progress, player);
     }
+    // Caído: o loop segue só para contar o tempo de retorno. Sem andar,
+    // atacar ou interagir até renascer.
+    if ((player.health ?? 1) <= 0) {
+      player.moving = false; player.target = null;
+      updateHealth(player, state.progress, dt, { onRespawn: () => getSafeSpawn() });
+      return;
+    }
+
     updateBasicCombat(player, state.trainingTargets, dt);
     let abilityLocksMovement = updateAbilities(dt);
     updateNucleoForm(state.progress, player, dt, canStandAt(getFloor(), player.x, player.y, CONFIG.PLAYER_RADIUS, player));
@@ -348,6 +358,11 @@ async function update(dt) {
     if (!abilityLocksMovement) {
       updatePlayer(dt);
     }
+
+    // Vida e dano ambiental só correm durante a exploração, nunca em menus
+    // nem durante uma habilidade que trava o movimento.
+    if (!abilityLocksMovement) updateHazards(state.hazards, player, state.progress, dt);
+    updateHealth(player, state.progress, dt, { onRespawn: () => getSafeSpawn() });
 
     const pressedE =
       input.pressed.has('e') ||

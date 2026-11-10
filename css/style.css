@@ -2392,3 +2392,905 @@ body.in-menu #controls {
   color: #9af9c8;
   text-decoration: line-through;
 }
+
+/* =====================================================================
+   CÓDEX DE ROTAS — painel com abas
+   Fundo gerado (assets/sprites/ui/codex-fundo.png) + molduras em pixel
+   ===================================================================== */
+
+#codex {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: clamp(8px, 2vw, 28px);
+
+  opacity: 0;
+  pointer-events: none;
+
+  background:
+    linear-gradient(180deg, rgba(3, 12, 14, 0.82), rgba(2, 8, 10, 0.94)),
+    url("../assets/sprites/ui/codex-fundo.png") center / cover no-repeat;
+
+  color: #d8f8ed;
+  font-family: monospace;
+  transition: opacity 0.18s ease;
+}
+
+#codex.visible {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* Linhas finas lembrando monitor industrial; não interferem na leitura. */
+#codex::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+
+  background: repeating-linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.022) 0 1px,
+    transparent 1px 3px
+  );
+}
+
+.codex-panel {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+
+  width: min(1020px, 96vw);
+  height: min(760px, 88vh);
+
+  background:
+    linear-gradient(180deg, rgba(9, 28, 31, 0.94), rgba(5, 17, 20, 0.97));
+  border: 2px solid #2f7a6a;
+  border-radius: 4px;
+
+  box-shadow:
+    0 0 0 2px rgba(6, 18, 20, 0.9),
+    0 0 34px rgba(45, 215, 184, 0.18),
+    inset 0 0 40px rgba(0, 0, 0, 0.55);
+
+  overflow: hidden;
+}
+
+/* Cantos em L, marca registrada da interface do 404. */
+.codex-panel::before,
+.codex-panel::after {
+  content: "";
+  position: absolute;
+  width: 18px;
+  height: 18px;
+  pointer-events: none;
+  border-color: #8bf3d8;
+}
+
+.codex-panel::before {
+  top: 5px;
+  left: 5px;
+  border-top: 2px solid;
+  border-left: 2px solid;
+}
+
+.codex-panel::after {
+  right: 5px;
+  bottom: 5px;
+  border-right: 2px solid;
+  border-bottom: 2px solid;
+}
+
+.codex-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+
+  padding: 12px 16px 10px;
+
+  border-bottom: 1px solid rgba(122, 226, 198, 0.22);
+  background: linear-gradient(180deg, rgba(16, 46, 46, 0.55), transparent);
+}
+
+.codex-title-block {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.codex-emblem {
+  width: 34px;
+  height: 34px;
+  image-rendering: pixelated;
+  filter: drop-shadow(0 0 6px rgba(106, 255, 150, 0.45));
+}
+
+.codex-header h2 {
+  margin: 0;
+
+  color: #a9ffe0;
+  font-size: 14px;
+  letter-spacing: 0.18em;
+}
+
+#codexArchetype {
+  color: #7fb0a6;
+  font-size: 9px;
+  letter-spacing: 0.14em;
+}
+
+.codex-close {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+
+  padding: 4px 8px 4px 4px;
+
+  color: #bfe9dd;
+  background: rgba(10, 34, 34, 0.9);
+  border: 1px solid #2f7a6a;
+  border-radius: 3px;
+  cursor: pointer;
+}
+
+.codex-close:hover {
+  border-color: #8bf3d8;
+  color: #ffffff;
+}
+
+.codex-close-icon {
+  width: 22px;
+  height: 22px;
+  image-rendering: pixelated;
+}
+
+.codex-close kbd {
+  font: inherit;
+  font-size: 9px;
+  color: #7fb0a6;
+}
+
+.codex-tabs {
+  display: flex;
+  gap: 4px;
+  padding: 8px 12px 0;
+  border-bottom: 1px solid rgba(122, 226, 198, 0.18);
+}
+
+.codex-tab {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+
+  padding: 7px 12px 6px;
+
+  color: #7fb0a6;
+  background: rgba(8, 26, 28, 0.55);
+  border: 1px solid transparent;
+  border-bottom: none;
+  border-radius: 4px 4px 0 0;
+
+  font: inherit;
+  font-size: 10px;
+  letter-spacing: 0.10em;
+  cursor: pointer;
+  transition: color 0.14s ease, background 0.14s ease, transform 0.14s ease;
+}
+
+.codex-tab:hover {
+  color: #c9ffe9;
+  background: rgba(18, 52, 50, 0.7);
+  transform: translateY(-1px);
+}
+
+.codex-tab.active {
+  color: #05100f;
+  background: linear-gradient(180deg, #9af9c8, #55c9a4);
+  border-color: #b6ffdd;
+  font-weight: bold;
+}
+
+.codex-tab-icon {
+  width: 22px;
+  height: 22px;
+  image-rendering: pixelated;
+}
+
+.codex-tab kbd {
+  padding: 0 3px;
+
+  color: inherit;
+  border: 1px solid currentColor;
+  border-radius: 2px;
+
+  font: inherit;
+  font-size: 8px;
+  opacity: 0.6;
+}
+
+.codex-body {
+  flex: 1;
+  min-height: 0;
+  padding: 16px;
+  overflow: auto;
+
+  animation: codex-panel-in 0.18s ease;
+}
+
+@keyframes codex-panel-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.codex-section { animation: codex-panel-in 0.2s ease; }
+
+.codex-columns {
+  display: grid;
+  grid-template-columns: minmax(0, 1.55fr) minmax(220px, 0.9fr);
+  gap: 14px;
+  align-items: start;
+}
+
+.codex-column {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+}
+
+.codex-tag {
+  color: #f4d77e;
+  font-size: 8px;
+  letter-spacing: 0.16em;
+}
+
+.codex-note {
+  margin: 6px 0 0;
+  color: #86b3a9;
+  font-size: 9px;
+  line-height: 1.55;
+}
+
+.codex-empty {
+  padding: 26px 16px;
+
+  color: #86b3a9;
+  border: 1px dashed rgba(122, 226, 198, 0.3);
+  border-radius: 4px;
+  text-align: center;
+  font-size: 11px;
+}
+
+/* ---------------- missões ---------------- */
+
+.codex-quest {
+  padding: 10px 12px;
+
+  background: linear-gradient(180deg, rgba(12, 38, 38, 0.8), rgba(6, 22, 24, 0.85));
+  border: 1px solid rgba(101, 187, 167, 0.35);
+  border-left: 3px solid #f4d77e;
+  border-radius: 4px;
+}
+
+.codex-quest header {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.codex-quest strong {
+  color: #eafff7;
+  font-size: 11px;
+  letter-spacing: 0.05em;
+}
+
+.codex-quest p {
+  margin: 6px 0 0;
+  color: #a9cdc5;
+  font-size: 10px;
+  line-height: 1.6;
+}
+
+.codex-quest ul {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+
+  margin: 8px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.codex-quest li {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 2px 8px;
+
+  font-size: 10px;
+  color: #bfe4da;
+}
+
+.codex-quest li.done {
+  color: #9af9c8;
+}
+
+.codex-quest-count {
+  color: #f4d77e;
+  font-size: 9px;
+}
+
+.codex-quest-bar {
+  grid-column: 1 / -1;
+  display: block;
+  height: 4px;
+  overflow: hidden;
+
+  background: rgba(122, 226, 198, 0.16);
+  border-radius: 999px;
+}
+
+.codex-quest-bar b {
+  display: block;
+  height: 100%;
+  background: linear-gradient(90deg, #3f9c85, #9af9c8);
+  transition: width 0.3s ease;
+}
+
+.codex-quest.completed {
+  border-left-color: #9af9c8;
+  opacity: 0.85;
+}
+
+.codex-quest-side {
+  border-left-color: #73e9fa;
+}
+
+.codex-quest-empty {
+  border-left-color: #4d6b64;
+  opacity: 0.8;
+}
+
+/* ---------------- progressão ---------------- */
+
+.codex-level {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 4px 10px;
+  align-items: center;
+
+  padding: 10px 12px;
+
+  background: rgba(10, 34, 34, 0.75);
+  border: 1px solid rgba(101, 187, 167, 0.35);
+  border-radius: 4px;
+}
+
+.codex-level-icon {
+  grid-row: span 2;
+  width: 34px;
+  height: 34px;
+  image-rendering: pixelated;
+}
+
+.codex-level strong {
+  color: #a9ffe0;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+}
+
+.codex-level span {
+  color: #8fb6ae;
+  font-size: 9px;
+}
+
+.codex-level-bars {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.codex-xp-bar {
+  display: block;
+  height: 6px;
+  overflow: hidden;
+
+  background: rgba(255, 233, 138, 0.14);
+  border-radius: 999px;
+}
+
+.codex-xp-bar b {
+  display: block;
+  height: 100%;
+  background: linear-gradient(90deg, #d7b13f, #ffe98a);
+  box-shadow: 0 0 8px rgba(255, 233, 138, 0.5);
+}
+
+.codex-tracks {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.codex-track {
+  display: flex;
+  gap: 10px;
+
+  padding: 9px 11px;
+
+  background: rgba(7, 26, 28, 0.78);
+  border: 1px solid rgba(101, 187, 167, 0.28);
+  border-left: 3px solid var(--track, #4d6b64);
+  border-radius: 4px;
+
+  transition: border-color 0.2s ease, transform 0.2s ease;
+}
+
+.codex-track:hover {
+  transform: translateX(2px);
+  border-color: rgba(154, 249, 200, 0.6);
+}
+
+.codex-track-icon {
+  width: 26px;
+  height: 26px;
+  image-rendering: pixelated;
+  opacity: 0.9;
+}
+
+.codex-track-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.codex-track-body header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.codex-track-body strong {
+  color: #eafff7;
+  font-size: 10px;
+  letter-spacing: 0.06em;
+}
+
+.codex-track-rank {
+  margin-left: auto;
+
+  color: #ffe98a;
+  font-size: 10px;
+}
+
+.codex-pips {
+  display: flex;
+  gap: 3px;
+}
+
+.codex-pips i {
+  width: 7px;
+  height: 7px;
+
+  background: rgba(122, 226, 198, 0.15);
+  border: 1px solid rgba(122, 226, 198, 0.35);
+}
+
+.codex-pips i.filled {
+  background: #9af9c8;
+  border-color: #d6ffe9;
+  box-shadow: 0 0 6px rgba(154, 249, 200, 0.7);
+}
+
+.codex-track-body p {
+  margin: 3px 0 5px;
+  color: #8fb6ae;
+  font-size: 9px;
+}
+
+.codex-track-bar {
+  display: block;
+  height: 4px;
+  overflow: hidden;
+
+  background: rgba(122, 226, 198, 0.14);
+  border-radius: 999px;
+}
+
+.codex-track-bar b {
+  display: block;
+  height: 100%;
+  background: linear-gradient(90deg, #2f7a6a, #9af9c8);
+  transition: width 0.35s ease;
+}
+
+.codex-track-body footer {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+
+  margin-top: 4px;
+
+  color: #6f9a91;
+  font-size: 8px;
+}
+
+.codex-track-effect {
+  color: #b8e6d6;
+  text-align: right;
+}
+
+/* ---------------- inventário ---------------- */
+
+.codex-inventory {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.codex-slot {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+
+  min-height: 92px;
+  padding: 7px;
+
+  color: #bfe4da;
+  background: rgba(8, 30, 32, 0.8);
+  border: 1px solid rgba(101, 187, 167, 0.3);
+  border-radius: 4px;
+
+  font: inherit;
+  font-size: 8px;
+  line-height: 1.35;
+  text-align: center;
+  cursor: pointer;
+
+  transition: transform 0.14s ease, border-color 0.14s ease;
+}
+
+.codex-slot span {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+.codex-slot:hover {
+  transform: translateY(-2px);
+  border-color: #8bf3d8;
+}
+
+.codex-slot.selected {
+  border-color: #ffe98a;
+  box-shadow: 0 0 12px rgba(255, 233, 138, 0.25);
+}
+
+.codex-slot.empty {
+  background:
+    repeating-linear-gradient(45deg, rgba(122, 226, 198, 0.05) 0 6px, transparent 6px 12px);
+  border-style: dashed;
+  cursor: default;
+}
+
+.codex-slot-icon {
+  width: 42px;
+  height: 42px;
+  image-rendering: pixelated;
+}
+
+.codex-item-detail {
+  display: flex;
+  gap: 12px;
+
+  margin-top: 10px;
+  padding: 12px;
+
+  background: linear-gradient(180deg, rgba(14, 40, 40, 0.85), rgba(7, 24, 26, 0.9));
+  border: 1px solid rgba(255, 233, 138, 0.3);
+  border-radius: 4px;
+}
+
+.codex-item-detail.empty {
+  border-color: rgba(101, 187, 167, 0.25);
+}
+
+.codex-item-icon {
+  width: 54px;
+  height: 54px;
+  image-rendering: pixelated;
+  filter: drop-shadow(0 0 8px rgba(106, 255, 150, 0.25));
+}
+
+.codex-item-detail strong {
+  display: block;
+
+  margin: 2px 0 5px;
+
+  color: #ffe98a;
+  font-size: 11px;
+  letter-spacing: 0.06em;
+}
+
+.codex-item-detail p {
+  margin: 0;
+  color: #a9cdc5;
+  font-size: 10px;
+  line-height: 1.6;
+}
+
+.codex-companions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+
+  padding: 12px;
+
+  background: rgba(8, 28, 30, 0.8);
+  border: 1px solid rgba(101, 187, 167, 0.3);
+  border-radius: 4px;
+}
+
+.codex-companions strong {
+  color: #c9ffe9;
+  font-size: 10px;
+}
+
+.codex-companion-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.codex-companion-actions button {
+  padding: 7px 9px;
+
+  color: #dafdef;
+  background: #123f3b;
+  border: 1px solid #6fe6bd;
+  border-radius: 3px;
+
+  font: inherit;
+  font-size: 9px;
+  letter-spacing: 0.06em;
+  cursor: pointer;
+}
+
+.codex-companion-actions button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/* ---------------- atributos ---------------- */
+
+.codex-vitals {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+
+  padding: 12px;
+
+  background: rgba(8, 28, 30, 0.8);
+  border: 1px solid rgba(101, 187, 167, 0.3);
+  border-radius: 4px;
+}
+
+.codex-vital {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 2px 10px;
+  align-items: center;
+}
+
+.codex-vital-icon {
+  grid-row: span 2;
+  width: 26px;
+  height: 26px;
+  image-rendering: pixelated;
+}
+
+.codex-vital span {
+  color: #8fb6ae;
+  font-size: 8px;
+  letter-spacing: 0.14em;
+}
+
+.codex-vital strong {
+  color: #eafff7;
+  font-size: 11px;
+}
+
+.codex-vital-bar {
+  grid-column: 2;
+  display: block;
+  height: 6px;
+  overflow: hidden;
+
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 999px;
+}
+
+.codex-vital-bar b {
+  display: block;
+  height: 100%;
+  transition: width 0.3s ease;
+}
+
+.codex-vital-bar.health b {
+  background: linear-gradient(90deg, #b23a3a, #ff8a8a);
+}
+
+.codex-vital-bar.energy b {
+  background: linear-gradient(90deg, #1aa8a0, #35e6d3);
+}
+
+.codex-stats {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+
+  margin: 0;
+  padding: 0;
+  list-style: none;
+
+  border: 1px solid rgba(101, 187, 167, 0.25);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.codex-stats li {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 0 8px;
+
+  padding: 7px 10px;
+
+  background: rgba(7, 26, 28, 0.7);
+  font-size: 10px;
+}
+
+.codex-stats li:nth-child(odd) {
+  background: rgba(10, 32, 34, 0.7);
+}
+
+.codex-stats span {
+  color: #8fb6ae;
+  letter-spacing: 0.06em;
+}
+
+.codex-stats strong {
+  color: #d8fff0;
+}
+
+.codex-stats small {
+  grid-column: 1 / -1;
+
+  color: #6f9a91;
+  font-size: 8px;
+}
+
+.codex-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+
+  padding: 8px 14px;
+
+  color: #6f9a91;
+  background: rgba(4, 16, 18, 0.85);
+  border-top: 1px solid rgba(122, 226, 198, 0.2);
+
+  font-size: 8px;
+  letter-spacing: 0.08em;
+}
+
+@media (max-width: 760px) {
+  .codex-columns {
+    grid-template-columns: 1fr;
+  }
+
+  .codex-inventory {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .codex-tab span {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #codex,
+  .codex-body,
+  .codex-section,
+  .codex-slot,
+  .codex-tab,
+  .codex-track {
+    transition: none;
+    animation: none;
+  }
+}
+
+/* =====================================================================
+   HUD — VIDA DO OPERADOR
+   ===================================================================== */
+
+.ability-vital-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+
+  margin-top: 2px;
+}
+
+.ability-vital-row img {
+  width: 18px;
+  height: 18px;
+  image-rendering: pixelated;
+}
+
+.ability-vital-label {
+  color: #8ca2a7;
+  font-size: 9px;
+  letter-spacing: 0.14em;
+}
+
+#abilityHealthText {
+  margin-left: auto;
+
+  color: #ffd9d4;
+  font-size: 10px;
+}
+
+.ability-health-track {
+  height: 7px;
+  overflow: hidden;
+
+  margin: 3px 0 6px;
+
+  background: rgba(125, 150, 157, 0.18);
+  border-radius: 999px;
+}
+
+#abilityHealthFill {
+  width: 100%;
+  height: 100%;
+
+  background: linear-gradient(90deg, #b23a3a, #ff8a8a);
+  border-radius: inherit;
+
+  box-shadow: 0 0 10px rgba(255, 120, 110, 0.45);
+
+  transition: width 0.12s linear;
+}
+
+#abilityHud.danger #abilityHealthFill {
+  animation: hud-health-pulse 0.8s ease-in-out infinite;
+}
+
+@keyframes hud-health-pulse {
+  50% { filter: brightness(1.5); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #abilityHud.danger #abilityHealthFill { animation: none; }
+}
+
+/* Códex: brilho lento no emblema e cantos vivos, sem exagero. */
+#codex .codex-emblem { animation: codex-emblem 4.2s ease-in-out infinite; }
+@keyframes codex-emblem {
+  0%, 100% { filter: drop-shadow(0 0 2px rgba(93, 252, 199, .2)); transform: translateY(0); }
+  50% { filter: drop-shadow(0 0 7px rgba(93, 252, 199, .55)); transform: translateY(-1px); }
+}
+#codex .codex-tab { transition: background .18s ease, color .18s ease, transform .18s ease; }
+#codex .codex-tab:hover { transform: translateY(-1px); }
+#codex .codex-slot:hover:not([disabled]) { box-shadow: 0 0 0 2px rgba(93, 252, 199, .45); }
+@media (prefers-reduced-motion: reduce) {
+  #codex .codex-emblem { animation: none; }
+  #codex .codex-tab:hover { transform: none; }
+}

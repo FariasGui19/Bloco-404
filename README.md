@@ -36,12 +36,21 @@ for f in tests/*.mjs; do node --experimental-default-type=module "$f" || break; 
 - **Forma Veloz (Núcleo 10X)** com locomoção nas quatro direções.
 - **Dano por arquétipo**: dano, golpes, recarga, alcance e crítico em
   [`js/data/combat-balance.js`](js/data/combat-balance.js).
-- **XP, níveis, árvore de progressão e missões contáveis** em
-  [`docs/sistemas-rpg-dano-xp-missoes.md`](docs/sistemas-rpg-dano-xp-missoes.md).
-- Diário (`J`) mostra a missão principal, as missões contáveis e a árvore.
+- **Maestria por uso** (sem pontos): ataque, fluxo, eco e locomoção sobem
+  conforme você golpeia, usa habilidades, conclui missões e percorre o mapa.
+- **Vida** com dano, invulnerabilidade, regeneração e retorno seguro ao morrer.
+- **Códex (`J`)** com abas de missões, progressão, inventário e atributos.
+- Detalhes em [`docs/sistemas-rpg-dano-xp-missoes.md`](docs/sistemas-rpg-dano-xp-missoes.md).
+
+## Futuro
+
+Dimensões com gêneros próprios, viagem de nave e procurados estão mapeados em
+[`docs/manifesto-multiverso.md`](docs/manifesto-multiverso.md) — direção, não
+promessa.
 
 ## Estado atual
 
-Protótipo jogável em construção: sem inimigos agressivos, sem dano ao
-jogador e com balanceamento ainda aberto. Cada etapa concluída e cada
+Protótipo jogável em construção: vida, dano e progressão já funcionam contra
+alvos de treino e zonas de eco; inimigos agressivos e balanceamento final ainda
+não existem. Cada etapa concluída e cada
 pendência estão registradas em [`docs/roteiro-proximas-etapas.md`](docs/roteiro-proximas-etapas.md).

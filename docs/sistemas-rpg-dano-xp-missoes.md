@@ -1,108 +1,153 @@
-# Dano, XP, missões e árvore de progressão
+# Combate, maestria, vida e Códex
 
-Primeira camada do RPG do Bloco 404. Tudo aqui é data-driven: os números
-vivem em `js/data`, as regras puras em `js/game` e nenhum módulo repete
-constantes. Inimigos agressivos e dano ao jogador continuam pendentes — o
-que existe hoje já é jogável nos alvos de treino.
+Estado atual do RPG do Bloco 404. Tudo é data-driven: números em `js/data`,
+regras puras em `js/game`, interface em `js/ui`. Inimigos agressivos continuam
+pendentes — o que existe já é jogável nos alvos de treino e nas zonas de eco.
 
-## Arquivos
+## 1. Arquivos
 
 | Arquivo | Papel |
 | --- | --- |
-| `js/data/combat-balance.js` | dano, golpes, recarga, alcance, crítico e multiplicadores de habilidade por arquétipo |
-| `js/data/progression-tree.js` | grade de nós (ataque/fluxo/eco) com sabor próprio por arquétipo |
-| `js/data/quests.js` | definição das missões contáveis e suas recompensas |
-| `js/game/rpg.js` | XP, níveis, pontos, ranks, estatísticas derivadas e rolagem de dano |
-| `js/game/quests.js` | motor de objetivos, conclusão e entrega única de recompensa |
-| `js/game/combat.js` | aplica dano, registra vitória, concede XP e dispara eventos de missão |
-| `js/game/combat-feedback.js` | números flutuantes de dano/crítico/XP (só memória) |
+| `js/data/combat-balance.js` | dano, golpes, recarga, alcance, crítico, multiplicadores de habilidade e regras de vida |
+| `js/data/mastery.js` | trilhas de maestria, limiares e efeitos por arquétipo |
+| `js/data/quests.js` | missões contáveis e recompensas |
+| `js/data/items.js` | catálogo de itens do inventário |
+| `js/game/rpg.js` | nível, XP, estatísticas derivadas e rolagem de dano |
+| `js/game/mastery.js` | motor da maestria (contadores → ranks → bônus) |
+| `js/game/health.js` | vida, dano, invulnerabilidade, regeneração e respawn |
+| `js/game/hazards.js` | zonas de eco instável (dano ambiental) |
+| `js/game/combat.js` | aplica dano, registra vitória, XP e eventos |
+| `js/game/quests.js` | objetivos, conclusão e entrega única de recompensa |
+| `js/game/combat-feedback.js` | números flutuantes de dano/crítico/XP |
+| `js/ui/codex.js` | Códex com abas (missões, progressão, inventário, atributos) |
 | `js/game/progression.js` | normaliza e migra os campos novos em saves antigos |
 
-## Ataque básico por arquétipo (nível 1)
+## 2. Ataque básico por arquétipo (nível 1)
 
 | Arquétipo | Dano/golpe | Golpes | Recarga | Alcance | Crítico | Perfil |
 | --- | --- | --- | --- | --- | --- | --- |
-| Domínio Ancião | 13 | 1 | 0,68 s | 2,0 | 12% (×1,85) | lento, pesado, maior pico por golpe |
-| Motor Bio-Forja | 9 | 1 | 0,54 s | 1,8 | 7% (×1,6) | médio, estável |
-| Maré Astral | 5 | 2 | 0,52 s | 1,9 | 9% (×1,55) | dois toques por gesto, ritmo fluido |
+| Domínio Ancião | 13 | 1 | 0,68 s | 2,0 | 12% (×1,85) | lento, maior pico |
+| Motor Bio-Forja | 9 | 1 | 0,54 s | 1,8 | 7% (×1,6) | médio e estável |
+| Maré Astral | 5 | 2 | 0,52 s | 1,9 | 9% (×1,55) | dois toques por gesto |
 | Núcleo 10X | 5 | 1 | 0,32 s | 1,7 | 11% (×1,7) | mais rápido; ×1,35 em Forma Veloz |
 
-Cada golpe varia ±6% e pode ser crítico. O dano final é:
-
 ```text
-dano = base × (1 + ganhoPorNível × (nível − 1)) × (1 + nósDeAtaque) × (formaVeloz ? ×1,35 : 1)
+dano = base × (1 + ganhoPorNível × (nível − 1)) × (1 + maestria de ataque) × (forma veloz ? ×1,35 : 1)
 ```
 
-Ao encadear golpes sem pausa, o ataque entra em recuperação depois de N
-acertos (`strain`), somando tempo à recarga — a leitura de "sobrecarga"
-que já existia na HUD.
+Cada golpe varia ±6% e pode ser crítico. Encadear golpes sem pausa entra em
+recuperação (`strain`) e soma tempo à recarga.
 
-## Habilidades de impacto
+### Habilidades de impacto
 
-`ABILITY_DAMAGE` multiplica o dano básico do arquétipo:
+| Habilidade | Multiplicador |
+| --- | --- |
+| Golpe de Ruptura | ×2,4 |
+| Passo de Corrente | ×1,9 |
+| Pulso da Forma Veloz | ×1,6 |
+| Propulsor de Impulso | ×1,2 |
 
-| Habilidade | Multiplicador | Observação |
-| --- | --- | --- |
-| Golpe de Ruptura | ×2,4 | maior dano de área curta |
-| Passo de Corrente | ×1,9 | atinge à frente no impulso |
-| Forma Veloz (pulso) | ×1,6 | rápido, menor compromisso |
-| Propulsor de Impulso | ×1,2 | dano incidental do dash |
+Varreduras (`postura_dominio`, `senso_corrente`, `eco_scan`, `bio_diagnostic`)
+não causam dano. O nó de dano de habilidade vem da maestria de **eco**.
 
-Varreduras (`postura_dominio`, `senso_corrente`, `eco_scan`,
-`bio_diagnostic`) não causam dano e continuam sendo leitura de sistemas.
-O dano de habilidade também sobe com o nó `eco_1`.
+## 3. Maestria — progressão orgânica por uso
 
-## XP, níveis e pontos
+Não existe ponto para gastar. Cada trilha sobe conforme o jogador **faz** o que
+ela representa, e os ranks são derivados dos contadores (mudar limiares no
+futuro recalcula tudo sem migração).
 
-- Curva: `xpParaPróximoNível = round(40 × 1,2^(nível−1))`, teto no nível 20.
-- Cada nível concede **1 ponto** de árvore.
-- Alvos de treino dão **25 XP** e param de dar XP no nível 5; XP de missão
-  continua valendo em qualquer nível.
-- XP, nível, pontos e ranks são salvos em `progress.archetypeProgress[arquétipo]`,
-  que já existia nos saves — a migração só adiciona campos neutros.
+| Trilha | Sobe com | Efeito por rank | Limiares |
+| --- | --- | --- | --- |
+| Ataque | golpes básicos que acertam | +4% dano básico, +1% crítico | 30 / 80 / 160 / 300 |
+| Fluxo | usos de Q, R e transformação | −3% recarga, +0,4 energia/s | 10 / 25 / 50 / 90 |
+| Eco | vitórias, missões e descobertas | +4% dano de habilidade, +5% XP | 4 / 10 / 20 / 40 |
+| Locomoção | tiles percorridos | +2% velocidade | 150 / 500 / 1200 / 2500 |
 
-## Árvore
+**Núcleo 10X — trilha CINÉTICA (locomoção):** além dos +2% de velocidade,
+a Forma Veloz ganha **+3% de velocidade por rank** e **+1,2 s de duração por
+rank**. Ou seja: quanto mais você anda, corre e dá dash na forma, mais rápida e
+mais longa ela fica — exatamente o comportamento "orgânico" pedido.
 
-Seis nós por arquétipo, em três ramos com nomes próprios:
+Nomes por arquétipo:
 
-| Ramo | Nós | Efeito por rank |
-| --- | --- | --- |
-| Ataque | `ataque_1` (3 ranks) | +6% dano básico |
-| Ataque | `ataque_2` (2) — exige `ataque_1` rank 2 | +10% dano básico, +3% crítico |
-| Fluxo | `fluxo_1` (3) | −5% recarga |
-| Fluxo | `fluxo_2` (2) — exige `fluxo_1` rank 2 | −5% recarga, +1,5 energia |
-| Eco | `eco_1` (3) | +8% dano de habilidade |
-| Eco | `eco_2` (1) — exige `eco_1` rank 2 | +15% XP recebido |
+| Arquétipo | Ataque | Fluxo | Eco | Locomoção |
+| --- | --- | --- | --- | --- |
+| Núcleo 10X | PULSO SINTONIZADO | CIRCUITO ESTÁVEL | LEITURA PROFUNDA | CINÉTICA |
+| Domínio Ancião | FIO ANCESTRAL | PASSADA FIRME | RUNAS VIVAS | PESO E IMPULSO |
+| Maré Astral | CORRENTE CONTÍNUA | RESPIRAÇÃO ABISSAL | SINTONIA LÍQUIDA | FLUIDEZ |
+| Bio-Forja | IMPULSO AFIADO | SERVO ESTÁVEL | DIAGNÓSTICO DUPLO | PROPULSÃO |
 
-Os custos crescem por rank (`1, 1, 2`, etc.). A árvore abre no diário
-(`J`): mostra nível, XP, pontos e os seis nós, com botão por nó. Nó
-bloqueado informa o motivo (pontos ou pré-requisito).
+O save guarda só quatro números em `progress.archetypeProgress[arquétipo].mastery`.
+Saves antigos com `points`/`nodes` da árvore antiga são lidos e **ignorados**
+(não viram poder, não são apagados à força).
 
-## Missões contáveis
+## 4. Vida
 
-`CALIBRAÇÃO DE CAMPO` começa ao concluir a avaliação com o NEXO-04:
-derrotar 3 ecos de treino rende 60 XP, 1 ponto e o item
-`registro_de_calibracao`. A recompensa é entregue uma única vez; o diário
-mostra `atual/alvo` por objetivo.
+| Regra | Valor |
+| --- | --- |
+| Vida base | Domínio 150 · Bio 130 · Núcleo 120 · Maré 110 (+8 por nível) |
+| Regeneração | após 5 s sem dano, +4 vida/s |
+| Invulnerabilidade | 1,6 s após levar dano |
+| Morte | 1,2 s caído e retorno ao ponto seguro com 60% da vida |
+| Ao renascer | 2,4 s invulnerável |
 
-As missões antigas (`embarque_dimensional`, `calibracao_de_eco`) seguem com
-o fluxo próprio e não foram reescritas: `progress.activeQuest` continua
-sendo a missão principal. `progress.questLog` guarda apenas as missões
-novas, e abrir o diário não altera o save.
+**Sem punição permanente:** morrer não remove XP, itens, missões nem flags. A
+vida é de sessão (não vai para o save); cada carregamento abre com a barra
+cheia. A HUD mostra a barra com o ícone de coração e pulsa abaixo de 30%.
 
-## Testes
+### Fonte de dano atual: zonas de eco instável
+
+Declaradas no mapa em `hazards`. Duas na Enseada dos Ecos, longe do spawn, do
+alvo de treino e do caminho obrigatório. Pulsam a cada 1,2–1,5 s, causam 9–12
+de dano e **são ignoradas durante o dash**. O teste `tests/vida.mjs` garante que
+nenhuma zona nasce sobre spawn, alvo de treino ou parede.
+
+## 5. Códex de Rotas (`J`)
+
+Substitui o antigo diário monolítico. Quatro abas com ícones próprios:
+
+| Aba | Conteúdo |
+| --- | --- |
+| **Missões** | missão principal, missões contáveis com barra por objetivo e resumo de exploração da Enseada |
+| **Progressão** | nível, XP, resumo da maestria e as quatro trilhas com pips, barra até o próximo rank e efeito |
+| **Inventário** | grade de 8 espaços, catálogo de itens com nome/descrição e painel de companheiros |
+| **Atributos** | vida, energia, dano, crítico, recarga, alcance, bônus de XP e velocidade da Forma Veloz |
+
+Atalhos: `J` abre/fecha, `ESC` fecha, `1–4` troca de aba, `←`/`→` navegam.
+Abrir o Códex **nunca altera o progresso** — só os botões de companheiro salvam,
+de propósito.
+
+Arte: `assets/sprites/ui/codex-fundo.png` (fundo atmosférico),
+`assets/sprites/ui/codex/icone-emblema.png` (emblema do cabeçalho) e
+`assets/sprites/ui/codex/icone-*.png` (8 ícones em pixel art), gerados a partir
+de `assets/source-art/ui/` e tratados por `tools/preparar-codex-ui.py`.
+
+## 6. Missões contáveis
+
+`CALIBRAÇÃO DE CAMPO` começa ao concluir a avaliação com o NEXO-04: derrotar 3
+ecos de treino rende 60 XP, 1 rank de eco e o item `registro_de_calibracao`.
+Recompensa entregue uma única vez; o Códex mostra `atual/alvo` por objetivo.
+
+As missões antigas (`embarque_dimensional`, `calibracao_de_eco`) seguem com o
+fluxo próprio: `progress.activeQuest` continua sendo a principal, e
+`progress.questLog` guarda apenas as missões novas.
+
+## 7. Testes
 
 ```bash
 node --experimental-default-type=module tests/combat-basic.mjs
 node --experimental-default-type=module tests/rpg.mjs
+node --experimental-default-type=module tests/maestria.mjs
+node --experimental-default-type=module tests/vida.mjs
+node --experimental-default-type=module tests/codex.mjs
 node --experimental-default-type=module tests/missoes.mjs
 node --experimental-default-type=module tests/dano-habilidades.mjs
 ```
 
-## Pendências honestas
+## 8. Pendências honestas
 
-- Inimigos agressivos, vida do jogador com dano real, invulnerabilidade e morte.
-- Escalonamento dos alvos de treino por mapa (hoje todos têm 60 de vida).
-- Dano de habilidade em inimigos que se movem e resistências por tipo.
-- UI dedicada da árvore fora do diário e feedback sonoro.
-- Balanceamento só pode ser fechado depois do primeiro inimigo real.
+- Inimigos agressivos com patrulha, telegrafia e contra-ataque.
+- Escalonamento de vida dos alvos por mapa (hoje todos com 60).
+- Mais fontes de cura (itens, descanso, estações) e feedback sonoro.
+- Persistir maestria de forma legível no Códex com histórico de rank.
+- Balanceamento final só depois do primeiro inimigo real.

@@ -21,7 +21,8 @@ import {
 import { ARCHETYPE_ABILITIES, getAbilityLabel } from '../game/abilities.js';
 import { IMPLEMENTED_ABILITIES } from '../data/archetype-kits.js';
 import { getBioDashProfile } from '../game/ability-context.js';
-import { getArchetypeLevel, getTreePoints, xpToNext } from '../game/rpg.js';
+import { getArchetypeLevel, getArchetypeXp, xpToNext } from '../game/rpg.js';
+import { getMasterySummary } from '../game/mastery.js';
 
 const el = {};
 const cache = {};
@@ -53,6 +54,8 @@ export function initHud() {
     'abilityEnergyFill',
     'abilityLevel',
     'abilityTreePoints',
+    'abilityHealthText',
+    'abilityHealthFill',
     'abilityXpFill',
     'abilityXpText',
     'abilityPrimary',
@@ -118,15 +121,25 @@ function updateAbilityHud(state) {
   setText('nucleoTimer', timerText);
   el.nucleoTimer?.classList.toggle('visible', Boolean(timerText));
 
-  // Nível, XP e pontos de árvore do arquétipo atual.
+  // Nível, XP e maestria do arquétipo atual.
   const level = getArchetypeLevel(state.progress, archetypeId);
-  const kit = state.progress.archetypeProgress?.[archetypeId] ?? {};
-  const xp = Number.isFinite(kit.xp) ? kit.xp : 0;
-  const points = getTreePoints(state.progress, archetypeId);
+  const xp = getArchetypeXp(state.progress, archetypeId);
   const next = xpToNext(level);
+  const mastery = getMasterySummary(state.progress, archetypeId);
   setText('abilityLevel', `NÍVEL ${level} • ${BASIC_ATTACKS[archetypeId]?.label ?? ''}`.trim());
-  setText('abilityTreePoints', points > 0 ? `ÁRVORE: ${points} PONTO${points > 1 ? 'S' : ''}` : 'ÁRVORE: J');
-  setText('abilityXpText', Number.isFinite(next) ? `${xp} / ${next} XP` : 'NÍVEL MÁXIMO');
+  setText('abilityTreePoints', mastery.total > 0 ? `MAESTRIA · ${mastery.label}` : 'MAESTRIA · J');
+  setText('abilityXpText', Number.isFinite(next) ? `${Math.floor(xp)} / ${next} XP` : 'NÍVEL MÁXIMO');
+
+  // Vida: barra própria, com aviso pulsante em estado crítico.
+  const player = state.player;
+  const health = Math.round(player.health ?? player.maxHealth ?? 0);
+  const maxHealth = Math.round(player.maxHealth ?? 0);
+  setText('abilityHealthText', `${health} / ${maxHealth}`);
+  if (el.abilityHealthFill) {
+    const ratio = maxHealth ? Math.max(0, Math.min(100, (health / maxHealth) * 100)) : 0;
+    el.abilityHealthFill.style.width = `${ratio}%`;
+    el.abilityHud?.classList.toggle('danger', ratio <= 30);
+  }
   if (el.abilityXpFill) {
     const xpPercent = Number.isFinite(next) ? Math.max(0, Math.min(100, (xp / next) * 100)) : 100;
     el.abilityXpFill.style.width = `${xpPercent}%`;

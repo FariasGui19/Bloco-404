@@ -21,12 +21,32 @@ import {
 } from './world.js';
 
 import { moveWithCollision } from './collision.js';
+import { getDerivedStats } from './rpg.js';
+import { recordMastery } from './mastery.js';
 
 const CLICK_SNAP_DIST = 1.0;
 // Aplicado apenas à locomoção da forma sustentada, não ao Q nem a trajes.
 export const VELOZ_SPEED_MULTIPLIER = 1.8;
+
+// A maestria de locomoção soma velocidade. A Forma Veloz tem ainda o próprio
+// bônus cinético, que cresce conforme o jogador corre, anda e dá dash nela.
 export function getPlayerMoveSpeed(progress, player) {
-  return CONFIG.PLAYER_SPEED * (progress?.archetype === 'nucleo_dez_forma' && player?.nucleoForm === 'forma_veloz' ? VELOZ_SPEED_MULTIPLIER : 1);
+  const stats = getDerivedStats(progress, player);
+  if (!stats) return CONFIG.PLAYER_SPEED;
+  const veloz = progress?.archetype === 'nucleo_dez_forma' && player?.nucleoForm === 'forma_veloz';
+  const mastery = 1 + stats.moveSpeedPct + (veloz ? stats.formSpeedPct : 0);
+  return CONFIG.PLAYER_SPEED * (veloz ? VELOZ_SPEED_MULTIPLIER : 1) * mastery;
+}
+
+// Distância é acumulada e enviada em blocos para não recalcular maestria
+// a cada quadro.
+let distanceBuffer = 0;
+function trackDistance(progress, amount) {
+  if (!(amount > 0)) return;
+  distanceBuffer += amount;
+  if (distanceBuffer < .5) return;
+  recordMastery(progress, 'distance', distanceBuffer);
+  distanceBuffer = 0;
 }
 
 const keyHeld = (...keys) =>
@@ -147,6 +167,7 @@ export function updatePlayer(dt) {
   // Movimento robusto:
   // usa subpassos + colisão + slide.
   // ---------------------------------------------------------------
+  const beforeX = player.x, beforeY = player.y;
   const moved = moveWithCollision(
     map,
     player,
@@ -156,6 +177,7 @@ export function updatePlayer(dt) {
   );
 
   player.moving = moved;
+  if (moved) trackDistance(state.progress, Math.hypot(player.x - beforeX, player.y - beforeY));
 
   if (dx !== 0 || dy !== 0) {
     updateFacing(dx, dy);

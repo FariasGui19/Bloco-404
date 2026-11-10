@@ -36,18 +36,18 @@ assert(progress.completedQuests.includes('calibracao_de_campo'));
 assert(progress.inventory.includes('registro_de_calibracao'), 'recompensa de item entregue');
 assert.equal(progress.flags.calibracao_de_campo_concluida, true);
 const kit = progress.archetypeProgress.lamina_dominio_anciao;
-assert.equal(kit.points, 2, 'recompensa em pontos: 1 do nível + 1 da missão');
 assert(kit.xp + (kit.level > 1 ? 40 : 0) > xpBefore, 'recompensa de XP somada');
+assert.equal(kit.mastery.eco, 2, 'concluir missão alimenta a maestria de eco');
 
 // Recompensa não é entregue duas vezes.
-const pointsAfter = kit.points;
+const ecoAfter = kit.mastery.eco;
 const inventoryLength = progress.inventory.length;
 recordQuestEvent(progress, { type: 'defeat', target: 'training', amount: 5 });
-assert.equal(kit.points, pointsAfter);
+assert.equal(kit.mastery.eco, ecoAfter);
 assert.equal(progress.inventory.length, inventoryLength);
 assert.equal(progress.completedQuests.filter(id => id === 'calibracao_de_campo').length, 1);
 
-// O diário lista só o que foi iniciado e mantém orientação de leitura.
+// O Códex lista só o que foi iniciado e mantém orientação de leitura.
 assert.equal(listTrackedQuests(progress).length, 1);
 assert.deepEqual(listTrackedQuests({ archetype: 'mare_astral' }), []);
 

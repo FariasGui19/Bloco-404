@@ -10,6 +10,7 @@ import { snapCameraTo, setMapZoomMin } from '../engine/camera.js';
 import { createActorRuntime } from './actors.js';
 import { createCoastalFauna } from './fauna-costeira.js';
 import { createTrainingTargets } from './combat.js';
+import { createHazards } from './hazards.js';
 import { rememberMapLocation } from './save.js';
 import { applyGateStates } from './gates.js';
 
@@ -26,6 +27,14 @@ function findDefaultSpawn(layout) {
   }
 
   return { x: 1.5, y: 1.5 };
+}
+
+// Ponto seguro do mapa atual: spawn declarado ou o primeiro tile livre.
+export function getSafeSpawn() {
+  const map = state.world.currentMap;
+  if (!map) return null;
+  const point = map.spawnPoints?.[state.world.currentSpawnId] ?? map.spawnPoints?.inicio ?? findDefaultSpawn(map.layout);
+  return { x: point.x, y: point.y };
 }
 
 export async function loadMap(mapId, spawnId = 'inicio') {
@@ -49,6 +58,7 @@ export async function loadMap(mapId, spawnId = 'inicio') {
     state.companion = null; // posição do vínculo é runtime, não atravessa saves/mapas
     state.fauna = createCoastalFauna(mapData);
     state.trainingTargets = createTrainingTargets(mapData);
+    state.hazards = createHazards(mapData);
     state.player.combat = null;
     state.objects = [];
     state.portals = [];

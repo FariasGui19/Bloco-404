@@ -79,6 +79,7 @@ export function render(map, state) {
       if (map.id !== 'ilha_estacao_bio') drawBeachSurface(map);
     }
     drawFloors(map);
+    drawHazards(state.hazards);
     if (map.id === 'hub_saguao') drawHubFloorMarkings();
     if (map.id === 'ilha_praia_inicial') drawBeachStation(map);
     if (map.id === 'bio_sala_controle') drawBioControlFloor();
@@ -1199,6 +1200,61 @@ function drawWorld(map, state) {
   while (ei < drawList.length) drawItem(drawList[ei++]);
 
   drawCombatFeedback();
+  drawPlayerHurt();
+}
+
+// Zonas de eco instável: anel pulsante no chão, sem esconder o personagem.
+function drawHazards(hazards) {
+  if (!hazards?.length) return;
+  ctx.save();
+  for (const hazard of hazards) {
+    const x = (hazard.x - hazard.y) * HW, y = (hazard.x + hazard.y) * HH;
+    const pulse = .55 + .45 * Math.sin(hazard.clock * 2.2);
+    const radius = hazard.radius * HW;
+    ctx.globalAlpha = .16 + pulse * .10;
+    ctx.fillStyle = '#6bff92';
+    ctx.beginPath(); ctx.ellipse(x, y, radius, radius * HH / HW, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.globalAlpha = .5 + pulse * .3;
+    ctx.strokeStyle = '#a9ffbe'; ctx.lineWidth = 1.6;
+    ctx.beginPath(); ctx.ellipse(x, y, radius, radius * HH / HW, 0, 0, Math.PI * 2); ctx.stroke();
+    // Pequenos fragmentos de eco girando devagar.
+    ctx.fillStyle = '#d9ffe3';
+    for (let i = 0; i < 4; i++) {
+      const angle = hazard.clock * .8 + i * Math.PI / 2;
+      const px = x + Math.cos(angle) * radius * .72;
+      const py = y + Math.sin(angle) * radius * .72 * HH / HW - 2;
+      ctx.fillRect(px - 1, py - 1, 2, 2);
+    }
+  }
+  ctx.restore();
+}
+
+// Dano recente escurece as bordas; vida zerada fecha o quadro em preto.
+function drawPlayerHurt() {
+  const player = state.player;
+  const hurt = player?.hurtTimer ?? 0;
+  const dead = (player?.health ?? 1) <= 0;
+  if (hurt <= 0 && !dead) return;
+  const { w, h, dpr } = view;
+  ctx.save();
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  if (hurt > 0) {
+    const strength = Math.min(1, hurt / .5) * .75;
+    const gradient = ctx.createRadialGradient(w / 2, h / 2, Math.min(w, h) * .25, w / 2, h / 2, Math.max(w, h) * .62);
+    gradient.addColorStop(0, 'rgba(120,10,10,0)');
+    gradient.addColorStop(1, `rgba(150,18,12,${strength})`);
+    ctx.fillStyle = gradient;
+    ctx.fillRect(0, 0, w, h);
+  }
+  if (dead) {
+    ctx.fillStyle = 'rgba(4,10,8,.72)';
+    ctx.fillRect(0, 0, w, h);
+    ctx.fillStyle = '#c9ffe0';
+    ctx.font = 'bold 14px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText('ECO DISPERSO • RETORNANDO', w / 2, h / 2);
+  }
+  ctx.restore();
 }
 
 // Números de dano/crítico/XP sobem e desaparecem acima do alvo.

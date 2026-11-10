@@ -85,6 +85,17 @@ export const ARCHETYPE_VITALS = Object.freeze({
   nucleo_dez_forma: Object.freeze({ health: 120 }),
 });
 
+// Regras de vida do operador. Sem punição permanente: morrer devolve o
+// jogador ao ponto seguro do mapa com parte da vida e invulnerabilidade curta.
+export const VITALS_RULES = Object.freeze({
+  regenDelay: 5,        // segundos sem levar dano antes de regenerar
+  regenRate: 4,         // vida por segundo regenerada
+  invulnerability: 1.6, // janela após levar dano
+  respawnRatio: .6,     // fração da vida ao voltar
+  respawnInvulnerability: 2.4,
+  deathDelay: 1.2,      // tempo caído antes de retornar
+});
+
 // XP do treino vale até este nível; depois só inimigos de verdade rendem.
 export const TRAINING_XP_LEVEL_CAP = 5;
 export const TRAINING_TARGET_XP = 25;

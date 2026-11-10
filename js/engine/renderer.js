@@ -10,7 +10,7 @@ import { drawUltimateSignature } from './ultimate-visuals.js';
 import { getSprite } from './sprites.js';
 import { createBeachSurface } from './beach-surface.js';
 import { getSeaCanvas, foamArcs } from './beach-water.js';
-import { getVidaAquatica, atualizarCardumes, atualizarBolhas, CORES_CARDUME } from '../game/vida-aquatica.js';
+import { getVidaAquatica, atualizarCardumes, atualizarBolhas, CORES_CARDUME, elementosDeRecife } from '../game/vida-aquatica.js';
 import { criarFragmentosDeMare, fragmentosColetados } from '../game/mare-missao.js';
 import { createCoastField } from './coast-field.js';
 import { bridgeGateGeometry } from './bridge-geometry.js';
@@ -531,8 +531,8 @@ function drawVidaAquatica(map, state) {
     ctx.globalCompositeOperation = 'source-over';
   }
 
-  // ---- Recifes: coral, rocha submersa e alga alta
-  for (const r of vida.recifes) {
+  // ---- Recifes: coral, rocha submersa e alga alta (agrupados em manchas)
+  for (const r of elementosDeRecife(vida.recifes)) {
     if (!dentro(r.x, r.y)) continue;
     const ix = (r.x - r.y) * HW, iy = (r.x + r.y) * HH;
     const balanco = Math.sin(t * 1.1 + r.fase) * 1.6;

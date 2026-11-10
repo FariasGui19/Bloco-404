@@ -25,7 +25,11 @@ export const VIDA = {
   peixesPorCardume: 6,
   bolhasMax: 26,
   raios: 9,
-  recifesMax: 34,
+  // Recifes são MANCHAS, não pontos soltos: um recife de verdade é um
+  // agrupamento de coral, rocha e alga. Pontinhos espalhados pelo mar
+  // inteiro liam como ruído/defeito no print, não como vida.
+  recifesMax: 5,      // quantos agrupamentos
+  porRecife: 7,       // elementos por agrupamento
 };
 
 function hash(x, y, seed = 0) {
@@ -45,35 +49,67 @@ function hash(x, y, seed = 0) {
 export function criarRecifes(map, field) {
   const rows = map.aguaPraia;
   if (!rows) return [];
-  const recifes = [];
-  const minDist = 2.6;
+  const dist = (x, y) => {
+    const px = Math.min(field.width - 1, Math.max(0, Math.floor(x * field.scale)));
+    const py = Math.min(field.height - 1, Math.max(0, Math.floor(y * field.scale)));
+    return field.distLand[py * field.width + px];
+  };
 
-  for (let y = 1; y < rows.length - 1 && recifes.length < VIDA.recifesMax; y++) {
-    for (let x = 1; x < (rows[y]?.length ?? 0) - 1 && recifes.length < VIDA.recifesMax; x++) {
+  const grupos = [];
+  // Candidatos: água funda, longe da costa e longe de outro recife.
+  const celulas = [];
+  for (let y = 1; y < rows.length - 1; y++) {
+    for (let x = 1; x < (rows[y]?.length ?? 0) - 1; x++) {
       if (!isAguaChar(rows[y][x])) continue;
-      // Água funda: pelo menos 2 tiles da costa.
-      const px = Math.min(field.width - 1, Math.floor((x + .5) * field.scale));
-      const py = Math.min(field.height - 1, Math.floor((y + .5) * field.scale));
-      const dist = field.distLand[py * field.width + px];
-      if (dist < 2.1) continue;
-
-      const r = hash(x, y, 41);
-      if (r > .16) continue;
-
-      const wx = x + .5 + (hash(x, y, 7) - .5) * .7;
-      const wy = y + .5 + (hash(x, y, 11) - .5) * .7;
-      if (recifes.some(o => Math.hypot(o.x - wx, o.y - wy) < minDist)) continue;
-
-      recifes.push({
-        x: wx, y: wy,
-        // 0 = coral, 1 = rocha submersa, 2 = alga alta
-        tipo: Math.floor(hash(x, y, 23) * 3),
-        tamanho: .55 + hash(x, y, 31) * .7,
-        fase: hash(x, y, 53) * Math.PI * 2,
-      });
+      if (dist(x + .5, y + .5) < 2.4) continue;
+      celulas.push([x, y]);
     }
   }
-  return recifes;
+  // Prioriza água ENCADEADA (cercada de terra), onde o mergulho acontece,
+  // em vez do mar aberto na borda do mapa. `abrigo` mede quantas das 8
+  // células em volta são terra em até 2 tiles.
+  const abrigo = (x, y) => {
+    let n = 0;
+    for (let dy = -2; dy <= 2; dy++) for (let dx = -2; dx <= 2; dx++) {
+      if (!dx && !dy) continue;
+      const c = rows[y + dy]?.[x + dx];
+      if (c != null && !isAguaChar(c)) n += 1 / Math.hypot(dx, dy);
+    }
+    return n;
+  };
+  // Abrigo primeiro, e dentro do mesmo nível a ordem determinística.
+  celulas.sort((a, b) => (abrigo(b[0], b[1]) - abrigo(a[0], a[1]))
+    || (hash(a[0], a[1], 41) - hash(b[0], b[1], 41)));
+
+  for (const [x, y] of celulas) {
+    if (grupos.length >= VIDA.recifesMax) break;
+    const cx = x + .5, cy = y + .5;
+    if (grupos.some(g => Math.hypot(g.x - cx, g.y - cy) < 5.5)) continue;
+
+    // Um agrupamento: elementos em volta do centro, com raio variado.
+    const elementos = [];
+    for (let k = 0; k < VIDA.porRecife; k++) {
+      const ang = hash(x, y, k * 13 + 3) * Math.PI * 2;
+      const raio = (0.25 + hash(x, y, k * 19 + 5) * 0.95);
+      const ex = cx + Math.cos(ang) * raio;
+      const ey = cy + Math.sin(ang) * raio * .75;
+      if (!isAguaChar(rows[Math.floor(ey)]?.[Math.floor(ex)])) continue;
+      if (dist(ex, ey) < 1.9) continue;
+      elementos.push({
+        x: ex, y: ey,
+        tipo: Math.floor(hash(x + k, y, 23) * 3),
+        tamanho: .6 + hash(x + k, y, 31) * .8,
+        fase: hash(x + k, y, 53) * Math.PI * 2,
+      });
+    }
+    if (elementos.length >= 3) grupos.push({ x: cx, y: cy, elementos });
+  }
+  return grupos;
+}
+
+/** Lista achatada de elementos (para desenhar e para os testes). */
+export function elementosDeRecife(recifes) {
+  return recifes.flatMap(g => g.elementos);
 }
 
 // ---------------------------------------------------------------------

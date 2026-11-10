@@ -11,7 +11,7 @@
 import assert from 'node:assert/strict';
 import {
   getVidaAquatica, criarRecifes, criarCardumes, atualizarCardumes,
-  atualizarBolhas, VIDA, CORES_CARDUME,
+  atualizarBolhas, VIDA, CORES_CARDUME, elementosDeRecife,
 } from '../js/game/vida-aquatica.js';
 import { createCoastField } from '../js/engine/coast-field.js';
 import { map as praia } from '../js/data/worlds/arquipelago-rotas-perdidas/praia-inicial.js';
@@ -31,14 +31,21 @@ for (const map of maps) {
     + Math.min(field.width - 1, Math.floor(x * field.scale))
   ];
 
-  for (const r of vida.recifes) {
-    assert(agua(map.aguaPraia[Math.floor(r.y)]?.[Math.floor(r.x)]), `${map.id}: recife fora da água em ${r.x},${r.y}`);
-    assert(dist(r.x, r.y) > 1.4, `${map.id}: recife raso demais em ${r.x},${r.y}`);
+  // Recife é AGRUPAMENTO (mancha), não ponto solto — é assim que ele lê
+  // como recife e não como ruído no meio do mar.
+  const elementos = elementosDeRecife(vida.recifes);
+  for (const g of vida.recifes) {
+    assert(g.elementos.length >= 3, `${map.id}: recife com menos de 3 elementos`);
+    assert(dist(g.x, g.y) > 1.8, `${map.id}: recife raso demais em ${g.x},${g.y}`);
+  }
+  for (const r of elementos) {
+    assert(agua(map.aguaPraia[Math.floor(r.y)]?.[Math.floor(r.x)]), `${map.id}: coral fora da água em ${r.x},${r.y}`);
+    assert(dist(r.x, r.y) > 1.4, `${map.id}: coral raso demais em ${r.x},${r.y}`);
   }
   for (const c of vida.cardumes) {
     assert(agua(map.aguaPraia[Math.floor(c.homeY)]?.[Math.floor(c.homeX)]), `${map.id}: cardume fora da água`);
   }
-  console.log(`  ${map.id.padEnd(20)} ${vida.recifes.length} recifes, ${vida.cardumes.length} cardumes, ${vida.raios.length} raios`);
+  console.log(`  ${map.id.padEnd(20)} ${vida.recifes.length} recifes (${elementosDeRecife(vida.recifes).length} corais/rochas/algas), ${vida.cardumes.length} cardumes, ${vida.raios.length} raios`);
 }
 
 // --- 2. Contagem fixa -------------------------------------------------

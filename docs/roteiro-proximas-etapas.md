@@ -11,6 +11,36 @@
 - Núcleo 10X: Ultimate só com a forma ativa; formas futuras listadas como projeto.
 - Maré Astral: rotas de maré no Códex (leitura de mapa).
 
+## Concluído na 0.6.5 — o Motor Bio-Forja ganhou corpo
+
+Até aqui o Bio-Forja tinha as quatro ferramentas definidas em dados
+(`js/data/archetype-tools.js`) e as cinco assinaturas desenhadas como efeito
+procedural, mas o corpo só fazia a pose de andar durante o `F`. A rodada
+fechou a lacuna:
+
+1. **Cinco folhas de execução** (`assets/sprites/player/player-bio-ult-*.png`),
+   uma por assinatura: cúpula de raízes (`forja_dome`), serra instável
+   (`serra`), marreta de forja (`martelo`), rede de cabos (`cabos`) e
+   propulsores (`propulsores`). Geradas a partir do turnaround aprovado do
+   operador, com o preparador `tools/preparar-bio-ultimate.py`.
+2. **Animação presa ao estado real** (`js/data/bio-ultimate-animation.js`):
+   carga usa os quadros 0 e 1, impacto o 2, recuperação o 3. A escolha é pela
+   ASSINATURA do efeito, não pelo id da ferramenta — ferramenta nova com a
+   mesma assinatura já entra com arte.
+3. **A carga já veste a ferramenta**: `beginUltimate` passou a guardar a
+   assinatura em `chargeDefinition`, então a preparação usa o gesto certo em
+   vez de cair sempre na cúpula.
+4. **O exo respira** (`drawBioForjaFx`): vapor de pistão no passo e bobina da
+   ferramenta acesa na cor dela (ciano da lâmina, âmbar do punho, verde do
+   gancho, azul da asa). Enfeite de leitura, sem tocar em dano/colisão.
+
+Versão `0.6.5-bio-forja-ultimate`. Teste novo: `tests/bio-ultimate.mjs`
+(assinatura → folha → quadro por fase → bônus ativo → altura do corpo).
+
+**Ainda pendente do Bio:** som de pistão e a leitura da ferramenta no HUD
+durante o bônus (hoje o bônus aparece com nome e segundos, sem a cor da
+ferramenta).
+
 ## Concluído na 0.6.4 — o Núcleo 10X fechado
 
 Três pendências antigas do Núcleo, todas em jogo:

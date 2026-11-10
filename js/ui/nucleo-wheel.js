@@ -41,23 +41,24 @@ let safeToReturn = () => true;
 let focusToolId = null;
 
 // POSIÇÕES DOS ENCAIXES DO ANEL.
-// A arte do anel (assets/sprites/ui/nucleo-roda.png, 1536×1024) tem quatro
-// hexágonos: topo (766,320), direita (1187,529), base (765,680) e esquerda
-// (345,529). Em porcentagem da imagem:
-//     topo 50%/31% · direita 77%/52% · base 50%/66% · esquerda 22%/52%
-// Era aqui que a segunda forma "não trocava de foto": os quatro cartões eram
-// pintados no MESMO ponto (50%/46%), um por cima do outro — só a última arte
-// aparecia e os nomes ficavam empilhados. Cada forma agora mora no seu slot.
+// Medidas na própria arte (assets/sprites/ui/nucleo-roda.png, 1536×1024),
+// olhando a grade da imagem: os quatro hexágonos ficam em
+//     topo ~50%/15% · direita ~75%/45% · base ~50%/77% · esquerda ~24%/45%
+// A primeira versão usava 31%/53% (o miolo e as bordas do anel), e por isso a
+// FORMA VELOZ caía em cima do núcleo em vez de no hexágono de cima.
 const SLOT_ANCHOR = Object.freeze([
-  { left: '50%', top: '31%' }, // 0 · topo      → FORMA VELOZ
-  { left: '77%', top: '53%' }, // 1 · direita   → QUEBRA SISTEMAS
-  { left: '50%', top: '67%' }, // 2 · base      → FLUIDA (projeto)
-  { left: '22%', top: '53%' }, // 3 · esquerda  → NÚCLEO (projeto)
+  { left: '50%', top: '15.5%', box: '13.5%' }, // 0 · topo      → FORMA VELOZ
+  { left: '75%', top: '45%',   box: '15%'   }, // 1 · direita   → QUEBRA SISTEMAS
+  { left: '50%', top: '77%',   box: '14%'   }, // 2 · base      → FLUIDA (projeto)
+  { left: '24.5%', top: '45%', box: '15%'   }, // 3 · esquerda  → NÚCLEO (projeto)
 ]);
 
+// O cartão nasce com o TAMANHO do hexágono da sua posição: um alvo de 13,5%
+// do anel cabe dentro da moldura; antes os quatro tinham 30%×36% e a arte
+// transbordava por cima do miolo.
 function slotStyle(index) {
   const slot = SLOT_ANCHOR[index % SLOT_ANCHOR.length];
-  return `--slot-x: ${slot.left}; --slot-y: ${slot.top};`;
+  return `--slot-x: ${slot.left}; --slot-y: ${slot.top}; --slot-box: ${slot.box};`;
 }
 
 const RUNTIME_FOR_TOOL = Object.freeze({

@@ -2243,17 +2243,27 @@ body.in-menu #controls {
 /* Arte fornecida para a roda: o centro seleciona a única forma disponível. */
 .nucleo-art-ready .nucleo-orbit { background: url('../assets/sprites/ui/nucleo-roda.png') center / contain no-repeat; width: min(470px, 84vw); aspect-ratio: 3 / 2; height: auto; max-height: none; }
 .nucleo-art-ready .nucleo-orbit .nucleo-ring, .nucleo-art-ready .nucleo-orbit .nucleo-core, .nucleo-art-ready .nucleo-orbit .nucleo-locked { display: none; }
-.nucleo-art-ready .nucleo-orbit .nucleo-form { left: var(--slot-x, 50%); top: var(--slot-y, 50%); transform: translate(-50%,-50%); width: 27%; height: 34%; border-radius: 50%; background: transparent; border: 1px solid transparent; box-shadow: none; }
+.nucleo-art-ready .nucleo-orbit .nucleo-form {
+  left: var(--slot-x, 50%); top: var(--slot-y, 50%); transform: translate(-50%,-50%);
+  /* O anel é 3:2, então a MESMA porcentagem vale pixels diferentes nos dois
+     eixos. O slot é quadrado em pixels: largura em % da largura e altura
+     equivalente em % da altura (× 3/2). */
+  width: var(--slot-box, 14%);
+  height: calc(var(--slot-box, 14%) * 1.5);
+  border-radius: 50%; background: transparent; border: 1px solid transparent; box-shadow: none;
+}
 .nucleo-art-ready .nucleo-orbit .nucleo-form span, .nucleo-art-ready .nucleo-orbit .nucleo-form small { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
 /* Com a arte carregada, o nome fica como legenda pequena sob o corpo. */
 .nucleo-art-ready .nucleo-orbit .nucleo-form b {
-  position: static; width: auto; height: auto; overflow: visible; clip-path: none;
-  margin-top: 1px; padding: 1px 5px; border-radius: 6px;
-  font-size: 8px; letter-spacing: .08em; line-height: 1.2; text-align: center;
-  white-space: nowrap; color: #eafff2; background: #04140fbb;
+  position: absolute; top: 100%; left: 50%; transform: translateX(-50%);
+  width: max-content; max-width: 15ch; height: auto; overflow: visible; clip-path: none;
+  margin-top: 3px; padding: 1px 5px; border-radius: 5px;
+  font-size: 7px; letter-spacing: .05em; line-height: 1.25; text-align: center;
+  color: #eafff2; background: #04140fcc;
   text-shadow: 0 1px 2px #000; pointer-events: none;
 }
-.nucleo-art-ready .nucleo-orbit .nucleo-form:hover, .nucleo-art-ready .nucleo-orbit .nucleo-form:focus-visible { outline: 2px solid #dcffac; box-shadow: 0 0 20px #62ffa5; background: #58ff991c; }
+.nucleo-art-ready .nucleo-orbit .nucleo-form:hover,
+.nucleo-art-ready .nucleo-orbit .nucleo-form:focus-visible { outline: 2px solid #dcffac; box-shadow: 0 0 16px #62ffa5; background: #58ff9914; }
 
 /* Diário de missões: somente consulta; não altera a missão ativa. */
 #questJournal { position: fixed; inset: 0; z-index: 89; display: none; align-items: center; justify-content: center; background: rgba(3,12,18,.8); color: #d8f8ed; font-family: monospace; }
@@ -2273,7 +2283,11 @@ body.in-menu #controls {
 .nucleo-form .nucleo-preview { flex: 1 1 auto; min-height: 0; }
 /* No modo com arte o corpo da forma é o herói do cartão: ocupa o hexágono
    inteiro e o nome fica como etiqueta embaixo. */
-.nucleo-art-ready .nucleo-orbit .nucleo-form .nucleo-preview { width: 88%; height: calc(100% - 13px); filter: drop-shadow(0 0 6px #6aff9688) drop-shadow(0 2px 3px #000); }
+.nucleo-art-ready .nucleo-orbit .nucleo-form .nucleo-preview {
+  /* 86%: o corpo cabe DENTRO do hexágono, com a moldura aparecendo em volta. */
+  width: 86%; height: 86%;
+  filter: drop-shadow(0 0 6px #6aff9688) drop-shadow(0 2px 3px #000);
+}
 /* O anel já desenha o cadeado das formas em projeto: o ◆ some para não
    duplicar (ele só existe no modo sem arte). */
 .nucleo-art-ready .nucleo-orbit .nucleo-form .nucleo-form-lock { display: none; }
@@ -2284,7 +2298,7 @@ body.in-menu #controls {
 .nucleo-form[data-tool="nucleo_bruto"].selected .nucleo-preview { filter: drop-shadow(0 0 12px #ffb02e) drop-shadow(0 2px 3px #000); }
 .nucleo-form { overflow: visible; }
 .nucleo-form b, .nucleo-form small { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
-.nucleo-art-ready .nucleo-orbit .nucleo-form { width: 30%; height: 36%; }
+
 @keyframes nucleo-preview-float { 50% { transform: translateY(-5px) scale(1.04); filter: drop-shadow(0 0 12px #8dffa7); } }
 #nucleoTimer { display: none; margin-bottom: 4px; color: var(--form-color, #a7ffbb); font-size: 10px; font-weight: bold; letter-spacing: .05em; }
 /* Relógio + barra da forma: segundos e proporção, juntos. */
@@ -3540,6 +3554,32 @@ body.in-menu #controls {
 .codex-tool.selected {
   background: linear-gradient(150deg, color-mix(in srgb, var(--tool, #6bff9e) 16%, rgba(8, 20, 22, .95)), rgba(7, 18, 20, .9));
   box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--tool, #6bff9e) 45%, transparent);
+}
+
+/* Miniatura de execução: a folha da Ultimate tem 4 quadros de 320 px em uma
+   linha. O cartão mostra a PRIMEIRA pose (preparo) — a mesma arte que o corpo
+   vai usar no jogo, recortada aqui por background-position. Sem imagem nova,
+   sem ícone inventado: é a folha da ferramenta, já no disco. */
+.codex-tool-pose {
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  margin-bottom: 2px;
+
+  background-image: var(--pose-sheet, none);
+  background-repeat: no-repeat;
+  background-size: calc(var(--poses, 4) * 100%) 100%;
+  background-position: calc(var(--pose, 0) * 100% / (var(--poses, 4) - 1)) 0;
+
+  object-fit: none;
+  object-position: 0 0;
+  image-rendering: pixelated;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, .45));
+  pointer-events: none;
+}
+
+.codex-tool:hover .codex-tool-pose,
+.codex-tool:focus-visible .codex-tool-pose {
+  filter: drop-shadow(0 0 6px color-mix(in srgb, var(--tool, #6bff9e) 55%, transparent));
 }
 
 .codex-tool-tag {

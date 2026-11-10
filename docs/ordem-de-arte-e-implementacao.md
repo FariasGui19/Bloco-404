@@ -7,6 +7,32 @@ Gerar e implementar **exatamente duas folhas/imagens por atualização**, seguin
 3. Estação Bio / Bio-Forja (rodadas 0.3.5 e 0.3.6)
 4. Folha de sprites do Bolt (prévia opt-in, sem concessão automática)
 
+## Rodada 0.6.5 — Ultimate do Motor Bio-Forja (as cinco execuções)
+
+O Bio é o único módulo em que o `F` é da FERRAMENTA: a nível 1 a ferramenta
+instalada substitui a Ultimate do módulo. Antes, o `F` do Bio só desenhava a
+assinatura procedural (`js/engine/ultimate-visuals.js`) e o corpo continuava
+andando. Agora cada golpe tem folha de execução de quatro quadros, no mesmo
+padrão do Núcleo 10X:
+
+| Assinatura | Ferramenta | Ultimate | Folha (1280×320) |
+| --- | --- | --- | --- |
+| `serra` | Lâmina de Forja | CORTE DE RECONFIGURAÇÃO | `player-bio-ult-serra.png` |
+| `martelo` | Punho de Impacto | MARTELO DE FORJA | `player-bio-ult-martelo.png` |
+| `cabos` | Gancho Magnético | REDE DE ANCORAGEM | `player-bio-ult-cabos.png` |
+| `propulsores` | Asa de Impulso | QUEBRA-LIMITE CINÉTICO | `player-bio-ult-propulsores.png` |
+| `forja_dome` | — (base do módulo) | PULSO DA FORJA VIVA | `player-bio-ult-forja-dome.png` |
+
+Ordem dos quadros em todas: preparo → arma armada → impacto → recuperação.
+O preparador (`tools/preparar-bio-ultimate.py`) é o único a mexer nos PNGs:
+limpa o magenta deixando alpha real, descarta a linha de grade do gerador por
+recorte de conteúdo (com junção de faixas quando a linha parte a figura),
+normaliza a altura em 230 px úteis e apoia os pés em 276 de 320.
+
+Escala em jogo `.57`: o corpo fica do mesmo tamanho do operador equipado
+(~130 px) e é o GESTO que ocupa o quadro — a cúpula, a serra, a marreta, a
+rede e os propulsores crescem em volta dele, sem virar outro personagem.
+
 ## Rodada 0.6.4 — costas da Quebra e cicatriz no chão
 
 - `assets/source-art/nucleo/quebra-ataque-costas-v2.png` →

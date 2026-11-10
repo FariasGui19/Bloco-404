@@ -31,7 +31,13 @@ export const map = {
     estiloPiso: 'livre', useBackgroundWalls: true, sandSprite: 'beach_novas_artes', ambiente: { poeira: 12, cor: '#ffd98a' } },
   corChao: '#e6c280', layout, walkMask: ground.walkMask, pisos: ground.pisos, aguaPraia: rows,
   spawnPoints: { inicio: { x: 6.5, y: 15.5 }, vindo_da_praia: { x: 6.5, y: 15.5 } },
-  trainingTargets: [{ id: 'eco_treino_enseada', x: 14, y: 15, maxHealth: 3 }],
+  trainingTargets: [{ id: 'eco_treino_enseada', x: 14, y: 15, maxHealth: 60 }],
+  // Fonte de dano ambiental enquanto inimigos agressivos não existem.
+  // Longe do spawn, do alvo de treino e dos vestígios obrigatórios.
+  hazards: [
+    { id: 'eco_instavel_oeste', x: 10, y: 10, radius: .9, damage: 9, interval: 1.3 },
+    { id: 'eco_instavel_leste', x: 21, y: 21, radius: 1.1, damage: 12, interval: 1.5 },
+  ],
   fauna: [
     { id: 'enseada_caranguejo_1', species: 'caranguejo', x: 7.5, y: 12.5 },
     { id: 'enseada_caranguejo_2', species: 'caranguejo', x: 24.5, y: 19.5 },

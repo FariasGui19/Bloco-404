@@ -21,6 +21,8 @@ import {
 import { ARCHETYPE_ABILITIES, getAbilityLabel } from '../game/abilities.js';
 import { IMPLEMENTED_ABILITIES } from '../data/archetype-kits.js';
 import { getBioDashProfile } from '../game/ability-context.js';
+import { getArchetypeLevel, getArchetypeXp, xpToNext } from '../game/rpg.js';
+import { getMasterySummary } from '../game/mastery.js';
 
 const el = {};
 const cache = {};
@@ -50,6 +52,12 @@ export function initHud() {
     'attackStrain',
     'abilityEnergyText',
     'abilityEnergyFill',
+    'abilityLevel',
+    'abilityTreePoints',
+    'abilityHealthText',
+    'abilityHealthFill',
+    'abilityXpFill',
+    'abilityXpText',
     'abilityPrimary',
     'abilityMessage',
     'abilitySecondary',
@@ -112,6 +120,30 @@ function updateAbilityHud(state) {
   const timerText = active ? (runtime?.remaining <= 0 ? 'FORMA VELOZ • RETORNO ASSIM QUE SEGURO' : `FORMA VELOZ • ${Math.ceil(runtime?.remaining ?? 0)}s`) : recharge > 0 ? `NÚCLEO RECARREGANDO • ${Math.ceil(recharge)}s` : '';
   setText('nucleoTimer', timerText);
   el.nucleoTimer?.classList.toggle('visible', Boolean(timerText));
+
+  // Nível, XP e maestria do arquétipo atual.
+  const level = getArchetypeLevel(state.progress, archetypeId);
+  const xp = getArchetypeXp(state.progress, archetypeId);
+  const next = xpToNext(level);
+  const mastery = getMasterySummary(state.progress, archetypeId);
+  setText('abilityLevel', `NÍVEL ${level} • ${BASIC_ATTACKS[archetypeId]?.label ?? ''}`.trim());
+  setText('abilityTreePoints', mastery.total > 0 ? `MAESTRIA · ${mastery.label}` : 'MAESTRIA · J');
+  setText('abilityXpText', Number.isFinite(next) ? `${Math.floor(xp)} / ${next} XP` : 'NÍVEL MÁXIMO');
+
+  // Vida: barra própria, com aviso pulsante em estado crítico.
+  const player = state.player;
+  const health = Math.round(player.health ?? player.maxHealth ?? 0);
+  const maxHealth = Math.round(player.maxHealth ?? 0);
+  setText('abilityHealthText', `${health} / ${maxHealth}`);
+  if (el.abilityHealthFill) {
+    const ratio = maxHealth ? Math.max(0, Math.min(100, (health / maxHealth) * 100)) : 0;
+    el.abilityHealthFill.style.width = `${ratio}%`;
+    el.abilityHud?.classList.toggle('danger', ratio <= 30);
+  }
+  if (el.abilityXpFill) {
+    const xpPercent = Number.isFinite(next) ? Math.max(0, Math.min(100, (xp / next) * 100)) : 100;
+    el.abilityXpFill.style.width = `${xpPercent}%`;
+  }
 
   const strain = BASIC_ATTACKS[archetypeId]?.strain;
   const chain = state.player.combat?.style === archetypeId ? state.player.combat.chain ?? 0 : 0;

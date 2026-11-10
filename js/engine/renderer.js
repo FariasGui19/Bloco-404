@@ -8,15 +8,19 @@ import { CONFIG, TILE } from '../config.js';
 import { camera, view, worldToScreen, isoToWorld } from './camera.js';
 import { getSprite } from './sprites.js';
 import { createBeachSurface } from './beach-surface.js';
-import { bridgeThresholdGeometry } from './bridge-geometry.js';
+import { bridgeGateGeometry } from './bridge-geometry.js';
+import { getBioWalkFrame, bioWalkSheet } from '../data/bio-walk.js';
 import { faunaFootAnchor } from '../game/fauna-costeira.js';
 import { getFrame } from './sprite-clean.js';
 import { drawAmbientBack, drawAmbientFront } from './ambient.js';
 import { isDebugEnabled, drawDebugWorld } from '../game/debug.js';
 import { ACTION_SPRITES } from '../data/action-sprites.js';
 import { drawHubScreenFx, hasHubScreenFx } from './hub-screen-fx.js';
-import { getVelozAnimation } from '../data/veloz-animation.js';
+import { getVelozAnimation, getVelozPulse } from '../data/veloz-animation.js';
+import { getMareWalk, getMareAttack, mareSheet } from '../data/mare-animation.js';
+import { getDominioWalk, getDominioAttack } from '../data/dominio-animation.js';
 import { getBasicAttackPose } from '../data/basic-attack-poses.js';
+import { listCombatFeedback } from '../game/combat-feedback.js';
 import { state } from '../game/state.js';
 
 const HW = CONFIG.TILE_W / 2;
@@ -72,10 +76,13 @@ export function render(map, state) {
     if (map.aguaPraia) {
       drawBeachSea(map);
       drawBeachRipples(map);
-      drawBeachSurface(map);
+      if (map.id !== 'ilha_estacao_bio') drawBeachSurface(map);
     }
     drawFloors(map);
+    drawHazards(state.hazards);
     if (map.id === 'hub_saguao') drawHubFloorMarkings();
+    if (map.id === 'ilha_praia_inicial') drawBeachStation(map);
+    if (map.id === 'bio_sala_controle') drawBioControlFloor();
     if (map.id === 'ilha_estacao_bio') {
       drawStationPaving(map);
       drawStationCanalRims(map);
@@ -354,7 +361,7 @@ function drawBeachSea(map) {
   const rows = map.aguaPraia;
   const width = rows[0].length, height = rows.length;
   if (!texture) {
-    const scale = 4;
+    const scale = 8;
     texture = document.createElement('canvas');
     texture.width = width * scale;
     texture.height = height * scale;
@@ -378,9 +385,15 @@ function drawBeachSea(map) {
         const border = Math.max(0, Math.min(1, edge / 1.6));
         const t = Math.max(Math.min(1, closest / 4.5), 1 - border * border * (3 - 2 * border));
         const smooth = t * t * (3 - 2 * t);
-        const detail = (1 - smooth) * (Math.sin(wx * 4.1 + Math.sin(wy * 2.3)) * 3 + Math.sin(wy * 3.2 - wx * .7) * 2);
+        // Bancos submersos sutis unem visualmente as enseadas sem criar terra.
+        const bank = (1 - smooth) * Math.max(0, Math.sin(wx * .65 + Math.sin(wy * .5) * 1.8) - .45) * 8;
+        const detail = bank + (1 - smooth) * (Math.sin(wx * 4.1 + Math.sin(wy * 2.3)) * 3 + Math.sin(wy * 3.2 - wx * .7) * 2);
+        // Cintilações entrelaçadas somente no raso, assadas no cache.
+        const a = Math.sin(wx * 3.5 + Math.sin(wy * 2.2) * 1.4);
+        const b = Math.sin(wy * 3.1 + Math.sin(wx * 2.0) * 1.2);
+        const caustic = Math.max(0, (a + b) * .5 - .45) * 42 * (1 - smooth);
         const i = (py * texture.width + px) * 4;
-        for (let c = 0; c < 3; c++) image.data[i + c] = shallow[c] * (1 - smooth) + deep[c] * smooth + detail;
+        for (let c = 0; c < 3; c++) image.data[i + c] = shallow[c] * (1 - smooth) + deep[c] * smooth + detail + caustic;
         image.data[i + 3] = 255;
       }
     }
@@ -573,10 +586,14 @@ const ehDeck = (map, x, y) => 'Bb'.includes(map.aguaPraia?.[y]?.[x] ?? ' ');
 function caminhoEstacao(map, x, y) {
   if (map.walkMask[y]?.[x] !== '.' || ehDeck(map, x, y)) return false;
   return (
+<<<<<<< HEAD
     (x >= 3 && x <= 17 && y >= 3 && y <= 15) ||   // avental do terminal
+=======
+    (x >= 4 && x <= 18 && y >= 2 && y <= 16) ||   // avental do terminal
+>>>>>>> e5736762ec637ebe671540515d65b30b7c6323f4
     (x >= 8 && x <= 18 && y >= 10 && y <= 18) ||
     (x >= 14 && x <= 39 && y >= 17 && y <= 22) ||
-    (x >= 35 && x <= 48 && y >= 18 && y <= 23) ||
+    (x >= 32 && x <= 48 && y >= 14 && y <= 25) ||
     (x >= 30 && x <= 34 && y >= 22 && y <= 27) ||
     (x >= 44 && x <= 48 && y >= 18 && y <= 51) ||
     (x >= 47 && x <= 64 && y >= 40 && y <= 56) ||  // avental da estufa
@@ -584,31 +601,73 @@ function caminhoEstacao(map, x, y) {
     (x >= 53 && x <= 59 && y >= 42 && y <= 47));
 }
 
-function drawStationPaving(map) {
-  const sheet = getSprite('bio_piso');
-  const onPath = (x, y) => caminhoEstacao(map, x, y);
-  ctx.save();
-  stationClip(map, onPath);
-  // Base evita frestas transparentes nas bordas da arte gerada.
-  ctx.fillStyle = '#4c5648';
-  for (let y = range.y0; y <= range.y1; y++) for (let x = range.x0; x <= range.x1; x++) {
-    if (!onPath(x, y)) continue;
-    const ix = (x - y) * HW, iy = (x + y) * HH;
-    ctx.beginPath(); ctx.moveTo(ix, iy); ctx.lineTo(ix + HW, iy + HH); ctx.lineTo(ix, iy + TH); ctx.lineTo(ix - HW, iy + HH); ctx.closePath(); ctx.fill();
+// Plataforma do trem é piso, não um sprite decorativo flutuando sobre a areia.
+// Não altera a máscara: a faixa de trilhos R continua bloqueada.
+const beachStationCache = new WeakMap();
+function drawBeachStation(map) {
+  let entry = beachStationCache.get(map);
+  if (!entry) {
+    // A plataforma é estática: compor uma vez, em coordenadas isométricas.
+    const left = -4 * HW, top = 3 * HH;
+    const surface = document.createElement('canvas');
+    surface.width = 17 * HW; surface.height = 17 * HH + 18;
+    const previous = ctx;
+    ctx = surface.getContext('2d');
+    try {
+      ctx.translate(-left, -top);
+      ctx.imageSmoothingEnabled = false;
+      // Faces estruturais sob o tabuleiro, com suportes e iluminação embutida.
+      const p = (x, y) => [(x-y)*HW, (x+y)*HH];
+      const face = (a, b, color) => {
+        const [ax, ay] = p(...a), [bx, by] = p(...b);
+        quad(ax, ay, bx, by, bx, by+14, ax, ay+14, color, '#26333a', 1);
+        ctx.strokeStyle = '#202c34'; ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.moveTo(ax, ay+10); ctx.lineTo(bx, by+10); ctx.stroke();
+      };
+      for (let x = 2; x <= 13; x++) face([x, 6], [x+1, 6], '#3b4c4d');
+      for (let y = 1; y <= 5; y++) face([14, y], [14, y+1], '#30404b');
+      ctx.strokeStyle = '#5fd5cd'; ctx.lineWidth = 2;
+      for (let x = 3; x <= 13; x += 3) {
+        const [a,b] = p(x,6); ctx.beginPath(); ctx.moveTo(a-5,b+6); ctx.lineTo(a+5,b+11); ctx.stroke();
+      }
+      for (let y = 1; y <= 5; y++) for (let x = 2; x <= 13; x++) {
+        if (!'RPSM'.includes(map.aguaPraia[y]?.[x] ?? ' ')) continue;
+        const ix = (x-y)*HW, iy = (x+y)*HH;
+        // Placas alinhadas à grade, sem repetir recortes inteiros de máquinas.
+        quad(ix, iy, ix+HW, iy+HH, ix, iy+TH, ix-HW, iy+HH,
+          (x+y)%3 ? '#44535a' : '#4c5c61', '#263840', 1);
+        if ((x+y)%3 === 0) {
+          ctx.strokeStyle = 'rgba(157,185,179,.3)'; ctx.lineWidth = 1;
+          ctx.beginPath(); ctx.moveTo(ix-HW*.55,iy+HH); ctx.lineTo(ix,iy+HH*1.55);
+          ctx.lineTo(ix+HW*.55,iy+HH); ctx.stroke();
+        }
+        if (y === 4) {
+          ctx.strokeStyle = '#e1bd73'; ctx.lineWidth = 2;
+          ctx.beginPath(); ctx.moveTo(ix, iy+3); ctx.lineTo(ix+HW-3, iy+HH); ctx.stroke();
+        }
+      }
+    } finally { ctx = previous; }
+    entry = { surface, left, top };
+    beachStationCache.set(map, entry);
   }
-  if (sheet) {
-    // Um módulo cobre 3×3 tiles lógicos, para não reduzir seus ladrilhos a ruído.
-    const span = 3, sw = sheet.width / 2, sh = sheet.height / 2;
-    ctx.imageSmoothingEnabled = false;
-    for (let y = Math.floor(range.y0 / span) * span; y <= range.y1; y += span) for (let x = Math.floor(range.x0 / span) * span; x <= range.x1; x += span) {
-      const tone = hash(x, y), variant = tone < .62 ? 0 : tone < .76 ? 1 : tone < .88 ? 2 : 3;
-      const ix = (x - y) * HW, iy = (x + y) * HH;
-      ctx.drawImage(sheet, (variant % 2) * sw, Math.floor(variant / 2) * sh, sw, sh, ix - span * HW, iy, span * HW * 2, span * TH);
-    }
+  ctx.drawImage(entry.surface, entry.left, entry.top);
+}
+
+// Circuito da sala conecta o registro, a placa e o painel de controle.
+function drawBioControlFloor() {
+  const live = !!state.progress?.flags?.gate_bio_pulso_interior;
+  const p = (x, y) => [(x-y)*HW, (x+y)*HH];
+  ctx.save(); ctx.lineJoin = 'round'; ctx.lineCap = 'round';
+  const route = [[3.5,5.5],[7.5,5.5],[10.5,5.5],[10.5,3.5]];
+  for (const [width, color] of [[7, '#192a29'], [3, live ? '#86dbb7' : '#a38858']]) {
+    ctx.strokeStyle = color; ctx.lineWidth = width; ctx.beginPath();
+    route.forEach(([x,y], i) => { const [a,b] = p(x,y); if (!i) ctx.moveTo(a,b); else ctx.lineTo(a,b); });
+    ctx.stroke();
   }
   ctx.restore();
 }
 
+<<<<<<< HEAD
 // Borda de pedra rente à água: o canal deixa de ser uma faixa ciana sem
 // limite e passa a ter margem dos dois lados. Só desenha arestas com terra
 // ou deck do outro lado; não altera máscara nem colisão.
@@ -663,6 +722,73 @@ function drawStationRoute(map) {
     }
   }
   ctx.restore();
+=======
+// Texturas em coordenadas de mundo: ambas seguem a mesma projeção dos tiles.
+// Água e decks não recebem chão; caminhos permanecem legíveis sobre o jardim.
+function paintStationPaving(map) {
+  const paintTexture = (image, predicate, fallback) => {
+    ctx.save();
+    stationClip(map, predicate);
+    ctx.transform(HW, HH, -HW, HH, 0, 0);
+    ctx.fillStyle = fallback;
+    ctx.fillRect(range.x0, range.y0, range.x1 - range.x0 + 1, range.y1 - range.y0 + 1);
+    if (image) {
+      const span = 6;
+      ctx.imageSmoothingEnabled = false;
+      for (let y = Math.floor(range.y0 / span) * span; y <= range.y1; y += span)
+        for (let x = Math.floor(range.x0 / span) * span; x <= range.x1; x += span)
+          ctx.drawImage(image, x, y, span, span);
+    }
+    ctx.restore();
+  };
+  paintTexture(getSprite('bio_jardim_novo'), (x, y) => map.walkMask[y]?.[x] === '.' && !ehDeck(map, x, y), '#405247');
+  paintTexture(getSprite('bio_piso_novo'), (x, y) => caminhoEstacao(map, x, y), '#4c5648');
+}
+
+// Piso estático em blocos: o recorte e as centenas de losangos são pintados
+// uma vez por bloco, não novamente a cada frame. A rede continua independente.
+const stationPavingCache = new WeakMap();
+function drawStationPaving(map) {
+  const sheet = getSprite('bio_piso_novo'), garden = getSprite('bio_jardim_novo');
+  let cache = stationPavingCache.get(map);
+  if (!cache || cache.sheet !== sheet || cache.garden !== garden) {
+    cache = { sheet, garden, chunks: new Map() };
+    stationPavingCache.set(map, cache);
+  }
+  const span = 12;
+  for (let cy = Math.floor(range.y0 / span); cy <= Math.floor(range.y1 / span); cy++) {
+    for (let cx = Math.floor(range.x0 / span); cx <= Math.floor(range.x1 / span); cx++) {
+      const key = `${cx},${cy}`;
+      if (!cache.chunks.has(key)) {
+        const x0 = cx * span, y0 = cy * span;
+        const x1 = Math.min(x0 + span - 1, map.layout[0].length - 1);
+        const y1 = Math.min(y0 + span - 1, map.layout.length - 1);
+        let hasPaving = false;
+        for (let y = y0; y <= y1 && !hasPaving; y++)
+          for (let x = x0; x <= x1; x++) if (map.walkMask[y]?.[x] === '.' && !ehDeck(map, x, y)) { hasPaving = true; break; }
+        if (!hasPaving) { cache.chunks.set(key, null); continue; }
+        const left = (x0 - (y1 + 1)) * HW;
+        const top = (x0 + y0) * HH;
+        const tile = document.createElement('canvas');
+        tile.width = (x1 - x0 + y1 - y0 + 2) * HW;
+        tile.height = (x1 - x0 + y1 - y0 + 2) * HH;
+        const previousCtx = ctx, previousRange = { ...range };
+        try {
+          ctx = tile.getContext('2d');
+          ctx.translate(-left, -top);
+          Object.assign(range, { x0, y0, x1, y1 });
+          paintStationPaving(map);
+        } finally {
+          ctx = previousCtx;
+          Object.assign(range, previousRange);
+        }
+        cache.chunks.set(key, { tile, left, top });
+      }
+      const chunk = cache.chunks.get(key);
+      if (chunk) ctx.drawImage(chunk.tile, chunk.left, chunk.top);
+    }
+  }
+>>>>>>> e5736762ec637ebe671540515d65b30b7c6323f4
 }
 
 // Tabuleiros das duas travessias: geometria real sobre a água, com espessura
@@ -760,7 +886,7 @@ function drawBioNetwork(map) {
   const energizada = !!flags.gate_bio_reparo_condutor && !!flags.gate_bio_reparo_regulador;
   const fluxo = !!flags.gate_bio_valvula_estufa;
   ctx.save();
-  stationClip(map, (x, y) => map.walkMask[y]?.[x] === '.' && !'YyDd'.includes(map.aguaPraia?.[y]?.[x] ?? ' '));
+  // Os percursos são validados sobre terra/deck; não recortar milhares de tiles por frame.
   const ponto = ([x, y]) => [((x + .5) - (y + .5)) * HW, ((x + .5) + (y + .5)) * HH];
   for (const path of net.paths) {
     const desenha = (largura, cor) => {
@@ -800,6 +926,20 @@ function drawBioNetwork(map) {
 // Apoio no solo para as estruturas grandes: elipse escura antes dos objetos.
 function drawBioShadows() {
   ctx.save();
+  // Fundação projetada a partir da mesma hitbox sólida do terminal.
+  const terminal = (state.objects ?? []).find(o => o.id === 'bio_terminal_principal');
+  if (terminal?.hitbox) {
+    const h = terminal.hitbox, x0 = terminal.x + h.offsetX, y0 = terminal.y + h.offsetY;
+    const x1 = x0 + h.width, y1 = y0 + h.height;
+    const p = (x,y) => [(x-y)*HW,(x+y)*HH];
+    const [a,b,c,d] = [p(x0,y0),p(x1,y0),p(x1,y1),p(x0,y1)];
+    ctx.fillStyle = '#263d35'; ctx.strokeStyle = '#172b28'; ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.moveTo(...a); ctx.lineTo(...b); ctx.lineTo(c[0],c[1]+7); ctx.lineTo(d[0],d[1]+7); ctx.closePath(); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = '#58665a';
+    ctx.beginPath(); ctx.moveTo(...a); ctx.lineTo(...b); ctx.lineTo(...c); ctx.lineTo(...d); ctx.closePath(); ctx.fill(); ctx.stroke();
+    ctx.strokeStyle = '#8a9c83'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(...d); ctx.lineTo(...c); ctx.lineTo(...b); ctx.stroke();
+  }
   for (const o of state.objects ?? []) {
     if (!o.sombra || o.oculto) continue;
     const ix = (o.x - o.y) * HW, iy = (o.x + o.y) * HH;
@@ -1143,6 +1283,11 @@ function drawWorld(map, state) {
     }
   };
 
+  // Fachada no extremo do trilho, atrás do trem; é cenográfica, não portal.
+  if (map.id === 'ilha_praia_inicial') {
+    const rail = backList.find(o => o.id === 'trilho_dimensional_principal');
+    if (rail) drawBeachRailTunnel(rail);
+  }
   // Camada de fundo (trilho, trem): atrás de tudo, só acima do chão.
   for (const o of backList) drawMapObject(o, state);
 
@@ -1167,6 +1312,152 @@ function drawWorld(map, state) {
   }
 
   while (ei < drawList.length) drawItem(drawList[ei++]);
+
+  drawCombatFeedback();
+  drawPlayerHurt();
+}
+
+// Zonas de eco instável: anel pulsante no chão, sem esconder o personagem.
+function drawHazards(hazards) {
+  if (!hazards?.length) return;
+  ctx.save();
+  for (const hazard of hazards) {
+    const x = (hazard.x - hazard.y) * HW, y = (hazard.x + hazard.y) * HH;
+    const pulse = .55 + .45 * Math.sin(hazard.clock * 2.2);
+    const radius = hazard.radius * HW;
+    ctx.globalAlpha = .16 + pulse * .10;
+    ctx.fillStyle = '#6bff92';
+    ctx.beginPath(); ctx.ellipse(x, y, radius, radius * HH / HW, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.globalAlpha = .5 + pulse * .3;
+    ctx.strokeStyle = '#a9ffbe'; ctx.lineWidth = 1.6;
+    ctx.beginPath(); ctx.ellipse(x, y, radius, radius * HH / HW, 0, 0, Math.PI * 2); ctx.stroke();
+    // Pequenos fragmentos de eco girando devagar.
+    ctx.fillStyle = '#d9ffe3';
+    for (let i = 0; i < 4; i++) {
+      const angle = hazard.clock * .8 + i * Math.PI / 2;
+      const px = x + Math.cos(angle) * radius * .72;
+      const py = y + Math.sin(angle) * radius * .72 * HH / HW - 2;
+      ctx.fillRect(px - 1, py - 1, 2, 2);
+    }
+  }
+  ctx.restore();
+}
+
+// Dano recente escurece as bordas; vida zerada fecha o quadro em preto.
+function drawPlayerHurt() {
+  const player = state.player;
+  const hurt = player?.hurtTimer ?? 0;
+  const dead = (player?.health ?? 1) <= 0;
+  if (hurt <= 0 && !dead) return;
+  const { w, h, dpr } = view;
+  ctx.save();
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  if (hurt > 0) {
+    const strength = Math.min(1, hurt / .5) * .75;
+    const gradient = ctx.createRadialGradient(w / 2, h / 2, Math.min(w, h) * .25, w / 2, h / 2, Math.max(w, h) * .62);
+    gradient.addColorStop(0, 'rgba(120,10,10,0)');
+    gradient.addColorStop(1, `rgba(150,18,12,${strength})`);
+    ctx.fillStyle = gradient;
+    ctx.fillRect(0, 0, w, h);
+  }
+  if (dead) {
+    ctx.fillStyle = 'rgba(4,10,8,.72)';
+    ctx.fillRect(0, 0, w, h);
+    ctx.fillStyle = '#c9ffe0';
+    ctx.font = 'bold 14px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText('ECO DISPERSO • RETORNANDO', w / 2, h / 2);
+  }
+  ctx.restore();
+}
+
+// Números de dano/crítico/XP sobem e desaparecem acima do alvo.
+function drawCombatFeedback() {
+  const items = listCombatFeedback();
+  if (!items.length) return;
+  ctx.save();
+  ctx.textAlign = 'center';
+  ctx.lineJoin = 'round';
+  for (const item of items) {
+    const t = 1 - Math.max(0, item.life) / item.duration;
+    const x = (item.x - item.y) * HW;
+    const y = (item.x + item.y) * HH - 42 - t * 24;
+    ctx.globalAlpha = Math.min(1, item.life / (item.duration * .45));
+    ctx.font = `bold ${item.crit ? 13 : 10}px monospace`;
+    ctx.lineWidth = 3;
+    ctx.strokeStyle = 'rgba(4,16,12,.85)';
+    ctx.strokeText(item.text, x, y);
+    ctx.fillStyle = item.color;
+    ctx.fillText(item.text, x, y);
+  }
+  ctx.restore();
+}
+
+// Entrada dimensional na ponta oeste do trem; desenhada atrás do material
+// rodante e sem acrescentar colisão, portal ou promessa de túnel explorável.
+// O eixo e a ponta usam os mesmos campos do trilho já convertido para runtime.
+// A abertura fica atrás do trilho/trem e não é uma passagem jogável.
+export function beachRailEnd(rail, frame) {
+  const half = (rail.larguraPx ?? 0) / 2;
+  const height = frame?.w ? (rail.larguraPx ?? 0) * frame.h / frame.w : 0;
+  return { x: (rail.x - rail.y) * HW + (rail.ajusteX ?? 0) - half,
+    y: (rail.x + rail.y) * HH + (rail.ajusteY ?? 0) - half * (rail.skewY ?? 0)
+      - height * (rail.pivotY ?? .5) * (rail.escalaY ?? 1) };
+}
+export function beachTunnelAnchor(rail, frame) {
+  const end = beachRailEnd(rail, frame);
+  return { x: end.x + HW + 16, y: end.y + 24 };
+}
+function drawBeachRailTunnel(rail) {
+  const image = getSprite(rail.sprite);
+  const cfg = getObjectSpriteConfig(rail.sprite);
+  const frame = getFrame(image, rail.frame?.col ?? 0, rail.frame?.row ?? 0, cfg.SHEET_COLS, cfg.SHEET_ROWS)?.crop;
+  if (!frame) return;
+  const end = beachTunnelAnchor(rail, frame);
+  ctx.save(); ctx.translate(end.x, end.y); ctx.lineJoin = 'round';
+  // Sapata assentada sob a estrutura e estendida na direção do trilho.
+  ctx.fillStyle = '#344a50'; ctx.strokeStyle = '#1c2d34'; ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.moveTo(-94, 20); ctx.lineTo(-62, 29);
+  ctx.lineTo(34, 4); ctx.lineTo(54, 0); ctx.lineTo(22, -16);
+  ctx.lineTo(-74, 9); ctx.closePath(); ctx.fill(); ctx.stroke();
+  // Alongar o pórtico para cima sem levantar sua base da plataforma.
+  ctx.save(); ctx.translate(0, 15);
+  // A face transversal do portal acompanha o outro eixo isométrico do piso.
+  // A inclinação mantém as colunas verticais, sem rotacionar a estrutura.
+  ctx.transform(1, -0.32, 0, 1.18, 0, 0); ctx.translate(0, -15);
+  // Volume se prolonga para trás, paralelo ao trilho, em vez de ser
+  // uma placa fina na diagonal. A abertura frontal continua atrás do trem.
+  // O desenho do trilho já é diagonal dentro do próprio PNG; skewY
+  // sozinho não mede sua inclinação visual. O eixo do deck é 2:1.
+  const depthX = -32, depthY = (depthX * HH / HW + 0.32 * depthX) / 1.18;
+  const panel = (points, fill) => {
+    ctx.beginPath(); points.forEach(([x,y],i) => i ? ctx.lineTo(x,y) : ctx.moveTo(x,y));
+    ctx.closePath(); ctx.fillStyle = fill; ctx.fill(); ctx.strokeStyle = '#253a42'; ctx.lineWidth = 2; ctx.stroke();
+  };
+  panel([[-62,10],[-62,-82],[-62+depthX,-82+depthY],[-62+depthX,10+depthY]], '#1c2f38');
+  panel([[-62,-82],[-42,-112],[-42+depthX,-112+depthY],[-62+depthX,-82+depthY]], '#40565b');
+  panel([[-42,-112],[23,-112],[23+depthX,-112+depthY],[-42+depthX,-112+depthY]], '#51636a');
+  panel([[23,-112],[54,-82],[54+depthX,-82+depthY],[23+depthX,-112+depthY]], '#344a51');
+  // Ranhuras da carcaça reforçam a profundidade sem cobrir o trilho.
+  ctx.strokeStyle = '#73918d'; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(-62 + depthX * .3, -82 + depthY * .3);
+  ctx.lineTo(-42 + depthX * .3, -112 + depthY * .3);
+  ctx.lineTo(23 + depthX * .3, -112 + depthY * .3); ctx.stroke();
+  // Moldura recuada enquadra a traseira do trem e a ponta real do trilho.
+  ctx.fillStyle = '#243841'; ctx.strokeStyle = '#61777b'; ctx.lineWidth = 3;
+  ctx.beginPath(); ctx.moveTo(-62, 10); ctx.lineTo(-62, -82);
+  ctx.lineTo(-42, -112); ctx.lineTo(23, -112); ctx.lineTo(54, -82);
+  ctx.lineTo(54, 17); ctx.lineTo(34, 16); ctx.lineTo(34, -77);
+  ctx.lineTo(15, -92); ctx.lineTo(-34, -92); ctx.lineTo(-42, -77);
+  ctx.lineTo(-42, 9); ctx.closePath(); ctx.fill(); ctx.stroke();
+  ctx.fillStyle = '#0b1b24'; ctx.beginPath(); ctx.moveTo(-42,9);
+  ctx.lineTo(-42,-77); ctx.lineTo(-34,-92); ctx.lineTo(15,-92);
+  ctx.lineTo(34,-77); ctx.lineTo(34,16); ctx.closePath(); ctx.fill();
+  ctx.strokeStyle = '#4ad4d2'; ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.moveTo(-52,0); ctx.lineTo(-52,-79); ctx.lineTo(-38,-101);
+  ctx.lineTo(19,-101); ctx.lineTo(44,-79); ctx.lineTo(44,3); ctx.stroke();
+  ctx.restore(); // escala do pórtico
+  ctx.restore();
 }
 
 // Um trecho de guarda-corpo: poste + duas travessas até o poste seguinte.
@@ -1365,6 +1656,7 @@ function getObjectSpriteConfig(spriteId) {
   if (['bio_terminal', 'bio_reator', 'bio_ponte', 'bio_estufa', 'bio_floreira', 'bio_tubos', 'bio_caixa', 'bio_luminaria', 'bio_plataforma', 'bio_margem_canto', 'bio_margem_cano', 'bio_margem_ruina', 'bio_margem_mureta', 'bio_condutor_quebrado', 'bio_condutor_ativo', 'bio_regulador_quebrado', 'bio_regulador_ativo', 'bio_mato_cano', 'bio_mato_ventilacao', 'bio_mato_barris', 'bio_mato_fissura', 'bio_cabeceira', 'bio_distribuidor', 'bio_margem_baixa', 'bio_fundacao'].includes(spriteId)) return { SHEET_COLS: 1, SHEET_ROWS: 1, DEFAULT_SCALE: 1, FEET_ANCHOR_Y: 1 };
   if (['hub_vaso_novo', 'hub_reciclagem', 'hub_carrinho', 'hub_bebedouro'].includes(spriteId)) return { SHEET_COLS: 1, SHEET_ROWS: 1, DEFAULT_SCALE: .25, FEET_ANCHOR_Y: 1 };
   if (spriteId === 'costa_rochosa') return { SHEET_COLS: 4, SHEET_ROWS: 1, DEFAULT_SCALE: 1, FEET_ANCHOR_Y: 1 };
+  if (spriteId === 'praia_plataforma_kit') return { SHEET_COLS: 4, SHEET_ROWS: 2, DEFAULT_SCALE: 1, FEET_ANCHOR_Y: 1 };
   if (spriteId === 'vegetacao_tropical') return { SHEET_COLS: 8, SHEET_ROWS: 1, DEFAULT_SCALE: 1, FEET_ANCHOR_Y: 1 };
   if (spriteId === 'metro_props') {
     return CONFIG.METRO_PROPS_SPRITE;
@@ -1439,39 +1731,42 @@ function getVisibleBox(image, sx, sy, sw, sh, threshold = 40) {
 // Limiares acompanhando a largura e o eixo do deck, em vez de uma caverna
 // ou rocha aparentemente solta sobre a ponte. Só muda o desenho do gate.
 function drawBridgeThreshold(object, map) {
-  const alongX = object.id === 'travessia_mare_eco' || object.id === 'fenda_estreita';
-  const fissure = object.id === 'fenda_estreita';
-  const broken = object.id === 'teleferico_quebrado';
-  const center = bridgeThresholdGeometry(map?.aguaPraia, object, alongX ? 'x' : 'y') ?? { x: object.x, y: object.y, halfWidth: .92 };
-  const x = (center.x - center.y) * HW, y = (center.x + center.y) * HH;
-  const dx = (alongX ? -1 : 1) * HW * center.halfWidth, dy = HH * center.halfWidth;
-  const t = performance.now() / 1000;
-  ctx.save(); ctx.translate(x, y + 2);
-  ctx.lineCap = 'round';
-  // Base sombreada ajuda a ancorar o efeito às tábuas.
-  ctx.strokeStyle = 'rgba(15,36,39,.7)'; ctx.lineWidth = 13;
-  ctx.beginPath(); ctx.moveTo(-dx, -dy); ctx.lineTo(dx, dy); ctx.stroke();
-  ctx.strokeStyle = broken ? '#dfae62' : fissure ? '#98edba' : '#66dfd8'; ctx.lineWidth = fissure ? 2 : 3;
-  ctx.beginPath(); ctx.moveTo(-dx, -dy - 8);
-  if (broken) {
-    ctx.quadraticCurveTo(-dx*.65, -dy*.65-3, -dx*.22, -dy*.22-3);
-    ctx.moveTo(dx*.22, dy*.22-3); ctx.quadraticCurveTo(dx*.65, dy*.65-3, dx, dy-8);
-  } else ctx.quadraticCurveTo(Math.sin(t * 2) * 4, -6 + Math.sin(t * 2.5) * 2, dx, dy - 4);
-  ctx.stroke();
-  ctx.strokeStyle = fissure ? 'rgba(157,255,192,.65)' : 'rgba(195,255,244,.75)'; ctx.lineWidth = 1;
-  for (let i = -1; i <= 1; i++) {
-    if (broken && i !== 0) continue;
-    const f = (i + Math.sin(t * 1.8 + i) * .15) / 2;
-    const px = dx * f, py = dy * f;
-    ctx.beginPath(); ctx.moveTo(px - (broken ? 2 : 7), py - 7); ctx.quadraticCurveTo(px, py - 11, px + (broken ? 2 : 7), py - 7); ctx.stroke();
-  }
-  // Estacas baixas de cada lado deixam clara a entrada no limiar.
-  for (const side of [-1, 1]) {
-    const px = dx * side, py = dy * side;
-    ctx.strokeStyle = '#413f35'; ctx.lineWidth = 6;
-    ctx.beginPath(); ctx.moveTo(px, py + 3); ctx.lineTo(px, py - 18); ctx.stroke();
-    ctx.strokeStyle = broken ? '#edbc78' : fissure ? '#83f2ae' : '#75e9e1'; ctx.lineWidth = 2;
-    ctx.beginPath(); ctx.moveTo(px, py - 15); ctx.lineTo(px, py - 10); ctx.stroke();
+  const g = bridgeGateGeometry(map?.aguaPraia, object);
+  if (!g) return; // sem deck reconhecível, não inventar marca sobre água
+  const x = (g.x - g.y) * HW, y = (g.x + g.y) * HH;
+  // Pontas da faixa são recuadas das bordas físicas do deck.
+  const dx = (g.axis === 'x' ? -1 : 1) * HW * g.halfWidth, dy = HH * g.halfWidth;
+  ctx.save(); ctx.translate(x, y); ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+  const line = (color, width, ax, ay, bx, by) => { ctx.strokeStyle = color; ctx.lineWidth = width; ctx.beginPath(); ctx.moveTo(ax, ay); ctx.lineTo(bx, by); ctx.stroke(); };
+  if (g.kind === 'dominio') {
+    // Fragmento geológico com fenda de frequência: não é um arco tecnológico.
+    ctx.fillStyle = '#525053'; ctx.strokeStyle = '#292e30'; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(-dx*.72, -dy*.72); ctx.lineTo(-18, -30); ctx.lineTo(5, -43); ctx.lineTo(24, -26); ctx.lineTo(dx*.72,dy*.72); ctx.lineTo(0, 9); ctx.closePath(); ctx.fill(); ctx.stroke();
+    ctx.strokeStyle = '#edb85a'; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(-3,-38); ctx.lineTo(1,-28); ctx.lineTo(-6,-19); ctx.lineTo(3,-10); ctx.lineTo(-1,1); ctx.stroke();
+  } else if (g.kind === 'bio') {
+    // Um condutor rompido com extremidades mecânicas sobre a travessia.
+    line('#283e3b', 9, -dx, -dy, dx, dy);
+    line('#ce9c5f', 3, -dx, -dy, -dx*.24, -dy*.24);
+    line('#ce9c5f', 3, dx*.24, dy*.24, dx, dy);
+    for (const side of [-1, 1]) {
+      const px = dx * side, py = dy * side;
+      ctx.fillStyle = '#3f5750'; ctx.strokeStyle = '#aec9aa'; ctx.lineWidth = 1.5;
+      ctx.fillRect(px-5, py-8, 10, 8); ctx.strokeRect(px-5, py-8, 10, 8);
+    }
+  } else {
+    // Maré = faixas de fluxo curvas; Núcleo = marcas cinéticas angulares.
+    line('#344c49', 8, -dx, -dy, dx, dy);
+    if (g.kind === 'mare' || g.kind === 'mare_nucleo') {
+      ctx.strokeStyle = '#74e6e4'; ctx.lineWidth = 2.5;
+      ctx.beginPath(); ctx.moveTo(-dx*.85,-dy*.85); ctx.quadraticCurveTo(-6,-8,0,0); ctx.quadraticCurveTo(6,8,dx*.85,dy*.85); ctx.stroke();
+    }
+    if (g.kind === 'nucleo' || g.kind === 'mare_nucleo') {
+      ctx.strokeStyle = '#9cefa2'; ctx.lineWidth = 2;
+      for (const f of [-.48, .48]) {
+        const px=dx*f, py=dy*f; ctx.beginPath(); ctx.moveTo(px-5,py-4); ctx.lineTo(px,py); ctx.lineTo(px+5,py-4); ctx.stroke();
+      }
+    }
   }
   ctx.restore();
 }
@@ -1496,6 +1791,39 @@ function drawHubHologram(object) {
   ctx.fillStyle = 'rgba(175,255,237,.85)'; ctx.font = 'bold 9px monospace'; ctx.textAlign = 'center'; ctx.fillText('404', 0, 3);
   ctx.shadowBlur = 0; ctx.strokeStyle = 'rgba(95,242,217,.28)'; ctx.lineWidth = .7;
   for (let i = 0; i < 4; i++) { const yy = -13 + i * 8; ctx.beginPath(); ctx.moveTo(-31, yy); ctx.lineTo(31, yy); ctx.stroke(); }
+  ctx.restore();
+}
+
+// Marcadores de acesso e de impulso têm posições reais e não bloqueiam o chão.
+function drawBioMarker(object) {
+  const x = (object.x - object.y) * HW, y = (object.x + object.y) * HH;
+  const active = object.dashSensor && !!state.progress?.flags?.gate_bio_pulso_interior;
+  ctx.save(); ctx.translate(x, y);
+  ctx.fillStyle = 'rgba(13,35,32,.8)'; ctx.strokeStyle = active ? '#a9f2bb' : '#e8ba70'; ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.ellipse(0, 0, 25, 11, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+  ctx.fillStyle = active ? '#a9f2bb' : '#ffcd80'; ctx.font = 'bold 9px monospace'; ctx.textAlign = 'center';
+  ctx.fillText(active ? 'PULSO OK' : object.bioMarker, 0, -16);
+  ctx.restore();
+}
+
+// Duas plataformas da mesma linha, decorativas e sem colisão extra.
+function drawCableStation(object) {
+  const x = (object.x - object.y) * HW, y = (object.x + object.y) * HH;
+  const active = !!state.progress?.flags?.gate_teleferico_quebrado;
+  ctx.save(); ctx.translate(x, y);
+  ctx.fillStyle = '#34463e'; ctx.strokeStyle = '#b5c0a0'; ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.moveTo(0, -15); ctx.lineTo(50, 9); ctx.lineTo(0, 32); ctx.lineTo(-50, 9); ctx.closePath(); ctx.fill(); ctx.stroke();
+  ctx.strokeStyle = '#273934'; ctx.lineWidth = 6;
+  for (const px of [-36, 36]) { ctx.beginPath(); ctx.moveTo(px, 8); ctx.lineTo(px, -77); ctx.stroke(); }
+  ctx.lineWidth = 3; ctx.strokeStyle = '#718b77';
+  ctx.beginPath(); ctx.moveTo(-48, -72); ctx.lineTo(48, -72); ctx.moveTo(0, -72); ctx.lineTo(0, -58); ctx.stroke();
+  ctx.fillStyle = '#314c48'; ctx.strokeStyle = active ? '#8fe4bd' : '#c99b67';
+  ctx.fillRect(-23, -58, 46, 38); ctx.strokeRect(-23, -58, 46, 38);
+  ctx.fillStyle = active ? '#81c9b5' : '#715e4d'; ctx.fillRect(-17, -52, 34, 18);
+  ctx.fillStyle = '#152d2c'; ctx.fillRect(-43, -99, 86, 19);
+  ctx.strokeStyle = '#92b6a0'; ctx.strokeRect(-43, -99, 86, 19);
+  ctx.fillStyle = '#e2f8d8'; ctx.font = 'bold 8px monospace'; ctx.textAlign = 'center';
+  ctx.fillText(object.cableStation, 0, -86);
   ctx.restore();
 }
 
@@ -1528,7 +1856,7 @@ function drawMapObject(object, state) {
   if (object.hideWhenFlag && state.progress.flags?.[object.hideWhenFlag]) return;
   if (object.showWhenFlag && !state.progress.flags?.[object.showWhenFlag]) return; // NOVO
 
-  if (['travessia_mare_eco', 'passagem_mare_eco', 'caverna_alagada', 'fenda_estreita', 'teleferico_quebrado'].includes(object.id)) { drawBridgeThreshold(object, state.world?.currentMap); return; }
+  if (['rocha_rachada', 'travessia_mare_eco', 'passagem_mare_eco', 'caverna_alagada', 'fenda_estreita', 'teleferico_quebrado'].includes(object.id)) { drawBridgeThreshold(object, state.world?.currentMap); return; }
 
   if (object.gate) {
     const x = (object.x - object.y) * HW, y = (object.x + object.y) * HH;
@@ -1536,6 +1864,8 @@ function drawMapObject(object, state) {
     ctx.ellipse(x, y + 3, 30, 9, 0, 0, Math.PI * 2); ctx.fill(); ctx.restore();
   }
 
+  if (object.bioMarker) { drawBioMarker(object); return; }
+  if (object.cableStation) { drawCableStation(object); return; }
   if (object.tipo === 'holograma_decorativo') { drawHubHologram(object); return; }
   if (object.porta) { drawDoor(object); return; }
   if (object.routeMarker) {
@@ -1748,7 +2078,7 @@ function drawArchetypeSheet(spriteId, col, row, ix, iy, flip = false, options = 
   const w = (x1 - x0) * scale, h = (y1 - y0) * scale;
   ctx.save();
   const stride = options.walk ? Math.sin(performance.now() * 0.012) : 0;
-  ctx.translate(ix, iy - Math.abs(stride) * 1.8);
+  ctx.translate(ix + (options.offsetX ?? 0), iy - Math.abs(stride) * 1.8 + (options.offsetY ?? 0));
   if (flip) ctx.scale(-1, 1);
   if (options.walk) ctx.rotate(stride * 0.025);
   drawSmooth(image, x0, y0, x1 - x0, y1 - y0, -w / 2, -h * (options.anchor ?? 0.98), w, h);
@@ -1769,6 +2099,19 @@ function getVisualEffect(player) {
   return player.ability?.effect;
 }
 
+function drawMareFrame(player, ix, iy, col, kind) {
+  const profile = mareSheet(player.facing, kind);
+  const sheet = profile && getSprite(profile.id);
+  if (!sheet) return false;
+  const width = sheet.width / 4, scale = .37;
+  ctx.save(); ctx.translate(ix, iy);
+  if (profile.flip) ctx.scale(-1, 1);
+  drawSmooth(sheet, col * width, 0, width, sheet.height,
+    -width * scale / 2, -sheet.height * scale * .98,
+    width * scale, sheet.height * scale);
+  ctx.restore(); player._topo = 140; return true;
+}
+
 function drawPlayerSprite(player, ix, iy) {
   // As folhas de referência têm poses, não quadros sequenciais. Usamos uma
   // pose provisória com os pulsos animados, sem fingir que são animações finais.
@@ -1787,6 +2130,31 @@ function drawPlayerSprite(player, ix, iy) {
       return true;
     }
   }
+  const mareAttack = getMareAttack(state.progress, player);
+  if (mareAttack && drawMareFrame(player, ix, iy, mareAttack.col, 'ataque')) return true;
+  const dominioAttack = getDominioAttack(state.progress, player);
+  if (dominioAttack && ['up', 'down'].includes(player.facing)) {
+    const sheet = getSprite(player.facing === 'up' ? 'dominio_ataque_costas_0317' : 'dominio_ataque_frente_0317');
+    if (sheet) {
+      const w = sheet.width / 4, scale = .245;
+      drawSmooth(sheet, dominioAttack.col * w, 0, w, sheet.height,
+        ix - w * scale / 2, iy + 3 - 680 * scale, w * scale, sheet.height * scale);
+      player._topo = 140; return true;
+    }
+  }
+  if (dominioAttack && ['left', 'right'].includes(player.facing)) {
+    const sheet = getSprite('dominio_ataque_lateral_0316');
+    if (sheet) {
+      // Mesma escala em todas as poses: a espada pode ir acima da cabeça
+      // sem encolher o operador. Pivot comum medido no preparo da folha.
+      const w = sheet.width / 4, scale = .21, footY = 737;
+      ctx.save(); ctx.translate(ix, iy + 3);
+      if (dominioAttack.flip) ctx.scale(-1, 1);
+      drawSmooth(sheet, dominioAttack.col * w, 0, w, sheet.height,
+        -w * scale / 2, -footY * scale, w * scale, sheet.height * scale);
+      ctx.restore(); player._topo = 140; return true;
+    }
+  }
   const attackPose = getBasicAttackPose(state.progress, player);
   if (attackPose && drawArchetypeSheet(attackPose.sprite, attackPose.col, attackPose.row, ix, iy, attackPose.flip, { scale: attackPose.scale, anchor: attackPose.anchor })) {
     player._topo = 100;
@@ -1797,11 +2165,34 @@ function drawPlayerSprite(player, ix, iy) {
     const frames = effect.activating ? [0, 1, 1, 2] : [2, 1, 3, 3];
     if (drawArchetypeSheet('player_10x_q', frames[Math.floor(t * 4)], 0, ix, iy, player.facing === 'left', { rows: 1, scale: 0.29, anchor: 0.78 })) { player._topo = 120; return true; }
   }
+  const pulseFrame = getVelozPulse(state.progress, player);
+  if (pulseFrame) {
+    const image = getSprite(pulseFrame.sprite);
+    if (image) {
+      const w = image.width / 6, h = image.height / 4, scale = .5;
+      ctx.save(); ctx.translate(ix, iy);
+      // As linhas acompanham a direção da ação, sem alterar deslocamento ou dano.
+      const direction = {right:[1,0],left:[-1,0],down:[0,1],up:[0,-1]}[player.facing];
+      ctx.strokeStyle = '#69ff9b'; ctx.globalAlpha = .7; ctx.lineWidth = 2; ctx.lineCap = 'round';
+      for (let i=0; i<3; i++) {
+        const x = -direction[0]*(16+i*7) + direction[1]*(i-1)*8;
+        const y = -25-direction[1]*(8+i*4) - direction[0]*(i-1)*6;
+        ctx.beginPath(); ctx.moveTo(x,y); ctx.lineTo(x-direction[0]*14,y-direction[1]*7); ctx.stroke();
+      }
+      ctx.globalAlpha = 1;
+      if (pulseFrame.flip) ctx.scale(-1, 1);
+      drawSmooth(image, pulseFrame.col * w, pulseFrame.row * h, w, h,
+        -w * scale / 2, -pulseFrame.footY * scale, w * scale, h * scale);
+      ctx.restore(); player._topo = 110; return true;
+    }
+  }
   const velozFrame = getVelozAnimation(state.progress, player, performance.now());
   if (velozFrame) {
     const image = getSprite(velozFrame.sprite);
     if (image) {
-      const w = image.width / 6, h = image.height / 4, scale = .5;
+      // As folhas verticais têm 4 quadros em uma linha; as laterais, 6 × 4.
+      const cols = velozFrame.cols ?? 6, rows = velozFrame.rows ?? 4;
+      const w = image.width / cols, h = image.height / rows, scale = .5;
       ctx.save(); ctx.translate(ix, iy);
       if (velozFrame.flip) ctx.scale(-1, 1);
       drawSmooth(image, velozFrame.col * w, velozFrame.row * h, w, h,
@@ -1810,7 +2201,7 @@ function drawPlayerSprite(player, ix, iy) {
     }
   }
   if (state.progress.archetype === 'nucleo_dez_forma' && player.nucleoForm === 'forma_veloz') {
-    if (drawArchetypeSheet('player_10x_q', 2, 0, ix, iy, player.facing === 'left', { rows: 1, scale: 0.29, anchor: 0.78, walk: player.moving })) { player._topo = 120; return true; }
+    if (drawArchetypeSheet('player_10x_q', 2, 0, ix, iy, player.facing === 'left', { rows: 1, scale: 0.29, anchor: 0.75, offsetX: player.facing === 'left' ? 14 : -14, walk: player.moving })) { player._topo = 120; return true; }
   }
   if (effect && state.progress.archetype === 'nucleo_dez_forma' && ['forma_veloz', 'eco_scan'].includes(effect.id)) {
     const elapsed = Math.max(0, Math.min(0.999, 1 - effect.timeLeft / effect.duration));
@@ -1916,10 +2307,56 @@ function drawPlayerSprite(player, ix, iy) {
     // ===============================================
   // 3. ANDAR / PARADO
   // ===============================================
+  const mareWalk = getMareWalk(state.progress, player, performance.now());
+  if (mareWalk && drawMareFrame(player, ix, iy, mareWalk.col, 'andar')) return true;
+  const dominioWalk = getDominioWalk(state.progress, player, performance.now());
+  if (dominioWalk && player.facing !== 'down') {
+    const sheet = getSprite(player.facing === 'up' ? 'dominio_andar_costas_0317' : 'dominio_andar_lateral_0317');
+    if (sheet) {
+      const w = sheet.width / 4, scale = .245;
+      ctx.save(); ctx.translate(ix, iy + 3);
+      if (player.facing === 'left') ctx.scale(-1, 1);
+      drawSmooth(sheet, dominioWalk.col * w, 0, w, sheet.height,
+        -w * scale / 2, -680 * scale, w * scale, sheet.height * scale);
+      ctx.restore(); player._topo = 140; return true;
+    }
+  }
+  if (dominioWalk && player.facing === 'down') {
+    const sheet = getSprite('dominio_andar_frente_0316');
+    const frame = sheet && getFrame(sheet, dominioWalk.col, 0, 4, 1);
+    if (frame) {
+      const scale = 139.86 / frame.crop.h, base = iy + .36;
+      drawSmooth(frame.cell, 0, 0, frame.cell.width, frame.cell.height,
+        ix - 3 - frame.cell.width * scale / 2, base - (frame.crop.y + frame.crop.h) * scale,
+        frame.cell.width * scale, frame.cell.height * scale);
+      player._topo = iy - (base - frame.crop.h * scale);
+      return true;
+    }
+  }
   if (suit === 'dominio' || suit === 'mare') {
     const col = player.facing === 'up' ? 2 : player.facing === 'down' ? 0 : 1;
-    if (drawArchetypeSheet(`player_${suit}_lvl1`, col, 0, ix, iy, player.facing === 'left', { walk: player.moving })) {
+    if (drawArchetypeSheet(`player_${suit}_lvl1`, col, 0, ix, iy, player.facing === 'left', { walk: player.moving, offsetY: suit === 'mare' ? 3 : 0 })) {
       player._topo = 100;
+      return true;
+    }
+  }
+  const walk = getBioWalkFrame(state.progress, player, performance.now());
+  if (walk) {
+    const profile = bioWalkSheet(player.facing);
+    const sheet = getSprite(profile.id);
+    const frame = sheet && getFrame(sheet, walk.col, 0, 4, 1);
+    if (frame) {
+      // Altura por direção medida na folha parada, sem deformação não uniforme.
+      // O eixo da célula e o mesmo nível de apoio são mantidos por quadro.
+      const scale = profile.height / frame.crop.h;
+      const base = iy + profile.footOffset;
+      ctx.save(); ctx.translate(ix, 0);
+      if (profile.flip) ctx.scale(-1, 1);
+      drawSmooth(frame.cell, 0, 0, frame.cell.width, frame.cell.height,
+        -frame.cell.width * scale / 2, base - (frame.crop.y + frame.crop.h) * scale,
+        frame.cell.width * scale, frame.cell.height * scale);
+      ctx.restore();
+      player._topo = iy - (base - frame.crop.h * scale);
       return true;
     }
   }
@@ -1954,9 +2391,9 @@ function drawPlayerSprite(player, ix, iy) {
     ctx.shadowColor = player.equippedSuit === 'dominio' ? '#ffd264' : '#53d9f4';
     ctx.shadowBlur = 15;
   }
+  // Fallback seguro caso a folha direcional ainda não esteja carregada.
   drawSmooth(fr.cell, insetX, insetY, sourceW, sourceH, drawX, drawY, drawW, drawH);
   ctx.restore();
-  
   player._topo = iy - (drawY + Math.max(0, fr.crop.y - insetY) * sprite.SCALE);
   return true;
 }

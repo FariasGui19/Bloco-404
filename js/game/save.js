@@ -190,6 +190,14 @@ export function loadSaveIntoState(slot) {
   state.player.facing = save.player?.facing ?? 'down';
   state.player.nucleoForm = null;
   state.player.nucleoRuntime = null;
+  // Vida é de sessão: cada carregamento começa com a barra cheia.
+  state.player.health = null;
+  state.player.maxHealth = null;
+  state.player.invulnerable = 0;
+  state.player.hurtTimer = 0;
+  state.player.sinceDamage = 0;
+  state.player.deathTimer = 0;
+
   if (state.player.ability?.effect?.id === 'transformacao_10x') state.player.ability.effect = null;
 
   state.world.currentMapId = save.world.lastMapId;
@@ -210,6 +218,14 @@ export function startNewSave(slot, profileName = null) {
   state.player.facing = save.player.facing;
   state.player.nucleoForm = null;
   state.player.nucleoRuntime = null;
+  // Vida é de sessão: cada partida começa com a barra cheia.
+  state.player.health = null;
+  state.player.maxHealth = null;
+  state.player.invulnerable = 0;
+  state.player.hurtTimer = 0;
+  state.player.sinceDamage = 0;
+  state.player.deathTimer = 0;
+
   if (state.player.ability?.effect?.id === 'transformacao_10x') state.player.ability.effect = null;
 
   state.world.currentMapId = save.world.lastMapId;

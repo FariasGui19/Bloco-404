@@ -45,8 +45,8 @@ function gerarGuardaCorpos(ponte) {
     for (const [side, coord] of [['longe', longinquo], ['perto', proximo]]) {
       trilhos.push({
         id: `${ponte.id}_${side}_${t}`,
-        x: alongX ? t + 0.5 : coord + 0.5,
-        y: alongX ? coord + 0.5 : t + 0.5,
+        x: alongX ? t : coord,
+        y: alongX ? coord : t,
         axis: ponte.axis, side, ultimo: t === fim, bridgeId: ponte.id,
         renderType: 'bioRail',
       });
@@ -110,6 +110,7 @@ const bioRoute = {
   ],
 };
 
+<<<<<<< HEAD
 const objects = [];
 
 // Fundações primeiro: depthOffset negativo garante que fiquem atrás da máquina.
@@ -137,6 +138,17 @@ objects.push(
     hitbox: { offsetX: -7, offsetY: -7, width: 7, height: 7 } },
   { id: 'bio_reator_patio', tipo: 'decoracao', x: 38, y: 17, sprite: 'bio_reator', useCrop: true,
     larguraPx: 116, pivotX: .5, pivotY: 1, sombra: [26, 11], depthLayers: { count: 4, back: -1.6, front: .4 },
+=======
+const objects = [
+  // Escala e pegada ampliadas juntas; peça única ordenada atrás da fachada.
+  // A entrada de controle fica fora da base sólida, em 16,12.
+  { id: 'bio_terminal_principal', tipo: 'decoracao', x: 14, y: 11, sprite: 'bio_terminal', useCrop: true,
+    larguraPx: 520, pivotX: .5, pivotY: 1, depthOffset: -1.5,
+    sombra: [120, 38], bloqueia: true,
+    hitbox: { offsetX: -8, offsetY: -8, width: 8.1, height: 8.1 } },
+  { id: 'bio_reator_patio', tipo: 'decoracao', x: 38, y: 17, sprite: 'bio_reator', useCrop: true,
+    larguraPx: 150, pivotX: .5, pivotY: 1, sombra: [32, 13], depthLayers: { count: 4, back: -1.6, front: .4 },
+>>>>>>> e5736762ec637ebe671540515d65b30b7c6323f4
     bloqueia: true, hitbox: { offsetX: -1.25, offsetY: -1.25, width: 1.25, height: 1.25 } },
   { id: 'bio_estufa_principal', tipo: 'decoracao', x: 58, y: 47, sprite: 'bio_estufa', useCrop: true,
     larguraPx: 390, pivotX: .5, pivotY: 1, sombra: [104, 36], depthLayers: { count: 6, back: -7.5, front: 1 },
@@ -150,9 +162,15 @@ for (const [id, x, y, espelhar] of [
   ['bio_cabeceira_norte', 24, 7, false],
   ['bio_cabeceira_oeste', 30, 38, true],
 ]) objects.push({ id, tipo: 'decoracao', x, y, sprite: 'bio_cabeceira', useCrop: true,
+<<<<<<< HEAD
   larguraPx: 54, pivotX: .5, pivotY: 1, espelhar, filter: 'brightness(.7) saturate(.85)',
   sombra: [20, 8], bloqueia: true,
   hitbox: { offsetX: -.3, offsetY: -.3, width: .6, height: .6 } });
+=======
+  larguraPx: 64, pivotX: .5, pivotY: 1, espelhar, filter: 'brightness(.78) saturate(.88)',
+  sombra: [25, 10], bloqueia: true,
+  hitbox: { offsetX: -.35, offsetY: -.35, width: .7, height: .7 } });
+>>>>>>> e5736762ec637ebe671540515d65b30b7c6323f4
 
 // Nós da rede. O da estufa é o passo final da primeira missão do setor.
 for (const node of bioNetwork.nodes) {
@@ -188,8 +206,13 @@ for (const node of bioNetwork.nodes) {
       falha: ['ESTE SISTEMA EXIGE BIO-FORJA.'],
       sucesso: [
         'FLUXO PARCIAL ABERTO. A REDE RESPONDE ATÉ A ESTUFA.',
+<<<<<<< HEAD
         'PRIMEIRA MISSÃO DO SETOR INICIAL: CONCLUÍDA. LEITURA REGISTRADA NO DIÁRIO.',
         'O NÚCLEO PROFUNDO CONTINUA PARA UMA MISSÃO FUTURA. SEM RECOMPENSA OU DESBLOQUEIO.',
+=======
+        'O INTERIOR REAGE, MAS O NÚCLEO AINDA PEDE UMA RECONSTRUÇÃO MAIS PROFUNDA.',
+        'RETORNE AO TERMINAL E ENTRE NA SALA DE CONTROLE PARA SINCRONIZAR A LINHA.',
+>>>>>>> e5736762ec637ebe671540515d65b30b7c6323f4
       ],
       manterVisivel: true, manterColisao: true,
     };
@@ -214,6 +237,7 @@ for (const cfg of [
 
 // Vegetação industrial de baixa altura, distribuída junto aos caminhos.
 for (const [id, x, y, sprite, scale] of [
+<<<<<<< HEAD
   ['bio_vida_cano_entrada', 20, 13, 'bio_mato_cano', .21],
   ['bio_vida_ventilacao_patio', 34, 16, 'bio_mato_ventilacao', .19],
   ['bio_vida_barris_patio', 40, 25, 'bio_mato_barris', .20],
@@ -224,6 +248,21 @@ for (const [id, x, y, sprite, scale] of [
 
 objects.push({ id: 'bio_plataforma_tecnica', tipo: 'decoracao', x: 33, y: 26, sprite: 'bio_plataforma', scale: .24,
   depthOffset: -.6, sombra: [40, 16], bloqueia: true, hitbox: { offsetX: -2, offsetY: -2, width: 2, height: 2 } });
+=======
+  ['bio_vida_cano_entrada', 20, 13, 'bio_mato_cano', .23],
+  ['bio_vida_ventilacao_patio', 34, 16, 'bio_mato_ventilacao', .21],
+  ['bio_vida_barris_patio', 40, 25, 'bio_mato_barris', .22],
+  ['bio_vida_fissura_trilha', 43, 32, 'bio_mato_fissura', .20],
+  ['bio_vida_cano_estufa', 51, 48, 'bio_mato_cano', .23],
+  ['bio_vida_barris_estufa', 57, 52, 'bio_mato_barris', .22],
+]) objects.push({ id, tipo: 'decoracao', x, y, sprite, scale, bloqueia: true, hitbox: { offsetX: -.3, offsetY: -.3, width: .6, height: .6 } });
+
+objects.push({ id: 'acesso_controle_bio', tipo: 'decoracao', x: 16, y: 12, bioMarker: 'CONTROLE', bloqueia: false });
+objects.push({ id: 'estacao_cabo_chegada', tipo: 'decoracao', x: 8, y: 13, cableStation: 'PRAIA', bloqueia: false });
+
+objects.push({ id: 'bio_plataforma_tecnica', tipo: 'decoracao', x: 33, y: 26, sprite: 'bio_plataforma', scale: .28,
+  depthOffset: -.6, sombra: [46, 18], bloqueia: true, hitbox: { offsetX: -2, offsetY: -2, width: 2, height: 2 } });
+>>>>>>> e5736762ec637ebe671540515d65b30b7c6323f4
 for (const [id, x, y, sprite, scale] of [
   ['bio_margem_canto_entrada', 8, 17, 'bio_margem_canto', .17],
   ['bio_margem_cano_patio', 29, 22, 'bio_margem_cano', .16],
@@ -247,14 +286,12 @@ for (const [id, x, y, sprite, scale] of [
 for (let y = 5; y < 68; y += 6) for (let x = 5; x < 68; x += 6) {
   const n = (x * 97 + y * 131 + x * y * 17) % 11;
   if (n > 5 || (x > 20 && x < 32 && y > 12 && y < 28) || (x > 39 && x < 53 && y > 33 && y < 46) || (x < 20 && y < 22) || (x > 29 && x < 42 && y > 12 && y < 25) || (x > 42 && x < 58 && y > 42 && y < 57)) continue;
-  objects.push({ id: `estacao_planta_${x}_${y}`, tipo: 'decoracao', x: x + ((x * y) % 5 - 2) * .4, y: y + ((x + 2 * y) % 5 - 2) * .4, sprite: 'vegetacao_tropical', frame: { col: n % 2 ? 2 : 3, row: 0 }, useCrop: true, larguraPx: 65 + (x * y) % 35, pivotX: .5, pivotY: 1, bloqueia: false });
+  const px = x + ((x * y) % 5 - 2) * .4, py = y + ((x + 2 * y) % 5 - 2) * .4;
+  if (ground.walkMask[Math.floor(py + .5)]?.[Math.floor(px + .5)] !== '.') continue;
+  if (n > 2) continue; // menos árvores isoladas no complexo industrial
+  objects.push({ id: `estacao_planta_${x}_${y}`, tipo: 'decoracao', x: px, y: py, sprite: 'vegetacao_tropical', frame: { col: n % 2 ? 2 : 3, row: 0 }, useCrop: true, larguraPx: 65 + (x * y) % 35, pivotX: .5, pivotY: 1, bloqueia: false });
 }
-for (const [id, x, y, col, row, w] of [
-  ['bio_destroc_1', 14, 10, 3, 1, 62], ['bio_destroc_2', 17, 18, 2, 1, 55],
-  ['bio_destroc_4', 48, 52, 2, 1, 64],
-  ['bio_destroc_5', 54, 53, 3, 1, 58], ['bio_destroc_6', 41, 25, 3, 0, 48],
-]) objects.push({ id, tipo: 'decoracao', x, y, sprite: 'beach_props', frame: { col, row }, useCrop: true, larguraPx: w, pivotX: .5, pivotY: 1, bloqueia: false });
-for (const [id, x, y, label] of [['estacao_chegada', 8, 10, 'CHEGADA'], ['estacao_patio', 36, 20, 'PÁTIO'], ['estacao_estufa', 50, 50, 'ESTUFA']]) objects.push({ id, tipo: 'decoracao', x, y, routeMarker: label, bloqueia: false });
+for (const [id, x, y, label] of [['estacao_chegada', 13, 15, 'CHEGADA'], ['estacao_patio', 36, 20, 'PÁTIO'], ['estacao_estufa', 50, 50, 'ESTUFA']]) objects.push({ id, tipo: 'decoracao', x, y, routeMarker: label, bloqueia: false });
 
 export const map = {
   id: 'ilha_estacao_bio',
@@ -263,14 +300,24 @@ export const map = {
   aguaPraia: rows.map(r => r.replaceAll('X', 'D')),
   layout: rows.map(r => [...r].map(c => (c === 'X' || c === 'Y' ? 1 : 0))),
   walkMask: ground.walkMask, pisos: ground.pisos,
+<<<<<<< HEAD
   bioBridges, bioBridgeRails, bioNetwork, bioRoute,
   spawnPoints: { inicio: { x: 9.5, y: 10.5 } },
+=======
+  bioBridges, bioBridgeRails, bioNetwork,
+  spawnPoints: { inicio: { x: 9.5, y: 13.5 }, vindo_controle: { x: 16.5, y: 12.5 } },
+>>>>>>> e5736762ec637ebe671540515d65b30b7c6323f4
   objects,
-  trainingTargets: [{ id: 'simulador_bio_1', x: 33, y: 18, maxHealth: 3 }, { id: 'simulador_bio_2', x: 48, y: 51, maxHealth: 3 }],
+  trainingTargets: [{ id: 'simulador_bio_1', x: 33, y: 18, maxHealth: 60 }, { id: 'simulador_bio_2', x: 48, y: 51, maxHealth: 60 }],
   collectibles: [
     { id: 'bio_estacao_condutor', nome: 'CONDUTOR', tipo: 'fragmento', x: 15, y: 15, label: 'EXAMINAR CONDUTOR', dialogue: ['UM CONDUTOR FALHOU NA ESTAÇÃO.', 'PROCURE O REGULADOR NO PÁTIO.'] },
     { id: 'bio_estacao_regulador', nome: 'REGULADOR', tipo: 'fragmento', x: 36, y: 20, requiresFlag: 'collected_bio_estacao_condutor', label: 'AJUSTAR REGULADOR', dialogue: ['A PRESSÃO COMEÇA A ESTABILIZAR.', 'REATIVE A ESTUFA NO SETOR MAIS DISTANTE.'] },
     { id: 'bio_estacao_estufa', nome: 'ESTUFA', tipo: 'fragmento', x: 50, y: 50, requiresFlag: 'collected_bio_estacao_regulador', label: 'ESTABILIZAR ESTUFA', dialogue: ['O PULSO DA ESTAÇÃO SE ESTABILIZA.', 'SETOR INICIAL CONCLUÍDO. O SISTEMA AINDA EXIGE UMA RECONSTRUÇÃO MAIS PROFUNDA.'] },
   ],
+<<<<<<< HEAD
   portals: [{ id: 'estacao_voltar', tipo: 'door', x: 8, y: 10, label: 'VOLTAR À PRAIA', labelConcluido: 'RETORNAR · LEITURA REGISTRADA', missaoFlag: 'gate_bio_valvula_estufa', interactionDistance: 1.4, destino: { mapId: 'ilha_praia_inicial', spawnId: 'vindo_da_estacao' }, transition: 'fade' }],
+=======
+  portals: [{ id: 'entrar_controle_bio', tipo: 'door', x: 16, y: 12, label: 'ENTRAR NA SALA DE CONTROLE', interactionDistance: 1.3, destino: { mapId: 'bio_sala_controle', spawnId: 'inicio' }, transition: 'fade' },
+    { id: 'estacao_voltar', tipo: 'door', x: 8, y: 13, label: 'EMBARCAR PARA A PRAIA', interactionDistance: 1.4, destino: { mapId: 'ilha_praia_inicial', spawnId: 'vindo_da_estacao' }, transition: 'fade' }],
+>>>>>>> e5736762ec637ebe671540515d65b30b7c6323f4
 };

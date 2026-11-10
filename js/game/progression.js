@@ -1,9 +1,10 @@
-// Progressão persistente por slot do módulo escolhido.
-// Ainda não concede poderes nem implementa upgrades: todos começam no nível 1.
+// Progressão persistente por arquétipo escolhido.
+// Guarda slots de habilidade, nível, XP e os contadores de maestria.
+// A migração é aditiva: saves antigos ganham os campos com valores neutros;
+// `points`/`nodes` de versões anteriores ficam apenas como dado morto.
 import { ARCHETYPE_KITS, KIT_SLOTS } from '../data/archetype-kits.js';
 
-export function ensureArchetypeProgress(progress) {
-  const archetype = progress?.archetype;
+export function ensureArchetypeProgress(progress, archetype = progress?.archetype) {
   if (!Object.hasOwn(ARCHETYPE_KITS, archetype)) return progress;
 
   progress.archetypeProgress ??= {};
@@ -15,6 +16,9 @@ export function ensureArchetypeProgress(progress) {
       kit.slots[slot].level = 1;
     }
   }
+  if (!Number.isInteger(kit.level) || kit.level < 1) kit.level = 1;
+  if (!Number.isFinite(kit.xp) || kit.xp < 0) kit.xp = 0;
+  if (!kit.mastery || typeof kit.mastery !== 'object' || Array.isArray(kit.mastery)) kit.mastery = {};
   return progress;
 }
 

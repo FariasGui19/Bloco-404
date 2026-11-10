@@ -38,3 +38,7 @@ O Rival dimensional (nomes provisórios Operador Nulo, Nexo-Null ou Arquivo 0) c
 4. Prototipar Q e R dos demais arquétipos e experiências próprias de exploração.
 5. Evoluir o protótipo do ataque básico, testar diferenças entre trajes e formas e validar Shift + clique como movimento.
 6. Expandir demais slots, Ultimate, Bolt e Rival por etapas jogáveis.
+
+## Sequência de produção 0.3.10
+
+A tabela de regiões inclui a Estação que Respira e a sala existente, sem adicionar portais ou desbloqueios. O recorte atual ainda é Praia → Enseada/Estação, fauna ambiental localizada e desafios de arquétipo provisórios. Clima, rotas aéreas e submarinas continuam planejamento, não sistemas jogáveis. Para a ordem de produção e prompts independentes que o criador pode gerar, ver `docs/prompts-arquipelago-producao.md`. A construção desses sistemas exige retorno seguro, acessibilidade, saves e orçamento de desempenho; não habilitar mapas fantasmas.

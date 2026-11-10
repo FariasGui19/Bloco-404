@@ -30,6 +30,7 @@ export const state = {
   actors: [],
   fauna: [],
   trainingTargets: [],
+  hazards: [],
   objects: [],
   portals: [],
   collectibles: [],
@@ -106,6 +107,13 @@ export const state = {
 
     target: null,
     moving: false,
+    // Vida: migra com o arquétipo/nível; não é salva em combate.
+    health: null,
+    maxHealth: null,
+    invulnerable: 0,
+    hurtTimer: 0,
+    sinceDamage: 0,
+    deathTimer: 0,
     // Energia e runtime de habilidades.
     energy: 100,
     maxEnergy: 100,

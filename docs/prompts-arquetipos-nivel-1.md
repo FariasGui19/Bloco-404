@@ -204,3 +204,37 @@ quadriculado ou cópia de interfaces de franquias. Não incluir fundos opacos.
 ```
 
 As novas folhas 10X também chegaram em JPG com transparência simulada. A remoção é aproximada, podendo perder brilho; o cone da leitura invade a célula vizinha e contém quadriculado colorido, por isso não é usado na animação atual. Pedir originais em PNG com alpha e efeitos independentes, mais direções alinhadas. A arte estática do operador 10X foi armazenada como referência, mas T **não** veste armadura: abre a interface própria.
+
+## Atualização — caminhada vertical da Forma Veloz (PNG com alpha)
+
+A forma sustentada do Núcleo 10X passou a ter **quatro direções de
+locomoção**. As folhas laterais continuam sendo `veloz-lateral.png`
+(6 × 4) e `veloz-ataque-alternativa.png`; as duas direções que faltavam
+foram geradas e tratadas:
+
+- `assets/source-art/proximas-animacoes/veloz-andar-frente.png` → `assets/sprites/player/player-10x-veloz-andar-frente.png`
+- `assets/source-art/proximas-animacoes/veloz-andar-costas.png` → `assets/sprites/player/player-10x-veloz-andar-costas.png`
+
+Cada folha final tem **4 quadros em uma linha** (1024 × 256, células de
+256 px), RGBA com transparência real, apoio dos pés em `y = 208` — o mesmo
+das folhas laterais — e centro da cabeça fixo em `x = 128`. O ciclo de
+4 quadros roda a 140 ms por quadro, então a velocidade da corrida não muda
+ao trocar de eixo. Prévia: [`animacao-forma-veloz.gif`](animacao-forma-veloz.gif).
+
+O gerador entregou fundo magenta chapado e, na folha frontal, uma tira
+extra de miniaturas abaixo da sequência. `tools/preparar-veloz-caminhada.py`
+recorta a faixa útil, remove o magenta com alpha real e despill de borda,
+normaliza escala e alinhamento e grava as duas folhas. Para regerar:
+
+```bash
+python3 tools/preparar-veloz-caminhada.py
+```
+
+`js/data/veloz-animation.js` escolhe a folha pela direção e devolve
+`cols`/`rows` junto do quadro; o renderer deixou de assumir 6 × 4 fixo.
+O golpe direcional para cima/baixo continua usando a folha lateral como
+pose provisória — a sequência de ataque vertical ainda não existe.
+
+Ainda pendentes para fechar a locomoção do Núcleo: ataque básico vertical
+próprio, transição entre corrida e ataque sem troca de escala e revisão de
+escala contra os props no chão da Enseada e da Estação Bio.

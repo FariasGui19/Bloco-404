@@ -7,6 +7,8 @@ import { ARCHETYPE_KITS } from '../data/archetype-kits.js';
 import { CONFIG } from '../config.js';
 import { canStandAt } from './collision.js';
 import { getCurrentMap } from './map-manager.js';
+import { tryAbilityDamage } from './combat.js';
+import { recordMastery } from './mastery.js';
 
 export const POWER_PROFILES = {
   golpe_ruptura: { cost: 24, cooldown: 1.4, color: '#ffd264', duration: 0.55 },
@@ -63,6 +65,17 @@ export function tryArchetypePower(id, showMessage) {
   if (!canStart(id, showMessage)) return false;
   const player = state.player;
   const profile = POWER_PROFILES[id];
+  // Habilidades de impacto acertam alvos de treino à frente. A mobilidade e
+  // os gates do Q continuam exatamente como antes.
+  tryAbilityDamage({ player, progress: state.progress, targets: state.trainingTargets ?? [], abilityId: id });
+  // Dash e avanço contam como locomoção: correr e impulsionar também treinam
+  // a trilha CINÉTICA do Núcleo, mesmo o deslocamento não passando pelo updatePlayer.
+  if (id === 'passo_corrente' || id === 'forma_veloz') recordMastery(state.progress, 'distance', 6);
+  const rankUps = recordMastery(state.progress, 'ability_use');
+  if (rankUps.length) {
+    player.ability.lastMessage = `MAESTRIA • ${rankUps.map(up => up.label).join(' + ')}`;
+    player.ability.messageTimer = 3;
+  }
   if (SCAN_LABELS[id]) {
     const target = nearestGate(5);
     if (target?.gate?.scanFlag && target.gate.diagnosisArchetype === state.progress.archetype) {

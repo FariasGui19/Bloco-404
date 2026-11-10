@@ -23,8 +23,10 @@ import { tryModuleInteraction, hasSharedQuestSystem } from './module-interaction
 import { ARCHETYPE_KITS, IMPLEMENTED_ABILITIES } from '../data/archetype-kits.js';
 import { getBioDashProfile } from './ability-context.js';
 import { tryArchetypePower, POWER_PROFILES } from './archetype-powers.js';
-import { openGate } from './gates.js';
+import { openGate, checkGate, isGateOpen } from './gates.js';
 import { saveGame } from './save.js';
+import { getDerivedStats } from './rpg.js';
+import { recordMastery } from './mastery.js';
 
 // ---------------------------------------------------------------------
 // CONFIGURAÇÃO INTERNA DE HABILIDADES
@@ -166,6 +168,8 @@ function tryStartBioDash() {
   player.energy -= profile.energyCost;
 
   ability.cooldowns.bio_dash = profile.cooldown;
+  recordMastery(state.progress, 'distance', 6); // o dash também treina locomoção
+  recordMastery(state.progress, 'ability_use');
 
   ability.active = 'bio_dash';
 
@@ -184,6 +188,23 @@ function tryStartBioDash() {
   showAbilityMessage(profile.mode === 'equipped' ? 'PROPULSOR • TRAJE ATIVO' : 'PROPULSOR • MODO RÁPIDO');
 
   return true;
+}
+
+// Ativa apenas sensores explícitos cruzados pelo deslocamento real do Q.
+// Distância ao segmento evita perder o evento em frames longos.
+export function activateBioDashSensors(start, end) {
+  if (state.progress.archetype !== 'motor_bio_forja') return false;
+  const dx = end.x - start.x, dy = end.y - start.y, len2 = dx * dx + dy * dy;
+  if (len2 < 1e-8) return false;
+  let activated = false;
+  for (const sensor of state.objects ?? []) {
+    if (!sensor.dashSensor || !sensor.gate || isGateOpen(sensor) || !checkGate(sensor.gate)) continue;
+    const t = Math.max(0, Math.min(1, ((sensor.x - start.x) * dx + (sensor.y - start.y) * dy) / len2));
+    if (Math.hypot(start.x + dx * t - sensor.x, start.y + dy * t - sensor.y) > .45) continue;
+    openGate(sensor); saveGame(); activated = true;
+    if (state.player.ability) showAbilityMessage('IMPULSO REGISTRADO • ATIVE O PAINEL');
+  }
+  return activated;
 }
 
 function updateBioDash(dt) {
@@ -205,6 +226,7 @@ function updateBioDash(dt) {
   const moveX = dash.directionX * dash.speed * stepTime;
   const moveY = dash.directionY * dash.speed * stepTime;
 
+  const start = { x: player.x, y: player.y };
   const moved = moveWithCollision(
     map,
     player,
@@ -212,6 +234,8 @@ function updateBioDash(dt) {
     moveY,
     CONFIG.PLAYER_RADIUS
   );
+
+  if (moved) activateBioDashSensors(start, player);
 
   if (dash.phaseGateId) {
     const gate = state.objects.find(o => o.id === dash.phaseGateId);
@@ -267,10 +291,11 @@ export function updateAbilities(dt) {
     );
   }
 
-  // Regeneração de energia.
+  // Regeneração de energia (a árvore do arquétipo pode somar aqui).
+  const energyRegen = CONFIG.ABILITIES.ENERGY_REGEN + (getDerivedStats(state.progress)?.energyRegen ?? 0);
   player.energy = Math.min(
     player.maxEnergy,
-    player.energy + CONFIG.ABILITIES.ENERGY_REGEN * dt
+    player.energy + energyRegen * dt
   );
   // NOVO: Controla o tempo que o player fica ajoelhado escaneando
   if (player.ability.scanning > 0) {

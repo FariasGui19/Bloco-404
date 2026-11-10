@@ -62,6 +62,8 @@ export function getDerivedStats(progress, player = null, archetype = progress?.a
   if (!profile) return null;
   const level = getArchetypeLevel(progress, archetype);
   const mastery = getMasteryBonuses(progress, archetype);
+  // Bônus de Ultimate: temporário, vive no runtime do jogador (nunca no save).
+  const buff = player?.ultimate?.buff?.timeLeft > 0 ? player.ultimate.buff : null;
 
   const formMult = profile.formMult && player?.nucleoForm === 'forma_veloz' ? profile.formMult : 1;
   const baseDamage = profile.damage * (1 + profile.perLevel * (level - 1));
@@ -73,7 +75,7 @@ export function getDerivedStats(progress, player = null, archetype = progress?.a
     color: profile.color,
     hits: profile.hits,
     range: profile.range,
-    basicDamage: baseDamage * (1 + mastery.basicDamagePct) * formMult,
+    basicDamage: baseDamage * (1 + mastery.basicDamagePct) * (1 + (buff?.basicDamagePct ?? 0)) * formMult,
     critChance: Math.min(.75, profile.crit + mastery.critChance),
     critMult: profile.critMult,
     cooldown: profile.cooldown * Math.max(.4, 1 - Math.min(.6, mastery.cooldownPct)),
@@ -81,11 +83,12 @@ export function getDerivedStats(progress, player = null, archetype = progress?.a
     energyRegen: mastery.energyRegen,
     abilityDamagePct: mastery.abilityDamagePct,
     xpBonusPct: mastery.xpBonusPct,
-    moveSpeedPct: mastery.moveSpeedPct,
+    moveSpeedPct: mastery.moveSpeedPct + (buff?.moveSpeedPct ?? 0),
     formSpeedPct: mastery.formSpeedPct,
     formDuration: mastery.formDuration,
     maxHealth: vitals.health + (level - 1) * 8,
     mastery,
+    ultimateBuff: buff,
   };
 }
 

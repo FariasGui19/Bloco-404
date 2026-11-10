@@ -23,6 +23,7 @@ import { IMPLEMENTED_ABILITIES } from '../data/archetype-kits.js';
 import { getBioDashProfile } from '../game/ability-context.js';
 import { getArchetypeLevel, getArchetypeXp, xpToNext } from '../game/rpg.js';
 import { getMasterySummary } from '../game/mastery.js';
+import { getUltimateStatus } from '../game/ultimate.js';
 
 const el = {};
 const cache = {};
@@ -56,6 +57,12 @@ export function initHud() {
     'abilityTreePoints',
     'abilityHealthText',
     'abilityHealthFill',
+    'abilityUltimate',
+    'ultimateIcon',
+    'ultimateName',
+    'ultimateState',
+    'ultimateBuff',
+    'ultimateFill',
     'abilityXpFill',
     'abilityXpText',
     'abilityPrimary',
@@ -192,6 +199,25 @@ function updateAbilityHud(state) {
       </div>
     `;
     el.abilitySecondary.classList.toggle('ready', Boolean(prompt));
+  }
+
+  // Ultimate: ícone do arquétipo, recarga e bônus ativo.
+  const ultimate = getUltimateStatus(state.player, state.progress);
+  if (el.abilityUltimate) {
+    el.abilityUltimate.classList.toggle('visible', Boolean(ultimate));
+    if (ultimate) {
+      el.ultimateIcon.src = `assets/sprites/ui/codex/ultimate-${archetypeId}.png`;
+      setText('ultimateName', ultimate.definition.name);
+      const faltando = ultimate.definition.cost - ultimate.energy;
+      setText('ultimateState', ultimate.cooldown > 0
+        ? `RECARREGANDO ${ultimate.cooldown.toFixed(1)}s`
+        : !ultimate.energyOk ? `FALTA ${Math.max(0, faltando)} ENERGIA` : `F · ${ultimate.definition.cost} ENERGIA`);
+      setText('ultimateBuff', ultimate.buff ? `${ultimate.buff.label} · ${Math.ceil(ultimate.buff.timeLeft)}s` : '');
+      if (el.ultimateFill) el.ultimateFill.style.width = `${Math.round(ultimate.charge * 100)}%`;
+      el.abilityUltimate.classList.toggle('ready', ultimate.ready);
+      el.abilityUltimate.classList.toggle('unaffordable', ultimate.cooldown <= 0 && !ultimate.energyOk);
+      el.abilityUltimate.classList.toggle('buffed', Boolean(ultimate.buff));
+    }
   }
 
   const message = state.player.ability?.lastMessage ?? '';

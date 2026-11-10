@@ -110,6 +110,7 @@ export function render(map, state) {
   drawWorld(map, state);
   drawBasicAttack(state.player);
   drawAbilityEffects(state);
+  drawUltimateEffect(state);
   drawAmbientFront(ctx, map, HW, HH);
   drawTarget(state.player);
 
@@ -2662,6 +2663,37 @@ function drawAbilityEffects(state) {
       ctx.lineTo(x + 15, y - 49);
       ctx.stroke();
     }
+  }
+  ctx.restore();
+}
+
+// Ultimate: onda radial grande, no raio real do efeito, com faíscas subindo.
+function drawUltimateEffect(state) {
+  const ultimate = state.player?.ultimate;
+  if (!ultimate?.effect) return;
+  const effect = ultimate.effect;
+  const player = state.player;
+  const x = (player.x - player.y) * HW, y = (player.x + player.y) * HH;
+  const t = Math.max(0, Math.min(1, 1 - effect.timeLeft / effect.duration));
+  ctx.save();
+  ctx.shadowColor = effect.color;
+  ctx.shadowBlur = 18;
+  ctx.strokeStyle = effect.color;
+  for (let ring = 0; ring < 3; ring++) {
+    const progresso = Math.min(1, t * 1.25 + ring * .12);
+    const raio = 26 + progresso * 190;
+    ctx.globalAlpha = Math.max(0, (1 - progresso) * .9);
+    ctx.lineWidth = 3 - ring * .6;
+    ctx.beginPath();
+    ctx.ellipse(x, y, raio, raio * .5, 0, 0, Math.PI * 2);
+    ctx.stroke();
+  }
+  ctx.globalAlpha = Math.max(0, 1 - t) * .85;
+  ctx.fillStyle = effect.color;
+  for (let i = 0; i < 18; i++) {
+    const angle = i * Math.PI * 2 / 18;
+    const raio = 30 + (i % 5) * 16 + t * 120;
+    ctx.fillRect(x + Math.cos(angle) * raio - 1, y + Math.sin(angle) * raio * .5 - 2 - t * 24, 3, 3);
   }
   ctx.restore();
 }

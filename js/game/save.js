@@ -190,7 +190,8 @@ export function loadSaveIntoState(slot) {
   state.player.facing = save.player?.facing ?? 'down';
   state.player.nucleoForm = null;
   state.player.nucleoRuntime = null;
-  // Vida é de sessão: cada carregamento começa com a barra cheia.
+  // Vida e Ultimate são de sessão: cada carregamento começa limpo.
+  state.player.ultimate = { cooldown: 0, buff: null, effect: null, casts: 0 };
   state.player.health = null;
   state.player.maxHealth = null;
   state.player.invulnerable = 0;
@@ -218,7 +219,8 @@ export function startNewSave(slot, profileName = null) {
   state.player.facing = save.player.facing;
   state.player.nucleoForm = null;
   state.player.nucleoRuntime = null;
-  // Vida é de sessão: cada partida começa com a barra cheia.
+  // Vida e Ultimate são de sessão: cada partida começa limpa.
+  state.player.ultimate = { cooldown: 0, buff: null, effect: null, casts: 0 };
   state.player.health = null;
   state.player.maxHealth = null;
   state.player.invulnerable = 0;

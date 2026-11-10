@@ -73,6 +73,18 @@ Detalhes, números e testes: [`sistemas-rpg-dano-xp-missoes.md`](sistemas-rpg-da
 O que **não** está pronto: inimigos agressivos, cura por itens, resistências,
 UI de rank com histórico e balanceamento final.
 
+## Atualização — Ultimate e cor por função
+
+A Ultimate de cada arquétipo entrou no lugar previsto pelo documento de direção
+(slot 5, tecla **F**): onda radial com dano, cura proporcional e bônus temporário
+de dano, velocidade, energia ou vida/s. Custo alto e recarga longa; estado,
+bônus e efeito são de sessão. O Códex mostra a Ultimate na aba Progressão e cada
+aba/trilha ganhou cor própria — os ícones deixaram de ser todos verdes.
+
+O que **não** está pronto: animação do personagem executando a Ultimate, aviso
+de área para inimigos (que ainda não existem), balanceamento após combate real e
+as habilidades de utilidade/suporte.
+
 ## Futuro — multiverso dinâmico
 
 A direção de dimensões com gêneros diferentes (survival, terror, corrida, FPS),

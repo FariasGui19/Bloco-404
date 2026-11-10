@@ -96,6 +96,23 @@ function registerDefeat(player, progress, target) {
   return xp;
 }
 
+// Dano radial: usado pela Ultimate, que não depende de direção.
+// Devolve o total causado e os alvos atingidos para HUD/testes.
+export function applyRadialDamage({ player, progress, targets, radius, damage, color = '#ffffff', rng = Math.random }) {
+  const hits = [];
+  if (!targets?.length || !(radius > 0) || !(damage > 0)) return { total: 0, hits };
+  for (const target of targets) {
+    if (!target || target.health <= 0) continue;
+    if (Math.hypot(target.x - player.x, target.y - player.y) > radius) continue;
+    const rolagem = Math.max(1, Math.round(damage * (.94 + rng() * .12)));
+    const outcome = applyAttackDamage(target, { hits: [rolagem], total: rolagem });
+    pushCombatText(target.x, target.y, String(rolagem), { color, duration: 1.1 });
+    if (outcome?.defeated) registerDefeat(player, progress, target);
+    hits.push({ target, damage: rolagem });
+  }
+  return { total: hits.reduce((sum, item) => sum + item.damage, 0), hits };
+}
+
 // Habilidade de impacto: atinge alvos de treino à frente, no raio do gesto.
 // Devolve o total causado para a HUD/testes; não altera a mobilidade do Q.
 export function tryAbilityDamage({ player, progress, targets, abilityId, rng = Math.random }) {

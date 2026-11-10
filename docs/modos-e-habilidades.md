@@ -2,7 +2,22 @@
 
 ## Decisões e escopo atual
 
-Cada operador escolhe um arquétipo; um possível morfador mestre futuro não é troca de módulo. Níveis dos cinco slots já podem ser registrados no save, mas ainda não existe sistema jogável de subir nível nem habilidades 3, 4 e Ultimate. Valores abaixo são protótipos, não balanceamento final.
+Cada operador escolhe um arquétipo; um possível morfador mestre futuro não é troca de módulo. Níveis dos cinco slots já podem ser registrados no save, mas ainda não existe sistema jogável de subir nível nem habilidades de utilidade e suporte. **A Ultimate saiu do papel em 0.3.23** (ver abaixo). Valores abaixo são protótipos, não balanceamento final.
+
+## Ultimate (slot 5) — implementada em 0.3.23
+
+Tecla **F**. Custo alto, recarga longa, dano radial sem direção, cura imediata e bônus temporário. Todos os arquétipos começam com ela no nível 1, como o documento de direção previa.
+
+| Arquétipo | Ultimate | Custo | Recarga | Raio | Dano | Cura | Bônus |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| Bio-Forja | PULSO DA FORJA VIVA | 58 | 26 s | 5,5 | 22 | 45% | +3 vida/s por 8 s |
+| Domínio | COROA DA FALHA | 62 | 30 s | 6,5 | 38 | 15% | +15% dano básico por 10 s |
+| Maré | SINFONIA DO ESTUÁRIO | 54 | 24 s | 7 | 20 | 25% | +1,5 energia/s por 8 s |
+| Núcleo 10X | HORIZONTE DE DEZ ECOS | 50 | 22 s | 6 | 24 | 20% | +35% velocidade e +0,8 energia/s por 7 s |
+
+Recarga e bônus são de sessão (não vão para o save), o uso conta 2 pontos na maestria de fluxo e o `F` devolve o controle às ferramentas de cenário quando debug (`H`) ou calibração (`V`) estão ligados. Arte: um sigilo por arquétipo em `assets/sprites/ui/codex/ultimate-*.png`; o efeito em jogo é procedural (anéis + faíscas), sem folha nova.
+
+Ainda pendente: animação do personagem executando a Ultimate (pose/folha), aviso de área para inimigos futuros, e ajuste de custo depois que existir combate real.
 
 **Bio-Forja, Q no nível 1:**
 

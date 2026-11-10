@@ -20,7 +20,8 @@ import { getFloor } from './game/world.js';
 import { loadMap, getSafeSpawn } from './game/map-manager.js';
 
 import { updatePlayer } from './game/player.js';
-import { updateAbilities } from './game/abilities.js';
+import { updateAbilities, showAbilityMessage } from './game/abilities.js';
+import { tryUltimate, updateUltimate } from './game/ultimate.js';
 import { toggleArchetypeSuit } from './game/ability-context.js';
 import { openNucleoWheel, isNucleoWheelOpen, updateNucleoWheel } from './ui/nucleo-wheel.js';
 import { updateCamera } from './engine/camera.js';
@@ -48,6 +49,7 @@ import {
 } from './ui/elevator-menu.js';
 
 import { updateObjectTools } from './game/object-tools.js';
+import { isDebugEnabled } from './game/debug.js';
 import { updateDoors } from './game/doors.js';
 
 import {
@@ -348,6 +350,20 @@ async function update(dt) {
 
     updateBasicCombat(player, state.trainingTargets, dt);
     let abilityLocksMovement = updateAbilities(dt);
+
+    // F = Ultimate do módulo. Peso alto: energia cheia, recarga longa e
+    // bloqueio enquanto outra ação trava o movimento.
+    // Com debug/calibração ligados, o F pertence às ferramentas de cenário.
+    const fLivre = !isDebugEnabled() && !isBackgroundCalibrationEnabled();
+    if (fLivre && (input.pressed.has('f') || input.pressed.has('keyf')) && !abilityLocksMovement && !state.world.isLoading) {
+      tryUltimate({
+        player,
+        progress: state.progress,
+        targets: state.trainingTargets,
+        showMessage: showAbilityMessage,
+      });
+    }
+    updateUltimate(player, state.progress, dt);
     updateNucleoForm(state.progress, player, dt, canStandAt(getFloor(), player.x, player.y, CONFIG.PLAYER_RADIUS, player));
     abilityLocksMovement ||= player.ability?.effect?.id === 'transformacao_10x';
     if (input.attackClick) {

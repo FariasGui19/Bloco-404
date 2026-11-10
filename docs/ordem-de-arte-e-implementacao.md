@@ -7,7 +7,28 @@ Gerar e implementar **exatamente duas folhas/imagens por atualização**, seguin
 3. Estação Bio / Bio-Forja (rodadas 0.3.5 e 0.3.6)
 4. Folha de sprites do Bolt (prévia opt-in, sem concessão automática)
 
-## Rodada atual (0.3.6-bio)
+## Rodada atual (0.3.23): cor por função e sigilos de Ultimate
+
+Duas peças visuais, dentro da regra: **(1)** uma folha 2×2 com os quatro sigilos
+de Ultimate (`assets/source-art/ui/codex-ultimates.png`), recortada em
+`assets/sprites/ui/codex/ultimate-<arquétipo>.png`; **(2)** o conjunto de ícones
+do Códex repintado por função — âmbar (missões), violeta (progressão), laranja
+(inventário), rosa (atributos), vermelho (vida), ciano (energia), dourado (XP) e
+neutro (fechar) —, resolvendo o relato de que "tudo verde cansa a vista".
+
+O repintado não gera arte nova: `tools/preparar-codex-ui.py` aplica uma rampa de
+cor sobre o alpha já limpo do magenta, mantendo contorno escuro e realce branco
+só no topo do brilho. O mesmo script recorta os sigilos. Nenhuma folha de
+personagem foi gerada e nenhum valor aprovado de Q/R mudou.
+
+Junto entrou a **Ultimate** dos quatro arquétipos (tecla F): dados em
+`js/data/ultimates.js`, runtime em `js/game/ultimate.js`, HUD própria, cartão no
+Códex e efeito procedural no renderer (anéis + faíscas, sem folha nova). A
+próxima peça de arte natural é a **pose/folha de execução da Ultimate**, uma por
+arquétipo, avaliando identidade e traje — e depois o inimigo agressivo, que
+continua sendo o que falta para o combate deixar de ser treino.
+
+## Rodada anterior (0.3.6-bio)
 **Peças geradas (exatamente duas):**
 1. `assets/source-art/estacao-bio/margem-canal-baixa.png` → `assets/sprites/estacao-bio/bio-margem-baixa.png` (512×309, alpha real, bordas rente ao canal)
 2. `assets/source-art/estacao-bio/fundacao-maquina.png` → `assets/sprites/estacao-bio/bio-fundacao.png` (512×281, alpha real, placas sob as máquinas)

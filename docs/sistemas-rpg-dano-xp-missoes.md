@@ -102,6 +102,34 @@ alvo de treino e do caminho obrigatório. Pulsam a cada 1,2–1,5 s, causam 9–
 de dano e **são ignoradas durante o dash**. O teste `tests/vida.mjs` garante que
 nenhuma zona nasce sobre spawn, alvo de treino ou parede.
 
+## 4.5 Ultimate (`F`) — o quinto slot
+
+A Ultimate estava prevista no documento de direção ("cada kit tem ataque, Q, R,
+utilidade, suporte e Ultimate, todos no nível 1") e agora está implementada.
+Ela não depende de direção: atinge tudo dentro do raio, cura o operador e deixa
+um bônus temporário do arquétipo. Recarga, bônus e efeito são de sessão — nada
+disso vai para o save.
+
+| Arquétipo | Ultimate | Custo | Recarga | Raio | Dano | Cura | Bônus |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| Bio-Forja | PULSO DA FORJA VIVA | 58 | 26 s | 5,5 | 22 | 45% | +3 vida/s por 8 s |
+| Domínio | COROA DA FALHA | 62 | 30 s | 6,5 | 38 | 15% | +15% dano básico por 10 s |
+| Maré | SINFONIA DO ESTUÁRIO | 54 | 24 s | 7 | 20 | 25% | +1,5 energia/s por 8 s |
+| Núcleo 10X | HORIZONTE DE DEZ ECOS | 50 | 22 s | 6 | 24 | 20% | +35% velocidade e +0,8 energia/s por 7 s |
+
+Regras verificadas por `tests/ultimate.mjs`:
+
+- bloqueia sem arquétipo, com vida zerada, em recarga e sem energia (sem cobrar nada);
+- dano radial ignora a direção e não atinge quem está fora do raio;
+- cura proporcional à vida máxima do arquétipo/nível, limitada ao máximo;
+- bônus entra em `getDerivedStats` (dano básico, velocidade) e expira sozinho;
+- uso conta 2 pontos na maestria de **fluxo**;
+- com debug (`H`) ou calibração (`V`) ligados, o `F` continua sendo das ferramentas de cenário.
+
+HUD: bloco próprio com o sigilo do arquétipo, recarga, energia faltando e o
+bônus ativo. Códex → **Progressão** mostra o cartão da Ultimate com custo,
+recarga e estado.
+
 ## 5. Códex de Rotas (`J`)
 
 Substitui o antigo diário monolítico. Quatro abas com ícones próprios:
@@ -117,10 +145,15 @@ Atalhos: `J` abre/fecha, `ESC` fecha, `1–4` troca de aba, `←`/`→` navegam.
 Abrir o Códex **nunca altera o progresso** — só os botões de companheiro salvam,
 de propósito.
 
+Cores: cada aba tem acento próprio (`data-tab` no CSS) e cada trilha usa a cor do
+seu ícone — dourado (ataque), ciano (fluxo), âmbar (eco) e violeta (locomoção).
+A barra de vida é vermelha, energia ciano e XP dourado.
+
 Arte: `assets/sprites/ui/codex-fundo.png` (fundo atmosférico),
-`assets/sprites/ui/codex/icone-emblema.png` (emblema do cabeçalho) e
-`assets/sprites/ui/codex/icone-*.png` (8 ícones em pixel art), gerados a partir
-de `assets/source-art/ui/` e tratados por `tools/preparar-codex-ui.py`.
+`assets/sprites/ui/codex/icone-emblema.png` (emblema do cabeçalho),
+`assets/sprites/ui/codex/icone-*.png` (8 ícones, cada um na cor da sua função) e
+`assets/sprites/ui/codex/ultimate-*.png` (4 sigilos de Ultimate), gerados a
+partir de `assets/source-art/ui/` e tratados por `tools/preparar-codex-ui.py`.
 
 ## 6. Missões contáveis
 
@@ -142,6 +175,7 @@ node --experimental-default-type=module tests/vida.mjs
 node --experimental-default-type=module tests/codex.mjs
 node --experimental-default-type=module tests/missoes.mjs
 node --experimental-default-type=module tests/dano-habilidades.mjs
+node --experimental-default-type=module tests/ultimate.mjs
 node --experimental-default-type=module tests/estrutura.mjs
 node --experimental-default-type=module tests/boot.mjs
 ```

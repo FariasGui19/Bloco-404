@@ -91,3 +91,15 @@ Protótipo jogável em construção: vida, dano e progressão já funcionam cont
 alvos de treino e zonas de eco; inimigos agressivos e balanceamento final ainda
 não existem. Cada etapa concluída e cada
 pendência estão registradas em [`docs/roteiro-proximas-etapas.md`](docs/roteiro-proximas-etapas.md).
+
+### Afinidade aquática
+
+Na praia, todos podem aprender a boiar, atravessar na superfície e colocar a
+cabeça na água. Por enquanto, descer até o fundo exige Maré Astral e o degrau
+de travessia; a prova final também depende disso. Equipamentos, veículos e
+formas aquáticas do Núcleo ainda não estão disponíveis: a capacidade explícita
+`mergulhoLivre` em `atualizarNado` é o ponto de integração para eles.
+Segure ESPAÇO para descer e use SHIFT para a arrancada quando liberada. O Maré
+ganha velocidade com os degraus e o respeito do mar, adquirido no fundo e em
+socorros; cardumes se assustam menos com um Maré experiente, mas reagem à
+arrancada. O novo quadro de impulso complementa a animação existente.

@@ -313,6 +313,7 @@ await loadSprites([
   // por direção.
   { id: 'nado_civil', src: 'assets/sprites/player/nado-civil.png' },
   { id: 'nado_mare', src: 'assets/sprites/player/nado-mare.png' },
+  { id: 'nado_mare_impulso', src: 'assets/sprites/player/nado-mare-impulso.png' },
   { id: 'nado_bio', src: 'assets/sprites/player/nado-bio.png' },
   { id: 'nado_dominio', src: 'assets/sprites/player/nado-dominio.png' },
   { id: 'nado_nucleo', src: 'assets/sprites/player/nado-nucleo.png' },

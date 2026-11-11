@@ -87,7 +87,7 @@ function atualizarEsteira(player, nado, agora, naSuperficie) {
 export function desenharNadador(ctx, player, ix, iy, opt) {
   const nado = player.nado;
   const id = spriteDeNado(player, opt.arquetipo);
-  const imagem = getSprite(id);
+  let imagem = getSprite(id);
   if (!imagem || !nado) return false;
   const { HW, HH, t } = opt;
 
@@ -97,6 +97,8 @@ export function desenharNadador(ctx, player, ix, iy, opt) {
   const vel = Math.hypot(nado.vx ?? 0, nado.vy ?? 0);
   const movendo = vel > .35;
   const arrancando = nado.arrancada > 0;
+  const impulsoMare = id === 'nado_mare' && arrancando && getSprite('nado_mare_impulso');
+  if (impulsoMare) imagem = impulsoMare;
   const mare = id === 'nado_mare';
   const cor = COR_TRAJE[id] ?? '#e8fffa';
 
@@ -182,7 +184,9 @@ export function desenharNadador(ctx, player, ix, iy, opt) {
   // Cadência da braçada: acompanha a velocidade; parado, o braço fica à
   // frente (boiando). Na arrancada o corpo vira flecha (quadro 0).
   const cadencia = 1.5 + Math.min(3.2, vel) * .75;
-  player._nadoFase = (player._nadoFase ?? 0) + cadencia / 60;
+  const dtVisual = player._nadoUltimoTempo == null ? 0 : Math.max(0, Math.min(.1, t - player._nadoUltimoTempo));
+  player._nadoUltimoTempo = t;
+  player._nadoFase = (player._nadoFase ?? 0) + cadencia * dtVisual;
   const quadro = arrancando || !movendo ? 0 : Math.floor(player._nadoFase) % 2;
   const escala = ESCALA * (1 - fundura * .1);
   const estica = (arrancando ? 1.1 : 1) * escorco;

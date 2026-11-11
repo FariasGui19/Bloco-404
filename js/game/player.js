@@ -143,6 +143,8 @@ export function updatePlayer(dt) {
     arvore,
     mergulhar: querMergulhar,
     mareAstral: state.progress?.archetype === 'mare_astral',
+    // Futuras formas e equipamentos poderão fornecer esta capacidade aqui.
+    mergulhoLivre: state.progress?.archetype === 'mare_astral',
   });
   if (arvore && nado.respeito.valor > (arvore.respeito ?? 0)) arvore.respeito = nado.respeito.valor;
   // Onde este degrau pode nadar (sem árvore: mar inteiro, como antes).

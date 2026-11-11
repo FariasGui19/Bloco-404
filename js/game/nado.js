@@ -296,13 +296,16 @@ export function atualizarNado(nado, ctx) {
   // mergulhar, até o limite do degrau.
   const grau = arvore ? DEGRAUS[Math.max(0, Math.min(DEGRAUS.length - 1, arvore.nivel | 0))] : null;
   nado.nivel = grau ? grau.nivel : null;
-  nado.mareAstral = !!ctx.mareAstral && (!grau || grau.nivel === DEGRAUS.length - 1);
+  nado.mareAstral = !!ctx.mareAstral;
+  // A capacidade explícita permite futuros equipamentos e formas aquáticas.
+  // Na API legada, sem parâmetro, mantém-se o comportamento anterior.
+  nado.mergulhoLivre = ctx.mergulhoLivre !== false;
   let alvo = fundo;
   let cabecaNaAgua = nado.ativo && fundo > 1.25;
   if (grau) {
     if (!ctx.mergulhar) nado.semFolego = false;      // soltou a tecla: pode tentar de novo
     const quer = !!ctx.mergulhar && nado.ativo && grau.mergulho > 0 && !nado.semFolego;
-    alvo = quer ? Math.min(fundo, grau.mergulho) : Math.min(fundo, SUPERFICIE);
+    alvo = quer ? Math.min(fundo, grau.mergulho, nado.mergulhoLivre ? Infinity : SUPERFICIE) : Math.min(fundo, SUPERFICIE);
     cabecaNaAgua = quer;
     // Pela CÉLULA, não pela profundidade: na franja da praia a água ainda
     // tem profundidade 0 e mesmo assim já é mar para quem tem medo dele.
@@ -416,7 +419,7 @@ export function moverNaAgua(nado, dt, dirX, dirY, baseSpeed) {
   // O degrau da árvore limita a braçada: quem só boia quase não anda.
   const doDegrau = nado.nivel == null ? 1 : DEGRAUS[nado.nivel].velocidade;
   const fatorBase = (NADO.velocidade + (nado.submerso ? NADO.velocidadeFundo - NADO.velocidade : 0))
-    * d.velocidade * doDegrau;
+    * d.velocidade * doDegrau * (nado.mareAstral ? 1.08 + .12 * (nado.nivel ?? 0) / (DEGRAUS.length - 1) : 1);
   let alvoX = 0, alvoY = 0;
   if (temDirecao) {
     let fator = fatorCorrente(nado.corrente, dirX, dirY);
@@ -433,8 +436,8 @@ export function moverNaAgua(nado, dt, dirX, dirY, baseSpeed) {
   }
 
   // Arrancada soma impulso forte na direção atual.
-  if (nado.arrancada > 0 && temDirecao) {
-    const impulso = NADO.arrancadaForca * (d.arrancada);
+  if (nado.arrancada > 0) {
+    const impulso = NADO.arrancadaForca * d.arrancada * (nado.mareAstral ? NADO.arrancadaMare : 1);
     alvoX += nado.dirX * baseSpeed * impulso;
     alvoY += nado.dirY * baseSpeed * impulso;
   }
@@ -442,7 +445,7 @@ export function moverNaAgua(nado, dt, dirX, dirY, baseSpeed) {
   if (temDirecao || nado.arrancada > 0) {
     // Com direção: persegue o alvo sem saltar para ele (é a "pegada" da
     // braçada).
-    const k = Math.min(1, NADO.aceleracao * dt);
+    const k = 1 - Math.exp(-NADO.aceleracao * dt);
     nado.vx += (alvoX - nado.vx) * k;
     nado.vy += (alvoY - nado.vy) * k;
   } else {

@@ -113,7 +113,9 @@ function nadoTree(progress) {
         <small>${escapeHtml(estado === 'futuro' && prova ? `Prova: ${prova.instrucao}` : d.resumo)}</small>
       </li>`;
   }).join('');
-  const rodape = r.prova
+  const rodape = r.prova?.id === 'fundo' && progress?.archetype !== 'mare_astral'
+    ? 'TOCAR O FUNDO requer afinidade aquática; equipamentos e formas de mergulho ainda estão em projeto.'
+    : r.prova
     ? `PRÓXIMA PROVA — ${escapeHtml(r.prova.nome)}: ${escapeHtml(r.prova.instrucao)}`
     : 'O mar inteiro é seu. ESPAÇO mergulha, SHIFT arranca.';
   return `<aside class="codex-mare codex-nado" aria-label="Árvore de nado">

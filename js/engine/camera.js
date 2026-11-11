@@ -43,12 +43,16 @@ export function snapCameraTo(wx, wy) {
   camera.follow = true;
 }
 
-export function updateCamera(dt, targetWx, targetWy) {
+export function updateCamera(dt, targetWx, targetWy, nado = null) {
   if (camera.follow) {
     const t = worldToIso(targetWx, targetWy);
     const k = 1 - Math.exp(-CONFIG.FOLLOW_SMOOTH * dt); // independente de FPS
     camera.x += (t.x - camera.x) * k;
     camera.y += (t.y - camera.y) * k;
   }
-  camera.zoom += (camera.targetZoom - camera.zoom) * (1 - Math.exp(-CONFIG.ZOOM_SMOOTH * dt));
+  // Zoom é um offset transitório: roda do mouse e preferência são preservadas.
+  const mergulho = nado?.ativo && nado.mareAstral && nado.profundidade > 1.25;
+  const fator = mergulho ? (nado.arrancada > 0 ? .96 : 1.06) : 1;
+  const zoomTemporario = Math.min(CONFIG.ZOOM_MAX, Math.max(mapMinZoom, camera.targetZoom * fator));
+  camera.zoom += (zoomTemporario - camera.zoom) * (1 - Math.exp(-CONFIG.ZOOM_SMOOTH * dt));
 }

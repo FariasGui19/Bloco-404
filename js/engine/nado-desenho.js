@@ -73,8 +73,8 @@ function atualizarEsteira(player, nado, agora, naSuperficie) {
   const vel = Math.hypot(nado.vx ?? 0, nado.vy ?? 0);
   const ultimo = rastro[rastro.length - 1];
   const longe = !ultimo || Math.hypot(ultimo.x - player.x, ultimo.y - player.y) > .28;
-  if (naSuperficie && vel > .5 && longe && rastro.length < 16) {
-    rastro.push({ x: player.x, y: player.y, t: agora, forca: Math.min(1, vel / 3.2) + (nado.arrancada > 0 ? .6 : 0) });
+  if ((naSuperficie || nado.arrancada > 0) && vel > .5 && longe && rastro.length < 16) {
+    rastro.push({ x: player.x, y: player.y, t: agora, submerso: !naSuperficie, forca: Math.min(1, vel / 3.2) + (nado.arrancada > 0 ? .6 : 0) });
   }
   return rastro;
 }
@@ -106,7 +106,10 @@ export function desenharNadador(ctx, player, ix, iy, opt) {
   const cor = COR_TRAJE[id] ?? '#e8fffa';
 
   // ---- direção na tela (isométrica) ----
-  const dx = nado.dirX ?? 0, dy = nado.dirY ?? 1;
+  // Em movimento, o corpo segue a velocidade real, não a tecla recém-apertada.
+  const segueVelocidade = nado.mareAstral && nado.profundidade > 1.25 && vel > .35;
+  const dx = segueVelocidade ? nado.vx : nado.dirX ?? 0;
+  const dy = segueVelocidade ? nado.vy : nado.dirY ?? 1;
   const alvo = Math.atan2((dx + dy) * HH, (dx - dy) * HW);
   player._nadoAng = player._nadoAng == null ? alvo : aproximarAngulo(player._nadoAng, alvo, .22);
   const ang = player._nadoAng;
@@ -128,9 +131,10 @@ export function desenharNadador(ctx, player, ix, iy, opt) {
       const px = (p.x - p.y) * HW, py = (p.x + p.y) * HH;
       const r = 5 + idade * 15 * (.7 + p.forca * .5);
       ctx.globalAlpha = (1 - idade) * (1 - idade) * .5 * Math.min(1, .45 + p.forca);
-      ctx.strokeStyle = '#f2fffb';
+      ctx.strokeStyle = p.submerso ? '#83eaf4' : '#f2fffb';
       ctx.beginPath();
-      ctx.ellipse(px, py, r, r * .5, 0, 0, Math.PI * 2);
+      if (p.submerso) ctx.ellipse(px, py - idade * 12, 2 + idade * 3, 2 + idade * 3, 0, 0, Math.PI * 2);
+      else ctx.ellipse(px, py, r, r * .5, 0, 0, Math.PI * 2);
       ctx.stroke();
     }
     ctx.restore();

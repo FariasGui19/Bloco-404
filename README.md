@@ -111,3 +111,13 @@ momentâneos e para o treino inicial. No fundo, o jogo troca a superfície por
 uma camada de leito marinho, preservando os mesmos controles, colisões,
 fragmentos e fauna. A câmera continua isométrica para manter a orientação e
 a leitura das margens; não é uma câmera em primeira pessoa nem um mundo 3D.
+
+Na Praia Inicial, o Maré já mergulhado pode atravessar **sob** as pontes que
+possuem água mapeada abaixo delas. O deque e suas travas continuam sólidos na
+superfície; estacas e relevo continuam sólidos no fundo. Ao subir sob um deque,
+o personagem retorna à superfície dele. A batimetria, a transparência da
+passarela e a ordenação do personagem só mudam durante o mergulho profundo.
+No fundo, **Q** aplica a propulsão aquática (respeitando energia e recargas),
+e **R** detecta fragmentos não coletados e animais aquáticos próximos; **E**
+continua sendo o socorro. Em terra, Q e R preservam suas funções anteriores.
+O zoom de mergulho é temporário e não altera o zoom escolhido pelo jogador.

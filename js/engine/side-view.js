@@ -110,15 +110,6 @@ const SHIP_SPRITES = {
 const SHIP_HEIGHT = { freighter: 46, cruiser: 30, shuttle: 24 };
 
 // ---------------------------------------------------------------------
-// ESCALA POR PROFUNDIDADE (pseudo-3D): quem anda pelo fundo da passarela
-// (perto dos janelões) encolhe; quem vem para a borda frontal cresce.
-// ---------------------------------------------------------------------
-export function svDepthScale(wy) {
-  const t = Math.min(1, Math.max(0, (wy - WALL_WORLD_Y) / (FLOOR_FRONT_Y - WALL_WORLD_Y)));
-  return 0.8 + t * 0.34;
-}
-
-// ---------------------------------------------------------------------
 // PARALLAX DINÂMICO COM O MOUSE (leve, estilo "estação orbital de verdade")
 // Camada 1 move com o mouse; o foreground move no sentido oposto.
 // ---------------------------------------------------------------------
@@ -829,10 +820,14 @@ function drawSidePortalsOnWall(ctx, map, state, cameraX, cameraY, viewW, viewH, 
     ctx.fillStyle = mainColor;
     ctx.fillRect(-halfW - 4, 1, archW + 8, 2);
 
-    // Moldura industrial externa do pórtico
-    ctx.fillStyle = '#0e1723';
-    ctx.strokeStyle = near ? '#ffffff' : '#294463';
-    ctx.lineWidth = near ? 2.2 : 1.5;
+    // Moldura industrial externa do pórtico (metal com gradiente vertical + chanfro interno)
+    const frameGrad = ctx.createLinearGradient(0, -archH, 0, 0);
+    frameGrad.addColorStop(0, '#1b2940');
+    frameGrad.addColorStop(0.45, '#111c2c');
+    frameGrad.addColorStop(1, '#080d16');
+    ctx.fillStyle = frameGrad;
+    ctx.strokeStyle = near ? '#ffffff' : '#2f4a6b';
+    ctx.lineWidth = near ? 2.4 : 1.6;
     ctx.beginPath();
     ctx.moveTo(-halfW - 6, 0);
     ctx.lineTo(-halfW - 6, -archH * 0.62);
@@ -841,6 +836,32 @@ function drawSidePortalsOnWall(ctx, map, state, cameraX, cameraY, viewW, viewH, 
     ctx.closePath();
     ctx.fill();
     ctx.stroke();
+    // Chanfro interno claro (bevel de chapa metálica)
+    ctx.strokeStyle = 'rgba(180, 220, 245, 0.14)';
+    ctx.lineWidth = 1.1;
+    ctx.beginPath();
+    ctx.moveTo(-halfW - 2.5, -2);
+    ctx.lineTo(-halfW - 2.5, -archH * 0.615);
+    ctx.arc(0, -archH * 0.615, halfW + 2.5, Math.PI, 0, false);
+    ctx.lineTo(halfW + 2.5, -2);
+    ctx.stroke();
+    // Placa de soleira estendida (degrau metálico)
+    ctx.fillStyle = '#101a29';
+    ctx.fillRect(-halfW - 14, 4, archW + 28, 5);
+    ctx.fillStyle = 'rgba(120, 170, 215, 0.18)';
+    ctx.fillRect(-halfW - 14, 4, archW + 28, 1);
+    // Rebites / parafusos da moldura
+    const boltAt = (bx, by) => {
+      ctx.fillStyle = '#03070d';
+      ctx.beginPath(); ctx.arc(bx, by + 0.6, 2.15, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#3b5578';
+      ctx.beginPath(); ctx.arc(bx, by, 1.75, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = 'rgba(210, 235, 255, 0.55)';
+      ctx.beginPath(); ctx.arc(bx - 0.55, by - 0.55, 0.62, 0, Math.PI * 2); ctx.fill();
+    };
+    boltAt(-halfW - 3, -6); boltAt(halfW + 3, -6);
+    boltAt(-halfW - 3, -archH * 0.32); boltAt(halfW + 3, -archH * 0.32);
+    boltAt(-halfW * 0.52, -archH - 1.4); boltAt(halfW * 0.52, -archH - 1.4);
 
     // Interior do portal (vórtice dimensional ou comporta trancada)
     ctx.save();
@@ -894,16 +915,24 @@ function drawSidePortalsOnWall(ctx, map, state, cameraX, cameraY, viewW, viewH, 
       const swirl = getTintedSwirl(mainColor);
       const cx = 0;
       const cy = -archH * 0.52;
+      // Cores muito luminosas (B2 âmbar) pedem vórtice mais contido para não estourar o branco
+      const hexMatch = /^#?([0-9a-f]{6})$/i.exec(mainColor);
+      let swirlBoost = 1;
+      if (hexMatch) {
+        const intVal = parseInt(hexMatch[1], 16);
+        const lum = (0.2126 * ((intVal >> 16) & 255) + 0.7152 * ((intVal >> 8) & 255) + 0.0722 * (intVal & 255)) / 255;
+        swirlBoost = lum > 0.72 ? 0.62 : 1;
+      }
       if (swirl) {
         ctx.save();
         ctx.globalCompositeOperation = 'lighter';
         ctx.translate(cx, cy);
         const R = halfW * 1.45;
         ctx.rotate(t * 0.85 + p.x * 0.7);
-        ctx.globalAlpha = 0.95;
+        ctx.globalAlpha = 0.95 * swirlBoost;
         ctx.drawImage(swirl, -R, -R, R * 2, R * 2);
         ctx.rotate(-t * 1.85 + 1.2);
-        ctx.globalAlpha = 0.7;
+        ctx.globalAlpha = 0.7 * swirlBoost;
         const R2 = R * 0.58;
         ctx.drawImage(swirl, -R2, -R2, R2 * 2, R2 * 2);
         ctx.restore();
@@ -924,6 +953,59 @@ function drawSidePortalsOnWall(ctx, map, state, cameraX, cameraY, viewW, viewH, 
       }
       ctx.globalAlpha = 1;
 
+      // Anel rúnico orbitando o horizonte de eventos (12 glifos geométricos)
+      ctx.save();
+      ctx.translate(0, -archH * 0.52);
+      ctx.rotate(t * 0.32 + p.x * 0.4);
+      ctx.strokeStyle = mainColor;
+      ctx.fillStyle = mainColor;
+      const runeR = halfW - 5.5;
+      for (let gi = 0; gi < 12; gi++) {
+        const ga = (gi / 12) * Math.PI * 2;
+        const gx = Math.cos(ga) * runeR;
+        const gy = Math.sin(ga) * runeR * 0.92;
+        ctx.save();
+        ctx.translate(gx, gy);
+        ctx.rotate(ga + Math.PI / 2);
+        ctx.globalAlpha = 0.5 + 0.45 * Math.sin(t * 2.4 + gi * 1.7 + p.x);
+        if (gi % 3 === 0) {
+          ctx.lineWidth = 1.9;
+          ctx.beginPath(); ctx.moveTo(0, -3.4); ctx.lineTo(0, 3.4); ctx.stroke();
+          ctx.beginPath(); ctx.arc(0, 0, 1.15, 0, Math.PI * 2); ctx.fill();
+        } else if (gi % 3 === 1) {
+          ctx.lineWidth = 1.5;
+          ctx.beginPath(); ctx.moveTo(-2.4, 2); ctx.lineTo(0, -2.6); ctx.lineTo(2.4, 2); ctx.closePath(); ctx.stroke();
+        } else {
+          ctx.lineWidth = 1.4;
+          ctx.strokeRect(-1.9, -1.9, 3.8, 3.8);
+        }
+        ctx.restore();
+      }
+      ctx.restore();
+      ctx.globalAlpha = 1;
+
+      // Arcos de energia saltando entre as laterais do pórtico (raros, com semente temporal)
+      const arcWindow = (t * 2.6 + p.x * 1.93) % 4.1;
+      if (arcWindow < 0.3) {
+        const seed = Math.floor(t * 2.6 + p.x * 1.93) * 12.9898;
+        const jitter = (k) => Math.sin(seed + k * 78.233) * 43758.5453 % 1;
+        ctx.beginPath();
+        const x0 = -halfW + 3, y0 = -archH * (0.18 + 0.5 * Math.abs(jitter(1)));
+        const x1 = halfW - 3, y1 = -archH * (0.18 + 0.5 * Math.abs(jitter(2)));
+        for (let seg = 0; seg <= 7; seg++) {
+          const f = seg / 7;
+          const px = x0 + (x1 - x0) * f;
+          const py = y0 + (y1 - y0) * f + (seg === 0 || seg === 7 ? 0 : (jitter(seg + 3) - 0.5) * 22);
+          if (seg === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+        }
+        ctx.strokeStyle = hexToRgba(mainColor, 0.4);
+        ctx.lineWidth = 3.6;
+        ctx.stroke();
+        ctx.strokeStyle = 'rgba(240, 255, 255, 0.85)';
+        ctx.lineWidth = 1.25;
+        ctx.stroke();
+      }
+
       // Faíscas espirais caindo para dentro do portal
       const cy2 = -archH * 0.52;
       for (let i = 0; i < 7; i++) {
@@ -941,7 +1023,34 @@ function drawSidePortalsOnWall(ctx, map, state, cameraX, cameraY, viewW, viewH, 
     }
     ctx.restore();
 
-    // Arco de neon contornando o portal
+    // Feixe de luz dimensional jorrando do portal para a passarela
+    if (!locked) {
+      const shaftGrad = ctx.createLinearGradient(0, 0, 0, 62 * zoom);
+      shaftGrad.addColorStop(0, hexToRgba(mainColor, 0.34 * pulse));
+      shaftGrad.addColorStop(0.55, hexToRgba(mainColor, 0.10 * pulse));
+      shaftGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+      ctx.save();
+      ctx.globalCompositeOperation = 'lighter';
+      ctx.fillStyle = shaftGrad;
+      ctx.beginPath();
+      ctx.moveTo(-halfW + 5, -2);
+      ctx.lineTo(halfW - 5, -2);
+      ctx.lineTo(halfW + 42, 62 * zoom);
+      ctx.lineTo(-halfW - 42, 62 * zoom);
+      ctx.closePath();
+      ctx.fill();
+      ctx.restore();
+    }
+
+    // Arco de neon contornando o portal (filete interno claro + linha principal)
+    ctx.strokeStyle = 'rgba(235, 252, 255, 0.4)';
+    ctx.lineWidth = 0.9;
+    ctx.beginPath();
+    ctx.moveTo(-halfW + 7.4, -2);
+    ctx.lineTo(-halfW + 7.4, -archH * 0.615);
+    ctx.arc(0, -archH * 0.615, halfW - 7.4, Math.PI, 0, false);
+    ctx.lineTo(halfW - 7.4, -2);
+    ctx.stroke();
     ctx.strokeStyle = mainColor;
     ctx.lineWidth = 2.4;
     ctx.beginPath();
@@ -975,6 +1084,13 @@ function drawSidePortalsOnWall(ctx, map, state, cameraX, cameraY, viewW, viewH, 
     ctx.strokeStyle = mainColor;
     ctx.lineWidth = 1.2;
     ctx.strokeRect(-signW / 2, signY, signW, 20);
+    // Parafusos e LED de status da placa eletrônica
+    ctx.fillStyle = '#3b5578';
+    for (const cornerX of [-signW / 2 + 3.4, signW / 2 - 3.4]) {
+      ctx.beginPath(); ctx.arc(cornerX, signY + 3.2, 1.15, 0, Math.PI * 2); ctx.fill();
+    }
+    ctx.fillStyle = locked ? '#ff6b6b' : '#57ff9a';
+    ctx.beginPath(); ctx.arc(-signW / 2 + 7.2, signY + 14.8, 1.35, 0, Math.PI * 2); ctx.fill();
 
     ctx.textAlign = 'center';
     ctx.font = 'bold 7px monospace';
@@ -1031,9 +1147,9 @@ function drawReflectiveFloor(ctx, map, state, cameraX, cameraY, viewW, viewH, zo
     const color = locked ? '#ff6b6b' : (theme?.cor ?? '#35E6D3');
     const pulse = 0.75 + 0.25 * Math.sin(t * 3.8 + p.x);
 
-    const pGrad = ctx.createRadialGradient(sx, wallBaseY + 6 * zoom, 4, sx, wallBaseY + floorH * 0.45, 68 * zoom);
-    pGrad.addColorStop(0, hexToRgba(color, 0.38 * pulse));
-    pGrad.addColorStop(0.55, hexToRgba(color, 0.12 * pulse));
+    const pGrad = ctx.createRadialGradient(sx, wallBaseY + 6 * zoom, 4, sx, wallBaseY + floorH * 0.45, 78 * zoom);
+    pGrad.addColorStop(0, hexToRgba(color, 0.46 * pulse));
+    pGrad.addColorStop(0.55, hexToRgba(color, 0.15 * pulse));
     pGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
     ctx.fillStyle = pGrad;
     ctx.fillRect(sx - 75 * zoom, wallBaseY, 150 * zoom, floorH);
@@ -1119,12 +1235,11 @@ function drawMirroredEntitiesOnFloor(ctx, state, cameraX, cameraY, viewW, viewH,
 
   // NPCs espelhados
   for (const actor of state.actors ?? []) {
-    const ds = svDepthScale(actor.y);
     const { x, y } = svToScreen(actor.x, actor.y, cameraX, cameraY, viewW, viewH, zoom);
     if (x < -120 || x > viewW + 120) continue;
     ctx.save();
     ctx.translate(x, y + 2 * zoom);
-    ctx.scale(zoom * ds, -zoom * ds * 0.42);
+    ctx.scale(zoom, -zoom * 0.42);
     ctx.globalAlpha = 0.18;
     if (callbacks.drawActor) callbacks.drawActor(actor, 0, 0);
     ctx.restore();
@@ -1132,11 +1247,10 @@ function drawMirroredEntitiesOnFloor(ctx, state, cameraX, cameraY, viewW, viewH,
 
   // Player espelhado no piso reflexivo
   if (state.player && callbacks.drawPlayer) {
-    const ds = svDepthScale(state.player.y);
     const { x, y } = svToScreen(state.player.x, state.player.y, cameraX, cameraY, viewW, viewH, zoom);
     ctx.save();
     ctx.translate(x, y + 2 * zoom);
-    ctx.scale(zoom * ds, -zoom * ds * 0.42);
+    ctx.scale(zoom, -zoom * 0.42);
     ctx.globalAlpha = 0.20;
     callbacks.drawPlayer(state.player, 0, 0);
     ctx.restore();
@@ -1158,7 +1272,7 @@ export function drawSideObject(ctx, obj, cameraX, cameraY, viewW, viewH, zoom, t
   const rows = obj.sheetRows ?? 4;
   const col = obj.frame?.col ?? 0;
   const row = obj.frame?.row ?? 0;
-  const scale = (obj.scale ?? 0.45) * zoom * svDepthScale(obj.y);
+  const scale = (obj.scale ?? 0.45) * zoom;
 
   const fr = getFrame(image, col, row, cols, rows);
   const sourceCanvas = fr?.cell ?? image;
@@ -1394,29 +1508,25 @@ export function renderSideViewMap(ctx, map, state, cameraX, cameraY, viewW, view
     if (entry.kind === 'object' || entry.kind === 'collectible') {
       drawSideObject(ctx, entry.item, cameraX, cameraY, viewW, viewH, zoom, time, false);
     } else if (entry.kind === 'actor') {
-      const ds = svDepthScale(entry.item.y);
       const { x, y } = svToScreen(entry.item.x, entry.item.y, cameraX, cameraY, viewW, viewH, zoom);
       ctx.save();
       ctx.translate(x, y);
-      ctx.scale(zoom * ds, zoom * ds);
+      ctx.scale(zoom, zoom);
       if (callbacks.drawActor) {
         callbacks.drawActor(entry.item, 0, 0);
       }
       ctx.restore();
       // Mantém a altura do sprite coerente com a escala de profundidade
       // para o rótulo flutuante (drawLabels multiplica por zoom).
-      if (entry.item._topo) entry.item._topo = Math.round(entry.item._topo * ds);
     } else if (entry.kind === 'player') {
-      const ds = svDepthScale(entry.item.y);
       const { x, y } = svToScreen(entry.item.x, entry.item.y, cameraX, cameraY, viewW, viewH, zoom);
       ctx.save();
       ctx.translate(x, y);
-      ctx.scale(zoom * ds, zoom * ds);
+      ctx.scale(zoom, zoom);
       if (callbacks.drawPlayer) {
         callbacks.drawPlayer(entry.item, 0, 0);
       }
       ctx.restore();
-      if (entry.item._topo) entry.item._topo = Math.round(entry.item._topo * ds);
 
       // Anel de scan / diagnóstico (tecla R) em perspectiva side-view
       if (entry.item.ability?.scanning > 0) {

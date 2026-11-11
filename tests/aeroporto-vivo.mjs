@@ -10,7 +10,7 @@ import { readFileSync, existsSync } from 'node:fs';
 import { state } from '../js/game/state.js';
 import { loadMap } from '../js/game/map-manager.js';
 import { camera, view } from '../js/engine/camera.js';
-import { renderSideViewMap, svDepthScale } from '../js/engine/side-view.js';
+import { renderSideViewMap } from '../js/engine/side-view.js';
 import { getArchetypeAbilities } from '../js/game/abilities.js';
 
 // ---- DOM falso mínimo (permite até <canvas> fora da tela) ----
@@ -60,10 +60,11 @@ state.progress = {
   inventory: [],
 };
 
-// ---- 1) Escala por profundidade monotônica ----
-assert(svDepthScale(2.0) < svDepthScale(4.5), 'quem está no fundo deve encolher');
-assert(svDepthScale(4.5) < svDepthScale(7.15), 'quem está na frente deve crescer');
-assert(svDepthScale(2.0) >= 0.75 && svDepthScale(7.15) <= 1.2, 'escala contida');
+// ---- 1) Escala de profundidade removida por decisão de design (nov/2026):
+//        todos os atores e objetos desenham em escala constante.
+import { readFileSync as _rf } from 'node:fs';
+assert(!_rf(new URL('../js/engine/side-view.js', import.meta.url), 'utf8').includes('svDepthScale'),
+  'svDepthScale não deve mais existir no side-view');
 
 // ---- 2) Mapa carrega com a mobília nova e os NPCs ambientais ----
 const ok = await loadMap('hub_aeroporto', 'inicio');
@@ -71,9 +72,17 @@ assert(ok, 'falha ao carregar hub_aeroporto');
 const map = state.world.currentMap;
 const objIds = (map.objects ?? []).map(o => o.id);
 for (const id of ['vending_aero_01', 'planta_aero_01', 'planta_aero_02', 'planta_aero_03',
-                  'lamp_aero_01', 'lamp_aero_02', 'cone_aero_01', 'barreira_aero_01']) {
+                  'lamp_aero_01', 'lamp_aero_02', 'cone_aero_01', 'barreira_aero_01',
+                  'carrinho_aero_01', 'totem_holo_01', 'totem_holo_02']) {
   assert(objIds.includes(id), `objeto ${id} ausente no mapa`);
 }
+// Arte IA nova registrada nos sprites certos
+const aeroSprites = (map.objects ?? []).filter(o => String(o.sprite).startsWith('aero_')).map(o => o.sprite);
+for (const sprite of ['aero_painel_partidas', 'aero_carrinho_bagagem', 'aero_totem_holo', 'aero_planta_aliena']) {
+  assert(aeroSprites.includes(sprite), `sprite IA ${sprite} não usado no mapa`);
+}
+assert(!(map.objects ?? []).some(o => o.id === 'painel_partidas' && o.sprite !== 'aero_painel_partidas'),
+  'painel de partidas deve usar a arte nova');
 const viajante = map.actors.find(a => a.id === 'viajante_aeroporto');
 assert(viajante?.tipo === 'viajante_ambiental', 'viajante ambiental ausente');
 assert(Array.isArray(viajante.visitorRoute) && viajante.visitorRoute.length === 2, 'viajante sem rota própria');

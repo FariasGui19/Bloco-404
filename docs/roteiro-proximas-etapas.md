@@ -1,5 +1,34 @@
 # Próximas Etapas — Bloco 404
 
+## Concluído na 0.11.0 — Lapidação do Aeroporto e Salas de Missão
+
+1. **Escala por profundidade aposentada** — o pseudo-3D de W/S que encolhia/
+   crescia sprites foi removido do side-view (player, NPCs, objetos, reflexos);
+   todos desenham em escala constante.
+2. **Aeroporto ainda mais cenográfico** — novos sprites gerados por IA:
+   painel de partidas split-flap interativo (substitui o placeholder),
+   carrinho de bagagem no desembarque, dois totens holográficos de anúncios
+   (GATE 00 e Docas) e plantas alienígenas ladeando as Docas. L-9 patrulha
+   em escala 1.7× (antes destoava do porte da estação).
+3. **Pórticos dimensionais repaginados** — moldura com gradiente metálico,
+   chanfro interno, soleira estendida e rebites; anel rúnico orbital com 12
+   glifos; arcos de energia saltando raros (semente temporal); feixe de luz
+   dimensional jorrando para a passarela; placa eletrônica com parafusos e
+   LED de status; filete de neon interno; reflexo de piso mais forte; vórtice
+   com alpha corrigido por luminância (B2 âmbar não estoura mais no branco).
+4. **Salas de Missão Iniciais reconstruídas** — as quatro salas
+   (Bio-Forja/Domínio/Maré/Núcleo) ganharam planta baixa própria e aberta
+   (spawn sempre em chão livre — antes nascia dentro de parede), registro de
+   missão com o protocolo R → Q, obstáculo único por arquétipo com arte
+   gerada por IA (grade viva, lacre de frequência, fluxo contido, malha
+   cinética), Fragmento de Eco realmente coletável (antes a flag exigida
+   nunca era gravada) e portal de retorno ao Aeroporto. Ver
+   `tests/salas-arquetipos.mjs`.
+5. **Gates + legíveis** — prompt contextualizado em três estados
+   (precisa diagnosticar / pronto para agir / bloqueado).
+
+Versão `0.11.0-salas-missao`.
+
 ## Concluído na 0.10.0 — Aeroporto Central 2.5D Vivo
 
 Registro completo, com a análise do que a implementação side-view entregou e o
@@ -28,7 +57,7 @@ Em resumo:
    headless e falha se qualquer coordenada NaN/Infinity chegar ao canvas.
    90 testes passando.
 
-Versão `0.10.0-aeroporto`.
+Versão `0.10.0-aeroporto` (histórico).
 
 ## Concluído
 - Saguão (concluído)

@@ -299,6 +299,46 @@ await loadSprites([
     id: 'aeroporto_planeta_vermelho',
     src: 'assets/sprites/aeroporto/planeta-vermelho.png',
   },
+  // ---- CENOGRAFIA NOVA DO AEROPORTO (gerada por IA) ----
+  // (assets/source-art/aeroporto -> tools/preparar-salas-aeroporto.py)
+  {
+    id: 'aero_painel_partidas',
+    src: 'assets/sprites/aeroporto/painel-partidas.png',
+  },
+  {
+    id: 'aero_carrinho_bagagem',
+    src: 'assets/sprites/aeroporto/carrinho-bagagem.png',
+  },
+  {
+    id: 'aero_totem_holo',
+    src: 'assets/sprites/aeroporto/totem-holo.png',
+  },
+  {
+    id: 'aero_planta_aliena',
+    src: 'assets/sprites/aeroporto/planta-aliena.png',
+  },
+  // ---- SALAS DE MISSÃO: máquina da Bio-Forja + portões de barreira (gerados por IA) ----
+  // (assets/source-art/salas -> tools/preparar-salas-aeroporto.py)
+  {
+    id: 'sala_bio_maquina',
+    src: 'assets/sprites/salas/maquina-bio.png',
+  },
+  {
+    id: 'sala_bio_grade',
+    src: 'assets/sprites/salas/grade-bio.png',
+  },
+  {
+    id: 'sala_dominio_lacre',
+    src: 'assets/sprites/salas/lacre-dominio.png',
+  },
+  {
+    id: 'sala_mare_fluxo',
+    src: 'assets/sprites/salas/fluxo-mare.png',
+  },
+  {
+    id: 'sala_nucleo_malha',
+    src: 'assets/sprites/salas/malha-nucleo.png',
+  },
   {
     id: 'metro_rail_kit',
     src: 'assets/sprites/tiles/metro-rail-kit.png',

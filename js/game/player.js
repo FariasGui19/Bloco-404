@@ -22,9 +22,9 @@ import {
 
 import { moveWithCollision } from './collision.js';
 import {
-  criarEstadoNado, atualizarNado, multiplicadorVelocidade,
-  podeNadar, destinoValido, NADO, moverNaAgua, ganharRespeito,
+  criarEstadoNado, atualizarNado, podeNadar, NADO, moverNaAgua, aguaDoDegrau,
 } from './nado.js';
+import { garantirArvore, direcaoDaAreia, DEGRAUS } from './nado-arvore.js';
 import { getCoastFieldForMap } from '../engine/coast-field.js';
 import { damagePlayer } from './health.js';
 import { getDerivedStats } from './rpg.js';
@@ -122,16 +122,33 @@ export function updatePlayer(dt) {
   // ---- NADO ----
   // `nado` vive no player (e não no mapa) porque o fôlego e a propulsão
   // são do personagem: trocar de mapa não devolve ar.
-  player.nado ??= criarEstadoNado();
+  // A ÁRVORE DE NADO mora no progresso (vai no save): o degrau decide até
+  // onde o corpo entra no mar, quanto desce e quanto ar carrega.
+  const arvore = map.aguaPraia ? garantirArvore(state.progress) : null;
+  if (!player.nado) {
+    player.nado = criarEstadoNado();
+    // O respeito do mar nunca desce — nem ao recarregar o jogo.
+    if (arvore) player.nado.respeito.valor = Math.max(0, Math.min(1, arvore.respeito ?? 0));
+  }
   const nado = player.nado;
   const campoCosta = getCoastFieldForMap(map);
+  // ESPAÇO = mergulhar (segurar). Em terra a tecla não faz nada.
+  const querMergulhar = !!(input.keys[' '] || input.keys['space']);
   const efeitoNado = atualizarNado(nado, {
     map, x: player.x, y: player.y, field: campoCosta, dt,
     tempo: performance.now() / 1000,
     // Ressaca deixa a correnteza mais forte e o fôlego mais curto: o
     // clima não é só visual, ele muda como o mar se comporta.
     clima: state.clima,
+    arvore,
+    mergulhar: querMergulhar,
+    mareAstral: state.progress?.archetype === 'mare_astral',
   });
+  if (arvore && nado.respeito.valor > (arvore.respeito ?? 0)) arvore.respeito = nado.respeito.valor;
+  // Onde este degrau pode nadar (sem árvore: mar inteiro, como antes).
+  const agua = aguaDoDegrau(arvore ? arvore.nivel : null);
+  // Eventos do nado para quem desenha HUD/mensagem (o main lê e limpa).
+  player.nadoEventos ??= {};
 
   const radius = CONFIG.PLAYER_RADIUS;
   // `speed` está em TILES/S (CONFIG.PLAYER_SPEED = 4.0). Em terra o passo
@@ -152,9 +169,12 @@ export function updatePlayer(dt) {
     const clicked = input.click;
     input.click = null;
 
-    if (podeNadar(map, clicked.x, clicked.y)) {
+    if (agua(map, clicked.x, clicked.y)) {
       // Clique no mar: nada até lá. `nearestStandable` só conhece terra.
       player.target = { x: clicked.x, y: clicked.y };
+    } else if (podeNadar(map, clicked.x, clicked.y)) {
+      // Mar além do degrau: o clique não vira caminho (e o HUD explica).
+      player.nadoEventos.limite = true;
     } else {
       const spot = nearestStandable(
         map,
@@ -208,19 +228,62 @@ export function updatePlayer(dt) {
   // coração da locomoção aquática — e é o que o `moveWithCollision` não
   // sabe fazer, porque lá cada passo é instantâneo.
   let moved;
-  if (nado.ativo) {
-    const dir = keyboardDirection
+  // Comando de direção neste quadro (a prova de boiar exige NENHUM).
+  player.nadoParado = !keyboardDirection && !player.target;
+  // MEDO (degrau 0 no mar) e FUNDO DEMAIS (além do alcance do degrau): o
+  // corpo não obedece, volta sozinho para a areia. O caminho de volta usa
+  // o mar inteiro para nunca ficar preso atrás do próprio limite, e o
+  // recuo continua por um instante em terra — senão o operador pararia
+  // com o calcanhar na água e o susto se repetiria no quadro seguinte.
+  const devolvendo = nado.medo || nado.foraDoAlcance;
+  if (devolvendo) {
+    const volta = direcaoDaAreia(map, player.x, player.y);
+    if (volta.x || volta.y) player.recuoNado = { x: volta.x, y: volta.y, tempo: nado.medo ? .32 : .12 };
+    player.target = null;
+  }
+  const recuo = player.recuoNado;
+  if (devolvendo || nado.ativo) {
+    let dir = keyboardDirection
       ? { x: keyboardDirection.x, y: keyboardDirection.y }
       : player.target
         ? { x: player.target.x - player.x, y: player.target.y - player.y }
         : { x: 0, y: 0 };
-    const passo = moverNaAgua(nado, dt, dir.x, dir.y, speed);
-    moved = moveWithCollision(map, player, passo.dx, passo.dy, radius, podeNadar);
-    // Respeito do mar sobe nadando fundo (a curva de progressão).
-    if (nado.submerso) ganharRespeito(nado.respeito, NADO.respeitoPorSegundo * dt);
+    if (devolvendo && recuo) dir = recuo;
+    const passo = moverNaAgua(nado, dt, dir.x, dir.y, devolvendo ? speed / DEGRAUS[nado.nivel ?? 4].velocidade * .8 : speed);
+    const antesX = player.x, antesY = player.y;
+    moved = moveWithCollision(map, player, passo.dx, passo.dy, radius, devolvendo ? podeNadar : agua);
+    // Bateu no limite do degrau: queria ir, a água existe, o degrau não deixa.
+    if (!devolvendo && (dir.x || dir.y)) {
+      const m = Math.hypot(dir.x, dir.y) || 1;
+      const fx = player.x + dir.x / m * .45, fy = player.y + dir.y / m * .45;
+      const andou = Math.hypot(player.x - antesX, player.y - antesY);
+      if (andou < Math.hypot(passo.dx, passo.dy) * .5 && podeNadar(map, fx, fy) && !agua(map, fx, fy)) {
+        player.nadoEventos.limite = true;
+        // Sem embalo contra a boia: o corpo não fica "empurrando o limite".
+        nado.vx *= .6; nado.vy *= .6;
+      }
+    }
+  } else if (recuo && recuo.tempo > 0) {
+    // Já em terra, ainda recuando do susto: uns passos para trás.
+    recuo.tempo -= dt;
+    const passo = speed * .7 * dt;
+    // (com o predicado do mar: quem está na beira só sai dela por ele)
+    moved = moveWithCollision(map, player, recuo.x * passo, recuo.y * passo, radius, podeNadar);
+    player.target = null;
+    dx = recuo.x * passo; dy = recuo.y * passo;
+    if (recuo.tempo <= 0) player.recuoNado = null;
   } else {
-    moved = moveWithCollision(map, player, dx, dy, radius, podeNadar);
+    const antesX = player.x, antesY = player.y;
+    moved = moveWithCollision(map, player, dx, dy, radius, agua);
+    // Em terra, andando para um mar que o degrau não alcança.
+    if ((dx || dy) && arvore && Math.hypot(player.x - antesX, player.y - antesY) < Math.hypot(dx, dy) * .5) {
+      const m = Math.hypot(dx, dy) || 1;
+      const fx = player.x + dx / m * .55, fy = player.y + dy / m * .55;
+      if (podeNadar(map, fx, fy) && !agua(map, fx, fy)) player.nadoEventos.limite = true;
+    }
   }
+  if (efeitoNado.susto) player.nadoEventos.susto = true;
+  if (efeitoNado.engoliuAgua) player.nadoEventos.engoliu = true;
 
   player.moving = moved;
   if (moved) trackDistance(state.progress, Math.hypot(player.x - beforeX, player.y - beforeY));
@@ -241,4 +304,7 @@ export function updatePlayer(dt) {
     player.afogamentoAcumulado = 0;
     damagePlayer(player, state.progress, NADO.danoAfogamento, 'afogamento');
   }
+  // O susto de quem tem medo da água custa pouco, mas custa: é o que
+  // manda o operador procurar a poça em vez de insistir no mar.
+  if (efeitoNado.susto) damagePlayer(player, state.progress, NADO.danoSusto, 'medo_da_agua');
 }

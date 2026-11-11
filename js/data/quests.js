@@ -71,6 +71,37 @@ export const QUESTS = Object.freeze({
       flags: Object.freeze({ mare_salva_vidas_concluida: true }),
     }),
   }),
+  // -------------------------------------------------------------------
+  // APRENDER A NADAR — a árvore de nado em cinco degraus
+  //
+  // Ninguém chega à praia sabendo nadar. Cada objetivo é uma PROVA feita
+  // no mundo (`nado-arvore.js` emite `nado_degrau` com o id da prova):
+  // um objetivo por prova, contagem 1 — o motor é incremental, mas aqui
+  // "prova feita" é absoluto e não pode contar duas vezes.
+  // Vale para qualquer módulo (e para quem ainda não tem módulo).
+  // -------------------------------------------------------------------
+  aprender_a_nadar: Object.freeze({
+    id: 'aprender_a_nadar',
+    title: 'APRENDER A NADAR',
+    giver: 'O MAR',
+    kind: 'secundária',
+    description: 'O mar assusta quem nunca entrou nele. Comece pela Poça da Cascata, a oeste da estação: boiar, prender o ar, atravessar um canal e, por fim, tocar o fundo.',
+    objectives: Object.freeze([
+      Object.freeze({ type: 'nado_degrau', target: 'boiar', count: 1, label: 'Boiar parado na Poça da Cascata' }),
+      Object.freeze({ type: 'nado_degrau', target: 'respirar', count: 1, label: 'Cabeça submersa por 4 s (segure ESPAÇO)' }),
+      Object.freeze({ type: 'nado_degrau', target: 'travessia', count: 1, label: 'Atravessar um canal a nado' }),
+      Object.freeze({ type: 'nado_degrau', target: 'fundo', count: 1, label: 'Tocar o fundo do azul-escuro' }),
+    ]),
+    // Secundária e curta (uns três minutos): rende um pouco mais que a
+    // calibração de campo (60), bem menos que uma rota principal (140+).
+    // Com 160 ela pulava o operador do nível 1 para o 4 de uma vez.
+    rewards: Object.freeze({
+      xp: 70,
+      points: 1,
+      items: Object.freeze(['boia_de_cortica']),
+      flags: Object.freeze({ aprendeu_a_nadar: true }),
+    }),
+  }),
 });
 
 export function getQuest(id) {

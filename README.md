@@ -59,6 +59,20 @@ pegar export faltando antes de abrir o navegador.
 - **Ultimate (`F`)** em duas camadas: a base de cada arquétipo e a sobrecarga da
   ferramenta instalada (corte, impacto, onda, avanço, guarda ou sintonia), com
   custo alto de energia e recarga longa.
+- **Praia 11.0 — arquipélago com relevo** (falésias altas com topo de musgo,
+  cascatas com poço, arco de pedra, pilares, ilhotas e rochas com espuma), mar
+  turquesa com cáusticas e três linhas de espuma que escurece até o azul
+  profundo. Tudo é objeto de mapa dimensionado por `larguraPx`
+  ([`js/data/relevo-praia.js`](js/data/relevo-praia.js)); a grade aprovada da
+  praia não mudou.
+- **Árvore de nado em 5 degraus** — MEDO DA ÁGUA → BOIAR → FÔLEGO → TRAVESSIA →
+  MARÉ PLENA. Começa-se com medo do mar e aprende-se na Poça da Cascata; cada
+  degrau abre mais mar, mais ar e mais fundura
+  ([`js/game/nado-arvore.js`](js/game/nado-arvore.js)). `ESPAÇO` (segurar)
+  mergulha, `SHIFT` arranca. O limite de cada degrau é um cordão de boias, e o
+  corpo nada deitado, com folha própria por traje
+  ([`js/engine/nado-desenho.js`](js/engine/nado-desenho.js)). Detalhes em
+  [`docs/praia-11.0-plano.md`](docs/praia-11.0-plano.md).
 - **Caminho 0–5** por arquétipo no Códex, com liberação por nível: Q/R no nível 1,
   ferramenta no 2, Ultimate no 3.
 - **HUD em coluna única** (mapa, módulo, vitais, habilidades e missão), sem

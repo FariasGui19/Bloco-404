@@ -46,9 +46,16 @@ for (const map of maps) {
 const enorme = { x0: 0, y0: 0, x1: praia.aguaPraia[0].length - 1, y1: praia.aguaPraia.length - 1 };
 const pequeno = { x0: 0, y0: 0, x1: 9, y1: 9 };
 
-const t2 = performance.now();
-const arcosCheio = foamArcs(praia.aguaPraia, enorme, 1.7, 96);
-const msCheio = performance.now() - t2;
+// Melhor de 5: uma medida só pegava a pausa do coletor de lixo deixada pela
+// montagem do mar logo acima (a textura com moldura aloca alguns MB) e o
+// teste oscilava entre 0,4 ms e 5 ms sem o código mudar. O contrato é o
+// custo da FUNÇÃO, não o do GC.
+let arcosCheio = null, msCheio = Infinity;
+for (let i = 0; i < 5; i++) {
+  const t2 = performance.now();
+  arcosCheio = foamArcs(praia.aguaPraia, enorme, 1.7, 96);
+  msCheio = Math.min(msCheio, performance.now() - t2);
+}
 const arcosPerto = foamArcs(praia.aguaPraia, pequeno, 1.7, 96);
 
 assert(arcosCheio.length <= 96, `orçamento de ondas estourado: ${arcosCheio.length}`);

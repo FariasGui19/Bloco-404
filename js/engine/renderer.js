@@ -43,6 +43,11 @@ import { getDominioWalk, getDominioAttack } from '../data/dominio-animation.js';
 import { getBasicAttackPose } from '../data/basic-attack-poses.js';
 import { listCombatFeedback } from '../game/combat-feedback.js';
 import { state } from '../game/state.js';
+import { desenharCascata, desenharRespingo, desenharAnelEspuma } from './cascata.js';
+import { desenharPocas } from './pocas.js';
+import { desenharNadador, desenharBoias, desenharMarcadorDeTreino } from './nado-desenho.js';
+import { lerArvore, boiasDoLimite } from '../game/nado-arvore.js';
+import { cabecaSubmersa } from '../game/nado.js';
 
 const HW = CONFIG.TILE_W / 2;
 const HH = CONFIG.TILE_H / 2;
@@ -93,11 +98,11 @@ export function render(map, state) {
     shakeX = Math.sin(shake.timeLeft * 143) * power;
     shakeY = Math.cos(shake.timeLeft * 117) * power * .6;
   }
-  ctx.setTransform(
-    z, 0, 0, z,
-    (view.w / 2 - camera.x * camera.zoom + shakeX) * dpr,
-    (view.h / 2 - camera.y * camera.zoom + shakeY) * dpr
-  );
+  mundoZ = z;
+  mundoTx = (view.w / 2 - camera.x * camera.zoom + shakeX) * dpr;
+  mundoTy = (view.h / 2 - camera.y * camera.zoom + shakeY) * dpr;
+  ctx.setTransform(z, 0, 0, z, mundoTx, mundoTy);
+  prepararEscalados(z);
 
   updateVisibleRange(map);
 
@@ -111,6 +116,13 @@ export function render(map, state) {
       drawBeachSea(map);
       drawVidaAquatica(map, state);
       drawBeachRipples(map);
+      // Poças de treino: água por cima da areia (zona, não célula da grade).
+      desenharPocas(ctx, map, performance.now() / 1000, HW, HH);
+      // Cordão de boias: o limite do degrau de nado, só perto do operador.
+      const nivelNado = lerArvore(state.progress).nivel;
+      if (nivelNado === 1 || nivelNado === 2) {
+        desenharBoias(ctx, boiasDoLimite(map, nivelNado), state.player, range, performance.now() / 1000, HW, HH);
+      }
     }
     drawFloors(map);
     drawHazards(state.hazards);
@@ -143,6 +155,7 @@ export function render(map, state) {
   // Chão antes de tudo: as fendas ficam embaixo de objetos e personagens.
   drawWorldScars(state);
   drawWorld(map, state);
+  drawMarcadorDeTreino(map, state);
   drawBasicAttack(state.player);
   drawAbilityEffects(state);
   drawUltimateCharge(state);
@@ -406,13 +419,49 @@ function drawFloors(map) {
 // degradê, bancos submersos, cáusticas, espuma da margem e linha de espuma
 // recuada vêm todos dela. Antes isso era recalculado pixel a pixel no
 // primeiro frame e as ondas/espuma eram redesenhadas a cada quadro.
+// FOLGA DE DESEMPENHO: efeitos de enfeite (a luz que balança no mar) só
+// existem enquanto a máquina segura a taxa de quadros. Mede o intervalo
+// real entre quadros (média móvel) e liga/desliga com histerese; se o
+// enfeite derrubar a taxa duas vezes, fica desligado até recarregar.
+const folga = { dt: 16.7, ultimo: 0, nivel: 0, alvo: 1, quedas: 0 };
+function medirFolga() {
+  const agora = performance.now();
+  if (folga.ultimo) {
+    const dt = Math.min(80, agora - folga.ultimo);
+    folga.dt += (dt - folga.dt) * .04;
+    if (folga.quedas >= 2) folga.alvo = 0;
+    else if (folga.dt > 23 && folga.alvo === 1) { folga.alvo = 0; if (folga.nivel > .5) folga.quedas++; }
+    else if (folga.dt < 19 && folga.alvo === 0) folga.alvo = 1;
+    // Sobe devagar (2 s), desce depressa (0,4 s).
+    const passo = dt / 1000 * (folga.alvo > folga.nivel ? .5 : 2.5);
+    folga.nivel += Math.max(-passo, Math.min(passo, folga.alvo - folga.nivel));
+  }
+  folga.ultimo = agora;
+  return folga.nivel;
+}
+export function nivelDeFolga() { return folga.nivel; }
+
 function drawBeachSea(map) {
   const sea = getSeaCanvas(map);
   if (!sea) return;
+  const m = sea.margem ?? 0;
+  const cols = map.aguaPraia[0].length + m * 2, lines = map.aguaPraia.length + m * 2;
   ctx.save();
   ctx.transform(HW, HH, -HW, HH, 0, 0);
   ctx.imageSmoothingEnabled = true;
-  ctx.drawImage(sea.canvas, 0, 0, map.aguaPraia[0].length, map.aguaPraia.length);
+  ctx.drawImage(sea.canvas, -m, -m, cols, lines);
+  // LUZ QUE BALANÇA: a rede de cáusticas já vem assada no mar (custo zero).
+  // Com folga, uma segunda rede desliza devagar por cima dela — as duas se
+  // cruzando é o que faz a água "dançar". É UM drawImage a mais, de uma
+  // textura pronta; sem folga, não é desenhada.
+  const nivel = medirFolga();
+  if (sea.causticas && nivel > .02) {
+    const t = performance.now() / 1000;
+    ctx.globalAlpha = nivel * (.34 + Math.sin(t * .8) * .06);
+    ctx.drawImage(sea.causticas,
+      -m + .43 + Math.sin(t * .27) * .22, -m + .31 + Math.cos(t * .21) * .18, cols, lines);
+    ctx.globalAlpha = 1;
+  }
   ctx.restore();
 }
 
@@ -572,7 +621,8 @@ function drawVidaAquatica(map, state) {
   const t = performance.now() / 1000;
   const player = state.player;
   const nado = player?.nado;
-  const submerso = !!nado?.ativo && nado.profundidade > 1.25;
+  // Cabeça na água (o gesto de mergulhar): é o que abre os raios de sol.
+  const submerso = cabecaSubmersa(nado);
 
   // Atualiza simulação uma vez por frame (não por item visível).
   atualizarCardumes(vida.cardumes, player ?? { x: 0, y: 0 }, 1 / 60, submerso);
@@ -751,6 +801,80 @@ function drawVidaAquatica(map, state) {
   ctx.restore();
 }
 
+// COSTÃO ROCHOSO: a ponta de pedra é UM bloco de basalto, não um piso de
+// ladrilhos. A altura vem de um ruído largo (platôs de 2–3 células com
+// degraus entre eles) e a cor varia devagar, então as células se fundem;
+// as faces só aparecem onde a pedra da frente é mais baixa ou é mar.
+// Desenho puro (um losango, até duas faces e três riscos por célula).
+function alturaCostao(x, y) {
+  const n = Math.sin(x * .9 + y * .35) + Math.sin(y * .8 - x * .25 + 1.7);
+  return 8 + Math.round((n + 2) * 1.4) * 3;
+}
+
+function drawCostao(x, y, tx, ty, map) {
+  const eh = (i, j) => Boolean(map.costao[`${i},${j}`]);
+  const alt = alturaCostao(x, y);
+  const topo = ty - alt;
+  const r = hash(x, y), r2 = hash(x + 31, y + 17);
+  const tom = Math.sin(x * .55 - y * .4) * 5 + Math.sin(x * .2 + y * .7 + 2) * 4;
+
+  // Faces da frente: até a pedra vizinha (se for mais baixa) ou até o mar.
+  const quedaSO = eh(x, y + 1) ? alt - alturaCostao(x, y + 1) : alt + 3;
+  const quedaSE = eh(x + 1, y) ? alt - alturaCostao(x + 1, y) : alt + 3;
+  if (quedaSO > 0) {
+    quad(tx - HW - .5, topo + HH, tx, topo + TH, tx, topo + TH + quedaSO, tx - HW - .5, topo + HH + quedaSO,
+      tint('#55504a', tom * .6), null);
+  }
+  if (quedaSE > 0) {
+    quad(tx, topo + TH, tx + HW + .5, topo + HH, tx + HW + .5, topo + HH + quedaSE, tx, topo + TH + quedaSE,
+      tint('#403c37', tom * .6), null);
+  }
+  // Topo, meio pixel maior que a célula: vizinhas do mesmo platô se fundem.
+  quad(tx, topo - .6, tx + HW + 1, topo + HH, tx, topo + TH + .6, tx - HW - 1, topo + HH,
+    tint('#7b756b', tom + r * 4 - 2), null);
+
+  // Aresta gasta (clara) onde a laje acaba num degrau.
+  if (quedaSO > 0 || quedaSE > 0) {
+    ctx.strokeStyle = 'rgba(214,206,190,.34)';
+    ctx.lineWidth = 1.2;
+    ctx.beginPath();
+    if (quedaSO > 0) { ctx.moveTo(tx - HW, topo + HH); ctx.lineTo(tx, topo + TH); }
+    if (quedaSE > 0) { ctx.moveTo(tx, topo + TH); ctx.lineTo(tx + HW, topo + HH); }
+    ctx.stroke();
+  }
+  // Rachadura que atravessa a célula (sai e chega em bordas diferentes).
+  ctx.strokeStyle = 'rgba(38,34,30,.42)';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(tx - HW * (.75 - r * .5), topo + HH * (.75 + r * .5));
+  ctx.lineTo(tx + HW * (r2 * .4 - .2), topo + HH * (.7 + r2 * .6));
+  ctx.lineTo(tx + HW * (.3 + r * .45), topo + HH * (1.3 - r2 * .5));
+  ctx.stroke();
+  // Mancha clara de pedra lavada e musgo em algumas lajes.
+  ctx.fillStyle = 'rgba(160,152,138,.3)';
+  ctx.beginPath();
+  ctx.ellipse(tx + (r2 - .5) * HW * .8, topo + HH * (.75 + r * .5), HW * (.2 + r * .16), HH * (.2 + r2 * .14), 0, 0, Math.PI * 2);
+  ctx.fill();
+  if (r2 > .58) {
+    ctx.fillStyle = r > .5 ? 'rgba(92,128,54,.6)' : 'rgba(122,140,60,.5)';
+    ctx.beginPath();
+    ctx.ellipse(tx + (r - .5) * HW * .7, topo + HH * (1 + (r2 - .8)), HW * (.2 + r * .14), HH * .24, 0, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  // Espuma no pé das faces que tocam o mar.
+  const g = map.aguaPraia;
+  const mar = (i, j) => { const c = g[j]?.[i]; return c == null || 'YyDdX'.includes(c); };
+  const marSO = mar(x, y + 1), marSE = mar(x + 1, y);
+  if (marSO || marSE) {
+    ctx.strokeStyle = 'rgba(240,255,250,.75)';
+    ctx.lineWidth = 1.8;
+    ctx.beginPath();
+    if (marSO) { ctx.moveTo(tx - HW, ty + HH + 3); ctx.lineTo(tx, ty + TH + 3); }
+    if (marSE) { ctx.moveTo(tx, ty + TH + 3); ctx.lineTo(tx + HW, ty + HH + 3); }
+    ctx.stroke();
+  }
+}
+
 function drawFloorTile(type, x, y, map) {
   const tx = (x - y) * HW;
   const ty = (x + y) * HH;
@@ -761,6 +885,9 @@ function drawFloorTile(type, x, y, map) {
     // O mar contínuo já foi desenhado sob as ilhas e pontes.
     return;
   }
+
+  // Costão: laje de pedra escura com poças de maré (não é placa de sprite).
+  if (map.costao?.[`${x},${y}`]) { drawCostao(x, y, tx, ty, map); return; }
 
   // Placa específica (map.pisos) ou mapa inteiro em placas
   const placas = map.meta?.estiloPiso === 'placas';
@@ -1570,6 +1697,23 @@ function drawWorld(map, state) {
         __slice: { index: i, count: camadas.count },
         depthOffset: offset,
       }));
+    } else if (o.colunas?.count > 1) {
+      // PAREDÃO: uma parede comprida corre ao longo de uma borda, então cada
+      // trecho dela está a uma profundidade diferente. O PNG é desenhado em
+      // TIRAS VERTICAIS, cada uma ordenada pelo ponto do pé onde ela pisa:
+      // quem passa na frente fica na frente, quem nada por trás fica atrás.
+      // As tiras são montadas uma vez por objeto (cenário não se mexe).
+      let tiras = o.__tiras;
+      if (!tiras) {
+        const { count, esq, dir } = o.colunas;
+        tiras = Array.from({ length: count }, (_, i) => ({
+          ...o,
+          __coluna: { index: i, count },
+          depthOffset: esq + (dir - esq) * ((i + .5) / count),
+        }));
+        o.__tiras = tiras;
+      }
+      for (const tira of tiras) drawList.push(tira);
     } else drawList.push(o);
   }
 
@@ -1605,13 +1749,16 @@ function drawWorld(map, state) {
     }
   };
 
+  // Paredão de fundo (`ordem` negativa): a falésia de onde o túnel sai é
+  // desenhada ANTES da fachada, então o pórtico fica encaixado na rocha.
+  for (const o of backList) if ((o.ordem ?? 0) < 0) drawMapObject(o, state);
   // Fachada no extremo do trilho, atrás do trem; é cenográfica, não portal.
   if (map.id === 'ilha_praia_inicial') {
     const rail = backList.find(o => o.id === 'trilho_dimensional_principal');
     if (rail) drawBeachRailTunnel(rail);
   }
   // Camada de fundo (trilho, trem): atrás de tudo, só acima do chão.
-  for (const o of backList) drawMapObject(o, state);
+  for (const o of backList) if ((o.ordem ?? 0) >= 0) drawMapObject(o, state);
 
   let ei = 0;
   for (let d = range.x0 + range.y0; d <= range.x1 + range.y1; d++) {
@@ -2007,6 +2154,9 @@ function getObjectSpriteConfig(spriteId) {
   if (['bio_terminal', 'bio_reator', 'bio_ponte', 'bio_estufa', 'bio_floreira', 'bio_tubos', 'bio_caixa', 'bio_luminaria', 'bio_plataforma', 'bio_margem_canto', 'bio_margem_cano', 'bio_margem_ruina', 'bio_margem_mureta', 'bio_condutor_quebrado', 'bio_condutor_ativo', 'bio_regulador_quebrado', 'bio_regulador_ativo', 'bio_mato_cano', 'bio_mato_ventilacao', 'bio_mato_barris', 'bio_mato_fissura', 'bio_cabeceira', 'bio_distribuidor', 'bio_margem_baixa', 'bio_fundacao'].includes(spriteId)) return { SHEET_COLS: 1, SHEET_ROWS: 1, DEFAULT_SCALE: 1, FEET_ANCHOR_Y: 1 };
   if (['hub_vaso_novo', 'hub_reciclagem', 'hub_carrinho', 'hub_bebedouro'].includes(spriteId)) return { SHEET_COLS: 1, SHEET_ROWS: 1, DEFAULT_SCALE: .25, FEET_ANCHOR_Y: 1 };
   if (spriteId === 'costa_rochosa') return { SHEET_COLS: 4, SHEET_ROWS: 1, DEFAULT_SCALE: 1, FEET_ANCHOR_Y: 1 };
+  // Praia 11: relevo (uma peça por PNG) e os dois atlas extras de flora/rochedo.
+  if (typeof spriteId === 'string' && spriteId.startsWith('relevo_')) return { SHEET_COLS: 1, SHEET_ROWS: 1, DEFAULT_SCALE: 1, FEET_ANCHOR_Y: 1 };
+  if (spriteId === 'costa_rochosa_2' || spriteId === 'vegetacao_tropical_2') return { SHEET_COLS: 8, SHEET_ROWS: 3, DEFAULT_SCALE: 1, FEET_ANCHOR_Y: 1 };
   if (spriteId === 'praia_plataforma_kit') return { SHEET_COLS: 4, SHEET_ROWS: 2, DEFAULT_SCALE: 1, FEET_ANCHOR_Y: 1 };
   if (spriteId === 'vegetacao_tropical') return { SHEET_COLS: 8, SHEET_ROWS: 1, DEFAULT_SCALE: 1, FEET_ANCHOR_Y: 1 };
   if (spriteId === 'metro_props') {
@@ -2235,9 +2385,12 @@ function drawMapObject(object, state) {
     ctx.strokeStyle = '#9fffe3'; ctx.lineWidth = 2;
     ctx.beginPath(); ctx.ellipse(x, y, 12, 5, 0, 0, Math.PI * 2); ctx.stroke();
     ctx.beginPath(); ctx.moveTo(x, y - 4); ctx.lineTo(x, y - 30); ctx.stroke();
-    ctx.fillStyle = '#0c393c'; ctx.fillRect(x - 38, y - 48, 76, 18);
-    ctx.strokeRect(x - 38, y - 48, 76, 18);
-    ctx.fillStyle = '#e1fff1'; ctx.font = 'bold 8px monospace'; ctx.textAlign = 'center';
+    ctx.font = 'bold 8px monospace'; ctx.textAlign = 'center';
+    // A caixa acompanha o texto: nomes longos ("POÇA DA CASCATA") cabem.
+    const meia = Math.max(38, Math.ceil(ctx.measureText(object.routeMarker).width / 2) + 8);
+    ctx.fillStyle = '#0c393c'; ctx.fillRect(x - meia, y - 48, meia * 2, 18);
+    ctx.strokeRect(x - meia, y - 48, meia * 2, 18);
+    ctx.fillStyle = '#e1fff1';
     ctx.fillText(object.routeMarker, x, y - 36);
     ctx.restore(); return;
   }
@@ -2310,6 +2463,74 @@ function drawMapObject(object, state) {
   }
 }
 
+// ---------------------------------------------------------------------
+// SPRITES JÁ NA ESCALA DA TELA
+//
+// A praia tem centenas de objetos pintados em alta resolução e reduzidos
+// na hora (`larguraPx`). Reduzir com filtro a cada quadro é o que mais
+// pesa quando o canvas roda por software (máquina sem aceleração): no
+// perfil da Ilha A eram 25 ms de 58. Com o zoom PARADO, cada recorte é
+// reduzido UMA vez (com o filtro bom) e depois só copiado, pixel a
+// pixel, alinhado ao pixel da tela.
+//
+// Fica no caminho antigo (direto, com filtro): zoom em movimento, peça
+// ampliada, com skew/escalaY, com filtro de estado, ou acima do orçamento
+// de memória. O cache inteiro é descartado quando o zoom muda.
+// ---------------------------------------------------------------------
+const ESCALADOS_MAX_BYTES = 96 * 1024 * 1024;
+const ESCALADOS_POR_QUADRO = 10;       // construções por quadro: sem tranco
+// Até quanto de AMPLIAÇÃO ainda vale guardar (zoom de perto): acima disto
+// a cópia ficaria grande demais e o desenho direto resolve.
+const ESCALADOS_MAX_K = 2.6;
+let mundoZ = 1, mundoTx = 0, mundoTy = 0;
+let escalados = new Map();             // canvas do recorte → Map(chave → canvas)
+let escaladosBytes = 0, escaladosZoom = 0, escaladosNoQuadro = 0;
+let zoomAnterior = 0, quadrosComZoomParado = 0, escaladosAtivo = false;
+
+function prepararEscalados(z) {
+  escaladosNoQuadro = 0;
+  quadrosComZoomParado = Math.abs(z - zoomAnterior) <= z * 1e-6 ? quadrosComZoomParado + 1 : 0;
+  zoomAnterior = z;
+  // O que foi reduzido para outro zoom não serve mais.
+  if (escaladosBytes && Math.abs(z - escaladosZoom) > z * 2e-4) {
+    escalados = new Map();
+    escaladosBytes = 0;
+  }
+  escaladosAtivo = quadrosComZoomParado >= 10;
+  if (escaladosAtivo && !escaladosBytes) escaladosZoom = z;
+}
+
+/** Estado do cache, para os testes e para o painel de debug. */
+export function estadoDosEscalados() {
+  let pecas = 0;
+  for (const porFonte of escalados.values()) pecas += porFonte.size;
+  return { pecas, bytes: escaladosBytes, ativo: escaladosAtivo, zoom: escaladosZoom };
+}
+
+function spriteEscalado(fonte, k, espelhar) {
+  const lw = Math.max(1, Math.round(fonte.width * k));
+  const lh = Math.max(1, Math.round(fonte.height * k));
+  let porFonte = escalados.get(fonte);
+  const chave = espelhar ? -lw : lw;
+  let pronto = porFonte?.get(chave);
+  if (pronto) return pronto;
+  const bytes = lw * lh * 4;
+  if (escaladosNoQuadro >= ESCALADOS_POR_QUADRO || escaladosBytes + bytes > ESCALADOS_MAX_BYTES) return null;
+  pronto = document.createElement('canvas');
+  pronto.width = lw;
+  pronto.height = lh;
+  const g = pronto.getContext('2d');
+  g.imageSmoothingEnabled = true;
+  g.imageSmoothingQuality = 'high';
+  if (espelhar) { g.translate(lw, 0); g.scale(-1, 1); }
+  g.drawImage(fonte, 0, 0, lw, lh);
+  if (!porFonte) { porFonte = new Map(); escalados.set(fonte, porFonte); }
+  porFonte.set(chave, pronto);
+  escaladosBytes += bytes;
+  escaladosNoQuadro++;
+  return pronto;
+}
+
 function drawCroppedObject(object, image, sheet) {
   const col = object.frame?.col ?? 0;
   const row = object.frame?.row ?? 0;
@@ -2337,21 +2558,68 @@ function drawCroppedObject(object, image, sheet) {
   const escalaY = object.escalaY ?? 1;
 
   const banda = fatiaObjeto(object, c.h);
+  // Tira vertical de um paredão (ver `drawWorld`). Um pixel de sobra de cada
+  // lado: as tiras se sobrepõem e a emenda nunca aparece como risco.
+  const tira = object.__coluna;
+  let sx = 0, sw = c.w;
+  if (tira) {
+    sx = Math.max(0, Math.floor(c.w * tira.index / tira.count) - 1);
+    sw = Math.min(c.w, Math.ceil(c.w * (tira.index + 1) / tira.count) + 1) - sx;
+  }
+  const inteiro = !object.__slice && (!tira || tira.index === 0);
+  const agora = performance.now() / 1000;
+  // Pedra no mar: a espuma nasce ANTES da pedra (fica por baixo do sprite).
+  if (object.espuma && inteiro) {
+    desenharAnelEspuma(ctx, ix + (object.espumaX ?? 0), iy + (object.espumaY ?? 0), object.espuma, agora, (object.x * 7 + object.y * 13) | 0);
+  }
   ctx.save();
   const filtro = filtroObjeto(object);
-  if (filtro) ctx.filter = filtro;
-  ctx.imageSmoothingEnabled = true;
-  ctx.imageSmoothingQuality = 'high';
-  ctx.translate(ix, iy);
-  if (skewY !== 0 || escalaY !== 1) ctx.transform(1, skewY, 0, escalaY, 0, 0);
-  if (object.espelhar) ctx.scale(-1, 1);
-  ctx.drawImage(c.canvas, 0, banda.sy, c.w, banda.sh,
-    -w * px, -h * py + banda.sy * scale, w, banda.sh * scale);
-  ctx.filter = 'none';
+  // Cópia 1:1 do sprite já reduzido (ver "SPRITES JÁ NA ESCALA DA TELA").
+  const kTela = scale * escaladosZoom;
+  const pronto = escaladosAtivo && !filtro && skewY === 0 && escalaY === 1 && kTela <= ESCALADOS_MAX_K
+    ? spriteEscalado(c.canvas, kTela, Boolean(object.espelhar))
+    : null;
+  if (pronto) {
+    const lw = pronto.width, lh = pronto.height;
+    // Canto da peça INTEIRA em pixels da tela: todas as tiras e faixas da
+    // mesma peça partem dele, então nunca abrem fresta entre si.
+    const esquerda = object.espelhar ? ix + w * px - w : ix - w * px;
+    const ox = Math.round(esquerda * mundoZ + mundoTx);
+    const oy = Math.round((iy - h * py) * mundoZ + mundoTy);
+    let x0 = Math.floor(sx * kTela), x1 = Math.min(lw, Math.ceil((sx + sw) * kTela));
+    if (object.espelhar) { const a = lw - x1; x1 = lw - x0; x0 = a; }
+    const y0 = Math.floor(banda.sy * kTela), y1 = Math.min(lh, Math.ceil((banda.sy + banda.sh) * kTela));
+    if (x1 > x0 && y1 > y0) {
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.imageSmoothingEnabled = false;
+      ctx.drawImage(pronto, x0, y0, x1 - x0, y1 - y0, ox + x0, oy + y0, x1 - x0, y1 - y0);
+      ctx.setTransform(mundoZ, 0, 0, mundoZ, mundoTx, mundoTy);
+    }
+    ctx.imageSmoothingEnabled = true;
+    ctx.translate(ix, iy);
+    if (object.espelhar) ctx.scale(-1, 1);
+  } else {
+    if (filtro) ctx.filter = filtro;
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
+    ctx.translate(ix, iy);
+    if (skewY !== 0 || escalaY !== 1) ctx.transform(1, skewY, 0, escalaY, 0, 0);
+    if (object.espelhar) ctx.scale(-1, 1);
+    ctx.drawImage(c.canvas, sx, banda.sy, sw, banda.sh,
+      -w * px + sx * scale, -h * py + banda.sy * scale, sw * scale, banda.sh * scale);
+    ctx.filter = 'none';
+  }
+  // Queda-d'água: fios animados recortados pela máscara da arte, e o
+  // respingo onde ela bate. Mesmo sistema de coordenadas da peça.
+  if (object.cascata && inteiro) {
+    desenharCascata(ctx, { mascaraId: object.cascata, crop: c, x: -w * px, y: -h * py, w, h, t: agora });
+    const r = object.respingo;
+    if (r) desenharRespingo(ctx, r.x ?? 0, r.y ?? 0, r.largura ?? 26, agora, (object.x * 5 + object.y * 3) | 0);
+  }
   ctx.restore();
 
   // Debug H: cruz vermelha mostra o ponto de âncora no mundo
-  if (isDebugEnabled() && !object.__slice) {
+  if (isDebugEnabled() && inteiro) {
     ctx.save();
     ctx.strokeStyle = '#ff3b3b';
     ctx.lineWidth = 1.5;
@@ -3623,11 +3891,41 @@ function drawUltimateEffect(state) {
   ctx.restore();
 }
 
+// Poça de treino: enquanto as duas primeiras provas (boiar e respirar) não
+// saem, a poça fica marcada no mundo — é o "vá para lá" da missão.
+function drawMarcadorDeTreino(map, state) {
+  if (!map.pocas?.length || !state.player) return;
+  const arvore = lerArvore(state.progress);
+  if (arvore.nivel >= 2) return;
+  const poca = map.pocas.find(p => p.treino);
+  if (!poca) return;
+  const d = Math.hypot(state.player.x - poca.x, state.player.y - poca.y);
+  // Dentro da poça o painel do degrau já explica: o marcador recua.
+  const forca = Math.max(0, Math.min(1, (d - 1.2) / 1.6));
+  desenharMarcadorDeTreino(ctx, poca, performance.now() / 1000, HW, HH,
+    arvore.nivel === 0 ? 'POÇA DE TREINO · BOIAR' : 'POÇA DE TREINO · RESPIRAR', forca);
+}
+
 function drawEntity(entity, state) {
   const ix = (entity.x - entity.y) * HW;
   const iy = (entity.x + entity.y) * HH;
 
   if (entity === state.player) {
+    // NADANDO: o corpo deita, gira na direção do nado e ondula. Ataque,
+    // habilidade e Ultimate continuam com a arte de pé (o operador se
+    // ergue na água para golpear), então só entra quando o corpo está livre.
+    // Histerese: na franja da praia `nado.ativo` liga e desliga a cada
+    // passo; sem isto o corpo piscava entre em pé e deitado.
+    const querDeitar = Boolean(entity.nado?.ativo);
+    const deitando = entity._nadoVis ?? (querDeitar ? 1 : 0);
+    entity._nadoVis = Math.max(0, Math.min(1, deitando + (querDeitar ? 1 : -1) * .12));
+    if (entity._nadoVis > .5 && entity.nado
+      && !(entity.combat?.timeLeft > 0)
+      && !(entity.ultimate?.charge > 0)
+      && !getVisualEffect(entity)
+      && desenharNadador(ctx, entity, ix, iy, {
+        arquetipo: state.progress.archetype, HW, HH, t: performance.now() / 1000,
+      })) return;
     // A Quebra Sistemas é ferro: sombra mais larga e mais densa que o operador.
     if (entity.nucleoForm === NUCLEO_BRUTA) {
       ctx.save();

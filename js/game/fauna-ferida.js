@@ -213,11 +213,13 @@ export function podeAjudar(bicho, arquetipo, submerso) {
   const modalidades = new Set([def.cura, def.alternativa].filter(Boolean));
   const serve = modalidades.has(arquetipo);
   if (!serve) {
-    return { ok: false, motivo: `precisa de ${nomeDoModulo(def.cura)}` };
+    return { ok: false, falta: 'modulo', motivo: `precisa de ${nomeDoModulo(def.cura)}` };
   }
   const meioOk = def.meio === 'agua' ? submerso : !submerso;
   if (!meioOk) {
-    return { ok: false, motivo: def.meio === 'agua' ? 'desça e aproxime-se' : 'saia da água' };
+    // `falta: 'meio'` — o módulo serve, só falta o gesto. É o caso em que
+    // vale a pena AVISAR o jogador (mergulhar é segurar ESPAÇO).
+    return { ok: false, falta: 'meio', meio: def.meio, motivo: def.meio === 'agua' ? 'segure ESPAÇO e mergulhe até ele' : 'saia da água' };
   }
   // Alternativa vale menos, mas vale.
   const completo = arquetipo === def.cura;
@@ -262,6 +264,8 @@ export function ajudarBicho(bicho, { player, arquetipo, submerso, dt, nado }) {
     resultado.aliviado = true;
   }
   resultado.motivo = veredito.motivo;
+  resultado.falta = veredito.falta ?? null;
+  resultado.meio = veredito.meio ?? null;
   return resultado;
 }
 
@@ -379,14 +383,16 @@ import { recordQuestEvent } from './quests.js';
  */
 export function atualizarFauna(map, { player, progress, arquetipo, submerso, nado, dt, recifes }) {
   const bichos = detalhesFauna(map, progress, recifes);
-  let pronto = null;
+  let pronto = null, dica = null;
   for (const b of bichos) {
     if (b.estado === 'curado') continue;
     const r = ajudarBicho(b, { player, arquetipo, submerso, dt, nado });
     if (r.aliviado) b.rastro = 1;
     if (r.pronto && !pronto) pronto = { bicho: b, parcial: r.socorroParcial };
+    // Módulo certo, bicho ao alcance, só falta mergulhar (ou sair da água).
+    if (r.falta === 'meio' && !dica) dica = { bicho: b, meio: r.meio, motivo: r.motivo };
   }
-  return { pronto, bichos, mensagem: resumoFauna({ bichos }) };
+  return { pronto, dica: pronto ? null : dica, bichos, mensagem: resumoFauna({ bichos }) };
 }
 
 /**

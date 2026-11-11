@@ -11,10 +11,12 @@ import { updateHazards } from './game/hazards.js';
 import { updateNucleoForm } from './game/nucleo-form.js';
 import { canStandAt } from './game/collision.js';
 import { dispararPropulsao } from './game/nado.js';
-import { desenharMedidorAr } from './ui/nado-hud.js';
+import { desenharMedidorAr, desenharDegrauNado } from './ui/nado-hud.js';
+import { atualizarProvas, garantirMissaoDeNado, lerArvore, provaDe, degrauDe, nomeDoDegrau } from './game/nado-arvore.js';
+import { pushCombatText } from './game/combat-feedback.js';
 import { atualizarMissaoMare, criarFragmentosDeMare } from './game/mare-missao.js';
 import { atualizarFauna, socorrerProximo } from './game/fauna-ferida.js';
-import { ganharRespeito } from './game/nado.js';
+import { ganharRespeito, cabecaSubmersa, noFundoDoMar } from './game/nado.js';
 import { criarClima, atualizarClima, criarParticulas } from './game/clima.js';
 import { getVidaAquatica } from './game/vida-aquatica.js';
 import { alternarMorfador, manterInfinitos, autorizado } from './game/morfador.js';
@@ -287,6 +289,33 @@ await loadSprites([
   { id: 'praia_plataforma_kit', src: 'assets/sprites/praia/plataforma-kit-0311.png' },
   { id: 'vegetacao_tropical', src: 'assets/sprites/objects/vegetacao-tropical.png' },
   { id: 'beach_props', src: 'assets/sprites/objects/beach-props.png' },
+  // ---- PRAIA 11: flora e rochedos extras (tools/preparar-flora-praia.py) ----
+  { id: 'vegetacao_tropical_2', src: 'assets/sprites/objects/vegetacao-tropical-2.png' },
+  { id: 'costa_rochosa_2', src: 'assets/sprites/objects/costa-rochosa-2.png' },
+  // ---- PRAIA 11: relevo — falésias, pilares, cascatas, arco e ilhota
+  // (tools/preparar-relevo-praia.py). `*_agua` é a máscara da queda-d'água.
+  { id: 'relevo_falesia_alta', src: 'assets/sprites/praia/relevo/falesia-alta.png' },
+  { id: 'relevo_falesia_selva', src: 'assets/sprites/praia/relevo/falesia-selva.png' },
+  { id: 'relevo_falesia_muro', src: 'assets/sprites/praia/relevo/falesia-muro.png' },
+  { id: 'relevo_pilar_samambaias', src: 'assets/sprites/praia/relevo/pilar-samambaias.png' },
+  { id: 'relevo_pilar_palmeiras_a', src: 'assets/sprites/praia/relevo/pilar-palmeiras-a.png' },
+  { id: 'relevo_pilar_palmeiras_b', src: 'assets/sprites/praia/relevo/pilar-palmeiras-b.png' },
+  { id: 'relevo_pilar_cascata', src: 'assets/sprites/praia/relevo/pilar-cascata.png' },
+  { id: 'relevo_pilar_cascata_agua', src: 'assets/sprites/praia/relevo/pilar-cascata-agua.png' },
+  { id: 'relevo_macico_cascata', src: 'assets/sprites/praia/relevo/macico-cascata.png' },
+  { id: 'relevo_macico_cascata_agua', src: 'assets/sprites/praia/relevo/macico-cascata-agua.png' },
+  { id: 'relevo_arco_pedra', src: 'assets/sprites/praia/relevo/arco-pedra.png' },
+  { id: 'relevo_ilhota_palmeiras', src: 'assets/sprites/praia/relevo/ilhota-palmeiras.png' },
+  { id: 'relevo_rochas_mar', src: 'assets/sprites/praia/relevo/rochas-mar.png' },
+  { id: 'relevo_rochedo_pe', src: 'assets/sprites/praia/relevo/rochedo-pe.png' },
+  // ---- NADO: o corpo na horizontal, dois quadros por traje
+  // (tools/preparar-nado.py). O jogo gira e ondula o corpo; não há folha
+  // por direção.
+  { id: 'nado_civil', src: 'assets/sprites/player/nado-civil.png' },
+  { id: 'nado_mare', src: 'assets/sprites/player/nado-mare.png' },
+  { id: 'nado_bio', src: 'assets/sprites/player/nado-bio.png' },
+  { id: 'nado_dominio', src: 'assets/sprites/player/nado-dominio.png' },
+  { id: 'nado_nucleo', src: 'assets/sprites/player/nado-nucleo.png' },
 ]);
 
 // Importações parciais deixam colisões sem arte; avise em vez de falhar silenciosamente.
@@ -474,6 +503,16 @@ async function update(dt) {
   // Missão do Maré: eventos de mergulho e coleta saem do estado real do
   // nado, nunca de um contador de tempo.
   const mapaAtual = getFloor();
+  // Dica de mergulho (fragmento / bicho embaixo do operador): uma por vez,
+  // com intervalo, e nunca por cima de um aviso que ainda está na tela.
+  player.dicaNado = Math.max(0, (player.dicaNado ?? 0) - dt);
+  const darDicaDeNado = texto => {
+    if (player.dicaNado > 0 || player.ability?.messageTimer > 0 || player.nadoAviso > 0) return;
+    player.ability ??= {};
+    player.ability.lastMessage = texto;
+    player.ability.messageTimer = 2.6;
+    player.dicaNado = 6;
+  };
   if (mapaAtual?.aguaPraia && player.nado) {
     player.fragmentosMare ??= criarFragmentosDeMare(mapaAtual, getCoastFieldForMap(mapaAtual));
     const res = atualizarMissaoMare({
@@ -484,12 +523,70 @@ async function update(dt) {
       player.ability ??= {};
       player.ability.lastMessage = 'FRAGMENTO DE MARÉ RECOLHIDO';
       player.ability.messageTimer = 2.2;
+    } else if (player.nado.ativo && !noFundoDoMar(player.nado)) {
+      // Boiando em cima de um fragmento: com a árvore de nado o corpo só
+      // desce com ESPAÇO, e o fundo do azul-escuro pede o degrau TRAVESSIA.
+      const emCima = res.fragmentos.some(f => Math.hypot(player.x - f.x, player.y - f.y) < 1.1);
+      if (emCima) {
+        darDicaDeNado(lerArvore(state.progress).nivel >= 3
+          ? 'FRAGMENTO NO FUNDO • SEGURE ESPAÇO PARA MERGULHAR'
+          : 'FRAGMENTO NO FUNDO • FALTA O DEGRAU TRAVESSIA');
+      }
     }
+  }
+  // ÁRVORE DE NADO: as provas saem do estado real do nado (poça, cabeça
+  // na água, travessia, fundo). Aqui também nasce a missão e sai o aviso
+  // de cada degrau conquistado.
+  if (mapaAtual?.aguaPraia && player.nado && !state.world.isLoading) {
+    const avisar = (texto, tempo = 3) => {
+      player.ability ??= {};
+      player.ability.lastMessage = texto;
+      player.ability.messageTimer = tempo;
+    };
+    if (garantirMissaoDeNado(state.progress)) avisar('NOVA MISSÃO • APRENDER A NADAR', 3.4);
+    // A poça de treino fica na Praia Inicial: nas outras praias o aviso diz onde.
+    const ondeTreinar = mapaAtual.pocas?.some(p => p.treino) ? 'NA POÇA DA CASCATA' : 'NA POÇA DA CASCATA (PRAIA INICIAL)';
+    const prova = atualizarProvas({
+      map: mapaAtual, player, nado: player.nado, progress: state.progress,
+      dt, parado: !!player.nadoParado,
+    });
+    const eventos = player.nadoEventos ?? {};
+    player.nadoAviso = Math.max(0, (player.nadoAviso ?? 0) - dt);
+    if (prova.subiu) {
+      const arvore = lerArvore(state.progress);
+      const nome = nomeDoDegrau(arvore, state.progress?.archetype);
+      avisar(`DEGRAU ${prova.subiu.degrau.nivel} • ${nome} — ${prova.subiu.degrau.resumo.toUpperCase()}`, 4.6);
+      pushCombatText(player.x, player.y, `DEGRAU ${prova.subiu.degrau.nivel}`, { color: '#7dffe6', kind: 'heal', duration: 1.6 });
+      // O HUD da árvore fica aceso por um tempo: é a comemoração.
+      player.nadoDestaque = 5;
+      player.nadoAviso = 4.6;
+      for (const m of prova.subiu.missoes ?? []) avisar(`MISSÃO CONCLUÍDA • ${m.title}`, 4.6);
+      saveGame();
+    } else if (player.nadoAviso <= 0) {
+      const arvore = lerArvore(state.progress);
+      const proxima = provaDe(arvore);
+      if (eventos.susto) {
+        avisar(`O MAR ASSUSTA • TREINE ${ondeTreinar}`, 3.2);
+        player.nadoAviso = 2.4; player.nadoDestaque = 4;
+      } else if (eventos.engoliu) {
+        avisar('ENGOLIU ÁGUA • SOLTE ESPAÇO ANTES DO AR ACABAR', 3);
+        player.nadoAviso = 2.4;
+      } else if (eventos.limite) {
+        avisar(arvore.nivel === 0
+          ? `O MAR ASSUSTA • TREINE ${ondeTreinar}`
+          : `FUNDO DEMAIS PARA O DEGRAU ${degrauDe(arvore).nome}${proxima ? ` • PROVA: ${proxima.curta}` : ''}`, 3);
+        player.nadoAviso = 3.2; player.nadoDestaque = 4;
+      }
+    }
+    eventos.susto = eventos.engoliu = eventos.limite = false;
+    player.nadoDestaque = Math.max(0, (player.nadoDestaque ?? 0) - dt);
   }
   // Fauna ferida: presença alivia, o módulo certo socorre.
   const ancoraFauna = getFloor();
   if (ancoraFauna?.aguaPraia) {
-    const submerso = !!player.nado?.ativo && player.nado.profundidade > 1.25;
+    // Socorro na água pede a CABEÇA na água (o gesto de mergulhar), não o
+    // fundo do mar: bicho no raso se socorre no raso.
+    const submerso = cabecaSubmersa(player.nado);
     const fauna = atualizarFauna(ancoraFauna, {
       player, progress: state.progress,
       arquetipo: state.progress?.archetype,
@@ -500,6 +597,14 @@ async function update(dt) {
     state.interaction.faunaPronta = fauna.pronto
       ? { nome: fauna.pronto.bicho.def.nome, parcial: fauna.pronto.parcial }
       : null;
+    // O módulo serve e o bicho está ao alcance, mas falta o gesto: avisa.
+    if (fauna.dica) {
+      const nome = fauna.dica.bicho.def.nome;
+      if (fauna.dica.meio !== 'agua') darDicaDeNado(`SAIA DA ÁGUA PARA SOCORRER • ${nome}`);
+      else if (player.nado?.ativo) darDicaDeNado(`SEGURE ESPAÇO PARA MERGULHAR • ${nome}`);
+      else if (lerArvore(state.progress).nivel === 0) darDicaDeNado(`${nome} ESTÁ NA ÁGUA • APRENDA A BOIAR NA POÇA PRIMEIRO`);
+      else darDicaDeNado(`${nome} ESTÁ NA ÁGUA • ENTRE E MERGULHE (ESPAÇO)`);
+    }
 
     const pressedE2 = input.pressed.has('e') || input.pressed.has('keye');
     // O prompt de socorro tem prioridade sobre o objeto/NPC atrás dele:
@@ -516,7 +621,8 @@ async function update(dt) {
         player.ability ??= {};
         player.ability.lastMessage = `${res.nome} — SALVO`;
         player.ability.messageTimer = 3;
-        if (player.nado) ganharRespeito(player.nado, res.respeito);
+        // (era `player.nado`: o respeito do socorro nunca chegava a contar)
+        if (player.nado) ganharRespeito(player.nado.respeito, res.respeito);
         state.interaction.faunaPronta = null;
       } else if (res?.motivo) {
         player.ability ??= {};
@@ -586,6 +692,8 @@ async function frame(now) {
   updateHud(map, state);
   // Fôlego só aparece quando importa (nadando); em terra não ocupa tela.
   if (state.player?.nado?.ativo) desenharMedidorAr(state.player.nado);
+  // Degrau do nado + prova em curso: perto d'água, ou comemorando.
+  if (map?.aguaPraia) desenharDegrauNado(state, map);
 
   endInputFrame();
 }

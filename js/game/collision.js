@@ -227,10 +227,13 @@ function canDashPassObject(object, ignore) {
 // OBJETOS — BLOQUEIO
 // =====================================================================
 
-export function getBlockingObject(x, y, radius, ignore = null) {
+export function getBlockingObject(x, y, radius, ignore = null, pular = null) {
   for (const object of state.objects ?? []) {
     if (!object?.bloqueia) continue;
     if (object === ignore) continue;
+    // Filtro opcional de quem chama (ex.: o nadador não esbarra na trava
+    // da ponte que está em cima do deque).
+    if (pular && pular(object)) continue;
 
     // Objeto escondido por progresso não bloqueia mais.
     if (
@@ -386,13 +389,52 @@ export function findNearestStandable(
 // `nado.destinoValido` é quem sabe o que é água — colisão não importa
 // `nado.js` para não criar ciclo (nado não importa colisão tampouco).
 // ---------------------------------------------------------------------
+//
+// A BEIRA. `canStandAt` exige o corpo inteiro (raio) em chão firme e a
+// água exige o CENTRO dentro do mar. Entre uma coisa e outra existe uma
+// faixa da largura do raio (0,25 tile) em que o corpo não cabe mais na
+// areia e o centro ainda não é mar. O passo por quadro é menor que essa
+// faixa (0,067 tile a 60 FPS), então NINGUÉM entrava no mar andando: o
+// operador parava a um quarto de tile da água e o nado inteiro ficava
+// inalcançável no jogo de verdade.
+// Na beira vale: centro em chão firme e tudo o que o corpo encosta além
+// do chão é água que ESTE nadador pode entrar (rocha e vazio continuam
+// sendo parede; água além do degrau também).
+function naBeira(map, x, y, radius, agua) {
+  if (isWall(map, Math.floor(x), Math.floor(y))) return false;
+  const minX = Math.floor(x - radius), maxX = Math.floor(x + radius);
+  const minY = Math.floor(y - radius), maxY = Math.floor(y + radius);
+  for (let tileY = minY; tileY <= maxY; tileY++) {
+    for (let tileX = minX; tileX <= maxX; tileX++) {
+      if (!isWall(map, tileX, tileY)) continue;
+      if (!circleHitsRect(x, y, radius, tileX, tileY, 1, 1)) continue;
+      // Ponto da célula mais próximo do centro, um tico para dentro dela.
+      const px = Math.max(tileX + .02, Math.min(tileX + .98, x));
+      const py = Math.max(tileY + .02, Math.min(tileY + .98, y));
+      if (!agua(map, px, py)) return false;
+    }
+  }
+  return true;
+}
+
 function podeIrPara(map, x, y, radius, ignore, agua) {
   if (canStandAt(map, x, y, radius, ignore)) return true;
-  if (!agua || !agua(map, x, y)) return false;
-  // Na água: não pode entrar em objeto sólido nem em outro ator, mas o
-  // "chão" da grade não bloqueia.
-  return !hitsSolidObject(x, y, radius, ignore) && !hitsActor(x, y, radius, ignore);
+  if (!agua) return false;
+  // Na água (ou na beira dela): não pode entrar em objeto sólido nem em
+  // outro ator, mas o "chão" da grade não bloqueia.
+  if (hitsActor(x, y, radius, ignore)) return false;
+  if (agua(map, x, y)) {
+    // TRAVA DE PONTE não é parede no mar. A caixa da trava sobra meio tile
+    // para cada lado do deque (é o que impede passar andando pela beirada);
+    // para quem nada, essa sobra era uma parede invisível dentro d'água.
+    // Quem está na água não está no deque, então a trava continua
+    // fechando a ponte para quem anda.
+    return getBlockingObject(x, y, radius, ignore, ehTravaDePonte) === null;
+  }
+  return !hitsSolidObject(x, y, radius, ignore) && naBeira(map, x, y, radius, agua);
 }
+
+const ehTravaDePonte = object => Boolean(object.gate);
 
 export function moveWithCollision(map, entity, dx, dy, radius, agua = null) {
   const distance = Math.hypot(dx, dy);

@@ -29,6 +29,11 @@ const SCAN_LABELS = {
 };
 
 function facingDirection(facing) {
+  if (getCurrentMap()?.meta?.sideView) {
+    const sideVectors = { down: [0, 1], up: [0, -1], right: [1, 0], left: [-1, 0] };
+    const [sx, sy] = sideVectors[facing] ?? sideVectors.right;
+    return { x: sx, y: sy };
+  }
   const vectors = { down: [1, 1], up: [-1, -1], right: [1, -1], left: [-1, 1] };
   const [x, y] = vectors[facing] ?? vectors.down;
   return { x: x / Math.SQRT2, y: y / Math.SQRT2 };

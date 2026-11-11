@@ -351,6 +351,7 @@ async function update(dt) {
   updateBackgroundCalibration();
 
   const player = state.player;
+  const mapaAtual = getFloor();
 
   // ===============================================================
   // MODO DE CALIBRAÇÃO
@@ -367,7 +368,7 @@ async function update(dt) {
     player.target = null;
     input.click = null; input.attackClick = null;
 
-    updateCamera(dt, player.x, player.y);
+    updateCamera(dt, player.x, player.y, null, mapaAtual);
     return;
   }
 
@@ -380,7 +381,7 @@ async function update(dt) {
     player.target = null;
     input.click = null; input.attackClick = null;
     updateNpcBrains(dt);
-    updateCamera(dt, player.x, player.y);
+    updateCamera(dt, player.x, player.y, null, mapaAtual);
     return;
   }
 
@@ -395,7 +396,7 @@ async function update(dt) {
     input.click = null; input.attackClick = null;
 
     updateNpcBrains(dt);
-    updateCamera(dt, player.x, player.y);
+    updateCamera(dt, player.x, player.y, null, mapaAtual);
     return;
   }
 
@@ -404,7 +405,7 @@ async function update(dt) {
     player.moving = false;
     player.target = null;
     input.click = null; input.attackClick = null;
-    updateCamera(dt, player.x, player.y);
+    updateCamera(dt, player.x, player.y, null, mapaAtual);
     return;
   }
 
@@ -412,7 +413,7 @@ async function update(dt) {
     handleCodexInput(input.pressed);
     player.moving = false; player.target = null;
     input.click = null; input.attackClick = null;
-    updateCamera(dt, player.x, player.y); return;
+    updateCamera(dt, player.x, player.y, null, mapaAtual); return;
   }
   if (!isElevatorMenuOpen() && (input.pressed.has('j') || input.pressed.has('keyj'))) {
     openCodex(state.progress, getFloor(), player);
@@ -517,7 +518,6 @@ async function update(dt) {
 
   // Missão do Maré: eventos de mergulho e coleta saem do estado real do
   // nado, nunca de um contador de tempo.
-  const mapaAtual = getFloor();
   const sinalCorrente = atualizarRotaCorrentes(mapaAtual, player, state.progress);
   if (sinalCorrente) {
     player.ability ??= {};
@@ -676,7 +676,7 @@ async function update(dt) {
   }
 
   updateOwnedCompanion(getFloor(), dt, canStandAt);
-  updateCamera(dt, player.x, player.y, player.nado);
+  updateCamera(dt, player.x, player.y, player.nado, mapaAtual);
 }
 
 // =====================================================================

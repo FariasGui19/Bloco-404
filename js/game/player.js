@@ -66,7 +66,7 @@ function trackDistance(progress, amount) {
 const keyHeld = (...keys) =>
   keys.some(key => input.keys[key]);
 
-function readKeyboardDirection() {
+function readKeyboardDirection(map) {
   const screenX =
     (keyHeld('d', 'arrowright') ? 1 : 0) -
     (keyHeld('a', 'arrowleft') ? 1 : 0);
@@ -82,7 +82,10 @@ function readKeyboardDirection() {
   let worldX;
   let worldY;
 
-  if (CONFIG.SCREEN_RELATIVE_CONTROLS) {
+  if (map?.meta?.sideView) {
+    worldX = screenX;
+    worldY = screenY * 0.78;
+  } else if (CONFIG.SCREEN_RELATIVE_CONTROLS) {
     worldX = screenX + screenY;
     worldY = screenY - screenX;
   } else {
@@ -98,10 +101,20 @@ function readKeyboardDirection() {
   };
 }
 
-function updateFacing(dx, dy) {
+function updateFacing(dx, dy, map) {
   if (dx === 0 && dy === 0) return;
 
   const player = state.player;
+
+  if (map?.meta?.sideView) {
+    if (Math.abs(dx) >= Math.abs(dy) * 0.65) {
+      player.facing = dx > 0 ? 'right' : 'left';
+      player.dir = dx > 0 ? 1 : -1;
+    } else {
+      player.facing = dy > 0 ? 'down' : 'up';
+    }
+    return;
+  }
 
   const screenDx = dx - dy;
   const screenDy = dx + dy;
@@ -216,7 +229,7 @@ export function updatePlayer(dt) {
   // ---------------------------------------------------------------
   // Teclado tem prioridade sobre caminho por clique.
   // ---------------------------------------------------------------
-  const keyboardDirection = vooDir ? (vooDir.ativo ? { x: vooDir.x, y: vooDir.y } : null) : readKeyboardDirection();
+  const keyboardDirection = vooDir ? (vooDir.ativo ? { x: vooDir.x, y: vooDir.y } : null) : readKeyboardDirection(map);
 
   if (keyboardDirection) {
     dx = keyboardDirection.x * maxStep;
@@ -327,7 +340,7 @@ export function updatePlayer(dt) {
   if (moved) trackDistance(state.progress, Math.hypot(player.x - beforeX, player.y - beforeY));
 
   if (dx !== 0 || dy !== 0) {
-    updateFacing(dx, dy);
+    updateFacing(dx, dy, map);
   }
 
   if (!moved && player.target && !keyboardDirection) {

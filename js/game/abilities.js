@@ -110,6 +110,16 @@ function pressed(...keys) {
 // ---------------------------------------------------------------------
 
 function getFacingWorldDirection(facing) {
+  if (getFloor()?.meta?.sideView) {
+    const sideDirs = {
+      down: { x: 0, y: 1 },
+      up: { x: 0, y: -1 },
+      right: { x: 1, y: 0 },
+      left: { x: -1, y: 0 },
+    };
+    return sideDirs[facing] ?? sideDirs.right;
+  }
+
   const directions = {
     // Baixo na tela.
     down: { x: 1, y: 1 },

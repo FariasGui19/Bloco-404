@@ -119,7 +119,7 @@ export async function loadMap(mapId, spawnId = 'inicio') {
     p.moving = false;
 
     setMapZoomMin(mapData.meta?.minZoom);
-    snapCameraTo(p.x, p.y);
+    snapCameraTo(p.x, p.y, mapData);
     // Salva a última localização somente se um perfil estiver ativo.
     rememberMapLocation(mapData.id, spawnId);
     return true;

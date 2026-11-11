@@ -70,6 +70,15 @@ function faceToward(actor, targetX, targetY) {
 
   if (dx === 0 && dy === 0) return;
 
+  if (getCurrentMap()?.meta?.sideView) {
+    if (Math.abs(dx) >= Math.abs(dy) * 0.65) {
+      actor.facing = dx > 0 ? 'right' : 'left';
+    } else {
+      actor.facing = dy > 0 ? 'down' : 'up';
+    }
+    return;
+  }
+
   // Converte o movimento do mundo para orientação na tela.
   const screenDx = dx - dy;
   const screenDy = dx + dy;

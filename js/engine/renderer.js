@@ -23,6 +23,7 @@ import { faunaFootAnchor } from '../game/fauna-costeira.js';
 import { getFrame } from './sprite-clean.js';
 import { drawAmbientBack, drawAmbientFront } from './ambient.js';
 import { tintaDoClima, atualizarParticulas, climaVisivelNoMapa } from '../game/clima.js';
+import { renderSideViewMap } from './side-view.js';
 import { animarFauna } from '../game/fauna-animacao.js';
 import { isDebugEnabled, drawDebugWorld } from '../game/debug.js';
 import { ACTION_SPRITES } from '../data/action-sprites.js';
@@ -101,6 +102,43 @@ export function render(map, state) {
     return;
   }
 
+  // SIDE-VIEW: Aeroporto Central usa perspectiva frontal/lateral profunda
+  if (map.meta?.sideView) {
+    renderSideViewMap(
+      ctx, map, state,
+      camera.x, camera.y,
+      view.w, view.h,
+      camera.zoom, dpr,
+      performance.now(),
+      {
+        drawPlayer: (p, px, py) => {
+          drawShadow(px, py, 0.28);
+          if (!drawPlayerSprite(p, px, py)) {
+            ctx.beginPath();
+            ctx.arc(px, py - 14, 9, 0, Math.PI * 2);
+            ctx.fillStyle = '#ffffff';
+            ctx.fill();
+          }
+        },
+        drawActor: (a, ax, ay) => {
+          drawShadow(ax, ay, 0.30);
+          if (a.sprite === 'guia_aeroporto' && drawGuiaSprite(a, ax, ay)) return;
+          if (drawNexoSprite(a, ax, ay)) return;
+          if (a.tipo === 'robo' && drawRobo(a, ax, ay)) return;
+          ctx.beginPath();
+          ctx.arc(ax, ay - 18, 10, 0, Math.PI * 2);
+          ctx.fillStyle = a.cor ?? '#35E6D3';
+          ctx.fill();
+        },
+      }
+    );
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    drawLabels(state);
+    drawBubbles(state);
+    return;
+  }
+
+  // ISOMÉTRICO (padrão)
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   ctx.fillStyle = map.meta?.corFundo ?? C.BG;
   ctx.fillRect(0, 0, view.w, view.h);
@@ -3688,37 +3726,38 @@ function drawRobo(e, ix, iy) {
 }
 
 // =====================================================================
-//  GUIA DO AEROPORTO — sprite próprio, quatro direções
+//  GUIA DO AEROPORTO — sprite próprio (5 poses em linha: frente, dir, costas, esq, aceno)
 // =====================================================================
 function drawGuiaSprite(npc, ix, iy) {
   const image = getSprite('guia_aeroporto');
   if (!image) return false;
 
-  const SHEET_COLS = 4;
-  const SHEET_ROWS = 4; // down, right, up, left
-  const frameW = image.width / SHEET_COLS;
-  const frameH = image.height / SHEET_ROWS;
+  const isWave = npc.pose === 'wave' || npc.talking || Boolean(npc.bark);
+  const col = isWave
+    ? 4
+    : ({ down: 0, right: 1, up: 2, left: 3 }[npc.facing ?? 'down'] ?? 0);
 
-  const row = { down: 0, right: 1, up: 2, left: 3 }[npc.facing ?? 'down'] ?? 0;
-  const frame = npc.moving
-    ? Math.floor((performance.now() / 180) % 4)
-    : 0;
+  const fr = getFrame(image, col, 0, 5, 1, { tolerancia: 14 });
+  if (!fr) return false;
 
-  const scale = 0.30;
+  const pe = pePos(fr);
+  const scale = 0.165;
   const bob = npc.moving ? Math.abs(Math.sin(performance.now() / 120)) * 2 : 0;
-  const flip = npc.facing === 'left';
 
   ctx.save();
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = 'medium';
   ctx.translate(ix, iy - bob);
-  if (flip) ctx.scale(-1, 1);
   ctx.drawImage(
-    image,
-    frame * frameW, row * frameH, frameW, frameH,
-    -(frameW * scale) / 2, -(frameH * scale) + 4,
-    frameW * scale, frameH * scale
+    fr.cell,
+    -pe.x * scale,
+    -pe.y * scale,
+    fr.cell.width * scale,
+    fr.cell.height * scale
   );
   ctx.restore();
-  npc._topo = 120;
+
+  npc._topo = Math.round((pe.y - fr.crop.y) * scale);
   return true;
 }
 

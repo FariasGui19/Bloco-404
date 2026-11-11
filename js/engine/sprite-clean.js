@@ -18,7 +18,7 @@ export function getFrame(image, col, row, cols, rows, opts = {}) {
     cache.set(image, porImagem);
   }
 
-  const key = `${cols}x${rows}|${col},${row}|${opts.removeShadow ? 1 : 0}`;
+  const key = `${cols}x${rows}|${col},${row}|${opts.removeShadow ? 1 : 0}|${opts.tolerancia ?? 60}`;
   if (porImagem.has(key)) return porImagem.get(key);
 
   let res = null;

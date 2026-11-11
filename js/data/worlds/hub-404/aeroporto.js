@@ -1,15 +1,19 @@
 // js/data/worlds/hub-404/aeroporto.js
 // =====================================================================
-// PISO 0 - AEROPORTO CENTRAL (Bloco 404) — Versão Grandiosa
+// PISO 0 - AEROPORTO CENTRAL (ZONA X10) — Perspectiva Side-View 2.5D
 // =====================================================================
-// O Aeroporto Central é agora um hub de dimensões de verdade, com:
-//  - Salão principal amplo e bem iluminado
-//  - Guia do Aeroporto com identidade visual própria (não é o NEXO-04)
-//  - 4 portais para salas de missão inicial por arquétipo
-//  - Portal para Área de Carga (bloqueado até diagnóstico)
-//  - Portal para Metrô, Setor Anime e Hall dos Elevadores
-//  - Background hero em pixel art cobrindo todo o cenário
+// Estação espacial panorâmica em visão frontal/lateral profunda
+// (estilo sci-fi anos 90: Flashback / Another World):
+//  - Movimento predominantemente horizontal (Esquerda / Direita)
+//  - Janelões panorâmicos com espaço sideral, planeta anelado e naves
+//  - Piso reflexivo espelhado na passarela principal
+//  - Guia do Aeroporto com sprite próprio no Concourse Central
+//  - 4 Portais verticais para as salas de missão por arquétipo
+//  - Terminal de Manutenção (Link de Diagnóstico [R]) + Hangar de Carga
 // =====================================================================
+
+const ROW_WALL  = [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1];
+const ROW_FLOOR = [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1];
 
 export const map = {
   id: 'hub_aeroporto',
@@ -18,257 +22,313 @@ export const map = {
     nome: 'PISO 0 - AEROPORTO CENTRAL',
     tipo: 'interior',
     dimensao: 'hub_404',
-    corFundo: '#0b0d12',
+    corFundo: '#060a10',
+    sideView: true,
+    minZoom: 0.85,
     backgroundCoversFloor: true,
-    ambiente: {
-      poeira: 12,
-      cor: '#35E6D3',
+    sideViewBackground: {
+      space: 'aeroporto_background',
     },
-    background: {
-      sprite: 'aeroporto_background',
-      scale: 0.6,
-      anchor: { x: 0.5, y: 0.5 },
-      offsetX: 0,
-      offsetY: 0,
+    ambiente: {
+      poeira: 14,
+      cor: '#35E6D3',
     },
   },
 
   spawnPoints: {
-    inicio: { x: 15.0, y: 12.0 },          // centro do salão principal
-    vindo_do_saguao: { x: 2.0, y: 11.0 },  // entrada oeste
-    chegada_sala_bio: { x: 26.0, y: 6.0 }, // norte (sala bio-forja)
-    chegada_sala_dominio: { x: 26.0, y: 10.0 }, // norte (sala domínio)
-    chegada_sala_mare: { x: 26.0, y: 14.0 }, // sul (sala maré)
-    chegada_sala_nucleo: { x: 26.0, y: 18.0 }, // sul (sala núcleo)
-    vindo_da_carga: { x: 26.0, y: 12.0 },  // leste (área de carga)
+    inicio: { x: 14.5, y: 4.4 },               // Concourse central (próximo à Guia)
+    vindo_do_saguao: { x: 4.2, y: 4.2 },       // Ala Oeste (desembarque do Saguão)
+    chegada_sala_bio: { x: 22.5, y: 3.8 },     // Em frente à Doca A1 (Bio-Forja)
+    chegada_sala_dominio: { x: 26.5, y: 3.8 }, // Em frente à Doca B2 (Domínio)
+    chegada_sala_mare: { x: 30.5, y: 3.8 },    // Em frente à Doca C3 (Maré Astral)
+    chegada_sala_nucleo: { x: 34.5, y: 3.8 },  // Em frente à Doca D4 (Núcleo 10X)
+    vindo_da_carga: { x: 40.5, y: 4.2 },       // Ala Leste (retorno da Área de Carga / Câmaras)
   },
 
-  corChao: '#1c2330',
+  corChao: '#101b2b',
 
   // ------------------------------------------------------------------
-  // LAYOUT 30 x 22
-  // 0 = chão   1 = parede   2 = coluna decorativa
-  //
-  // Oeste (x=0-4): entrada do saguão + recepção
-  // Centro (x=5-24): salão principal amplo com balcões, colunas, bancos
-  // Norte (x=25-28): portais para salas Bio-Forja e Domínio
-  // Sul (x=25-28): portais para salas Maré e Núcleo
-  // Leste (x=29): portão Área de Carga + Metrô
+  // LAYOUT 44 x 9 (Corredor Panorâmico Horizontal 2.5D)
+  // y = 0..1 : Parede norte / Janelões panorâmicos / Pórticos verticais
+  // y = 2..6 : Passarela reflexiva caminhável (x = 1..42)
+  // y = 7..8 : Guarda-corpo frontal da passarela
   // ------------------------------------------------------------------
   layout: [
-    [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1], // 0
-    [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1], // 1
-    [1,0,0,0,0,1,1,1,0,0,0,1,1,1,0,0,0,1,1,1,0,0,0,1,1,1,0,0,0,1], // 2  colunas
-    [1,0,0,0,0,1,0,1,0,0,0,1,0,1,0,0,0,1,0,1,0,0,0,1,0,1,0,0,0,1], // 3
-    [1,0,0,0,0,1,0,1,0,0,0,1,0,1,0,0,0,1,0,1,0,0,0,1,0,1,0,0,0,1], // 4
-    [1,0,0,0,0,1,1,1,0,0,0,1,1,1,0,0,0,1,1,1,0,0,0,1,1,1,0,0,0,1], // 5  portal bio
-    [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1], // 6
-    [1,0,0,0,0,1,1,1,0,0,0,1,1,1,0,0,0,1,1,1,0,0,0,1,1,1,0,0,0,1], // 7  portal domínio
-    [1,0,0,0,0,1,0,1,0,0,0,1,0,1,0,0,0,1,0,1,0,0,0,1,0,1,0,0,0,1], // 8
-    [1,0,0,0,0,1,0,1,0,0,0,1,0,1,0,0,0,1,0,1,0,0,0,1,0,1,0,0,0,1], // 9
-    [1,0,0,0,0,1,1,1,0,0,0,1,1,1,0,0,0,1,1,1,0,0,0,1,1,1,0,0,0,1], // 10 portal maré
-    [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1], // 11
-    [1,0,0,0,0,1,1,1,0,0,0,1,1,1,0,0,0,1,1,1,0,0,0,1,1,1,0,0,0,1], // 12 portal núcleo
-    [1,0,0,0,0,1,0,1,0,0,0,1,0,1,0,0,0,1,0,1,0,0,0,1,0,1,0,0,0,1], // 13
-    [1,0,0,0,0,1,0,1,0,0,0,1,0,1,0,0,0,1,0,1,0,0,0,1,0,1,0,0,0,1], // 14
-    [1,0,0,0,0,1,1,1,0,0,0,1,1,1,0,0,0,1,1,1,0,0,0,1,1,1,0,0,0,1], // 15
-    [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1], // 16
-    [1,0,0,0,0,1,1,1,0,0,0,1,1,1,0,0,0,1,1,1,0,0,0,1,1,1,0,0,0,1], // 17
-    [1,0,0,0,0,1,0,1,0,0,0,1,0,1,0,0,0,1,0,1,0,0,0,1,0,1,0,0,0,1], // 18
-    [1,0,0,0,0,1,0,1,0,0,0,1,0,1,0,0,0,1,0,1,0,0,0,1,0,1,0,0,0,1], // 19
-    [1,0,0,0,0,1,1,1,0,0,0,1,1,1,0,0,0,1,1,1,0,0,0,1,1,1,0,0,0,1], // 20
-    [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1], // 21
+    [...ROW_WALL],  // 0
+    [...ROW_WALL],  // 1
+    [...ROW_FLOOR], // 2  faixa junto aos portais e terminais
+    [...ROW_FLOOR], // 3  faixa superior da passarela
+    [...ROW_FLOOR], // 4  eixo central da passarela
+    [...ROW_FLOOR], // 5  faixa de bancos / mirante
+    [...ROW_FLOOR], // 6  borda sul caminhável
+    [...ROW_WALL],  // 7
+    [...ROW_WALL],  // 8
   ],
 
-  // Pisos especiais em pontos estratégicos
-  pisos: {
-    '15,12': [1, 2], // centro - ponto de partida brilhante
-    '7,5': [2, 0],   // perto da recepção
-    '22,5': [2, 0],  // perto do portal bio
-  },
-
-  // Paredes decorativas nas colunas
-  paredes: {
-    '5,2': [0, 1],
-    '5,20': [0, 1],
-    '24,2': [2, 1],
-    '24,20': [2, 1],
-  },
+  pisos: {},
+  paredes: {},
 
   actors: [
-    // Guia do Aeroporto — identidade própria, sprite dedicado
-    { id: 'guia_aeroporto', x: 15, y: 12, nome: 'Guia do Aeroporto', cor: '#35E6D3',
-      sprite: 'guia_aeroporto', facing: 'down', pose: 'idle',
-      interacao: { label: 'FALAR COM O GUIA', speaker: 'GUIA DO AEROPORTO', distancia: 1.8,
+    // Guia do Aeroporto — no Concourse Central, com vista para os janelões
+    {
+      id: 'guia_aeroporto',
+      x: 14,
+      y: 3,
+      nome: 'Guia do Aeroporto',
+      cor: '#35E6D3',
+      sprite: 'guia_aeroporto',
+      facing: 'down',
+      pose: 'idle',
+      interacao: {
+        label: 'FALAR COM A GUIA',
+        speaker: 'GUIA DO AEROPORTO',
+        distancia: 1.85,
         dialogue: [
-          'Bem-vindo ao Aeroporto Central do Bloco 404.',
-          'Sou o seu guia dimensional. Cada portal ao redor leva a uma missão inicial.',
-          'Escolha seu arquétipo e entre na sala correspondente para começar sua jornada.',
-          'Bio-Forja (norte), Domínio (norte), Maré Astral (sul) e Núcleo 10X (sul).',
-          'A Área de Carga requer liberação no Terminal de Manutenção.',
-        ] } },
+          'Bem-vindo à Galeria Panorâmica do Aeroporto Central — Zona X10.',
+          'Caminhe para a direita ao longo da estação para acessar as Docas de Arquétipo.',
+          'As Docas A1 a D4 conectam às salas do Motor Bio-Forja, Lâmina Domínio, Maré Astral e Núcleo 10X.',
+          'Mais ao leste fica o Hangar da Área de Carga. Use o Link de Diagnóstico [R] no Terminal de Manutenção para liberar a comporta.',
+        ],
+      },
+    },
   ],
 
   objects: [
     // ================================================================
-    // RECEPÇÃO E BALCÕES (oeste)
+    // SETOR A (OESTE, x = 2..10) — DESEMBARQUE & RECEPÇÃO
     // ================================================================
-    { id: 'balcao_recepcao_01', tipo: 'balcao', x: 3, y: 3,
-      sprite: 'hub_props', frame: { col: 0, row: 0 }, scale: 0.5, anchorY: 0.94,
-      bloqueia: true, brilho: { cor: '#35E6D3', raio: 0.9, forca: 0.18 } },
-    { id: 'balcao_recepcao_02', tipo: 'balcao', x: 3, y: 5,
-      sprite: 'hub_props', frame: { col: 0, row: 0 }, scale: 0.5, anchorY: 0.94,
-      bloqueia: true, brilho: { cor: '#35E6D3', raio: 0.9, forca: 0.18 } },
-    { id: 'balcao_recepcao_03', tipo: 'balcao', x: 4, y: 3,
-      sprite: 'hub_props', frame: { col: 0, row: 0 }, scale: 0.5, anchorY: 0.94,
-      bloqueia: true, brilho: { cor: '#35E6D3', raio: 0.9, forca: 0.18 } },
-    { id: 'balcao_recepcao_04', tipo: 'balcao', x: 4, y: 5,
-      sprite: 'hub_props', frame: { col: 0, row: 0 }, scale: 0.5, anchorY: 0.94,
-      bloqueia: true, brilho: { cor: '#35E6D3', raio: 0.9, forca: 0.18 } },
-
-    // Terminal de informações
-    { id: 'terminal_info', tipo: 'terminal', x: 6, y: 4,
-      sprite: 'hub_props', frame: { col: 0, row: 1 }, scale: 0.35, anchorY: 0.94,
-      bloqueia: false, brilho: { cor: '#35E6D3', raio: 0.8, forca: 0.20 },
-      interacao: { label: 'CONSULTAR INFO', speaker: 'TERMINAL DE INFORMAÇÕES', distancia: 1.4,
+    {
+      id: 'balcao_recepcao_01',
+      tipo: 'balcao',
+      x: 6,
+      y: 2,
+      sprite: 'hub_props',
+      frame: { col: 0, row: 0 },
+      scale: 0.46,
+      anchorY: 0.94,
+      bloqueia: true,
+      hitbox: { offsetX: -0.35, offsetY: -0.25, width: 0.70, height: 0.50 },
+      brilho: { cor: '#35E6D3', raio: 0.9, forca: 0.18 },
+    },
+    {
+      id: 'malas_aero_01',
+      tipo: 'malas',
+      x: 7,
+      y: 2,
+      sprite: 'hub_props',
+      frame: { col: 2, row: 1 },
+      scale: 0.34,
+      anchorY: 0.94,
+      bloqueia: false,
+    },
+    {
+      id: 'terminal_info',
+      tipo: 'terminal',
+      x: 9,
+      y: 2,
+      sprite: 'hub_props',
+      frame: { col: 0, row: 1 },
+      scale: 0.38,
+      anchorY: 0.94,
+      bloqueia: false,
+      brilho: { cor: '#35E6D3', raio: 0.8, forca: 0.22 },
+      interacao: {
+        label: 'CONSULTAR MAPA DA ESTAÇÃO',
+        speaker: 'TERMINAL DE INFORMAÇÕES',
+        distancia: 1.65,
         dialogue: [
-          'AEROPORTO CENTRAL — BLoco 404',
-          'SALAS DE MISSÃO INICIAL:',
-          '• BIO-FORJA — NORTE (PORTAL A)',
-          '• DOMÍNIO ANCIÃO — NORTE (PORTAL B)',
-          '• MARÉ ASTRAL — SUL (PORTAL C)',
-          '• NÚCLEO 10X — SUL (PORTAL D)',
-          'ÁREA DE CARGA: BLOQUEADA (TERMINAL DE MANUTENÇÃO)',
-          'METRÔ INTERDIMENSIONAL: LESTE',
-        ] } },
+          'ESTAÇÃO ORBITAL · PISO 0 — AEROPORTO CENTRAL (ZONA X10)',
+          '◄ OESTE (GATE 00): RETORNO AO SAGUÃO CENTRAL',
+          '• CENTRO: CONCOURSE PANORÂMICO & GUIA DIMENSIONAL',
+          '► LESTE (DOCAS A1–D4): SALAS DE MISSÃO POR ARQUÉTIPO',
+          '► EXTREMO LESTE (HANGAR C-04): TERMINAL DE MANUTENÇÃO & ÁREA DE CARGA',
+        ],
+      },
+    },
+    {
+      id: 'banco_aero_01',
+      tipo: 'banco',
+      x: 8,
+      y: 5,
+      sprite: 'hub_props',
+      frame: { col: 1, row: 1 },
+      scale: 0.42,
+      anchorY: 0.94,
+      bloqueia: true,
+      hitbox: { offsetX: -0.35, offsetY: -0.20, width: 0.70, height: 0.40 },
+    },
 
-    // Colunas estruturais decorativas
-    { id: 'coluna_01', tipo: 'coluna', x: 6, y: 2, sprite: 'hub_props', frame: { col: 2, row: 0 }, scale: 0.45, anchorY: 0.94, bloqueia: true },
-    { id: 'coluna_02', tipo: 'coluna', x: 23, y: 2, sprite: 'hub_props', frame: { col: 2, row: 0 }, scale: 0.45, anchorY: 0.94, bloqueia: true },
-    { id: 'coluna_03', tipo: 'coluna', x: 6, y: 20, sprite: 'hub_props', frame: { col: 2, row: 0 }, scale: 0.45, anchorY: 0.94, bloqueia: true },
-    { id: 'coluna_04', tipo: 'coluna', x: 23, y: 20, sprite: 'hub_props', frame: { col: 2, row: 0 }, scale: 0.45, anchorY: 0.94, bloqueia: true },
-
-    // Bancos de espera
-    { id: 'banco_aero_01', tipo: 'banco', x: 9, y: 8, sprite: 'hub_props', frame: { col: 1, row: 1 }, scale: 0.45, anchorY: 0.94, bloqueia: true },
-    { id: 'banco_aero_02', tipo: 'banco', x: 20, y: 8, sprite: 'hub_props', frame: { col: 1, row: 1 }, scale: 0.45, anchorY: 0.94, bloqueia: true },
-    { id: 'banco_aero_03', tipo: 'banco', x: 9, y: 15, sprite: 'hub_props', frame: { col: 1, row: 1 }, scale: 0.45, anchorY: 0.94, bloqueia: true },
-    { id: 'banco_aero_04', tipo: 'banco', x: 20, y: 15, sprite: 'hub_props', frame: { col: 1, row: 1 }, scale: 0.45, anchorY: 0.94, bloqueia: true },
-
-    // Malas de viajantes espalhadas
-    { id: 'malas_aero_01', tipo: 'malas', x: 7, y: 10, sprite: 'hub_props', frame: { col: 2, row: 1 }, scale: 0.35, anchorY: 0.94, bloqueia: true },
-    { id: 'malas_aero_02', tipo: 'malas', x: 22, y: 10, sprite: 'hub_props', frame: { col: 2, row: 1 }, scale: 0.35, anchorY: 0.94, bloqueia: true },
-    { id: 'malas_aero_03', tipo: 'malas', x: 11, y: 17, sprite: 'hub_props', frame: { col: 2, row: 1 }, scale: 0.35, anchorY: 0.94, bloqueia: true },
-    { id: 'malas_aero_04', tipo: 'malas', x: 19, y: 17, sprite: 'hub_props', frame: { col: 2, row: 1 }, scale: 0.35, anchorY: 0.94, bloqueia: true },
-
-    // Painel de partidas no centro
-    { id: 'painel_partidas', tipo: 'painel', x: 15, y: 11,
-      sprite: 'hub_props', frame: { col: 1, row: 3 }, scale: 0.45, anchorY: 0.94,
-      bloqueia: false, brilho: { cor: '#ffd54f', raio: 1.2, forca: 0.25 },
-      interacao: { label: 'PAINEL DE PARTIDAS', speaker: 'PAINEL DE DESTINOS', distancia: 1.5,
+    // ================================================================
+    // SETOR B (CENTRO, x = 11..20) — MIRANTE ORBITAL & PARTIDAS
+    // ================================================================
+    {
+      id: 'banco_aero_02',
+      tipo: 'banco',
+      x: 12,
+      y: 5,
+      sprite: 'hub_props',
+      frame: { col: 1, row: 1 },
+      scale: 0.42,
+      anchorY: 0.94,
+      bloqueia: true,
+      hitbox: { offsetX: -0.35, offsetY: -0.20, width: 0.70, height: 0.40 },
+    },
+    {
+      id: 'painel_partidas',
+      tipo: 'painel',
+      x: 17,
+      y: 2,
+      sprite: 'hub_props',
+      frame: { col: 1, row: 3 },
+      scale: 0.44,
+      anchorY: 0.94,
+      bloqueia: false,
+      brilho: { cor: '#ffd54f', raio: 1.1, forca: 0.24 },
+      interacao: {
+        label: 'PAINEL DE PARTIDAS',
+        speaker: 'PAINEL DE DESTINOS',
+        distancia: 1.65,
         dialogue: [
-          'PARTIDAS DO AEROPORTO CENTRAL — Bloco 404',
-          'SALAS DE MISSÃO: LIBERADAS',
-          'BIO-FORJA: PORTAL NORTE A',
-          'DOMÍNIO: PORTAL NORTE B',
-          'MARÉ ASTRAL: PORTAL SUL C',
-          'NÚCLEO 10X: PORTAL SUL D',
-          'ÁREA DE CARGA: BLOQUEADA',
-          'METRÔ INTERDIMENSIONAL: LESTE',
-        ] } },
-
-    // Luminárias pelo salão
-    { id: 'luz_aero_01', tipo: 'luminaria', x: 1, y: 1, sprite: 'hub_props', frame: { col: 3, row: 2 }, scale: 0.3, anchorY: 0.94, bloqueia: false, brilho: { cor: '#35E6D3', raio: 0.7, forca: 0.14 } },
-    { id: 'luz_aero_02', tipo: 'luminaria', x: 28, y: 1, sprite: 'hub_props', frame: { col: 3, row: 2 }, scale: 0.3, anchorY: 0.94, bloqueia: false, brilho: { cor: '#35E6D3', raio: 0.7, forca: 0.14 } },
-    { id: 'luz_aero_03', tipo: 'luminaria', x: 1, y: 20, sprite: 'hub_props', frame: { col: 3, row: 2 }, scale: 0.3, anchorY: 0.94, bloqueia: false, brilho: { cor: '#35E6D3', raio: 0.7, forca: 0.14 } },
-    { id: 'luz_aero_04', tipo: 'luminaria', x: 28, y: 20, sprite: 'hub_props', frame: { col: 3, row: 2 }, scale: 0.3, anchorY: 0.94, bloqueia: false, brilho: { cor: '#35E6D3', raio: 0.7, forca: 0.14 } },
-
-    // ================================================================
-    // PORTAIS PARA SALAS DE ARQUÉTIPO (norte e sul)
-    // ================================================================
-    // Portal: Sala Bio-Forja (norte A)
-    { id: 'portao_sala_bio', tipo: 'portao_visual', x: 26, y: 5,
-      sprite: 'hub_props', frame: { col: 2, row: 0 }, scale: 0.5, anchorY: 0.94,
-      bloqueia: false, brilho: { cor: '#35E6D3', raio: 1.2, forca: 0.28 } },
-    // Portal: Sala Domínio (norte B)
-    { id: 'portao_sala_dominio', tipo: 'portao_visual', x: 26, y: 7,
-      sprite: 'hub_props', frame: { col: 2, row: 0 }, scale: 0.5, anchorY: 0.94,
-      bloqueia: false, brilho: { cor: '#ffd54f', raio: 1.2, forca: 0.28 } },
-    // Portal: Sala Maré Astral (sul C)
-    { id: 'portao_sala_mare', tipo: 'portao_visual', x: 26, y: 10,
-      sprite: 'hub_props', frame: { col: 2, row: 0 }, scale: 0.5, anchorY: 0.94,
-      bloqueia: false, brilho: { cor: '#4caeff', raio: 1.2, forca: 0.28 } },
-    // Portal: Sala Núcleo 10X (sul D)
-    { id: 'portao_sala_nucleo', tipo: 'portao_visual', x: 26, y: 12,
-      sprite: 'hub_props', frame: { col: 2, row: 0 }, scale: 0.5, anchorY: 0.94,
-      bloqueia: false, brilho: { cor: '#74ff8a', raio: 1.2, forca: 0.28 } },
+          'PAINEL DE PARTIDAS — AEROPORTO CENTRAL BLOCO 404',
+          'DOCA A1 · MOTOR BIO-FORJA — [ONLINE]',
+          'DOCA B2 · LÂMINA DOMÍNIO ANCIÃO — [ONLINE]',
+          'DOCA C3 · MARÉ ASTRAL — [ONLINE]',
+          'DOCA D4 · NÚCLEO 10X — [ONLINE]',
+          'HANGAR C-04 · ÁREA DE CARGA — [REQUER DIAGNÓSTICO DE TERMINAL]',
+        ],
+      },
+    },
+    {
+      id: 'banco_aero_03',
+      tipo: 'banco',
+      x: 19,
+      y: 5,
+      sprite: 'hub_props',
+      frame: { col: 1, row: 1 },
+      scale: 0.42,
+      anchorY: 0.94,
+      bloqueia: true,
+      hitbox: { offsetX: -0.35, offsetY: -0.20, width: 0.70, height: 0.40 },
+    },
 
     // ================================================================
-    // TERMINAL DE MANUTENÇÃO — missão do Fragmento de Sincronização
+    // SETOR C (LESTE-CENTRO, x = 21..35) — DOCAS DE ARQUÉTIPO
+    // ================================================================
+    {
+      id: 'malas_aero_02',
+      tipo: 'malas',
+      x: 24,
+      y: 5,
+      sprite: 'hub_props',
+      frame: { col: 2, row: 1 },
+      scale: 0.34,
+      anchorY: 0.94,
+      bloqueia: false,
+    },
+    {
+      id: 'banco_aero_04',
+      tipo: 'banco',
+      x: 28,
+      y: 5,
+      sprite: 'hub_props',
+      frame: { col: 1, row: 1 },
+      scale: 0.42,
+      anchorY: 0.94,
+      bloqueia: true,
+      hitbox: { offsetX: -0.35, offsetY: -0.20, width: 0.70, height: 0.40 },
+    },
+    {
+      id: 'malas_aero_03',
+      tipo: 'malas',
+      x: 32,
+      y: 5,
+      sprite: 'hub_props',
+      frame: { col: 2, row: 1 },
+      scale: 0.34,
+      anchorY: 0.94,
+      bloqueia: false,
+    },
+
+    // ================================================================
+    // SETOR D (EXTREMO LESTE, x = 36..42) — TERMINAL DE MANUTENÇÃO & CARGA
     // ================================================================
     {
       id: 'terminal_manutencao',
       tipo: 'terminal',
-      x: 20,
-      y: 3,
-      ajusteY: 12,
+      x: 37,
+      y: 2,
+      ajusteY: 8,
       sprite: 'hub_props',
       frame: { col: 1, row: 3 },
       scale: 0.48,
       anchorY: 0.94,
       bloqueia: true,
       hitbox: {
-        offsetX: -0.30,
-        offsetY: -0.30,
-        width: 0.60,
-        height: 0.60,
+        offsetX: -0.28,
+        offsetY: -0.22,
+        width: 0.56,
+        height: 0.44,
       },
       interacao: {
         label: 'CONSULTAR TERMINAL',
         speaker: 'TERMINAL DE MANUTENÇÃO',
-        distancia: 1.45,
+        distancia: 1.65,
         dialogue: [
-          'SISTEMA OFFLINE.',
-          'ACESSO BÁSICO DISPONÍVEL.',
-          'UM OPERADOR COM FERRAMENTAS DE RECONFIGURAÇÃO PODERIA EXTRAIR MAIS DADOS.',
+          'SISTEMA DO HANGAR C-04 EM MODO DE CONTENÇÃO.',
+          'SINCRONIA DA COMPORTA DE CARGA PENDENTE.',
+          'DICA: PRESSIONE [R] PARA EXECUTAR O LINK DE DIAGNÓSTICO DO SEU MÓDULO.',
         ],
       },
       moduleSystem: {
         id: 'airport_maintenance_terminal',
         allowedArchetypes: ['motor_bio_forja', 'lamina_dominio_anciao', 'mare_astral', 'nucleo_dez_forma'],
         label: 'DIAGNOSTICAR TERMINAL',
-        distance: 1.65,
+        distance: 1.85,
         speaker: 'TERMINAL DE MANUTENÇÃO',
       },
       brilho: {
-        cor: '#35E6D3',
-        raio: 1.1,
-        forca: 0.22,
+        cor: '#ffd54f',
+        raio: 1.2,
+        forca: 0.26,
       },
+    },
+    {
+      id: 'malas_aero_04',
+      tipo: 'caixa',
+      x: 38,
+      y: 5,
+      sprite: 'hub_props',
+      frame: { col: 0, row: 3 },
+      scale: 0.38,
+      anchorY: 0.94,
+      bloqueia: false,
     },
   ],
 
   portals: [
-    // Volta para o Saguão Central (oeste)
+    // Oeste: Retorno ao Saguão Central
     {
       id: 'voltar_ao_saguao',
       tipo: 'door',
-      x: 1,
-      y: 11,
+      x: 3,
+      y: 2,
       label: 'VOLTAR AO SAGUÃO CENTRAL',
-      interactionDistance: 1.10,
+      interactionDistance: 1.75,
       destino: {
         mapId: 'hub_saguao',
         spawnId: 'vindo_do_aeroporto',
       },
       transition: 'fade',
     },
-    // Portais para salas de missão por arquétipo
+
+    // Docas de Arquétipo ao longo da galeria horizontal
     {
       id: 'portal_sala_bio_forja',
       tipo: 'door',
-      x: 26,
-      y: 5,
+      x: 22,
+      y: 2,
       label: 'ENTRAR NA SALA — MOTOR BIO-FORJA',
+      interactionDistance: 1.75,
       destino: {
         mapId: 'sala_bio_forja',
         spawnId: 'vindo_do_aeroporto',
@@ -279,8 +339,9 @@ export const map = {
       id: 'portal_sala_dominio',
       tipo: 'door',
       x: 26,
-      y: 7,
+      y: 2,
       label: 'ENTRAR NA SALA — LÂMINA DOMÍNIO',
+      interactionDistance: 1.75,
       destino: {
         mapId: 'sala_dominio',
         spawnId: 'vindo_do_aeroporto',
@@ -290,9 +351,10 @@ export const map = {
     {
       id: 'portal_sala_mare',
       tipo: 'door',
-      x: 26,
-      y: 10,
+      x: 30,
+      y: 2,
       label: 'ENTRAR NA SALA — MARÉ ASTRAL',
+      interactionDistance: 1.75,
       destino: {
         mapId: 'sala_mare',
         spawnId: 'vindo_do_aeroporto',
@@ -302,27 +364,30 @@ export const map = {
     {
       id: 'portal_sala_nucleo',
       tipo: 'door',
-      x: 26,
-      y: 12,
+      x: 34,
+      y: 2,
       label: 'ENTRAR NA SALA — NÚCLEO 10X',
+      interactionDistance: 1.75,
       destino: {
         mapId: 'sala_nucleo',
         spawnId: 'vindo_do_aeroporto',
       },
       transition: 'fade',
     },
-    // Portão: Área de Carga (bloqueado até diagnóstico)
+
+    // Extremo Leste: Portão da Área de Carga / Câmaras de Eco
     {
       id: 'porta_area_carga',
       tipo: 'door',
-      x: 28,
-      y: 12,
+      x: 40,
+      y: 2,
       label: 'ACESSAR ÁREA DE CARGA',
       lockedLabel: 'ÁREA DE CARGA SEM SINCRONIA',
+      interactionDistance: 1.80,
       requiresFlag: 'airportTerminalDiagnosed',
       mensagemBloqueado: [
         'ACESSO À ÁREA DE CARGA BLOQUEADO.',
-        'RECOMENDAÇÃO: UTILIZE O LINK DE DIAGNÓSTICO NO TERMINAL DE MANUTENÇÃO.',
+        'RECOMENDAÇÃO: UTILIZE O LINK DE DIAGNÓSTICO [R] NO TERMINAL DE MANUTENÇÃO AO LADO.',
       ],
       destino: {
         mapId: 'hub_aeroporto_carga',

@@ -22,7 +22,7 @@ import {
 
 import { moveWithCollision } from './collision.js';
 import {
-  criarEstadoNado, atualizarNado, podeNadar, NADO, moverNaAgua, aguaDoDegrau,
+  criarEstadoNado, atualizarNado, podeNadar, NADO, moverNaAgua, aguaDoDegrau, controlarMergulhoFixo,
 } from './nado.js';
 import { garantirArvore, direcaoDaAreia, DEGRAUS } from './nado-arvore.js';
 import { getCoastFieldForMap } from '../engine/coast-field.js';
@@ -133,7 +133,9 @@ export function updatePlayer(dt) {
   const nado = player.nado;
   const campoCosta = getCoastFieldForMap(map);
   // ESPAÇO = mergulhar (segurar). Em terra a tecla não faz nada.
-  const querMergulhar = !!(input.keys[' '] || input.keys['space']);
+  const mergulhoFixoDisponivel = state.progress?.archetype === 'mare_astral' && (arvore?.nivel ?? 0) >= 3;
+  controlarMergulhoFixo(nado, mergulhoFixoDisponivel, input.pressed.has('z') || input.pressed.has('keyz'));
+  const querMergulhar = !!(input.keys[' '] || input.keys['space'] || nado.mergulhoFixo);
   const efeitoNado = atualizarNado(nado, {
     map, x: player.x, y: player.y, field: campoCosta, dt,
     tempo: performance.now() / 1000,
@@ -146,6 +148,7 @@ export function updatePlayer(dt) {
     // Futuras formas e equipamentos poderão fornecer esta capacidade aqui.
     mergulhoLivre: state.progress?.archetype === 'mare_astral',
   });
+  if (efeitoNado.engoliuAgua || !nado.ativo) nado.mergulhoFixo = false;
   if (arvore && nado.respeito.valor > (arvore.respeito ?? 0)) arvore.respeito = nado.respeito.valor;
   // Onde este degrau pode nadar (sem árvore: mar inteiro, como antes).
   const agua = aguaDoDegrau(arvore ? arvore.nivel : null);
@@ -209,7 +212,11 @@ export function updatePlayer(dt) {
 
     const distance = Math.hypot(targetDx, targetDy);
 
-    if (distance <= maxStep || distance < 0.03) {
+    if (nado.ativo && distance < .16) {
+      // Clique aquático chega ao ponto sem continuar deslizando depois dele.
+      player.target = null;
+      nado.vx = 0; nado.vy = 0;
+    } else if (!nado.ativo && (distance <= maxStep || distance < 0.03)) {
       dx = targetDx;
       dy = targetDy;
       player.target = null;
@@ -251,7 +258,12 @@ export function updatePlayer(dt) {
         ? { x: player.target.x - player.x, y: player.target.y - player.y }
         : { x: 0, y: 0 };
     if (devolvendo && recuo) dir = recuo;
-    const passo = moverNaAgua(nado, dt, dir.x, dir.y, devolvendo ? speed / DEGRAUS[nado.nivel ?? 4].velocidade * .8 : speed);
+    // Aproximação suave para clique, sem afetar controle manual nem recuo.
+    const distanciaAlvo = !keyboardDirection && player.target && !devolvendo
+      ? Math.hypot(player.target.x - player.x, player.target.y - player.y) : Infinity;
+    const velocidade = devolvendo ? speed / DEGRAUS[nado.nivel ?? 4].velocidade * .8
+      : speed * Math.min(1, Math.max(.18, distanciaAlvo / 1.4));
+    const passo = moverNaAgua(nado, dt, dir.x, dir.y, velocidade);
     const antesX = player.x, antesY = player.y;
     moved = moveWithCollision(map, player, passo.dx, passo.dy, radius, devolvendo ? podeNadar : agua);
     // Bateu no limite do degrau: queria ir, a água existe, o degrau não deixa.

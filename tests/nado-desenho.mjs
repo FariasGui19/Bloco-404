@@ -277,7 +277,7 @@ assert.match(renderer, /const submerso = cabecaSubmersa\(nado\)/, 'raios de sol 
   assert.equal(passo.falta, 'meio', 'ajudarBicho precisa repassar o que falta');
   assert.equal(passo.meio, 'agua');
   assert.match(main, /fauna\.dica/, 'main.js não mostra a dica da fauna');
-  assert.match(main, /FRAGMENTO NO FUNDO • SEGURE ESPAÇO PARA MERGULHAR/, 'faltou a dica do fragmento');
+  assert.match(main, /FRAGMENTO NO FUNDO • ESPAÇO OU Z PARA MERGULHAR/, 'faltou a dica do fragmento');
 }
 
 // ---------------------------------------------------------------------

@@ -100,6 +100,9 @@ export function desenharNadador(ctx, player, ix, iy, opt) {
   const impulsoMare = id === 'nado_mare' && arrancando && getSprite('nado_mare_impulso');
   if (impulsoMare) imagem = impulsoMare;
   const mare = id === 'nado_mare';
+  // No fundo, uma pose própria e contínua substitui a braçada de superfície.
+  const imagemFundo = mare && nado.mareAstral && nado.profundidade > 1.25 && getSprite('nado_mare_submerso');
+  if (imagemFundo && !arrancando) imagem = imagemFundo;
   const cor = COR_TRAJE[id] ?? '#e8fffa';
 
   // ---- direção na tela (isométrica) ----
@@ -187,14 +190,15 @@ export function desenharNadador(ctx, player, ix, iy, opt) {
   const dtVisual = player._nadoUltimoTempo == null ? 0 : Math.max(0, Math.min(.1, t - player._nadoUltimoTempo));
   player._nadoUltimoTempo = t;
   player._nadoFase = (player._nadoFase ?? 0) + cadencia * dtVisual;
-  const quadro = arrancando || !movendo ? 0 : Math.floor(player._nadoFase) % 2;
+  const quadro = imagemFundo && !arrancando ? 0 : arrancando || !movendo ? 0 : Math.floor(player._nadoFase) % 2;
+  const misturaFundo = imagemFundo && !arrancando && movendo ? (1 - Math.cos(player._nadoFase * Math.PI * 2)) * .5 : 0;
   const escala = ESCALA * (1 - fundura * .1);
   const estica = (arrancando ? 1.1 : 1) * escorco;
   // A cauda bate mais que a cabeça; mergulhado, o corpo todo ondula mais.
   const amplitude = (movendo ? 1.5 + Math.min(2.2, vel) * .75 : .8) * (submerso ? 1.5 : 1) * (arrancando ? .5 : 1);
   const onda = t * (movendo ? 9 + vel * 1.4 : 2.4);
   const boia = submerso ? 0 : Math.sin(t * 2.3) * 1.1;
-  const alfaCorpo = submerso ? .62 - fundura * .12 : 1;
+  const alfaCorpo = imagemFundo ? .94 : submerso ? .62 - fundura * .12 : 1;
 
   ctx.save();
   ctx.translate(ix, iy - 7 + boia + fundura * 9);
@@ -216,6 +220,11 @@ export function desenharNadador(ctx, player, ix, iy, opt) {
     ctx.drawImage(imagem, sx, 0, fatia, topo, dxp, -EIXO_Y * escala + oy, dw, topo * escala);
     ctx.globalAlpha = alfaCorpo * (submerso ? 1 : .56);
     ctx.drawImage(imagem, sx, topo, fatia, baixo, dxp, (topo - EIXO_Y) * escala + oy, dw, baixo * escala);
+    if (misturaFundo > .001) {
+      ctx.globalAlpha = alfaCorpo * misturaFundo;
+      ctx.drawImage(imagem, sx + LARGURA, 0, fatia, topo, dxp, -EIXO_Y * escala + oy, dw, topo * escala);
+      ctx.drawImage(imagem, sx + LARGURA, topo, fatia, baixo, dxp, (topo - EIXO_Y) * escala + oy, dw, baixo * escala);
+    }
   }
   ctx.imageSmoothingEnabled = alisavaAntes;
 

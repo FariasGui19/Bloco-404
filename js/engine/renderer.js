@@ -114,8 +114,10 @@ export function render(map, state) {
       // seguir a borda quadrada das células de areia.
       if (map.id !== 'ilha_estacao_bio') drawBeachSurface(map);
       drawBeachSea(map);
+      const imersao = intensidadeSubmersa(state.player?.nado);
+      if (imersao > 0) drawFundoSubmerso(map, imersao);
       drawVidaAquatica(map, state);
-      drawBeachRipples(map);
+      if (imersao < .5) drawBeachRipples(map);
       // Poças de treino: água por cima da areia (zona, não célula da grade).
       desenharPocas(ctx, map, performance.now() / 1000, HW, HH);
       // Cordão de boias: o limite do degrau de nado, só perto do operador.
@@ -169,6 +171,18 @@ export function render(map, state) {
   if (isDebugEnabled()) drawDebugWorld(ctx, map, state, CONFIG.TILE_W, CONFIG.TILE_H);
 
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  // Atmosfera submersa cobre o mundo, nunca a HUD.
+  const imersaoTela = map.aguaPraia ? intensidadeSubmersa(state.player?.nado) : 0;
+  if (imersaoTela > 0) {
+    ctx.save();
+    ctx.fillStyle = `rgba(0,65,91,${(imersaoTela * .16).toFixed(3)})`;
+    ctx.fillRect(0, 0, view.w, view.h);
+    const g = ctx.createRadialGradient(view.w * .5, view.h * .45, view.h * .15, view.w * .5, view.h * .5, Math.max(view.w, view.h) * .72);
+    g.addColorStop(0, 'rgba(0,20,30,0)');
+    g.addColorStop(1, `rgba(0,26,46,${(imersaoTela * .42).toFixed(3)})`);
+    ctx.fillStyle = g; ctx.fillRect(0, 0, view.w, view.h);
+    ctx.restore();
+  }
   // Clarão curto no instante da soltura (não cobre a HUD, que é DOM).
   const flash = state.player?.ultimate?.flash;
   if (flash && flash.timeLeft > 0) {
@@ -462,6 +476,41 @@ function drawBeachSea(map) {
       -m + .43 + Math.sin(t * .27) * .22, -m + .31 + Math.cos(t * .21) * .18, cols, lines);
     ctx.globalAlpha = 1;
   }
+  ctx.restore();
+}
+
+// A câmera isométrica preserva o rumo, os obstáculos e os pontos de interação.
+// O fundo é uma camada do mesmo mundo, não um teleporte para um mapa falso.
+export function intensidadeSubmersa(nado) {
+  if (!nado?.ativo || !nado.mareAstral || nado.naPoca) return 0;
+  return Math.max(0, Math.min(1, (nado.profundidade - 1.0) / .55));
+}
+
+const fundoSubmersoCache = new WeakMap();
+function drawFundoSubmerso(map, intensidade) {
+  const imagem = getSprite('fundo_mar_mare');
+  if (!imagem) return; // carregamento falhou: mantém o mar normal
+  let tela = fundoSubmersoCache.get(map);
+  if (!tela) {
+    // Um único canvas por mapa; custo e memória não dependem do zoom.
+    const escala = 8, rows = map.aguaPraia, cols = rows[0].length;
+    const padrao = document.createElement('canvas');
+    padrao.width = 64; padrao.height = 64;
+    padrao.getContext('2d').drawImage(imagem, 0, 0, 64, 64);
+    tela = document.createElement('canvas');
+    tela.width = cols * escala; tela.height = rows.length * escala;
+    const pincel = tela.getContext('2d');
+    pincel.fillStyle = pincel.createPattern(padrao, 'repeat');
+    for (let y = 0; y < rows.length; y++) for (let x = 0; x < cols; x++) {
+      if ('YyDdX'.includes(rows[y][x])) pincel.fillRect(x * escala, y * escala, escala, escala);
+    }
+    fundoSubmersoCache.set(map, tela);
+  }
+  ctx.save();
+  ctx.globalAlpha = intensidade * .95;
+  ctx.transform(HW, HH, -HW, HH, 0, 0);
+  ctx.imageSmoothingEnabled = true;
+  ctx.drawImage(tela, 0, 0, map.aguaPraia[0].length, map.aguaPraia.length);
   ctx.restore();
 }
 

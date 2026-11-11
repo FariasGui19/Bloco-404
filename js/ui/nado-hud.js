@@ -76,6 +76,14 @@ export function desenharMedidorAr(nado) {
   ctx.lineWidth = 1.6;
   ctx.stroke();
 
+  // Orientação sempre visível depois que a travessia libera o nado livre.
+  if (nado.mareAstral && nado.nivel >= 3) {
+    ctx.fillStyle = 'rgba(232,255,250,.9)';
+    ctx.font = 'bold 9px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText(nado.mergulhoFixo ? 'Z SUBIR' : 'Z MERGULHAR', cx, cy - RAIO - 10);
+  }
+
   // Seta para cima enquanto há ar: "suba para respirar".
   if (nado.afogando) {
     ctx.fillStyle = '#EF6C6C';
@@ -204,7 +212,7 @@ export function desenharDegrauNado(state, map) {
     ctx.fillText(`${Math.min(r.prova.meta, r.valor).toFixed(casas)}/${r.prova.meta.toFixed(casas)} ${r.prova.unidade}`, x + L - 12, py + 3);
   } else {
     ctx.fillStyle = 'rgba(232,255,250,.74)';
-    ctx.fillText('ESPAÇO MERGULHA · SHIFT ARRANCA', x + 12, y + 32);
+    ctx.fillText(nado.mareAstral ? 'Z MERGULHA/SOBE · SHIFT ARRANCA' : 'ESPAÇO MERGULHA · SHIFT ARRANCA', x + 12, y + 32);
   }
   ctx.restore();
 }

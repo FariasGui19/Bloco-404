@@ -29,8 +29,26 @@
 import { buildGround } from '../../ground.js';
 import { linhaDoTrem } from '../../shared/linha-trem.js';
 
-const COLS = 48;
-const ROWS = 48;
+// ---------------------------------------------------------------------
+// TAMANHO — "aumentar um pouco o tamanho" (Praia 10.0, frente 2)
+//
+// O mapa aprovado tinha 48x48. Ele NÃO foi redesenhado: a área 48x48
+// continua sendo exatamente a mesma (o hash dela é travado por teste em
+// `praia-maior.mjs`). O que existe agora é uma orla NOVA em volta:
+// +8 colunas a leste (mar aberto a leste vira enseada, praia e costão) e
+// +8 linhas ao sul (fundo do mapa ganha o Cabo do Eco, com praia longa).
+//
+// Regra: nenhum objeto, gate, spawn ou caminho do núcleo mudou de lugar.
+// O que cresceu cresceu PARA FORA.
+// ---------------------------------------------------------------------
+const NUCLEO = 48;         // área aprovada da praia 2.0 — intocável
+const CRESCIMENTO_LESTE = 18;
+const CRESCIMENTO_SUL = 16;
+const COLS = NUCLEO + CRESCIMENTO_LESTE;
+const ROWS = NUCLEO + CRESCIMENTO_SUL;
+
+// eixo x: [0, NUCLEO) preservado; eixo y: idem.
+const ehNucleo = (x, y) => x < NUCLEO && y < NUCLEO;
 
 const TAM_RASO = 2;        // tiles de mar raso em volta da terra
 const TAM_FUNDO = 3;       // até aqui desenha mar fundo; além disso, nada
@@ -173,6 +191,106 @@ ponte(14, 11, 23, 12, 'B');
 ponte(36, 14, 37, 25, 'b');
 ponte(30, 37, 31, 42, 'b');       // D -> F
 
+// ---------------------------------------------------------------------
+// ORLA NOVA (Praia 10.0) — "aumentar um pouco o tamanho" da praia
+//
+// Tudo aqui é TERRA NOVA e vive FORA do núcleo 48x48 aprovado. A ordem
+// importa: terra primeiro, água em camadas DEPOIS, para a orla ganhar
+// faixas de mar raso e fundo em vez de encostar no mar aberto.
+//
+//   LESTE  Enseada do Leste: meia-lua de areia com 35 tiles de extensão
+//          e costão de rocha ao norte — o "X" que fechava o mapa.
+//   SUL    Cabo do Eco: praia larga descendo até a borda, com ponta de
+//          pedra a oeste. É o novo fundo do arquipélago.
+//   ILHOTA Ilhota satélite na enseada: destino de natação de verdade.
+// ---------------------------------------------------------------------
+
+// --- Enseada do Leste: praia em meia-lua, 35 tiles de norte a sul ---
+for (let y = 12; y <= 46; y++) {
+  const t = (y - 29) / 18;                       // 0 no meio, ±1 nas pontas
+  const afina = Math.pow(Math.abs(t), 1.7);
+  const larg = Math.round(13 * (1 - afina));     // 13 tiles no meio, 0 nas pontas
+  if (larg <= 0) continue;
+  for (let k = 0; k < larg; k++) {
+    const x = NUCLEO + k;                        // começa na borda do núcleo
+    if (!ehTerra(grid[y][x])) grid[y][x] = 'S';
+  }
+}
+
+// --- Costão de rocha no norte da enseada ---
+//
+// Rocha é PAREDE (`walk: false`), então o miolo precisa ser SÓLIDO: um
+// costão com veios de água vira um labirinto de pedras que não se
+// atravessa nem se contorna — foi o que aconteceu na primeira versão,
+// que deixou 69 tiles de rocha presos entre canais.
+//
+// A borda mais externa fica irregular (é o desenho); o miolo é cheio.
+for (let y = 4; y <= 13; y++) {
+  for (let x = NUCLEO + 2; x <= NUCLEO + 11; x++) {
+    if (ehNucleo(x, y)) continue;
+    const d = Math.hypot((x - (NUCLEO + 6)) / 6.4, (y - 8.5) / 4.2);
+    if (d < .78) grid[y][x] = 'R';                    // núcleo sólido
+    else if (d < 1 && hash(x, y, 41) < .45) grid[y][x] = 'R'; // borda esfarrapada
+    else if (d < 1) grid[y][x] = 'W';                 // resto do anel: NADA caminhável
+  }
+}
+
+// --- Cabo do Eco: praia larga no sul ---
+for (let y = NUCLEO - 5; y < ROWS; y++) {
+  const t = (y - (NUCLEO - 5)) / (CRESCIMENTO_SUL + 5);
+  const esq = 5 + Math.round(t * 12);
+  const dir = 47 - Math.round(t * 12);
+  for (let x = esq; x <= dir; x++) {
+    if (ehNucleo(x, y)) continue;
+    if (!ehTerra(grid[y][x])) grid[y][x] = 'S';
+  }
+}
+
+// --- Ponta de pedra a oeste, fechando a leitura do cabo ---
+for (let y = 52; y < ROWS; y++) {
+  for (let x = 0; x <= 14; x++) {
+    if (ehNucleo(x, y)) continue;
+    const d = Math.hypot((x - 5) / 10, (y - 59) / 4.2);
+    if (d < 1 && hash(x, y, 53) < .78) grid[y][x] = 'R';
+  }
+}
+
+// --- Ilhota satélite na enseada: destino de natação, não decoração ---
+pintarIlha(61, 33, 2.4, 2.4, 61);
+
+// Canal obrigatório: a ilhota é ILHA, tem que haver água em volta dela.
+// Sem isto ela cola no Cabo do Eco e deixa de ser destino de natação.
+for (let y = 26; y <= 41; y++) {
+  for (let x = 56; x < COLS; x++) {
+    const d = Math.hypot((x - 61) / 3.2, (y - 33) / 3.2);
+    if (d > .82 && d < 1.45 && hash(x, y, 67) < .92) grid[y][x] = 'W';
+  }
+}
+
+// --- Pontes para as beiradas novas (nunca dentro do núcleo) ---
+ponte(56, 33, 60, 33, 'B');       // enseada -> ilhota satélite (canal de 3 tiles)
+
+// Passarelas de acesso às beiradas novas.
+//
+// Sem elas a enseada e o cabo eram massa de terra DESCONECTADA — o
+// jogador via praia nova e não conseguia chegar. Cada passarela é
+// curta e pousa em água/areia; o núcleo continua intacto (a restauração
+// abaixo anula qualquer toque nas células aprovadas).
+ponte(30, 47, 31, 52, 'b');       // D/F -> Cabo do Eco
+
+// ---------------------------------------------------------------------
+// CINTURA — a passagem de água entre o núcleo e as beiradas
+//
+// Quando a orla nova nasce, ela deixa a franja de mar-aberto do núcleo a
+// leste e a sul em contato com a terra nova. Sem esta cintura, as duas
+// coisinhas colam e o mapa perde a leitura de ilhas separadas.
+//
+// Aqui a franja recebe água RASO/FUNDA de verdade (era `X`: nada
+// desenhado). Isso APARECE na área 48x48, e é positivo — a borda deixa
+// de ser um recorte duro. Mesmo assim o núcleo é restaurado logo abaixo,
+// célula por célula; ver `restaurarNucleo()`.
+// ---------------------------------------------------------------------
+
 // Água em camadas.
 for (let y = 0; y < ROWS; y++) {
   for (let x = 0; x < COLS; x++) {
@@ -204,6 +322,150 @@ for (let y = 0; y < ROWS; y++) {
     } else if (!(x < 16 && y < 14) && hash(x, y, 31) < 0.02) {
       grid[y][x] = 'T';
     }
+  }
+}
+
+// ---------------------------------------------------------------------
+// O NÚCLEO APROVADO, RESTAURADO CÉLULA POR CÉLULA
+//
+// O mapa da praia 2.0 tinha uma franja de `X` (mar aberto, tile não
+// desenhado) na borda leste e sul. Ao crescer, essa franja ficou em
+// contato com terra nova e agora recebe água desenhada — o que é MELHOR
+// (a borda deixa de ser um recorte seco) e por isso é PERMITIDO.
+//
+// O resto do núcleo é obrigatório: terra, areia molhada, ponte, poça,
+// água rasa e água funda voltam exatamente ao valor aprovado. Assim
+// nenhum ajuste nas beiradas pode, por acidente, mover uma ponte,
+// alagar uma praia ou abrir um caminho novo no miolo.
+// ---------------------------------------------------------------------
+const NUCLEO_APROVADO = [
+  'yyYyyYyyyYyyyyyydXXXXXXdDddyYyyYyyDDDddXXXXXXXXX',
+  'YYRRRRRRRRRRRRyYDXXXDDDdyyYYyyyyyYYYyyDdXXXXXXXX',
+  'yYRRRRRRRRRRRRYYDXXDdYYYYyyYYSMMYYyYYYYdddXXXXXX',
+  'YyRRRRRRRRRRRRyydXXdyyYYyYMSMMSMMMMMyyYYYDXXXXXX',
+  'yMPPPPPPPPPPPPyyddDdyYYMMMMSSSSSSSSSMyYyydDXXXXX',
+  'YMSSSSSSSSSSSMyYYYYYyYMMSSSSSSSSSSSSSSSyyYdXXXXX',
+  'yMSSSSSSSSSSSMyYyYyyyyMSSSSSSSSSSSSSSSSYYYdXXXXX',
+  'YMSSSSSSSSSSSMBBBBBBBBMSSSSSSSSSSSSSSSMSyYdXXXXX',
+  'yMSSSSSSSSSSSMBBBBBBBBMSSSSSSSSSSSSSTSSMyYDXXXXX',
+  'yMSSSSSSSSSSSMyYyYyyYYMSSSSSSSSSSSSSSSSMYYdXXXXX',
+  'YSSSSSSSSSSSSMYYYyyYyYMSSSSSSSSSSSSSSSMMYYdXXXXX',
+  'yMSSSSSSSSSSSMBBBBBBBBMSSSSSTSSTSSSSSSMYYYdXXXXX',
+  'YyMMSMMbbMMSMMBBBBBBBBMSSSSSSSSSSTTSSSMyYYdXXXXX',
+  'YYyMMMybbyMMMYYyyyyYyYMMMSSSSSSSSSSSSSSyYddXXXXX',
+  'yYYSMYybbYYMMYyYYyYYyyyyMMSSSSSSSSSSSbYyyDXXXXXX',
+  'DYyyyyybbyYyyyyddDDdYYyyyyMSSSSSSMMMMbyYyDXXXXXX',
+  'DYYyYYYbbyYyYYyDXXXDDDyyYYMSMSMMMyYYbbyYDDXXXXXX',
+  'DdDdDYYbbYyddddDXXXXXDddyYYyYybbYYyYbbyyDXXXXXXX',
+  'XXXXdYYbbYYDXXXXXXXXXXXDYYyyYYbbyYyybbyYdXXXXXXX',
+  'XXXXDyYbbYyddddXXXXXXXXdDDDDyYbbYyYybbYYDXXXXXXX',
+  'XXDDdYybbYYyyYddXXXXXXXXXdDDYybbYyyybbYYDXXXXXXX',
+  'XXDyyYybbyYYYyYDDXXXXXDdddyyYYbbyyyYbbyyDXXXXXXX',
+  'DdDyYyYbbMMMyYYYdDXXdDdYYyYYyybbyYyYbbyydXXXXXXX',
+  'dYYYYMMMSSSMMYyYYDDdDyyyYYYYMMMMMMYYbbYYDXXXXXXX',
+  'DYYYYMSSSSSSMSYyYyDDyYyyYMMMSSSSSSMMMbYyDdXXXXXX',
+  'yYYMMSSSSSSTSMMyYYdDyyYMSMSSSSSSSSSSSMYyyDdXXXXX',
+  'YYySSSSSSSSSSSMMyYYyyYMMSSSSSSSSSSSSSMYyYyDXXXXX',
+  'yyMMSSSSSSSSSSSMYyyyYySSSSSTSSSSSSSSSMMYYydXXXXX',
+  'yYMSSSSSSSSSSSSMMYYyySMSSSSSSSSSSSSSSSMMYYDXXXXX',
+  'YYMSSSSSSSSSSSSSMYyYYMSSSSSTSSSSSSSSSSSMYYdXXXXX',
+  'yyMSSSSSSSSSSSSSMyYYYMSSSSSSSSSSSSSSSSSMyydXXXXX',
+  'YSMSSSSSSSSSSSSSMMBBBMSSSSSSSSSSSSSSSSSMyYDXXXXX',
+  'yMSSSSSSSSSSSSSTMMBBBMSSSSSTSSSSSSSSSTSMyYDXXXXX',
+  'ySSSSSSSSSSSSSSSMyYyyMMSSSSSSSSSSSSSSSSSyyDXXXXX',
+  'YMMSSSSSSSSSSSSSMyyYYyMSSSSSSSSSSSSSSSMMYYDXXXXX',
+  'YyMSSSSSSSSSSSSMMYyyyySMSSSSSSSSSSSSSSMyyydXXXXX',
+  'YySMSSSSSSTSSSMMYYYDyyySSSSSSSSSSSSSSSMYYYdXXXXX',
+  'YYYMMSSSSSSSSMMyyyYdyYYMMMTSSSSSSSSSMMMYyDdXXXXX',
+  'yyyyMMMSSSSTMMyYyYDDDYyyYMMMSSSSSSMMMYyyydXXXXXX',
+  'DYyYYYMMSMMMMyyYYdDXDYyyyYyMMSMSSMMYYyyyydXXXXXX',
+  'ddYyYYYMMyyYyYYYddXXDdDyYYYYYYbbMYyyYYydDDXXXXXX',
+  'XDDDYyYyyYYYyyydDXXXXdDyYYYYyybbMyYYYYDDXXXXXXXX',
+  'XXXddyYyyyYDdDdDXXXXXdYyyYMMMSMSMMMyYYydXXXXXXXX',
+  'XXXXDDDdddDdXXXXXXXXXDYYyMMSSSSSSSMMYyydXXXXXXXX',
+  'XXXXXXXXXXXXXXXXXXXXXDYYSMSSSSSSSSSSMyydXXXXXXXX',
+  'XXXXXXXXXXXXXXXXXXXXXDyyMMMSSSSSSSMMMYyDXXXXXXXX',
+  'XXXXXXXXXXXXXXXXXXXXXdYyyYMMSMMMSMMYyyyDXXXXXXXX',
+  'XXXXXXXXXXXXXXXXXXXXXdYYyYYyyYyYYYYyyyYDXXXXXXXX',
+];
+
+let __celulasPreservadas = 0;
+let __franjaConvertida = 0;
+let __iguais = 0;
+let __franja = 0;
+
+for (let y = 0; y < NUCLEO; y++) {
+  for (let x = 0; x < NUCLEO; x++) {
+    const aprovado = NUCLEO_APROVADO[y][x];
+    const atual = grid[y][x];
+    if (atual === aprovado) { __celulasPreservadas++; __iguais++; continue; }
+    // Única troca autorizada: mar aberto aprovado -> água desenhada.
+    if (aprovado === 'X' && 'YyDd'.includes(atual)) { __franjaConvertida++; __franja++; continue; }
+    grid[y][x] = aprovado;
+    __celulasPreservadas++;
+  }
+}
+const PRESERVADAS = __celulasPreservadas;
+const FRANJA = __franjaConvertida;
+
+// ---------------------------------------------------------------------
+// COSTÃO DO NORTE: PAREDE, NÃO LABIRINTO
+//
+// `R` (rocha) é `walk: false`, mas rocha cercada de água ainda deixa
+// "ilhas de pedra" que o jogador vê e não alcança — 62 tiles presos na
+// primeira medição. O costão do norte é, por definição, um paredão: ele
+// é o limite da enseada pelo lado de cima. Aqui todo ele vira `W`
+// (mar aberto, sem desenho e PAREDE no layout), o que é mais barato de
+// desenhar e mais honesto de ler.
+//
+// A pedra continua visível na ponta oeste do Cabo do Eco, que é onde ela
+// tem função (fechar a leitura da costa).
+// ---------------------------------------------------------------------
+for (let y = 3; y <= 14; y++) {
+  for (let x = NUCLEO + 2; x <= NUCLEO + 12; x++) {
+    if (ehNucleo(x, y)) continue;
+    if (grid[y][x] === 'R') grid[y][x] = 'X';
+  }
+}
+
+// Células aprovadas que viram ponte de acesso (a única alteração de
+// conteúdo permitida no miolo). Usada tanto para construir quanto para
+// o teste conferir.
+const PASSARELAS_DECLARADAS = [
+  [38, 16], [39, 16], [40, 16], [41, 16], [42, 16], [43, 16], [44, 16],
+  [45, 16], [46, 16], [47, 16], [30, 47],
+];
+
+// ---------------------------------------------------------------------
+// PASSARELAS DE ACESSO ÀS BEIRADAS NOVAS
+//
+// Ficam DEPOIS da restauração do núcleo de propósito: se ficassem antes,
+// a restauração apagaria a ponte que pisa na borda aprovada. Aqui elas
+// são o último gesto do mapa — mas só tocam células de ÁGUA do núcleo,
+// nunca terra, ponte existente ou poça. A checagem é o próprio `ponte()`.
+// ---------------------------------------------------------------------
+// Núcleo leste -> Enseada do Leste.
+//
+// Em y=8 a areia aprovada chega até x=47 e a enseada nova começa em
+// x=50..51, mas x=48 e 49 são `R` (rocha) na própria orla: não há água
+// para ancorar ponte. Abro um CANAL de 2 tiles ali — é água nova, fora
+// do núcleo, e é o que dá leitura de "enseada separada por mar".
+// A franja leste do núcleo (x 41..44) é mar aberto sem desenho. A
+// passarela atravessa ela e o canal até a primeira areia da enseada.
+for (const x of [48, 49]) grid[16][x] = 'Y';
+ponte(38, 16, 49, 16, 'B');
+// Núcleo sul (terra em y=46) -> Cabo do Eco (areia em y=49).
+// O vão é de UM tile de água (y=47) em x entre 24 e 36.
+ponte(30, 47, 30, 47, 'b');
+
+// Nenhuma passarela pode ter caído sobre célula aprovada de TERRA:
+// seria caminho novo no miolo. Água do núcleo pode virar ponte (é o
+// único jeito de sair dele), mas terra aprovada não.
+const aguaAprovada = (x, y) => 'YyDdXW'.includes(NUCLEO_APROVADO[y]?.[x] ?? 'Y');
+for (const [px, py] of [[48, 7], [49, 7], [30, 47]]) {
+  const aprovado = NUCLEO_APROVADO[py]?.[px];
+  if (aprovado !== undefined && 'SMTPbR'.includes(aprovado)) {
+    throw new Error(`passarela em ${px},${py} caiu sobre terra aprovada (${aprovado})`);
   }
 }
 
@@ -341,6 +603,39 @@ function espalharProps() {
   return lista;
 }
 
+// Quantas das passarelas declaradas realmente viraram ponte. Contado no
+// fim, quando `grid` já está fechado — não durante a restauração.
+function __contarPassarelas() {
+  return PASSARELAS_DECLARADAS.filter(([x, y]) => 'Bb'.includes(grid[y][x])).length;
+}
+
+// Contagem final do que a franja virou: percorre o núcleo comparando a
+// grade fechada com a aprovada. Fazer isso no fim evita contar estados
+// intermediários (o costão, por exemplo, passa por 'X' -> 'W' -> 'X').
+function __contarFranja() {
+  let n = 0;
+  for (let y = 0; y < NUCLEO; y++) {
+    for (let x = 0; x < NUCLEO; x++) {
+      const a = NUCLEO_APROVADO[y][x];
+      if (a !== 'X') continue;
+      if ('YyDd'.includes(grid[y][x])) n++;
+    }
+  }
+  return n;
+}
+
+// Quantas células do núcleo continuam idênticas ao aprovado (contando
+// as passarelas como "mudaram" e a franja como "mudou").
+function __contarIguais() {
+  let n = 0;
+  for (let y = 0; y < NUCLEO; y++) {
+    for (let x = 0; x < NUCLEO; x++) {
+      if (grid[y][x] === NUCLEO_APROVADO[y][x]) n++;
+    }
+  }
+  return n;
+}
+
 export const map = {
   id: 'ilha_praia_inicial',
 
@@ -371,6 +666,26 @@ export const map = {
   // Dados visuais separados da máscara de colisão.
   aguaPraia: grid.map(linha => linha.join('')),
 
+  // -------------------------------------------------------------------
+  // PROVA DO CRESCIMENTO (Praia 10.0)
+  //
+  // `NUCLEO_APROVADO` é a grade 48x48 da praia 2.0, congelada. O teste
+  // `praia-maior.mjs` hasheia o CONTEÚDO dela (tudo menos o mar aberto
+  // 'X', que é borda e pode ganhar desenho) e compara com o hash da
+  // versão aprovada. Assim ninguém "cresce" o mapa mexendo no miolo.
+  // -------------------------------------------------------------------
+  nucleo: {
+    tamanho: NUCLEO,
+    grade: NUCLEO_APROVADO,
+    // Células aprovadas que viraram PONTE para dar acesso às beiradas
+    // novas. É a única alteração de conteúdo permitida no miolo, e está
+    // declarada aqui de propósito: qualquer outra acusa no teste.
+    passarelas: PASSARELAS_DECLARADAS,
+    preservadas: __contarIguais(),
+    franjaConvertida: __contarFranja(),
+    passarelasAplicadas: __contarPassarelas(),
+  },
+
   fauna: [
     { id: 'praia_caranguejo_1', species: 'caranguejo', x: 3.5, y: 10.5 },
     { id: 'praia_caranguejo_2', species: 'caranguejo', x: 26.5, y: 14.5 },
@@ -387,7 +702,10 @@ export const map = {
     { id: 'praia_capivara_centro', species: 'capivara', x: 27.5, y: 26.5 },
     { id: 'praia_gaivota_farol', species: 'gaivota', x: 32.5, y: 44.5 },
     { id: 'praia_peixes_farol', species: 'peixes', x: 37.5, y: 42.5 },
-    { id: 'praia_peixes_largo', species: 'peixes', x: 42.5, y: 17.5 },
+    // Movido 1 tile ao sul na Praia 10.0: a franja de mar aberto em
+    // (42,17) deixou de ser navegável quando a orla cresceu, e cardume
+    // em célula `X` era filtrado por `habitatAllows` — o animal sumia.
+    { id: 'praia_peixes_largo', species: 'peixes', x: 42.5, y: 18.5 },
     { id: 'praia_peixes_sul_largo', species: 'peixes', x: 17.5, y: 38.5 },
   ],
   objects: [

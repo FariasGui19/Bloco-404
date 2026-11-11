@@ -1096,6 +1096,11 @@ export const map = {
     { id: 'estacao_dossel', tipo: 'decoracao', x: 7.3, y: 0.8, camada: 'fundo', ordem: 3,
       sprite: 'praia_plataforma_kit', frame: { col: 2, row: 0 }, useCrop: true,
       larguraPx: 142, pivotX: .5, pivotY: 1, ajusteY: 74, escalaY: .78, bloqueia: false },
+    // Sapatas visuais sob as extremidades da plataforma, sem alterar rotas.
+    { id: 'estacao_sapata_oeste', tipo: 'decoracao', x: 4.4, y: 2.0, camada: 'fundo', ordem: -1,
+      sprite: 'praia_plataforma_kit', frame: { col: 0, row: 1 }, useCrop: true, larguraPx: 35, pivotY: 1, ajusteY: 50, escalaY: 1.05, bloqueia: false },
+    { id: 'estacao_sapata_leste', tipo: 'decoracao', x: 10.0, y: 2.0, camada: 'fundo', ordem: -1,
+      sprite: 'praia_plataforma_kit', frame: { col: 0, row: 1 }, useCrop: true, larguraPx: 35, pivotY: 1, ajusteY: 50, escalaY: 1.05, bloqueia: false },
     // Os dois pilares do contrato 0314: mesmo id, mesmo y=5, em chão firme.
     { id: 'plataforma_pilar_oeste', tipo: 'decoracao', x: 2, y: 5, sprite: 'praia_plataforma_kit', frame: { col: 0, row: 1 }, useCrop: true, larguraPx: 30, pivotY: 1, escalaY: .86, bloqueia: false },
     { id: 'plataforma_pilar_leste', tipo: 'decoracao', x: 13, y: 5, sprite: 'praia_plataforma_kit', frame: { col: 0, row: 1 }, useCrop: true, larguraPx: 30, pivotY: 1, escalaY: .86, bloqueia: false },

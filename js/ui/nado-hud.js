@@ -185,7 +185,8 @@ export function desenharDegrauNado(state, map) {
   ctx.font = '9px monospace';
   if (r.prova) {
     ctx.fillStyle = 'rgba(232,255,250,.74)';
-    ctx.fillText(`PROVA › ${r.prova.curta}`, x + 12, y + 32);
+    ctx.fillText(r.prova.id === 'fundo' && !nado.mergulhoLivre
+      ? 'FUNDO: REQUER AFINIDADE AQUÁTICA' : `PROVA › ${r.prova.curta}`, x + 12, y + 32);
 
     // Barra de andamento.
     const bw = L - 24 - 54, bh = 5, px = x + 12, py = y + 46;

@@ -8,12 +8,17 @@ import { state } from '../js/game/state.js';
 import { canStandAt } from '../js/game/collision.js';
 
 // Fundação e hitbox compartilham coordenadas e toda sua área tem terra por baixo.
-const terminal = bio.objects.find(o => o.id === 'bio_terminal_principal');
-const h = terminal.hitbox, ox = terminal.x + .5, oy = terminal.y + .5;
+// Usa o objeto já carregado (x/y no centro do tile), que é o que a colisão lê.
+state.save.loaded = false; state.progress = { flags: {}, inventory: [], archetype: 'motor_bio_forja' };
+await loadMap(bio.id, 'inicio');
+const terminal = state.objects.find(o => o.id === 'bio_terminal_principal');
+const h = terminal.hitbox, ox = terminal.x, oy = terminal.y;
 for (let y = Math.floor(oy + h.offsetY); y <= Math.floor(oy + h.offsetY + h.height); y++)
   for (let x = Math.floor(ox + h.offsetX); x <= Math.floor(ox + h.offsetX + h.width); x++)
     assert.equal(bio.walkMask[y]?.[x], '.', `fundação em ${x},${y} sem terra`);
-assert(ox + h.offsetX >= 3 && oy + h.offsetY >= 3, 'recuo mínimo da costa');
+assert(ox + h.offsetX >= 2 && oy + h.offsetY >= 2, 'recuo mínimo da costa');
+const fundacao = state.objects.find(o => o.id === 'bio_fundacao_bio_terminal_principal');
+assert.deepEqual([fundacao.x, fundacao.y], [terminal.x, terminal.y], 'placa acompanha a máquina');
 const entrance = bio.portals.find(o => o.id === 'entrar_controle_bio');
 const station = bio.portals.find(o => o.id === 'estacao_voltar');
 for (const [portal, marker] of [[entrance, 'acesso_controle_bio'], [station, 'estacao_cabo_chegada']]) {
@@ -22,7 +27,6 @@ for (const [portal, marker] of [[entrance, 'acesso_controle_bio'], [station, 'es
 }
 assert.deepEqual(entradaSpawn(bio.spawnPoints.vindo_controle), [entrance.x, entrance.y]);
 function entradaSpawn(p) { return [Math.floor(p.x), Math.floor(p.y)]; }
-state.save.loaded = false; state.progress = { flags: {}, inventory: [], archetype: 'motor_bio_forja' };
 for (const id of ['inicio', 'vindo_controle']) {
   await loadMap(bio.id, id);
   assert(canStandAt(bio, state.player.x, state.player.y, .28, state.player), `spawn ${id} livre`);

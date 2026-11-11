@@ -6,17 +6,38 @@
 // =====================================================================
 import { CONFIG, TILE } from '../config.js';
 import { camera, view, worldToScreen, isoToWorld } from './camera.js';
+import { drawUltimateSignature } from './ultimate-visuals.js';
 import { getSprite } from './sprites.js';
 import { createBeachSurface } from './beach-surface.js';
+import { getSeaCanvas, foamArcs } from './beach-water.js';
+import { identidadeDoGate, desenharSeloDeModulo } from './selos-modulo.js';
+import { getVidaAquatica, atualizarCardumes, atualizarBolhas, CORES_CARDUME, elementosDeRecife } from '../game/vida-aquatica.js';
+import { detalhesFauna } from '../game/fauna-ferida.js';
+import { desenharBichoFerido, desenharRastroSocorro } from '../ui/fauna-desenho.js';
+import { criarFragmentosDeMare, fragmentosColetados } from '../game/mare-missao.js';
+import { createCoastField } from './coast-field.js';
 import { bridgeGateGeometry } from './bridge-geometry.js';
 import { getBioWalkFrame, bioWalkSheet } from '../data/bio-walk.js';
 import { faunaFootAnchor } from '../game/fauna-costeira.js';
 import { getFrame } from './sprite-clean.js';
 import { drawAmbientBack, drawAmbientFront } from './ambient.js';
+import { tintaDoClima, atualizarParticulas } from '../game/clima.js';
+import { animarFauna } from '../game/fauna-animacao.js';
 import { isDebugEnabled, drawDebugWorld } from '../game/debug.js';
 import { ACTION_SPRITES } from '../data/action-sprites.js';
 import { drawHubScreenFx, hasHubScreenFx } from './hub-screen-fx.js';
 import { getVelozAnimation, getVelozPulse } from '../data/veloz-animation.js';
+import { getBrutaAnimation, BRUTA_SCALE, BRUTA_FOOT_Y } from '../data/bruta-animation.js';
+import { getUltimateFrame } from '../data/nucleo-ultimate-animation.js';
+import { getBioUltimateFrame } from '../data/bio-ultimate-animation.js';
+import { getBioAttackFrame, getBioPropulsorFrame } from '../data/bio-action-animation.js';
+import { getMareUltimateFrame } from '../data/mare-ultimate-animation.js';
+import { getDominioUltimateFrame } from '../data/dominio-ultimate-animation.js';
+import { getMarePropulsorFrame } from '../data/mare-action-animation.js';
+import { getTransformFrame, getNucleoBraceletFrame } from '../data/transform-animation.js';
+import { getSelectedToolId } from '../game/tools.js';
+import { NUCLEO_BRUTA } from '../data/nucleo-forms.js';
+import { getFissures } from '../game/scars.js';
 import { getMareWalk, getMareAttack, mareSheet } from '../data/mare-animation.js';
 import { getDominioWalk, getDominioAttack } from '../data/dominio-animation.js';
 import { getBasicAttackPose } from '../data/basic-attack-poses.js';
@@ -63,10 +84,19 @@ export function render(map, state) {
   ctx.fillRect(0, 0, view.w, view.h);
 
   const z = camera.zoom * dpr;
+  // Tremor da Ultimate: desloca a câmera e volta sozinho.
+  const shake = state.player?.ultimate?.shake;
+  let shakeX = 0, shakeY = 0;
+  if (shake && shake.timeLeft > 0) {
+    const k = shake.timeLeft / (shake.duration || .34);
+    const power = (shake.power ?? 8) * k;
+    shakeX = Math.sin(shake.timeLeft * 143) * power;
+    shakeY = Math.cos(shake.timeLeft * 117) * power * .6;
+  }
   ctx.setTransform(
     z, 0, 0, z,
-    (view.w / 2 - camera.x * camera.zoom) * dpr,
-    (view.h / 2 - camera.y * camera.zoom) * dpr
+    (view.w / 2 - camera.x * camera.zoom + shakeX) * dpr,
+    (view.h / 2 - camera.y * camera.zoom + shakeY) * dpr
   );
 
   updateVisibleRange(map);
@@ -74,9 +104,13 @@ export function render(map, state) {
   // O metrô modular volta a usar chão e tiles.
   if (!map.meta?.backgroundCoversFloor) {
     if (map.aguaPraia) {
-      drawBeachSea(map);
-      drawBeachRipples(map);
+      // AREIA primeiro, MAR por cima: o mar recorta a própria borda pelo campo
+      // de costa (`beach-water.js`), então a linha d'água é curva em vez de
+      // seguir a borda quadrada das células de areia.
       if (map.id !== 'ilha_estacao_bio') drawBeachSurface(map);
+      drawBeachSea(map);
+      drawVidaAquatica(map, state);
+      drawBeachRipples(map);
     }
     drawFloors(map);
     drawHazards(state.hazards);
@@ -91,7 +125,6 @@ export function render(map, state) {
       drawStationRoute(map);
       drawBioShadows(map);
     }
-    if (map.aguaPraia) drawBeachShore(map);
 
     if (map.metroTiles) {
       drawMetroPlatformTiles(map);
@@ -107,15 +140,31 @@ export function render(map, state) {
   }
 
   drawAmbientBack(ctx, state, HW, HH);
+  // Chão antes de tudo: as fendas ficam embaixo de objetos e personagens.
+  drawWorldScars(state);
   drawWorld(map, state);
   drawBasicAttack(state.player);
   drawAbilityEffects(state);
+  drawUltimateCharge(state);
+  drawUltimateEffect(state);
   drawAmbientFront(ctx, map, HW, HH);
+  // CLIMA por último entre as camadas de mundo: chuva e tinta cobrem
+  // tudo (inclusive o jogador), mas nunca a HUD, que é DOM.
+  drawClima(ctx, state, view);
   drawTarget(state.player);
 
   if (isDebugEnabled()) drawDebugWorld(ctx, map, state, CONFIG.TILE_W, CONFIG.TILE_H);
 
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  // Clarão curto no instante da soltura (não cobre a HUD, que é DOM).
+  const flash = state.player?.ultimate?.flash;
+  if (flash && flash.timeLeft > 0) {
+    ctx.save();
+    ctx.globalAlpha = (flash.timeLeft / (flash.duration || .26)) * .34;
+    ctx.fillStyle = flash.color ?? '#ffffff';
+    ctx.fillRect(0, 0, view.w, view.h);
+    ctx.restore();
+  }
   drawLabels(state);
   drawBubbles(state);
 }
@@ -353,57 +402,17 @@ function drawFloors(map) {
   }
 }
 
-// Textura de mar contínua em coordenadas de mundo. A distância é calculada
-// até a areia (não até pontes), sem modificar a máscara de colisão.
-const beachSeaCache = new WeakMap();
+// O mar é uma textura única ASSADA por mapa (js/engine/beach-water.js):
+// degradê, bancos submersos, cáusticas, espuma da margem e linha de espuma
+// recuada vêm todos dela. Antes isso era recalculado pixel a pixel no
+// primeiro frame e as ondas/espuma eram redesenhadas a cada quadro.
 function drawBeachSea(map) {
-  let texture = beachSeaCache.get(map);
-  const rows = map.aguaPraia;
-  const width = rows[0].length, height = rows.length;
-  if (!texture) {
-    const scale = 8;
-    texture = document.createElement('canvas');
-    texture.width = width * scale;
-    texture.height = height * scale;
-    const sea = texture.getContext('2d');
-    const image = sea.createImageData(texture.width, texture.height);
-    const shallow = [111, 200, 184], deep = [30, 99, 132];
-    for (let py = 0; py < texture.height; py++) {
-      for (let px = 0; px < texture.width; px++) {
-        const wx = (px + 0.5) / scale, wy = (py + 0.5) / scale;
-        let closest = 5;
-        for (let y = Math.max(0, Math.floor(wy) - 5); y <= Math.min(height - 1, Math.floor(wy) + 5); y++) {
-          for (let x = Math.max(0, Math.floor(wx) - 5); x <= Math.min(width - 1, Math.floor(wx) + 5); x++) {
-            if (!'SMTPR'.includes(rows[y][x])) continue;
-            const dx = Math.max(x - wx, 0, wx - (x + 1));
-            const dy = Math.max(y - wy, 0, wy - (y + 1));
-            closest = Math.min(closest, Math.hypot(dx, dy));
-          }
-        }
-        // Degradê contínuo entre a margem e o mar aberto.
-        const edge = Math.min(wx, wy, width - wx, height - wy);
-        const border = Math.max(0, Math.min(1, edge / 1.6));
-        const t = Math.max(Math.min(1, closest / 4.5), 1 - border * border * (3 - 2 * border));
-        const smooth = t * t * (3 - 2 * t);
-        // Bancos submersos sutis unem visualmente as enseadas sem criar terra.
-        const bank = (1 - smooth) * Math.max(0, Math.sin(wx * .65 + Math.sin(wy * .5) * 1.8) - .45) * 8;
-        const detail = bank + (1 - smooth) * (Math.sin(wx * 4.1 + Math.sin(wy * 2.3)) * 3 + Math.sin(wy * 3.2 - wx * .7) * 2);
-        // Cintilações entrelaçadas somente no raso, assadas no cache.
-        const a = Math.sin(wx * 3.5 + Math.sin(wy * 2.2) * 1.4);
-        const b = Math.sin(wy * 3.1 + Math.sin(wx * 2.0) * 1.2);
-        const caustic = Math.max(0, (a + b) * .5 - .45) * 42 * (1 - smooth);
-        const i = (py * texture.width + px) * 4;
-        for (let c = 0; c < 3; c++) image.data[i + c] = shallow[c] * (1 - smooth) + deep[c] * smooth + detail + caustic;
-        image.data[i + 3] = 255;
-      }
-    }
-    sea.putImageData(image, 0, 0);
-    beachSeaCache.set(map, texture);
-  }
+  const sea = getSeaCanvas(map);
+  if (!sea) return;
   ctx.save();
   ctx.transform(HW, HH, -HW, HH, 0, 0);
   ctx.imageSmoothingEnabled = true;
-  ctx.drawImage(texture, 0, 0, width, height);
+  ctx.drawImage(sea.canvas, 0, 0, map.aguaPraia[0].length, map.aguaPraia.length);
   ctx.restore();
 }
 
@@ -421,7 +430,7 @@ function drawBeachSurface(map) {
     image.data.set(data.pixels);
     paint.putImageData(image, 0, 0);
     // Grãos e sulcos sutis são assados no cache, não redesenhados por frame.
-    const rows = map.aguaPraia, scale = data.width / rows[0].length;
+    const rows = map.aguaPraia, scale = data.scale;
     paint.strokeStyle = 'rgba(145,101,58,.20)'; paint.lineWidth = .8;
     paint.lineCap = 'round'; paint.beginPath();
     for (let y = 0; y < rows.length; y++) for (let x = 0; x < rows[y].length; x++) {
@@ -443,76 +452,302 @@ function drawBeachSurface(map) {
   ctx.drawImage(texture, 0, 0, map.aguaPraia[0].length, map.aguaPraia.length);
   ctx.restore();
 }
-
-// Reflexos também no mar além dos limites do mapa: o fundo deixa de ser
-// um vazio chapado, sem criar terrenos jogáveis nem alterar a colisão.
+// MOVIMENTO DA ÁGUA — só a animação aditiva, em orçamento fixo.
+// A espuma e as ondulações estáticas já estão na textura assada; aqui sobram
+// alguns arcos que sobem e descem na beira. `foamArcs` devolve no máximo
+// `limit` itens por quadro, então afastar a câmera não aumenta o custo.
+const SHORE_ARC_BUDGET = 72;
 function drawBeachRipples(map) {
-  const halfW = view.w / (2 * camera.zoom);
-  const halfH = view.h / (2 * camera.zoom);
-  const corners = [
-    isoToWorld(camera.x - halfW, camera.y - halfH),
-    isoToWorld(camera.x + halfW, camera.y - halfH),
-    isoToWorld(camera.x + halfW, camera.y + halfH),
-    isoToWorld(camera.x - halfW, camera.y + halfH),
-  ];
-  const spacing = 1.6;
-  const x0 = Math.floor(Math.min(...corners.map(p => p.x)) / spacing) - 1;
-  const x1 = Math.ceil(Math.max(...corners.map(p => p.x)) / spacing) + 1;
-  const y0 = Math.floor(Math.min(...corners.map(p => p.y)) / spacing) - 1;
-  const y1 = Math.ceil(Math.max(...corners.map(p => p.y)) / spacing) + 1;
   const rows = map.aguaPraia;
-
+  const time = performance.now() / 1000;
+  const arcs = foamArcs(rows, range, time, SHORE_ARC_BUDGET);
+  if (!arcs.length) return;
   ctx.save();
-  const waveTime = performance.now() / 1000;
-  ctx.strokeStyle = `rgba(176, 238, 226, ${0.22 + 0.05 * Math.sin(waveTime * 0.9)})`;
-  ctx.lineWidth = 1;
   ctx.lineCap = 'round';
-  ctx.beginPath();
-  for (let y = y0; y <= y1; y++) {
-    for (let x = x0; x <= x1; x++) {
-      if (hash(x + 319, y - 871) > 0.58) continue;
-      const wx = (x + hash(x + 29, y + 17)) * spacing;
-      const wy = (y + hash(x - 37, y + 53)) * spacing;
-      const tile = rows[Math.floor(wy)]?.[Math.floor(wx)];
-      if (tile && 'SMTPRBb'.includes(tile)) continue;
-      const ix = (wx - wy) * HW + Math.sin(waveTime * 0.7 + x * 0.8 + y) * 2, iy = (wx + wy) * HH;
-      const length = 6 + hash(x + 117, y - 62) * 10;
-      ctx.moveTo(ix - length / 2, iy);
-      ctx.quadraticCurveTo(ix, iy - 2.2, ix + length / 2, iy);
-      if (hash(x - 19, y + 23) < 0.22) {
-        ctx.moveTo(ix - length * 0.18, iy + 3);
-        ctx.lineTo(ix + length * 0.22, iy + 3);
-      }
-    }
+  for (const { x, y, phase, seed } of arcs) {
+    const ix = (x - y) * HW, iy = (x + y) * HH;
+    const rise = Math.sin(phase * Math.PI);
+    const alpha = .5 * (1 - rise) * (.55 + seed * .45);
+    if (alpha <= .02) continue;
+    const len = 7 + seed * 7;
+    const off = (1 - rise) * 3.2;
+    ctx.strokeStyle = `rgba(232,255,247,${alpha.toFixed(3)})`;
+    ctx.lineWidth = 1 + seed * .8;
+    ctx.beginPath();
+    ctx.moveTo(ix - len / 2, iy + off);
+    ctx.quadraticCurveTo(ix, iy + off - 2.4, ix + len / 2, iy + off);
+    ctx.stroke();
   }
-  ctx.stroke();
   ctx.restore();
 }
 
-// Pequenos arcos de espuma interrompidos, em água junto à areia. Evita
-// sublinhar os dentes da máscara com uma linha geométrica contínua.
-function drawBeachShore(map) {
-  const rows = map.aguaPraia;
-  const sand = (x, y) => 'SMT'.includes(rows[y]?.[x] ?? ' ');
-  ctx.save(); ctx.strokeStyle = 'rgba(222,255,240,.44)';
-  ctx.lineWidth = 1.25; ctx.lineCap = 'round';
-  const wave = performance.now() / 1000;
-  for (let y = range.y0; y <= range.y1; y++) for (let x = range.x0; x <= range.x1; x++) {
-    if (!'Yy'.includes(rows[y]?.[x] ?? ' ')) continue;
-    const tx = (x-y)*HW, ty = (x+y)*HH;
-    const edges = [
-      [x-1,y,tx-HW,ty+HH,tx,ty], [x,y-1,tx,ty,tx+HW,ty+HH],
-      [x+1,y,tx+HW,ty+HH,tx,ty+TH], [x,y+1,tx,ty+TH,tx-HW,ty+HH],
-    ];
-    for (const [nx,ny,ax,ay,bx,by] of edges) {
-      if (!sand(nx,ny) || hash(x + nx*7, y + ny*11) < .22) continue;
-      const shift = Math.sin(wave * .8 + x * .5 + y) * 1.5;
-      const sx = ax*.8+bx*.2, sy = ay*.8+by*.2;
-      const ex = ax*.2+bx*.8, ey = ay*.2+by*.8;
-      ctx.beginPath(); ctx.moveTo(sx, sy + shift);
-      ctx.quadraticCurveTo((ax+bx)/2, (ay+by)/2 + shift - 2, ex, ey + shift); ctx.stroke();
+
+// =====================================================================
+// VIDA SUBAQUÁTICA
+//
+// Tudo é opaco sob a água? Não: o mar assado é desenhado ANTES, então o
+// que aparece aqui é o que está "embaixo" da lâmina. A leitura funciona
+// porque cada elemento é desenhado com alpha baixo, como se a água o
+// tingisse — recifes mais apagados, cardumes um pouco mais vivos (estão
+// mais perto da superfície).
+//
+// Custo: cardumes são um número FIXO por mapa (7); recifes e raios são
+// listas estáticas. Só os visíveis são desenhados.
+// =====================================================================
+const vidaCache = new WeakMap();
+const fragmentosCache = new WeakMap();
+
+// Cor por módulo, espelhada de `selos-modulo.js` para o rastro de socorro.
+const MOD_COR = {
+  mare_astral: '#35E6D3',
+  nucleo_dez_forma: '#9CEFA2',
+  lamina_dominio_anciao: '#EDB85A',
+  motor_bio_forja: '#CE9C5F',
+};
+
+// ---------------------------------------------------------------------
+// CLIMA: tinta, chuva e clarão
+//
+// Peso por frame é constante: 120 partículas no máximo, um retângulo de
+// tinta e uma vinheta. Nada aqui cresce com o tamanho do mapa.
+// ---------------------------------------------------------------------
+function drawClima(ctx, state, view) {
+  const clima = state.clima;
+  if (!clima) return;
+
+  // 1. TINTA: esfria e escurece a cena inteira. É o efeito mais barato
+  //    e o que mais se lê de longe — em ressaca a praia "fecha".
+  const tinta = tintaDoClima(clima);
+  if (tinta.a > 0.004) {
+    ctx.save();
+    ctx.fillStyle = `rgba(${tinta.r},${tinta.g},${tinta.b},${tinta.a.toFixed(3)})`;
+    ctx.fillRect(0, 0, view.w, view.h);
+    ctx.restore();
+  }
+
+  // 2. CHUVA: só desenha se o buffer existir (evita alocar em mapa seco).
+  if (clima.chuva > 0.02 && state.particulasClima) {
+    const ativas = Math.round(state.particulasClima.length * Math.min(1, clima.chuva));
+    atualizarParticulas(state.particulasClima, clima, 1 / 60, ativas);
+    ctx.save();
+    ctx.globalCompositeOperation = 'lighter';
+    ctx.strokeStyle = `rgba(190,220,235,${(0.16 + clima.chuva * 0.26).toFixed(3)})`;
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    const W = view.w, H = view.h;
+    const dx = Math.cos(clima.direcao) * clima.vento * 26;
+    const dy = Math.sin(clima.direcao) * clima.vento * 10;
+    for (let i = 0; i < ativas; i++) {
+      const p = state.particulasClima[i];
+      const x = p.x * W, y = p.y * H;
+      const c = p.comprimento * H;
+      ctx.moveTo(x, y);
+      ctx.lineTo(x + dx * 0.25, y + c + dy * 0.25);
+    }
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  // 3. VINHETA: fecha o quadro nas bordas. Em tempo fechado ela aperta.
+  if (clima.forca > 0.15) {
+    const forca = Math.min(0.5, clima.forca * 0.42);
+    const g = ctx.createRadialGradient(
+      view.w * .5, view.h * .5, Math.min(view.w, view.h) * .32,
+      view.w * .5, view.h * .5, Math.max(view.w, view.h) * .72);
+    g.addColorStop(0, 'rgba(0,0,0,0)');
+    g.addColorStop(1, `rgba(8,18,24,${forca.toFixed(3)})`);
+    ctx.save();
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, view.w, view.h);
+    ctx.restore();
+  }
+}
+
+function drawVidaAquatica(map, state) {
+  if (!map.aguaPraia) return;
+  let vida = vidaCache.get(map);
+  if (!vida) { vida = getVidaAquatica(map); vidaCache.set(map, vida); }
+  if (!vida) return;
+
+  const t = performance.now() / 1000;
+  const player = state.player;
+  const nado = player?.nado;
+  const submerso = !!nado?.ativo && nado.profundidade > 1.25;
+
+  // Atualiza simulação uma vez por frame (não por item visível).
+  atualizarCardumes(vida.cardumes, player ?? { x: 0, y: 0 }, 1 / 60, submerso);
+  atualizarBolhas(vida.bolhas, player ?? { x: 0, y: 0 }, nado, 1 / 60, map);
+
+  const dentro = (x, y, margem = 4) =>
+    x >= range.x0 - margem && x <= range.x1 + margem &&
+    y >= range.y0 - margem && y <= range.y1 + margem;
+
+  ctx.save();
+
+  // ---- Fauna ferida: os animais em apuros do mapa atual ----
+  // Desenhada junto com a vida aquática porque é a MESMA camada: bicho
+  // ferido é vida no mar, não um item de inventário.
+  const bichos = detalhesFauna(map, state.progress, vida.recifes);
+  for (const b of bichos) {
+    if (!dentro(b.x, b.y, 2)) continue;
+    const bx = (b.x - b.y) * HW, by = (b.x + b.y) * HH;
+    const perto = player && Math.hypot(player.x - b.x, player.y - b.y) < 3.4;
+    desenharBichoFerido(ctx, b, bx, by, 16, t, {
+      destacado: perto && b.estado !== 'curado',
+      corModulo: b.def?.cura && MOD_COR[b.def.cura],
+    });
+    if (b.rastro > 0) {
+      desenharRastroSocorro(ctx, bx, by, b.rastro, MOD_COR[b.def?.cura] ?? '#9fffe3');
+      b.rastro = Math.max(0, b.rastro - 1 / 90);
     }
   }
+
+  // ---- Raios de sol: só quando o jogador mergulha (é o "wow" do mergulho)
+  if (submerso) {
+    ctx.globalCompositeOperation = 'lighter';
+    for (const raio of vida.raios) {
+      if (!dentro(raio.x, raio.y, 8)) continue;
+      const pulsar = .06 + .05 * Math.sin(t * raio.vel + raio.fase);
+      const ix = (raio.x - raio.y) * HW, iy = (raio.x + raio.y) * HH;
+      const g = ctx.createLinearGradient(ix, iy - 120, ix, iy + 40);
+      g.addColorStop(0, `rgba(190,240,255,${pulsar.toFixed(3)})`);
+      g.addColorStop(1, 'rgba(190,240,255,0)');
+      ctx.fillStyle = g;
+      ctx.beginPath();
+      ctx.moveTo(ix - raio.largura * 9, iy - 120);
+      ctx.lineTo(ix + raio.largura * 9, iy - 120);
+      ctx.lineTo(ix + raio.largura * 22, iy + 40);
+      ctx.lineTo(ix - raio.largura * 22, iy + 40);
+      ctx.closePath();
+      ctx.fill();
+    }
+    ctx.globalCompositeOperation = 'source-over';
+  }
+
+  // ---- Recifes: coral, rocha submersa e alga alta (agrupados em manchas)
+  for (const r of elementosDeRecife(vida.recifes)) {
+    if (!dentro(r.x, r.y)) continue;
+    const ix = (r.x - r.y) * HW, iy = (r.x + r.y) * HH;
+    const balanco = Math.sin(t * 1.1 + r.fase) * 1.6;
+    const s = r.tamanho;
+    if (r.tipo === 0) {
+      // Coral: três hastes curvas, rosa/coral, balançando.
+      ctx.strokeStyle = 'rgba(232,132,120,.62)';
+      ctx.lineWidth = 2.4 * s;
+      ctx.lineCap = 'round';
+      ctx.beginPath();
+      for (let k = -1; k <= 1; k++) {
+        ctx.moveTo(ix + k * 5 * s, iy);
+        ctx.quadraticCurveTo(ix + k * 7 * s + balanco, iy - 9 * s, ix + k * 9 * s + balanco * 1.4, iy - 16 * s);
+      }
+      ctx.stroke();
+      ctx.strokeStyle = 'rgba(255,190,150,.30)';
+      ctx.lineWidth = 1.1 * s;
+      ctx.beginPath();
+      ctx.moveTo(ix + balanco * .5, iy);
+      ctx.lineTo(ix + balanco * .9, iy - 20 * s);
+      ctx.stroke();
+    } else if (r.tipo === 1) {
+      // Rocha submersa: mancha escura e arredondada, com brilho de topo.
+      ctx.fillStyle = 'rgba(24,58,76,.42)';
+      ctx.beginPath();
+      ctx.ellipse(ix, iy + 2, 11 * s, 6.5 * s, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = 'rgba(120,160,170,.20)';
+      ctx.beginPath();
+      ctx.ellipse(ix - 2 * s, iy, 6 * s, 3 * s, -.3, 0, Math.PI * 2);
+      ctx.fill();
+    } else {
+      // Alga alta: lâminas finas subindo e voltando com a corrente.
+      ctx.strokeStyle = 'rgba(96,178,132,.50)';
+      ctx.lineWidth = 1.7 * s;
+      ctx.lineCap = 'round';
+      ctx.beginPath();
+      for (let k = -1; k <= 1; k++) {
+        ctx.moveTo(ix + k * 4, iy);
+        ctx.quadraticCurveTo(ix + k * 5 + balanco * 1.5, iy - 12 * s, ix + k * 4 + balanco * 2.6, iy - 24 * s);
+      }
+      ctx.stroke();
+    }
+  }
+
+  // ---- Cardumes: peixinhos em vaivém, apagados pela água
+  for (const c of vida.cardumes) {
+    if (!dentro(c.x, c.y, 2)) continue;
+    const cor = CORES_CARDUME[c.cor];
+    const base = submerso ? .78 : .5;
+    ctx.fillStyle = `rgba(${cor[0]},${cor[1]},${cor[2]},${base})`;
+    for (const p of c.peixes) {
+      const bal = Math.sin(t * 3.4 + p.fase) * .06;
+      const px = c.x + p.ox + bal;
+      const py = c.y + p.oy + Math.sin(t * 2.1 + p.fase) * .03;
+      const ix = (px - py) * HW, iy = (px + py) * HH;
+      const flip = c.flip ? -1 : 1;
+      // Corpo do peixe: losango curto e cauda.
+      ctx.beginPath();
+      ctx.moveTo(ix - 4 * flip, iy);
+      ctx.lineTo(ix, iy - 1.8);
+      ctx.lineTo(ix + 3 * flip, iy);
+      ctx.lineTo(ix, iy + 1.8);
+      ctx.closePath();
+      ctx.fill();
+      ctx.beginPath();
+      ctx.moveTo(ix - 4 * flip, iy);
+      ctx.lineTo(ix - 6.5 * flip, iy - 2.2);
+      ctx.lineTo(ix - 6.5 * flip, iy + 2.2);
+      ctx.closePath();
+      ctx.fill();
+    }
+  }
+
+  // ---- Fragmentos de maré: o prêmio do mergulho, girando devagar
+  let frags = fragmentosCache.get(map);
+  if (!frags) {
+    frags = criarFragmentosDeMare(map, createCoastField(map.aguaPraia, 8));
+    fragmentosCache.set(map, frags);
+  }
+  if (frags.length) {
+    const pegos = fragmentosColetados(state.progress);
+    for (const frag of frags) {
+      if (pegos.has(frag.id) || !dentro(frag.x, frag.y, 2)) continue;
+      const ix = (frag.x - frag.y) * HW;
+      const iy = (frag.x + frag.y) * HH + Math.sin(t * 1.6 + frag.fase) * 3;
+      const brilho = .62 + .28 * Math.sin(t * 2.4 + frag.fase);
+      // Halo.
+      const halo = ctx.createRadialGradient(ix, iy, 0, ix, iy, 16);
+      halo.addColorStop(0, `rgba(120,236,255,${(brilho * .5).toFixed(3)})`);
+      halo.addColorStop(1, 'rgba(120,236,255,0)');
+      ctx.fillStyle = halo;
+      ctx.beginPath();
+      ctx.arc(ix, iy, 16, 0, Math.PI * 2);
+      ctx.fill();
+      // Cristal.
+      ctx.fillStyle = `rgba(196,248,255,${brilho.toFixed(3)})`;
+      ctx.beginPath();
+      ctx.moveTo(ix, iy - 7); ctx.lineTo(ix + 4.5, iy);
+      ctx.lineTo(ix, iy + 7); ctx.lineTo(ix - 4.5, iy);
+      ctx.closePath();
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(72,190,220,.75)';
+      ctx.lineWidth = .8;
+      ctx.stroke();
+    }
+  }
+
+  // ---- Bolhas: só do jogador, sobem e estouram
+  if (vida.bolhas.length) {
+    ctx.strokeStyle = 'rgba(226,252,255,.62)';
+    ctx.lineWidth = .9;
+    for (const b of vida.bolhas) {
+      const ix = (b.x - b.y) * HW, iy = (b.x + b.y) * HH;
+      ctx.globalAlpha = Math.max(0, b.vida) * .8;
+      ctx.beginPath();
+      ctx.arc(ix, iy, b.raio * 64, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+    ctx.globalAlpha = 1;
+  }
+
   ctx.restore();
 }
 
@@ -586,11 +821,7 @@ const ehDeck = (map, x, y) => 'Bb'.includes(map.aguaPraia?.[y]?.[x] ?? ' ');
 function caminhoEstacao(map, x, y) {
   if (map.walkMask[y]?.[x] !== '.' || ehDeck(map, x, y)) return false;
   return (
-<<<<<<< HEAD
     (x >= 3 && x <= 17 && y >= 3 && y <= 15) ||   // avental do terminal
-=======
-    (x >= 4 && x <= 18 && y >= 2 && y <= 16) ||   // avental do terminal
->>>>>>> e5736762ec637ebe671540515d65b30b7c6323f4
     (x >= 8 && x <= 18 && y >= 10 && y <= 18) ||
     (x >= 14 && x <= 39 && y >= 17 && y <= 22) ||
     (x >= 32 && x <= 48 && y >= 14 && y <= 25) ||
@@ -667,7 +898,6 @@ function drawBioControlFloor() {
   ctx.restore();
 }
 
-<<<<<<< HEAD
 // Borda de pedra rente à água: o canal deixa de ser uma faixa ciana sem
 // limite e passa a ter margem dos dois lados. Só desenha arestas com terra
 // ou deck do outro lado; não altera máscara nem colisão.
@@ -722,7 +952,8 @@ function drawStationRoute(map) {
     }
   }
   ctx.restore();
-=======
+}
+
 // Texturas em coordenadas de mundo: ambas seguem a mesma projeção dos tiles.
 // Água e decks não recebem chão; caminhos permanecem legíveis sobre o jardim.
 function paintStationPaving(map) {
@@ -788,7 +1019,6 @@ function drawStationPaving(map) {
       if (chunk) ctx.drawImage(chunk.tile, chunk.left, chunk.top);
     }
   }
->>>>>>> e5736762ec637ebe671540515d65b30b7c6323f4
 }
 
 // Tabuleiros das duas travessias: geometria real sobre a água, com espessura
@@ -1219,6 +1449,98 @@ const depthOf = (item) => item.x + item.y + (item.depthOffset ?? 0);
 
 const backList = [];
 
+// =====================================================================
+// CICATRIZES DO CHÃO — a fenda que a Quebra Sistemas deixa
+// =====================================================================
+// Decalque isométrico, não objeto de colisão: o jogador atravessa, mas o mapa
+// lembra do golpe. A semente estável de cada fenda evita o desenho "ferver".
+function drawWorldScars(state) {
+  const mapa = state.world?.currentMapId;
+  const fissuras = getFissures(state.progress, mapa);
+  if (!fissuras.length) return;
+  ctx.save();
+  // O laço principal já aplicou zoom, câmera e tremor no contexto: aqui só
+  // projetamos as coordenadas do mundo, igual ao resto do chão. (Uma
+  // transformação extra aqui faria a fenda flutuar fora do mapa.)
+  for (const f of fissuras) {
+    const sx = (f.x - f.y) * HW;
+    const sy = (f.x + f.y) * HH;
+    // Comprimento do traço em pixels de mundo; a direção vem do dado do golpe
+    // (facing é uma direção ISO: [1,1] desce, [-1,-1] sobe...). A escala é
+    // calibrada pelo tile (64 px): a fenda cobre de 2 a 4 tiles, é o que dá
+    // para ler como chão rachado sem virar um buraco do tamanho do mapa.
+    const escala = 62;
+    const dx = (f.dx ?? 1) * escala, dy = (f.dy ?? 1) * escala * .5;
+    const comprimento = (f.len ?? 3) * .5;
+    const semente = f.seed ?? 1;
+    const tremor = (i) => {
+      // Ruído determinístico, sem aleatório por quadro.
+      const n = Math.sin(semente * .017 + i * 2.7) * 43758.5453;
+      return (n - Math.floor(n) - .5) * 2;
+    };
+    // 1) Sombra funda sob a fenda: dá a sensação de abismo.
+    ctx.globalAlpha = .55;
+    ctx.strokeStyle = '#05090c';
+    ctx.lineWidth = 7;
+    ctx.beginPath();
+    for (let i = 0; i <= 10; i++) {
+      const k = i / 10;
+      const px = sx + dx * k * comprimento + tremor(i) * 2;
+      const py = sy + dy * k * comprimento + tremor(i + 5) * 1.2;
+      if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+    }
+    ctx.stroke();
+    // 2) Magma esfriando: halo laranja largo + miolo quente quase branco.
+    ctx.globalAlpha = .35;
+    ctx.strokeStyle = '#ff7a3c';
+    ctx.lineWidth = 9;
+    ctx.beginPath();
+    for (let i = 0; i <= 10; i++) {
+      const k = i / 10;
+      const px = sx + dx * k * comprimento + tremor(i) * 1.6;
+      const py = sy + dy * k * comprimento + tremor(i + 5) * 1;
+      if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+    }
+    ctx.stroke();
+    ctx.globalAlpha = .95;
+    ctx.strokeStyle = '#ffd08a';
+    ctx.lineWidth = 2.4;
+    ctx.beginPath();
+    for (let i = 0; i <= 10; i++) {
+      const k = i / 10;
+      const px = sx + dx * k * comprimento + tremor(i) * 1.4;
+      const py = sy + dy * k * comprimento + tremor(i + 5) * .8;
+      if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+    }
+    ctx.stroke();
+    // 3) Placas levantadas nas margens (retângulos duros, como na Ultimate).
+    ctx.globalAlpha = .8;
+    ctx.fillStyle = '#2a3138';
+    // Perpendicular normalizada no espaço da tela: as placas ficam ENCOSTADAS
+    // na fenda (antes flutuavam longe dela, parecendo lixo no chão).
+    const perpLen = Math.hypot(dy, dx) || 1;
+    const perpX = -dy / perpLen, perpY = dx / perpLen;
+    for (let placa = 0; placa < 4; placa++) {
+      const k = .18 + placa * .2;
+      const lado = placa % 2 === 0 ? -1 : 1;
+      const px = sx + dx * k * comprimento + perpX * lado * 9 + tremor(placa) * 1.5;
+      const py = sy + dy * k * comprimento + perpY * lado * 9 + tremor(placa + 3) * 1.5;
+      ctx.save();
+      ctx.translate(px, py);
+      ctx.rotate((tremor(placa) * .5));
+      ctx.fillRect(-7, -3, 14, 6);
+      // Brilho na quina da placa: lembra que o chão acabou de ser partido.
+      ctx.fillStyle = '#ff7a3c';
+      ctx.globalAlpha = .5;
+      ctx.fillRect(-7, -3, 14, 1.5);
+      ctx.fillStyle = '#2a3138';
+      ctx.globalAlpha = .8;
+      ctx.restore();
+    }
+  }
+  ctx.restore();
+}
+
 function drawWorld(map, state) {
   drawList.length = 0;
   backList.length = 0;
@@ -1541,27 +1863,56 @@ function drawBasicAttack(player) {
 
 // As células são desenhadas integralmente: os peixes são um cardume, não
 // componentes desconectados a eliminar, e as âncoras não pulam entre quadros.
+// Espécies da folha NOVA (Praia 10.0), por linha e largura em px.
+// `ar` = passa tempo acima da linha d'água (o golfinho salta).
+const FAUNA_NOVA = {
+  trinta_reis: { linha: 0, largura: 46, ar: 'voo' },
+  graxaim:     { linha: 1, largura: 54 },
+  golfinho:    { linha: 2, largura: 62, ar: 'salto' },
+  tartaruga:   { linha: 3, largura: 52, ar: 'nado' },
+};
+
 function drawCoastalFauna(a) {
   const crab = a.species === 'caranguejo';
-  const image = getSprite(crab ? 'fauna_caranguejo' : 'fauna_costeira');
+  const nova = FAUNA_NOVA[a.species];
+  const image = getSprite(crab ? 'fauna_caranguejo' : nova ? 'fauna_nova_1010' : 'fauna_costeira');
   if (!image) return;
-  const cols = crab ? 4 : 8, rows = 4;
-  const flight = a.species === 'gaivota' && a.fleeing;
-  const row = crab ? (a.fleeing ? 2 : 0) : ({ gaivota: 1, peixes: 2, capivara: 3 }[a.species] ?? 0);
+  const cols = crab ? 4 : 8, rows = crab ? 4 : nova ? 4 : 4;
+  const flight = (a.species === 'gaivota' || a.species === 'trinta_reis') && a.fleeing;
+  const row = crab ? (a.fleeing ? 2 : 0)
+    : nova ? nova.linha
+    : ({ gaivota: 1, peixes: 2, capivara: 3 }[a.species] ?? 0);
   const tick = Math.floor(a.clock * (a.fleeing ? 8 : 4));
-  const col = crab ? tick % 4 : flight ? 4 + tick % 4 : a.species === 'gaivota' ? tick % 4 : a.species === 'capivara' ? tick % 7 : tick % 8;
-  const width = crab ? 54 : a.species === 'peixes' ? 65 : a.species === 'capivara' ? 62 : 48;
+  const col = crab ? tick % 4
+    : nova ? tick % 8
+    : flight ? 4 + tick % 4
+    : a.species === 'gaivota' ? tick % 4
+    : a.species === 'capivara' ? tick % 7 : tick % 8;
+  const width = crab ? 54
+    : nova ? nova.largura
+    : a.species === 'peixes' ? 65 : a.species === 'capivara' ? 62 : 48;
   const cw = image.width / cols, ch = image.height / rows;
   const height = width * ch / cw;
   const x = (a.x - a.y) * HW, y = (a.x + a.y) * HH;
+  // Golfinho e tartaruga vivem na água: a sombra deles é na própria
+  // lâmina d'água, e o golfinho ganha arco de salto.
+  const naAgua = a.species === 'golfinho' || a.species === 'tartaruga' || a.species === 'peixes';
+  // Animação vem do módulo de fauna: parábola de verdade para o golfinho,
+  // batida em rajada para o trinta-réis, passo para o graxaim. O renderer
+  // só obedece — nada de seno solto aqui dentro.
+  const anim = animarFauna(a);
   ctx.save();
-  if (a.species !== 'peixes') {
+  if (!naAgua) {
     ctx.fillStyle = 'rgba(12,25,24,.22)'; ctx.beginPath(); ctx.ellipse(x, y + 3, width * .22, 4, 0, 0, Math.PI * 2); ctx.fill();
   }
-  ctx.translate(x, y - (flight ? 18 + Math.sin(a.clock * 8) * 2 : 0));
+  ctx.translate(x, y + anim.y - (flight ? 18 + Math.sin(a.clock * 8) * 2 : 0));
   if (a.flip) ctx.scale(-1, 1);
+  // Inclinação do corpo: o golfinho mergulha e emerge com o corpo
+  // inclinado; quem está em terra firme mal inclina.
+  if (anim.rot) ctx.rotate(anim.rot * (a.flip ? -1 : 1));
+  if (anim.escalaY !== 1) ctx.scale(1, anim.escalaY);
   ctx.imageSmoothingEnabled = false;
-  const box = a.species === 'capivara' ? getVisibleBox(image, col * cw, row * ch, cw, ch) : null;
+  const box = (a.species === 'capivara' || nova) ? getVisibleBox(image, col * cw, row * ch, cw, ch) : null;
   // Usa a base opaca de cada quadro, sem redimensioná-lo ou deslocar a sombra.
   const anchor = faunaFootAnchor(box, ch);
   ctx.drawImage(image, col * cw, row * ch, cw, ch, -width / 2, -height * anchor, width, height);
@@ -1730,10 +2081,20 @@ function getVisibleBox(image, sx, sy, sw, sh, threshold = 40) {
 }
 // Limiares acompanhando a largura e o eixo do deck, em vez de uma caverna
 // ou rocha aparentemente solta sobre a ponte. Só muda o desenho do gate.
-function drawBridgeThreshold(object, map) {
+function drawBridgeThreshold(object, map, state) {
   const g = bridgeGateGeometry(map?.aguaPraia, object);
   if (!g) return; // sem deck reconhecível, não inventar marca sobre água
   const x = (g.x - g.y) * HW, y = (g.x + g.y) * HH;
+
+  // SELO DO MÓDULO: o portal de energia que dá identidade ao gate.
+  // Desenhado ANTES do traço do deck, para o deck ficar por cima do
+  // brilho (leitura correta de "portal atrás do piso").
+  const vencido = Boolean(state?.progress?.flags?.[`gate_${object.id}`]);
+  const identidade = identidadeDoGate(object);
+  ctx.save();
+  ctx.translate(x, y - 6);
+  desenharSeloDeModulo(ctx, identidade, g, performance.now() / 1000, vencido);
+  ctx.restore();
   // Pontas da faixa são recuadas das bordas físicas do deck.
   const dx = (g.axis === 'x' ? -1 : 1) * HW * g.halfWidth, dy = HH * g.halfWidth;
   ctx.save(); ctx.translate(x, y); ctx.lineCap = 'round'; ctx.lineJoin = 'round';
@@ -1856,7 +2217,7 @@ function drawMapObject(object, state) {
   if (object.hideWhenFlag && state.progress.flags?.[object.hideWhenFlag]) return;
   if (object.showWhenFlag && !state.progress.flags?.[object.showWhenFlag]) return; // NOVO
 
-  if (['rocha_rachada', 'travessia_mare_eco', 'passagem_mare_eco', 'caverna_alagada', 'fenda_estreita', 'teleferico_quebrado'].includes(object.id)) { drawBridgeThreshold(object, state.world?.currentMap); return; }
+  if (['rocha_rachada', 'travessia_mare_eco', 'passagem_mare_eco', 'caverna_alagada', 'fenda_estreita', 'teleferico_quebrado'].includes(object.id)) { drawBridgeThreshold(object, state.world?.currentMap, state); return; }
 
   if (object.gate) {
     const x = (object.x - object.y) * HW, y = (object.x + object.y) * HH;
@@ -2112,21 +2473,295 @@ function drawMareFrame(player, ix, iy, col, kind) {
   ctx.restore(); player._topo = 140; return true;
 }
 
+// Peso da Quebra Sistemas: poeira no passo, vapor nos pistões e atrito das
+// marretas. É visual de runtime — nada muda em dano, velocidade ou colisão.
+function drawBrutaFx(player, ix, iy, gait) {
+  const now = performance.now();
+  ctx.save();
+  ctx.lineCap = 'round';
+  if (gait === 'walk') {
+    const cycle = (now % 600) / 600;
+    ctx.globalAlpha = .22 * (1 - cycle);
+    ctx.fillStyle = '#c9d3d8';
+    for (let i = 0; i < 3; i++) {
+      const ang = (i / 3) * Math.PI * 2;
+      ctx.beginPath();
+      ctx.ellipse(ix + Math.cos(ang) * (8 + cycle * 16), iy + 1 + Math.sin(ang) * (3 + cycle * 5),
+        4 + cycle * 5, 2 + cycle * 2.4, 0, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+  // Faíscas: a marreta arrasta no chão.
+  if (gait === 'walk' || gait === 'idle') {
+    ctx.globalAlpha = .75;
+    ctx.strokeStyle = '#ffb02e';
+    ctx.lineWidth = 1.4;
+    for (let i = 0; i < 2; i++) {
+      const flick = Math.sin(now * .03 + i * 2.1) * 2;
+      const bx = ix + (player.facing === 'left' ? 20 : -20) + i * 3;
+      ctx.beginPath();
+      ctx.moveTo(bx, iy - 2);
+      ctx.lineTo(bx + (player.facing === 'left' ? 8 : -8), iy - 3 + flick);
+      ctx.stroke();
+    }
+  }
+  // Exaustão: ao parar, os pistões soltam uma rajada de vapor.
+  const exhaust = player.nucleoRuntime?.exhaustion;
+  if (exhaust?.timeLeft > 0) {
+    const k = 1 - exhaust.timeLeft / (exhaust.duration || .9);
+    ctx.globalAlpha = .5 * (1 - k);
+    ctx.fillStyle = '#e8f2f4';
+    for (let i = 0; i < 4; i++) {
+      const lado = i % 2 === 0 ? 1 : -1;
+      const raio = 3 + k * 9 + (i % 2) * 2;
+      ctx.beginPath();
+      ctx.arc(ix + lado * (5 + k * 12), iy - 44 - k * 26 - i * 3, raio, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+  ctx.restore();
+}
+
+// Vapor e faísca da ferramenta: o Bio-FORJA é biomecânica viva, então ele
+// respira vapor mesmo parado, e cada ferramenta puxa uma cor de brilho.
+// Puro enfeite de leitura — dano, velocidade e colisão não mudam.
+const BIO_TOOL_GLOW = {
+  lamina_de_forja: { cor: '#8ff2ff', lado: 'direita' },
+  punho_de_impacto: { cor: '#ffc23d', lado: 'ambos' },
+  gancho_magnetico: { cor: '#7dffd8', lado: 'esquerda' },
+  asa_de_impulso: { cor: '#3fd0ff', lado: 'baixo' },
+};
+
+function drawBioForjaFx(player, ix, iy, gait) {
+  const now = performance.now();
+  // A ferramenta instalada muda a cor da bobina: o exo mostra o que carrega.
+  const ferramenta = BIO_TOOL_GLOW[getSelectedToolId(state.progress)] ?? { cor: '#3fd0ff', lado: 'ambos' };
+  ctx.save();
+  ctx.lineCap = 'round';
+  // Vapor dos pistões: sobe devagar, mais forte no passo.
+  const sopro = gait === 'walk' ? 1 : .55;
+  ctx.globalAlpha = .2 * sopro;
+  ctx.fillStyle = '#dff0f2';
+  for (let i = 0; i < 3; i++) {
+    const ciclo = ((now * .0006) + i / 3) % 1;
+    const lado = i % 2 === 0 ? -1 : 1;
+    ctx.beginPath();
+    ctx.ellipse(ix + lado * (7 + ciclo * 10), iy - 12 - ciclo * 26,
+      2 + ciclo * 4, 1.6 + ciclo * 3, 0, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  // Espira da bobina da ferramenta: brilho curto, ritmado.
+  const pulso = .45 + Math.sin(now * .006) * .25;
+  ctx.globalAlpha = pulso * .8;
+  ctx.strokeStyle = ferramenta.cor;
+  ctx.lineWidth = 1.4;
+  const lados = ferramenta.lado === 'ambos' ? [-1, 1] : ferramenta.lado === 'esquerda' ? [-1] : [1];
+  if (ferramenta.lado === 'baixo') {
+    for (let i = 0; i < 2; i++) {
+      const bx = ix + (i === 0 ? -6 : 6);
+      ctx.beginPath();
+      ctx.moveTo(bx, iy - 2);
+      ctx.lineTo(bx + (i === 0 ? -3 : 3), iy + 3);
+      ctx.stroke();
+    }
+  } else {
+    for (const lado of lados) {
+      const bx = ix + lado * 13;
+      ctx.beginPath();
+      ctx.moveTo(bx, iy - 30);
+      ctx.lineTo(bx + lado * 3, iy - 22);
+      ctx.lineTo(bx - lado * 1, iy - 16);
+      ctx.stroke();
+    }
+  }
+  ctx.restore();
+}
+
+// A ÁGUA DO MARÉ anda com o corpo: gotas que sobem e caem em volta das botas,
+// um respingo no passo e um fio de vapor frio na exaustão do Q. É o mesmo
+// carinho do vapor do Bio — leitura, não regra: nada muda em dano/colisão.
+const MARE_TOOL_GLOW = {
+  escudo_liquido: { cor: '#54ccff' },
+  passo_abissal: { cor: '#73e9fa' },
+  chicote_de_mare: { cor: '#a6f0ff' },
+  senso_de_corrente: { cor: '#8cff9e' },
+};
+
+function drawMareFx(player, ix, iy, gait) {
+  const now = performance.now();
+  const corrente = MARE_TOOL_GLOW[getSelectedToolId(state.progress)] ?? { cor: '#53d9f4' };
+  ctx.save();
+  // Bolhas/drops orbitando os tornozelos, mais intensos no passo.
+  const forca = gait === 'walk' ? 1 : .5;
+  for (let i = 0; i < 4; i++) {
+    const ciclo = ((now * .00045) + i / 4) % 1;
+    const ang = (i / 4) * Math.PI * 2 + now * .0006;
+    const raio = 9 + ciclo * 7;
+    const px = ix + Math.cos(ang) * raio;
+    const py = iy - 4 - ciclo * 22;
+    ctx.globalAlpha = (1 - ciclo) * .55 * forca;
+    ctx.fillStyle = corrente.cor;
+    ctx.beginPath();
+    ctx.ellipse(px, py, 1.6 + (1 - ciclo), 2.4 + (1 - ciclo) * 1.4, 0, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  // Anel de correnteza raso no chão: lembra que o traje mexe com água.
+  const pulso = .5 + Math.sin(now * .004) * .2;
+  ctx.globalAlpha = pulso * .3 * forca;
+  ctx.strokeStyle = corrente.cor;
+  ctx.lineWidth = 1.2;
+  ctx.beginPath();
+  ctx.ellipse(ix, iy + 1, 15, 6.5, 0, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.restore();
+}
+
+// A FREQUÊNCIA DO DOMÍNIO anda com o corpo: faíscas douradas que sobem das
+// botas, um anel geométrico raso no chão e duas runas pequenas orbitando os
+// ombros. É a leitura do arquétipo (peso, geometria, ouro antigo), no mesmo
+// papel do vapor do Bio e da água do Maré: desenho, não regra.
+const DOMINIO_TOOL_GLOW = {
+  espada_de_dominio: { cor: '#ffd465' },
+  escudo_de_dominio: { cor: '#b78cff' },
+  postura_de_dominio: { cor: '#ff7d8f' },
+  investida_de_dominio: { cor: '#ff9a5c' },
+};
+
+function drawDominioFx(player, ix, iy, gait) {
+  const now = performance.now();
+  const arma = DOMINIO_TOOL_GLOW[getSelectedToolId(state.progress)] ?? { cor: '#ffd465' };
+  const forca = gait === 'walk' ? 1 : .55;
+  ctx.save();
+  // Faíscas douradas subindo das botas, com estalo no passo.
+  for (let i = 0; i < 3; i++) {
+    const ciclo = ((now * .0007) + i / 3) % 1;
+    const lado = i === 1 ? 1 : -1;
+    const px = ix + lado * (6 + ciclo * 5);
+    const py = iy - 2 - ciclo * 26;
+    ctx.globalAlpha = (1 - ciclo) * .7 * forca;
+    ctx.fillStyle = arma.cor;
+    ctx.fillRect(Math.round(px), Math.round(py), 1.6, 1.6 + (1 - ciclo) * 1.4);
+  }
+  // Anel geométrico raso: o traje carrega uma frequência antiga.
+  const pulso = .5 + Math.sin(now * .0032) * .22;
+  ctx.globalAlpha = pulso * .28 * forca;
+  ctx.strokeStyle = arma.cor;
+  ctx.lineWidth = 1.1;
+  ctx.beginPath();
+  ctx.ellipse(ix, iy + 1, 13, 5.6, 0, 0, Math.PI * 2);
+  ctx.stroke();
+  // Duas runas pequenas orbitando a altura do ombro, sempre de perfil.
+  for (let i = 0; i < 2; i++) {
+    const ang = now * .0009 + i * Math.PI;
+    const px = ix + Math.cos(ang) * 12;
+    const py = iy - 30 + Math.sin(ang) * 4;
+    ctx.globalAlpha = (.32 + Math.sin(ang) * .18) * forca;
+    ctx.fillStyle = arma.cor;
+    ctx.fillRect(Math.round(px) - 1, Math.round(py) - 3, 2.4, 5);
+    ctx.fillRect(Math.round(px) - 2, Math.round(py) - 4, 4.6, 1.4);
+  }
+  ctx.restore();
+}
+
 function drawPlayerSprite(player, ix, iy) {
   // As folhas de referência têm poses, não quadros sequenciais. Usamos uma
   // pose provisória com os pulsos animados, sem fingir que são animações finais.
   const effect = getVisualEffect(player);
+  // ULTIMATE DAS FORMAS DO NÚCLEO: execução desenhada, não só o efeito.
+  // Carga (0,42 s) usa os dois primeiros quadros da folha da forma; a soltura
+  // usa o impacto e a recuperação. Sem isso o F era só um anel procedural.
+  // MOTOR BIO-FORJA: a Ultimate nível 1 é a ferramenta escolhida executando
+  // o próprio golpe — cada uma tem folha (cúpula, serra, marreta, cabos,
+  // propulsores). Fica antes do corpo parado do exo para o gesto aparecer.
+  // Os QUATRO arquétipos têm execução desenhada do F: Núcleo 10X (por
+  // forma), Bio-Forja (por ferramenta), Maré (por corrente) e Domínio (por
+  // arma/postura). A ordem importa porque só um deles pode desenhar o corpo.
+  const ultimateFrame = getUltimateFrame(state.progress, player)
+    ?? getBioUltimateFrame(state.progress, player)
+    ?? getMareUltimateFrame(state.progress, player)
+    ?? getDominioUltimateFrame(state.progress, player);
+  if (ultimateFrame) {
+    const imagem = getSprite(ultimateFrame.sprite);
+    if (imagem) {
+      const w = imagem.width / ultimateFrame.cols, h = imagem.height;
+      const escala = ultimateFrame.scale;
+      // Um flash curto da cor da Ultimate no quadro do impacto dá o "estalo".
+      if (ultimateFrame.phase === 'impact' && (player.ultimate?.flash?.timeLeft ?? 0) > 0) {
+        ctx.save();
+        ctx.globalAlpha = .28;
+        ctx.fillStyle = ultimateFrame.flash ?? '#ffffff';
+        ctx.beginPath();
+        ctx.ellipse(ix, iy - h * escala * .45, w * escala * .55, h * escala * .55, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      }
+      ctx.save();
+      ctx.translate(ix, iy);
+      if (player.facing === 'left') ctx.scale(-1, 1);
+      drawSmooth(imagem, ultimateFrame.col * w, 0, w, h,
+        -w * escala / 2, -ultimateFrame.footY * escala, w * escala, h * escala);
+      ctx.restore();
+      player._topo = Math.round(ultimateFrame.footY * escala);
+      return true;
+    }
+  }
   const suit = player.equippedSuit;
-  // A folha nova é frontal: não a espelhamos nem fingimos vistas laterais/traseiras.
-  const attack = player.combat;
-  if (suit === 'bio_forja' && player.facing === 'down' && attack?.style === 'motor_bio_forja' && attack.timeLeft > 0 && !effect && !(player.ability?.scanning > 0)) {
-    const sheet = getSprite('player_bio_ataque_frontal');
+  // O exo do Bio-FORJA respira: vapor de pistão e a bobina da ferramenta.
+  if (suit === 'bio_forja') drawBioForjaFx(player, ix, iy, player.moving ? 'walk' : 'idle');
+  // O Maré carrega água: gotas orbitando as botas e anel de correnteza.
+  if (suit === 'mare') drawMareFx(player, ix, iy, player.moving ? 'walk' : 'idle');
+  // O Domínio carrega frequência: faíscas de ouro, anel no chão e runas.
+  if (suit === 'dominio') drawDominioFx(player, ix, iy, player.moving ? 'walk' : 'idle');
+  // A segunda forma do Núcleo (Quebra Sistemas) desenha o próprio peso:
+  // poeira no passo, faísca das marretas e vapor na exaustão.
+  if (player.nucleoForm === NUCLEO_BRUTA) {
+    drawBrutaFx(player, ix, iy, player.moving ? 'walk' : 'idle');
+  }
+  // Pancada de Peso (Q da Quebra): fagulhas elétricas nos pistões durante a
+  // preparação. O efeito é separado da transformação — antes o id era o mesmo
+  // e o jogo refazia a metamorfose em vez de socar.
+  const cast = player.ability?.cast;
+  if (cast?.id === 'pancada_quebra' && cast.timeLeft > 0) {
+    const k = 1 - cast.timeLeft / (cast.duration || .55);
+    ctx.save();
+    ctx.globalAlpha = .35 + k * .6;
+    ctx.strokeStyle = '#ffd45c';
+    ctx.lineWidth = 1.6;
+    for (let i = 0; i < 3; i++) {
+      const lado = i === 1 ? 1 : -1;
+      const base = i * 2.1;
+      ctx.beginPath();
+      for (let seg = 0; seg < 3; seg++) {
+        const px = ix + lado * (10 + seg * 4) + Math.sin(base + seg) * 2;
+        const py = iy - 18 - seg * 9 - k * 6;
+        if (seg === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+      }
+      ctx.stroke();
+    }
+    // Brilho no bloco de cabeça: a energia concentra antes do impacto.
+    ctx.globalAlpha = .2 + k * .35;
+    ctx.fillStyle = '#ffb02e';
+    ctx.beginPath();
+    ctx.ellipse(ix, iy - 46, 8 + k * 6, 10 + k * 7, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  }
+  // ATAQUE DO EXO — quatro direções. Antes só existia a folha frontal: de
+  // costas e de lado o soco acontecia sem arte. A lateral é espelhada para a
+  // esquerda; a de costas é vista de trás, nunca espelhada.
+  const attackFrame = getBioAttackFrame(state.progress, player);
+  if (attackFrame && !effect) {
+    const sheet = getSprite(attackFrame.sprite);
     if (sheet) {
-      const phase = Math.max(0, Math.min(.9999, 1 - attack.timeLeft / attack.duration));
-      const col = Math.floor(phase * 9), x0 = Math.round(col * sheet.width / 9), x1 = Math.round((col + 1) * sheet.width / 9);
-      const scale = .19, w = (x1 - x0) * scale, h = sheet.height * scale;
-      drawSmooth(sheet, x0, 0, x1 - x0, sheet.height, ix - w / 2, iy - h * .92, w, h);
-      player._topo = 125;
+      const escala = attackFrame.scale;
+      const w = attackFrame.cell * escala, h = attackFrame.height * escala;
+      ctx.save();
+      ctx.translate(ix, iy);
+      if (attackFrame.flip) ctx.scale(-1, 1);
+      drawSmooth(sheet, attackFrame.col * attackFrame.cell, 0, attackFrame.cell, attackFrame.height,
+        -w / 2, -attackFrame.footY * escala, w, h);
+      ctx.restore();
+      player._topo = Math.round(attackFrame.footY * escala);
       return true;
     }
   }
@@ -2160,10 +2795,69 @@ function drawPlayerSprite(player, ix, iy) {
     player._topo = 100;
     return true;
   }
+  // TRANSFORMAÇÃO DO T — a sequência de 4 quadros que faltava. Antes o traje
+  // trocava de folha no mesmo quadro, sem leitura nenhuma. Entrar corre a
+  // folha 0→3; sair corre a mesma arte ao contrário (desmonta).
+  const transformFrame = getTransformFrame(state.progress, player);
+  if (transformFrame) {
+    const sheet = getSprite(transformFrame.sprite);
+    if (sheet) {
+      const cell = 320, escala = .57;
+      const w = cell * escala, h = cell * escala;
+      // Clarão da cor do arquétipo no quadro de energia (1 e 2).
+      if (transformFrame.phase === 'build') {
+        ctx.save();
+        ctx.globalAlpha = .22;
+        ctx.fillStyle = transformFrame.color;
+        ctx.beginPath();
+        ctx.ellipse(ix, iy - h * .45, w * .42, h * .42, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      }
+      ctx.save();
+      ctx.translate(ix, iy);
+      if (player.facing === 'left') ctx.scale(-1, 1);
+      drawSmooth(sheet, transformFrame.col * cell, 0, cell, cell,
+        -w / 2, -276 * escala, w, h);
+      ctx.restore();
+      player._topo = Math.round(276 * escala);
+      return true;
+    }
+  }
+  // NÚCLEO: a identidade do arquétipo é o BRACELETE. Enquanto o corpo humano
+  // está sendo digitalizado (primeiros 70% da transformação), quem desenha é
+  // o operador acionando o bracelete; depois entra a criatura/placas.
+  const braceletFrame = getNucleoBraceletFrame(state.progress, player);
+  if (braceletFrame) {
+    const sheet = getSprite(braceletFrame.sprite);
+    if (sheet) {
+      const cell = 320, escala = .57;
+      const w = cell * escala, h = cell * escala;
+      ctx.save();
+      ctx.translate(ix, iy);
+      if (player.facing === 'left') ctx.scale(-1, 1);
+      drawSmooth(sheet, braceletFrame.col * cell, 0, cell, cell, -w / 2, -276 * escala, w, h);
+      ctx.restore();
+      player._topo = Math.round(276 * escala);
+      return true;
+    }
+  }
+  // Transformação do Núcleo: uma decisão só, escolhida por `effect.form`.
+  // Aqui estava o defeito visual relatado: QUALQUER transformação desenhava a
+  // folha do Pulso Veloz (o operador virando criatura), inclusive a da Quebra
+  // Sistemas — que tem folha própria de placas de ferro se montando.
   if (state.progress.archetype === 'nucleo_dez_forma' && effect?.id === 'transformacao_10x') {
     const t = Math.max(0, Math.min(0.999, 1 - effect.timeLeft / effect.duration));
-    const frames = effect.activating ? [0, 1, 1, 2] : [2, 1, 3, 3];
-    if (drawArchetypeSheet('player_10x_q', frames[Math.floor(t * 4)], 0, ix, iy, player.facing === 'left', { rows: 1, scale: 0.29, anchor: 0.78 })) { player._topo = 120; return true; }
+    const quadro = Math.floor(t * 4);
+    if (effect.form === NUCLEO_BRUTA) {
+      // Entrando, a montagem corre 0 → 3; retornando, o corpo se desfaz na
+      // mesma arte ao contrário (sem inventar quadro que não existe).
+      const col = effect.activating === false ? 3 - quadro : quadro;
+      if (drawArchetypeSheet('player_10x_bruta_transformacao', col, 0, ix, iy, false, { rows: 1, scale: BRUTA_SCALE, anchor: BRUTA_FOOT_Y / 256 })) { player._topo = 150; return true; }
+    } else {
+      const frames = effect.activating ? [0, 1, 1, 2] : [2, 1, 3, 3];
+      if (drawArchetypeSheet('player_10x_q', frames[quadro], 0, ix, iy, player.facing === 'left', { rows: 1, scale: 0.29, anchor: 0.78 })) { player._topo = 120; return true; }
+    }
   }
   const pulseFrame = getVelozPulse(state.progress, player);
   if (pulseFrame) {
@@ -2200,6 +2894,39 @@ function drawPlayerSprite(player, ix, iy) {
       ctx.restore(); player._topo = 110; return true;
     }
   }
+  // Segunda forma do Núcleo: Quebra Sistemas. Folhas próprias de 4 colunas,
+  // apoio e escala comuns; o ataque tem prioridade sobre a caminhada.
+  const bruta = getBrutaAnimation(state.progress, player, performance.now());
+  if (bruta) {
+    // Onda de choque do impacto da marreta: anel rasteiro no chão, sem
+    // esconder o corpo. Ataque de costas também tem (o golpe existe mesmo
+    // sem folha traseira própria).
+    if (bruta.attack) {
+      const choque = Math.max(0, 1 - (player.combat?.timeLeft ?? 0) / (player.combat?.duration || .48));
+      if (choque > .45) {
+        const k = (choque - .45) / .55;
+        ctx.save();
+        ctx.globalAlpha = (1 - k) * .7;
+        ctx.strokeStyle = '#ffc94a';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.ellipse(ix, iy + 2, 14 + k * 40, 7 + k * 20, 0, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.restore();
+      }
+    }
+    const image = getSprite(bruta.sprite);
+    if (image) {
+      const w = image.width / bruta.cols, h = image.height / bruta.rows, scale = bruta.scale;
+      ctx.save(); ctx.translate(ix, iy);
+      if (bruta.flip) ctx.scale(-1, 1);
+      drawSmooth(image, bruta.col * w, bruta.row * h, w, h,
+        -w * scale / 2, -bruta.footY * scale, w * scale, h * scale);
+      ctx.restore();
+      player._topo = 125;
+      return true;
+    }
+  }
   if (state.progress.archetype === 'nucleo_dez_forma' && player.nucleoForm === 'forma_veloz') {
     if (drawArchetypeSheet('player_10x_q', 2, 0, ix, iy, player.facing === 'left', { rows: 1, scale: 0.29, anchor: 0.75, offsetX: player.facing === 'left' ? 14 : -14, walk: player.moving })) { player._topo = 120; return true; }
   }
@@ -2211,6 +2938,20 @@ function drawPlayerSprite(player, ix, iy) {
     const id = effect.id === 'forma_veloz' ? 'player_10x_q' : 'player_10x_r';
     if (drawArchetypeSheet(id, col, 0, ix, iy, player.facing === 'left', { rows: 1, scale: 0.29, anchor: 0.78 })) {
       player._topo = 120;
+      return true;
+    }
+  }
+  // PASSO DE CORRENTE de costas: a folha lateral aprovada virava o corpo de
+  // perfil no meio do avanço. Só a direção de cima tem esta troca — as outras
+  // continuam com a folha lateral, que já está certa.
+  const propulsorMare = getMarePropulsorFrame(state.progress, player);
+  if (propulsorMare) {
+    const sheet = getSprite(propulsorMare.sprite);
+    if (sheet) {
+      const w = propulsorMare.cell * propulsorMare.scale, h = propulsorMare.cell * propulsorMare.scale;
+      drawSmooth(sheet, propulsorMare.col * propulsorMare.cell, 0, propulsorMare.cell, propulsorMare.cell,
+        ix - w / 2, iy - propulsorMare.footY * propulsorMare.scale, w, h);
+      player._topo = Math.round(propulsorMare.footY * propulsorMare.scale);
       return true;
     }
   }
@@ -2274,6 +3015,26 @@ function drawPlayerSprite(player, ix, iy) {
   // ===============================================
   // 2. ANIMAÇÃO DE DASH (Q)
   // ===============================================
+  // PROPULSOR DE IMPULSO (Q): folha própria de avanço. Antes o exo deslizava
+  // na célula de caminhada, com alpha .8, e o rastro era a única leitura.
+  const propulsor = getBioPropulsorFrame(state.progress, player);
+  if (propulsor) {
+    const sheet = getSprite(propulsor.sprite);
+    if (sheet) {
+      const escala = propulsor.scale;
+      const w = propulsor.cell * escala, h = propulsor.height * escala;
+      ctx.save();
+      ctx.translate(ix, iy);
+      if (player.facing === 'left') ctx.scale(-1, 1);
+      // Quadros de arranque ainda no chão; o pico do avanço sai do chão.
+      const lift = propulsor.col === 2 ? 4 : propulsor.col === 1 ? 1 : 0;
+      drawSmooth(sheet, propulsor.col * propulsor.cell, 0, propulsor.cell, propulsor.height,
+        -w / 2, -propulsor.footY * escala - lift, w, h);
+      ctx.restore();
+      player._topo = Math.round(propulsor.footY * escala + lift);
+      return true;
+    }
+  }
   if (player.ability?.active === 'bio_dash') {
     const config = CONFIG.PLAYER_BIO_FORJA_SPRITE;
     const image = getSprite(config.ID);
@@ -2652,7 +3413,7 @@ function drawAbilityEffects(state) {
         const radius = 18 + ((t + ring / 3) % 1) * 76;
         ctx.beginPath(); ctx.ellipse(x, y - 8, radius, radius * 0.42, 0, 0, Math.PI * 2); ctx.stroke();
       }
-      ctx.fillStyle = '#9cffbc';
+      ctx.fillStyle = effect.color ?? '#9cffbc';
       for (let i = 0; i < 16; i++) {
         const angle = i * Math.PI * 2 / 16 + t * 2;
         const r = 22 + 40 * t + (i % 3) * 7;
@@ -2671,12 +3432,225 @@ function drawAbilityEffects(state) {
   ctx.restore();
 }
 
+// Ultimate: a forma do efeito segue o tipo da sobrecarga ativa.
+//   burst/wave/surge → anéis no raio real
+//   line             → cunha na direção apontada
+//   dash             → rastro atrás do avanço
+//   guard            → cúpula fechada no corpo
+const ULTIMATE_FACING = { down: [1, 1], up: [-1, -1], left: [-1, 1], right: [1, -1] };
+
+// Carga da Ultimate: a energia converge no corpo antes da soltura.
+function drawUltimateCharge(state) {
+  const ultimate = state.player?.ultimate;
+  if (!ultimate?.charge) return;
+  const player = state.player;
+  const x = (player.x - player.y) * HW, y = (player.x + player.y) * HH;
+  const duration = ultimate.chargeDuration || .42;
+  const t = Math.max(0, Math.min(1, 1 - ultimate.charge / duration));
+  const color = ultimate.chargeDefinition?.color ?? '#ffd465';
+  ctx.save();
+  ctx.shadowColor = color;
+  ctx.shadowBlur = 12;
+  ctx.strokeStyle = color;
+  ctx.fillStyle = color;
+  // Anéis que encolhem até o peito.
+  for (let anel = 0; anel < 3; anel++) {
+    const raio = (74 - t * 52) * (1 - anel * .22);
+    ctx.globalAlpha = (.25 + t * .55) * (1 - anel * .25);
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.ellipse(x, y - 12, Math.max(4, raio), Math.max(2, raio * .42), 0, 0, Math.PI * 2);
+    ctx.stroke();
+  }
+  // Cada arquétipo converge à sua maneira.
+  ctx.globalAlpha = .35 + t * .5;
+  const arquetipo = state.progress?.archetype;
+  if (arquetipo === 'motor_bio_forja') {
+    // Placas de forja girando e fechando.
+    for (let i = 0; i < 8; i++) {
+      const ang = i * Math.PI / 4 + t * 3;
+      const raio = 46 - t * 32;
+      const px = x + Math.cos(ang) * raio;
+      const py = y - 12 + Math.sin(ang) * raio * .45;
+      ctx.save();
+      ctx.translate(px, py);
+      ctx.rotate(ang + t * 2);
+      ctx.fillRect(-3, -3, 6, 6);
+      ctx.restore();
+    }
+  } else if (arquetipo === 'lamina_dominio_anciao') {
+    // Runas verticais que se alinham.
+    for (let i = 0; i < 6; i++) {
+      const xr = x - 30 + i * 12;
+      const altura = 10 + (i % 3) * 8;
+      ctx.fillRect(xr, y - 26 - t * 10 - altura * (1 - t), 2, altura);
+    }
+  } else if (arquetipo === 'mare_astral') {
+    // Gotas subindo em espiral.
+    for (let i = 0; i < 10; i++) {
+      const ang = i * Math.PI * 2 / 10 + t * 4;
+      const raio = 44 - t * 30;
+      ctx.beginPath();
+      ctx.arc(x + Math.cos(ang) * raio, y - 6 + Math.sin(ang) * raio * .4 - t * 18, 2, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  } else if (arquetipo === 'nucleo_dez_forma') {
+    // Silhuetas de eco piscando atrás do corpo.
+    for (let i = 0; i < 4; i++) {
+      ctx.globalAlpha = (.10 + t * .18) * (1 - i * .18);
+      ctx.beginPath();
+      ctx.ellipse(x - i * 6 + t * 4, y - 12 + i * 2, 12 - i, 22 - i * 2, 0, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  } else {
+    for (let i = 0; i < 10; i++) {
+      const ang = i * Math.PI * 2 / 10 + t * 2.4;
+      const raio = 42 - t * 30;
+      ctx.fillRect(x + Math.cos(ang) * raio - 1, y - 10 + Math.sin(ang) * raio * .42 - t * 14, 2, 2);
+    }
+  }
+  ctx.globalAlpha = .35 + t * .5;
+  if (t > .85) {
+    // Último instante: halo branco quente.
+    ctx.globalAlpha = (t - .85) / .15 * .85;
+    ctx.beginPath();
+    ctx.ellipse(x, y - 12, 16 + (t - .85) * 260, 8 + (t - .85) * 120, 0, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.restore();
+}
+
+function drawUltimateEffect(state) {
+  const ultimate = state.player?.ultimate;
+  if (!ultimate?.effect) return;
+  const effect = ultimate.effect;
+  const player = state.player;
+  const x = (player.x - player.y) * HW, y = (player.x + player.y) * HH;
+  const t = Math.max(0, Math.min(1, 1 - effect.timeLeft / effect.duration));
+  const kind = effect.kind ?? 'burst';
+  const [fx, fy] = ULTIMATE_FACING[effect.facing] ?? ULTIMATE_FACING.down;
+  const length = Math.hypot(fx, fy) || 1;
+  const screenX = (fx - fy) / length * HW;
+  const screenY = (fx + fy) / length * HH;
+  const fxUnit = screenX / (Math.hypot(screenX, screenY) || 1);
+  const fyUnit = screenY / (Math.hypot(screenX, screenY) || 1);
+
+  ctx.save();
+  ctx.shadowColor = effect.color;
+  ctx.shadowBlur = 18;
+  ctx.strokeStyle = effect.color;
+  ctx.fillStyle = effect.color;
+
+  // Cada Ultimate tem desenho próprio; o tipo (linha/onda/guarda...) é só o
+  // formato do dano. Sem assinatura, cai no desenho genérico abaixo.
+  if (drawUltimateSignature(ctx, {
+    signature: effect.signature,
+    kind,
+    color: effect.color,
+    x, y, t,
+    dir: { x: fxUnit, y: fyUnit },
+    radius: effect.radius ?? 0,
+    range: effect.range ?? 0,
+  })) {
+    ctx.restore();
+    return;
+  }
+
+  if (kind === 'line') {
+    const alcance = Math.max(40, (effect.range ?? 6) * 34) * (0.35 + t * 0.75);
+    const largura = alcance * 0.3;
+    ctx.globalAlpha = Math.max(0, 1 - t) * .9;
+    ctx.lineWidth = 3;
+    for (let faixa = -1; faixa <= 1; faixa++) {
+      const desvio = faixa * largura * 0.45;
+      ctx.beginPath();
+      ctx.moveTo(x + (-fyUnit) * desvio, y - 6 + fxUnit * desvio);
+      ctx.lineTo(x + fxUnit * alcance + (-fyUnit) * desvio * 0.3, y + fyUnit * alcance - 6 + fxUnit * desvio * 0.3);
+      ctx.stroke();
+    }
+    ctx.globalAlpha = Math.max(0, 1 - t) * .55;
+    ctx.fillRect(x + fxUnit * alcance - 3, y - 8 + fyUnit * alcance, 6, 6);
+  } else if (kind === 'dash') {
+    ctx.globalAlpha = Math.max(0, 1 - t) * .85;
+    ctx.lineWidth = 3;
+    for (let i = 0; i < 4; i++) {
+      const recuo = 18 + i * 16 + t * 26;
+      ctx.globalAlpha = Math.max(0, 1 - t) * (.8 - i * .16);
+      ctx.beginPath();
+      ctx.moveTo(x - fxUnit * recuo - fyUnit * 7, y - 12 - fyUnit * recuo - fxUnit * 3);
+      ctx.lineTo(x - fxUnit * recuo + fyUnit * 7, y - 12 - fyUnit * recuo + fxUnit * 3);
+      ctx.stroke();
+    }
+    ctx.globalAlpha = Math.max(0, 1 - t) * .5;
+    for (let i = 0; i < 10; i++) {
+      ctx.fillRect(x + (i % 5) * 11 - 22, y - 6 - (i % 3) * 9 - t * 12, 3, 3);
+    }
+  } else if (kind === 'guard') {
+    const abertura = Math.PI * (.15 + t * .85);
+    const raio = 30 + t * 26;
+    ctx.globalAlpha = Math.max(0, 1 - t) * .95;
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.ellipse(x, y - 10, raio, raio * .78, 0, Math.PI, Math.PI * 2);
+    ctx.stroke();
+    ctx.globalAlpha = Math.max(0, 1 - t) * .4;
+    ctx.beginPath();
+    ctx.ellipse(x, y - 2, raio * 1.15, raio * .34, 0, 0, abertura * 2);
+    ctx.stroke();
+    ctx.globalAlpha = Math.max(0, 1 - t) * .6;
+    for (let i = 0; i < 6; i++) {
+      const angle = Math.PI + i * Math.PI / 5;
+      ctx.fillRect(x + Math.cos(angle) * raio, y - 10 + Math.sin(angle) * raio * .78, 3, 3);
+    }
+  } else {
+    const raioBase = Math.max(70, (effect.radius ?? 5) * 34);
+    for (let ring = 0; ring < 3; ring++) {
+      const progresso = Math.min(1, t * 1.25 + ring * .12);
+      const raio = 26 + progresso * raioBase;
+      ctx.globalAlpha = Math.max(0, (1 - progresso) * .9);
+      ctx.lineWidth = 3 - ring * .6;
+      ctx.beginPath();
+      ctx.ellipse(x, y, raio, raio * .5, 0, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+    ctx.globalAlpha = Math.max(0, 1 - t) * .85;
+    for (let i = 0; i < 18; i++) {
+      const angle = i * Math.PI * 2 / 18;
+      const raio = 30 + (i % 5) * 16 + t * (raioBase * .65);
+      ctx.fillRect(x + Math.cos(angle) * raio - 1, y + Math.sin(angle) * raio * .5 - 2 - t * 24, 3, 3);
+    }
+  }
+  ctx.restore();
+}
+
 function drawEntity(entity, state) {
   const ix = (entity.x - entity.y) * HW;
   const iy = (entity.x + entity.y) * HH;
 
   if (entity === state.player) {
-    drawShadow(ix, iy, 0.28);
+    // A Quebra Sistemas é ferro: sombra mais larga e mais densa que o operador.
+    if (entity.nucleoForm === NUCLEO_BRUTA) {
+      ctx.save();
+      ctx.fillStyle = 'rgba(0,0,0,.34)';
+      ctx.beginPath();
+      ctx.ellipse(ix, iy, 21, 9, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    } else drawShadow(ix, iy, 0.28);
+    // Passo pesado: a câmera sente o chão a cada passada da Quebra Sistemas.
+    // Tremor curto e fraco de propósito: some sozinho, sem quebrar leitura.
+    if (entity.nucleoForm === NUCLEO_BRUTA && entity.moving && !entity.ability?.dash) {
+      const passo = Math.floor(performance.now() / 150) % 4;
+      const chave = `${passo}:${Math.floor(performance.now() / 600)}`;
+      if (entity._brutaStep !== chave) {
+        entity._brutaStep = chave;
+        entity.ultimate ??= { cooldown: 0, buff: null, effect: null, casts: 0, charge: 0, shake: null, flash: null };
+        // Só dispara se o tremor da Ultimate não estiver ocupando a câmera.
+        if (!entity.ultimate.shake || entity.ultimate.shake.source === 'passo') {
+          entity.ultimate.shake = { timeLeft: .12, duration: .12, power: 2.2, source: 'passo' };
+        }
+      }
+    }
     if (state.progress.archetype === 'nucleo_dez_forma' && entity.nucleoForm === 'forma_veloz' && entity.moving && !entity.ability?.dash) {
       const dir = { left: [-1,0], right: [1,0], up: [0,-1], down: [0,1] }[entity.facing] ?? [1,0];
       const pulse = .45 + .2 * Math.sin(performance.now() * .02);
@@ -2694,7 +3668,12 @@ function drawEntity(entity, state) {
     const push = attack?.timeLeft > 0 ? Math.sin(Math.PI * t) * 4 : 0;
     const dx = attack ? (attack.dx - attack.dy) : 0, dy = attack ? (attack.dx + attack.dy) * .5 : 0;
     const length = Math.hypot(dx, dy) || 1;
-    if (drawPlayerSprite(entity, ix + dx / length * push, iy + dy / length * push)) return;
+    // Corpo se prepara durante a carga da Ultimate: peso para baixo e aura.
+    const carga = entity.ultimate?.charge > 0
+      ? 1 - entity.ultimate.charge / (entity.ultimate.chargeDuration || .42)
+      : 0;
+    const afundar = carga > 0 ? Math.sin(Math.PI * Math.min(1, carga)) * 3 : 0;
+    if (drawPlayerSprite(entity, ix + dx / length * push, iy + dy / length * push + afundar)) return;
 
     ctx.beginPath();
     ctx.arc(ix, iy - 14, 9, 0, Math.PI * 2);

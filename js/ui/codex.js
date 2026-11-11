@@ -12,10 +12,27 @@ import { activateCompanion } from '../game/companion-progress.js';
 import { ARCHETYPES } from '../data/onboarding.js';
 import { getArchetypeLevel, getArchetypeXp, getDerivedStats, xpToNext } from '../game/rpg.js';
 import { getMasteryState, getMasterySummary } from '../game/mastery.js';
+import { getUltimateStatus } from '../game/ultimate.js';
+import { getBioUltimatePosePath } from '../data/bio-ultimate-animation.js';
+import { getMareUltimatePosePath } from '../data/mare-ultimate-animation.js';
+import { getDominioUltimatePosePath } from '../data/dominio-ultimate-animation.js';
+import { listTools, selectTool } from '../game/tools.js';
+import { describeNextUnlock, getUnlockState, getUnlockStepFor } from '../game/unlocks.js';
+import { getPath, LEVEL_TITLES, PATH_STATES } from '../data/archetype-progression.js';
+import { getTree, getTreeSummary, TREE_STATE_LABELS } from '../data/archetype-trees.js';
+import { TOOL_LABELS } from '../data/archetype-tools.js';
+import { NUCLEO_FORMS } from '../data/nucleo-forms.js';
 import { listTrackedQuests } from '../game/quests.js';
+import { ARQUIPELAGO_REGIONS } from '../data/arquipelago-regioes.js';
 import { getItem, listInventory } from '../data/items.js';
 
 const ICONS = 'assets/sprites/ui/codex/icone-';
+const ULTIMATE_ICONS = 'assets/sprites/ui/codex/ultimate-';
+
+// Cada trilha tem sua cor, igual ao ícone que a representa no Códex.
+export const TRACK_COLORS = Object.freeze({
+  ataque: '#ffd86b', fluxo: '#54ccff', eco: '#ffc861', locomocao: '#b78cff',
+});
 
 const TABS = Object.freeze([
   { id: 'missoes', label: 'MISSÕES', icon: 'missoes' },
@@ -51,6 +68,33 @@ function renderTabs() {
       <kbd>${index + 1}</kbd>
     </button>`).join('')}
   </nav>`;
+}
+
+// Rotas marítimas da Maré Astral: mapa do arquipélago com o que já navega e o
+// que ainda é projeto. Nada aqui move o jogador — é leitura de mapa.
+function mareRoutes(progress, map) {
+  if (progress?.archetype !== 'mare_astral') return '';
+  const atual = ARQUIPELAGO_REGIONS.find(region => region.mapId && region.mapId === map?.id)
+    ?? ARQUIPELAGO_REGIONS.find(region => region.id === 'praia_inicial');
+  const vizinhas = ARQUIPELAGO_REGIONS.filter(region => atual.neighbours.includes(region.id));
+  const rota = region => `<li class="codex-route ${region.status === 'jogavel' ? 'pronto' : 'projeto'}">
+      <span class="codex-route-pin" aria-hidden="true">${region.status === 'jogavel' ? '◆' : '◇'}</span>
+      <strong>${escapeHtml(region.nome)}</strong>
+      <em>${region.status === 'jogavel' ? 'ROTA ABERTA' : 'EM PROJETO'}</em>
+      <small>${escapeHtml(region.biome)}</small>
+    </li>`;
+  const lista = vizinhas.length ? vizinhas.map(rota).join('') : '<li class="codex-route projeto"><strong>Nenhuma vizinha mapeada</strong></li>';
+  return `<aside class="codex-mare" aria-label="Rotas de maré">
+      <span class="codex-tag">ROTAS DE MARÉ</span>
+      <strong>${escapeHtml(atual.nome)}</strong>
+      <ul>${lista}</ul>
+      <div class="codex-mare-modes">
+        <span class="codex-mare-mode projeto"><b>NADO LIVRE</b><em>EM PROJETO</em><small>movimento fluido contínuo na água funda</small></span>
+        <span class="codex-mare-mode projeto"><b>NAVEGAÇÃO</b><em>EM PROJETO</em><small>correntes levam a ilhas e portos</small></span>
+        <span class="codex-mare-mode projeto"><b>MISSÕES DE TRAVESSIA</b><em>EM PROJETO</em><small>rotas com carga e pouso</small></span>
+      </div>
+      <p class="codex-note">Mapa do arquipélago já registra as ilhas; navegar entre elas fica para o sistema de navegação.</p>
+    </aside>`;
 }
 
 function renderMissions(progress, map) {
@@ -93,13 +137,155 @@ function renderMissions(progress, map) {
   return `<section class="codex-section" aria-label="Missões">
     <div class="codex-columns">
       <div class="codex-column">${main}${cards}</div>
-      <aside class="codex-column codex-column-side">${exploration}</aside>
+      <aside class="codex-column codex-column-side">${exploration}${mareRoutes(progress, map)}</aside>
     </div>
   </section>`;
 }
 
 function masteryPips(rank, maxRank) {
   return `<span class="codex-pips" aria-hidden="true">${Array.from({ length: maxRank }, (_, index) => `<i class="${index < rank ? 'filled' : ''}"></i>`).join('')}</span>`;
+}
+
+// De onde sai a arte de execução de uma escolha: cada arquétipo que já tem
+// folhas de Ultimate própria aponta seu resolvedor. Quem ainda não tem cai em
+// null e o cartão fica só com o texto (sem ícone inventado).
+const POSE_RESOLVERS = {
+  motor_bio_forja: getBioUltimatePosePath,
+  mare_astral: getMareUltimatePosePath,
+  lamina_dominio_anciao: getDominioUltimatePosePath,
+};
+
+function poseDaFerramenta(arquetipo, signature) {
+  const resolver = POSE_RESOLVERS[arquetipo];
+  return resolver && signature ? resolver(signature) : null;
+}
+
+// Ultimate: nome, custo e estado atual, com o sigilo do arquétipo.
+function ultimateCard(progress) {
+  const status = getUltimateStatus(context.player, progress);
+  if (!status) return '';
+  const { definition, tool } = status;
+  const estado = status.locked ? `BLOQUEADA · NÍVEL ${status.requiredLevel}`
+    : status.cooldown > 0 ? `RECARREGANDO ${status.cooldown.toFixed(0)}s`
+    : !status.energyOk ? `FALTA ${Math.max(0, definition.cost - status.energy)} ENERGIA`
+    : 'PRONTA';
+  const camada = tool ? `SOBRECARGA · ${tool.short}` : 'ULTIMATE DE ARQUÉTIPO · BASE';
+  const avisoForma = status.needsForm
+    ? '<p class="codex-form-warning">SÓ COM A FORMA ATIVA · TRANSFORME-SE COM <kbd>T</kbd> ANTES DE SOLTAR.</p>'
+    : '';
+  return `<article class="codex-ultimate${status.ready ? ' ready' : ''}${status.locked ? ' locked' : ''}" style="--ultimate:${definition.color}">
+    <img class="codex-ultimate-icon" src="${ULTIMATE_ICONS}${progress.archetype}.png" alt="" aria-hidden="true" draggable="false">
+    <div>
+      <header><span class="codex-tag">F · ${camada}</span><strong>${escapeHtml(definition.name)}</strong><em>${estado}</em></header>
+      <p>${escapeHtml(definition.description)}</p>
+      ${avisoForma}
+      <footer>${definition.cost} ENERGIA · RECARGA ${definition.cooldown}s · ${escapeHtml(definition.effectText)}</footer>
+    </div>
+  </article>`;
+}
+
+// Escolha de ferramenta/corrente/forma: é ela que define a Ultimate nível 1.
+function toolPicker(progress) {
+  const tools = listTools(progress);
+  if (!tools.length) return '';
+  const label = TOOL_LABELS[progress.archetype] ?? 'FERRAMENTA';
+  const acesso = getUnlockState(progress);
+  const hint = acesso.features.tool
+    ? (getPath(progress.archetype)?.levels?.find(entry => entry.level === 2)?.note ?? 'A escolha vale para todo o perfil.')
+    : `Instalar ${label.toLowerCase()} abre no nível ${getUnlockStepFor(2)?.level ?? 2}. Suba de nível com combate e missões.`;
+  const titulo = !acesso.features.tool
+    ? `${escapeHtml(label)} BLOQUEADA`
+    : tools.some(tool => tool.selected) ? 'TROQUE A SOBRECARGA' : `ESCOLHA UMA ${escapeHtml(label)}`;
+  const cards = tools.map(tool => {
+    // A execução da Ultimate é arte de verdade: o cartão mostra a primeira pose
+    // da folha da ferramenta/corrente (preparo), não um ícone genérico.
+    // A busca é por arquétipo — a corrente `escudo_liquido` desenha o próprio
+    // gesto, não o do Bio.
+    const pose = poseDaFerramenta(progress.archetype, tool.ultimate?.signature);
+    // `src` é a folha inteira; o CSS recorta o quadro do preparo. Assim a
+    // mesma arte serve de miniatura e de referência do golpe, sem gerar PNG
+    // só para o menu.
+    const execucao = pose
+      ? `<img class="codex-tool-pose" src="${pose}" alt="" aria-hidden="true" draggable="false"
+          style="--pose-sheet:url('${pose}')">`
+      : '';
+    return `<button type="button" class="codex-tool${tool.selected ? ' selected' : ''}${tool.locked ? ' locked' : ''}"
+      data-tool="${escapeHtml(tool.id)}" style="--tool:${tool.color};--poses:4;--pose:0"
+      aria-pressed="${tool.selected}" ${tool.locked ? 'disabled aria-disabled="true"' : ''}>
+      ${execucao}
+      <span class="codex-tool-tag">${escapeHtml(tool.short)}</span>
+      <strong>${escapeHtml(tool.name)}</strong>
+      <small>${tool.playable ? 'NÍVEL 1' : 'EM PROJETO'} · ${escapeHtml(tool.ultimate.name)}</small>
+      <em>${escapeHtml(tool.tagline)}</em>
+      <i class="codex-tool-cost">${!tool.playable ? 'FORMA EM PROJETO' : tool.locked ? `BLOQUEADA · NÍVEL ${tool.requiredLevel}` : `${tool.ultimate.cost} EN · ${tool.ultimate.cooldown}s`}</i>
+    </button>`;
+  }).join('');
+  return `<section class="codex-tools" aria-label="Escolha de ${escapeHtml(label)}">
+    <header>
+      <span class="codex-tag">ESPECIALIZAÇÃO · ${escapeHtml(label)}</span>
+      <strong>${titulo}</strong>
+      <p>${escapeHtml(hint)}</p>
+    </header>
+    <div class="codex-tool-grid">${cards}</div>
+  </section>`;
+}
+
+// Caminho 0–5 do arquétipo: o que já dá para jogar e o que ainda é plano.
+function pathLadder(progress) {
+  const path = getPath(progress?.archetype);
+  if (!path) return '';
+  const unlockState = getUnlockState(progress);
+  const steps = path.levels.map(entry => {
+    const items = entry.items.map(item => `<li>${escapeHtml(item)}</li>`).join('');
+    const unlockStep = getUnlockStepFor(entry.level);
+    const estado = entry.state === 'futuro' || unlockStep?.planned
+      ? PATH_STATES[entry.state] ?? 'PLANEJADO'
+      : unlockState.level >= (unlockStep?.level ?? unlockState.level) ? 'DISPONÍVEL' : `NÍVEL ${unlockStep.level} · FALTAM ${unlockStep.level - unlockState.level}`;
+    const classe = estado === 'DISPONÍVEL' ? 'pronto' : estado.startsWith('NÍVEL') ? 'travado' : entry.state;
+    return `<li class="codex-step ${classe}">
+      <span class="codex-step-level">${entry.level}</span>
+      <div class="codex-step-body">
+        <header><strong>${escapeHtml(entry.title)}</strong><em>${escapeHtml(estado)}</em></header>
+        <ul>${items}</ul>
+        ${entry.note ? `<small>${escapeHtml(entry.note)}</small>` : ''}
+      </div>
+    </li>`;
+  }).join('');
+  return `<section class="codex-path" aria-label="Caminho do arquétipo">
+    <header><span class="codex-tag">CAMINHO · NÍVEIS 0–5</span><p>${escapeHtml(path.tagline)}</p></header>
+    <ol class="codex-steps">${steps}</ol>
+  </section>`;
+}
+
+// Árvore do arquétipo: o horizonte de cada galho, sem prometer o que não existe.
+function treePanel(progress) {
+  const tree = getTree(progress?.archetype);
+  if (!tree) return '';
+  const resumo = getTreeSummary(progress.archetype);
+  const galhos = tree.branches.map(branch => {
+    const estado = TREE_STATE_LABELS[branch.state] ?? 'PLANEJADO';
+    const nos = branch.nodes.map(node => {
+      const rotulo = TREE_STATE_LABELS[node.state] ?? 'PLANEJADO';
+      return `<li class="codex-node ${node.state}">
+        <strong>${escapeHtml(node.name)}</strong>
+        <em>${escapeHtml(rotulo)}</em>
+        ${node.note ? `<small>${escapeHtml(node.note)}</small>` : ''}
+      </li>`;
+    }).join('');
+    return `<article class="codex-branch ${branch.state}">
+      <header><strong>${escapeHtml(branch.name)}</strong><em>${escapeHtml(estado)}</em></header>
+      <ul>${nos}</ul>
+    </article>`;
+  }).join('');
+  return `<section class="codex-tree" aria-label="Árvore do arquétipo">
+    <header>
+      <span class="codex-tag">ÁRVORE · ${resumo.prontos}/${resumo.branches} GALHOS PRONTOS</span>
+      <strong>${escapeHtml(tree.title)}</strong>
+      <p>${escapeHtml(tree.tagline)}</p>
+    </header>
+    <div class="codex-branches">${galhos}</div>
+    <p class="codex-note">${resumo.nodesProntos} de ${resumo.nodes} nós já existem em jogo. Nós <em>EM PROJETO</em> aparecem para mostrar o horizonte — não dão poder nenhum ainda.</p>
+  </section>`;
 }
 
 function renderProgress(progress) {
@@ -115,7 +301,7 @@ function renderProgress(progress) {
   const summary = getMasterySummary(progress, archetypeId);
   const tracks = getMasteryState(progress, archetypeId);
 
-  const rows = tracks.map(track => `<article class="codex-track" style="--track:${track.rank > 0 ? '#9af9c8' : '#4d6b64'}">
+  const rows = tracks.map(track => `<article class="codex-track" style="--track:${track.rank > 0 ? TRACK_COLORS[track.id] ?? '#9af9c8' : '#4d6b64'}">
       ${icon(track.icon, 'codex-track-icon')}
       <div class="codex-track-body">
         <header>
@@ -138,6 +324,7 @@ function renderProgress(progress) {
       <div>
         <strong>${escapeHtml(archetype.nome)} · NÍVEL ${level}</strong>
         <span>${Number.isFinite(next) ? `${Math.floor(xp)} / ${next} XP` : 'NÍVEL MÁXIMO'} · MAESTRIA ${summary.total}</span>
+        <span class="codex-unlock-next">${escapeHtml(describeNextUnlock(progress))}</span>
       </div>
       <div class="codex-level-bars">
         <i class="codex-xp-bar"><b style="width:${Number.isFinite(next) ? pct(xp / next) : '100%'}"></b></i>
@@ -145,7 +332,11 @@ function renderProgress(progress) {
       </div>
     </header>
     <p class="codex-note">A maestria sobe com o uso: golpes, habilidades, missões e distância percorrida. Não há pontos para gastar.</p>
+    ${toolPicker(progress)}
+    ${ultimateCard(progress)}
     <div class="codex-tracks">${rows}</div>
+    ${treePanel(progress)}
+    ${pathLadder(progress)}
   </section>`;
 }
 
@@ -197,6 +388,32 @@ function renderInventory(progress) {
   </section>`;
 }
 
+// Linha da forma do Núcleo 10X: mesma informação da HUD, mas com a barra
+// desenhada — o jogador vê quanto ainda cabe de forma e quantos golpes da
+// Quebra ainda dá para pagar (3 s cada).
+function formRow(progress, player, stats) {
+  if (progress?.archetype !== 'nucleo_dez_forma') return '';
+  const runtime = player?.nucleoRuntime;
+  const ativa = NUCLEO_FORMS[player?.nucleoForm] ?? null;
+  const base = ativa ?? NUCLEO_FORMS[stats?.formId] ?? null;
+  if (!base) return '';
+  const duracao = base.form?.duration ?? 20;
+  const restante = ativa ? Math.max(0, runtime?.remaining ?? 0) : 0;
+  const fracao = ativa ? Math.max(0, Math.min(1, restante / duracao)) : 0;
+  const custo = ativa?.form?.hitCost ?? 0;
+  // Quantos golpes carregados ainda cabem na barra.
+  const golpes = custo > 0 ? Math.floor(restante / custo) : null;
+  const detalhe = ativa
+    ? `${restante.toFixed(1)}s de ${duracao}s${golpes !== null ? ` · ${golpes} marretada(s) ainda cabem` : ''}`
+    : `aguardando o T (${base.form?.recharge ?? 8}s de recarga)`;
+  return `<li class="codex-form-row">
+    <span>FORMA</span>
+    <strong style="color:${base.color}">${escapeHtml(base.name)}</strong>
+    <i class="codex-form-bar" aria-hidden="true"><b style="width:${Math.round(fracao * 100)}%;background:${base.color}"></b></i>
+    <small>${escapeHtml(detalhe)}</small>
+  </li>`;
+}
+
 function statRow(label, value, hint = '') {
   return `<li><span>${escapeHtml(label)}</span><strong>${escapeHtml(value)}</strong>${hint ? `<small>${escapeHtml(hint)}</small>` : ''}</li>`;
 }
@@ -240,7 +457,12 @@ function renderAttributes(progress, player) {
           ${statRow('DANO DE HABILIDADE', `+${Math.round(stats.abilityDamagePct * 100)}%`)}
           ${statRow('XP RECEBIDO', `+${Math.round(stats.xpBonusPct * 100)}%`)}
           ${statRow('VELOCIDADE', `${speed}%`)}
-          ${statRow('FORMA VELOZ', `${formSpeed}%`, `+${stats.formDuration.toFixed(1)}s de duração`)}
+          ${statRow(stats.formId ? 'FORMA ATIVA' : 'FORMA VELOZ', stats.formId
+            ? `${NUCLEO_FORMS[stats.formId]?.short ?? 'FORMA'} · ${Math.round(100 * (stats.cooldown))}% de recarga`
+            : `${formSpeed}%`, stats.formId
+            ? `${stats.range.toFixed(1)} tiles · preparo ${stats.windup.toFixed(2)}s`
+            : `+${stats.formDuration.toFixed(1)}s de duração`)}
+          ${formRow(progress, player, stats)}
         </ul>
         <p class="codex-note">Morrer devolve você ao ponto seguro do mapa com parte da vida. Nenhum XP, item ou missão é perdido.</p>
       </div>
@@ -261,6 +483,7 @@ function render() {
   if (!overlay) return;
   const { progress } = context;
   const archetype = progress?.archetype ? ARCHETYPES[progress.archetype] : null;
+  if (overlay) overlay.dataset.tab = currentTab;
   overlay.querySelector('.codex-tabs').outerHTML = renderTabs();
   const panel = overlay.querySelector('#codexPanel');
   panel.innerHTML = renderPanel();
@@ -276,6 +499,12 @@ function bind(root, panel) {
   root.querySelectorAll('.codex-companion-actions button').forEach(button => {
     button.addEventListener('click', () => {
       if (activateCompanion(context.progress, button.dataset.companion)) saveGame();
+      render();
+    });
+  });
+  panel.querySelectorAll('.codex-tool[data-tool]').forEach(button => {
+    button.addEventListener('click', () => {
+      if (selectTool(context.progress, button.dataset.tool)) saveGame();
       render();
     });
   });
@@ -333,7 +562,7 @@ export function openCodex(progress, map, player) {
       <div class="codex-body" id="codexPanel" role="tabpanel" tabindex="-1"></div>
       <footer class="codex-footer">
         <span>J / ESC fechar · 1–4 trocar aba · ← → navegar</span>
-        <span id="codexHint">A maestria cresce com o uso.</span>
+        <span id="codexHint">Clique numa ferramenta para trocar a Ultimate do F.</span>
       </footer>
     </section>`;
     document.body.appendChild(overlay);
@@ -359,3 +588,7 @@ export function handleCodexInput(pressed) {
 }
 
 export const CODEX_TABS = TABS;
+
+// Exposto para teste: a linha da forma do Núcleo (barra, tempo restante e
+// quantas marretadas ainda cabem) não pode voltar a depender de sorte.
+export const __codexInternals = Object.freeze({ formRow, renderAttributes });

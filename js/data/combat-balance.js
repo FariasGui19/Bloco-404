@@ -76,6 +76,27 @@ export const ABILITY_DAMAGE = Object.freeze({
   forma_veloz: 1.6,
 });
 
+// FORMAS DO NÚCLEO — o mesmo arquétipo, dois corpos.
+// O perfil acima é do operador; cada forma sustentada tem o próprio gesto.
+// A Quebra Sistemas bate devagar e pesado: preparação longa, alcance curto e
+// strain mais agressivo (3 golpes e o braço hidráulico entra em recuperação).
+export const NUCLEO_FORM_BALANCE = Object.freeze({
+  forma_bruta: Object.freeze({
+    label: 'MARRETA',
+    color: '#ffc94a',
+    damageMult: 1.9,
+    cooldown: .92,
+    range: 1.6,
+    windup: .55,
+    formMult: 1,
+    strain: Object.freeze({ hits: 3, extra: .7, label: 'PISTÃO SUPERAQUECIDO' }),
+  }),
+});
+
+export function getFormCombatProfile(formId) {
+  return NUCLEO_FORM_BALANCE[formId] ?? null;
+}
+
 // Vida de referência do operador por arquétipo. Ainda não há fonte de dano
 // ao jogador: inimigos continuam pendentes (ver docs/roteiro).
 export const ARCHETYPE_VITALS = Object.freeze({

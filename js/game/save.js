@@ -12,9 +12,14 @@
 
 import { state } from './state.js';
 import { ensureArchetypeProgress } from './progression.js';
+import { ensureTools } from './tools.js';
+import { applyUnlocks } from './unlocks.js';
+import { ARCHETYPE_KITS } from '../data/archetype-kits.js';
 
 const SAVE_VERSION = 1;
-const SLOT_COUNT = 3;
+// 4 personas criáveis: um arquétipo por save, no máximo.
+// (O criador pediu para poder criar um de cada.)
+const SLOT_COUNT = 4;
 const SAVE_PREFIX = 'BLOCO404_SAVE_SLOT_';
 
 function getSlotKey(slot) {
@@ -43,6 +48,7 @@ function createDefaultProgress() {
 
     abilities: [],
     archetypeProgress: {},
+    tools: {},
     inventory: [],
 
     activeQuest: null,
@@ -144,6 +150,7 @@ function migrateSave(save, slot) {
   };
 
   ensureArchetypeProgress(safeSave.progress);
+  ensureTools(safeSave.progress);
   return safeSave;
 }
 
@@ -186,11 +193,14 @@ export function loadSaveIntoState(slot) {
   state.save.loaded = true;
 
   state.progress = clone(save.progress);
+  ensureTools(state.progress);
+  applyUnlocks(state.progress, ARCHETYPE_KITS[state.progress.archetype]);
 
   state.player.facing = save.player?.facing ?? 'down';
   state.player.nucleoForm = null;
   state.player.nucleoRuntime = null;
-  // Vida é de sessão: cada carregamento começa com a barra cheia.
+  // Vida e Ultimate são de sessão: cada carregamento começa limpo.
+  state.player.ultimate = { cooldown: 0, buff: null, effect: null, casts: 0, charge: 0, shake: null, flash: null };
   state.player.health = null;
   state.player.maxHealth = null;
   state.player.invulnerable = 0;
@@ -214,11 +224,14 @@ export function startNewSave(slot, profileName = null) {
   state.save.loaded = true;
 
   state.progress = clone(save.progress);
+  ensureTools(state.progress);
+  applyUnlocks(state.progress, ARCHETYPE_KITS[state.progress.archetype]);
 
   state.player.facing = save.player.facing;
   state.player.nucleoForm = null;
   state.player.nucleoRuntime = null;
-  // Vida é de sessão: cada partida começa com a barra cheia.
+  // Vida e Ultimate são de sessão: cada partida começa limpa.
+  state.player.ultimate = { cooldown: 0, buff: null, effect: null, casts: 0, charge: 0, shake: null, flash: null };
   state.player.health = null;
   state.player.maxHealth = null;
   state.player.invulnerable = 0;

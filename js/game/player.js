@@ -21,8 +21,15 @@ import {
 } from './world.js';
 
 import { moveWithCollision } from './collision.js';
+import {
+  criarEstadoNado, atualizarNado, multiplicadorVelocidade,
+  podeNadar, destinoValido, NADO, moverNaAgua, ganharRespeito,
+} from './nado.js';
+import { getCoastFieldForMap } from '../engine/coast-field.js';
+import { damagePlayer } from './health.js';
 import { getDerivedStats } from './rpg.js';
 import { recordMastery } from './mastery.js';
+import { NUCLEO_FORMS, NUCLEO_VELOZ, getFormSpeedMultiplier } from '../data/nucleo-forms.js';
 
 const CLICK_SNAP_DIST = 1.0;
 // Aplicado apenas à locomoção da forma sustentada, não ao Q nem a trajes.
@@ -30,12 +37,18 @@ export const VELOZ_SPEED_MULTIPLIER = 1.8;
 
 // A maestria de locomoção soma velocidade. A Forma Veloz tem ainda o próprio
 // bônus cinético, que cresce conforme o jogador corre, anda e dá dash nela.
+// A Quebra Sistemas carrega a inércia extrema no dado da forma: multiplicador
+// abaixo de 1, aplicado do mesmo jeito (nada de número solto no renderer).
 export function getPlayerMoveSpeed(progress, player) {
   const stats = getDerivedStats(progress, player);
   if (!stats) return CONFIG.PLAYER_SPEED;
-  const veloz = progress?.archetype === 'nucleo_dez_forma' && player?.nucleoForm === 'forma_veloz';
+  const form = progress?.archetype === 'nucleo_dez_forma'
+    ? NUCLEO_FORMS[player?.nucleoForm] ?? null
+    : null;
+  const veloz = form?.id === NUCLEO_VELOZ;
   const mastery = 1 + stats.moveSpeedPct + (veloz ? stats.formSpeedPct : 0);
-  return CONFIG.PLAYER_SPEED * (veloz ? VELOZ_SPEED_MULTIPLIER : 1) * mastery;
+  const formMultiplier = veloz ? VELOZ_SPEED_MULTIPLIER : getFormSpeedMultiplier(form);
+  return CONFIG.PLAYER_SPEED * formMultiplier * mastery;
 }
 
 // Distância é acumulada e enviada em blocos para não recalcular maestria
@@ -106,7 +119,23 @@ export function updatePlayer(dt) {
 
   if (!map) return;
 
+  // ---- NADO ----
+  // `nado` vive no player (e não no mapa) porque o fôlego e a propulsão
+  // são do personagem: trocar de mapa não devolve ar.
+  player.nado ??= criarEstadoNado();
+  const nado = player.nado;
+  const campoCosta = getCoastFieldForMap(map);
+  const efeitoNado = atualizarNado(nado, {
+    map, x: player.x, y: player.y, field: campoCosta, dt,
+    tempo: performance.now() / 1000,
+    // Ressaca deixa a correnteza mais forte e o fôlego mais curto: o
+    // clima não é só visual, ele muda como o mar se comporta.
+    clima: state.clima,
+  });
+
   const radius = CONFIG.PLAYER_RADIUS;
+  // `speed` está em TILES/S (CONFIG.PLAYER_SPEED = 4.0). Em terra o passo
+  // é linear; na água quem integra a velocidade é `moverNaAgua`.
   const speed = getPlayerMoveSpeed(state.progress, player);
   const maxStep = speed * dt;
 
@@ -123,17 +152,22 @@ export function updatePlayer(dt) {
     const clicked = input.click;
     input.click = null;
 
-    const spot = nearestStandable(
-      map,
-      clicked.x,
-      clicked.y,
-      radius,
-      CLICK_SNAP_DIST,
-      player
-    );
+    if (podeNadar(map, clicked.x, clicked.y)) {
+      // Clique no mar: nada até lá. `nearestStandable` só conhece terra.
+      player.target = { x: clicked.x, y: clicked.y };
+    } else {
+      const spot = nearestStandable(
+        map,
+        clicked.x,
+        clicked.y,
+        radius,
+        CLICK_SNAP_DIST,
+        player
+      );
 
-    if (spot) {
-      player.target = spot;
+      if (spot) {
+        player.target = spot;
+      }
     }
   }
 
@@ -168,13 +202,25 @@ export function updatePlayer(dt) {
   // usa subpassos + colisão + slide.
   // ---------------------------------------------------------------
   const beforeX = player.x, beforeY = player.y;
-  const moved = moveWithCollision(
-    map,
-    player,
-    dx,
-    dy,
-    radius
-  );
+
+  // ---- ÁGUA: deslocamento com inércia, correnteza e planeio ----
+  // Em vez de "andar devagar", o corpo persegue a direção e desliza. É o
+  // coração da locomoção aquática — e é o que o `moveWithCollision` não
+  // sabe fazer, porque lá cada passo é instantâneo.
+  let moved;
+  if (nado.ativo) {
+    const dir = keyboardDirection
+      ? { x: keyboardDirection.x, y: keyboardDirection.y }
+      : player.target
+        ? { x: player.target.x - player.x, y: player.target.y - player.y }
+        : { x: 0, y: 0 };
+    const passo = moverNaAgua(nado, dt, dir.x, dir.y, speed);
+    moved = moveWithCollision(map, player, passo.dx, passo.dy, radius, podeNadar);
+    // Respeito do mar sobe nadando fundo (a curva de progressão).
+    if (nado.submerso) ganharRespeito(nado.respeito, NADO.respeitoPorSegundo * dt);
+  } else {
+    moved = moveWithCollision(map, player, dx, dy, radius, podeNadar);
+  }
 
   player.moving = moved;
   if (moved) trackDistance(state.progress, Math.hypot(player.x - beforeX, player.y - beforeY));
@@ -185,5 +231,14 @@ export function updatePlayer(dt) {
 
   if (!moved && player.target && !keyboardDirection) {
     player.target = null;
+  }
+
+  // Afogamento: usa o mesmo caminho de dano do resto do jogo (invencibilidade,
+  // texto de dano, morte e respawn já vêm de graça). O "pulo" de ~1 s evita
+  // drenar vida quadro a quadro e deixar o dano ilegível.
+  player.afogamentoAcumulado = (player.afogamentoAcumulado ?? 0) + efeitoNado.dano;
+  if (player.afogamentoAcumulado >= 12) {
+    player.afogamentoAcumulado = 0;
+    damagePlayer(player, state.progress, NADO.danoAfogamento, 'afogamento');
   }
 }

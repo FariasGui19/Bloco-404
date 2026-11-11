@@ -41,5 +41,5 @@ state.progress.flags.gate_teleferico_quebrado = true;
 assert.equal(getInteractionPrompt(findNearestInteraction()), 'EMBARCAR PARA ESTAÇÃO BIO');
 await loadMap(bio.id);
 assert(canStandAt(bio, state.player.x, state.player.y, .28, state.player));
-assert.equal(getInteractionPrompt(findNearestInteraction()), 'EMBARCAR PARA A PRAIA');
+assert.equal(getInteractionPrompt(findNearestInteraction()), 'VOLTAR À PRAIA');
 console.log('Bio: alinhamento das pontes, rede e estações de embarque OK.');

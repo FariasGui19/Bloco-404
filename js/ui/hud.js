@@ -21,8 +21,13 @@ import {
 import { ARCHETYPE_ABILITIES, getAbilityLabel } from '../game/abilities.js';
 import { IMPLEMENTED_ABILITIES } from '../data/archetype-kits.js';
 import { getBioDashProfile } from '../game/ability-context.js';
-import { getArchetypeLevel, getArchetypeXp, xpToNext } from '../game/rpg.js';
+import { getArchetypeLevel, getArchetypeXp, getDerivedStats, xpToNext } from '../game/rpg.js';
+import { getFormDuration } from '../data/nucleo-forms.js';
 import { getMasterySummary } from '../game/mastery.js';
+import { getUltimateStatus } from '../game/ultimate.js';
+import { NUCLEO_FORMS } from '../data/nucleo-forms.js';
+import { TOOL_LABELS } from '../data/archetype-tools.js';
+import { describeNextUnlock, getUnlockState } from '../game/unlocks.js';
 
 const el = {};
 const cache = {};
@@ -49,6 +54,8 @@ export function initHud() {
     'moduleHudSubtitle',
     'abilityHud',
     'nucleoTimer',
+    'nucleoClock',
+    'nucleoBar',
     'attackStrain',
     'abilityEnergyText',
     'abilityEnergyFill',
@@ -56,8 +63,16 @@ export function initHud() {
     'abilityTreePoints',
     'abilityHealthText',
     'abilityHealthFill',
+    'abilityUltimate',
+    'ultimateIcon',
+    'ultimateName',
+    'ultimateTool',
+    'ultimateState',
+    'ultimateBuff',
+    'ultimateFill',
     'abilityXpFill',
     'abilityXpText',
+    'abilityUnlockHint',
     'abilityPrimary',
     'abilityMessage',
     'abilitySecondary',
@@ -71,6 +86,8 @@ export function initHud() {
       `${CONFIG.GAME_NAME} - BASE V${CONFIG.VERSION}`;
   }
 }
+
+const getToolLabel = archetypeId => TOOL_LABELS[archetypeId] ?? 'FERRAMENTA';
 
 function setText(key, value) {
   if (cache[key] === value) return;
@@ -115,11 +132,39 @@ function updateAbilityHud(state) {
   if (!shouldShow) return;
 
   const runtime = state.player.nucleoRuntime;
-  const active = archetypeId === 'nucleo_dez_forma' && state.player.nucleoForm === 'forma_veloz';
+  // A forma ativa pode ser a Veloz ou a Quebra Sistemas: o nome vem do dado,
+  // nunca de um texto fixo (era o que fazia a segunda forma se apresentar
+  // como "Forma Veloz" na HUD).
+  const form = NUCLEO_FORMS[state.player.nucleoForm] ?? null;
+  const active = archetypeId === 'nucleo_dez_forma' && Boolean(form);
   const recharge = archetypeId === 'nucleo_dez_forma' && !active ? runtime?.recharge ?? 0 : 0;
-  const timerText = active ? (runtime?.remaining <= 0 ? 'FORMA VELOZ • RETORNO ASSIM QUE SEGURO' : `FORMA VELOZ • ${Math.ceil(runtime?.remaining ?? 0)}s`) : recharge > 0 ? `NÚCLEO RECARREGANDO • ${Math.ceil(recharge)}s` : '';
+  const rotulo = form?.name ?? 'FORMA';
+  const timerText = active
+    ? (runtime?.remaining <= 0 ? `${rotulo} • RETORNO ASSIM QUE SEGURO` : `${rotulo} • ${Math.ceil(runtime?.remaining ?? 0)}s`)
+    : recharge > 0 ? `NÚCLEO RECARREGANDO • ${Math.ceil(recharge)}s` : '';
   setText('nucleoTimer', timerText);
   el.nucleoTimer?.classList.toggle('visible', Boolean(timerText));
+  // Cor própria por forma: âmbar na Quebra, verde na Veloz.
+  el.nucleoTimer?.style.setProperty('--form-color', form?.color ?? '#a7ffbb');
+  el.nucleoTimer?.classList.toggle('bruta', state.player.nucleoForm === 'forma_bruta');
+
+  // BARRA DA FORMA: quanto tempo ainda dá para ser a forma, em porcentagem da
+  // duração dela — não em segundos soltos. A Quebra gasta 3 s por marretada,
+  // então a barra é o medidor honesto de quantos golpes ainda cabem.
+  el.nucleoClock?.classList.toggle('visible', Boolean(timerText));
+  el.nucleoClock?.style.setProperty('--form-color', form?.color ?? '#a7ffbb');
+  el.nucleoClock?.classList.toggle('bruta', state.player.nucleoForm === 'forma_bruta');
+  if (el.nucleoBar) {
+    const total = form ? getFormDuration(form, runtime?.formDuration ?? getDerivedStats(state.progress)?.formDuration ?? 0) : 0;
+    const restantePct = active && total > 0 ? Math.max(0, Math.min(100, (runtime.remaining / total) * 100)) : 0;
+    const preenchimento = el.nucleoBar.querySelector?.('b');
+    if (preenchimento) preenchimento.style.width = `${restantePct}%`;
+    el.nucleoBar.setAttribute?.('aria-valuenow', String(Math.round(restantePct)));
+    // Golpe caro (Quebra) mostra quantos cabem; a Veloz não cobra nada.
+    const custo = form?.form?.hitCost ?? 0;
+    el.nucleoBar.classList.toggle('hit-cost', custo > 0 && active);
+    el.nucleoBar.title = custo > 0 ? `Cada golpe carregado gasta ${custo}s da forma` : 'Duração da forma';
+  }
 
   // Nível, XP e maestria do arquétipo atual.
   const level = getArchetypeLevel(state.progress, archetypeId);
@@ -129,6 +174,10 @@ function updateAbilityHud(state) {
   setText('abilityLevel', `NÍVEL ${level} • ${BASIC_ATTACKS[archetypeId]?.label ?? ''}`.trim());
   setText('abilityTreePoints', mastery.total > 0 ? `MAESTRIA · ${mastery.label}` : 'MAESTRIA · J');
   setText('abilityXpText', Number.isFinite(next) ? `${Math.floor(xp)} / ${next} XP` : 'NÍVEL MÁXIMO');
+  // Próximo degrau do caminho: a HUD avisa o que o próximo nível libera.
+  const unlock = getUnlockState(state.progress, archetypeId);
+  setText('abilityUnlockHint', unlock.next ? describeNextUnlock(state.progress, archetypeId) : '');
+  el.abilityUnlockHint?.classList.toggle('proximo', Boolean(unlock.next));
 
   // Vida: barra própria, com aviso pulsante em estado crítico.
   const player = state.player;
@@ -166,7 +215,9 @@ function updateAbilityHud(state) {
     const bioProfile = primaryId === 'bio_dash' ? getBioDashProfile(state.progress, state.player) : null;
     const readyText = bioProfile
       ? `${bioProfile.mode === 'equipped' ? 'TRAJE ATIVO' : 'MODO RÁPIDO'} • ${bioProfile.energyCost} ENERGIA`
-      : (state.progress.archetype === 'nucleo_dez_forma' && state.player.nucleoForm === 'forma_veloz' ? 'FORMA VELOZ ATIVA' : ['dominio', 'mare'].includes(state.player.equippedSuit) ? 'TRAJE ATIVO' : 'PRONTO');
+      : (state.progress.archetype === 'nucleo_dez_forma' && NUCLEO_FORMS[state.player.nucleoForm]
+        ? `${NUCLEO_FORMS[state.player.nucleoForm].name} ATIVA`
+        : ['dominio', 'mare'].includes(state.player.equippedSuit) ? 'TRAJE ATIVO' : 'PRONTO');
 
     el.abilityPrimary.innerHTML = `
       <kbd>Q</kbd>
@@ -192,6 +243,52 @@ function updateAbilityHud(state) {
       </div>
     `;
     el.abilitySecondary.classList.toggle('ready', Boolean(prompt));
+  }
+
+  // Ultimate: ícone do arquétipo, recarga e bônus ativo.
+  const ultimate = getUltimateStatus(state.player, state.progress);
+  if (el.abilityUltimate) {
+    el.abilityUltimate.classList.toggle('visible', Boolean(ultimate));
+    if (ultimate) {
+      el.ultimateIcon.src = `assets/sprites/ui/codex/ultimate-${archetypeId}.png`;
+      setText('ultimateName', ultimate.definition.name);
+      el.abilityUltimate.style.setProperty('--ultimate-color', ultimate.definition.color);
+      const faltando = ultimate.definition.cost - ultimate.energy;
+      if (ultimate.locked) {
+        // Bloqueada por nível: mostra o requisito, não a recarga.
+        setText('ultimateTool', 'BLOQUEADA');
+        setText('ultimateState', `NÍVEL ${ultimate.requiredLevel}`);
+        setText('ultimateBuff', '');
+        if (el.ultimateFill) el.ultimateFill.style.width = '0%';
+      } else if (ultimate.needsForm) {
+        // Núcleo 10X: a Ultimate é da FORMA, não do operador base.
+        setText('ultimateTool', `${getToolLabel(archetypeId)} · ${ultimate.tool?.short ?? 'NÚCLEO'}`);
+        setText('ultimateState', 'TRANSFORME-SE · T');
+        setText('ultimateBuff', '');
+        if (el.ultimateFill) el.ultimateFill.style.width = '0%';
+      } else if (ultimate.charging) {
+        setText('ultimateTool', ultimate.tool ? `${getToolLabel(archetypeId)} · ${ultimate.tool.short}` : 'ULTIMATE DE ARQUITETURA');
+        setText('ultimateState', 'CARREGANDO');
+        setText('ultimateBuff', '');
+        if (el.ultimateFill) el.ultimateFill.style.width = `${Math.round(ultimate.windup * 100)}%`;
+      } else {
+        setText('ultimateTool', ultimate.tool
+          ? `${getToolLabel(archetypeId)} · ${ultimate.tool.short}`
+          : 'ULTIMATE DE ARQUÉTIPO');
+        setText('ultimateState', ultimate.cooldown > 0
+          ? `RECARREGANDO ${ultimate.cooldown.toFixed(1)}s`
+          : !ultimate.energyOk ? `FALTA ${Math.max(0, faltando)} ENERGIA` : `F · ${ultimate.definition.cost} ENERGIA`);
+        setText('ultimateBuff', ultimate.buff ? `${ultimate.buff.label} · ${Math.ceil(ultimate.buff.timeLeft)}s` : '');
+        if (el.ultimateFill) el.ultimateFill.style.width = `${Math.round(ultimate.charge * 100)}%`;
+      }
+      el.abilityUltimate.classList.toggle('ready', ultimate.ready);
+      el.abilityUltimate.classList.toggle('locked', ultimate.locked);
+      el.abilityUltimate.classList.toggle('needs-form', Boolean(ultimate.needsForm));
+      el.abilityUltimate.classList.toggle('charging', ultimate.charging);
+      el.abilityUltimate.classList.toggle('unaffordable', !ultimate.locked && ultimate.cooldown <= 0 && !ultimate.energyOk);
+      el.abilityUltimate.classList.toggle('buffed', Boolean(ultimate.buff));
+      el.abilityUltimate.classList.toggle('toolbound', Boolean(ultimate.tool));
+    }
   }
 
   const message = state.player.ability?.lastMessage ?? '';
@@ -273,13 +370,19 @@ export function updateHud(map, state) {
   updateBackgroundCalibrationHud();
 
   const active = state.interaction.active;
+  // Socorro de animal ferido ocupa o mesmo prompt do [E]. É um único
+  // gesto no jogo, então tem que ser um único aviso na tela — antes o
+  // jogador via dois prompts concorrentes quando estava perto de bicho.
+  const socorro = state.interaction.faunaPronta;
 
   const shouldShowPrompt =
-    Boolean(active) &&
+    (Boolean(active) || Boolean(socorro)) &&
     !isDialogueOpen();
 
   if (shouldShowPrompt) {
-    const label = getInteractionPrompt(active);
+    const label = socorro
+      ? `SOCORRER ${socorro.nome}${socorro.parcial ? ' (PARCIAL)' : ''}`
+      : getInteractionPrompt(active);
 
     setText(
       'elevatorPrompt',

@@ -25,7 +25,17 @@ state.progress.abilities = [];
 assert.equal(await loadMap('ilha_praia_inicial'), true);
 const gates = Object.fromEntries(state.objects.filter(o => o.gate).map(o => [o.id, o]));
 assert.equal(Object.keys(gates).length, 6);
-assert.equal(map.objects.find(o => o.id === 'trem_dimensional').ajusteY, 68);
+// O ajuste LOCAL da praia (assentar as rodas no trilho). Não é um número
+// sagrado: mudou quando o trem foi reescalado para não sair da tela. O que
+// NÃO pode mudar é o trem compartilhado de `linha-trem.js` (verificado
+// logo abaixo).
+const tremPraia = map.objects.find(o => o.id === 'trem_dimensional');
+// O `global.y` do mapa desloca o conjunto em PIXELS de tela (não em
+// tiles), então o ajuste final que chega ao renderer é 38.9. O que importa
+// é o trem assentar na orla — o número exato é consequência disso.
+assert.equal(tremPraia.ajusteY, 38.9);
+assert.equal(tremPraia.larguraPx, 286, 'trem da praia redimensionado');
+assert.equal(tremPraia.escalaY, .60);
 assert.equal(linhaDoTrem().find(o => o.id === 'trem_dimensional').ajusteY, 58, 'ajuste da praia não altera o trem compartilhado');
 
 // Sample traversable positions at quarter-tile intervals with real collision radius.

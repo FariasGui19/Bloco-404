@@ -7,7 +7,257 @@ Gerar e implementar **exatamente duas folhas/imagens por atualização**, seguin
 3. Estação Bio / Bio-Forja (rodadas 0.3.5 e 0.3.6)
 4. Folha de sprites do Bolt (prévia opt-in, sem concessão automática)
 
-## Rodada atual (0.3.6-bio)
+## Rodada 0.7.1 — a transformação do T nos quatro módulos
+
+O `T` funcionava, mas era instantâneo: o corpo trocava de folha no mesmo
+quadro. Agora cada módulo tem sequência de quatro quadros (320 px, pés em 276,
+corpo de 249 px de arte = 142 px em jogo, o tamanho do operador civil).
+
+| Arquétipo | Folha | O que a sequência mostra |
+| --- | --- | --- |
+| Motor Bio-Forja | `player-t-bio.png` | grampos abrem, placas fecham com vapor, pistão traseiro gira |
+| Maré Astral | `player-t-mare.png` | água sobe pelas pernas e substitui o traje |
+| Domínio Ancião | `player-t-dominio.png` | anéis de frequência, placas de ouro, núcleo ciano acendendo |
+| Núcleo 10X | `player-t-nucleo.png` | **o bracelete**: operador de macacão projetando a Forma de Eco |
+
+Regras (em `js/data/transform-animation.js`): entrar corre 0→3, sair corre a
+MESMA folha ao contrário (3→0); 1,05 s nos quatro; não empilha se apertar de
+novo; e o efeito é só visual — equipar continua sendo uma linha de estado.
+
+O Núcleo é o caso especial: a identidade do arquétipo é o **bracelete**, então
+nos primeiros 70 % da transformação quem desenha é o operador usando o
+bracelete (quatro quadros) e só no fim a criatura/placas assume — sem tocar no
+efeito `transformacao_10x`, que já escolhia certo entre Veloz e Quebra.
+
+## Rodada 0.7.0 — Ultimate do Maré Astral (as cinco execuções)
+
+Mesmo contrato do Bio-Forja: no Maré o `F` de nível 1 é da CORRENTE
+instalada, então cada corrente tem a própria execução.
+
+| Assinatura | Corrente | Ultimate | Folha (1280×320) |
+| --- | --- | --- | --- |
+| `cupula_agua` | Escudo Líquido | CÚPULA DE PRESSÃO | `player-mare-ult-cupula.png` |
+| `vortice` | Passo de Corrente | CORRENTE ABISSAL | `player-mare-ult-vortice.png` |
+| `chicote` | Chicote de Maré | ONDA CORTANTE | `player-mare-ult-chicote.png` |
+| `sonar` | Senso de Corrente | CHAMADO DA MARÉ | `player-mare-ult-sonar.png` |
+| `estuario` | — (base do módulo) | SINFONIA DO ESTUÁRIO | `player-mare-ult-estuario.png` |
+
+Ordem dos quadros: preparo → arma → impacto → recuperação. O preparador
+(`tools/preparar-mare-ultimate.py`) reaproveita o recorte do Bio
+(`tools/bio_arte.py`) e acrescenta duas coisas que só o Maré precisava:
+
+* **`body_height`** — a altura de referência é o CORPO, não a caixa da figura
+  com efeito. A caminhada aprovada desenha 142 px em jogo; sem fixar isso o
+  personagem encolhia ~13 % durante o `F` e quebrava a comparação com Bio e
+  Núcleo. `CORPO = 249` px de arte × .57 = 142 px.
+* **`disc_mask`** — o quadro de impacto do vórtice vem com o túnel preenchendo
+  a célula inteira. Em jogo isso viraria um retângulo de água; o disco dissolve
+  a borda e o desenho lê como redemoinho em volta do corpo.
+
+Também entrou o **PASSO DE CORRENTE de costas**
+(`player-mare-propulsor-costas.png`): a folha lateral aprovada virava o corpo
+de perfil no meio do avanço para cima. As outras direções continuam com a
+folha lateral, que já é a leitura certa.
+
+## Rodada 0.6.6 — o Motor Bio-Forja fechado (soco nas quatro direções e Q)
+
+Duas folgas que sobravam no exo, com teste próprio em `tests/bio-acoes.mjs`:
+
+1. **Soco de costas e de lado.** A folha frontal (9 quadros de 355 px) era a
+   única arte de ataque: de costas e de lado o dano saía e o corpo continuava
+   na caminhada. Agora existem `player-bio-ataque-costas.png` (vista de trás,
+   nunca espelhada) e `player-bio-ataque-lateral.png` (perfil, espelhado para
+   a esquerda), ambas de 4 quadros.
+2. **Propulsor do Q.** O avanço usava a célula de caminhada com alpha .8, o
+   que lia como deslize. `player-bio-propulsor.png` traz as quatro fases
+   reais do impulso: agachar → acender → avanço → pouso.
+
+`js/data/bio-action-animation.js` prende as duas coisas ao estado real
+(`player.combat` e `ability.dash`), e o renderer desenha essas ações ANTES da
+caminhada. O trecho antigo continua no código como fallback: sem folha
+carregada, o jogo não quebra nem pisca.
+
+O recorte de arte virou módulo (`tools/bio_arte.py`) usado pelos dois
+preparadores (`preparar-bio-ultimate.py` e `preparar-bio-acoes.py`): magenta →
+alpha, recorte por conteúdo, células de 320 px com pés em 276.
+
+## Rodada 0.6.5 — Ultimate do Motor Bio-Forja (as cinco execuções)
+
+O Bio é o único módulo em que o `F` é da FERRAMENTA: a nível 1 a ferramenta
+instalada substitui a Ultimate do módulo. Antes, o `F` do Bio só desenhava a
+assinatura procedural (`js/engine/ultimate-visuals.js`) e o corpo continuava
+andando. Agora cada golpe tem folha de execução de quatro quadros, no mesmo
+padrão do Núcleo 10X:
+
+| Assinatura | Ferramenta | Ultimate | Folha (1280×320) |
+| --- | --- | --- | --- |
+| `serra` | Lâmina de Forja | CORTE DE RECONFIGURAÇÃO | `player-bio-ult-serra.png` |
+| `martelo` | Punho de Impacto | MARTELO DE FORJA | `player-bio-ult-martelo.png` |
+| `cabos` | Gancho Magnético | REDE DE ANCORAGEM | `player-bio-ult-cabos.png` |
+| `propulsores` | Asa de Impulso | QUEBRA-LIMITE CINÉTICO | `player-bio-ult-propulsores.png` |
+| `forja_dome` | — (base do módulo) | PULSO DA FORJA VIVA | `player-bio-ult-forja-dome.png` |
+
+Ordem dos quadros em todas: preparo → arma armada → impacto → recuperação.
+O preparador (`tools/preparar-bio-ultimate.py`) é o único a mexer nos PNGs:
+limpa o magenta deixando alpha real, descarta a linha de grade do gerador por
+recorte de conteúdo (com junção de faixas quando a linha parte a figura),
+normaliza a altura em 230 px úteis e apoia os pés em 276 de 320.
+
+Escala em jogo `.57`: o corpo fica do mesmo tamanho do operador equipado
+(~130 px) e é o GESTO que ocupa o quadro — a cúpula, a serra, a marreta, a
+rede e os propulsores crescem em volta dele, sem virar outro personagem.
+
+## Rodada 0.6.4 — costas da Quebra e cicatriz no chão
+
+- `assets/source-art/nucleo/quebra-ataque-costas-v2.png` →
+  `assets/sprites/player/player-10x-bruta-ataque-costas.png` (1024×256).
+  A primeira tentativa foi descartada: no terceiro quadro o gerador virou o
+  corpo para a frente (de frente com o núcleo aceso no meio de uma folha de
+  costas). A segunda mantém as quatro vistas estritamente por trás.
+- A fenda da Ultimate não é mais arte de sprite: é decalque procedural no
+  chão (`drawWorldScars`), com semente estável por fenda para o desenho não
+  ferver e placas levantadas nas margens.
+
+**Ainda pendente do Núcleo:** som de pistões/steam (o jogo não tem camada de
+áudio ainda) e as formas Fluida e Núcleo, que seguem como projeto no galho.
+
+## Rodada 0.6.3 — execução da Ultimate das formas do Núcleo
+
+Duas folhas novas de quatro quadros, geradas a partir das referências já
+aprovadas (turnaround da Quebra e andar frontal da Veloz):
+
+1. `assets/source-art/nucleo/bruta-ultimate-v3.png` →
+   `assets/sprites/player/player-10x-bruta-ultimate.png` (1024×256).
+   Marretas baixas → erguidas com rachadura magmática nos ombros → pancada
+   dupla abrindo a fenda → corpo alto com a marreta apoiada.
+2. `assets/source-art/nucleo/veloz-ultimate-v3.png` →
+   `assets/sprites/player/player-10x-veloz-ultimate.png` (896×224).
+   Círculo de relógio → corpo encolhido e faiscando → arrancada com riscos de
+   velocidade → recuperação.
+
+O gerador insistiu em duplicar a criatura como "afterimage" na corrida: a
+terceira tentativa foi aceita porque ficou **um corpo por coluna** com riscos
+de velocidade, que é o que a leitura do jogo pede. As tentativas anteriores
+foram descartadas e apagadas.
+
+Aprendizados do script (já aplicados): o gerador às vezes desenha a linha da
+grade em volta de cada quadro — o recorte em grade precisa de `inset`; e
+detritos soltos viram faixas próprias, então nesses casos a grade é a verdade,
+não a detecção automática.
+
+**Ainda pendente do Núcleo:** ataque de costas da Quebra, som de pistões e a
+fenda permanente no cenário (a Ultimate desenha e aplica o dano, mas não altera
+o layout do mapa).
+
+## Rodada 0.6.2 — correções da Quebra Sistemas em jogo
+
+Nada de folha nova de personagem além de uma: a **transformação**.
+
+- `assets/source-art/nucleo/quebra-transformacao.png` → 4 quadros de frente
+  (blocos soltos no feixe → corpo montado). Recortado pelo mesmo
+  `tools/preparar-quebra-sistemas.py`, que ganhou dois passos:
+  - `remove_pink_light`: o feixe de luz saiu rosa-salmão do gerador; a cor é
+    reescrita para âmbar mantendo o brilho (apagar mataria o efeito).
+  - `make_icon`: recorta o bloco de cabeça da folha de referência e grava
+    `assets/sprites/ui/nucleo-quebra-sistemas.png`, a miniatura da roda do `T`.
+- `assets/sprites/player/player-10x-bruta-transformacao.png` (1024×256, 4
+  quadros de 256 px, RGBA), carregada no manifesto de `js/main.js`.
+- Escala de exibição da forma: `.95` (era `.55`), ainda apoiada em
+  `BRUTA_FOOT_Y 220` para os pés não flutuarem.
+
+O ataque de costas continua pendente: o golpe existe (onda de choque
+procedural), mas ainda não há folha traseira própria.
+
+## Rodada 0.6.1 — segunda forma do Núcleo 10X (Quebra Sistemas)
+
+Seis folhas de personagem novas, todas da mesma criatura original do jogador
+(bípede de ferro sem cabeça, núcleo âmbar, marretas telescópicas):
+
+1. `assets/source-art/nucleo/quebra-sistemas-turnaround.png` → pose parada
+   direcional (frente, direita, costas, esquerda).
+2. `quebra-sistemas-andar.png` → 4 passos de frente e 4 de costas (costas usa
+   duas fases alternadas: a arte original só tem duas vistas traseiras limpas).
+3. `quebra-corrida-faixa.png` → 4 passos de perfil virados à direita.
+4. `quebra-ataque-faixa.png` → marreta lateral em 4 fases (preparo → impacto).
+5. `quebra-ataque-frente-faixa.png` → marreta com as duas mãos, de frente.
+
+`tools/preparar-quebra-sistemas.py` remove o magenta, encontra as figuras sem
+confiar em grade fixa, normaliza altura/apoio e grava 256 px por célula. Nada
+de pose estática fingindo animação: a vista de costas do ataque usa a pose
+traseira e uma onda de choque procedural, porque ainda não existe folha
+própria para o golpe de costas.
+
+A Ultimate da forma tem assinatura própria (`tectonica`), com fenda e placas
+se separando; a `punho_eco` do Impacto de Eco saiu do catálogo visual para o
+Núcleo não ter duas formas desenhando o mesmo soco.
+
+**Ainda pendente:** ataque de costas da Quebra, som de pistões, destruição
+permanente de geometria do mapa (a Ultimate desenha a fenda e o dano radial,
+mas não altera o layout) e três folhas de execução de Ultimate por arquétipo
+(Bio, Domínio, Maré e Núcleo), que continuam na fila. A transformação da
+Quebra, que estava nesta lista, foi feita na 0.6.2.
+
+## Rodada anterior (0.5.0): HUD enxuta, liberação por nível e execução da Ultimate
+
+Três frentes, nenhuma folha de sprite nova:
+
+1. **HUD sem sobreposição.** Os cartões tinham `position: fixed` com `top`
+   fixo; quando vida, Ultimate e ferramenta entraram, um caiu em cima do
+   outro. Agora existe uma coluna flex (`#hudLeft`) com mapa, módulo, vitais e
+   missão empilhados, cada card só ocupando espaço quando está visível, e a
+   mensagem de habilidade virou aviso central em pílula. Nada de conteúdo
+   escondido: os mesmos dados, com hierarquia e respiro.
+2. **Liberação por nível.** Q/R no nível 1, ferramenta no 2, Ultimate no 3.
+   Sem nível, sem poder — e a HUD diz o que falta.
+3. **Execução da Ultimate.** Carga de 0,42 s com partículas por arquétipo
+   (placas, runas, gotas e silhuetas), corpo afundando, anéis convergindo,
+   depois soltura com tremor de câmera e clarão na cor da sobrecarga. É
+   animação de runtime, não pose estática fingindo movimento.
+
+A **pose de execução em folha** (uma por arquétipo) continua na fila de arte:
+ela precisa de frames desenhados na mesma linguagem do traje, e o efeito
+procedural atual não substitui isso — só segura o lugar sem mentir. Depois
+dela: inimigo agressivo e a evolução visual do traje por degrau.
+
+## Rodada anterior (0.4.0): caminho 0–5 e sobrecarga por ferramenta
+
+**Nada de arte nova nesta rodada** — e isso é deliberado. O caminho dos
+arquétipos (0 a 5) entrou no jogo como estrutura de dados e painel no Códex, e a
+Ultimate nível 1 passou a ser a sobrecarga da ferramenta escolhida, reusando os
+quatro sigilos que já existem. O efeito em jogo continua procedural, agora com
+seis geometrias (`burst`, `wave`, `line`, `dash`, `guard`, `surge`), porque
+inventar folhas para 16 sobrecargas antes de o combate existir seria arte
+descartável.
+
+A próxima peça de arte honesta é a **pose de execução da Ultimate**, uma por
+arquétipo e não uma por ferramenta: o corpo se prepara igual e o efeito muda.
+Depois disso, a fila continua a mesma — inimigo agressivo (o que falta para o
+combate deixar de ser treino) e a evolução visual do traje por degrau do
+caminho, que o jogador pediu e que só faz sentido quando o degrau tiver
+gameplay.
+
+## Rodada anterior (0.3.23): cor por função e sigilos de Ultimate
+
+Duas peças visuais, dentro da regra: **(1)** uma folha 2×2 com os quatro sigilos
+de Ultimate (`assets/source-art/ui/codex-ultimates.png`), recortada em
+`assets/sprites/ui/codex/ultimate-<arquétipo>.png`; **(2)** o conjunto de ícones
+do Códex repintado por função — âmbar (missões), violeta (progressão), laranja
+(inventário), rosa (atributos), vermelho (vida), ciano (energia), dourado (XP) e
+neutro (fechar) —, resolvendo o relato de que "tudo verde cansa a vista".
+
+O repintado não gera arte nova: `tools/preparar-codex-ui.py` aplica uma rampa de
+cor sobre o alpha já limpo do magenta, mantendo contorno escuro e realce branco
+só no topo do brilho. O mesmo script recorta os sigilos. Nenhuma folha de
+personagem foi gerada e nenhum valor aprovado de Q/R mudou.
+
+Junto entrou a **Ultimate** dos quatro arquétipos (tecla F): dados em
+`js/data/ultimates.js`, runtime em `js/game/ultimate.js`, HUD própria, cartão no
+Códex e efeito procedural no renderer (anéis + faíscas, sem folha nova). A
+próxima peça de arte natural é a **pose/folha de execução da Ultimate**, uma por
+arquétipo, avaliando identidade e traje — e depois o inimigo agressivo, que
+continua sendo o que falta para o combate deixar de ser treino.
+
+## Rodada anterior (0.3.6-bio)
 **Peças geradas (exatamente duas):**
 1. `assets/source-art/estacao-bio/margem-canal-baixa.png` → `assets/sprites/estacao-bio/bio-margem-baixa.png` (512×309, alpha real, bordas rente ao canal)
 2. `assets/source-art/estacao-bio/fundacao-maquina.png` → `assets/sprites/estacao-bio/bio-fundacao.png` (512×281, alpha real, placas sob as máquinas)
@@ -43,10 +293,6 @@ Gerar e implementar **exatamente duas folhas/imagens por atualização**, seguin
 - Viagem espacial/galáctica (nave, interior, melhorias) — vertical slice futura.
 - Não gerar terceira imagem na rodada 0.3.6.
 
-<<<<<<< HEAD
-## Justificativa da fila
-A Estação Bio (0.3.5 e 0.3.6) foi priorizada para consolidar o ciclo terrestre (piso, canais, rede, missão inicial) antes de retomar as animações dos arquétipos e o Bolt. A ordem de prioridade (Saguão → Arquétipos → Bio-Forja → Bolt) é mantida.
-=======
 A sequência opcional usa R de Bio-Forja para diagnosticar e E para reparar o condutor da chegada e depois o regulador do pátio. Os reparos permanecem sólidos e visíveis e as flags sobrevivem à reentrada, sem substituir coletáveis antigos nem missão ativa. Ainda não ativam a estufa nem concedem recompensas. O cenário continua provisório; árvores, areia, água e bordas exigem refinamento. A aproximação de profundidade do terminal foi ajustada para o novo ponto do print, mas não substitui camadas reais.
 
 ## Próximas rodadas sugeridas (ordem ajustável depois do teste)
@@ -157,4 +403,41 @@ O portal cenográfico passou a envolver melhor a traseira do trem: foi ampliado 
 - A pose sustentada da Forma Veloz foi deslocada horizontalmente para aproximar o corpo do centro da sombra; a altura da pose da 0.3.20 foi preservada. O Q transformado e os ataques básicos aprovados não foram modificados.
 - **Corrida frontal e traseira continuam pendentes.** Novas gerações repetiram poses de ataque/repouso, ângulos errados ou membros sem alternância; não foram integradas. A interface, transformação e corrida lateral existentes permanecem iguais. Não considerar este estudo uma corrida completa.
 - Capturas pontuais de estação e idle verificadas no renderer via canvas Node; ainda falta avaliação em navegador e em movimento.
->>>>>>> e5736762ec637ebe671540515d65b30b7c6323f4
+
+### 0.6.0 — assinaturas visuais, árvores e forma do Núcleo
+- Cada Ultimate ganhou **desenho próprio** (`js/engine/ultimate-visuals.js`, 20 assinaturas). O `kind` continua definindo o dano; a assinatura define o visual. Sem assinatura, o renderer usa o desenho antigo. Nenhum sprite novo: tudo procedural.
+- Validação honesta: `tests/visual-ultimates.mjs` prova que as 20 desenham sem número inválido e que nenhuma repete a sequência de outra. Isso é **verificação de comandos de desenho**, não avaliação estética — a leitura final é no navegador.
+- Árvores por arquétipo no Códex (`js/data/archetype-trees.js`): galho `pronto` existe em jogo; nó `EM PROJETO` é horizonte e não entrega poder. Nenhum nó carrega dano/custo.
+- Núcleo 10X: só a **Forma Veloz** tem transformação. Bruta, Fluida e Núcleo ficam `playable: false` (aparecem na árvore e no seletor como `FORMA EM PROJETO`), porque instalar uma forma sem transformação daria um F morto. Sem forma ativa, a Ultimate do Núcleo não solta: HUD mostra `TRANSFORME-SE · T` e o Códex avisa `SÓ COM A FORMA ATIVA`.
+- Maré Astral: bloco **ROTAS DE MARÉ** na aba Missões do Códex (região atual, vizinhas `ROTA ABERTA`/`EM PROJETO`) e três modos listados como plano — nado livre, navegação e missões de travessia. É leitura de mapa: não cria portal, não move o jogador, não altera save.
+- **Pendente:** o sistema de navegação em si (nado livre, rotas com destino, portos, missões de travessia) e as transformações Bruta/Fluida/Núcleo. Avaliação visual das novas assinaturas em movimento continua no navegador.
+
+### 0.8.0 — Domínio Ancião fecha a série
+
+O quarto módulo ganhou execução desenhada do `F`: cinco folhas de quatro
+quadros (1280×320), uma por assinatura — `coroa`, `lamina_vertical`,
+`muralha_hex`, `tita` e `trono`. Código em
+`js/data/dominio-ultimate-animation.js`, arte em `assets/source-art/dominio/`,
+preparador em `tools/preparar-dominio-ultimate.py`.
+
+A lição técnica da rodada está em `tools/dominio_arte.py`: com efeito dourado
+sólido, medir o corpo pela caixa do desenho encolhe o operador justo no quadro
+do impacto (a parede da muralha cobre o tronco). O corpo passou a ser medido
+pelo cabelo (topo e centro) e pela sola da bota, com UMA escala por folha.
+
+`drawDominioFx` acrescenta a leitura ambiental (faíscas, anel e runas na cor da
+ferramenta). O Códex mostra a pose de preparo de cada arma. Teste novo:
+`tests/dominio-ultimate.mjs`, que também protege o dash da INVESTIDA — mesmo
+bug que matou a CORRENTE ABISSAL do Maré.
+
+**Pendente:** a parede hex cobre o peito no quadro do impacto (regerar no
+futuro com a parede na cintura) e a cor da ferramenta no HUD durante o bônus.
+Validação: 64 testes automatizados; a leitura em movimento continua no
+navegador do jogador.
+
+## Justificativa da fila
+
+A Estação Bio (0.3.5 e 0.3.6) foi priorizada para consolidar o ciclo terrestre
+(piso, canais, rede, missão inicial e rota desenhada) antes de retomar as
+animações dos arquétipos e o Bolt. A ordem de prioridade (Saguão → Arquétipos →
+Bio-Forja → Bolt) é mantida.

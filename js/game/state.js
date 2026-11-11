@@ -79,6 +79,9 @@ export const state = {
 
     abilities: [],
     archetypeProgress: {},
+
+    // Ferramenta/corrente/forma escolhida por arquétipo (Ultimate nível 1).
+    tools: {},
     inventory: [],
 
     activeQuest: null,
@@ -120,6 +123,17 @@ export const state = {
      // NOVO: Controla qual traje o player está usando visualmente
     equippedSuit: null, // 'bio_forja', etc.
     nucleoForm: null, // estado temporário, não salvo
+
+    // Ultimate: recarga, bônus e efeito são de sessão, não vão para o save.
+    ultimate: {
+      cooldown: 0,
+      buff: null,
+      effect: null,
+      casts: 0,
+      charge: 0,      // carga em andamento (0 = livre)
+      shake: null,    // tremor de câmera da soltura
+      flash: null,    // clarão da soltura
+    },
 
     ability: {
       active: null,

@@ -10,6 +10,16 @@ import { updateHealth } from './game/health.js';
 import { updateHazards } from './game/hazards.js';
 import { updateNucleoForm } from './game/nucleo-form.js';
 import { canStandAt } from './game/collision.js';
+import { dispararPropulsao } from './game/nado.js';
+import { desenharMedidorAr } from './ui/nado-hud.js';
+import { atualizarMissaoMare, criarFragmentosDeMare } from './game/mare-missao.js';
+import { atualizarFauna, socorrerProximo } from './game/fauna-ferida.js';
+import { ganharRespeito } from './game/nado.js';
+import { criarClima, atualizarClima, criarParticulas } from './game/clima.js';
+import { getVidaAquatica } from './game/vida-aquatica.js';
+import { alternarMorfador, manterInfinitos, autorizado } from './game/morfador.js';
+import { alternarPainel, morfadorAberto, promoverAutoria } from './ui/morfador-panel.js';
+import { getCoastFieldForMap } from './engine/coast-field.js';
 import { CONFIG } from './config.js';
 import { isCodexOpen, openCodex, closeCodex, handleCodexInput } from './ui/codex.js';
 import { updateOwnedCompanion } from './game/companions.js';
@@ -20,7 +30,8 @@ import { getFloor } from './game/world.js';
 import { loadMap, getSafeSpawn } from './game/map-manager.js';
 
 import { updatePlayer } from './game/player.js';
-import { updateAbilities } from './game/abilities.js';
+import { updateAbilities, showAbilityMessage } from './game/abilities.js';
+import { beginUltimate, updateUltimate } from './game/ultimate.js';
 import { toggleArchetypeSuit } from './game/ability-context.js';
 import { openNucleoWheel, isNucleoWheelOpen, updateNucleoWheel } from './ui/nucleo-wheel.js';
 import { updateCamera } from './engine/camera.js';
@@ -48,6 +59,7 @@ import {
 } from './ui/elevator-menu.js';
 
 import { updateObjectTools } from './game/object-tools.js';
+import { isDebugEnabled } from './game/debug.js';
 import { updateDoors } from './game/doors.js';
 
 import {
@@ -114,6 +126,27 @@ await loadSprites([
   { id: 'player_dominio_q', src: 'assets/sprites/player/player-dominio-q.png' },
   { id: 'player_dominio_r', src: 'assets/sprites/player/player-dominio-r.png' },
   { id: 'player_mare_lvl1', src: 'assets/sprites/player/player-mare-lvl1.png' },
+  // Transformação do T (tools/preparar-transformacao.py): o traje se veste e
+  // se desmonta em 4 quadros. O Núcleo usa o bracelete como identidade.
+  { id: 'player_t_bio', src: 'assets/sprites/player/player-t-bio.png' },
+  { id: 'player_t_mare', src: 'assets/sprites/player/player-t-mare.png' },
+  { id: 'player_t_dominio', src: 'assets/sprites/player/player-t-dominio.png' },
+  { id: 'player_t_nucleo', src: 'assets/sprites/player/player-t-nucleo.png' },
+  // Execução da Ultimate do MARÉ ASTRAL (F): uma folha por corrente, mais o
+  // Q de costas (tools/preparar-mare-ultimate.py).
+  { id: 'player_mare_ult_cupula', src: 'assets/sprites/player/player-mare-ult-cupula.png' },
+  { id: 'player_mare_ult_vortice', src: 'assets/sprites/player/player-mare-ult-vortice.png' },
+  { id: 'player_mare_ult_chicote', src: 'assets/sprites/player/player-mare-ult-chicote.png' },
+  { id: 'player_mare_ult_sonar', src: 'assets/sprites/player/player-mare-ult-sonar.png' },
+  { id: 'player_mare_ult_estuario', src: 'assets/sprites/player/player-mare-ult-estuario.png' },
+  { id: 'player_mare_propulsor_costas', src: 'assets/sprites/player/player-mare-propulsor-costas.png' },
+  // Execução da Ultimate do DOMÍNIO ANCIÃO (F): uma folha por arma/postura,
+  // mais a coroa da base do módulo (tools/preparar-dominio-ultimate.py).
+  { id: 'player_dominio_ult_coroa', src: 'assets/sprites/player/player-dominio-ult-coroa.png' },
+  { id: 'player_dominio_ult_lamina', src: 'assets/sprites/player/player-dominio-ult-lamina.png' },
+  { id: 'player_dominio_ult_muralha', src: 'assets/sprites/player/player-dominio-ult-muralha.png' },
+  { id: 'player_dominio_ult_tita', src: 'assets/sprites/player/player-dominio-ult-tita.png' },
+  { id: 'player_dominio_ult_trono', src: 'assets/sprites/player/player-dominio-ult-trono.png' },
   { id: 'player_mare_q', src: 'assets/sprites/player/player-mare-q.png' },
   { id: 'player_mare_r', src: 'assets/sprites/player/player-mare-r.png' },
   { id: 'player_10x_lvl1', src: 'assets/sprites/player/player-10x-lvl1.png' },
@@ -148,6 +181,8 @@ await loadSprites([
   { id: 'bio_reator', src: 'assets/sprites/estacao-bio/biorreator.png' },
   { id: 'bio_cabeceira', src: 'assets/sprites/estacao-bio/bio-cabeceira.png' },
   { id: 'bio_distribuidor', src: 'assets/sprites/estacao-bio/bio-distribuidor.png' },
+  { id: 'bio_margem_baixa', src: 'assets/sprites/estacao-bio/bio-margem-baixa.png' },
+  { id: 'bio_fundacao', src: 'assets/sprites/estacao-bio/bio-fundacao.png' },
   { id: 'pet_bolt', src: 'assets/sprites/companions/bolt.png' },
   { id: 'hub_nexo_lateral', src: 'assets/sprites/saguao/nexo-lateral-limpo.png' },
   { id: 'hub_viajante', src: 'assets/sprites/saguao/viajante-2026.png' },
@@ -156,8 +191,33 @@ await loadSprites([
   { id: 'hub_carrinho', src: 'assets/sprites/saguao/carrinho.png' },
   { id: 'hub_bebedouro', src: 'assets/sprites/saguao/bebedouro.png' },
   { id: 'player_bio_ataque_frontal', src: 'assets/sprites/player/player-bio-ataque-frontal.png' },
+  // Ataque nas outras direções e o avanço do Q (tools/preparar-bio-acoes.py):
+  // o exo tinha arte só de frente e deslizava andando durante o propulsor.
+  { id: 'player_bio_ataque_costas', src: 'assets/sprites/player/player-bio-ataque-costas.png' },
+  { id: 'player_bio_ataque_lateral', src: 'assets/sprites/player/player-bio-ataque-lateral.png' },
+  { id: 'player_bio_propulsor', src: 'assets/sprites/player/player-bio-propulsor.png' },
+  // Execução da Ultimate do MOTOR BIO-FORJA (F): uma folha por ferramenta
+  // (tools/preparar-bio-ultimate.py). A nível 1 a ferramenta instala a
+  // própria Ultimate; a base do módulo é a cúpula.
+  { id: 'player_bio_ult_forja_dome', src: 'assets/sprites/player/player-bio-ult-forja-dome.png' },
+  { id: 'player_bio_ult_serra', src: 'assets/sprites/player/player-bio-ult-serra.png' },
+  { id: 'player_bio_ult_martelo', src: 'assets/sprites/player/player-bio-ult-martelo.png' },
+  { id: 'player_bio_ult_cabos', src: 'assets/sprites/player/player-bio-ult-cabos.png' },
+  { id: 'player_bio_ult_propulsores', src: 'assets/sprites/player/player-bio-ult-propulsores.png' },
   { id: 'player_10x_q', src: 'assets/sprites/player/player-10x-q.png' },
   { id: 'player_10x_r', src: 'assets/sprites/player/player-10x-r.png' },
+  // Segunda forma do Núcleo 10X — QUEBRA SISTEMAS (tools/preparar-quebra-sistemas.py).
+  { id: 'player_10x_bruta_parado', src: 'assets/sprites/player/player-10x-bruta-parado.png' },
+  { id: 'player_10x_bruta_andar_frente', src: 'assets/sprites/player/player-10x-bruta-andar-frente.png' },
+  { id: 'player_10x_bruta_andar_costas', src: 'assets/sprites/player/player-10x-bruta-andar-costas.png' },
+  { id: 'player_10x_bruta_andar_lateral', src: 'assets/sprites/player/player-10x-bruta-andar-lateral.png' },
+  { id: 'player_10x_bruta_ataque_lateral', src: 'assets/sprites/player/player-10x-bruta-ataque-lateral.png' },
+  { id: 'player_10x_bruta_ataque_frente', src: 'assets/sprites/player/player-10x-bruta-ataque-frente.png' },
+  { id: 'player_10x_bruta_ataque_costas', src: 'assets/sprites/player/player-10x-bruta-ataque-costas.png' },
+  { id: 'player_10x_bruta_transformacao', src: 'assets/sprites/player/player-10x-bruta-transformacao.png' },
+  // Execução da Ultimate das duas formas (F): antes só existia o efeito.
+  { id: 'player_10x_bruta_ultimate', src: 'assets/sprites/player/player-10x-bruta-ultimate.png' },
+  { id: 'player_10x_veloz_ultimate', src: 'assets/sprites/player/player-10x-veloz-ultimate.png' },
   {
     id: 'elevator_door',
     src: 'assets/sprites/objects/elevator-door.png',
@@ -221,6 +281,7 @@ await loadSprites([
   { id: 'visao_nucleo', src: 'assets/sprites/backgrounds/camara-nucleo-visao.jpg' },
   { id: 'beach_novas_artes', src: 'assets/sprites/tiles/beach-novas-artes.png' },
   { id: 'fauna_costeira', src: 'assets/sprites/fauna/fauna-costeira.png' },
+  { id: 'fauna_nova_1010', src: 'assets/sprites/fauna/fauna-nova-1010.png' },
   { id: 'fauna_caranguejo', src: 'assets/sprites/fauna/caranguejo.png' },
   { id: 'costa_rochosa', src: 'assets/sprites/objects/costa-rochosa.png' },
   { id: 'praia_plataforma_kit', src: 'assets/sprites/praia/plataforma-kit-0311.png' },
@@ -229,7 +290,7 @@ await loadSprites([
 ]);
 
 // Importações parciais deixam colisões sem arte; avise em vez de falhar silenciosamente.
-const bioMissing = ['bio_piso_novo', 'bio_jardim_novo', 'bio_terminal', 'bio_reator', 'bio_estufa', 'bio_piso', 'bio_cabeceira', 'bio_distribuidor', 'bio_floreira', 'bio_tubos', 'bio_caixa', 'bio_luminaria', 'bio_plataforma', 'bio_margem_canto', 'bio_margem_cano', 'bio_margem_ruina', 'bio_margem_mureta', 'bio_condutor_quebrado', 'bio_condutor_ativo', 'bio_regulador_quebrado', 'bio_regulador_ativo', 'bio_mato_cano', 'bio_mato_ventilacao', 'bio_mato_barris', 'bio_mato_fissura'].filter(id => !getSprite(id));
+const bioMissing = ['bio_piso_novo', 'bio_jardim_novo', 'bio_terminal', 'bio_reator', 'bio_estufa', 'bio_piso', 'bio_cabeceira', 'bio_distribuidor', 'bio_floreira', 'bio_tubos', 'bio_caixa', 'bio_luminaria', 'bio_plataforma', 'bio_margem_canto', 'bio_margem_cano', 'bio_margem_ruina', 'bio_margem_mureta', 'bio_condutor_quebrado', 'bio_condutor_ativo', 'bio_regulador_quebrado', 'bio_regulador_ativo', 'bio_mato_cano', 'bio_mato_ventilacao', 'bio_mato_barris', 'bio_mato_fissura', 'bio_terminal', 'bio_reator', 'bio_estufa', 'bio_piso', 'bio_cabeceira', 'bio_distribuidor', 'bio_margem_baixa', 'bio_fundacao', 'bio_floreira', 'bio_tubos', 'bio_caixa', 'bio_luminaria', 'bio_plataforma', 'bio_margem_canto', 'bio_margem_cano', 'bio_margem_ruina', 'bio_margem_mureta', 'bio_condutor_quebrado', 'bio_condutor_ativo', 'bio_regulador_quebrado', 'bio_regulador_ativo', 'bio_mato_cano', 'bio_mato_ventilacao', 'bio_mato_barris', 'bio_mato_fissura'].filter(id => !getSprite(id));
 if (bioMissing.length) {
   const warning = document.createElement('div');
   warning.setAttribute('role', 'alert');
@@ -344,8 +405,42 @@ async function update(dt) {
       return;
     }
 
-    updateBasicCombat(player, state.trainingTargets, dt);
+    // MORFADOR DE RESSONÂNCIA — modo criador. Só para save de autoria:
+    // sem a flag, a tecla não faz absolutamente nada (nem loga).
+    if (input.pressed.has('m') || input.pressed.has('keym')) {
+      if (autorizado(state.progress)) {
+        alternarPainel(state.progress, player);
+        player.moving = false; player.target = null;
+        return;
+      }
+    }
+    // O painel aberto prende o mouse como um menu, mas o jogo segue vivo:
+    // é assim que se testa habilidade com o painel à vista.
+    if (player.morfador?.ativo) manterInfinitos(state.progress, player);
+
+    // Durante a carga da Ultimate o corpo está tomado: sem ataque básico.
+    const carregandoUltimate = (player.ultimate?.charge ?? 0) > 0;
+    if (!carregandoUltimate) updateBasicCombat(player, state.trainingTargets, dt);
     let abilityLocksMovement = updateAbilities(dt);
+
+    // F = Ultimate do módulo. Peso alto: energia cheia, recarga longa e
+    // bloqueio enquanto outra ação trava o movimento.
+    // Com debug/calibração ligados, o F pertence às ferramentas de cenário.
+    const fLivre = !isDebugEnabled() && !isBackgroundCalibrationEnabled();
+    if (fLivre && (input.pressed.has('f') || input.pressed.has('keyf')) && !abilityLocksMovement && !state.world.isLoading) {
+      beginUltimate({
+        player,
+        progress: state.progress,
+        targets: state.trainingTargets,
+        showMessage: showAbilityMessage,
+      });
+    }
+    // A carga da Ultimate trava o corpo até a soltura.
+    updateUltimate(player, state.progress, dt, {
+      targets: state.trainingTargets,
+      showMessage: showAbilityMessage,
+    });
+    abilityLocksMovement ||= player.ultimate?.charge > 0;
     updateNucleoForm(state.progress, player, dt, canStandAt(getFloor(), player.x, player.y, CONFIG.PLAYER_RADIUS, player));
     abilityLocksMovement ||= player.ability?.effect?.id === 'transformacao_10x';
     if (input.attackClick) {
@@ -356,6 +451,13 @@ async function update(dt) {
     }
 
     if (!abilityLocksMovement) {
+      // Propulsão do Maré: SHIFT na água. Antes do movimento para o
+      // multiplicador de velocidade já valer neste quadro.
+      const nado = player.nado;
+      if (nado?.ativo && (input.pressed.has('shift') || input.pressed.has('shiftleft'))) {
+        const mareAlinhado = state.progress?.archetype === 'mare_astral';
+        dispararPropulsao(nado, mareAlinhado);
+      }
       updatePlayer(dt);
     }
 
@@ -364,18 +466,102 @@ async function update(dt) {
     if (!abilityLocksMovement) updateHazards(state.hazards, player, state.progress, dt);
     updateHealth(player, state.progress, dt, { onRespawn: () => getSafeSpawn() });
 
-    const pressedE =
-      input.pressed.has('e') ||
-      input.pressed.has('keye');
-
-    await checkInteractions(pressedE);
   }
 
   updateNpcBrains(dt);
   updateCoastalFauna(getFloor(), state.fauna, player, dt);
-  updateOwnedCompanion(state, getFloor(), dt, canStandAt);
+
+  // Missão do Maré: eventos de mergulho e coleta saem do estado real do
+  // nado, nunca de um contador de tempo.
+  const mapaAtual = getFloor();
+  if (mapaAtual?.aguaPraia && player.nado) {
+    player.fragmentosMare ??= criarFragmentosDeMare(mapaAtual, getCoastFieldForMap(mapaAtual));
+    const res = atualizarMissaoMare({
+      map: mapaAtual, player, nado: player.nado, progress: state.progress,
+      fragmentos: player.fragmentosMare,
+    });
+    if (res.coletou) {
+      player.ability ??= {};
+      player.ability.lastMessage = 'FRAGMENTO DE MARÉ RECOLHIDO';
+      player.ability.messageTimer = 2.2;
+    }
+  }
+  // Fauna ferida: presença alivia, o módulo certo socorre.
+  const ancoraFauna = getFloor();
+  if (ancoraFauna?.aguaPraia) {
+    const submerso = !!player.nado?.ativo && player.nado.profundidade > 1.25;
+    const fauna = atualizarFauna(ancoraFauna, {
+      player, progress: state.progress,
+      arquetipo: state.progress?.archetype,
+      submerso, nado: player.nado, dt,
+      recifes: getVidaAquatica(ancoraFauna)?.recifes,
+    });
+    // "E — SOCORRER" só aparece quando há socorro real para fazer.
+    state.interaction.faunaPronta = fauna.pronto
+      ? { nome: fauna.pronto.bicho.def.nome, parcial: fauna.pronto.parcial }
+      : null;
+
+    const pressedE2 = input.pressed.has('e') || input.pressed.has('keye');
+    // O prompt de socorro tem prioridade sobre o objeto/NPC atrás dele:
+    // sem isto, um E perto de bicho E de placa abriria as duas coisas.
+    if (pressedE2 && fauna.pronto) state.interaction.socorroConsumiuE = true;
+    if (pressedE2 && fauna.pronto) {
+      const res = socorrerProximo(ancoraFauna, {
+        player, progress: state.progress,
+        arquetipo: state.progress?.archetype,
+        submerso, nado: player.nado,
+        recifes: getVidaAquatica(ancoraFauna)?.recifes,
+      });
+      if (res?.ok) {
+        player.ability ??= {};
+        player.ability.lastMessage = `${res.nome} — SALVO`;
+        player.ability.messageTimer = 3;
+        if (player.nado) ganharRespeito(player.nado, res.respeito);
+        state.interaction.faunaPronta = null;
+      } else if (res?.motivo) {
+        player.ability ??= {};
+        player.ability.lastMessage = res.motivo.toUpperCase();
+        player.ability.messageTimer = 2;
+      }
+    }
+  }
+
+  // Interações (portais, NPCs, objetos) correm DEPOIS da fauna: assim o
+  // socorro tem a primeira chance no E, e um E perto de bicho não abre
+  // a placa atrás dele ao mesmo tempo.
+  {
+    const pressedE =
+      input.pressed.has('e') ||
+      input.pressed.has('keye');
+    await checkInteractions(pressedE && !state.interaction.socorroConsumiuE);
+    state.interaction.socorroConsumiuE = false;
+  }
+
+  updateOwnedCompanion(getFloor(), dt, canStandAt);
   updateCamera(dt, player.x, player.y);
 }
+
+// =====================================================================
+// AUTORIA — comando do criador
+//
+// O Morfador não abre sozinho. O criador digita, UMA vez, no console:
+//     __morfador("morfador_de_ressonancia")
+// e este save passa a ser de autoria. A chave é o nome da própria flag: não
+// é senha, é um gesto explícito, e por isso nunca aparece em save novo.
+// =====================================================================
+if (typeof window !== 'undefined') {
+  window.__morfador = (chave) => promoverAutoria(state.progress, chave);
+}
+
+// =====================================================================
+// CLIMA
+//
+// Um único estado de clima para a sessão, criado no boot e atualizado no
+// loop. O buffer de partículas existe uma vez (120 posições fixas) e é
+// reaproveitado — nunca alocado por frame.
+// =====================================================================
+state.clima = criarClima(4);
+state.particulasClima = criarParticulas(7);
 
 // =====================================================================
 // LOOP
@@ -391,12 +577,15 @@ async function frame(now) {
 
   last = now;
 
+  atualizarClima(state.clima, dt);
   await update(dt);
 
   const map = getFloor();
 
   render(map, state);
   updateHud(map, state);
+  // Fôlego só aparece quando importa (nadando); em terra não ocupa tela.
+  if (state.player?.nado?.ativo) desenharMedidorAr(state.player.nado);
 
   endInputFrame();
 }

@@ -12,77 +12,94 @@
   <canvas id="game"></canvas>
 
   <!-- ============ HUD (fica escondido enquanto o menu está aberto) ============ -->
+  <!-- Coluna esquerda: mapa, módulo, vitais/habilidades e missão, empilhados
+       sem posições fixas — é o que evita um card sobre o outro. -->
   <div id="ui">
-    <div class="panel">
-      <h1 id="floorName">...</h1>
-      <p id="coords">X: 0 Y: 0 | ZOOM: 100%</p>
-    </div>
-    <!-- HUD DO MÓDULO DE ECO ATIVO -->
-    <div id="moduleHud">
-      <span class="module-hud-label">ECO ATIVO</span>
-      <strong id="moduleHudName">---</strong>
-      <span id="moduleHudSubtitle">---</span>
-    </div>
-    <!-- HUD DE HABILIDADES -->
-    <div id="abilityHud">
-      <div id="nucleoTimer" aria-live="polite"></div>
-      <!-- NÍVEL / XP DO ARQUÉTIPO -->
-      <div class="ability-level-row">
-        <strong id="abilityLevel">NÍVEL 1</strong>
-        <span id="abilityTreePoints">MAESTRIA · J</span>
-      </div>
-      <div class="ability-xp-track">
-        <div id="abilityXpFill"></div>
-      </div>
-      <span id="abilityXpText" class="ability-xp-text">0 / 40 XP</span>
-      <!-- VIDA DO OPERADOR -->
-      <div class="ability-vital-row">
-        <img src="assets/sprites/ui/codex/icone-vida.png" alt="" aria-hidden="true" draggable="false">
-        <span class="ability-vital-label">VIDA</span>
-        <strong id="abilityHealthText">--- / ---</strong>
-      </div>
-      <div class="ability-health-track">
-        <div id="abilityHealthFill"></div>
-      </div>
-      <div class="ability-energy-row">
-        <span class="ability-energy-label">ENERGIA</span>
-        <strong id="abilityEnergyText">100 / 100</strong>
-      </div>
-      <!-- HUD DE MISSÃO ATIVA -->
-      <div id="questHud">
-        <span class="quest-hud-label">MISSÃO ATIVA</span>
-        <strong id="questHudTitle">---</strong>
-        <span id="questHudDescription">---</span>
-      </div>
-      <!-- HUD DE CALIBRAÇÃO INTERNA -->
-      <pre id="backgroundCalibrationHud"></pre>
-
-      <div class="ability-energy-track">
-        <div id="abilityEnergyFill"></div>
+    <div id="hudLeft">
+      <div class="panel hud-map">
+        <h1 id="floorName">...</h1>
+        <p id="coords">X: 0 Y: 0 | ZOOM: 100%</p>
       </div>
 
-      <div class="ability-list">
-        <div id="abilityPrimary" class="ability-slot">
-          <kbd>Q</kbd>
+      <!-- HUD DO MÓDULO DE ECO ATIVO -->
+      <div id="moduleHud" class="hud-card">
+        <span class="module-hud-label">ECO ATIVO</span>
+        <strong id="moduleHudName">---</strong>
+        <span id="moduleHudSubtitle">---</span>
+      </div>
 
-          <div>
-            <strong>---</strong>
-            <span>INDISPONÍVEL</span>
-          </div>
+      <!-- HUD DE VITAIS E HABILIDADES -->
+      <div id="abilityHud" class="hud-card">
+        <div id="nucleoClock" class="nucleo-clock">
+          <div id="nucleoTimer" aria-live="polite"></div>
+          <i id="nucleoBar" class="nucleo-bar" role="progressbar" aria-label="Barra da forma do Núcleo" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><b></b></i>
         </div>
-        <div id="abilitySecondary" class="ability-slot ability-secondary">
-          <kbd>R</kbd>
 
-          <div>
-            <strong>LINK DE DIAGNÓSTICO</strong>
-            <span>PROCURE SISTEMAS COMPATÍVEIS</span>
+        <header class="ability-head">
+          <strong id="abilityLevel">NÍVEL 1</strong>
+          <span id="abilityTreePoints">MAESTRIA · J</span>
+        </header>
+        <div class="ability-xp-track"><div id="abilityXpFill"></div></div>
+        <span id="abilityXpText" class="ability-xp-text">0 / 40 XP</span>
+        <span id="abilityUnlockHint" class="ability-unlock-hint"></span>
+
+        <div class="ability-vitals">
+          <div class="ability-vital-row">
+            <img src="assets/sprites/ui/codex/icone-vida.png" alt="" aria-hidden="true" draggable="false">
+            <span class="ability-vital-label">VIDA</span>
+            <strong id="abilityHealthText">--- / ---</strong>
+          </div>
+          <div class="ability-health-track"><div id="abilityHealthFill"></div></div>
+          <div class="ability-vital-row ability-vital-energy">
+            <img src="assets/sprites/ui/codex/icone-energia.png" alt="" aria-hidden="true" draggable="false">
+            <span class="ability-vital-label">ENERGIA</span>
+            <strong id="abilityEnergyText">100 / 100</strong>
+          </div>
+          <div class="ability-energy-track"><div id="abilityEnergyFill"></div></div>
+        </div>
+
+        <div class="ability-list">
+          <div id="abilityPrimary" class="ability-slot">
+            <kbd>Q</kbd>
+            <div>
+              <strong>---</strong>
+              <span>INDISPONÍVEL</span>
+            </div>
+          </div>
+          <div id="abilitySecondary" class="ability-slot ability-secondary">
+            <kbd>R</kbd>
+            <div>
+              <strong>LINK DE DIAGNÓSTICO</strong>
+              <span>PROCURE SISTEMAS COMPATÍVEIS</span>
+            </div>
+          </div>
+          <div id="abilityUltimate" class="ability-ultimate">
+            <kbd>F</kbd>
+            <img id="ultimateIcon" class="ability-ultimate-icon" src="assets/sprites/ui/codex/ultimate-motor_bio_forja.png" alt="" aria-hidden="true" draggable="false">
+            <div class="ability-ultimate-body">
+              <span id="ultimateTool" class="ability-ultimate-tool">MÓDULO BASE</span>
+              <strong id="ultimateName">ULTIMATE</strong>
+              <span id="ultimateState">F · PRONTO</span>
+              <span id="ultimateBuff" class="ability-ultimate-buff"></span>
+              <i class="ability-ultimate-track"><b id="ultimateFill"></b></i>
+            </div>
           </div>
         </div>
 
         <div id="attackStrain" class="attack-strain"></div>
-        <div id="abilityMessage" class="ability-message"></div>
       </div>
+
+      <!-- HUD DE MISSÃO ATIVA (compacta, no fim da coluna) -->
+      <div id="questHud" class="hud-card">
+        <span class="quest-hud-label">MISSÃO ATIVA</span>
+        <strong id="questHudTitle">---</strong>
+        <span id="questHudDescription">---</span>
+      </div>
+
+      <pre id="backgroundCalibrationHud"></pre>
+      <div id="abilityMessage" class="ability-message"></div>
     </div>
+
     <div class="panel right">
       <p id="stats" class="stats">● -- FPS</p>
       <p id="version"></p>
@@ -91,7 +108,7 @@
 
   <div id="controls">
     <div class="panel">
-      <b>WASD / Setas</b> mover &nbsp;|&nbsp; <b>T</b> traje / Núcleo &nbsp;|&nbsp; <b>CLIQUE ESQ.</b> atacar &nbsp;|&nbsp; <b>SHIFT + CLIQUE</b> mover &nbsp;|&nbsp; <b>J</b> missões &nbsp;|&nbsp; <b>ARRASTAR botão direito</b>
+      <b>WASD / Setas</b> mover &nbsp;|&nbsp; <b>T</b> traje / Núcleo &nbsp;|&nbsp; <b>CLIQUE ESQ.</b> atacar &nbsp;|&nbsp; <b>SHIFT + CLIQUE</b> mover &nbsp;|&nbsp; <b>J</b> Códex &nbsp;|&nbsp; <b>F</b> Ultimate &nbsp;|&nbsp; <b>ARRASTAR botão direito</b>
       câmera<br>
       <b>RODINHA / + -</b> zoom | <b>C</b> centralizar | <b>[E]</b> interagir | <b>H</b> debug | <b>V</b> calibrar
       cenário &nbsp;|&nbsp; <b>U/O</b> escala X &nbsp;|&nbsp; <b>N/M</b> escala Y

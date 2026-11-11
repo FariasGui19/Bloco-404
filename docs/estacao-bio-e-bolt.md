@@ -30,12 +30,6 @@
 - Não gerar terceira imagem na rodada 0.3.6.
 - Não declarar sistema completo, não conceder recompensa.
 
-<<<<<<< HEAD
-## Base
-- BASE V0.3.6-bio
-- Commit atual: arena/e9de45fa-bloco-404
-- PR #30 mesclada (0.3.5-bio)
-=======
 ## Bolt
 
 Uma pose inicial de Bolt foi gerada a partir das fotos fornecidas: border collie blue merle, peito e faixa brancos, expressão amigável. A arte foi limpa de fundo e é exibida como **uma única pose provisória**, com espelhamento lateral e leve movimento procedural. Não é uma folha direcional nem animação real de caminhada. As fotografias não foram adicionadas ao repositório; a imagem gerada é uma interpretação e precisa de avaliação do tutor.
@@ -99,4 +93,22 @@ A partir das capturas e do relato de FPS estável, o terminal foi recuado de (12
 Duas texturas novas em linguagem pixel art substituem as texturas de solo e piso da versão anterior, mantendo o cache por blocos e a máscara de água/decks. A sala de controle recebeu conduítes, peças existentes e uma marca de saída, sem alterar a sequência R/Q/E. Na praia há uma plataforma procedural sob o trem e uma faixa de segurança, com sinalização e objetos existentes; a faixa dos trilhos continua bloqueada. Os limiares de travessia receberam símbolos distintos, sem alterar hitboxes ou regras de arquétipo.
 
 Os testes automatizados verificam a fundação sobre terra, spawns e acessos, máscara da plataforma, puzzle e persistência; nenhuma medição nova de FPS ou validação visual em navegador foi feita nesta rodada. As duas imagens geradas são `assets/source-art/estacao-bio/piso-pixel-09.png` e `jardim-pixel-09.png`. A costa do setor Bio ainda é retangular, a sala e a estação ferroviária são protótipos, e a integração estética, bordas das texturas e enquadramento precisam de aprovação no jogo. Não foram implementados inimigos, miniboss, novas animações ou novos interiores nesta rodada.
->>>>>>> e5736762ec637ebe671540515d65b30b7c6323f4
+
+## 0.3.6-bio — margens baixas, fundações e rota no piso
+
+- **Duas imagens**: `bio-margem-baixa.png` (borda de apoio rente ao solo, sem
+  hitbox, não obstrui rota) e `bio-fundacao.png` (base das máquinas, desenhada
+  atrás delas com `depthOffset: -.65`).
+- O terminal voltou a 460 px de largura com seis camadas de profundidade
+  (`depthLayers`), pegada sólida de 7 × 7 tiles e sombra própria; as cabeceiras
+  ficaram menores (54 px) e a plataforma técnica mais discreta (escala .24).
+- A rota da primeira missão agora é **desenhada no piso** (`bioRoute`): losangos
+  e setas ao longo do trajeto, com os trechos já concluídos mais claros. É
+  orientação visual, sem colisão.
+- O portal de retorno em 8,10 exibe `labelConcluido` (“RETORNAR · LEITURA
+  REGISTRADA”) depois da válvula da estufa, via `interactions.js`.
+- A sala de controle continua existindo: marcador CONTROLE em 16,12, portal
+  `entrar_controle_bio` e spawn `vindo_controle` preservados da versão 0.3.8.
+- Nota de merge: os documentos anteriores falavam do “diário J”; ele agora é o
+  Códex com abas (ver `docs/sistemas-rpg-dano-xp-missoes.md`), então as ações de
+  companheiro (“TESTAR BOLT”) ficam na aba **Inventário**.

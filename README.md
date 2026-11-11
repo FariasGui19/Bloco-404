@@ -39,13 +39,30 @@ pegar export faltando antes de abrir o navegador.
 ## Sistemas em destaque
 
 - **Quatro arquétipos** com ataque básico, Q e R próprios.
-- **Forma Veloz (Núcleo 10X)** com locomoção nas quatro direções.
+- **Duas formas do Núcleo 10X** (tecla `T`): *Forma Veloz* (corrida, 1,8× de
+  velocidade) e *Quebra Sistemas* (ferro denso, 40% mais lenta, cada marretada
+  consome a barra de forma). Ambas com folhas próprias nas quatro direções,
+  ataque básico animado, metamorfose desenhada com a própria arte e **execução
+  de Ultimate em quatro quadros** por forma. Na Quebra, `Q` sobe e desce a
+  marreta (dano à frente, empurrão, tremor de câmera) e a Ultimate
+  `DEVORADOR DE TECTÔNICA` abre uma fenda **que fica no mapa** (e no save);
+  na Veloz, o `F` (`VELOCIDADE TEMPORAL`) dispara em relâmpago com riscos de
+  velocidade. A barra da forma mostra o tempo restante e, na Quebra, quantas
+  marretadas ainda cabem.
 - **Dano por arquétipo**: dano, golpes, recarga, alcance e crítico em
   [`js/data/combat-balance.js`](js/data/combat-balance.js).
 - **Maestria por uso** (sem pontos): ataque, fluxo, eco e locomoção sobem
   conforme você golpeia, usa habilidades, conclui missões e percorre o mapa.
 - **Vida** com dano, invulnerabilidade, regeneração e retorno seguro ao morrer.
-- **Códex (`J`)** com abas de missões, progressão, inventário e atributos.
+- **Códex (`J`)** com abas de missões, progressão, inventário e atributos, cada
+  uma com sua cor (âmbar, violeta, laranja e rosa) para não cansar a vista.
+- **Ultimate (`F`)** em duas camadas: a base de cada arquétipo e a sobrecarga da
+  ferramenta instalada (corte, impacto, onda, avanço, guarda ou sintonia), com
+  custo alto de energia e recarga longa.
+- **Caminho 0–5** por arquétipo no Códex, com liberação por nível: Q/R no nível 1,
+  ferramenta no 2, Ultimate no 3.
+- **HUD em coluna única** (mapa, módulo, vitais, habilidades e missão), sem
+  cartões sobrepostos; a Ultimate tem carga de 0,42 s antes da soltura.
 - Detalhes em [`docs/sistemas-rpg-dano-xp-missoes.md`](docs/sistemas-rpg-dano-xp-missoes.md).
 
 ## Futuro

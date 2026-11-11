@@ -13,6 +13,9 @@ import { canStandAt } from './game/collision.js';
 import { dispararPropulsao } from './game/nado.js';
 import { desenharMedidorAr } from './ui/nado-hud.js';
 import { atualizarMissaoMare, criarFragmentosDeMare } from './game/mare-missao.js';
+import { atualizarFauna, socorrerProximo } from './game/fauna-ferida.js';
+import { ganharRespeito } from './game/nado.js';
+import { getVidaAquatica } from './game/vida-aquatica.js';
 import { alternarMorfador, manterInfinitos, autorizado } from './game/morfador.js';
 import { alternarPainel, morfadorAberto, promoverAutoria } from './ui/morfador-panel.js';
 import { getCoastFieldForMap } from './engine/coast-field.js';
@@ -486,7 +489,44 @@ async function update(dt) {
       player.ability.messageTimer = 2.2;
     }
   }
-  updateOwnedCompanion(state, getFloor(), dt, canStandAt);
+  // Fauna ferida: presença alivia, o módulo certo socorre.
+  const ancoraFauna = getFloor();
+  if (ancoraFauna?.aguaPraia) {
+    const submerso = !!player.nado?.ativo && player.nado.profundidade > 1.25;
+    const fauna = atualizarFauna(ancoraFauna, {
+      player, progress: state.progress,
+      arquetipo: state.progress?.archetype,
+      submerso, nado: player.nado, dt,
+      recifes: getVidaAquatica(ancoraFauna)?.recifes,
+    });
+    // "E — SOCORRER" só aparece quando há socorro real para fazer.
+    state.interaction.faunaPronta = fauna.pronto
+      ? { nome: fauna.pronto.bicho.def.nome, parcial: fauna.pronto.parcial }
+      : null;
+
+    const pressedE2 = input.pressed.has('e') || input.pressed.has('keye');
+    if (pressedE2 && fauna.pronto) {
+      const res = socorrerProximo(ancoraFauna, {
+        player, progress: state.progress,
+        arquetipo: state.progress?.archetype,
+        submerso, nado: player.nado,
+        recifes: getVidaAquatica(ancoraFauna)?.recifes,
+      });
+      if (res?.ok) {
+        player.ability ??= {};
+        player.ability.lastMessage = `${res.nome} — SALVO`;
+        player.ability.messageTimer = 3;
+        if (player.nado) ganharRespeito(player.nado, res.respeito);
+        state.interaction.faunaPronta = null;
+      } else if (res?.motivo) {
+        player.ability ??= {};
+        player.ability.lastMessage = res.motivo.toUpperCase();
+        player.ability.messageTimer = 2;
+      }
+    }
+  }
+
+  updateOwnedCompanion(getFloor(), dt, canStandAt);
   updateCamera(dt, player.x, player.y);
 }
 

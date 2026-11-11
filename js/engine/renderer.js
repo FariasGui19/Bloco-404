@@ -12,6 +12,8 @@ import { createBeachSurface } from './beach-surface.js';
 import { getSeaCanvas, foamArcs } from './beach-water.js';
 import { identidadeDoGate, desenharSeloDeModulo } from './selos-modulo.js';
 import { getVidaAquatica, atualizarCardumes, atualizarBolhas, CORES_CARDUME, elementosDeRecife } from '../game/vida-aquatica.js';
+import { detalhesFauna } from '../game/fauna-ferida.js';
+import { desenharBichoFerido, desenharRastroSocorro } from '../ui/fauna-desenho.js';
 import { criarFragmentosDeMare, fragmentosColetados } from '../game/mare-missao.js';
 import { createCoastField } from './coast-field.js';
 import { bridgeGateGeometry } from './bridge-geometry.js';
@@ -490,6 +492,14 @@ function drawBeachRipples(map) {
 const vidaCache = new WeakMap();
 const fragmentosCache = new WeakMap();
 
+// Cor por módulo, espelhada de `selos-modulo.js` para o rastro de socorro.
+const MOD_COR = {
+  mare_astral: '#35E6D3',
+  nucleo_dez_forma: '#9CEFA2',
+  lamina_dominio_anciao: '#EDB85A',
+  motor_bio_forja: '#CE9C5F',
+};
+
 function drawVidaAquatica(map, state) {
   if (!map.aguaPraia) return;
   let vida = vidaCache.get(map);
@@ -510,6 +520,24 @@ function drawVidaAquatica(map, state) {
     y >= range.y0 - margem && y <= range.y1 + margem;
 
   ctx.save();
+
+  // ---- Fauna ferida: os animais em apuros do mapa atual ----
+  // Desenhada junto com a vida aquática porque é a MESMA camada: bicho
+  // ferido é vida no mar, não um item de inventário.
+  const bichos = detalhesFauna(map, state.progress, vida.recifes);
+  for (const b of bichos) {
+    if (!dentro(b.x, b.y, 2)) continue;
+    const bx = (b.x - b.y) * HW, by = (b.x + b.y) * HH;
+    const perto = player && Math.hypot(player.x - b.x, player.y - b.y) < 3.4;
+    desenharBichoFerido(ctx, b, bx, by, 16, t, {
+      destacado: perto && b.estado !== 'curado',
+      corModulo: b.def?.cura && MOD_COR[b.def.cura],
+    });
+    if (b.rastro > 0) {
+      desenharRastroSocorro(ctx, bx, by, b.rastro, MOD_COR[b.def?.cura] ?? '#9fffe3');
+      b.rastro = Math.max(0, b.rastro - 1 / 90);
+    }
+  }
 
   // ---- Raios de sol: só quando o jogador mergulha (é o "wow" do mergulho)
   if (submerso) {

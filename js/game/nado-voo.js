@@ -14,7 +14,7 @@ export function atualizarVoo(voo, controles, dt) {
   voo.giro ??= 0;
   voo.giro += (giro * 2.0 - voo.giro) * (1 - Math.exp(-9 * tempo));
   voo.heading += voo.giro * tempo;
-  voo.profundidadeAlvo = Math.max(.9, Math.min(2, voo.profundidadeAlvo + vertical * .8 * tempo));
+  voo.profundidadeAlvo = Math.max(.9, Math.min(2, voo.profundidadeAlvo + vertical * (vertical > 0 ? .42 : .95) * tempo));
   const k = 1 - Math.exp(-4 * tempo);
   voo.roll += (-giro * .35 - voo.roll) * k;
   voo.pitch += (vertical * .3 - voo.pitch) * k;

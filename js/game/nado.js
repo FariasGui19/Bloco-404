@@ -78,7 +78,7 @@ export const NADO = {
   // O respeito do mar aumenta o fôlego (até +80%).
   arBonusMax: 0.8,
   // O Maré Astral no degrau pleno carrega mais ar: 22 s × 1,8 (respeito)
-  // × 1,3 = 52 s. É o "respira embaixo d'água" do arquétipo.
+  // × 1,3 = 52 s: ainda precisa subir para respirar.
   arMare: 1.3,
   // Correnteza contrária freia o Maré Astral só pela metade.
   correnteMare: .5,
@@ -342,7 +342,7 @@ export function atualizarNado(nado, ctx) {
   let alvo = fundo;
   let cabecaNaAgua = nado.ativo && fundo > 1.25;
   if (grau) {
-    if (!ctx.mergulhar) nado.semFolego = false;      // soltou a tecla: pode tentar de novo
+    if (!ctx.mergulhar && nado.profundidade <= 1.25) nado.semFolego = false;      // soltou a tecla: pode tentar de novo
     const quer = !!ctx.mergulhar && nado.ativo && grau.mergulho > 0 && !nado.semFolego;
     const profundidadeAlvo = Number.isFinite(ctx.profundidadeAlvo) ? Math.max(.9, ctx.profundidadeAlvo) : Infinity;
     alvo = quer ? Math.min(fundo, grau.mergulho, nado.mergulhoLivre ? profundidadeAlvo : SUPERFICIE) : Math.min(fundo, SUPERFICIE);
@@ -360,7 +360,7 @@ export function atualizarNado(nado, ctx) {
 
   // Suavização visual da profundidade: entrar na água não "pula".
   nado.profundidade += (alvo - nado.profundidade) * Math.min(1, NADO.suavidade * dt);
-  nado.submerso = cabecaNaAgua;
+  nado.submerso = nado.ativo && (cabecaNaAgua || nado.profundidade > 1.25);
   // "Fundo de verdade": é o que conta para respeito, fragmentos e fauna.
   const noFundo = nado.submerso && (grau ? nado.profundidade > 1.25 : true);
 
@@ -376,7 +376,8 @@ export function atualizarNado(nado, ctx) {
 
   // ---- respeito sobe nadando fundo ----
   if (noFundo) {
-    const ganho = NADO.respeitoPorSegundo * (nado.mareAstral ? NADO.respeitoMare : 1);
+    const movimento = Math.min(1, Math.hypot(nado.vx, nado.vy) / 2);
+    const ganho = NADO.respeitoPorSegundo * (.2 + .8 * movimento) * (nado.mareAstral ? NADO.respeitoMare : 1);
     nado.respeito.valor = Math.min(NADO.respeitoMax, nado.respeito.valor + ganho * dt);
     nado.respeito.distanteNadada += Math.hypot(nado.vx, nado.vy) * dt;
   }
@@ -396,10 +397,9 @@ export function atualizarNado(nado, ctx) {
     // Com árvore a superfície está sempre em cima: sem ar, o corpo SOBE
     // sozinho engolindo água (um susto), em vez de afogar quadro a quadro.
     if (grau && nado.afogando) {
+      if (!nado.semFolego) engoliu = true;
       nado.semFolego = true;
       nado.afogando = false;
-      nado.submerso = false;
-      engoliu = true;
     }
   }
 

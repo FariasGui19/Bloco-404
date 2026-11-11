@@ -6,7 +6,7 @@ import { perspectivaSubmersa } from './perspectiva-submersa.js';
 //  profundidade → poeira → debug → nomes e balões
 // =====================================================================
 import { CONFIG, TILE } from '../config.js';
-import { camera, view, worldToScreen, isoToWorld } from './camera.js';
+import { camera, view, worldToScreen, worldToIso, isoToWorld } from './camera.js';
 import { drawUltimateSignature } from './ultimate-visuals.js';
 import { getSprite } from './sprites.js';
 import { createBeachSurface } from './beach-surface.js';
@@ -84,7 +84,14 @@ function resize() {
 export function render(map, state) {
   if (!map) return;
   const { dpr } = view;
+  const estavaEm3d = !!state.player?.nado?.perspectiva3d;
   const perspectiva = perspectivaSubmersa(map, state, view);
+  if (estavaEm3d && !state.player?.nado?.perspectiva3d && state.player) {
+    // A câmera pode estar solta após um arrasto em terra. Durante o 3D ela
+    // não é visível; no retorno, não deixe o jogador fora da tela no mar.
+    const p = worldToIso(state.player.x, state.player.y);
+    camera.x = p.x; camera.y = p.y;
+  }
   // Quando a transição terminou não desenhamos o mapa isométrico escondido:
   // isso evita pagar dois renderizadores durante todo o mergulho.
   if (perspectiva?.alpha >= .995) {

@@ -708,8 +708,8 @@ async function frame(now) {
     const dpr = Math.min(window.devicePixelRatio || 1, 2), w = canvas.width / dpr, h = canvas.height / dpr;
     const c = canvas.getContext('2d'); c.save(); c.setTransform(dpr, 0, 0, dpr, 0, 0);
     c.font = 'bold 11px monospace'; c.textAlign = 'right';
-    c.fillStyle = 'rgba(0,30,42,.72)'; c.fillRect(w - 344, h - 127, 330, 32);
-    c.fillStyle = '#bdfaf0'; c.fillText('A/D GIRAR · W DESCER · S SUBIR · Q IMPULSO', w - 24, h - 107);
+    c.fillStyle = 'rgba(0,30,42,.72)'; c.fillRect(w - 510, h - 127, 496, 32);
+    c.fillStyle = '#bdfaf0'; c.fillText('A/D GIRAR · W NADAR/DESCER · S SUBIR · Q IMPULSO · R SONAR', w - 24, h - 107);
     c.restore();
   }
   // Degrau do nado + prova em curso: perto d'água, ou comemorando.

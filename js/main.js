@@ -13,6 +13,12 @@ import { canStandAt } from './game/collision.js';
 import { dispararPropulsao } from './game/nado.js';
 import { desenharMedidorAr } from './ui/nado-hud.js';
 import { atualizarMissaoMare, criarFragmentosDeMare } from './game/mare-missao.js';
+import { atualizarFauna, socorrerProximo } from './game/fauna-ferida.js';
+import { ganharRespeito } from './game/nado.js';
+import { criarClima, atualizarClima, criarParticulas } from './game/clima.js';
+import { getVidaAquatica } from './game/vida-aquatica.js';
+import { alternarMorfador, manterInfinitos, autorizado } from './game/morfador.js';
+import { alternarPainel, morfadorAberto, promoverAutoria } from './ui/morfador-panel.js';
 import { getCoastFieldForMap } from './engine/coast-field.js';
 import { CONFIG } from './config.js';
 import { isCodexOpen, openCodex, closeCodex, handleCodexInput } from './ui/codex.js';
@@ -275,6 +281,7 @@ await loadSprites([
   { id: 'visao_nucleo', src: 'assets/sprites/backgrounds/camara-nucleo-visao.jpg' },
   { id: 'beach_novas_artes', src: 'assets/sprites/tiles/beach-novas-artes.png' },
   { id: 'fauna_costeira', src: 'assets/sprites/fauna/fauna-costeira.png' },
+  { id: 'fauna_nova_1010', src: 'assets/sprites/fauna/fauna-nova-1010.png' },
   { id: 'fauna_caranguejo', src: 'assets/sprites/fauna/caranguejo.png' },
   { id: 'costa_rochosa', src: 'assets/sprites/objects/costa-rochosa.png' },
   { id: 'praia_plataforma_kit', src: 'assets/sprites/praia/plataforma-kit-0311.png' },
@@ -398,6 +405,19 @@ async function update(dt) {
       return;
     }
 
+    // MORFADOR DE RESSONÂNCIA — modo criador. Só para save de autoria:
+    // sem a flag, a tecla não faz absolutamente nada (nem loga).
+    if (input.pressed.has('m') || input.pressed.has('keym')) {
+      if (autorizado(state.progress)) {
+        alternarPainel(state.progress, player);
+        player.moving = false; player.target = null;
+        return;
+      }
+    }
+    // O painel aberto prende o mouse como um menu, mas o jogo segue vivo:
+    // é assim que se testa habilidade com o painel à vista.
+    if (player.morfador?.ativo) manterInfinitos(state.progress, player);
+
     // Durante a carga da Ultimate o corpo está tomado: sem ataque básico.
     const carregandoUltimate = (player.ultimate?.charge ?? 0) > 0;
     if (!carregandoUltimate) updateBasicCombat(player, state.trainingTargets, dt);
@@ -446,11 +466,6 @@ async function update(dt) {
     if (!abilityLocksMovement) updateHazards(state.hazards, player, state.progress, dt);
     updateHealth(player, state.progress, dt, { onRespawn: () => getSafeSpawn() });
 
-    const pressedE =
-      input.pressed.has('e') ||
-      input.pressed.has('keye');
-
-    await checkInteractions(pressedE);
   }
 
   updateNpcBrains(dt);
@@ -471,9 +486,82 @@ async function update(dt) {
       player.ability.messageTimer = 2.2;
     }
   }
-  updateOwnedCompanion(state, getFloor(), dt, canStandAt);
+  // Fauna ferida: presença alivia, o módulo certo socorre.
+  const ancoraFauna = getFloor();
+  if (ancoraFauna?.aguaPraia) {
+    const submerso = !!player.nado?.ativo && player.nado.profundidade > 1.25;
+    const fauna = atualizarFauna(ancoraFauna, {
+      player, progress: state.progress,
+      arquetipo: state.progress?.archetype,
+      submerso, nado: player.nado, dt,
+      recifes: getVidaAquatica(ancoraFauna)?.recifes,
+    });
+    // "E — SOCORRER" só aparece quando há socorro real para fazer.
+    state.interaction.faunaPronta = fauna.pronto
+      ? { nome: fauna.pronto.bicho.def.nome, parcial: fauna.pronto.parcial }
+      : null;
+
+    const pressedE2 = input.pressed.has('e') || input.pressed.has('keye');
+    // O prompt de socorro tem prioridade sobre o objeto/NPC atrás dele:
+    // sem isto, um E perto de bicho E de placa abriria as duas coisas.
+    if (pressedE2 && fauna.pronto) state.interaction.socorroConsumiuE = true;
+    if (pressedE2 && fauna.pronto) {
+      const res = socorrerProximo(ancoraFauna, {
+        player, progress: state.progress,
+        arquetipo: state.progress?.archetype,
+        submerso, nado: player.nado,
+        recifes: getVidaAquatica(ancoraFauna)?.recifes,
+      });
+      if (res?.ok) {
+        player.ability ??= {};
+        player.ability.lastMessage = `${res.nome} — SALVO`;
+        player.ability.messageTimer = 3;
+        if (player.nado) ganharRespeito(player.nado, res.respeito);
+        state.interaction.faunaPronta = null;
+      } else if (res?.motivo) {
+        player.ability ??= {};
+        player.ability.lastMessage = res.motivo.toUpperCase();
+        player.ability.messageTimer = 2;
+      }
+    }
+  }
+
+  // Interações (portais, NPCs, objetos) correm DEPOIS da fauna: assim o
+  // socorro tem a primeira chance no E, e um E perto de bicho não abre
+  // a placa atrás dele ao mesmo tempo.
+  {
+    const pressedE =
+      input.pressed.has('e') ||
+      input.pressed.has('keye');
+    await checkInteractions(pressedE && !state.interaction.socorroConsumiuE);
+    state.interaction.socorroConsumiuE = false;
+  }
+
+  updateOwnedCompanion(getFloor(), dt, canStandAt);
   updateCamera(dt, player.x, player.y);
 }
+
+// =====================================================================
+// AUTORIA — comando do criador
+//
+// O Morfador não abre sozinho. O criador digita, UMA vez, no console:
+//     __morfador("morfador_de_ressonancia")
+// e este save passa a ser de autoria. A chave é o nome da própria flag: não
+// é senha, é um gesto explícito, e por isso nunca aparece em save novo.
+// =====================================================================
+if (typeof window !== 'undefined') {
+  window.__morfador = (chave) => promoverAutoria(state.progress, chave);
+}
+
+// =====================================================================
+// CLIMA
+//
+// Um único estado de clima para a sessão, criado no boot e atualizado no
+// loop. O buffer de partículas existe uma vez (120 posições fixas) e é
+// reaproveitado — nunca alocado por frame.
+// =====================================================================
+state.clima = criarClima(4);
+state.particulasClima = criarParticulas(7);
 
 // =====================================================================
 // LOOP
@@ -489,6 +577,7 @@ async function frame(now) {
 
   last = now;
 
+  atualizarClima(state.clima, dt);
   await update(dt);
 
   const map = getFloor();

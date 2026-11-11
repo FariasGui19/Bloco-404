@@ -47,6 +47,30 @@ export const QUESTS = Object.freeze({
       flags: Object.freeze({ mare_profunda_concluida: true }),
     }),
   }),
+  // -------------------------------------------------------------------
+  // MARÉ ASTRAL — SALVA-VIDAS
+  //
+  // Missão de AJUDAR ANIMAIS pedida pelo criador. Não é "colete 5 itens":
+  // o objetivo `socorro` só conta quando um bicho ferido volta à vida,
+  // e não conta duas vezes para o mesmo animal (o id é gravado no save).
+  // -------------------------------------------------------------------
+  mare_salva_vidas: Object.freeze({
+    id: 'mare_salva_vidas',
+    title: 'SALVA-VIDAS',
+    giver: 'MARÉ ASTRAL',
+    kind: 'secundária',
+    description: 'O arquipélago está ferido antes de você chegar. Há bichos presos, encalhados e enredados na areia e na água. Solte o que prende, cure o que respira.',
+    objectives: Object.freeze([
+      Object.freeze({ type: 'socorro', count: 3, label: 'Animais socorridos' }),
+      Object.freeze({ type: 'socorro_terra', count: 1, label: 'Animal socorrido em terra' }),
+    ]),
+    rewards: Object.freeze({
+      xp: 180,
+      points: 2,
+      items: Object.freeze(['concha_ressonante']),
+      flags: Object.freeze({ mare_salva_vidas_concluida: true }),
+    }),
+  }),
 });
 
 export function getQuest(id) {

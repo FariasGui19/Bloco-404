@@ -23,7 +23,7 @@ import {
 import { moveWithCollision } from './collision.js';
 import {
   criarEstadoNado, atualizarNado, multiplicadorVelocidade,
-  podeNadar, destinoValido, NADO,
+  podeNadar, destinoValido, NADO, moverNaAgua, ganharRespeito,
 } from './nado.js';
 import { getCoastFieldForMap } from '../engine/coast-field.js';
 import { damagePlayer } from './health.js';
@@ -127,10 +127,16 @@ export function updatePlayer(dt) {
   const campoCosta = getCoastFieldForMap(map);
   const efeitoNado = atualizarNado(nado, {
     map, x: player.x, y: player.y, field: campoCosta, dt,
+    tempo: performance.now() / 1000,
+    // Ressaca deixa a correnteza mais forte e o fôlego mais curto: o
+    // clima não é só visual, ele muda como o mar se comporta.
+    clima: state.clima,
   });
 
   const radius = CONFIG.PLAYER_RADIUS;
-  const speed = multiplicadorVelocidade(nado, getPlayerMoveSpeed(state.progress, player));
+  // `speed` está em TILES/S (CONFIG.PLAYER_SPEED = 4.0). Em terra o passo
+  // é linear; na água quem integra a velocidade é `moverNaAgua`.
+  const speed = getPlayerMoveSpeed(state.progress, player);
   const maxStep = speed * dt;
 
   let dx = 0;
@@ -196,14 +202,25 @@ export function updatePlayer(dt) {
   // usa subpassos + colisão + slide.
   // ---------------------------------------------------------------
   const beforeX = player.x, beforeY = player.y;
-  const moved = moveWithCollision(
-    map,
-    player,
-    dx,
-    dy,
-    radius,
-    podeNadar
-  );
+
+  // ---- ÁGUA: deslocamento com inércia, correnteza e planeio ----
+  // Em vez de "andar devagar", o corpo persegue a direção e desliza. É o
+  // coração da locomoção aquática — e é o que o `moveWithCollision` não
+  // sabe fazer, porque lá cada passo é instantâneo.
+  let moved;
+  if (nado.ativo) {
+    const dir = keyboardDirection
+      ? { x: keyboardDirection.x, y: keyboardDirection.y }
+      : player.target
+        ? { x: player.target.x - player.x, y: player.target.y - player.y }
+        : { x: 0, y: 0 };
+    const passo = moverNaAgua(nado, dt, dir.x, dir.y, speed);
+    moved = moveWithCollision(map, player, passo.dx, passo.dy, radius, podeNadar);
+    // Respeito do mar sobe nadando fundo (a curva de progressão).
+    if (nado.submerso) ganharRespeito(nado.respeito, NADO.respeitoPorSegundo * dt);
+  } else {
+    moved = moveWithCollision(map, player, dx, dy, radius, podeNadar);
+  }
 
   player.moving = moved;
   if (moved) trackDistance(state.progress, Math.hypot(player.x - beforeX, player.y - beforeY));

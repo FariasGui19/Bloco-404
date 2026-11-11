@@ -7,9 +7,24 @@ export function faunaFootAnchor(box, frameHeight) {
   return Math.max(0, Math.min(1, (box.y + box.h) / frameHeight));
 }
 const tileAt = (map, x, y) => map.aguaPraia?.[Math.floor(y)]?.[Math.floor(x)];
+
+// Espécies que vivem NA ÁGUA. Antes só 'peixes' era aquático; com a
+// fauna nova (golfinho, tartaruga) o habitat precisa saber distinguir,
+// senão eles nascem na areia e são filtrados para fora do mapa.
+export const ESPECIES_AQUATICAS = Object.freeze(['peixes', 'golfinho', 'tartaruga', 'arraia']);
+export const ehEspecieAquatica = (s) => ESPECIES_AQUATICAS.includes(s);
+
 export function habitatAllows(map, species, x, y) {
   const tile = tileAt(map, x, y);
-  if (species !== 'peixes') return terrestrial(tile);
+  if (ehEspecieAquatica(species)) {
+    // Aquático exige água em toda a pegada — golfinho na areia é bicho
+    // encalhado, não fauna passeando.
+    for (const dx of [-.55, 0, .55]) for (const dy of [-.55, 0, .55]) {
+      if (!aquatic(tileAt(map, x + dx, y + dy))) return false;
+    }
+    return true;
+  }
+  return terrestrial(tile);
   // A arte do cardume é mais larga que o ponto lógico: não deixe os peixes
   // desenharem sobre uma ponte ou na areia ao seguir a borda da água.
   return [-.65, 0, .65].every(dx => [-.65, 0, .65].every(dy => aquatic(tileAt(map, x + dx, y + dy))));

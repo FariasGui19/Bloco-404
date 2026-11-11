@@ -4004,3 +4004,90 @@ body.in-menu #controls {
 .codex-form-row small { grid-column: 1 / -1; color: #a2c6b2; }
 .codex-form-bar { display: block; height: 4px; min-width: 90px; border-radius: 2px; background: #ffffff18; overflow: hidden; }
 .codex-form-bar b { display: block; height: 100%; transition: width .2s linear; }
+
+/* =====================================================================
+   MORFADOR DE RESSONÂNCIA — painel do modo criador
+   ===================================================================== */
+.morfador-panel {
+  position: fixed;
+  inset: 8vh auto auto 50%;
+  transform: translateX(-50%) translateY(-12px);
+  width: min(760px, 92vw);
+  max-height: 78vh;
+  display: flex;
+  flex-direction: column;
+  background: linear-gradient(180deg, #07131c 0%, #050c13 100%);
+  border: 1px solid #35e6d344;
+  border-radius: 14px;
+  box-shadow: 0 24px 70px #000000bb, 0 0 0 1px #35e6d318 inset;
+  color: #d8f5ef;
+  font-family: ui-monospace, monospace;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .18s ease, transform .18s ease;
+  z-index: 60;
+  overflow: hidden;
+}
+.morfador-panel.visible { opacity: 1; pointer-events: auto; transform: translateX(-50%) translateY(0); }
+
+.morfador-head {
+  display: flex; justify-content: space-between; align-items: flex-start;
+  gap: 16px; padding: 16px 18px 12px;
+  border-bottom: 1px solid #35e6d322;
+  background: radial-gradient(120% 140% at 0% 0%, #35e6d31a, transparent 60%);
+}
+.morfador-head h2 { margin: 4px 0 4px; font-size: 15px; letter-spacing: .12em; color: #7ff3e2; }
+.morfador-head p { margin: 0; font-size: 10px; line-height: 1.5; color: #8fb6b0; max-width: 46ch; }
+.morfador-sigla {
+  display: inline-block; padding: 2px 8px; border-radius: 4px;
+  background: #35e6d31f; color: #35e6d3; font-size: 9px; letter-spacing: .2em;
+}
+.morfador-close {
+  background: none; border: 1px solid #35e6d333; color: #8fb6b0;
+  width: 28px; height: 28px; border-radius: 6px; cursor: pointer; font-size: 12px;
+}
+.morfador-close:hover { color: #ff9b8a; border-color: #ff9b8a55; }
+
+.morfador-body { display: grid; grid-template-columns: 1fr 190px; gap: 14px; padding: 14px 18px; overflow: auto; }
+.morfador-arquétipos { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
+
+.morfador-card {
+  --cor: #35e6d3;
+  position: relative; text-align: left; cursor: pointer;
+  padding: 10px 12px; border-radius: 8px;
+  background: #0c1a24; border: 1px solid #ffffff12; color: inherit;
+  font-family: inherit; transition: border-color .15s, background .15s, transform .15s;
+}
+.morfador-card:hover { border-color: var(--cor); transform: translateY(-1px); }
+.morfador-card.ativo { border-color: var(--cor); background: color-mix(in srgb, var(--cor) 12%, #0c1a24); box-shadow: 0 0 0 1px var(--cor) inset; }
+.morfador-card-nome { display: block; font-size: 11px; letter-spacing: .09em; color: var(--cor); }
+.morfador-card-sub { display: block; font-size: 9px; color: #7fa39d; margin-top: 3px; line-height: 1.4; }
+.morfador-card-tag {
+  position: absolute; top: 8px; right: 9px; font-size: 8px;
+  padding: 1px 5px; border-radius: 3px; background: var(--cor); color: #04120f;
+  letter-spacing: .1em;
+}
+
+.morfador-flags h3 { margin: 0 0 8px; font-size: 9px; letter-spacing: .18em; color: #6f918c; }
+.morfador-toggle { display: flex; align-items: center; gap: 8px; font-size: 10px; padding: 5px 0; color: #b6d8d2; cursor: pointer; }
+.morfador-toggle input { accent-color: #35e6d3; }
+
+.morfador-status {
+  padding: 9px 18px; border-top: 1px solid #35e6d322;
+  font-size: 9px; letter-spacing: .14em; color: #5f8b86; background: #040a10;
+}
+
+@media (max-width: 620px) {
+  .morfador-body { grid-template-columns: 1fr; }
+  .morfador-arquétipos { grid-template-columns: 1fr; }
+}
+
+/* Aviso de contagem de operadores no menu de saves. */
+.save-slots-note {
+  grid-column: 1 / -1;
+  margin: 0 0 10px;
+  font-family: ui-monospace, monospace;
+  font-size: 10px;
+  letter-spacing: .16em;
+  color: #5f8b86;
+}

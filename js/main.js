@@ -476,6 +476,8 @@ async function update(dt) {
     abilityLocksMovement ||= player.ultimate?.charge > 0;
     updateNucleoForm(state.progress, player, dt, canStandAt(getFloor(), player.x, player.y, CONFIG.PLAYER_RADIUS, player));
     abilityLocksMovement ||= player.ability?.effect?.id === 'transformacao_10x';
+    // A projeção de clique é isométrica; nunca a use para mirar no 3D.
+    if (player.nado?.perspectiva3d) input.attackClick = null;
     if (input.attackClick) {
       const point = input.attackClick; input.attackClick = null;
       if (!abilityLocksMovement && !state.world.isLoading) {
@@ -702,6 +704,14 @@ async function frame(now) {
   updateHud(map, state);
   // Fôlego só aparece quando importa (nadando); em terra não ocupa tela.
   if (state.player?.nado?.ativo) desenharMedidorAr(state.player.nado);
+  if (state.player?.nado?.perspectiva3d) {
+    const dpr = Math.min(window.devicePixelRatio || 1, 2), w = canvas.width / dpr, h = canvas.height / dpr;
+    const c = canvas.getContext('2d'); c.save(); c.setTransform(dpr, 0, 0, dpr, 0, 0);
+    c.font = 'bold 11px monospace'; c.textAlign = 'right';
+    c.fillStyle = 'rgba(0,30,42,.72)'; c.fillRect(w - 344, h - 127, 330, 32);
+    c.fillStyle = '#bdfaf0'; c.fillText('A/D GIRAR · W DESCER · S SUBIR · Q IMPULSO', w - 24, h - 107);
+    c.restore();
+  }
   // Degrau do nado + prova em curso: perto d'água, ou comemorando.
   if (map?.aguaPraia) desenharDegrauNado(state, map);
 

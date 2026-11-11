@@ -1,3 +1,4 @@
+import { iniciarVoo, atualizarVoo } from './nado-voo.js';
 // js/game/player.js
 // =====================================================================
 // PLAYER
@@ -135,7 +136,17 @@ export function updatePlayer(dt) {
   // ESPAÇO = mergulhar (segurar). Em terra a tecla não faz nada.
   const mergulhoFixoDisponivel = state.progress?.archetype === 'mare_astral' && (arvore?.nivel ?? 0) >= 3;
   controlarMergulhoFixo(nado, mergulhoFixoDisponivel, input.pressed.has('z') || input.pressed.has('keyz'));
-  const querMergulhar = !!(input.keys[' '] || input.keys['space'] || nado.mergulhoFixo);
+  let vooDir = null;
+  // Só troca os controles depois que a perspectiva realmente está disponível.
+  if (nado.perspectiva3d && nado.ativo && nado.profundidade > 1.25 && mergulhoFixoDisponivel) {
+    nado.voo ??= iniciarVoo(nado);
+    vooDir = atualizarVoo(nado.voo, {
+      esquerda: keyHeld('a', 'arrowleft'), direita: keyHeld('d', 'arrowright'),
+      descer: keyHeld('w', 'arrowup'), subir: keyHeld('s', 'arrowdown'),
+    }, dt);
+    if (vooDir.subir) nado.mergulhoFixo = false;
+  } else if (!nado.ativo || nado.profundidade <= 1.25 || !nado.perspectiva3d) nado.voo = null;
+  const querMergulhar = !vooDir?.subir && !!(input.keys[' '] || input.keys['space'] || nado.mergulhoFixo);
   const efeitoNado = atualizarNado(nado, {
     map, x: player.x, y: player.y, field: campoCosta, dt,
     tempo: performance.now() / 1000,
@@ -144,6 +155,7 @@ export function updatePlayer(dt) {
     clima: state.clima,
     arvore,
     mergulhar: querMergulhar,
+    profundidadeAlvo: nado.voo?.profundidadeAlvo,
     mareAstral: state.progress?.archetype === 'mare_astral',
     // Futuras formas e equipamentos poderão fornecer esta capacidade aqui.
     mergulhoLivre: state.progress?.archetype === 'mare_astral',
@@ -172,6 +184,7 @@ export function updatePlayer(dt) {
   // Se o clique caiu no vazio, parede ou prop, procura uma posição
   // válida próxima. Se não encontrar, ignora.
   // ---------------------------------------------------------------
+  if (vooDir) { input.click = null; player.target = null; }
   if (input.click) {
     const clicked = input.click;
     input.click = null;
@@ -201,7 +214,7 @@ export function updatePlayer(dt) {
   // ---------------------------------------------------------------
   // Teclado tem prioridade sobre caminho por clique.
   // ---------------------------------------------------------------
-  const keyboardDirection = readKeyboardDirection();
+  const keyboardDirection = vooDir ? (vooDir.ativo ? { x: vooDir.x, y: vooDir.y } : null) : readKeyboardDirection();
 
   if (keyboardDirection) {
     dx = keyboardDirection.x * maxStep;

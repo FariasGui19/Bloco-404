@@ -258,6 +258,7 @@ function resolveUltimate({ player, progress, targets = [], definition, kind, che
 // Começa a Ultimate: cobra energia, inicia a recarga e (no jogo) abre a carga.
 // `instant` resolve na hora — usado por testes e por chamadas fora do loop.
 export function beginUltimate({ player, progress, targets = [], showMessage, rng = Math.random, instant = false }) {
+  if (player?.nado?.ativo) { showMessage?.('ULTIMATE TERRESTRE • SAIA DA ÁGUA'); return false; }
   const check = canCastUltimate(player, progress);
   if (!check.ok) {
     showMessage?.(check.reason);

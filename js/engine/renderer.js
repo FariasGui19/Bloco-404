@@ -664,6 +664,10 @@ const MOD_COR = {
 function drawClima(ctx, state, view) {
   const clima = state.clima;
   if (!clima) return;
+  // O mundo está transformado pela câmera (zoom/translação); o clima é
+  // uma camada de tela. Restaurar ao sair preserva os demais desenhos.
+  ctx.save();
+  ctx.setTransform(view.dpr, 0, 0, view.dpr, 0, 0);
 
   // 1. TINTA: esfria e escurece a cena inteira. É o efeito mais barato
   //    e o que mais se lê de longe — em ressaca a praia "fecha".
@@ -711,6 +715,7 @@ function drawClima(ctx, state, view) {
     ctx.fillRect(0, 0, view.w, view.h);
     ctx.restore();
   }
+  ctx.restore();
 }
 
 function drawVidaAquatica(map, state) {
@@ -1888,7 +1893,7 @@ function drawWorld(map, state) {
   // Fachada no extremo do trilho, atrás do trem; é cenográfica, não portal.
   if (map.id === 'ilha_praia_inicial') {
     const rail = backList.find(o => o.id === 'trilho_dimensional_principal');
-    if (rail) { drawBeachRailTunnel(rail); drawBeachRailBed(rail); }
+    if (rail) drawBeachRailTunnel(rail);
   }
   // Camada de fundo (trilho, trem): atrás de tudo, só acima do chão.
   for (const o of backList) if ((o.ordem ?? 0) >= 0) drawMapObject(o, state);
@@ -2008,7 +2013,7 @@ export function beachRailEnd(rail, frame) {
 }
 export function beachTunnelAnchor(rail, frame) {
   const end = beachRailEnd(rail, frame);
-  return { x: end.x + HW + 16, y: end.y + 29 };
+  return { x: end.x + HW + 31, y: end.y + 25 };
 }
 function drawBeachRailTunnel(rail) {
   const image = getSprite(rail.sprite);
@@ -2059,26 +2064,6 @@ function drawBeachRailTunnel(rail) {
   ctx.beginPath(); ctx.moveTo(-52,0); ctx.lineTo(-52,-79); ctx.lineTo(-38,-101);
   ctx.lineTo(19,-101); ctx.lineTo(44,-79); ctx.lineTo(44,3); ctx.stroke();
   ctx.restore(); // escala do pórtico
-  ctx.restore();
-}
-
-// Base contínua sob o trilho. O PNG do leito tem perspectiva própria: sua
-// linha central sobe à esquerda e desce à direita. A sapata segue esse
-// mesmo eixo, e desce até o piso da estação em vez de deixar pontas no ar.
-function drawBeachRailBed(rail) {
-  const x = (rail.x - rail.y) * HW + (rail.ajusteX ?? 0);
-  const y = (rail.x + rail.y) * HH + (rail.ajusteY ?? 0);
-  const half = (rail.larguraPx ?? 350) * .5;
-  const dy = half * .45;
-  ctx.save(); ctx.translate(x, y); ctx.lineJoin = 'round';
-  ctx.fillStyle = '#273e42'; ctx.strokeStyle = '#182e34'; ctx.lineWidth = 2;
-  ctx.beginPath(); ctx.moveTo(-half, -dy + 4); ctx.lineTo(half, dy + 4);
-  ctx.lineTo(half, dy + 20); ctx.lineTo(-half, -dy + 20); ctx.closePath(); ctx.fill(); ctx.stroke();
-  ctx.fillStyle = '#516966'; ctx.beginPath();
-  ctx.moveTo(-half, -dy + 4); ctx.lineTo(-half + 18, -dy - 8);
-  ctx.lineTo(half + 18, dy - 8); ctx.lineTo(half, dy + 4); ctx.closePath(); ctx.fill(); ctx.stroke();
-  ctx.strokeStyle = '#74847b'; ctx.lineWidth = 1.4; ctx.beginPath();
-  ctx.moveTo(-half, -dy + 15); ctx.lineTo(half, dy + 15); ctx.stroke();
   ctx.restore();
 }
 
@@ -2727,6 +2712,11 @@ function drawCroppedObject(object, image, sheet) {
     desenharAnelEspuma(ctx, ix + (object.espumaX ?? 0), iy + (object.espumaY ?? 0), object.espuma, agora, (object.x * 7 + object.y * 13) | 0);
   }
   ctx.save();
+  // A extremidade traseira entra na abertura, não atravessa a moldura.
+  if (object.id === 'trilho_dimensional_principal' && state.world?.currentMap?.id === 'ilha_praia_inicial') {
+    const boca = beachTunnelAnchor(object, c);
+    ctx.beginPath(); ctx.rect(boca.x - 34, -10000, 20000, 20000); ctx.clip();
+  }
   const filtro = filtroObjeto(object);
   // Cópia 1:1 do sprite já reduzido (ver "SPRITES JÁ NA ESCALA DA TELA").
   const kTela = scale * escaladosZoom;

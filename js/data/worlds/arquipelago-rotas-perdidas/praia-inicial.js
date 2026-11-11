@@ -1088,8 +1088,8 @@ export const map = {
       totem: { x: 7.2, y: 5.0, ajusteY: 12 },
       // O leito é mais comprido que o trem e ambos compartilham o eixo.
       // A frente e a traseira do trilho permanecem visíveis sob as rodas.
-      trilho: { larguraPx: 350, ajusteX: -3, ajusteY: 19 },
-      trem: { larguraPx: 310, ajusteX: 0, escalaY: .78, ajusteY: 58 },
+      trilho: { larguraPx: 380, ajusteX: -3, ajusteY: 31 },
+      trem: { larguraPx: 340, ajusteX: 0, escalaY: .78, ajusteY: 70 },
     }),
 
     // A traseira agora assenta mais abaixo; a coluna impede entrar na área
@@ -1097,6 +1097,14 @@ export const map = {
     { id: 'estacao_limite_trilho', tipo: 'decoracao', x: 6, y: 5,
       invisivel: true, bloqueia: true, superficieSomente: true,
       hitbox: { offsetX: -.30, offsetY: -.30, width: .60, height: .60 } },
+
+    // Pequenos limites nos pontos cobertos pelo trem ampliado. O spawn e
+    // a aproximação ao terminal continuam livres, sem mudar a grade.
+    ...[[5,5], [8,5], [6,6], [7,6]].map(([x,y], i) => ({
+      id: `estacao_limite_leito_${i}`, tipo: 'decoracao', x, y,
+      invisivel: true, bloqueia: true, superficieSomente: true,
+      hitbox: { offsetX: -.15, offsetY: -.15, width: .30, height: .30 },
+    })),
 
     // ---- ESTAÇÃO DO TREM ----
     // Antes eram dois pilares soltos a 6 tiles do trem, e o trem ficava

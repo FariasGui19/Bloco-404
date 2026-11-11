@@ -3686,6 +3686,42 @@ function drawRobo(e, ix, iy) {
 
   return drawFramePe(e, image, cfg, rc, ix, iy - bob, cfg.SCALE ?? 0.16, false);
 }
+
+// =====================================================================
+//  GUIA DO AEROPORTO — sprite próprio, quatro direções
+// =====================================================================
+function drawGuiaSprite(npc, ix, iy) {
+  const image = getSprite('guia_aeroporto');
+  if (!image) return false;
+
+  const SHEET_COLS = 4;
+  const SHEET_ROWS = 4; // down, right, up, left
+  const frameW = image.width / SHEET_COLS;
+  const frameH = image.height / SHEET_ROWS;
+
+  const row = { down: 0, right: 1, up: 2, left: 3 }[npc.facing ?? 'down'] ?? 0;
+  const frame = npc.moving
+    ? Math.floor((performance.now() / 180) % 4)
+    : 0;
+
+  const scale = 0.30;
+  const bob = npc.moving ? Math.abs(Math.sin(performance.now() / 120)) * 2 : 0;
+  const flip = npc.facing === 'left';
+
+  ctx.save();
+  ctx.translate(ix, iy - bob);
+  if (flip) ctx.scale(-1, 1);
+  ctx.drawImage(
+    image,
+    frame * frameW, row * frameH, frameW, frameH,
+    -(frameW * scale) / 2, -(frameH * scale) + 4,
+    frameW * scale, frameH * scale
+  );
+  ctx.restore();
+  npc._topo = 120;
+  return true;
+}
+
 // =====================================================================
 //  ENTIDADES
 // =====================================================================
@@ -4152,6 +4188,7 @@ function drawEntity(entity, state) {
   } else {
     drawShadow(ix, iy, 0.32);
     if (drawNexoSprite(entity, ix, iy)) return;
+    if (entity.sprite === 'guia_aeroporto' && drawGuiaSprite(entity, ix, iy)) return;
   }
 
   ctx.beginPath();

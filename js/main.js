@@ -266,6 +266,14 @@ await loadSprites([
     src: 'assets/sprites/backgrounds/metro-station-base.png',
   },
   {
+    id: 'aeroporto_background',
+    src: 'assets/sprites/backgrounds/aeroporto-central-bg.png',
+  },
+  {
+    id: 'guia_aeroporto',
+    src: 'assets/sprites/npcs/guia-aeroporto.png',
+  },
+  {
     id: 'metro_rail_kit',
     src: 'assets/sprites/tiles/metro-rail-kit.png',
   },

@@ -15,6 +15,26 @@ export const WORLD_REGISTRY = {
     dimensao: 'hub_404',
     load: () => import('./worlds/hub-404/aeroporto-carga.js'),
   },
+  sala_bio_forja: {
+    nome: 'Sala de Missão — Motor Bio-Forja',
+    dimensao: 'hub_404',
+    load: () => import('./worlds/hub-404/salas-arquetipos.js').then(m => ({ map: m.salaBioForja })),
+  },
+  sala_dominio: {
+    nome: 'Sala de Missão — Lâminа Domínio',
+    dimensao: 'hub_404',
+    load: () => import('./worlds/hub-404/salas-arquetipos.js').then(m => ({ map: m.salaDominio })),
+  },
+  sala_mare: {
+    nome: 'Sala de Missão — Maré Astral',
+    dimensao: 'hub_404',
+    load: () => import('./worlds/hub-404/salas-arquetipos.js').then(m => ({ map: m.salaMare })),
+  },
+  sala_nucleo: {
+    nome: 'Sala de Missão — Núcleo 10X',
+    dimensao: 'hub_404',
+    load: () => import('./worlds/hub-404/salas-arquetipos.js').then(m => ({ map: m.salaNucleo })),
+  },
   hub_camara_dominio: { load: () => import('./worlds/hub-404/camara-dominio.js') },
   hub_camara_mare: { load: () => import('./worlds/hub-404/camara-mare.js') },
   hub_camara_nucleo: { load: () => import('./worlds/hub-404/camara-nucleo.js') },

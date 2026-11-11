@@ -1101,7 +1101,7 @@ export const map = {
     // mudam. O totem de embarque continua sendo o único bloqueio.
     { id: 'estacao_plataforma', tipo: 'decoracao', x: 7.1, y: 2.0, camada: 'fundo', ordem: -0.1,
       sprite: 'praia_plataforma_kit', frame: { col: 1, row: 0 }, useCrop: true,
-      larguraPx: 180, pivotX: .5, pivotY: 1, ajusteX: 67, ajusteY: -18, escalaY: .50, bloqueia: false },
+      larguraPx: 230, pivotX: .5, pivotY: 1, ajusteX: 5, ajusteY: 10, escalaY: .65, espelhar: true, bloqueia: false },
     { id: 'estacao_dossel', tipo: 'decoracao', x: 7.1, y: 2.0, camada: 'fundo', ordem: 0.3,
       sprite: 'praia_plataforma_kit', frame: { col: 2, row: 0 }, useCrop: true,
       larguraPx: 92, pivotX: .5, pivotY: 1, ajusteX: -66, ajusteY: 14, escalaY: .65, bloqueia: false },
@@ -1121,7 +1121,7 @@ export const map = {
       larguraPx: 44, pivotY: 1, escalaY: .80, bloqueia: false },
     { id: 'estacao_escada', tipo: 'decoracao', x: 4.6, y: 4.1,
       sprite: 'praia_plataforma_kit', frame: { col: 3, row: 0 }, useCrop: true,
-      larguraPx: 86, pivotY: 1, escalaY: .72, bloqueia: false },
+      larguraPx: 86, pivotY: 1, ajusteX: 65, ajusteY: 32, escalaY: .72, bloqueia: false },
     { id: 'estacao_guarda_corpo', tipo: 'decoracao', x: 10.4, y: 4.5,
       sprite: 'praia_plataforma_kit', frame: { col: 3, row: 1 }, useCrop: true,
       larguraPx: 104, pivotY: 1, escalaY: .74, bloqueia: false },

@@ -7,7 +7,7 @@ import { detalhesFauna } from '../game/fauna-ferida.js';
 import { fragmentosColetados } from '../game/mare-missao.js';
 
 let webgl = null, falhou = false, mapaAtual = null, cena = null, camera = null;
-let avatar, avatar2, rastros, sonar3d, cardumes = [], fragmentos = [], bichos = [], anterior = 0, transicao = 0;
+let avatar, poses, rastros, sonar3d, particulas, algas = [], raios3d = [], cardumes = [], fragmentos = [], bichos = [], anterior = 0, transicao = 0;
 let suavX = 0, suavY = 0, suavZ = 0, cameraInicializada = false;
 const minimo = (v, a, b) => Math.max(a, Math.min(b, v));
 
@@ -31,6 +31,8 @@ function descartarCena() {
   if (!cena) return;
   const geometrias = new Set(), materiais = new Set(), texturas = new Set();
   cena.traverse(o => { if (o.geometry) geometrias.add(o.geometry); for (const m of (Array.isArray(o.material) ? o.material : [o.material])) if (m) { materiais.add(m); if (m.map) texturas.add(m.map); } });
+  for (const t of poses ?? []) texturas.add(t);
+  poses = null;
   for (const g of geometrias) g.dispose();
   for (const m of materiais) m.dispose();
   for (const t of texturas) t.dispose();
@@ -43,10 +45,10 @@ function montar(map, state) {
   const sol = new THREE.DirectionalLight('#c3f7ef', 1.3); sol.position.set(-5, 12, -8); cena.add(sol);
   const rows = map.aguaPraia, h = rows.length, w = rows[0].length;
   const areia = textura('assets/sprites/tiles/fundo-mar-mare.png');
-  areia.wrapS = areia.wrapT = THREE.RepeatWrapping; areia.repeat.set(w / 8, h / 8);
+  areia.wrapS = areia.wrapT = THREE.RepeatWrapping; areia.repeat.set((w + 160) / 8, (h + 160) / 8);
   // Relevo apenas visual: a batimetria e os obstáculos continuam pertencendo
   // à simulação do mapa, para não criar colisões invisíveis.
-  const relevo = new THREE.PlaneGeometry(w, h, Math.min(w * 2, 160), Math.min(h * 2, 160));
+  const relevo = new THREE.PlaneGeometry(w + 160, h + 160, 160, 160);
   const vertices = relevo.attributes.position;
   for (let i = 0; i < vertices.count; i++) {
     const x = vertices.getX(i), y = vertices.getY(i);
@@ -55,7 +57,7 @@ function montar(map, state) {
   relevo.computeVertexNormals();
   const fundo = new THREE.Mesh(relevo, new THREE.MeshLambertMaterial({ map: areia, color: '#9ad5c9' }));
   fundo.rotation.x = -Math.PI / 2; fundo.position.set(w / 2, -2.9, h / 2); cena.add(fundo);
-  const teto = new THREE.Mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshBasicMaterial({ color: '#74e6e4', transparent: true, opacity: .18, side: THREE.DoubleSide, depthWrite: false }));
+  const teto = new THREE.Mesh(new THREE.PlaneGeometry(w + 160, h + 160), new THREE.MeshBasicMaterial({ color: '#74e6e4', transparent: true, opacity: .18, side: THREE.DoubleSide, depthWrite: false }));
   teto.rotation.x = -Math.PI / 2; teto.position.set(w / 2, .1, h / 2); cena.add(teto);
   // Instâncias: custo proporcional ao mapa apenas na montagem, não por frame.
   const terra = [], decks = [];
@@ -86,14 +88,39 @@ function montar(map, state) {
   const coral = textura('assets/sprites/praia/coral-astral-submerso.png');
   const coralMat = new THREE.SpriteMaterial({ map: coral, transparent: true, depthWrite: false });
   for (const r of elementosDeRecife(vida?.recifes ?? [])) {
-    if (r.tipo !== 0) continue;
-    const s = new THREE.Sprite(coralMat); s.position.set(r.x, -2.55, r.y); s.scale.set(.7 * r.tamanho, .8 * r.tamanho, 1); cena.add(s);
+    const s = new THREE.Sprite(coralMat); s.position.set(r.x, -2.55 + r.tipo * .05, r.y); s.scale.set((r.tipo === 0 ? .7 : .45) * r.tamanho, (.6 + .15 * r.tipo) * r.tamanho, 1); cena.add(s);
   }
+  // Algas e pedras pertencem aos mesmos recifes, não introduzem novos
+  // obstáculos invisíveis nem ocupam rotas ou pontos de interação.
+  const algaGeo = new THREE.ConeGeometry(.11, .68, 5);
+  const algaMat = new THREE.MeshLambertMaterial({color:'#398b76'});
+  const pedraGeo = new THREE.DodecahedronGeometry(.28, 0);
+  const pedraMat = new THREE.MeshLambertMaterial({color:'#446f67'});
+  algas = [];
+  for (const r of elementosDeRecife(vida?.recifes ?? [])) {
+    if (r.tipo === 1) {
+      const alga = new THREE.Mesh(algaGeo, algaMat);
+      alga.position.set(r.x, -2.53, r.y); alga.scale.setScalar(r.tamanho); cena.add(alga); algas.push({object:alga, fase:r.fase});
+    } else if (r.tipo === 2) {
+      const pedra = new THREE.Mesh(pedraGeo, pedraMat);
+      pedra.position.set(r.x, -2.72, r.y); pedra.scale.set(1.3 * r.tamanho, .6 * r.tamanho, r.tamanho); cena.add(pedra);
+    }
+  }
+  const luzGeo = new THREE.CylinderGeometry(.18, .65, 2.7, 6, 1, true);
+  const luzMat = new THREE.MeshBasicMaterial({color:'#8ee8da',transparent:true,opacity:.035,depthWrite:false,side:THREE.DoubleSide});
+  raios3d = (vida?.raios ?? []).filter(r => 'YyDdX'.includes(rows[Math.floor(r.y)]?.[Math.floor(r.x)] ?? '?')).map(r => {
+    const o = new THREE.Mesh(luzGeo, luzMat); o.position.set(r.x, -1.3, r.y); o.rotation.z = .18; cena.add(o); return {object:o, fase:r.fase};
+  });
   cardumes = (vida?.cardumes ?? []).map(c => {
     const g = new THREE.Group();
+    const geo = new THREE.OctahedronGeometry(.10, 0);
+    const mat = new THREE.MeshLambertMaterial({color: ['#c1ece7', '#e8a98e', '#70dcca'][c.cor % 3]});
+    const caudaGeo = new THREE.ConeGeometry(.08, .13, 3);
     for (const p of c.peixes.slice(0, 7)) {
-      const peixe = new THREE.Mesh(new THREE.OctahedronGeometry(.10, 0), new THREE.MeshLambertMaterial({color: '#b5e7df'}));
-      peixe.scale.set(1.8, .7, .7); peixe.position.set(p.ox, Math.sin(p.fase) * .15, p.oy); g.add(peixe);
+      const peixe = new THREE.Group();
+      const corpo = new THREE.Mesh(geo, mat); corpo.scale.set(1.8, .7, .7); peixe.add(corpo);
+      const cauda = new THREE.Mesh(caudaGeo, mat); cauda.rotation.z = -Math.PI / 2; cauda.position.x = -.19; peixe.add(cauda);
+      peixe.position.set(p.ox, Math.sin(p.fase) * .15, p.oy); g.add(peixe);
     }
     cena.add(g); return { data: c, object: g };
   });
@@ -110,12 +137,31 @@ function montar(map, state) {
   avatar = new THREE.Sprite(new THREE.SpriteMaterial({ map: body, transparent: true, depthWrite: false }));
   avatar.scale.set(1.65, .57, 1); cena.add(avatar);
   const body2 = textura('assets/sprites/player/mare-nado-costas-3d-b.png');
-  avatar2 = new THREE.Sprite(new THREE.SpriteMaterial({ map: body2, transparent: true, depthWrite: false }));
-  avatar2.scale.copy(avatar.scale); cena.add(avatar2);
+  poses = [body, body2];
+  particulas = new THREE.InstancedMesh(new THREE.SphereGeometry(.025, 5, 4), new THREE.MeshBasicMaterial({color:'#b7e8db', transparent:true, opacity:.45}), 90);
+  cena.add(particulas);
   rastros = new THREE.InstancedMesh(new THREE.SphereGeometry(.055, 6, 4), new THREE.MeshBasicMaterial({ color:'#a5f8ee', transparent:true, opacity:.65 }), 20);
   cena.add(rastros);
   sonar3d = new THREE.Mesh(new THREE.RingGeometry(.38, .44, 24), new THREE.MeshBasicMaterial({color:'#90fff2', side:THREE.DoubleSide, transparent:true, opacity:.85}));
   sonar3d.rotation.x = -Math.PI / 2; cena.add(sonar3d);
+}
+
+// Teste barato contra as mesmas células sólidas da cena. Fora do mapa há
+// mar visual; não movemos o jogador nem alteramos as colisões do mundo.
+export function cameraLivre(map, px, py, cx, cy) {
+  const rows = map?.aguaPraia;
+  if (!rows) return {x: cx, y: cy};
+  const dx = cx - px, dy = cy - py, distancia = Math.hypot(dx, dy);
+  const passos = Math.ceil(distancia / .08);
+  for (let i = 1; i <= passos; i++) {
+    const t = i / passos, x = px + dx * t, y = py + dy * t;
+    const c = rows[Math.floor(y)]?.[Math.floor(x)];
+    if (c != null && !'YyDdXBb'.includes(c)) {
+      const livre = Math.max(0, t - .12 / Math.max(distancia, .01));
+      return {x: px + dx * livre, y: py + dy * livre};
+    }
+  }
+  return {x: cx, y: cy};
 }
 
 /** Devolve canvas e opacidade para compor no canvas do jogo; null em fallback. */
@@ -123,7 +169,7 @@ export function perspectivaSubmersa(map, state, view) {
   const n = state.player?.nado;
   if (mapaAtual && map !== mapaAtual) { transicao = 0; anterior = 0; descartarCena(); cena = null; mapaAtual = null; }
   const quer = !!(map?.aguaPraia && n?.ativo && n.mareAstral && n.profundidade > 1.25);
-  if (!quer && transicao <= 0) { if (n) n.perspectiva3d = false; anterior = 0; return null; }
+  if (!quer && transicao <= 0) { if (n) n.perspectiva3d = false; anterior = 0; cameraInicializada = false; return null; }
   if (!iniciar()) { if (n) n.perspectiva3d = false; transicao = 0; return null; }
   if (quer && mapaAtual !== map) montar(map, state);
   if (!cena || !mapaAtual) return null;
@@ -143,17 +189,27 @@ export function perspectivaSubmersa(map, state, view) {
   cena.fog.density = .035 + (profundidade - .9) * .013;
   cena.background.set(profundidade > 1.7 ? '#064657' : '#07566a');
   cena.fog.color.copy(cena.background);
-  const tx = p.x - fx * 3.1, ty = py + 1.35, tz = p.y - fz * 3.1;
+  const posicao = cameraLivre(map, p.x, p.y, p.x - fx * 3.1, p.y - fz * 3.1);
+  const tx = posicao.x, ty = Math.min(-.16, py + 1.15), tz = posicao.y;
   if (!cameraInicializada) { suavX = tx; suavY = ty; suavZ = tz; cameraInicializada = true; }
   const k = 1 - Math.exp(-7 * dt);
   suavX += (tx - suavX) * k; suavY += (ty - suavY) * k; suavZ += (tz - suavZ) * k;
-  camera.position.set(suavX, suavY, suavZ);
+  // Revalida depois da suavização: ao virar perto de uma parede, a câmera
+  // não deve atravessar a ilha nem ficar presa dentro dela.
+  const segura = cameraLivre(map, p.x, p.y, suavX, suavZ);
+  camera.position.set(segura.x, Math.min(-.16, suavY), segura.y);
   camera.lookAt(p.x + fx * 2.4, py - .3 + (n?.voo?.pitch ?? 0) * -1.1, p.y + fz * 2.4);
   avatar.position.set(p.x, py, p.y); avatar.material.rotation = (n?.voo?.roll ?? 0);
   avatar.position.y += Math.sin(agora * 3) * .035;
-  avatar2.position.copy(avatar.position); avatar2.material.rotation = avatar.material.rotation;
-  const mistura = .5 - .5 * Math.cos(agora * 5);
-  avatar2.material.opacity = mistura * (Math.hypot(n?.vx ?? 0, n?.vy ?? 0) > .3 ? .65 : .15);
+  // Uma pose por vez: sobrepor duas silhuetas diferentes criava fantasmas.
+  avatar.material.map = poses[Math.hypot(n?.vx ?? 0, n?.vy ?? 0) > .3 ? Math.floor(agora * 3) % 2 : 0];
+  const particula = new THREE.Object3D();
+  for (let i = 0; i < 90; i++) {
+    const x = ((i * 37.17) % 12) - 6, z = ((i * 19.31) % 12) - 6;
+    particula.position.set(p.x + x, -2.7 + ((i * .73 + agora * .12) % 2.5), p.y + z);
+    particula.updateMatrix(); particulas.setMatrixAt(i, particula.matrix);
+  }
+  particulas.instanceMatrix.needsUpdate = true;
   sonar3d.visible = !!(n?.submerso && p.ability?.sonarAquatico);
   if (sonar3d.visible) { sonar3d.position.set(p.ability.sonarAquatico.x, -2.7, p.ability.sonarAquatico.y); sonar3d.scale.setScalar(1 + .15 * Math.sin(agora * 5)); }
   rastros.visible = !!(n?.arrancada > 0);
@@ -168,11 +224,17 @@ export function perspectivaSubmersa(map, state, view) {
     rastros.instanceMatrix.needsUpdate = true;
   }
   const pegos = fragmentosColetados(state.progress);
-  for (const f of fragmentos) { f.object.visible = !pegos.has(f.data.id); f.object.rotation.y = agora; f.object.position.y = -2.35 + Math.sin(agora * 2 + f.data.fase) * .08; }
+  for (const f of fragmentos) { f.object.visible = !pegos.has(f.data.id); f.object.rotation.y = agora; f.object.position.y = -2.35 + Math.sin(agora * 2 + (f.data.fase ?? 0)) * .08; }
   for (const b of bichos) b.object.visible = !state.progress?.faunaTratada?.[b.data.id];
+  for (const a of algas) a.object.rotation.z = Math.sin(agora * 1.1 + a.fase) * .15;
+  for (const r of raios3d) r.object.rotation.z = .18 + Math.sin(agora * .4 + r.fase) * .04;
   const vida = getVidaAquatica(mapaAtual);
   if (quer && transicao >= .99) atualizarCardumes(vida?.cardumes ?? [], p, dt, true);
-  for (const c of cardumes) c.object.position.set(c.data.x, -1.6 + Math.sin(agora + c.data.fase) * .18, c.data.y);
+  for (const c of cardumes) {
+    c.object.position.set(c.data.x, -1.6 + Math.sin(agora + c.data.fase) * .18, c.data.y);
+    c.object.rotation.y = c.data.flip ? Math.PI : 0;
+    c.object.children.forEach((peixe, i) => { peixe.rotation.y = Math.sin(agora * 4 + i) * .15; });
+  }
   webgl.render(cena, camera);
   return { canvas: webgl.domElement, alpha: transicao };
 }

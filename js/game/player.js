@@ -144,6 +144,8 @@ export function updatePlayer(dt) {
       esquerda: keyHeld('a', 'arrowleft'), direita: keyHeld('d', 'arrowright'),
       descer: keyHeld('w', 'arrowup'), subir: keyHeld('s', 'arrowdown'),
     }, dt);
+    // O impulso deve seguir para onde a câmera aponta, mesmo parado.
+    nado.dirX = vooDir.x; nado.dirY = vooDir.y;
     if (vooDir.subir) nado.mergulhoFixo = false;
   } else if (!nado.ativo || nado.profundidade <= 1.25 || !nado.perspectiva3d) nado.voo = null;
   const querMergulhar = !vooDir?.subir && !!(input.keys[' '] || input.keys['space'] || nado.mergulhoFixo);

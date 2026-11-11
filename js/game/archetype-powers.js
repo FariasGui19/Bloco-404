@@ -9,7 +9,7 @@ import { canStandAt } from './collision.js';
 import { getCurrentMap } from './map-manager.js';
 import { tryAbilityDamage } from './combat.js';
 import { recordMastery } from './mastery.js';
-import { dispararPropulsao } from './nado.js';
+import { dispararPropulsao, ganharRespeito } from './nado.js';
 import { DEGRAUS } from './nado-arvore.js';
 import { fragmentosColetados } from './mare-missao.js';
 import { detalhesFauna } from './fauna-ferida.js';
@@ -88,12 +88,14 @@ export function tryArchetypePower(id, showMessage) {
     // Q usa a mesma física de nado e colisão submersa de SHIFT, sem
     // levantar o sprite nem trocar para o dash terrestre de walkMask.
     dispararPropulsao(nado, true);
+    if (noFundo) ganharRespeito(nado.respeito, .002);
     recordMastery(state.progress, 'distance', 6);
     recordMastery(state.progress, 'ability_use');
     showMessage(noFundo ? 'PASSO DE CORRENTE • PROPULSÃO SUBMERSA' : 'PASSO DE CORRENTE • PROPULSÃO NA SUPERFÍCIE');
     return false;
   }
   if (naAgua && id === 'senso_corrente') {
+    if (noFundo) ganharRespeito(nado.respeito, .001);
     const map = getCurrentMap();
     const pegos = fragmentosColetados(state.progress);
     const fragmentos = (player.fragmentosMare ?? []).filter(f => !pegos.has(f.id)).map(f => ({...f, tipo: 'FRAGMENTO'}));

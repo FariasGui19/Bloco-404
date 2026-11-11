@@ -102,7 +102,11 @@ export function desenharMedidorAr(nado) {
     ctx.fillStyle = 'rgba(232,255,250,.62)';
     ctx.font = '9px monospace';
     ctx.textAlign = 'center';
-    ctx.fillText(`${Math.ceil(nado.ar)}s`, cx, cy + RAIO + 16);
+    ctx.fillText(`${Math.ceil(nado.ar)}s DE AR`, cx, cy + RAIO + 16);
+    if (nado.mareAstral && nado.profundidade > 1.25) {
+      ctx.fillStyle = pct < .25 ? '#ff9990' : '#c8fff3';
+      ctx.fillText(pct < .25 ? 'SUBA PARA RESPIRAR' : `RESPEITO ${Math.round((nado.respeito?.valor ?? 0) * 100)}%`, cx + 35, cy - RAIO - 23);
+    }
   }
 
   ctx.restore();

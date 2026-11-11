@@ -220,7 +220,7 @@ function toolPicker(progress) {
   const label = TOOL_LABELS[progress.archetype] ?? 'FERRAMENTA';
   const acesso = getUnlockState(progress);
   const hint = acesso.features.tool
-    ? (getPath(progress.archetype)?.levels?.find(entry => entry.level === 2)?.note ?? 'A escolha vale para todo o perfil.')
+    ? (progress.archetype === 'nucleo_dez_forma' ? 'Forma Veloz e Q no início; Ultimate no nível 3; Quebra Sistemas no nível 4.' : getPath(progress.archetype)?.levels?.find(entry => entry.level === 2)?.note ?? 'A escolha vale para todo o perfil.')
     : `Instalar ${label.toLowerCase()} abre no nível ${getUnlockStepFor(2)?.level ?? 2}. Suba de nível com combate e missões.`;
   const titulo = !acesso.features.tool
     ? `${escapeHtml(label)} BLOQUEADA`

@@ -71,7 +71,13 @@ const player = { ability: { dash: null } };
 assert(!abrir({ archetype: 'mare_astral' }, player));
 assert(!abrir({ archetype: 'nucleo_dez_forma' }, { ability: { dash: {} } }));
 
-const progress = { archetype: 'nucleo_dez_forma', abilities: ['forma_veloz', 'eco_scan'], tools: {} };
+const inicial = { archetype: 'nucleo_dez_forma', abilities: ['forma_veloz'], tools: {} };
+assert(abrir(inicial, player));
+assert(buttons.find(b => b.dataset.tool === 'nucleo_bruto').disabled, 'Quebra fica bloqueada no início');
+assert.match(overlay.innerHTML, /NÍVEL 4/, 'a roda explica o requisito');
+input.pressed.add('escape'); updateNucleoWheel(); input.pressed.clear();
+
+const progress = { archetype: 'nucleo_dez_forma', archetypeProgress: { nucleo_dez_forma: { level: 4 } }, abilities: ['forma_veloz', 'eco_scan'], tools: {} };
 assert(abrir(progress, player));
 assert(isNucleoWheelOpen() && visible);
 assert.match(overlay.innerHTML, /QUEBRA SISTEMAS/, 'a roda lista a segunda forma');

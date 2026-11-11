@@ -87,7 +87,7 @@ assert.equal(nucleo.passarelasAplicadas, nucleo.passarelas.length,
 // ---------------------------------------------------------------------
 const SPAWNS = {
   inicio: [8.0, 7.5],
-  vindo_do_trem: [8.0, 5.5],
+  vindo_do_trem: [8.0, 7.5],
   vindo_da_enseada: [11.5, 10.5],
   vindo_da_estacao: [8.5, 23.5],
 };

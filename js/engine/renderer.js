@@ -22,7 +22,7 @@ import { getBioWalkFrame, bioWalkSheet } from '../data/bio-walk.js';
 import { faunaFootAnchor } from '../game/fauna-costeira.js';
 import { getFrame } from './sprite-clean.js';
 import { drawAmbientBack, drawAmbientFront } from './ambient.js';
-import { tintaDoClima, atualizarParticulas } from '../game/clima.js';
+import { tintaDoClima, atualizarParticulas, climaVisivelNoMapa } from '../game/clima.js';
 import { animarFauna } from '../game/fauna-animacao.js';
 import { isDebugEnabled, drawDebugWorld } from '../game/debug.js';
 import { ACTION_SPRITES } from '../data/action-sprites.js';
@@ -190,7 +190,7 @@ export function render(map, state) {
   drawAmbientFront(ctx, map, HW, HH);
   // CLIMA por último entre as camadas de mundo: chuva e tinta cobrem
   // tudo (inclusive o jogador), mas nunca a HUD, que é DOM.
-  drawClima(ctx, state, view);
+  if (climaVisivelNoMapa(map)) drawClima(ctx, state, view);
   drawTarget(state.player);
 
   if (isDebugEnabled()) drawDebugWorld(ctx, map, state, CONFIG.TILE_W, CONFIG.TILE_H);
@@ -3110,6 +3110,7 @@ function drawPlayerSprite(player, ix, iy) {
       ctx.save();
       ctx.translate(ix, iy);
       if (player.facing === 'left') ctx.scale(-1, 1);
+      ctx.translate(ultimateFrame.offsetX ?? 0, 0);
       drawSmooth(imagem, ultimateFrame.col * w, 0, w, h,
         -w * escala / 2, -ultimateFrame.footY * escala, w * escala, h * escala);
       ctx.restore();
@@ -4133,7 +4134,10 @@ function drawEntity(entity, state) {
       drawShadow(ix, iy, .24);
       const row = { down: 0, right: 1, up: 2, left: 3 }[entity.facing] ?? 0;
       const frame = entity.moving ? Math.floor((entity.visitorRuntime?.clock ?? 0) * 7) % 6 : 0;
-      ctx.save(); ctx.translate(ix, iy);
+      // Oscilação curta e contínua entre os quadros, sem escalar o corpo.
+      const passo = entity.visitorRuntime?.clock ?? 0;
+      const oscilacao = entity.moving ? (1 - Math.cos(passo * 14 * Math.PI)) * .45 : 0;
+      ctx.save(); ctx.translate(ix, iy - oscilacao);
       ctx.drawImage(image, frame * 256, row * 256, 256, 256, -68, -129, 136, 136);
       ctx.restore(); entity._topo = 122; return;
     }

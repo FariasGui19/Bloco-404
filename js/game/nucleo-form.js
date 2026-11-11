@@ -8,6 +8,8 @@
 // A duração base cresce com a maestria CINÉTICA (ver data/mastery.js).
 import { getDerivedStats } from './rpg.js';
 import { recordMastery } from './mastery.js';
+import { getTool } from '../data/archetype-tools.js';
+import { isToolAvailable } from './tools.js';
 import {
   NUCLEO_BRUTA,
   NUCLEO_FORMS,
@@ -82,6 +84,7 @@ export function toggleNucleoForm(progress, player, formId = null) {
     ? NUCLEO_FORMS[formId]
     : (activating ? escolhida : NUCLEO_FORMS[player.nucleoForm] ?? escolhida);
   if (!forma) return false;
+  if (activating && !isToolAvailable(progress, getTool(progress.archetype, forma.toolId))) return false;
   if (activating && (player.nucleoRuntime?.recharge ?? 0) > 0) return false;
   const stats = getDerivedStats(progress, player);
   changeForm(player, activating, forma, getFormDuration(forma, stats?.formDuration ?? 0));

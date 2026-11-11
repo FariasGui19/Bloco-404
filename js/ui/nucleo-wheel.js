@@ -12,7 +12,7 @@
 import { input } from '../engine/input.js';
 import { toggleNucleoForm, canToggleNucleoForm } from '../game/nucleo-form.js';
 import { getTools } from '../data/archetype-tools.js';
-import { getSelectedTool } from '../game/tools.js';
+import { getSelectedTool, isToolAvailable } from '../game/tools.js';
 import {
   NUCLEO_BRUTA,
   NUCLEO_FORMS,
@@ -74,7 +74,7 @@ function closeWheel() {
 
 // Cartões jogáveis: são os que podem virar transformação.
 function playableCards(progress) {
-  return getTools(NUCLEO).filter(tool => tool.playable !== false);
+  return getTools(NUCLEO).filter(tool => isToolAvailable(progress, tool, NUCLEO));
 }
 
 // Confirma o cartão em foco. A regra é simples e previsível:
@@ -121,7 +121,7 @@ function toggleFocus() {
 function paintWheel() {
   if (!overlay) return;
   const cards = getTools(NUCLEO);
-  const jogaveis = cards.filter(tool => tool.playable !== false);
+  const jogaveis = playableCards(currentProgress);
   if (!focusToolId) {
     // Começa no cartão da forma escolhida no Códex.
     const escolhida = getSelectedTool(currentProgress);
@@ -179,7 +179,7 @@ export function openNucleoWheel(progress, player, isSafeToReturn = () => true) {
   // markup fixo (antes eram três cadeados pintados à mão).
   const cards = getTools(NUCLEO);
   const escolhida = getSelectedTool(progress);
-  focusToolId = escolhida?.id ?? cards.find(tool => tool.playable !== false)?.id ?? null;
+  focusToolId = escolhida?.id ?? playableCards(progress)[0]?.id ?? null;
   overlay.innerHTML = `
     <div class="nucleo-panel" role="dialog" aria-modal="true" aria-label="Seletor do Núcleo 10X">
       <div class="nucleo-eyebrow">PROTOCOLO DE METAMORFOSE</div>
@@ -189,11 +189,11 @@ export function openNucleoWheel(progress, player, isSafeToReturn = () => true) {
         <div class="nucleo-core"><span>10</span><small>ECO ATIVO</small></div>
         ${cards.map((tool, index) => `
           <button class="nucleo-form nucleo-form-${index}" type="button" data-tool="${tool.id}" style="${slotStyle(index)}"
-            ${tool.playable === false ? 'disabled aria-disabled="true"' : ''}
-            aria-label="${tool.playable === false ? `Forma em projeto: ${tool.name}` : `Escolher ${tool.name}`}">
+            ${!isToolAvailable(progress, tool, NUCLEO) ? 'disabled aria-disabled="true"' : ''}
+            aria-label="${tool.playable === false ? `Forma em projeto: ${tool.name}` : !isToolAvailable(progress, tool, NUCLEO) ? `${tool.name}: desbloqueia no nível ${tool.requiredLevel}` : `Escolher ${tool.name}`}">
             ${tool.playable === false ? '<span class="nucleo-form-lock" aria-hidden="true">◆</span>' : previewFor(tool)}
             <b>${tool.name}</b>
-            <small>${tool.playable === false ? 'EM PROJETO' : tool.short}</small>
+            <small>${tool.playable === false ? 'EM PROJETO' : !isToolAvailable(progress, tool, NUCLEO) ? `NÍVEL ${tool.requiredLevel}` : tool.short}</small>
           </button>`).join('')}
       </div>
       <p id="nucleo-status"></p>

@@ -38,6 +38,7 @@ export function levelsUntil(progress, feature, archetype = progress?.archetype) 
 export function describeNextUnlock(progress, archetype = progress?.archetype) {
   const { level } = getUnlockState(progress, archetype);
   const next = getNextStep(level);
+  if (archetype === 'nucleo_dez_forma' && level === 3) return 'PRÓXIMO: QUEBRA SISTEMAS · NÍVEL 4 (FALTA 1)';
   if (!next) return 'CAMINHO COMPLETO';
   const tags = next.features.length ? next.features.map(f => FEATURE_LABELS[f]).join(' + ') : next.label;
   return `PRÓXIMO: ${tags} · NÍVEL ${next.level} (FALTAM ${next.level - level})`;

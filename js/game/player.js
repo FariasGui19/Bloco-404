@@ -22,7 +22,7 @@ import {
 
 import { moveWithCollision } from './collision.js';
 import {
-  criarEstadoNado, atualizarNado, podeNadar, NADO, moverNaAgua, aguaDoDegrau, controlarMergulhoFixo,
+  criarEstadoNado, atualizarNado, podeNadar, aguaSobPonte, NADO, moverNaAgua, aguaDoDegrau, controlarMergulhoFixo,
 } from './nado.js';
 import { garantirArvore, direcaoDaAreia, DEGRAUS } from './nado-arvore.js';
 import { getCoastFieldForMap } from '../engine/coast-field.js';
@@ -151,7 +151,9 @@ export function updatePlayer(dt) {
   if (efeitoNado.engoliuAgua || !nado.ativo) nado.mergulhoFixo = false;
   if (arvore && nado.respeito.valor > (arvore.respeito ?? 0)) arvore.respeito = nado.respeito.valor;
   // Onde este degrau pode nadar (sem árvore: mar inteiro, como antes).
-  const agua = aguaDoDegrau(arvore ? arvore.nivel : null);
+  const aguaSuperficie = aguaDoDegrau(arvore ? arvore.nivel : null);
+  const submerso = nado.mareAstral && nado.ativo && nado.profundidade > 1.25;
+  const agua = submerso ? (m, x, y) => aguaSuperficie(m, x, y) || aguaSobPonte(m, x, y) : aguaSuperficie;
   // Eventos do nado para quem desenha HUD/mensagem (o main lê e limpa).
   player.nadoEventos ??= {};
 
@@ -265,7 +267,7 @@ export function updatePlayer(dt) {
       : speed * Math.min(1, Math.max(.18, distanciaAlvo / 1.4));
     const passo = moverNaAgua(nado, dt, dir.x, dir.y, velocidade);
     const antesX = player.x, antesY = player.y;
-    moved = moveWithCollision(map, player, passo.dx, passo.dy, radius, devolvendo ? podeNadar : agua);
+    moved = moveWithCollision(map, player, passo.dx, passo.dy, radius, devolvendo ? podeNadar : agua, { submerso: submerso && !devolvendo });
     // Bateu no limite do degrau: queria ir, a água existe, o degrau não deixa.
     if (!devolvendo && (dir.x || dir.y)) {
       const m = Math.hypot(dir.x, dir.y) || 1;

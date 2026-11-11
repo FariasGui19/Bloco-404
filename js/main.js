@@ -316,6 +316,7 @@ await loadSprites([
   { id: 'nado_mare_impulso', src: 'assets/sprites/player/nado-mare-impulso.png' },
   { id: 'nado_mare_submerso', src: 'assets/sprites/player/nado-mare-submerso.png' },
   { id: 'fundo_mar_mare', src: 'assets/sprites/tiles/fundo-mar-mare.png' },
+  { id: 'coral_astral_submerso', src: 'assets/sprites/praia/coral-astral-submerso.png' },
   { id: 'nado_bio', src: 'assets/sprites/player/nado-bio.png' },
   { id: 'nado_dominio', src: 'assets/sprites/player/nado-dominio.png' },
   { id: 'nado_nucleo', src: 'assets/sprites/player/nado-nucleo.png' },
@@ -517,7 +518,13 @@ async function update(dt) {
     player.dicaNado = 6;
   };
   if (mapaAtual?.aguaPraia && player.nado) {
-    player.fragmentosMare ??= criarFragmentosDeMare(mapaAtual, getCoastFieldForMap(mapaAtual));
+    if (player._mapaFragmentos !== mapaAtual.id) {
+      player.fragmentosMare = criarFragmentosDeMare(mapaAtual, getCoastFieldForMap(mapaAtual));
+      player._mapaFragmentos = mapaAtual.id;
+      // Não transportar um eco nem um evento de entrada do fundo de outro mapa.
+      if (player.ability) player.ability.sonarAquatico = null;
+      if (player.mareMissao) player.mareMissao.estavaSubmerso = false;
+    }
     const res = atualizarMissaoMare({
       map: mapaAtual, player, nado: player.nado, progress: state.progress,
       fragmentos: player.fragmentosMare,
@@ -647,7 +654,7 @@ async function update(dt) {
   }
 
   updateOwnedCompanion(getFloor(), dt, canStandAt);
-  updateCamera(dt, player.x, player.y);
+  updateCamera(dt, player.x, player.y, player.nado);
 }
 
 // =====================================================================

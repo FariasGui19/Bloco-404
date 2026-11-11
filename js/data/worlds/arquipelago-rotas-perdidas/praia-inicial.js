@@ -941,6 +941,13 @@ function espalharFlora(existentes, pontos) {
 
 export const map = {
   id: 'ilha_praia_inicial',
+  aguaSobPontes: true,
+  // Estacas de sustentação no fundo: pequenas, nas bordas dos dois canais.
+  // Coordenadas de mundo, independentes do gate da superfície.
+  pilaresSubmersos: [
+    { x: 18.5, y: 7.12, raio: .16 }, { x: 18.5, y: 8.88, raio: .16 },
+    { x: 7.12, y: 18.5, raio: .16 }, { x: 8.88, y: 18.5, raio: .16 },
+  ],
 
   meta: {
     nome: 'PRAIA INICIAL — ARQUIPÉLAGO',
@@ -1079,8 +1086,10 @@ export const map = {
       // O totem fica na AREIA, à frente do trem: o embarque tem que ser
       // alcançável a pé (ele é o ponto de interação do trem).
       totem: { x: 7.2, y: 5.0, ajusteY: 12 },
-      trilho: { larguraPx: 300, ajusteX: 6, ajusteY: 26 },
-      trem: { larguraPx: 286, escalaY: .60, ajusteY: 40 },
+      // O leito é mais comprido que o trem e ambos compartilham o eixo.
+      // A frente e a traseira do trilho permanecem visíveis sob as rodas.
+      trilho: { larguraPx: 332, ajusteX: 0, ajusteY: 25 },
+      trem: { larguraPx: 270, ajusteX: 0, escalaY: .60, ajusteY: 34 },
     }),
 
     // ---- ESTAÇÃO DO TREM ----
@@ -1092,10 +1101,10 @@ export const map = {
     // mudam. O totem de embarque continua sendo o único bloqueio.
     { id: 'estacao_plataforma', tipo: 'decoracao', x: 7.1, y: 2.0, camada: 'fundo', ordem: -0.1,
       sprite: 'praia_plataforma_kit', frame: { col: 1, row: 0 }, useCrop: true,
-      larguraPx: 196, pivotX: .5, pivotY: 1, ajusteY: 18, escalaY: .50, bloqueia: false },
+      larguraPx: 180, pivotX: .5, pivotY: 1, ajusteX: 24, ajusteY: 5, escalaY: .50, bloqueia: false },
     { id: 'estacao_dossel', tipo: 'decoracao', x: 7.1, y: 2.0, camada: 'fundo', ordem: 0.3,
       sprite: 'praia_plataforma_kit', frame: { col: 2, row: 0 }, useCrop: true,
-      larguraPx: 142, pivotX: .5, pivotY: 1, ajusteY: 48, escalaY: .78, bloqueia: false },
+      larguraPx: 92, pivotX: .5, pivotY: 1, ajusteX: -66, ajusteY: 14, escalaY: .65, bloqueia: false },
     // Sapatas visuais sob as extremidades da plataforma, sem alterar rotas.
     { id: 'estacao_sapata_oeste', tipo: 'decoracao', x: 4.4, y: 2.0, camada: 'fundo', ordem: -1,
       sprite: 'praia_plataforma_kit', frame: { col: 0, row: 1 }, useCrop: true, larguraPx: 35, pivotY: 1, ajusteY: 50, escalaY: 1.05, bloqueia: false },

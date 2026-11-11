@@ -349,7 +349,7 @@ export function updateAbilities(dt) {
       chargeFormHit(player);
     }
   }
-  for (const key of ['effect', 'reveal']) {
+  for (const key of ['effect', 'reveal', 'sonarAquatico']) {
     if (!ability[key]) continue;
     ability[key].timeLeft -= dt;
     if (ability[key].timeLeft <= 0) ability[key] = null;

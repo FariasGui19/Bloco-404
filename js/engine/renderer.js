@@ -98,6 +98,12 @@ export function render(map, state) {
     shakeX = Math.sin(shake.timeLeft * 143) * power;
     shakeY = Math.cos(shake.timeLeft * 117) * power * .6;
   }
+  const nadoCamera = state.player?.nado;
+  if (nadoCamera?.mareAstral && nadoCamera.profundidade > 1.25 && nadoCamera.arrancada > 0) {
+    const força = Math.min(2.2, nadoCamera.arrancada * 5);
+    shakeX += Math.sin(performance.now() * .08) * força;
+    shakeY += Math.cos(performance.now() * .095) * força * .6;
+  }
   mundoZ = z;
   mundoTx = (view.w / 2 - camera.x * camera.zoom + shakeX) * dpr;
   mundoTy = (view.h / 2 - camera.y * camera.zoom + shakeY) * dpr;
@@ -126,7 +132,9 @@ export function render(map, state) {
         desenharBoias(ctx, boiasDoLimite(map, nivelNado), state.player, range, performance.now() / 1000, HW, HH);
       }
     }
-    drawFloors(map);
+    // O nadador no fundo é desenhado antes das passarelas da superfície.
+    if (nadadorNoFundo(state.player, map)) drawEntity(state.player, state);
+    drawFloors(map, state);
     drawHazards(state.hazards);
     if (map.id === 'hub_saguao') drawHubFloorMarkings();
     if (map.id === 'ilha_praia_inicial') drawBeachStation(map);
@@ -416,7 +424,12 @@ function drawWalkMaskDebug(map) {
 
   ctx.restore();
 }
-function drawFloors(map) {
+export function nadadorNoFundo(player, map) {
+  const n = player?.nado;
+  return !!(map?.aguaPraia && n?.ativo && n.mareAstral && n.profundidade > 1.25);
+}
+
+function drawFloors(map, state) {
   for (let d = range.x0 + range.y0; d <= range.x1 + range.y1; d++) {
     const xs = Math.max(range.x0, d - range.y1);
     const xe = Math.min(range.x1, d - range.y0);
@@ -424,7 +437,13 @@ function drawFloors(map) {
     for (let x = xs; x <= xe; x++) {
       const y = d - x;
       const type = map.layout[y][x];
-      if (type !== TILE.WALL) drawFloorTile(type, x, y, map);
+      if (type !== TILE.WALL) {
+        const deck = map.aguaPraia?.[y]?.[x];
+        const acima = nadadorNoFundo(state?.player, map) && deck && 'Bb'.includes(deck);
+        if (acima) { ctx.save(); ctx.globalAlpha = .38; }
+        drawFloorTile(type, x, y, map);
+        if (acima) ctx.restore();
+      }
     }
   }
 }
@@ -502,7 +521,7 @@ function drawFundoSubmerso(map, intensidade) {
     const pincel = tela.getContext('2d');
     pincel.fillStyle = pincel.createPattern(padrao, 'repeat');
     for (let y = 0; y < rows.length; y++) for (let x = 0; x < cols; x++) {
-      if ('YyDdX'.includes(rows[y][x])) pincel.fillRect(x * escala, y * escala, escala, escala);
+      if ('YyDdX'.includes(rows[y][x]) || (map.aguaSobPontes && 'Bb'.includes(rows[y][x]))) pincel.fillRect(x * escala, y * escala, escala, escala);
     }
     fundoSubmersoCache.set(map, tela);
   }
@@ -724,12 +743,21 @@ function drawVidaAquatica(map, state) {
   }
 
   // ---- Recifes: coral, rocha submersa e alga alta (agrupados em manchas)
+  const coralAstral = getSprite('coral_astral_submerso');
+  const fundoVisivel = intensidadeSubmersa(nado) > .35;
   for (const r of elementosDeRecife(vida.recifes)) {
     if (!dentro(r.x, r.y)) continue;
     const ix = (r.x - r.y) * HW, iy = (r.x + r.y) * HH;
     const balanco = Math.sin(t * 1.1 + r.fase) * 1.6;
     const s = r.tamanho;
-    if (r.tipo === 0) {
+    if (r.tipo === 0 && fundoVisivel && coralAstral) {
+      // Arte própria, discreta e ancorada no fundo; o desenho procedural
+      // continua sendo o fallback e a leitura da superfície.
+      const w = 25 * s, h = 27 * s;
+      ctx.save(); ctx.globalAlpha = .9;
+      ctx.drawImage(coralAstral, ix - w / 2 + balanco * .2, iy - h, w, h);
+      ctx.restore();
+    } else if (r.tipo === 0) {
       // Coral: três hastes curvas, rosa/coral, balançando.
       ctx.strokeStyle = 'rgba(232,132,120,.62)';
       ctx.lineWidth = 2.4 * s;
@@ -770,6 +798,17 @@ function drawVidaAquatica(map, state) {
     }
   }
 
+  // Estacas reais do fundo, posicionadas pela mesma lista da colisão.
+  if (fundoVisivel) for (const pilar of map.pilaresSubmersos ?? []) {
+    if (!dentro(pilar.x, pilar.y, 2)) continue;
+    const px = (pilar.x - pilar.y) * HW, py = (pilar.x + pilar.y) * HH;
+    const r = (pilar.raio ?? .16) * HW;
+    ctx.save(); ctx.fillStyle = '#254451'; ctx.strokeStyle = '#73b8b3'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.ellipse(px, py + 2, r + 3, (r + 3) * .5, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.fillRect(px - r, py - 20, r * 2, 20); ctx.strokeRect(px - r, py - 20, r * 2, 20);
+    ctx.restore();
+  }
+
   // ---- Cardumes: peixinhos em vaivém, apagados pela água
   for (const c of vida.cardumes) {
     if (!dentro(c.x, c.y, 2)) continue;
@@ -797,6 +836,16 @@ function drawVidaAquatica(map, state) {
       ctx.closePath();
       ctx.fill();
     }
+  }
+
+  // O Senso submerso marca o eco real, sem criar coletáveis ou socorros.
+  const sonar = player?.ability?.sonarAquatico;
+  if (submerso && sonar && dentro(sonar.x, sonar.y, 2)) {
+    const sx = (sonar.x - sonar.y) * HW, sy = (sonar.x + sonar.y) * HH;
+    ctx.save(); ctx.strokeStyle = '#9fffee'; ctx.lineWidth = 2;
+    ctx.globalAlpha = Math.min(1, sonar.timeLeft) * (.55 + .25 * Math.sin(t * 5));
+    ctx.beginPath(); ctx.ellipse(sx, sy, 18 + Math.sin(t * 4) * 3, 9, 0, 0, Math.PI * 2); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(sx, sy - 12); ctx.lineTo(sx, sy - 25); ctx.stroke(); ctx.restore();
   }
 
   // ---- Fragmentos de maré: o prêmio do mergulho, girando devagar
@@ -1775,14 +1824,16 @@ function drawWorld(map, state) {
     if (visivel(item)) drawList.push(item);
   }
 
-  drawList.push(state.player);
+  if (!nadadorNoFundo(state.player, map)) drawList.push(state.player);
   // ...o resto da função continua igual (sort, drawItem, loops)
   drawList.sort((a, b) => depthOf(a) - depthOf(b));
   backList.sort((a, b) => (a.ordem ?? 0) - (b.ordem ?? 0));
 
   const drawItem = (item) => {
     if (item.renderType === 'object') {
-      drawMapObject(item, state);
+      if (item.gate && nadadorNoFundo(state.player, map)) {
+        ctx.save(); ctx.globalAlpha = .35; drawMapObject(item, state); ctx.restore();
+      } else drawMapObject(item, state);
     } else if (item.renderType === 'trainingTarget') {
       drawTrainingTarget(item);
     } else if (item.renderType === 'companion') {
@@ -3969,9 +4020,9 @@ function drawEntity(entity, state) {
     const deitando = entity._nadoVis ?? (querDeitar ? 1 : 0);
     entity._nadoVis = Math.max(0, Math.min(1, deitando + (querDeitar ? 1 : -1) * .12));
     if (entity._nadoVis > .5 && entity.nado
-      && !(entity.combat?.timeLeft > 0)
+      && (nadadorNoFundo(entity, state.world?.currentMap) || (!(entity.combat?.timeLeft > 0)
       && !(entity.ultimate?.charge > 0)
-      && !getVisualEffect(entity)
+      && !getVisualEffect(entity)))
       && desenharNadador(ctx, entity, ix, iy, {
         arquetipo: state.progress.archetype, HW, HH, t: performance.now() / 1000,
       })) return;

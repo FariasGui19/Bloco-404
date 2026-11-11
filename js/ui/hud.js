@@ -390,6 +390,10 @@ export function updateHud(map, state) {
     );
   }
 
+  // Nadando o corpo fica deitado bem no centro da tela, exatamente onde o
+  // aviso do [E] mora: ele desce um pouco para não tapar o nadador.
+  el.elevatorPrompt?.classList.toggle('nadando', Boolean(state.player?.nado?.ativo));
+
   if (promptVisible !== shouldShowPrompt) {
     promptVisible = shouldShowPrompt;
 

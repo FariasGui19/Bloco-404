@@ -142,8 +142,12 @@ function signedDistance(rows) {
 /**
  * @param {string[]} rows grade `aguaPraia`
  * @param {number} scale amostras por tile (8 = bom para textura de 64 px/tile)
+ * @param {number} origem quantos tiles de MOLDURA a grade recebeu em volta.
+ *   O ruído da costa é avaliado em coordenadas de mundo; quem monta o campo
+ *   numa grade acolchoada (o mar, que precisa de água além da borda do mapa)
+ *   informa a moldura para a costa sair IDÊNTICA à do campo sem moldura.
  */
-export function createCoastField(rows, scale = 8) {
+export function createCoastField(rows, scale = 8, origem = 0) {
   const { sd, toLand, cols, lines } = signedDistance(rows);
   const w = cols * scale, h = lines * scale;
   const data = new Float32Array(w * h);
@@ -175,8 +179,8 @@ export function createCoastField(rows, scale = 8) {
 
       // O ruído só age PERTO da costa: longe dela o campo fica exato.
       const perto = Math.max(0, 1 - Math.abs(base) / (HALF_WIDTH * 2.4));
-      const n = (valueNoise(wx, wy, .55, 17) * NOISE
-        + valueNoise(wx, wy, 1.9, 43) * NOISE * .38) * perto * perto * peso;
+      const n = (valueNoise(wx - origem, wy - origem, .55, 17) * NOISE
+        + valueNoise(wx - origem, wy - origem, 1.9, 43) * NOISE * .38) * perto * perto * peso;
       const v = base + n;
       const val = smooth((v + HALF_WIDTH) / (2 * HALF_WIDTH));
       data[py * w + px] = val;

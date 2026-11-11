@@ -26,6 +26,9 @@
 // deslocamento continua sendo `player.js` + `moveWithCollision`.
 // =====================================================================
 
+import { pocaEm } from '../engine/pocas.js';
+import { DEGRAUS, SUPERFICIE, dentroDoAlcance } from './nado-arvore.js';
+
 export const AGUA = 'YyDdX';
 export const AGUA_FUNDA = 'DdX';
 const DECK = 'Bb';
@@ -69,8 +72,17 @@ export const NADO = {
   consumo: 1,
   arCritico: 4,
   danoAfogamento: 6,
+  // Custo de pisar no mar com medo da água (degrau 0 da árvore).
+  danoSusto: 3,
   // O respeito do mar aumenta o fôlego (até +80%).
   arBonusMax: 0.8,
+  // O Maré Astral no degrau pleno carrega mais ar: 22 s × 1,8 (respeito)
+  // × 1,3 = 52 s. É o "respira embaixo d'água" do arquétipo.
+  arMare: 1.3,
+  // Correnteza contrária freia o Maré Astral só pela metade.
+  correnteMare: .5,
+  // Respeito do mar sobe mais rápido para quem É a maré.
+  respeitoMare: 1.5,
 
   // --- correnteza ---
   correnteForca: 0.55,
@@ -103,6 +115,10 @@ export function podeNadar(map, x, y) {
  * se nada.
  */
 export function profundidadeEm(map, x, y, field) {
+  // Poça: água rasa em cima de areia. A grade diz "areia" e o campo de
+  // costa diz "terra", então a profundidade vem da própria poça.
+  const poca = pocaEm(map, x, y);
+  if (poca) return poca.profundidade ?? .45;
   if (!podeNadar(map, x, y)) return 0;
   if (field?.distLand) {
     const px = Math.min(field.width - 1, Math.max(0, Math.floor(x * field.scale)));
@@ -114,6 +130,20 @@ export function profundidadeEm(map, x, y, field) {
 }
 
 export const estaNaSuperficie = (profundidade) => profundidade < 1.25;
+
+// Predicado de água para `moveWithCollision`, por degrau da árvore. Um por
+// degrau, criados uma vez: o laço do jogo não aloca função por quadro.
+const AGUA_DO_DEGRAU = DEGRAUS.map(grau => (
+  grau.alcance === Infinity
+    ? podeNadar
+    : (map, x, y) => podeNadar(map, x, y) && dentroDoAlcance(map, x, y, grau.nivel)
+));
+
+/** Onde o degrau `nivel` pode nadar. Sem árvore (null) = mar inteiro. */
+export function aguaDoDegrau(nivel) {
+  if (nivel == null) return podeNadar;
+  return AGUA_DO_DEGRAU[Math.max(0, Math.min(DEGRAUS.length - 1, nivel | 0))];
+}
 
 // ---------------------------------------------------------------------
 // CORRENTEZA
@@ -153,6 +183,23 @@ export function fatorCorrente(corrente, dirX, dirY) {
 // fica mais forte e conquista o respeito". Respeito sobe nadando fundo,
 // mergulhando e coletando; nunca cai. É o eixo que faz o nado evoluir.
 // ---------------------------------------------------------------------
+/**
+ * CABEÇA NA ÁGUA. Com a árvore de nado é o gesto de mergulhar (ESPAÇO),
+ * em qualquer fundura; sem árvore é estar em água funda. Raios de sol,
+ * cardumes e o socorro de bicho aquático perguntam isto.
+ */
+export function cabecaSubmersa(nado) {
+  return !!nado?.ativo && (!!nado.submerso || nado.profundidade > 1.25);
+}
+
+/**
+ * CORPO NO FUNDO. Fragmentos de maré, mergulhos da missão e respeito
+ * pedem que o corpo desça de verdade (degrau TRAVESSIA em diante).
+ */
+export function noFundoDoMar(nado) {
+  return !!nado?.ativo && nado.profundidade > 1.25;
+}
+
 export function criarRespeito() {
   return { valor: 0, mergulhos: 0, distanteNadada: 0 };
 }
@@ -189,6 +236,16 @@ export function criarEstadoNado() {
     submerso: false,
     afogando: false,
     ar: NADO.arMaximo,
+    arMax: NADO.arMaximo,
+    // profundidade do FUNDO sob o corpo (o corpo pode estar acima dele)
+    fundo: 0,
+    naPoca: false,
+    // árvore de nado (só preenchidos quando `atualizarNado` recebe `arvore`)
+    nivel: null,
+    medo: false,
+    foraDoAlcance: false,
+    semFolego: false,
+    mareAstral: false,
 
     // inércia
     vx: 0,
@@ -217,7 +274,7 @@ export function criarEstadoNado() {
  * Devolve efeitos para quem chamou aplicar (dano, eventos).
  */
 export function atualizarNado(nado, ctx) {
-  const { map, x, y, field, dt = 0, tempo = 0, clima = null } = ctx;
+  const { map, x, y, field, dt = 0, tempo = 0, clima = null, arvore = null } = ctx;
   const antes = nado.ativo;
 
   // Ressaca: o clima entra no nado como fator de mar. Fica guardado no
@@ -226,15 +283,47 @@ export function atualizarNado(nado, ctx) {
   nado.climaCorrenteza = 1 + (clima?.mar ?? 0) * 0.55;
   nado.climaFolego = 1 - (clima?.mar ?? 0) * 0.25;
 
-  const prof = profundidadeEm(map, x, y, field);
-  nado.ativo = prof > 0;
+  const poca = pocaEm(map, x, y);
+  const fundo = profundidadeEm(map, x, y, field);
+  nado.fundo = fundo;
+  nado.naPoca = !!poca;
+  nado.ativo = fundo > 0;
+
+  // ---- profundidade do CORPO ----
+  // Sem árvore (mergulho livre de antes): o corpo acompanha o fundo e
+  // quem está no fundo está submerso.
+  // Com árvore: o corpo fica na superfície e só desce com o GESTO de
+  // mergulhar, até o limite do degrau.
+  const grau = arvore ? DEGRAUS[Math.max(0, Math.min(DEGRAUS.length - 1, arvore.nivel | 0))] : null;
+  nado.nivel = grau ? grau.nivel : null;
+  nado.mareAstral = !!ctx.mareAstral && (!grau || grau.nivel === DEGRAUS.length - 1);
+  let alvo = fundo;
+  let cabecaNaAgua = nado.ativo && fundo > 1.25;
+  if (grau) {
+    if (!ctx.mergulhar) nado.semFolego = false;      // soltou a tecla: pode tentar de novo
+    const quer = !!ctx.mergulhar && nado.ativo && grau.mergulho > 0 && !nado.semFolego;
+    alvo = quer ? Math.min(fundo, grau.mergulho) : Math.min(fundo, SUPERFICIE);
+    cabecaNaAgua = quer;
+    // Pela CÉLULA, não pela profundidade: na franja da praia a água ainda
+    // tem profundidade 0 e mesmo assim já é mar para quem tem medo dele.
+    const noMar = !poca && podeNadar(map, x, y);
+    nado.medo = noMar && grau.nivel === 0;
+    nado.foraDoAlcance = noMar && grau.nivel > 0 && !dentroDoAlcance(map, x, y, grau.nivel);
+  } else {
+    nado.medo = false;
+    nado.foraDoAlcance = false;
+    nado.semFolego = false;
+  }
 
   // Suavização visual da profundidade: entrar na água não "pula".
-  nado.profundidade += (prof - nado.profundidade) * Math.min(1, NADO.suavidade * dt);
-  nado.submerso = nado.ativo && prof > 1.25;
+  nado.profundidade += (alvo - nado.profundidade) * Math.min(1, NADO.suavidade * dt);
+  nado.submerso = cabecaNaAgua;
+  // "Fundo de verdade": é o que conta para respeito, fragmentos e fauna.
+  const noFundo = nado.submerso && (grau ? nado.profundidade > 1.25 : true);
 
   // ---- correnteza local ----
-  if (nado.ativo) {
+  // Poça não tem correnteza: é onde se aprende a boiar parado.
+  if (nado.ativo && !poca) {
     const c = correnteEm(x, y, tempo);
     // A correnteza do mar local é amplificada pela ressaca.
     nado.corrente = { x: c.x * nado.climaCorrenteza, y: c.y * nado.climaCorrenteza, forca: c.forca * nado.climaCorrenteza };
@@ -243,25 +332,32 @@ export function atualizarNado(nado, ctx) {
   }
 
   // ---- respeito sobe nadando fundo ----
-  if (nado.submerso) {
-    const antesValor = nado.respeito.valor;
-    nado.respeito.valor = Math.min(
-      NADO.respeitoMax,
-      nado.respeito.valor + NADO.respeitoPorSegundo * dt
-    );
+  if (noFundo) {
+    const ganho = NADO.respeitoPorSegundo * (nado.mareAstral ? NADO.respeitoMare : 1);
+    nado.respeito.valor = Math.min(NADO.respeitoMax, nado.respeito.valor + ganho * dt);
     nado.respeito.distanteNadada += Math.hypot(nado.vx, nado.vy) * dt;
-    void antesValor;
   }
   const derivados = derivadosDoRespeito(nado.respeito);
 
   // ---- ar ----
-  const arMax = NADO.arMaximo * derivados.ar * nado.climaFolego;
+  const arBase = grau ? grau.ar : NADO.arMaximo;
+  const arMax = arBase * derivados.ar * nado.climaFolego * (nado.mareAstral ? NADO.arMare : 1);
+  nado.arMax = arMax;
+  let engoliu = false;
   if (!nado.ativo || !nado.submerso) {
     nado.ar = Math.min(arMax, nado.ar + NADO.recuperacao * dt);
     nado.afogando = false;
   } else {
-    nado.ar = Math.max(0, nado.ar - NADO.consumo * dt);
+    nado.ar = Math.max(0, (grau ? Math.min(arMax, nado.ar) : nado.ar) - NADO.consumo * dt);
     nado.afogando = nado.ar <= 0;
+    // Com árvore a superfície está sempre em cima: sem ar, o corpo SOBE
+    // sozinho engolindo água (um susto), em vez de afogar quadro a quadro.
+    if (grau && nado.afogando) {
+      nado.semFolego = true;
+      nado.afogando = false;
+      nado.submerso = false;
+      engoliu = true;
+    }
   }
 
   // ---- timers ----
@@ -275,9 +371,20 @@ export function atualizarNado(nado, ctx) {
     saiu: !nado.ativo && antes,
     dano: 0,
     semAr: false,
+    engoliuAgua: engoliu,
+    // Degrau 0 pisando no mar: o susto (quem aplica o custo é o player).
+    susto: false,
   };
+  if (efeitos.saiu) { nado.vx = 0; nado.vy = 0; }
+  if (nado.medo && !nado._comMedo) efeitos.susto = true;
+  nado._comMedo = nado.medo;
   if (nado.afogando) {
     efeitos.dano = NADO.danoAfogamento * dt;
+    efeitos.semAr = true;
+  }
+  if (engoliu) {
+    // Um golpe só (o acumulador do player dispara a cada 12).
+    efeitos.dano = 12;
     efeitos.semAr = true;
   }
   return efeitos;
@@ -306,11 +413,16 @@ export function moverNaAgua(nado, dt, dirX, dirY, baseSpeed) {
   }
 
   // Velocidade alvo: a direção desejada × velocidade base de nado.
+  // O degrau da árvore limita a braçada: quem só boia quase não anda.
+  const doDegrau = nado.nivel == null ? 1 : DEGRAUS[nado.nivel].velocidade;
   const fatorBase = (NADO.velocidade + (nado.submerso ? NADO.velocidadeFundo - NADO.velocidade : 0))
-    * d.velocidade;
+    * d.velocidade * doDegrau;
   let alvoX = 0, alvoY = 0;
   if (temDirecao) {
-    const fator = fatorCorrente(nado.corrente, dirX, dirY);
+    let fator = fatorCorrente(nado.corrente, dirX, dirY);
+    // Maré Astral: a correnteza a favor ajuda inteira, a contrária só
+    // freia a metade. É a maré reconhecendo quem nada nela.
+    if (nado.mareAstral && fator < 1) fator = 1 - (1 - fator) * NADO.correnteMare;
     alvoX = nado.dirX * baseSpeed * fatorBase * fator;
     alvoY = nado.dirY * baseSpeed * fatorBase * fator;
   } else if (nado.arrancada > 0) {
@@ -352,6 +464,9 @@ export function moverNaAgua(nado, dt, dirX, dirY, baseSpeed) {
 /** Dispara a arrancada. Maré Astral tem versão melhor. */
 export function dispararArrancada(nado, mareAstral) {
   if (!nado?.ativo) return false;
+  // Quem ainda só boia não tem braçada para arrancar; na poça também não.
+  if (nado.nivel != null && !DEGRAUS[nado.nivel].arrancada) return false;
+  if (nado.naPoca || nado.medo) return false;
   if (nado.recargaArrancada > 0) return false;
   nado.arrancada = NADO.arrancadaDuracao * (mareAstral ? 1.15 : .85);
   nado.recargaArrancada = mareAstral ? NADO.arrancadaRecargaMare : NADO.arrancadaRecarga;

@@ -23,6 +23,8 @@ import { getTree, getTreeSummary, TREE_STATE_LABELS } from '../data/archetype-tr
 import { TOOL_LABELS } from '../data/archetype-tools.js';
 import { NUCLEO_FORMS } from '../data/nucleo-forms.js';
 import { listTrackedQuests } from '../game/quests.js';
+import { getQuest } from '../data/quests.js';
+import { DEGRAUS, PROVAS, resumoDaArvore } from '../game/nado-arvore.js';
 import { ARQUIPELAGO_REGIONS } from '../data/arquipelago-regioes.js';
 import { getItem, listInventory } from '../data/items.js';
 
@@ -89,11 +91,36 @@ function mareRoutes(progress, map) {
       <strong>${escapeHtml(atual.nome)}</strong>
       <ul>${lista}</ul>
       <div class="codex-mare-modes">
-        <span class="codex-mare-mode projeto"><b>NADO LIVRE</b><em>EM PROJETO</em><small>movimento fluido contínuo na água funda</small></span>
+        <span class="codex-mare-mode pronto"><b>NADO LIVRE</b><em>ATIVO</em><small>braçada com inércia, arrancada e mergulho (ESPAÇO)</small></span>
         <span class="codex-mare-mode projeto"><b>NAVEGAÇÃO</b><em>EM PROJETO</em><small>correntes levam a ilhas e portos</small></span>
         <span class="codex-mare-mode projeto"><b>MISSÕES DE TRAVESSIA</b><em>EM PROJETO</em><small>rotas com carga e pouso</small></span>
       </div>
       <p class="codex-note">Mapa do arquipélago já registra as ilhas; navegar entre elas fica para o sistema de navegação.</p>
+    </aside>`;
+}
+
+// ÁRVORE DE NADO: os cinco degraus, o atual e a prova que abre o próximo.
+// Leitura pura (`resumoDaArvore` não cria nada no save).
+function nadoTree(progress) {
+  const r = resumoDaArvore(progress);
+  const degraus = DEGRAUS.map(d => {
+    const estado = d.nivel < r.nivel ? 'feito' : d.nivel === r.nivel ? 'atual' : 'futuro';
+    const nome = d.nivel === r.maximo && progress?.archetype === 'mare_astral' ? 'MARÉ ASTRAL' : d.nome;
+    const prova = PROVAS.find(p => p.de === d.nivel - 1);
+    return `<li class="codex-nado-degrau ${estado}">
+        <span class="codex-nado-pin" aria-hidden="true">${estado === 'feito' ? '◆' : estado === 'atual' ? '◈' : '◇'}</span>
+        <strong>${d.nivel} · ${escapeHtml(nome)}</strong>
+        <small>${escapeHtml(estado === 'futuro' && prova ? `Prova: ${prova.instrucao}` : d.resumo)}</small>
+      </li>`;
+  }).join('');
+  const rodape = r.prova
+    ? `PRÓXIMA PROVA — ${escapeHtml(r.prova.nome)}: ${escapeHtml(r.prova.instrucao)}`
+    : 'O mar inteiro é seu. ESPAÇO mergulha, SHIFT arranca.';
+  return `<aside class="codex-mare codex-nado" aria-label="Árvore de nado">
+      <span class="codex-tag">ÁRVORE DE NADO</span>
+      <strong>DEGRAU ${r.nivel}/${r.maximo} · ${escapeHtml(r.nome)}</strong>
+      <ul>${degraus}</ul>
+      <p class="codex-note">${rodape}</p>
     </aside>`;
 }
 
@@ -118,7 +145,7 @@ function renderMissions(progress, map) {
         </li>`;
       }).join('');
       return `<article class="codex-quest ${entry.status}">
-        <header><span class="codex-tag">${entry.status === 'completed' ? 'CONCLUÍDA' : 'ATIVA'}</span></header>
+        <header><span class="codex-tag">${entry.status === 'completed' ? 'CONCLUÍDA' : 'ATIVA'}</span><strong>${escapeHtml(getQuest(entry.id)?.title ?? '')}</strong></header>
         <ul>${objectives}</ul>
       </article>`;
     }).join('')
@@ -137,7 +164,7 @@ function renderMissions(progress, map) {
   return `<section class="codex-section" aria-label="Missões">
     <div class="codex-columns">
       <div class="codex-column">${main}${cards}</div>
-      <aside class="codex-column codex-column-side">${exploration}${mareRoutes(progress, map)}</aside>
+      <aside class="codex-column codex-column-side">${nadoTree(progress)}${exploration}${mareRoutes(progress, map)}</aside>
     </div>
   </section>`;
 }

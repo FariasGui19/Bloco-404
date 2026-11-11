@@ -11,6 +11,28 @@
 - Núcleo 10X: Ultimate só com a forma ativa; formas futuras listadas como projeto.
 - Maré Astral: rotas de maré no Códex (leitura de mapa).
 
+## Concluído na 0.9.0 — Praia 11.0: relevo, mar novo e árvore de nado
+
+Registro completo, com medidas e decisões, em
+[`praia-11.0-plano.md`](praia-11.0-plano.md). Em resumo:
+
+1. **Relevo** — 12 peças de pedra (falésias, cascatas, arco, pilares, ilhotas)
+   colocadas como objetos em todas as ilhas, com colisão própria e desenho em
+   tiras para o operador passar na frente e atrás. Duas folhas novas de flora.
+2. **Mar** — paleta nova, cáusticas assadas na textura, margem de 5 tiles para
+   o mar não acabar em linha reta, costão de pedra no Cabo.
+3. **Poças** — zonas de água rasa em cima da areia (a Poça da Cascata é a sala
+   de aula do nado).
+4. **Árvore de nado** — 5 degraus com provas que saem do estado real do nado,
+   missão `aprender_a_nadar`, painel no HUD, cartão no Códex, cordão de boias e
+   marcador da poça. `ESPAÇO` mergulha.
+5. **Corpo deitado** — folha de nado por traje (civil, Maré, Bio-Forja,
+   Domínio, Núcleo), girando no rumo do nado.
+6. **Desempenho** — objetos copiados de um cache já na escala da tela.
+
+Versão `0.9.0-arquipelago`. Testes novos: `tests/praia-relevo.mjs`,
+`tests/nado-arvore.mjs`, `tests/nado-desenho.mjs`.
+
 ## Concluído na 0.8.0 — Domínio Ancião fecha a série dos quatro módulos
 
 O quarto e último arquétipo ganhou as três camadas que faltavam, no mesmo

@@ -47,122 +47,330 @@ function hash(x, y, seed = 0) {
 const smooth = t => { t = Math.max(0, Math.min(1, t)); return t * t * (3 - 2 * t); };
 
 // ---------------------------------------------------------------------
-// TEXTURA DO MAR — degradê + bancos + cáusticas + espuma assados
+// PALETA — tirada da referência (`ilha-panorama.png`), não inventada
+//
+// A praia antiga ia de turquesa a AZUL-MARINHO em 3,6 tiles: de perto a
+// água parecia tinta escura. A referência é verde-água quase até a borda;
+// só o mar aberto azula. Aqui a profundidade (em tiles até a costa) vira
+// cor por uma rampa de quatro paradas, medidas na própria imagem.
 // ---------------------------------------------------------------------
-export function createSeaTexture(rows, scale = WATER_SCALE) {
+export const PALETA_MAR = Object.freeze({
+  //            tiles até a costa, [r, g, b]
+  rampa: Object.freeze([
+    [0.0, [150, 240, 204]],   // lâmina na beira (quase areia molhada)
+    [0.55, [98, 228, 176]],   // raso turquesa
+    [1.7, [34, 190, 152]],    // verde-água
+    [3.3, [10, 140, 148]],    // meia-água
+    [5.4, [3, 104, 136]],     // fundo
+    [8.0, [2, 80, 116]],      // mar aberto
+  ]),
+  espuma: Object.freeze([246, 255, 251]),
+  caustica: Object.freeze([226, 255, 240]),
+  recife: Object.freeze([58, 146, 104]),
+  // Cor de fundo do mapa que emenda com o mar aberto (use em `corFundo`).
+  fundo: '#025074',
+});
+
+// Rampa pré-calculada: 256 degraus cobrindo 0..8 tiles. Um índice por pixel
+// em vez de três interpolações — é isso que paga o resto dos efeitos.
+const RAMPA_MAX = 8;
+const RAMPA = (() => {
+  const lut = new Uint8ClampedArray(256 * 3);
+  const paradas = PALETA_MAR.rampa;
+  for (let i = 0; i < 256; i++) {
+    const d = (i / 255) * RAMPA_MAX;
+    let k = 0;
+    while (k < paradas.length - 2 && d > paradas[k + 1][0]) k++;
+    const [d0, c0] = paradas[k], [d1, c1] = paradas[k + 1];
+    const t = smooth((d - d0) / (d1 - d0));
+    lut[i * 3] = c0[0] + (c1[0] - c0[0]) * t;
+    lut[i * 3 + 1] = c0[1] + (c1[1] - c0[1]) * t;
+    lut[i * 3 + 2] = c0[2] + (c1[2] - c0[2]) * t;
+  }
+  return lut;
+})();
+
+// ---------------------------------------------------------------------
+// TEXTURA DO MAR — degradê + bancos + recife + espuma, assados
+//
+// A REDE DE CÁUSTICAS (a malha de luz no fundo, marca da referência) já
+// sai assada aqui: custo zero por quadro. Devolve também `luz`, quanto de
+// cáustica cada ponto recebe (0..255) — forte no raso, apagando no fundo e
+// sumindo antes da borda. `getSeaCanvas` usa `luz` para montar a camada
+// opcional que balança por cima quando a máquina tem folga.
+//
+// `origem`: tiles de moldura de mar que a grade recebeu em volta (ver
+// `getSeaCanvas`). Só serve para a costa coincidir com a da areia.
+// ---------------------------------------------------------------------
+export function createSeaTexture(rows, scale = WATER_SCALE, { origem = 0 } = {}) {
   const width = rows[0].length, height = rows.length;
   const w = width * scale, h = height * scale;
   const pixels = new Uint8ClampedArray(w * h * 4);
-  const shallow = [122, 210, 190];
-  const mid = [58, 158, 168];
-  const deep = [22, 78, 112];
-  const foam = [242, 255, 250];
+  const luz = new Uint8ClampedArray(w * h);
+  const [fr, fg, fb] = PALETA_MAR.espuma;
+  const [rr, rg, rb] = PALETA_MAR.recife;
+  const [cr, cg, cb] = PALETA_MAR.caustica;
+  const rede = ladrilhoCaustico(scale);
+  const lado = rede.tamanho, malha = rede.alpha;
 
   // O mesmo campo de costa da areia (`beach-surface.js`). Usar o MESMO campo
   // é essencial: se a água calcular a margem pela grade e a areia pelo campo,
   // as duas bordas não coincidem e a espuma aparece fora da praia.
-  const field = createCoastField(rows, scale);
+  const field = createCoastField(rows, scale, origem);
+  const campo = field.data, dist = field.distLand;
 
+  // Tipo de cada célula, uma vez: 0 água, 1 terra, 2 deck.
+  const tipo = new Uint8Array(width * height);
+  for (let y = 0; y < height; y++) {
+    const linha = rows[y];
+    for (let x = 0; x < width; x++) {
+      const c = linha[x];
+      tipo[y * width + x] = isDeckChar(c) ? 2 : isLandChar(c) ? 1 : 0;
+    }
+  }
+
+  // Ondas largas em tabelas (seno por coluna/linha/diagonal, não por pixel).
+  const ondaX = new Float32Array(w), ondaY = new Float32Array(h);
+  const diagA = new Float32Array(w + h), diagB = new Float32Array(w + h);
+  for (let px = 0; px < w; px++) ondaX[px] = Math.sin((px + .5) / scale * .62);
+  for (let py = 0; py < h; py++) ondaY[py] = Math.sin((py + .5) / scale * .47 + 1.3);
+  for (let i = 0; i < w + h; i++) {
+    diagA[i] = Math.sin(i / scale * .37 + .8);
+    diagB[i] = Math.sin(i / scale * .83 + 2.1);
+  }
+  // Furos da espuma: um sorteio por bloco de 1/5 de tile.
+  const fw = width * 5, fh = height * 5;
+  const furos = new Uint8Array(fw * fh);
+  for (let y = 0; y < fh; y++) for (let x = 0; x < fw; x++) furos[y * fw + x] = hash(x, y, 3) * 255;
+  const passoFuro = 5 / scale;
+
+  const bordaW = width, bordaH = height;
   for (let py = 0; py < h; py++) {
+    const ty = (py / scale) | 0;
+    const wy = (py + .5) / scale;
+    const fy = (py * passoFuro) | 0;
+    const oy = ondaY[py];
     for (let px = 0; px < w; px++) {
-      const wx = (px + .5) / scale, wy = (py + .5) / scale;
-      const tx = Math.floor(wx), ty = Math.floor(wy);
-      const cell = rows[ty]?.[tx];
-      const offset = (py * w + px) * 4;
-      if (cell == null) { pixels[offset + 3] = 0; continue; }
+      const i = py * w + px;
+      const t = tipo[ty * width + ((px / scale) | 0)];
       // Deck é passarela desenhada depois (chão): o mar não cobre.
-      if (isDeckChar(cell)) { pixels[offset + 3] = 0; continue; }
-
+      if (t === 2) continue;
       // `coast` = 0 no mar, 1 na areia, cruzando .5 na linha d'água.
+      const coast = campo[i];
+      // Em célula de AREIA o alpha desce pelo campo em ~1/6 de tile: a borda
+      // do mar ondula DENTRO da célula em vez de seguir o quadrado dela.
+      // Acima de .67 o mar já é invisível: nem calcula a cor.
+      let recorte = 1;
+      if (t === 1) {
+        if (coast >= .67) continue;
+        recorte = 1 - smooth(Math.max(0, (coast - .5) / .17));
+      }
+
+      const wx = (px + .5) / scale;
       // `d` é a distância em tiles até a costa, tirada do próprio campo:
       // é contínua, então o degradê e a espuma não fazem escada.
-      const coast = sampleCoast(field, wx, wy);
-      const d = Math.max(0, (field.distLand[(py < field.height ? py : field.height - 1) * field.width + (px < field.width ? px : field.width - 1)]));
-      void tx; void ty;
-      const t = smooth(Math.min(1, Math.max(0, (d - .3) / 3.6)));
-      const near = 1 - smooth(Math.min(1, Math.max(0, (d - .15) / 1.25)));
+      const d = dist[i];
+      // Bancos de areia e correntes: a profundidade "respira" ±0,35 tile
+      // antes de virar cor — é o que tira a cara de anel concêntrico.
+      const relevo = ondaX[px] * oy * .22 + diagA[px + py] * .16 + diagB[px - py + h] * .1;
+      const dc = d + relevo * Math.min(1, d * .8);
+      const k = dc <= 0 ? 0 : dc >= RAMPA_MAX ? 765 : ((dc * (255 / RAMPA_MAX)) | 0) * 3;
+      let r = RAMPA[k], g = RAMPA[k + 1], b = RAMPA[k + 2];
 
-      // Cor base: raso → meio → fundo.
-      let r, g, b;
-      if (t < .5) {
-        const k = t / .5;
-        r = shallow[0] + (mid[0] - shallow[0]) * k;
-        g = shallow[1] + (mid[1] - shallow[1]) * k;
-        b = shallow[2] + (mid[2] - shallow[2]) * k;
-      } else {
-        const k = (t - .5) / .5;
-        r = mid[0] + (deep[0] - mid[0]) * k;
-        g = mid[1] + (deep[1] - mid[1]) * k;
-        b = mid[2] + (deep[2] - mid[2]) * k;
+      // RECIFE submerso: manchas verde-escuras na meia-água, como na
+      // referência. Só onde as duas ondas diagonais concordam.
+      if (d > 1.25 && d < 4.2) {
+        const mancha = diagB[px + py] * diagA[px - py + h] + ondaX[px] * .35;
+        if (mancha > .52) {
+          const m = Math.min(1, (mancha - .52) * 4) * Math.min(1, (d - 1.25) * 2) * Math.min(1, (4.2 - d) * 1.5) * .55;
+          r += (rr - r) * m; g += (rg - g) * m; b += (rb - b) * m;
+        }
       }
 
-      // Bancos submersos: mancha clara onde o fundo sobe (perto da costa).
-      const bank = Math.max(0, Math.sin(wx * .62 + Math.sin(wy * .47) * 1.9) - .35) * (1 - t) * 16;
-      r += bank * .5; g += bank * .9; b += bank * .7;
-
-      // Cáusticas: filetes entrelaçados só no raso (não no mar fundo).
-      const a = Math.sin(wx * 3.4 + Math.sin(wy * 2.1) * 1.5);
-      const c = Math.sin(wy * 3.0 + Math.sin(wx * 1.9) * 1.3);
-      const caustic = Math.max(0, (a + c) * .5 - .42) * 46 * (1 - t) * (1 - t);
-      r += caustic; g += caustic * .95; b += caustic * .55;
-
-      // ESPUMA: faixa branca presa à iso-linha .5 do campo (a mesma da areia),
+      // ESPUMA 1: faixa branca presa à iso-linha .5 do campo (a da areia),
       // então ela encosta na praia em vez de seguir a escada dos tiles.
-      const edge = smooth(1 - Math.abs(coast - .5) / .085);
-      const ring = Math.max(0, (1 - Math.abs(coast - .355 - Math.sin(wx * 2.3 + wy * 1.1) * .022) / .03)) * .8;
-      const holes = hash(Math.floor(wx * 5), Math.floor(wy * 5), 3);
-      const foamAmt = Math.max(edge * (holes > .12 ? 1 : .45), ring * .75 * (holes > .3 ? 1 : 0));
-      if (foamAmt > .02) {
-        const k = Math.min(1, foamAmt) * .92;
-        r += (foam[0] - r) * k; g += (foam[1] - g) * k; b += (foam[2] - b) * k;
+      const furo = furos[fy * fw + ((px * passoFuro) | 0)];
+      let espuma = 0;
+      const e1 = 1 - Math.abs(coast - .5) / .095;
+      if (e1 > 0) espuma = smooth(e1) * (furo > 28 ? 1 : .5);
+      // ESPUMA 2 e 3: linhas finas recuadas, quebradas — a onda que já
+      // passou. Ficam na água (coast < .5), a ~0,45 e ~0,95 tile da beira.
+      if (coast < .46) {
+        const ondula = diagA[px + py] * .05 + oy * .04;
+        const e2 = 1 - Math.abs(d - .98 - ondula) / .075;
+        if (e2 > 0 && furo > 70) espuma = Math.max(espuma, e2 * .78);
+        const e3 = 1 - Math.abs(d - 1.5 - ondula * 1.6) / .06;
+        if (e3 > 0 && furo > 132) espuma = Math.max(espuma, e3 * .5);
+      }
+      if (espuma > .02) {
+        const m = Math.min(1, espuma) * .94;
+        r += (fr - r) * m; g += (fg - g) * m; b += (fb - b) * m;
       }
 
-      // Borda do mapa suaviza para a cor de fundo, sem moldura reta.
-      const border = Math.min(wx, wy, width - wx, height - wy);
-      const fade = Math.max(0, Math.min(1, border / 1.4));
-      const mist = 1 - smooth(fade);
+      // Borda da textura some por completo na cor de fundo do mapa (que é
+      // a mesma do mar aberto): não existe moldura reta no horizonte.
+      const borda = Math.min(wx, wy, bordaW - wx, bordaH - wy);
+      const visivel = borda >= 2.4 ? 1 : smooth(borda / 2.4);
 
-      pixels[offset] = r;
-      pixels[offset + 1] = g;
-      pixels[offset + 2] = b;
-      // ALPHA = silhueta da costa.
-      //  - em célula de ÁGUA o mar é opaco (não há furo para o fundo vazar);
-      //  - em célula de AREIA o alpha desce pelo campo, então a borda do mar
-      //    ondula DENTRO da célula de areia em vez de seguir o quadrado dela.
-      // É essa segunda parte que apaga a escada de 1 tile, e ela nunca muda
-      // o que é andável: só decide onde a água é desenhada.
-      let recorte = 1;
-      // Dentro da célula de areia o alpha cai em ~1/6 de tile: é a ondulação
-      // que apaga a escada, e é curta o bastante para nunca cobrir a parte
-      // central da célula (onde o jogador anda de fato).
-      if (isLandChar(cell)) recorte = 1 - smooth(Math.max(0, (coast - .5) / .17));
-      pixels[offset + 3] = Math.round(255 * recorte * (1 - mist * .55));
+      // LUZ (máscara das cáusticas): cheia entre a espuma e ~2 tiles, cai
+      // até ~6 tiles e some perto da borda e em cima da espuma.
+      if (t === 0) {
+        const perto = d < .7 ? Math.max(0, (d - .3) / .4) : 1;
+        const fundo = d < 1.8 ? 1 : d > 6 ? .1 : 1 - (d - 1.8) * .214;
+        const l = perto * fundo * (borda >= 3 ? 1 : borda / 3) * (1 - Math.min(1, espuma));
+        luz[i] = 255 * l;
+        // Rede de luz assada: o ladrilho repete a cada 8 tiles, sem emenda.
+        const c = malha[(py % lado) * lado + (px % lado)] * l * (.52 / 255);
+        if (c > .01) { r += (cr - r) * c; g += (cg - g) * c; b += (cb - b) * c; }
+      }
+
+      const o = i * 4;
+      pixels[o] = r;
+      pixels[o + 1] = g;
+      pixels[o + 2] = b;
+      pixels[o + 3] = 255 * recorte * visivel;
     }
   }
   // `width`/`height` em PIXELS de textura (é o que o renderer usa);
   // `tilesX`/`tilesY` guardam a dimensão do mapa em tiles.
-  return { width: w, height: h, tilesX: width, tilesY: height, scale, pixels };
+  return { width: w, height: h, tilesX: width, tilesY: height, scale, pixels, luz };
+}
+
+// ---------------------------------------------------------------------
+// REDE DE CÁUSTICAS — o desenho de luz no fundo do mar
+//
+// A referência tem uma malha de filetes claros por toda a água rasa. Ela é
+// um ruído celular (Worley): a distância ao 2º ponto mais próximo menos a
+// do 1º; onde as duas empatam nasce a linha. O ladrilho cobre 8x8 tiles,
+// repete sem emenda e é gerado UMA vez por sessão (~2 ms).
+// ---------------------------------------------------------------------
+const LADRILHO_TILES = 8;
+const CELULAS = 11;   // ~0,73 tile por célula, como na referência
+
+export function criarLadrilhoCaustico(tamanho, celulas = CELULAS, seed = 7) {
+  const pontos = new Float32Array(celulas * celulas * 2);
+  for (let cy = 0; cy < celulas; cy++) {
+    for (let cx = 0; cx < celulas; cx++) {
+      const i = (cy * celulas + cx) * 2;
+      pontos[i] = (cx + .12 + hash(cx, cy, seed) * .76) / celulas;
+      pontos[i + 1] = (cy + .12 + hash(cx, cy, seed + 5) * .76) / celulas;
+    }
+  }
+  const alpha = new Uint8ClampedArray(tamanho * tamanho);
+  for (let py = 0; py < tamanho; py++) {
+    const v = (py + .5) / tamanho;
+    const cy0 = Math.floor(v * celulas);
+    for (let px = 0; px < tamanho; px++) {
+      const u = (px + .5) / tamanho;
+      const cx0 = Math.floor(u * celulas);
+      let d1 = 9, d2 = 9;
+      for (let dy = -1; dy <= 1; dy++) {
+        for (let dx = -1; dx <= 1; dx++) {
+          const cx = cx0 + dx, cy = cy0 + dy;
+          // Envolve: o ponto do outro lado do ladrilho conta, deslocado.
+          const wx = ((cx % celulas) + celulas) % celulas, wy = ((cy % celulas) + celulas) % celulas;
+          const i = (wy * celulas + wx) * 2;
+          const ox = pontos[i] + (cx - wx) / celulas - u;
+          const oy = pontos[i + 1] + (cy - wy) / celulas - v;
+          const dd = ox * ox + oy * oy;
+          if (dd < d1) { d2 = d1; d1 = dd; } else if (dd < d2) d2 = dd;
+        }
+      }
+      // Borda da célula: as duas distâncias quase iguais.
+      const borda = (Math.sqrt(d2) - Math.sqrt(d1)) * celulas;
+      const linha = 1 - smooth(borda / .2);
+      // Brilho largo e fraco em volta da linha: a luz "vaza".
+      const halo = (1 - smooth(borda / .62)) * .3;
+      alpha[py * tamanho + px] = 255 * Math.min(1, linha * .95 + halo);
+    }
+  }
+  return { tamanho, alpha };
+}
+
+const ladrilhos = new Map();
+function ladrilhoCaustico(scale) {
+  let l = ladrilhos.get(scale);
+  if (!l) { l = criarLadrilhoCaustico(LADRILHO_TILES * scale); ladrilhos.set(scale, l); }
+  return l;
 }
 
 // ---------------------------------------------------------------------
 // CACHE — uma textura por mapa, montada no primeiro frame
+//
+// MOLDURA: o mar é assado com alguns tiles de água ALÉM da grade. Sem isso
+// a água rasa de uma ilha encostada na borda do mapa (a ilha de chegada
+// fica a 1 tile dela) terminava num corte reto. A moldura é só imagem:
+// colisão, nado e campo de costa do jogo continuam do tamanho do mapa.
 // ---------------------------------------------------------------------
+export const MARGEM_MAR = 5;
+
+function comMoldura(rows, m) {
+  const largura = rows[0].length + m * 2;
+  const mar = 'D'.repeat(largura), lado = 'D'.repeat(m);
+  return [
+    ...Array.from({ length: m }, () => mar),
+    ...rows.map(r => lado + r + lado),
+    ...Array.from({ length: m }, () => mar),
+  ];
+}
+
+/** Textura do mar como o jogo usa: com a moldura. (Sem DOM: serve a testes.) */
+export function createSeaTextureForMap(map, scale = WATER_SCALE) {
+  const m = map.meta?.margemMar ?? MARGEM_MAR;
+  const data = createSeaTexture(m ? comMoldura(map.aguaPraia, m) : map.aguaPraia, scale, { origem: m });
+  data.margem = m;
+  return data;
+}
+
 let seaCache = new WeakMap();
 
 export function getSeaCanvas(map) {
   if (!map?.aguaPraia) return null;
   let entrada = seaCache.get(map);
   if (entrada) return entrada;
-  const rows = map.aguaPraia;
-  const data = createSeaTexture(rows);
+  const data = createSeaTextureForMap(map);
   const canvas = document.createElement('canvas');
-  canvas.width = rows[0].length * data.scale;
-  canvas.height = rows.length * data.scale;
+  canvas.width = data.width;
+  canvas.height = data.height;
   const paint = canvas.getContext('2d');
   const image = paint.createImageData(canvas.width, canvas.height);
   image.data.set(data.pixels);
   paint.putImageData(image, 0, 0);
-  entrada = { canvas, width: canvas.width, height: canvas.height };
+
+  // Camada de luz que BALANÇA (opcional, ver `drawBeachSea`): o mesmo
+  // ladrilho, repetido e recortado pela máscara `luz`. Montagem nativa
+  // (um padrão e um drawImage), sem laço de cor por pixel.
+  let causticas = null;
+  try {
+    const rede = ladrilhoCaustico(data.scale);
+    const ladrilho = document.createElement('canvas');
+    ladrilho.width = ladrilho.height = rede.tamanho;
+    const gl = ladrilho.getContext('2d');
+    const il = gl.createImageData(rede.tamanho, rede.tamanho);
+    const [cr, cg, cb] = PALETA_MAR.caustica;
+    for (let i = 0, n = rede.alpha.length; i < n; i++) {
+      il.data[i * 4] = cr; il.data[i * 4 + 1] = cg; il.data[i * 4 + 2] = cb;
+      il.data[i * 4 + 3] = rede.alpha[i];
+    }
+    gl.putImageData(il, 0, 0);
+
+    const mascara = document.createElement('canvas');
+    mascara.width = canvas.width; mascara.height = canvas.height;
+    const gm = mascara.getContext('2d');
+    const im = gm.createImageData(canvas.width, canvas.height);
+    for (let i = 0, n = data.luz.length; i < n; i++) im.data[i * 4 + 3] = data.luz[i];
+    gm.putImageData(im, 0, 0);
+
+    causticas = document.createElement('canvas');
+    causticas.width = canvas.width; causticas.height = canvas.height;
+    const gc = causticas.getContext('2d');
+    gc.fillStyle = gc.createPattern(ladrilho, 'repeat');
+    gc.fillRect(0, 0, causticas.width, causticas.height);
+    gc.globalCompositeOperation = 'destination-in';
+    gc.drawImage(mascara, 0, 0);
+  } catch { causticas = null; }
+
+  entrada = { canvas, width: canvas.width, height: canvas.height, causticas, margem: data.margem };
   seaCache.set(map, entrada);
   return entrada;
 }

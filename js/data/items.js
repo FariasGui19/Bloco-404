@@ -49,6 +49,24 @@ export const ITEMS = Object.freeze({
     icon: 'energia',
     description: 'Ajuste de pressão registrado no pátio da Estação Bio.',
   }),
+  boia_de_cortica: Object.freeze({
+    name: 'BOIA DE CORTIÇA',
+    kind: 'lembrança',
+    icon: 'missoes',
+    description: 'A boia que marcava o limite de quem ainda não sabia nadar. Agora é só lembrança: o mar inteiro é seu.',
+  }),
+  semente_de_mare: Object.freeze({
+    name: 'SEMENTE DE MARÉ',
+    kind: 'fragmento',
+    icon: 'energia',
+    description: 'Núcleo de sal e luz recolhido no fundo da Enseada. Pulsa no ritmo da maré.',
+  }),
+  concha_ressonante: Object.freeze({
+    name: 'CONCHA RESSONANTE',
+    kind: 'lembrança',
+    icon: 'missoes',
+    description: 'Presente do mar para quem soltou o que estava preso. Encostada no ouvido, devolve o som dos bichos salvos.',
+  }),
   bio_estacao_estufa: Object.freeze({
     name: 'ASSINATURA DA ESTUFA',
     kind: 'registro',

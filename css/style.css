@@ -483,6 +483,9 @@ body.in-menu #controls {
   animation: interactionPromptIn 0.18s ease-out;
 }
 
+/* Nadando, o corpo deitado ocupa o centro da tela: o aviso desce. */
+#elevatorPrompt.nadando { top: 59%; }
+
 @keyframes interactionPromptIn {
   from {
     opacity: 0;
@@ -3780,11 +3783,14 @@ body.in-menu #controls {
 
 /* ---- mensagem de habilidade: aviso central, não empurra a coluna ---- */
 #hudLeft > .ability-message {
+  /* `#hudLeft > *` zera left/bottom com !important: sem repetir aqui, o
+     aviso ficava preso no canto de cima, cortado pela metade. */
   position: fixed !important;
-  left: 50%;
-  bottom: 118px;
+  left: 50% !important;
+  bottom: 118px !important;
   width: auto !important;
-  max-width: 460px;
+  max-width: min(620px, 92vw);
+  z-index: 6;
 
   padding: 6px 14px;
   margin: 0;
@@ -3998,6 +4004,29 @@ body.in-menu #controls {
 .codex-mare-mode b { color: #cfeaf3; font-size: 9px; font-weight: 600; letter-spacing: .08em; }
 .codex-mare-mode em { color: #5d7c85; font-size: 7px; font-style: normal; letter-spacing: .12em; }
 .codex-mare-mode small { grid-column: 1 / -1; color: #7fa3ad; font-size: 8.5px; line-height: 1.35; }
+
+.codex-mare-mode.pronto { border-left-color: #35e6d3; }
+.codex-mare-mode.pronto em { color: #73e9fa; }
+
+/* ÁRVORE DE NADO no Códex: cinco degraus, o atual aceso. */
+.codex-nado { margin-top: 0; margin-bottom: 10px; border-left-color: #35e6d3; }
+.codex-nado-degrau {
+  display: grid;
+  grid-template-columns: 14px 1fr;
+  align-items: baseline;
+  gap: 2px 6px;
+
+  padding: 4px 0;
+  border-bottom: 1px dashed rgba(53, 230, 211, .14);
+}
+.codex-nado-degrau:last-child { border-bottom: 0; }
+.codex-nado-pin { color: #35e6d3; font-size: 9px; }
+.codex-nado-degrau strong { color: #cfeaf3; font-size: 10px; font-weight: 600; letter-spacing: .06em; }
+.codex-nado-degrau small { grid-column: 2; color: #7fa3ad; font-size: 8.5px; line-height: 1.35; }
+.codex-nado-degrau.atual strong { color: #7dffe6; }
+.codex-nado-degrau.atual .codex-nado-pin { color: #7dffe6; }
+.codex-nado-degrau.futuro strong,
+.codex-nado-degrau.futuro .codex-nado-pin { color: #6c8f99; }
 
 /* Códex: barra da forma do Núcleo (acompanha o relógio da HUD). */
 .codex-form-row { display: grid; grid-template-columns: auto auto 1fr; align-items: center; gap: 8px; }

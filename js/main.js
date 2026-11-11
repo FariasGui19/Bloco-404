@@ -273,6 +273,32 @@ await loadSprites([
     id: 'guia_aeroporto',
     src: 'assets/sprites/npcs/guia-aeroporto.png',
   },
+  // ---- AEROPORTO 2.5D VIVO: naves, planetas e vórtice gerados por IA ----
+  // (assets/source-art/aeroporto -> tools/preparar-aeroporto.py)
+  {
+    id: 'aeroporto_portal_swirl',
+    src: 'assets/sprites/aeroporto/portal-vortice.png',
+  },
+  {
+    id: 'aeroporto_nave_cargueiro',
+    src: 'assets/sprites/aeroporto/nave-cargueiro.png',
+  },
+  {
+    id: 'aeroporto_nave_cruzador',
+    src: 'assets/sprites/aeroporto/nave-cruzador.png',
+  },
+  {
+    id: 'aeroporto_nave_shuttle',
+    src: 'assets/sprites/aeroporto/nave-shuttle.png',
+  },
+  {
+    id: 'aeroporto_planeta_anelado',
+    src: 'assets/sprites/aeroporto/planeta-anelado.png',
+  },
+  {
+    id: 'aeroporto_planeta_vermelho',
+    src: 'assets/sprites/aeroporto/planeta-vermelho.png',
+  },
   {
     id: 'metro_rail_kit',
     src: 'assets/sprites/tiles/metro-rail-kit.png',

@@ -123,8 +123,9 @@ export function render(map, state) {
         drawActor: (a, ax, ay) => {
           drawShadow(ax, ay, 0.30);
           if (a.sprite === 'guia_aeroporto' && drawGuiaSprite(a, ax, ay)) return;
-          if (drawNexoSprite(a, ax, ay)) return;
+          if (a.tipo === 'viajante_ambiental' && drawViajanteSprite(a, ax, ay)) return;
           if (a.tipo === 'robo' && drawRobo(a, ax, ay)) return;
+          if (drawNexoSprite(a, ax, ay)) return;
           ctx.beginPath();
           ctx.arc(ax, ay - 18, 10, 0, Math.PI * 2);
           ctx.fillStyle = a.cor ?? '#35E6D3';
@@ -3761,6 +3762,23 @@ function drawGuiaSprite(npc, ix, iy) {
   return true;
 }
 
+// Viajante ambiental (saguão e aeroporto): 4 vistas × 6 quadros a 256px.
+// Sem folha direcional de caminhada — só oscilação entre quadros do ciclo.
+function drawViajanteSprite(entity, ix, iy) {
+  const image = getSprite('hub_viajante');
+  if (!image) return false;
+  const row = { down: 0, right: 1, up: 2, left: 3 }[entity.facing] ?? 0;
+  const passo = entity.visitorRuntime?.clock ?? 0;
+  const frame = entity.moving ? Math.floor(passo * 7) % 6 : 0;
+  const oscilacao = entity.moving ? (1 - Math.cos(passo * 14 * Math.PI)) * .45 : 0;
+  ctx.save();
+  ctx.translate(ix, iy - oscilacao);
+  ctx.drawImage(image, frame * 256, row * 256, 256, 256, -68, -129, 136, 136);
+  ctx.restore();
+  entity._topo = 122;
+  return true;
+}
+
 // =====================================================================
 //  ENTIDADES
 // =====================================================================
@@ -4204,19 +4222,9 @@ function drawEntity(entity, state) {
   }
 
   if (entity.tipo === 'viajante_ambiental') {
-    const image = getSprite('hub_viajante');
-    if (image) {
-      drawShadow(ix, iy, .24);
-      const row = { down: 0, right: 1, up: 2, left: 3 }[entity.facing] ?? 0;
-      const frame = entity.moving ? Math.floor((entity.visitorRuntime?.clock ?? 0) * 7) % 6 : 0;
-      // Oscilação curta e contínua entre os quadros, sem escalar o corpo.
-      const passo = entity.visitorRuntime?.clock ?? 0;
-      const oscilacao = entity.moving ? (1 - Math.cos(passo * 14 * Math.PI)) * .45 : 0;
-      ctx.save(); ctx.translate(ix, iy - oscilacao);
-      ctx.drawImage(image, frame * 256, row * 256, 256, 256, -68, -129, 136, 136);
-      ctx.restore(); entity._topo = 122; return;
-    }
-    return; // Sem arte, não desenha uma cópia do NEXO.
+    drawShadow(ix, iy, .24);
+    drawViajanteSprite(entity, ix, iy); // sem arte, não desenha uma cópia do NEXO
+    return;
   }
   if (entity.tipo === 'robo') {
     ctx.beginPath();

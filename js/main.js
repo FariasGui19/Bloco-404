@@ -15,6 +15,7 @@ import { desenharMedidorAr, desenharDegrauNado } from './ui/nado-hud.js';
 import { atualizarProvas, garantirMissaoDeNado, garantirArvore, lerArvore, provaDe, degrauDe, nomeDoDegrau } from './game/nado-arvore.js';
 import { pushCombatText } from './game/combat-feedback.js';
 import { atualizarMissaoMare, criarFragmentosDeMare } from './game/mare-missao.js';
+import { atualizarRotaCorrentes } from './game/rota-correntes.js';
 import { atualizarFauna, socorrerProximo } from './game/fauna-ferida.js';
 import { ganharRespeito, cabecaSubmersa, noFundoDoMar } from './game/nado.js';
 import { criarClima, atualizarClima, criarParticulas } from './game/clima.js';
@@ -509,6 +510,12 @@ async function update(dt) {
   // Missão do Maré: eventos de mergulho e coleta saem do estado real do
   // nado, nunca de um contador de tempo.
   const mapaAtual = getFloor();
+  const sinalCorrente = atualizarRotaCorrentes(mapaAtual, player, state.progress);
+  if (sinalCorrente) {
+    player.ability ??= {};
+    player.ability.lastMessage = sinalCorrente;
+    player.ability.messageTimer = 3.5;
+  }
   // Dica de mergulho (fragmento / bicho embaixo do operador): uma por vez,
   // com intervalo, e nunca por cima de um aviso que ainda está na tela.
   player.dicaNado = Math.max(0, (player.dicaNado ?? 0) - dt);

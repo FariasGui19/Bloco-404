@@ -8,6 +8,7 @@ import { fragmentosColetados } from '../game/mare-missao.js';
 
 let webgl = null, falhou = false, mapaAtual = null, cena = null, camera = null;
 let avatar, avatarParado, misturaParado = 0, avatarVertices, rastros, sonar3d, particulas, algaInstancias, algaPontos = [], algas = [], raios3d = [], cardumes = [], fragmentos = [], bichos = [], anterior = 0, transicao = 0;
+let balizas = [];
 let suavX = 0, suavY = 0, suavZ = 0, suavHeading = 0, cameraInicializada = false;
 const minimo = (v, a, b) => Math.max(a, Math.min(b, v));
 
@@ -134,6 +135,49 @@ function montar(map, state) {
       peixe.position.set(p.ox, Math.sin(p.fase) * .15, p.oy); g.add(peixe);
     }
     cena.add(g); return { data: c, object: g };
+  });
+  // Os três jardins pertencem a esta rota, não a mapas antigos. Instâncias
+  // compartilham geometria e material: não há objetos novos a cada quadro.
+  if (map.pontosCorrente?.length) {
+    const pontos = map.pontosCorrente;
+    const corais = new THREE.InstancedMesh(new THREE.PlaneGeometry(1, 1),
+      new THREE.MeshBasicMaterial({map: coral, transparent:true, alphaTest:.25, side:THREE.DoubleSide}), pontos.length * 36);
+    const pedras = new THREE.InstancedMesh(new THREE.DodecahedronGeometry(1, 0),
+      new THREE.MeshLambertMaterial({color:'#486f70'}), pontos.length * 8);
+    const dummy = new THREE.Object3D();
+    pontos.forEach((p, k) => {
+      for (let i=0; i<18; i++) {
+        const ang = i * 2.399 + k, raio = 1.8 + (i % 5) * .48;
+        const x = p.x + Math.cos(ang) * raio, z = p.y + Math.sin(ang) * raio;
+        const altura = .38 + ((i * 7 + k) % 6) * .07;
+        for (let lado=0; lado<2; lado++) {
+          dummy.position.set(x, -2.87 + altura / 2, z);
+          dummy.rotation.set(0, lado * Math.PI / 2 + ang, 0);
+          dummy.scale.set(altura, altura, 1); dummy.updateMatrix();
+          corais.setMatrixAt(k * 36 + i * 2 + lado, dummy.matrix);
+        }
+      }
+      for (let i=0; i<8; i++) {
+        const ang = i * Math.PI / 4 + k, raio = 2.4 + (i % 3) * .6;
+        dummy.position.set(p.x + Math.cos(ang)*raio, -2.76, p.y + Math.sin(ang)*raio);
+        dummy.rotation.set(0, ang, 0); dummy.scale.set(.35 + i % 3 * .12, .18 + i % 2 * .1, .35);
+        dummy.updateMatrix(); pedras.setMatrixAt(k * 8 + i, dummy.matrix);
+      }
+    });
+    corais.instanceMatrix.needsUpdate = pedras.instanceMatrix.needsUpdate = true;
+    cena.add(corais, pedras);
+  }
+  // Balizas de missão visíveis de longe, sem colisões nem luzes dinâmicas.
+  const balizaGeo = new THREE.OctahedronGeometry(.35, 0);
+  const balizaMat = new THREE.MeshBasicMaterial({color:'#98fff0'});
+  const aroGeo = new THREE.TorusGeometry(.65, .035, 6, 24);
+  const aroMat = new THREE.MeshBasicMaterial({color:'#50d6cc'});
+  balizas = (map.pontosCorrente ?? []).map(ponto => {
+    const grupo = new THREE.Group();
+    const nucleo = new THREE.Mesh(balizaGeo, balizaMat); grupo.add(nucleo);
+    const aro = new THREE.Mesh(aroGeo, aroMat); aro.rotation.x = Math.PI / 2; grupo.add(aro);
+    grupo.position.set(ponto.x, -1.85, ponto.y); cena.add(grupo);
+    return {ponto, grupo, aro};
   });
   const cristalGeo = new THREE.OctahedronGeometry(.23, 0);
   const cristalMat = new THREE.MeshBasicMaterial({ color: '#87faff' });
@@ -280,6 +324,11 @@ export function perspectivaSubmersa(map, state, view) {
       dummy.scale.setScalar(.55 + t); dummy.updateMatrix(); rastros.setMatrixAt(i, dummy.matrix);
     }
     rastros.instanceMatrix.needsUpdate = true;
+  }
+  for (const b of balizas) {
+    b.grupo.position.y = -1.85 + Math.sin(agora * 1.5 + b.ponto.x) * .10;
+    b.grupo.rotation.y = agora * .55;
+    b.aro.scale.setScalar(state.progress?.flags?.[`corrente_sintonizada_${b.ponto.id}`] ? .65 : 1 + .12 * Math.sin(agora * 2));
   }
   const pegos = fragmentosColetados(state.progress);
   for (const f of fragmentos) { f.object.visible = !pegos.has(f.data.id); f.object.rotation.y = agora; f.object.position.y = -2.35 + Math.sin(agora * 2 + (f.data.fase ?? 0)) * .08; }

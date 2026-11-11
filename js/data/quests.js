@@ -10,6 +10,16 @@
 // =====================================================================
 
 export const QUESTS = Object.freeze({
+  caminho_das_correntes: Object.freeze({
+    id: 'caminho_das_correntes', title: 'CAMINHO DAS CORRENTES', giver: 'O MAR', kind: 'secundária',
+    description: 'Na Enseada dos Ecos, siga para o Caminho das Correntes. Com Maré Astral, mergulhe junto às três balizas: Recife da Escuta, Jardim das Marés e Farol Submerso.',
+    objectives: Object.freeze([
+      Object.freeze({type:'reach', target:'corrente_primeira', count:1, label:'Sintonizar o Recife da Escuta'}),
+      Object.freeze({type:'reach', target:'corrente_segunda', count:1, label:'Sintonizar o Jardim das Marés'}),
+      Object.freeze({type:'reach', target:'corrente_terceira', count:1, label:'Sintonizar o Farol Submerso'}),
+    ]),
+    rewards: Object.freeze({xp:200, points:2, items:Object.freeze(['mapa_das_correntes']), flags:Object.freeze({caminho_das_correntes_concluido:true})}),
+  }),
   calibracao_de_campo: Object.freeze({
     id: 'calibracao_de_campo',
     title: 'CALIBRAÇÃO DE CAMPO',

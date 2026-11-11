@@ -30,7 +30,7 @@ export const map = {
   meta: { nome: 'ENSEADA DOS ECOS', tipo: 'exterior', dimensao: 'arquipelago', corFundo: '#025074',
     estiloPiso: 'livre', useBackgroundWalls: true, sandSprite: 'beach_novas_artes', ambiente: { poeira: 12, cor: '#ffd98a' } },
   corChao: '#e6c280', layout, walkMask: ground.walkMask, pisos: ground.pisos, aguaPraia: rows,
-  spawnPoints: { inicio: { x: 6.5, y: 15.5 }, vindo_da_praia: { x: 6.5, y: 15.5 } },
+  spawnPoints: { inicio: { x: 6.5, y: 15.5 }, vindo_da_praia: { x: 6.5, y: 15.5 }, vindo_do_mar: { x: 24.5, y: 15.5 } },
   trainingTargets: [{ id: 'eco_treino_enseada', x: 14, y: 15, maxHealth: 60 }],
   // Fonte de dano ambiental enquanto inimigos agressivos não existem.
   // Longe do spawn, do alvo de treino e dos vestígios obrigatórios.
@@ -63,6 +63,7 @@ export const map = {
     tropical('enseada_folhas_9', 7, 10, 1, 40), tropical('enseada_folhas_10', 8, 20, 0, 43),
     tropical('enseada_folhas_11', 15, 8, 1, 38), tropical('enseada_folhas_12', 22, 23, 0, 42),
     tropical('enseada_ruinas', 20, 13, 6, 72), tropical('enseada_rochas', 12, 22, 7, 58),
+    { id: 'marco_correntes', tipo: 'decoracao', x: 25, y: 15, routeMarker: 'CAMINHO DAS CORRENTES', bloqueia: false },
     { id: 'marco_praia', tipo: 'decoracao', x: 5, y: 15, routeMarker: 'PRAIA', bloqueia: false },
     tropical('enseada_palmeira_1', 9, 10, 2, 84), tropical('enseada_palmeira_2', 21, 9, 2, 80),
     tropical('enseada_palmeira_3', 22, 21, 2, 86), prop('enseada_arbusto_1', 11, 21, 3, 0, 48),
@@ -77,6 +78,7 @@ export const map = {
     { id: 'enseada_rastro_pedra', nome: 'MARCA NO BASALTO', tipo: 'fragmento', x: 19, y: 12, label: 'EXAMINAR MARCA NA PEDRA', dialogue: ['UM SÍMBOLO DESCONHECIDO FOI GRAVADO NA PEDRA.', 'ELE APONTA PARA ALÉM DA ENSEADA.'] },
     { id: 'enseada_rastro_mata', nome: 'VESTÍGIO DA MATA', tipo: 'fragmento', x: 21, y: 20, label: 'EXAMINAR VESTÍGIO DA MATA', dialogue: ['FOLHAS E PEGADAS INDICAM UMA TRILHA PARA O INTERIOR.', 'O CAMINHO PARA O MANGUE AINDA PRECISA SER EXPLORADO.'] },
   ],
-  portals: [{ id: 'enseada_retorno', tipo: 'door', x: 5, y: 15, label: 'VOLTAR À PRAIA INICIAL', interactionDistance: 1.4,
+  portals: [{ id: 'rota_correntes', tipo: 'door', x: 25, y: 15, label: 'NAVEGAR: CAMINHO DAS CORRENTES', interactionDistance: 1.4, destino: { mapId: 'mar_caminho_das_correntes', spawnId: 'vindo_da_enseada' }, transition: 'fade' },
+    { id: 'enseada_retorno', tipo: 'door', x: 5, y: 15, label: 'VOLTAR À PRAIA INICIAL', interactionDistance: 1.4,
     destino: { mapId: 'ilha_praia_inicial', spawnId: 'vindo_da_enseada' }, transition: 'fade' }],
 };

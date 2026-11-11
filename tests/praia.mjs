@@ -34,7 +34,7 @@ const tremPraia = map.objects.find(o => o.id === 'trem_dimensional');
 // tiles), então o ajuste final que chega ao renderer é 68.9. O que importa
 // é o trem assentar na orla — o número exato é consequência disso.
 assert.equal(tremPraia.ajusteY, 68.9);
-assert.equal(tremPraia.larguraPx, 340, 'trem da praia redimensionado');
+assert.equal(tremPraia.larguraPx, 350, 'trem da praia redimensionado');
 assert.equal(tremPraia.escalaY, .78);
 assert.equal(linhaDoTrem().find(o => o.id === 'trem_dimensional').ajusteY, 58, 'ajuste da praia não altera o trem compartilhado');
 

@@ -260,6 +260,16 @@ export function getVidaAquatica(map) {
       raios: criarRaios(map),
       bolhas: [],
     };
+    // A rota oceânica tem cardumes residentes nos três jardins, além dos
+    // cardumes dispersos. São poucos e seguem a mesma simulação limitada.
+    if (map.pontosCorrente?.length && vida.cardumes.length) {
+      for (const [i, ponto] of map.pontosCorrente.entries()) {
+        const modelo = vida.cardumes[i % vida.cardumes.length];
+        vida.cardumes.push({ ...modelo, homeX:ponto.x + 1.4, homeY:ponto.y + 1,
+          x:ponto.x + 1.4, y:ponto.y + 1, fase:i * 2.1, cor:i % 3,
+          peixes:modelo.peixes.map(peixe => ({...peixe})) });
+      }
+    }
     cache.set(map, vida);
   }
   return vida;

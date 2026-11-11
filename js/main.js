@@ -466,11 +466,6 @@ async function update(dt) {
     if (!abilityLocksMovement) updateHazards(state.hazards, player, state.progress, dt);
     updateHealth(player, state.progress, dt, { onRespawn: () => getSafeSpawn() });
 
-    const pressedE =
-      input.pressed.has('e') ||
-      input.pressed.has('keye');
-
-    await checkInteractions(pressedE);
   }
 
   updateNpcBrains(dt);
@@ -507,6 +502,9 @@ async function update(dt) {
       : null;
 
     const pressedE2 = input.pressed.has('e') || input.pressed.has('keye');
+    // O prompt de socorro tem prioridade sobre o objeto/NPC atrás dele:
+    // sem isto, um E perto de bicho E de placa abriria as duas coisas.
+    if (pressedE2 && fauna.pronto) state.interaction.socorroConsumiuE = true;
     if (pressedE2 && fauna.pronto) {
       const res = socorrerProximo(ancoraFauna, {
         player, progress: state.progress,
@@ -526,6 +524,17 @@ async function update(dt) {
         player.ability.messageTimer = 2;
       }
     }
+  }
+
+  // Interações (portais, NPCs, objetos) correm DEPOIS da fauna: assim o
+  // socorro tem a primeira chance no E, e um E perto de bicho não abre
+  // a placa atrás dele ao mesmo tempo.
+  {
+    const pressedE =
+      input.pressed.has('e') ||
+      input.pressed.has('keye');
+    await checkInteractions(pressedE && !state.interaction.socorroConsumiuE);
+    state.interaction.socorroConsumiuE = false;
   }
 
   updateOwnedCompanion(getFloor(), dt, canStandAt);

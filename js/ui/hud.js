@@ -370,13 +370,19 @@ export function updateHud(map, state) {
   updateBackgroundCalibrationHud();
 
   const active = state.interaction.active;
+  // Socorro de animal ferido ocupa o mesmo prompt do [E]. É um único
+  // gesto no jogo, então tem que ser um único aviso na tela — antes o
+  // jogador via dois prompts concorrentes quando estava perto de bicho.
+  const socorro = state.interaction.faunaPronta;
 
   const shouldShowPrompt =
-    Boolean(active) &&
+    (Boolean(active) || Boolean(socorro)) &&
     !isDialogueOpen();
 
   if (shouldShowPrompt) {
-    const label = getInteractionPrompt(active);
+    const label = socorro
+      ? `SOCORRER ${socorro.nome}${socorro.parcial ? ' (PARCIAL)' : ''}`
+      : getInteractionPrompt(active);
 
     setText(
       'elevatorPrompt',

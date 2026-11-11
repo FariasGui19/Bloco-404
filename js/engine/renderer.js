@@ -10,6 +10,7 @@ import { drawUltimateSignature } from './ultimate-visuals.js';
 import { getSprite } from './sprites.js';
 import { createBeachSurface } from './beach-surface.js';
 import { getSeaCanvas, foamArcs } from './beach-water.js';
+import { identidadeDoGate, desenharSeloDeModulo } from './selos-modulo.js';
 import { getVidaAquatica, atualizarCardumes, atualizarBolhas, CORES_CARDUME, elementosDeRecife } from '../game/vida-aquatica.js';
 import { criarFragmentosDeMare, fragmentosColetados } from '../game/mare-missao.js';
 import { createCoastField } from './coast-field.js';
@@ -1960,10 +1961,20 @@ function getVisibleBox(image, sx, sy, sw, sh, threshold = 40) {
 }
 // Limiares acompanhando a largura e o eixo do deck, em vez de uma caverna
 // ou rocha aparentemente solta sobre a ponte. Só muda o desenho do gate.
-function drawBridgeThreshold(object, map) {
+function drawBridgeThreshold(object, map, state) {
   const g = bridgeGateGeometry(map?.aguaPraia, object);
   if (!g) return; // sem deck reconhecível, não inventar marca sobre água
   const x = (g.x - g.y) * HW, y = (g.x + g.y) * HH;
+
+  // SELO DO MÓDULO: o portal de energia que dá identidade ao gate.
+  // Desenhado ANTES do traço do deck, para o deck ficar por cima do
+  // brilho (leitura correta de "portal atrás do piso").
+  const vencido = Boolean(state?.progress?.flags?.[`gate_${object.id}`]);
+  const identidade = identidadeDoGate(object);
+  ctx.save();
+  ctx.translate(x, y - 6);
+  desenharSeloDeModulo(ctx, identidade, g, performance.now() / 1000, vencido);
+  ctx.restore();
   // Pontas da faixa são recuadas das bordas físicas do deck.
   const dx = (g.axis === 'x' ? -1 : 1) * HW * g.halfWidth, dy = HH * g.halfWidth;
   ctx.save(); ctx.translate(x, y); ctx.lineCap = 'round'; ctx.lineJoin = 'round';
@@ -2086,7 +2097,7 @@ function drawMapObject(object, state) {
   if (object.hideWhenFlag && state.progress.flags?.[object.hideWhenFlag]) return;
   if (object.showWhenFlag && !state.progress.flags?.[object.showWhenFlag]) return; // NOVO
 
-  if (['rocha_rachada', 'travessia_mare_eco', 'passagem_mare_eco', 'caverna_alagada', 'fenda_estreita', 'teleferico_quebrado'].includes(object.id)) { drawBridgeThreshold(object, state.world?.currentMap); return; }
+  if (['rocha_rachada', 'travessia_mare_eco', 'passagem_mare_eco', 'caverna_alagada', 'fenda_estreita', 'teleferico_quebrado'].includes(object.id)) { drawBridgeThreshold(object, state.world?.currentMap, state); return; }
 
   if (object.gate) {
     const x = (object.x - object.y) * HW, y = (object.x + object.y) * HH;

@@ -402,6 +402,7 @@ export const ARCHETYPE_TOOLS = Object.freeze({
       }),
       Object.freeze({
         id: 'nucleo_bruto',
+        requiredLevel: 4,
         name: 'QUEBRA SISTEMAS',
         short: 'QUEBRA',
         color: '#ffc94a',

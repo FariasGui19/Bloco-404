@@ -20,3 +20,18 @@ halo = edge & (a.min(axis=2) > 145) & (spread < 45)
 strength = np.clip((240 - a.min(axis=2)) / 95, 0, 1)
 rgba[halo, 3] = (strength[halo] * 255).astype(np.uint8)
 Image.fromarray(rgba).save('assets/sprites/saguao/viajante-2026.png')
+
+# O quadriculado também ficou preso entre a perna e a mala no quinto
+# quadro lateral esquerdo: é um buraco fechado, invisível ao flood exterior.
+# Limita a limpeza à região medida nesse quadro para preservar olhos e luzes.
+region = np.zeros(background.shape, bool)
+region[900:965, 1160:1205] = True
+hole = region & (a.min(axis=2) > 165) & ((a.max(axis=2) - a.min(axis=2)) < 30)
+labels, count = __import__('scipy.ndimage', fromlist=['label']).label(hole)
+for i in range(1, count + 1):
+    component = labels == i
+    if component.sum() < 100:
+        continue
+    halo = binary_dilation(component, iterations=2) & region & (a.min(axis=2) > 145) & ((a.max(axis=2) - a.min(axis=2)) < 45)
+    rgba[component | halo, 3] = 0
+Image.fromarray(rgba).save('assets/sprites/saguao/viajante-2026.png')

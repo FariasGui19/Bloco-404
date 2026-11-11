@@ -24,13 +24,15 @@ const BIO = 'motor_bio_forja';
 // Apoio dos pés e escala medidos no script de arte (BASELINE 276 de 320).
 // O corpo em jogo desenha 420 px de célula com 0,31 (≈130 px de altura).
 // Aqui a arte útil tem ~230 px por célula de 320: 0,57 dá ≈131 px — o corpo
-// continua do mesmo tamanho, quem cresce é o gesto da Ultimate.
+// continua do mesmo tamanho, quem cresce é o gesto da Ultimate. A folha
+// dos propulsores tem corpo maior, logo usa escala própria. As âncoras da
+// rede compensam o centro deslocado pelos cabos em cada quadro.
 export const BIO_ULTIMATE_SHEETS = Object.freeze({
-  forja_dome: Object.freeze({ sprite: 'player_bio_ult_forja_dome', cell: 320, footY: 276, scale: .57 }),
+  forja_dome: Object.freeze({ sprite: 'player_bio_ult_forja_dome', cell: 320, footY: 276, scale: .57, cols: 4 }),
   serra: Object.freeze({ sprite: 'player_bio_ult_serra', cell: 320, footY: 276, scale: .57, cols: 4 }),
   martelo: Object.freeze({ sprite: 'player_bio_ult_martelo', cell: 320, footY: 276, scale: .57, cols: 4 }),
-  cabos: Object.freeze({ sprite: 'player_bio_ult_cabos', cell: 320, footY: 276, scale: .57, cols: 4 }),
-  propulsores: Object.freeze({ sprite: 'player_bio_ult_propulsores', cell: 320, footY: 276, scale: .57, cols: 4 }),
+  cabos: Object.freeze({ sprite: 'player_bio_ult_cabos', cell: 320, footY: 276, scale: .57, cols: 4, anchors: Object.freeze([38, 95, 13, -2]) }),
+  propulsores: Object.freeze({ sprite: 'player_bio_ult_propulsores', cell: 320, footY: 276, scale: .52, cols: 4 }),
 });
 
 // Nome do sprite da folha de uma assinatura (usado pelo Códex para mostrar a
@@ -63,7 +65,8 @@ export function getBioUltimateFrame(progress, player) {
     const assinatura = runtime.chargeDefinition?.signature
       ?? runtime.chargeSignature ?? runtime.pendingSignature ?? 'forja_dome';
     const sheet = BIO_ULTIMATE_SHEETS[assinatura] ?? BIO_ULTIMATE_SHEETS.forja_dome;
-    return { ...sheet, col: k < .55 ? 0 : 1, phase: 'charge', flash: runtime.chargeDefinition?.color ?? null };
+    const col = k < .55 ? 0 : 1;
+    return { ...sheet, col, offsetX: (sheet.anchors?.[col] ?? 0) * sheet.scale, phase: 'charge', flash: runtime.chargeDefinition?.color ?? null };
   }
 
   const effect = runtime.effect;
@@ -71,5 +74,6 @@ export function getBioUltimateFrame(progress, player) {
   const sheet = BIO_ULTIMATE_SHEETS[effect.signature];
   if (!sheet) return null;
   const t = Math.max(0, Math.min(.9999, 1 - effect.timeLeft / effect.duration));
-  return { ...sheet, col: t < .42 ? 2 : 3, phase: t < .42 ? 'impact' : 'recover', flash: effect.color ?? null };
+  const col = t < .42 ? 2 : 3;
+  return { ...sheet, col, offsetX: (sheet.anchors?.[col] ?? 0) * sheet.scale, phase: t < .42 ? 'impact' : 'recover', flash: effect.color ?? null };
 }

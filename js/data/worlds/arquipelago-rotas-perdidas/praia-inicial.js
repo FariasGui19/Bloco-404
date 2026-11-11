@@ -963,7 +963,7 @@ export const map = {
 
   spawnPoints: {
     inicio: { x: 8.0, y: 7.5 },
-    vindo_do_trem: { x: 8.0, y: 5.5 },
+    vindo_do_trem: { x: 8.0, y: 7.5 },
     vindo_da_enseada: { x: 11.5, y: 10.5 },
     vindo_da_estacao: { x: 8.5, y: 23.5 },
   },

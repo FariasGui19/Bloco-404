@@ -51,6 +51,6 @@ assert.match(css, /width: 86%; height: 86%/, 'a arte cabe dentro do hexágono');
 // 6) E não existe mais a regra antiga que esticava todos os cartões.
 assert.doesNotMatch(css, /\.nucleo-art-ready \.nucleo-orbit \.nucleo-form \{ width: 30%; height: 36%; \}/,
   'a regra que transbordava foi removida');
-assert.ok(__wheelInternals.playableCards({ archetype: 'nucleo_dez_forma' }).length >= 2);
+assert.ok(__wheelInternals.playableCards({ archetype: 'nucleo_dez_forma', archetypeProgress: { nucleo_dez_forma: { level: 4 } } }).length >= 2);
 
 console.log('Roda do T: quatro encaixes medidos na arte, slot quadrado e arte contida OK.');

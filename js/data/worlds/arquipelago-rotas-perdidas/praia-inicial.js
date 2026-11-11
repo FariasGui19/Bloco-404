@@ -1089,7 +1089,7 @@ export const map = {
       // O leito é mais comprido que o trem e ambos compartilham o eixo.
       // A frente e a traseira do trilho permanecem visíveis sob as rodas.
       trilho: { larguraPx: 380, ajusteX: -3, ajusteY: 31 },
-      trem: { larguraPx: 340, ajusteX: 0, escalaY: .78, ajusteY: 70 },
+      trem: { larguraPx: 350, ajusteX: 0, escalaY: .78, ajusteY: 70 },
     }),
 
     // A traseira agora assenta mais abaixo; a coluna impede entrar na área
@@ -1115,7 +1115,7 @@ export const map = {
     // o totem protegem a área do trem sem mudar o spawn nem as rotas.
     { id: 'estacao_plataforma', tipo: 'decoracao', x: 7.1, y: 2.0, camada: 'fundo', ordem: -0.1,
       sprite: 'praia_plataforma_kit', frame: { col: 1, row: 0 }, useCrop: true,
-      larguraPx: 230, pivotX: .5, pivotY: 1, ajusteX: 5, ajusteY: 10, escalaY: .65, espelhar: true, bloqueia: false },
+      larguraPx: 240, pivotX: .5, pivotY: 1, ajusteX: 8, ajusteY: 14, escalaY: .65, espelhar: true, bloqueia: false },
     { id: 'estacao_dossel', tipo: 'decoracao', x: 7.1, y: 2.0, camada: 'fundo', ordem: 0.3,
       sprite: 'praia_plataforma_kit', frame: { col: 2, row: 0 }, useCrop: true,
       larguraPx: 92, pivotX: .5, pivotY: 1, ajusteX: -66, ajusteY: 14, escalaY: .65, bloqueia: false },
@@ -1130,13 +1130,13 @@ export const map = {
     { id: 'praia_placa_estacao', tipo: 'decoracao', x: 9.6, y: 3.4,
       sprite: 'praia_plataforma_kit', frame: { col: 1, row: 1 }, useCrop: true,
       larguraPx: 82, pivotY: 1, escalaY: .82, bloqueia: false, routeMarker: 'ESTAÇÃO' },
-    { id: 'estacao_luminaria', tipo: 'decoracao', x: 12.0, y: 1.5,
+    { id: 'estacao_luminaria', tipo: 'decoracao', x: 13.4, y: 1.3,
       sprite: 'praia_plataforma_kit', frame: { col: 2, row: 1 }, useCrop: true,
       larguraPx: 44, pivotY: 1, escalaY: .80, bloqueia: false },
     { id: 'estacao_escada', tipo: 'decoracao', x: 4.6, y: 4.1,
       sprite: 'praia_plataforma_kit', frame: { col: 3, row: 0 }, useCrop: true,
       larguraPx: 86, pivotY: 1, ajusteX: 65, ajusteY: 32, escalaY: .72, bloqueia: false },
-    { id: 'estacao_guarda_corpo', tipo: 'decoracao', x: 10.4, y: 4.5,
+    { id: 'estacao_guarda_corpo', tipo: 'decoracao', x: 9.8, y: 5.8,
       sprite: 'praia_plataforma_kit', frame: { col: 3, row: 1 }, useCrop: true,
       larguraPx: 104, pivotY: 1, escalaY: .74, bloqueia: false },
     { id: 'praia_caixa_estacao', tipo: 'decoracao', x: 12.4, y: 5.4, sprite: 'bio_caixa', useCrop: true, larguraPx: 42, pivotY: 1, bloqueia: false },

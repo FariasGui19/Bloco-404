@@ -12,9 +12,10 @@ import { updateNucleoForm } from './game/nucleo-form.js';
 import { canStandAt } from './game/collision.js';
 import { dispararPropulsao } from './game/nado.js';
 import { desenharMedidorAr, desenharDegrauNado } from './ui/nado-hud.js';
-import { atualizarProvas, garantirMissaoDeNado, lerArvore, provaDe, degrauDe, nomeDoDegrau } from './game/nado-arvore.js';
+import { atualizarProvas, garantirMissaoDeNado, garantirArvore, lerArvore, provaDe, degrauDe, nomeDoDegrau } from './game/nado-arvore.js';
 import { pushCombatText } from './game/combat-feedback.js';
 import { atualizarMissaoMare, criarFragmentosDeMare } from './game/mare-missao.js';
+import { atualizarRotaCorrentes } from './game/rota-correntes.js';
 import { atualizarFauna, socorrerProximo } from './game/fauna-ferida.js';
 import { ganharRespeito, cabecaSubmersa, noFundoDoMar } from './game/nado.js';
 import { criarClima, atualizarClima, criarParticulas } from './game/clima.js';
@@ -265,6 +266,10 @@ await loadSprites([
     src: 'assets/sprites/backgrounds/metro-station-base.png',
   },
   {
+    id: 'aeroporto_background',
+    src: 'assets/sprites/backgrounds/aeroporto-central-bg.png',
+  },
+  {
     id: 'metro_rail_kit',
     src: 'assets/sprites/tiles/metro-rail-kit.png',
   },
@@ -313,6 +318,10 @@ await loadSprites([
   // por direção.
   { id: 'nado_civil', src: 'assets/sprites/player/nado-civil.png' },
   { id: 'nado_mare', src: 'assets/sprites/player/nado-mare.png' },
+  { id: 'nado_mare_impulso', src: 'assets/sprites/player/nado-mare-impulso.png' },
+  { id: 'nado_mare_submerso', src: 'assets/sprites/player/nado-mare-submerso.png' },
+  { id: 'fundo_mar_mare', src: 'assets/sprites/tiles/fundo-mar-mare.png' },
+  { id: 'coral_astral_submerso', src: 'assets/sprites/praia/coral-astral-submerso.png' },
   { id: 'nado_bio', src: 'assets/sprites/player/nado-bio.png' },
   { id: 'nado_dominio', src: 'assets/sprites/player/nado-dominio.png' },
   { id: 'nado_nucleo', src: 'assets/sprites/player/nado-nucleo.png' },
@@ -472,6 +481,8 @@ async function update(dt) {
     abilityLocksMovement ||= player.ultimate?.charge > 0;
     updateNucleoForm(state.progress, player, dt, canStandAt(getFloor(), player.x, player.y, CONFIG.PLAYER_RADIUS, player));
     abilityLocksMovement ||= player.ability?.effect?.id === 'transformacao_10x';
+    // A projeção de clique é isométrica; nunca a use para mirar no 3D.
+    if (player.nado?.perspectiva3d) input.attackClick = null;
     if (input.attackClick) {
       const point = input.attackClick; input.attackClick = null;
       if (!abilityLocksMovement && !state.world.isLoading) {
@@ -503,6 +514,12 @@ async function update(dt) {
   // Missão do Maré: eventos de mergulho e coleta saem do estado real do
   // nado, nunca de um contador de tempo.
   const mapaAtual = getFloor();
+  const sinalCorrente = atualizarRotaCorrentes(mapaAtual, player, state.progress);
+  if (sinalCorrente) {
+    player.ability ??= {};
+    player.ability.lastMessage = sinalCorrente;
+    player.ability.messageTimer = 3.5;
+  }
   // Dica de mergulho (fragmento / bicho embaixo do operador): uma por vez,
   // com intervalo, e nunca por cima de um aviso que ainda está na tela.
   player.dicaNado = Math.max(0, (player.dicaNado ?? 0) - dt);
@@ -514,7 +531,13 @@ async function update(dt) {
     player.dicaNado = 6;
   };
   if (mapaAtual?.aguaPraia && player.nado) {
-    player.fragmentosMare ??= criarFragmentosDeMare(mapaAtual, getCoastFieldForMap(mapaAtual));
+    if (player._mapaFragmentos !== mapaAtual.id) {
+      player.fragmentosMare = criarFragmentosDeMare(mapaAtual, getCoastFieldForMap(mapaAtual));
+      player._mapaFragmentos = mapaAtual.id;
+      // Não transportar um eco nem um evento de entrada do fundo de outro mapa.
+      if (player.ability) player.ability.sonarAquatico = null;
+      if (player.mareMissao) player.mareMissao.estavaSubmerso = false;
+    }
     const res = atualizarMissaoMare({
       map: mapaAtual, player, nado: player.nado, progress: state.progress,
       fragmentos: player.fragmentosMare,
@@ -529,7 +552,7 @@ async function update(dt) {
       const emCima = res.fragmentos.some(f => Math.hypot(player.x - f.x, player.y - f.y) < 1.1);
       if (emCima) {
         darDicaDeNado(lerArvore(state.progress).nivel >= 3
-          ? 'FRAGMENTO NO FUNDO • SEGURE ESPAÇO PARA MERGULHAR'
+          ? 'FRAGMENTO NO FUNDO • ESPAÇO OU Z PARA MERGULHAR'
           : 'FRAGMENTO NO FUNDO • FALTA O DEGRAU TRAVESSIA');
       }
     }
@@ -601,7 +624,7 @@ async function update(dt) {
     if (fauna.dica) {
       const nome = fauna.dica.bicho.def.nome;
       if (fauna.dica.meio !== 'agua') darDicaDeNado(`SAIA DA ÁGUA PARA SOCORRER • ${nome}`);
-      else if (player.nado?.ativo) darDicaDeNado(`SEGURE ESPAÇO PARA MERGULHAR • ${nome}`);
+      else if (player.nado?.ativo) darDicaDeNado(`${player.nado.mareAstral && player.nado.nivel >= 3 ? 'ESPAÇO OU Z PARA MERGULHAR' : 'SEGURE ESPAÇO PARA MERGULHAR'} • ${nome}`);
       else if (lerArvore(state.progress).nivel === 0) darDicaDeNado(`${nome} ESTÁ NA ÁGUA • APRENDA A BOIAR NA POÇA PRIMEIRO`);
       else darDicaDeNado(`${nome} ESTÁ NA ÁGUA • ENTRE E MERGULHE (ESPAÇO)`);
     }
@@ -622,8 +645,13 @@ async function update(dt) {
         player.ability.lastMessage = `${res.nome} — SALVO`;
         player.ability.messageTimer = 3;
         // (era `player.nado`: o respeito do socorro nunca chegava a contar)
-        if (player.nado) ganharRespeito(player.nado.respeito, res.respeito);
+        if (player.nado) {
+          ganharRespeito(player.nado.respeito, res.respeito);
+          const arvore = garantirArvore(state.progress);
+          arvore.respeito = Math.max(arvore.respeito ?? 0, player.nado.respeito.valor);
+        }
         state.interaction.faunaPronta = null;
+        saveGame();
       } else if (res?.motivo) {
         player.ability ??= {};
         player.ability.lastMessage = res.motivo.toUpperCase();
@@ -644,7 +672,7 @@ async function update(dt) {
   }
 
   updateOwnedCompanion(getFloor(), dt, canStandAt);
-  updateCamera(dt, player.x, player.y);
+  updateCamera(dt, player.x, player.y, player.nado);
 }
 
 // =====================================================================
@@ -692,6 +720,20 @@ async function frame(now) {
   updateHud(map, state);
   // Fôlego só aparece quando importa (nadando); em terra não ocupa tela.
   if (state.player?.nado?.ativo) desenharMedidorAr(state.player.nado);
+  if (state.player?.nado?.perspectiva3d) {
+    const dpr = Math.min(window.devicePixelRatio || 1, 2), w = canvas.width / dpr, h = canvas.height / dpr;
+    const c = canvas.getContext('2d'); c.save(); c.setTransform(dpr, 0, 0, dpr, 0, 0);
+    c.font = 'bold 11px monospace'; c.textAlign = 'right';
+    c.fillStyle = 'rgba(0,30,42,.72)'; c.fillRect(w - 510, h - 127, 496, 32);
+    c.fillStyle = '#bdfaf0'; c.fillText('A/D GIRAR · W NADAR/DESCER · S SUBIR · Q IMPULSO · R SONAR', w - 24, h - 107);
+    if (state.interaction?.faunaPronta) {
+      const nome = state.interaction.faunaPronta.nome;
+      c.textAlign = 'center'; c.fillStyle = 'rgba(0,30,42,.82)';
+      c.fillRect(w / 2 - 190, h - 190, 380, 32);
+      c.fillStyle = '#bdfaf0'; c.fillText(`E · SOCORRER ${nome}`, w / 2, h - 170);
+    }
+    c.restore();
+  }
   // Degrau do nado + prova em curso: perto d'água, ou comemorando.
   if (map?.aguaPraia) desenharDegrauNado(state, map);
 

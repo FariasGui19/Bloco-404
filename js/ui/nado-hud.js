@@ -76,6 +76,14 @@ export function desenharMedidorAr(nado) {
   ctx.lineWidth = 1.6;
   ctx.stroke();
 
+  // Orientação sempre visível depois que a travessia libera o nado livre.
+  if (nado.mareAstral && nado.nivel >= 3) {
+    ctx.fillStyle = 'rgba(232,255,250,.9)';
+    ctx.font = 'bold 9px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText(nado.mergulhoFixo ? 'Z SUBIR' : 'Z MERGULHAR', cx, cy - RAIO - 10);
+  }
+
   // Seta para cima enquanto há ar: "suba para respirar".
   if (nado.afogando) {
     ctx.fillStyle = '#EF6C6C';
@@ -94,7 +102,11 @@ export function desenharMedidorAr(nado) {
     ctx.fillStyle = 'rgba(232,255,250,.62)';
     ctx.font = '9px monospace';
     ctx.textAlign = 'center';
-    ctx.fillText(`${Math.ceil(nado.ar)}s`, cx, cy + RAIO + 16);
+    ctx.fillText(`${Math.ceil(nado.ar)}s DE AR`, cx, cy + RAIO + 16);
+    if (nado.mareAstral && nado.profundidade > 1.25) {
+      ctx.fillStyle = pct < .25 ? '#ff9990' : '#c8fff3';
+      ctx.fillText(pct < .25 ? 'SUBA PARA RESPIRAR' : `RESPEITO ${Math.round((nado.respeito?.valor ?? 0) * 100)}%`, cx + 35, cy - RAIO - 23);
+    }
   }
 
   ctx.restore();
@@ -185,7 +197,8 @@ export function desenharDegrauNado(state, map) {
   ctx.font = '9px monospace';
   if (r.prova) {
     ctx.fillStyle = 'rgba(232,255,250,.74)';
-    ctx.fillText(`PROVA › ${r.prova.curta}`, x + 12, y + 32);
+    ctx.fillText(r.prova.id === 'fundo' && !nado.mergulhoLivre
+      ? 'FUNDO: REQUER AFINIDADE AQUÁTICA' : `PROVA › ${r.prova.curta}`, x + 12, y + 32);
 
     // Barra de andamento.
     const bw = L - 24 - 54, bh = 5, px = x + 12, py = y + 46;
@@ -203,7 +216,7 @@ export function desenharDegrauNado(state, map) {
     ctx.fillText(`${Math.min(r.prova.meta, r.valor).toFixed(casas)}/${r.prova.meta.toFixed(casas)} ${r.prova.unidade}`, x + L - 12, py + 3);
   } else {
     ctx.fillStyle = 'rgba(232,255,250,.74)';
-    ctx.fillText('ESPAÇO MERGULHA · SHIFT ARRANCA', x + 12, y + 32);
+    ctx.fillText(nado.mareAstral ? 'Z MERGULHA/SOBE · SHIFT ARRANCA' : 'ESPAÇO MERGULHA · SHIFT ARRANCA', x + 12, y + 32);
   }
   ctx.restore();
 }

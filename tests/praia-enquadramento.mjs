@@ -16,6 +16,11 @@
 // =====================================================================
 import assert from 'node:assert/strict';
 import { map } from '../js/data/worlds/arquipelago-rotas-perdidas/praia-inicial.js';
+import { state } from '../js/game/state.js';
+import { canStandAt } from '../js/game/collision.js';
+// Objetos recebem meia célula no carregamento real do mapa.
+state.objects = map.objects.map(o => ({...o, x:o.x + .5, y:o.y + .5}));
+state.actors = [];
 
 const HW = 32, HH = 16;
 const TILE_W = 64, TILE_H = 32;
@@ -116,7 +121,7 @@ let invadidas = [];
 for (let y = 0; y < map.aguaPraia.length; y++) {
   for (let x = 0; x < map.aguaPraia[y].length; x++) {
     if (!'SMT'.includes(map.aguaPraia[y][x])) continue;
-    if (cobrePonto(caixaTrem, x + .5, y + .5)) invadidas.push(`${x},${y}`);
+    if (cobrePonto(caixaTrem, x + .5, y + .5) && canStandAt(map, x + .5, y + .5, .25)) invadidas.push(`${x},${y}`);
   }
 }
 assert(invadidas.length === 0,

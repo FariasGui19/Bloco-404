@@ -1,3 +1,4 @@
+import { perspectivaSubmersa } from './perspectiva-submersa.js';
 // js/engine/renderer.js
 // =====================================================================
 //  RENDERER
@@ -5,7 +6,7 @@
 //  profundidade → poeira → debug → nomes e balões
 // =====================================================================
 import { CONFIG, TILE } from '../config.js';
-import { camera, view, worldToScreen, isoToWorld } from './camera.js';
+import { camera, view, worldToScreen, worldToIso, isoToWorld } from './camera.js';
 import { drawUltimateSignature } from './ultimate-visuals.js';
 import { getSprite } from './sprites.js';
 import { createBeachSurface } from './beach-surface.js';
@@ -21,7 +22,7 @@ import { getBioWalkFrame, bioWalkSheet } from '../data/bio-walk.js';
 import { faunaFootAnchor } from '../game/fauna-costeira.js';
 import { getFrame } from './sprite-clean.js';
 import { drawAmbientBack, drawAmbientFront } from './ambient.js';
-import { tintaDoClima, atualizarParticulas } from '../game/clima.js';
+import { tintaDoClima, atualizarParticulas, climaVisivelNoMapa } from '../game/clima.js';
 import { animarFauna } from '../game/fauna-animacao.js';
 import { isDebugEnabled, drawDebugWorld } from '../game/debug.js';
 import { ACTION_SPRITES } from '../data/action-sprites.js';
@@ -83,6 +84,22 @@ function resize() {
 export function render(map, state) {
   if (!map) return;
   const { dpr } = view;
+  const estavaEm3d = !!state.player?.nado?.perspectiva3d;
+  const perspectiva = perspectivaSubmersa(map, state, view);
+  if (estavaEm3d && !state.player?.nado?.perspectiva3d && state.player) {
+    // A câmera pode estar solta após um arrasto em terra. Durante o 3D ela
+    // não é visível; no retorno, não deixe o jogador fora da tela no mar.
+    const p = worldToIso(state.player.x, state.player.y);
+    camera.x = p.x; camera.y = p.y;
+  }
+  // Quando a transição terminou não desenhamos o mapa isométrico escondido:
+  // isso evita pagar dois renderizadores durante todo o mergulho.
+  if (perspectiva?.alpha >= .995) {
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.drawImage(perspectiva.canvas, 0, 0, view.w, view.h);
+    vinhetaSubmersa(state, view);
+    return;
+  }
 
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   ctx.fillStyle = map.meta?.corFundo ?? C.BG;
@@ -97,6 +114,12 @@ export function render(map, state) {
     const power = (shake.power ?? 8) * k;
     shakeX = Math.sin(shake.timeLeft * 143) * power;
     shakeY = Math.cos(shake.timeLeft * 117) * power * .6;
+  }
+  const nadoCamera = state.player?.nado;
+  if (nadoCamera?.mareAstral && nadoCamera.profundidade > 1.25 && nadoCamera.arrancada > 0) {
+    const força = Math.min(2.2, nadoCamera.arrancada * 5);
+    shakeX += Math.sin(performance.now() * .08) * força;
+    shakeY += Math.cos(performance.now() * .095) * força * .6;
   }
   mundoZ = z;
   mundoTx = (view.w / 2 - camera.x * camera.zoom + shakeX) * dpr;
@@ -114,8 +137,10 @@ export function render(map, state) {
       // seguir a borda quadrada das células de areia.
       if (map.id !== 'ilha_estacao_bio') drawBeachSurface(map);
       drawBeachSea(map);
+      const imersao = intensidadeSubmersa(state.player?.nado);
+      if (imersao > 0) drawFundoSubmerso(map, imersao);
       drawVidaAquatica(map, state);
-      drawBeachRipples(map);
+      if (imersao < .5) drawBeachRipples(map);
       // Poças de treino: água por cima da areia (zona, não célula da grade).
       desenharPocas(ctx, map, performance.now() / 1000, HW, HH);
       // Cordão de boias: o limite do degrau de nado, só perto do operador.
@@ -124,7 +149,9 @@ export function render(map, state) {
         desenharBoias(ctx, boiasDoLimite(map, nivelNado), state.player, range, performance.now() / 1000, HW, HH);
       }
     }
-    drawFloors(map);
+    // O nadador no fundo é desenhado antes das passarelas da superfície.
+    if (nadadorNoFundo(state.player, map)) drawEntity(state.player, state);
+    drawFloors(map, state);
     drawHazards(state.hazards);
     if (map.id === 'hub_saguao') drawHubFloorMarkings();
     if (map.id === 'ilha_praia_inicial') drawBeachStation(map);
@@ -163,12 +190,24 @@ export function render(map, state) {
   drawAmbientFront(ctx, map, HW, HH);
   // CLIMA por último entre as camadas de mundo: chuva e tinta cobrem
   // tudo (inclusive o jogador), mas nunca a HUD, que é DOM.
-  drawClima(ctx, state, view);
+  if (climaVisivelNoMapa(map)) drawClima(ctx, state, view);
   drawTarget(state.player);
 
   if (isDebugEnabled()) drawDebugWorld(ctx, map, state, CONFIG.TILE_W, CONFIG.TILE_H);
 
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  // Atmosfera submersa cobre o mundo, nunca a HUD.
+  const imersaoTela = map.aguaPraia ? intensidadeSubmersa(state.player?.nado) : 0;
+  if (imersaoTela > 0) {
+    ctx.save();
+    ctx.fillStyle = `rgba(0,65,91,${(imersaoTela * .16).toFixed(3)})`;
+    ctx.fillRect(0, 0, view.w, view.h);
+    const g = ctx.createRadialGradient(view.w * .5, view.h * .45, view.h * .15, view.w * .5, view.h * .5, Math.max(view.w, view.h) * .72);
+    g.addColorStop(0, 'rgba(0,20,30,0)');
+    g.addColorStop(1, `rgba(0,26,46,${(imersaoTela * .42).toFixed(3)})`);
+    ctx.fillStyle = g; ctx.fillRect(0, 0, view.w, view.h);
+    ctx.restore();
+  }
   // Clarão curto no instante da soltura (não cobre a HUD, que é DOM).
   const flash = state.player?.ultimate?.flash;
   if (flash && flash.timeLeft > 0) {
@@ -180,6 +219,22 @@ export function render(map, state) {
   }
   drawLabels(state);
   drawBubbles(state);
+  if (perspectiva) {
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.save(); ctx.globalAlpha = perspectiva.alpha;
+    ctx.drawImage(perspectiva.canvas, 0, 0, view.w, view.h);
+    vinhetaSubmersa(state, view); ctx.restore();
+  }
+}
+
+function vinhetaSubmersa(state, view) {
+  const profundidade = state.player?.nado?.profundidade ?? 1.25;
+  const intensidade = Math.max(0, Math.min(.45, .16 + (profundidade - 1.25) * .3));
+  const raio = Math.max(view.w, view.h) * .65;
+  const gradiente = ctx.createRadialGradient(view.w / 2, view.h / 2, raio * .25, view.w / 2, view.h / 2, raio);
+  gradiente.addColorStop(0, 'rgba(0,18,32,0)');
+  gradiente.addColorStop(1, `rgba(0,18,32,${intensidade})`);
+  ctx.fillStyle = gradiente; ctx.fillRect(0, 0, view.w, view.h);
 }
 
 // =====================================================================
@@ -402,7 +457,12 @@ function drawWalkMaskDebug(map) {
 
   ctx.restore();
 }
-function drawFloors(map) {
+export function nadadorNoFundo(player, map) {
+  const n = player?.nado;
+  return !!(map?.aguaPraia && n?.ativo && n.mareAstral && n.profundidade > 1.25);
+}
+
+function drawFloors(map, state) {
   for (let d = range.x0 + range.y0; d <= range.x1 + range.y1; d++) {
     const xs = Math.max(range.x0, d - range.y1);
     const xe = Math.min(range.x1, d - range.y0);
@@ -410,7 +470,13 @@ function drawFloors(map) {
     for (let x = xs; x <= xe; x++) {
       const y = d - x;
       const type = map.layout[y][x];
-      if (type !== TILE.WALL) drawFloorTile(type, x, y, map);
+      if (type !== TILE.WALL) {
+        const deck = map.aguaPraia?.[y]?.[x];
+        const acima = nadadorNoFundo(state?.player, map) && deck && 'Bb'.includes(deck);
+        if (acima) { ctx.save(); ctx.globalAlpha = .38; }
+        drawFloorTile(type, x, y, map);
+        if (acima) ctx.restore();
+      }
     }
   }
 }
@@ -462,6 +528,41 @@ function drawBeachSea(map) {
       -m + .43 + Math.sin(t * .27) * .22, -m + .31 + Math.cos(t * .21) * .18, cols, lines);
     ctx.globalAlpha = 1;
   }
+  ctx.restore();
+}
+
+// A câmera isométrica preserva o rumo, os obstáculos e os pontos de interação.
+// O fundo é uma camada do mesmo mundo, não um teleporte para um mapa falso.
+export function intensidadeSubmersa(nado) {
+  if (!nado?.ativo || !nado.mareAstral || nado.naPoca) return 0;
+  return Math.max(0, Math.min(1, (nado.profundidade - 1.0) / .55));
+}
+
+const fundoSubmersoCache = new WeakMap();
+function drawFundoSubmerso(map, intensidade) {
+  const imagem = getSprite('fundo_mar_mare');
+  if (!imagem) return; // carregamento falhou: mantém o mar normal
+  let tela = fundoSubmersoCache.get(map);
+  if (!tela) {
+    // Um único canvas por mapa; custo e memória não dependem do zoom.
+    const escala = 8, rows = map.aguaPraia, cols = rows[0].length;
+    const padrao = document.createElement('canvas');
+    padrao.width = 64; padrao.height = 64;
+    padrao.getContext('2d').drawImage(imagem, 0, 0, 64, 64);
+    tela = document.createElement('canvas');
+    tela.width = cols * escala; tela.height = rows.length * escala;
+    const pincel = tela.getContext('2d');
+    pincel.fillStyle = pincel.createPattern(padrao, 'repeat');
+    for (let y = 0; y < rows.length; y++) for (let x = 0; x < cols; x++) {
+      if ('YyDdX'.includes(rows[y][x]) || (map.aguaSobPontes && 'Bb'.includes(rows[y][x]))) pincel.fillRect(x * escala, y * escala, escala, escala);
+    }
+    fundoSubmersoCache.set(map, tela);
+  }
+  ctx.save();
+  ctx.globalAlpha = intensidade * .95;
+  ctx.transform(HW, HH, -HW, HH, 0, 0);
+  ctx.imageSmoothingEnabled = true;
+  ctx.drawImage(tela, 0, 0, map.aguaPraia[0].length, map.aguaPraia.length);
   ctx.restore();
 }
 
@@ -563,6 +664,10 @@ const MOD_COR = {
 function drawClima(ctx, state, view) {
   const clima = state.clima;
   if (!clima) return;
+  // O mundo está transformado pela câmera (zoom/translação); o clima é
+  // uma camada de tela. Restaurar ao sair preserva os demais desenhos.
+  ctx.save();
+  ctx.setTransform(view.dpr, 0, 0, view.dpr, 0, 0);
 
   // 1. TINTA: esfria e escurece a cena inteira. É o efeito mais barato
   //    e o que mais se lê de longe — em ressaca a praia "fecha".
@@ -610,6 +715,7 @@ function drawClima(ctx, state, view) {
     ctx.fillRect(0, 0, view.w, view.h);
     ctx.restore();
   }
+  ctx.restore();
 }
 
 function drawVidaAquatica(map, state) {
@@ -675,12 +781,21 @@ function drawVidaAquatica(map, state) {
   }
 
   // ---- Recifes: coral, rocha submersa e alga alta (agrupados em manchas)
+  const coralAstral = getSprite('coral_astral_submerso');
+  const fundoVisivel = intensidadeSubmersa(nado) > .35;
   for (const r of elementosDeRecife(vida.recifes)) {
     if (!dentro(r.x, r.y)) continue;
     const ix = (r.x - r.y) * HW, iy = (r.x + r.y) * HH;
     const balanco = Math.sin(t * 1.1 + r.fase) * 1.6;
     const s = r.tamanho;
-    if (r.tipo === 0) {
+    if (r.tipo === 0 && fundoVisivel && coralAstral) {
+      // Arte própria, discreta e ancorada no fundo; o desenho procedural
+      // continua sendo o fallback e a leitura da superfície.
+      const w = 25 * s, h = 27 * s;
+      ctx.save(); ctx.globalAlpha = .9;
+      ctx.drawImage(coralAstral, ix - w / 2 + balanco * .2, iy - h, w, h);
+      ctx.restore();
+    } else if (r.tipo === 0) {
       // Coral: três hastes curvas, rosa/coral, balançando.
       ctx.strokeStyle = 'rgba(232,132,120,.62)';
       ctx.lineWidth = 2.4 * s;
@@ -721,6 +836,17 @@ function drawVidaAquatica(map, state) {
     }
   }
 
+  // Estacas reais do fundo, posicionadas pela mesma lista da colisão.
+  if (fundoVisivel) for (const pilar of map.pilaresSubmersos ?? []) {
+    if (!dentro(pilar.x, pilar.y, 2)) continue;
+    const px = (pilar.x - pilar.y) * HW, py = (pilar.x + pilar.y) * HH;
+    const r = (pilar.raio ?? .16) * HW;
+    ctx.save(); ctx.fillStyle = '#254451'; ctx.strokeStyle = '#73b8b3'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.ellipse(px, py + 2, r + 3, (r + 3) * .5, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.fillRect(px - r, py - 20, r * 2, 20); ctx.strokeRect(px - r, py - 20, r * 2, 20);
+    ctx.restore();
+  }
+
   // ---- Cardumes: peixinhos em vaivém, apagados pela água
   for (const c of vida.cardumes) {
     if (!dentro(c.x, c.y, 2)) continue;
@@ -748,6 +874,16 @@ function drawVidaAquatica(map, state) {
       ctx.closePath();
       ctx.fill();
     }
+  }
+
+  // O Senso submerso marca o eco real, sem criar coletáveis ou socorros.
+  const sonar = player?.ability?.sonarAquatico;
+  if (submerso && sonar && dentro(sonar.x, sonar.y, 2)) {
+    const sx = (sonar.x - sonar.y) * HW, sy = (sonar.x + sonar.y) * HH;
+    ctx.save(); ctx.strokeStyle = '#9fffee'; ctx.lineWidth = 2;
+    ctx.globalAlpha = Math.min(1, sonar.timeLeft) * (.55 + .25 * Math.sin(t * 5));
+    ctx.beginPath(); ctx.ellipse(sx, sy, 18 + Math.sin(t * 4) * 3, 9, 0, 0, Math.PI * 2); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(sx, sy - 12); ctx.lineTo(sx, sy - 25); ctx.stroke(); ctx.restore();
   }
 
   // ---- Fragmentos de maré: o prêmio do mergulho, girando devagar
@@ -1726,14 +1862,16 @@ function drawWorld(map, state) {
     if (visivel(item)) drawList.push(item);
   }
 
-  drawList.push(state.player);
+  if (!nadadorNoFundo(state.player, map)) drawList.push(state.player);
   // ...o resto da função continua igual (sort, drawItem, loops)
   drawList.sort((a, b) => depthOf(a) - depthOf(b));
   backList.sort((a, b) => (a.ordem ?? 0) - (b.ordem ?? 0));
 
   const drawItem = (item) => {
     if (item.renderType === 'object') {
-      drawMapObject(item, state);
+      if (item.gate && nadadorNoFundo(state.player, map)) {
+        ctx.save(); ctx.globalAlpha = .35; drawMapObject(item, state); ctx.restore();
+      } else drawMapObject(item, state);
     } else if (item.renderType === 'trainingTarget') {
       drawTrainingTarget(item);
     } else if (item.renderType === 'companion') {
@@ -1875,7 +2013,7 @@ export function beachRailEnd(rail, frame) {
 }
 export function beachTunnelAnchor(rail, frame) {
   const end = beachRailEnd(rail, frame);
-  return { x: end.x + HW + 16, y: end.y + 24 };
+  return { x: end.x + HW + 31, y: end.y + 25 };
 }
 function drawBeachRailTunnel(rail) {
   const image = getSprite(rail.sprite);
@@ -2364,6 +2502,7 @@ export function fatiaObjeto(object, altura) {
 }
 
 function drawMapObject(object, state) {
+  if (object.invisivel) return;
   if (object.hideWhenFlag && state.progress.flags?.[object.hideWhenFlag]) return;
   if (object.showWhenFlag && !state.progress.flags?.[object.showWhenFlag]) return; // NOVO
 
@@ -2573,6 +2712,11 @@ function drawCroppedObject(object, image, sheet) {
     desenharAnelEspuma(ctx, ix + (object.espumaX ?? 0), iy + (object.espumaY ?? 0), object.espuma, agora, (object.x * 7 + object.y * 13) | 0);
   }
   ctx.save();
+  // A extremidade traseira entra na abertura, não atravessa a moldura.
+  if (object.id === 'trilho_dimensional_principal' && state.world?.currentMap?.id === 'ilha_praia_inicial') {
+    const boca = beachTunnelAnchor(object, c);
+    ctx.beginPath(); ctx.rect(boca.x - 34, -10000, 20000, 20000); ctx.clip();
+  }
   const filtro = filtroObjeto(object);
   // Cópia 1:1 do sprite já reduzido (ver "SPRITES JÁ NA ESCALA DA TELA").
   const kTela = scale * escaladosZoom;
@@ -2966,6 +3110,7 @@ function drawPlayerSprite(player, ix, iy) {
       ctx.save();
       ctx.translate(ix, iy);
       if (player.facing === 'left') ctx.scale(-1, 1);
+      ctx.translate(ultimateFrame.offsetX ?? 0, 0);
       drawSmooth(imagem, ultimateFrame.col * w, 0, w, h,
         -w * escala / 2, -ultimateFrame.footY * escala, w * escala, h * escala);
       ctx.restore();
@@ -3920,9 +4065,9 @@ function drawEntity(entity, state) {
     const deitando = entity._nadoVis ?? (querDeitar ? 1 : 0);
     entity._nadoVis = Math.max(0, Math.min(1, deitando + (querDeitar ? 1 : -1) * .12));
     if (entity._nadoVis > .5 && entity.nado
-      && !(entity.combat?.timeLeft > 0)
+      && (entity.nado?.ativo || (!(entity.combat?.timeLeft > 0)
       && !(entity.ultimate?.charge > 0)
-      && !getVisualEffect(entity)
+      && !getVisualEffect(entity)))
       && desenharNadador(ctx, entity, ix, iy, {
         arquetipo: state.progress.archetype, HW, HH, t: performance.now() / 1000,
       })) return;
@@ -3989,7 +4134,10 @@ function drawEntity(entity, state) {
       drawShadow(ix, iy, .24);
       const row = { down: 0, right: 1, up: 2, left: 3 }[entity.facing] ?? 0;
       const frame = entity.moving ? Math.floor((entity.visitorRuntime?.clock ?? 0) * 7) % 6 : 0;
-      ctx.save(); ctx.translate(ix, iy);
+      // Oscilação curta e contínua entre os quadros, sem escalar o corpo.
+      const passo = entity.visitorRuntime?.clock ?? 0;
+      const oscilacao = entity.moving ? (1 - Math.cos(passo * 14 * Math.PI)) * .45 : 0;
+      ctx.save(); ctx.translate(ix, iy - oscilacao);
       ctx.drawImage(image, frame * 256, row * 256, 256, 256, -68, -129, 136, 136);
       ctx.restore(); entity._topo = 122; return;
     }

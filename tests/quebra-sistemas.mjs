@@ -31,7 +31,7 @@ function progressoBruto() {
     flags: {},
   };
   ensureArchetypeProgress(progress, 'nucleo_dez_forma');
-  progress.archetypeProgress.nucleo_dez_forma.level = 3;
+  progress.archetypeProgress.nucleo_dez_forma.level = 4;
   return progress;
 }
 

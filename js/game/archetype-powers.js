@@ -9,6 +9,11 @@ import { canStandAt } from './collision.js';
 import { getCurrentMap } from './map-manager.js';
 import { tryAbilityDamage } from './combat.js';
 import { recordMastery } from './mastery.js';
+import { dispararPropulsao, ganharRespeito } from './nado.js';
+import { DEGRAUS } from './nado-arvore.js';
+import { fragmentosColetados } from './mare-missao.js';
+import { detalhesFauna } from './fauna-ferida.js';
+import { getVidaAquatica } from './vida-aquatica.js';
 
 export const POWER_PROFILES = {
   golpe_ruptura: { cost: 24, cooldown: 1.4, color: '#ffd264', duration: 0.55 },
@@ -62,8 +67,51 @@ function canStart(id, showMessage) {
 }
 
 export function tryArchetypePower(id, showMessage) {
-  if (!canStart(id, showMessage)) return false;
   const player = state.player;
+  const nado = player.nado;
+  const noFundo = state.progress.archetype === 'mare_astral' && nado?.ativo && nado.profundidade > 1.25;
+  const naAgua = !!nado?.ativo;
+  if (naAgua && state.progress.archetype !== 'mare_astral') {
+    showMessage('HABILIDADE TERRESTRE • SAIA DA ÁGUA'); return false;
+  }
+  if (naAgua && id !== 'passo_corrente' && id !== 'senso_corrente') {
+    showMessage('HABILIDADE TERRESTRE • SAIA DA ÁGUA'); return false;
+  }
+  if (naAgua && id === 'passo_corrente') {
+    if (nado.recargaArrancada > 0) { showMessage('PROPULSÃO RECARREGANDO'); return false; }
+    if (nado.naPoca || nado.medo || (nado.nivel != null && !DEGRAUS[nado.nivel]?.arrancada)) {
+      showMessage('PROPULSÃO • APRENDA A BRAÇADA NO MAR'); return false;
+    }
+  }
+  if (!canStart(id, showMessage)) return false;
+  if (naAgua && id === 'passo_corrente') {
+    // Q usa a mesma física de nado e colisão submersa de SHIFT, sem
+    // levantar o sprite nem trocar para o dash terrestre de walkMask.
+    // Q submerso começa mais contido e se aproxima do impulso pleno com
+    // o respeito conquistado; SHIFT e o impulso na superfície não mudam.
+    const potencia = noFundo ? .78 + .12 * Math.max(0, Math.min(1, nado.respeito?.valor ?? 0)) : 1;
+    dispararPropulsao(nado, true, { potencia });
+    if (noFundo) ganharRespeito(nado.respeito, .002);
+    recordMastery(state.progress, 'distance', 6 * potencia);
+    recordMastery(state.progress, 'ability_use');
+    showMessage(noFundo ? 'PASSO DE CORRENTE • PROPULSÃO SUBMERSA' : 'PASSO DE CORRENTE • PROPULSÃO NA SUPERFÍCIE');
+    return false;
+  }
+  if (naAgua && id === 'senso_corrente') {
+    if (noFundo) ganharRespeito(nado.respeito, .001);
+    const map = getCurrentMap();
+    const pegos = fragmentosColetados(state.progress);
+    const fragmentos = (player.fragmentosMare ?? []).filter(f => !pegos.has(f.id)).map(f => ({...f, tipo: 'FRAGMENTO'}));
+    const bichos = detalhesFauna(map, state.progress, getVidaAquatica(map)?.recifes)
+      .filter(b => b.def?.meio === 'agua' && b.estado !== 'curado')
+      .map(b => ({...b, tipo: 'VIDA MARINHA'}));
+    const alvo = [...fragmentos, ...bichos].map(a => ({ ...a, distancia: Math.hypot(a.x - player.x, a.y - player.y) }))
+      .filter(a => a.distancia <= 10).sort((a, b) => a.distancia - b.distancia)[0];
+    player.ability.sonarAquatico = alvo ? { x: alvo.x, y: alvo.y, timeLeft: 5 } : null;
+    recordMastery(state.progress, 'ability_use');
+    showMessage(alvo ? `SENSO SUBMERSO • ${alvo.tipo} A ${alvo.distancia.toFixed(1)} M` : 'SENSO SUBMERSO • NENHUM ECO PRÓXIMO');
+    return false;
+  }
   const profile = POWER_PROFILES[id];
   // Habilidades de impacto acertam alvos de treino à frente. A mobilidade e
   // os gates do Q continuam exatamente como antes.

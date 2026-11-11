@@ -437,6 +437,8 @@ assert.notEqual(ilhaEm(map, player.x, player.y), ilhaOrigem, 'saiu da água em O
 assert.ok(nadou >= PROVAS[2].meta, `nadou de verdade (${nadou.toFixed(1)} tiles)`);
 assert.ok(fundoMaximo <= SUPERFICIE + 1e-6, 'atravessou na superfície');
 
+// A prova de fundo agora exige a afinidade do Maré.
+progress.archetype = 'mare_astral';
 // ---- 5.7 DEGRAU 3: mar aberto na superfície, mergulho curto ----
 colocar(18.5, 2.5);                         // azul-escuro ao norte do canal
 por(.6);
@@ -445,7 +447,7 @@ assert.equal(player.nado.foraDoAlcance, false, 'no degrau 3 o mar aberto é perm
 assert.equal(player.nado.submerso, false, 'sobre o fundo, mas na superfície: mergulhar é um gesto');
 assert.ok(player.nado.profundidade <= SUPERFICIE + 1e-6);
 assert.ok(player.nado.fundo >= FUNDO_DA_PROVA);
-assert.ok(Math.abs(player.nado.arMax - DEGRAUS[3].ar * (1 + player.nado.respeito.valor * NADO.arBonusMax)) < .05);
+assert.ok(Math.abs(player.nado.arMax - DEGRAUS[3].ar * (1 + player.nado.respeito.valor * NADO.arBonusMax) * NADO.arMare) < .05);
 // ---- PROVA 4 — TOCAR O FUNDO ----
 ultimaSubida = null;
 const hpFundo = player.health;
@@ -474,8 +476,9 @@ assert.equal(resumoDaArvore(progress).fracao, 1);
 assert.deepEqual(Object.keys(progress.nado.provas).sort(), ['boiar', 'fundo', 'respirar', 'travessia']);
 
 // ---- 5.9 DEGRAU 4: mergulho livre; o Maré Astral é a maré ----
-assert.ok(Math.abs(player.nado.arMax - NADO.arMaximo * (1 + player.nado.respeito.valor * NADO.arBonusMax)) < .05, 'degrau pleno = fôlego de antes');
+assert.ok(Math.abs(player.nado.arMax - NADO.arMaximo * (1 + player.nado.respeito.valor * NADO.arBonusMax) * NADO.arMare) < .05, 'degrau pleno = fôlego de antes');
 assert.equal(dispararArrancada(player.nado, false), true, 'no degrau pleno a arrancada existe');
+player.nado.arrancada = 0; player.nado.vx = 0; player.nado.vy = 0; // prova de fundo sem sair do local
 // Fragmentos e fauna leem `profundidade > 1.25`: mergulhando, vale.
 por(1, { mergulhar: true });
 assert.ok(player.nado.profundidade > 1.25 && player.nado.submerso);
@@ -493,12 +496,12 @@ assert.equal(progress.nado.respeito, player.nado.respeito.valor);
   assert.ok(Math.abs(n.arMax - 22 * 1.8 * 1.3) < 1e-6, `fôlego do Maré Astral pleno: ${n.arMax}`);
   assert.equal(Math.round(n.arMax), 51);
   assert.equal(n.mareAstral, true);
-  // Abaixo do degrau pleno o módulo ainda não dá o bônus.
+  // A afinidade já ajuda antes do degrau pleno.
   const m = criarEstadoNado();
   m.respeito.valor = 1;
   atualizarNado(m, { ...ctx, arvore: criarArvore(3), mareAstral: true });
-  assert.equal(m.mareAstral, false);
-  assert.ok(Math.abs(m.arMax - 13 * 1.8) < 1e-6);
+  assert.equal(m.mareAstral, true);
+  assert.ok(Math.abs(m.arMax - 13 * 1.8 * NADO.arMare) < 1e-6);
   // Sem ser Maré: 22 × 1,8.
   const o = criarEstadoNado();
   o.respeito.valor = 1;
@@ -522,7 +525,7 @@ assert.equal(progress.nado.respeito, player.nado.respeito.valor);
     for (let i = 0; i < 240; i++) moverNaAgua(s, DT, 1, 0, 4);
     return s.vx;
   };
-  assert.ok(Math.abs(favor(true) - favor(false)) < 1e-9);
+  assert.ok(favor(true) > favor(false), "afinidade também melhora a velocidade base");
   // Nadar nunca passa de andar (4,0 tiles/s) fora da arrancada — nem a favor
   // da corrente... a não ser pelo empurrão da própria correnteza.
   const semCorrente = criarEstadoNado();

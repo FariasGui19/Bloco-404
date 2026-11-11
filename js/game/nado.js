@@ -27,6 +27,7 @@
 // =====================================================================
 
 import { pocaEm } from '../engine/pocas.js';
+import { createCoastField } from '../engine/coast-field.js';
 import { DEGRAUS, SUPERFICIE, dentroDoAlcance } from './nado-arvore.js';
 
 export const AGUA = 'YyDdX';
@@ -77,7 +78,7 @@ export const NADO = {
   // O respeito do mar aumenta o fôlego (até +80%).
   arBonusMax: 0.8,
   // O Maré Astral no degrau pleno carrega mais ar: 22 s × 1,8 (respeito)
-  // × 1,3 = 52 s. É o "respira embaixo d'água" do arquétipo.
+  // × 1,3 = 52 s: ainda precisa subir para respirar.
   arMare: 1.3,
   // Correnteza contrária freia o Maré Astral só pela metade.
   correnteMare: .5,
@@ -104,6 +105,10 @@ export function tileAtWorld(map, x, y) {
   return map?.aguaPraia?.[Math.floor(y)]?.[Math.floor(x)];
 }
 
+export function aguaSobPonte(map, x, y) {
+  return !!map?.aguaSobPontes && isDeck(tileAtWorld(map, x, y));
+}
+
 export function podeNadar(map, x, y) {
   const c = tileAtWorld(map, x, y);
   return isAgua(c) && !isDeck(c);
@@ -127,6 +132,26 @@ export function profundidadeEm(map, x, y, field) {
     return Math.max(0, Math.min(2, (d - .55) / 1.05));
   }
   return isAguaFunda(tileAtWorld(map, x, y)) ? 2 : 1;
+}
+
+// O campo de costa da superfície trata o deque como terra. Para o fundo,
+// reconstrói uma vez a batimetria com água sob os decks explicitamente
+// marcados no mapa; sem isso o nadador sobe antes de alcançar a ponte.
+const batimetrias = new WeakMap();
+export function profundidadeSubmersaEm(map, x, y, field) {
+  if (!map?.aguaSobPontes || !map.aguaPraia) return profundidadeEm(map, x, y, field);
+  let entrada = batimetrias.get(map);
+  if (!entrada) {
+    const rows = map.aguaPraia.map(row => typeof row === 'string'
+      ? row.replace(/[Bb]/g, 'D') : row.map(c => isDeck(c) ? 'D' : c));
+    entrada = { mapa: { ...map, aguaPraia: rows }, campo: null, escala: 0 };
+    batimetrias.set(map, entrada);
+  }
+  if (field?.distLand && entrada.escala !== field.scale) {
+    entrada.campo = createCoastField(entrada.mapa.aguaPraia, field.scale);
+    entrada.escala = field.scale;
+  }
+  return profundidadeEm(entrada.mapa, x, y, field?.distLand ? entrada.campo : null);
 }
 
 export const estaNaSuperficie = (profundidade) => profundidade < 1.25;
@@ -269,6 +294,17 @@ export function criarEstadoNado() {
   };
 }
 
+/** Alterna mergulho sustentado só quando a travessia do Maré foi conquistada.
+ * ESPAÇO continua independente e funciona como antes nas provas iniciais. */
+export function controlarMergulhoFixo(nado, disponivel, pressionou) {
+  if (!nado || !disponivel || !nado.ativo || nado.semFolego) {
+    if (nado) nado.mergulhoFixo = false;
+    return false;
+  }
+  if (pressionou) nado.mergulhoFixo = !nado.mergulhoFixo;
+  return !!nado.mergulhoFixo;
+}
+
 /**
  * Atualiza nado. `ctx`: { map, x, y, field, dt, dirX, dirY, tempo }
  * Devolve efeitos para quem chamou aplicar (dano, eventos).
@@ -284,7 +320,10 @@ export function atualizarNado(nado, ctx) {
   nado.climaFolego = 1 - (clima?.mar ?? 0) * 0.25;
 
   const poca = pocaEm(map, x, y);
-  const fundo = profundidadeEm(map, x, y, field);
+  // Só quem já mergulhou alcança a água sob uma ponte mapeada.
+  const sobPonte = !!ctx.mareAstral && nado.ativo && nado.profundidade > 1.25 && aguaSobPonte(map, x, y);
+  const emMergulho = !!ctx.mareAstral && nado.ativo && nado.profundidade > 1.25;
+  const fundo = emMergulho ? profundidadeSubmersaEm(map, x, y, field) : profundidadeEm(map, x, y, field);
   nado.fundo = fundo;
   nado.naPoca = !!poca;
   nado.ativo = fundo > 0;
@@ -296,19 +335,23 @@ export function atualizarNado(nado, ctx) {
   // mergulhar, até o limite do degrau.
   const grau = arvore ? DEGRAUS[Math.max(0, Math.min(DEGRAUS.length - 1, arvore.nivel | 0))] : null;
   nado.nivel = grau ? grau.nivel : null;
-  nado.mareAstral = !!ctx.mareAstral && (!grau || grau.nivel === DEGRAUS.length - 1);
+  nado.mareAstral = !!ctx.mareAstral;
+  // A capacidade explícita permite futuros equipamentos e formas aquáticas.
+  // Na API legada, sem parâmetro, mantém-se o comportamento anterior.
+  nado.mergulhoLivre = ctx.mergulhoLivre !== false;
   let alvo = fundo;
   let cabecaNaAgua = nado.ativo && fundo > 1.25;
   if (grau) {
-    if (!ctx.mergulhar) nado.semFolego = false;      // soltou a tecla: pode tentar de novo
+    if (!ctx.mergulhar && nado.profundidade <= 1.25) nado.semFolego = false;      // soltou a tecla: pode tentar de novo
     const quer = !!ctx.mergulhar && nado.ativo && grau.mergulho > 0 && !nado.semFolego;
-    alvo = quer ? Math.min(fundo, grau.mergulho) : Math.min(fundo, SUPERFICIE);
+    const profundidadeAlvo = Number.isFinite(ctx.profundidadeAlvo) ? Math.max(.9, ctx.profundidadeAlvo) : Infinity;
+    alvo = quer ? Math.min(fundo, grau.mergulho, nado.mergulhoLivre ? profundidadeAlvo : SUPERFICIE) : Math.min(fundo, SUPERFICIE);
     cabecaNaAgua = quer;
     // Pela CÉLULA, não pela profundidade: na franja da praia a água ainda
     // tem profundidade 0 e mesmo assim já é mar para quem tem medo dele.
-    const noMar = !poca && podeNadar(map, x, y);
+    const noMar = !poca && (podeNadar(map, x, y) || sobPonte);
     nado.medo = noMar && grau.nivel === 0;
-    nado.foraDoAlcance = noMar && grau.nivel > 0 && !dentroDoAlcance(map, x, y, grau.nivel);
+    nado.foraDoAlcance = noMar && !sobPonte && grau.nivel > 0 && !dentroDoAlcance(map, x, y, grau.nivel);
   } else {
     nado.medo = false;
     nado.foraDoAlcance = false;
@@ -317,7 +360,7 @@ export function atualizarNado(nado, ctx) {
 
   // Suavização visual da profundidade: entrar na água não "pula".
   nado.profundidade += (alvo - nado.profundidade) * Math.min(1, NADO.suavidade * dt);
-  nado.submerso = cabecaNaAgua;
+  nado.submerso = nado.ativo && (cabecaNaAgua || nado.profundidade > 1.25);
   // "Fundo de verdade": é o que conta para respeito, fragmentos e fauna.
   const noFundo = nado.submerso && (grau ? nado.profundidade > 1.25 : true);
 
@@ -333,7 +376,8 @@ export function atualizarNado(nado, ctx) {
 
   // ---- respeito sobe nadando fundo ----
   if (noFundo) {
-    const ganho = NADO.respeitoPorSegundo * (nado.mareAstral ? NADO.respeitoMare : 1);
+    const movimento = Math.min(1, Math.hypot(nado.vx, nado.vy) / 2);
+    const ganho = NADO.respeitoPorSegundo * (.2 + .8 * movimento) * (nado.mareAstral ? NADO.respeitoMare : 1);
     nado.respeito.valor = Math.min(NADO.respeitoMax, nado.respeito.valor + ganho * dt);
     nado.respeito.distanteNadada += Math.hypot(nado.vx, nado.vy) * dt;
   }
@@ -353,10 +397,9 @@ export function atualizarNado(nado, ctx) {
     // Com árvore a superfície está sempre em cima: sem ar, o corpo SOBE
     // sozinho engolindo água (um susto), em vez de afogar quadro a quadro.
     if (grau && nado.afogando) {
+      if (!nado.semFolego) engoliu = true;
       nado.semFolego = true;
       nado.afogando = false;
-      nado.submerso = false;
-      engoliu = true;
     }
   }
 
@@ -416,7 +459,7 @@ export function moverNaAgua(nado, dt, dirX, dirY, baseSpeed) {
   // O degrau da árvore limita a braçada: quem só boia quase não anda.
   const doDegrau = nado.nivel == null ? 1 : DEGRAUS[nado.nivel].velocidade;
   const fatorBase = (NADO.velocidade + (nado.submerso ? NADO.velocidadeFundo - NADO.velocidade : 0))
-    * d.velocidade * doDegrau;
+    * d.velocidade * doDegrau * (nado.mareAstral ? 1.08 + .12 * (nado.nivel ?? 0) / (DEGRAUS.length - 1) : 1);
   let alvoX = 0, alvoY = 0;
   if (temDirecao) {
     let fator = fatorCorrente(nado.corrente, dirX, dirY);
@@ -433,8 +476,8 @@ export function moverNaAgua(nado, dt, dirX, dirY, baseSpeed) {
   }
 
   // Arrancada soma impulso forte na direção atual.
-  if (nado.arrancada > 0 && temDirecao) {
-    const impulso = NADO.arrancadaForca * (d.arrancada);
+  if (nado.arrancada > 0) {
+    const impulso = NADO.arrancadaForca * d.arrancada * (nado.mareAstral ? NADO.arrancadaMare : 1) * (nado.potenciaArrancada ?? 1);
     alvoX += nado.dirX * baseSpeed * impulso;
     alvoY += nado.dirY * baseSpeed * impulso;
   }
@@ -442,14 +485,16 @@ export function moverNaAgua(nado, dt, dirX, dirY, baseSpeed) {
   if (temDirecao || nado.arrancada > 0) {
     // Com direção: persegue o alvo sem saltar para ele (é a "pegada" da
     // braçada).
-    const k = Math.min(1, NADO.aceleracao * dt);
+    // Curvas mais abertas no fundo; na superfície a resposta anterior fica intacta.
+    const aceleracao = nado.mareAstral && nado.profundidade > 1.25 ? 5.8 : NADO.aceleracao;
+    const k = 1 - Math.exp(-aceleracao * dt);
     nado.vx += (alvoX - nado.vx) * k;
     nado.vy += (alvoY - nado.vy) * k;
   } else {
     // Sem direção: PLANEIO. A velocidade NÃO persegue zero — ela decai
     // devagar, como corpo deslizando na água. Perseguir zero dava um freio
     // instantâneo e matava a sensação de natação.
-    const atrito = Math.exp(-NADO.atrito * dt);
+    const atrito = Math.exp(-(nado.mareAstral && nado.profundidade > 1.25 ? .95 : NADO.atrito) * dt);
     nado.vx *= atrito;
     nado.vy *= atrito;
     if (Math.hypot(nado.vx, nado.vy) < NADO.epsilon) { nado.vx = 0; nado.vy = 0; }
@@ -462,13 +507,18 @@ export function moverNaAgua(nado, dt, dirX, dirY, baseSpeed) {
 }
 
 /** Dispara a arrancada. Maré Astral tem versão melhor. */
-export function dispararArrancada(nado, mareAstral) {
+export function dispararArrancada(nado, mareAstral, { potencia = 1 } = {}) {
   if (!nado?.ativo) return false;
   // Quem ainda só boia não tem braçada para arrancar; na poça também não.
   if (nado.nivel != null && !DEGRAUS[nado.nivel].arrancada) return false;
   if (nado.naPoca || nado.medo) return false;
   if (nado.recargaArrancada > 0) return false;
+  nado.potenciaArrancada = Math.max(0, Math.min(1, potencia));
   nado.arrancada = NADO.arrancadaDuracao * (mareAstral ? 1.15 : .85);
+  if (mareAstral && nado.profundidade > 1.25) {
+    const impulso = 3.5 * derivadosDoRespeito(nado.respeito).arrancada * nado.potenciaArrancada;
+    nado.vx += nado.dirX * impulso; nado.vy += nado.dirY * impulso;
+  }
   nado.recargaArrancada = mareAstral ? NADO.arrancadaRecargaMare : NADO.arrancadaRecarga;
   return true;
 }
@@ -476,8 +526,8 @@ export function dispararArrancada(nado, mareAstral) {
 // ---------------------------------------------------------------------
 // COMPATIBILIDADE (API da fase anterior)
 // ---------------------------------------------------------------------
-export function dispararPropulsao(nado, alinhadoAoMare) {
-  return dispararArrancada(nado, alinhadoAoMare);
+export function dispararPropulsao(nado, alinhadoAoMare, opcoes) {
+  return dispararArrancada(nado, alinhadoAoMare, opcoes);
 }
 
 export function multiplicadorVelocidade(nado, velocidadeBase) {

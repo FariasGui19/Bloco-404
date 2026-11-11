@@ -20,6 +20,12 @@
 //    é constante e o sorteio só decide quem nasce, nunca quantos.
 // =====================================================================
 
+// O relógio continua no exterior mesmo durante visitas a interiores; apenas
+// sua representação visual é restrita a mapas explicitamente a céu aberto.
+export function climaVisivelNoMapa(map) {
+  return map?.meta?.tipo === 'exterior';
+}
+
 /**
  * Estados possíveis. `forca` é a intensidade do fenômeno; `luz` é o
  * multiplicador de luminosidade aplicado ao mapa (1 = pleno sol).

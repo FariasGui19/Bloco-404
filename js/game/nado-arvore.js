@@ -90,8 +90,8 @@ export const PROVAS = Object.freeze([
   }),
   Object.freeze({
     id: 'fundo', de: 3, nome: 'TOCAR O FUNDO', meta: 1.2, unidade: 's',
-    instrucao: 'No azul-escuro, segure ESPAÇO até tocar o fundo.',
-    curta: 'SEGURE ESPAÇO NO AZUL-ESCURO',
+    instrucao: 'No azul-escuro, segure ESPAÇO ou use Z até tocar o fundo.',
+    curta: 'ESPAÇO OU Z NO AZUL-ESCURO',
   }),
 ]);
 

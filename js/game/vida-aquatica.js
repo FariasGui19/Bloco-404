@@ -171,7 +171,11 @@ export function atualizarCardumes(cardumes, player, dt, submerso) {
     const dist = Math.hypot(player.x - c.x, player.y - c.y);
     // Medo decai devagar: o cardume não teleporta ao se assustar.
     c.medo = Math.max(0, c.medo - dt * .8);
-    if (dist < 2.4) c.medo = Math.min(1, c.medo + dt * 2.4);
+    // Um Maré experiente e calmo inspira confiança; uma arrancada ainda assusta.
+    const nado = player.nado;
+    const afinidade = submerso && nado?.mareAstral && !nado.arrancada
+      ? Math.max(0, Math.min(1, nado.respeito?.valor ?? 0)) : 0;
+    if (dist < 2.4) c.medo = Math.min(1, c.medo + dt * 2.4 * (1 - afinidade * .9));
 
     const alvoX = c.medo > .05 && dist > .001
       ? tx + (c.x - player.x) / dist * c.medo * 1.4
@@ -256,6 +260,16 @@ export function getVidaAquatica(map) {
       raios: criarRaios(map),
       bolhas: [],
     };
+    // A rota oceânica tem cardumes residentes nos três jardins, além dos
+    // cardumes dispersos. São poucos e seguem a mesma simulação limitada.
+    if (map.pontosCorrente?.length && vida.cardumes.length) {
+      for (const [i, ponto] of map.pontosCorrente.entries()) {
+        const modelo = vida.cardumes[i % vida.cardumes.length];
+        vida.cardumes.push({ ...modelo, homeX:ponto.x + 1.4, homeY:ponto.y + 1,
+          x:ponto.x + 1.4, y:ponto.y + 1, fase:i * 2.1, cor:i % 3,
+          peixes:modelo.peixes.map(peixe => ({...peixe})) });
+      }
+    }
     cache.set(map, vida);
   }
   return vida;

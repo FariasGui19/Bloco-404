@@ -91,7 +91,7 @@ function mareRoutes(progress, map) {
       <strong>${escapeHtml(atual.nome)}</strong>
       <ul>${lista}</ul>
       <div class="codex-mare-modes">
-        <span class="codex-mare-mode pronto"><b>NADO LIVRE</b><em>ATIVO</em><small>braçada com inércia, arrancada e mergulho (ESPAÇO)</small></span>
+        <span class="codex-mare-mode pronto"><b>NADO LIVRE</b><em>ATIVO</em><small>braçada com inércia, arrancada e mergulho (ESPAÇO; Z na Travessia do Maré)</small></span>
         <span class="codex-mare-mode projeto"><b>NAVEGAÇÃO</b><em>EM PROJETO</em><small>correntes levam a ilhas e portos</small></span>
         <span class="codex-mare-mode projeto"><b>MISSÕES DE TRAVESSIA</b><em>EM PROJETO</em><small>rotas com carga e pouso</small></span>
       </div>
@@ -113,9 +113,11 @@ function nadoTree(progress) {
         <small>${escapeHtml(estado === 'futuro' && prova ? `Prova: ${prova.instrucao}` : d.resumo)}</small>
       </li>`;
   }).join('');
-  const rodape = r.prova
+  const rodape = r.prova?.id === 'fundo' && progress?.archetype !== 'mare_astral'
+    ? 'TOCAR O FUNDO requer afinidade aquática; equipamentos e formas de mergulho ainda estão em projeto.'
+    : r.prova
     ? `PRÓXIMA PROVA — ${escapeHtml(r.prova.nome)}: ${escapeHtml(r.prova.instrucao)}`
-    : 'O mar inteiro é seu. ESPAÇO mergulha, SHIFT arranca.';
+    : 'ESPAÇO mergulha, SHIFT arranca; no Maré, Z mantém o mergulho ou sobe.';
   return `<aside class="codex-mare codex-nado" aria-label="Árvore de nado">
       <span class="codex-tag">ÁRVORE DE NADO</span>
       <strong>DEGRAU ${r.nivel}/${r.maximo} · ${escapeHtml(r.nome)}</strong>
@@ -218,7 +220,7 @@ function toolPicker(progress) {
   const label = TOOL_LABELS[progress.archetype] ?? 'FERRAMENTA';
   const acesso = getUnlockState(progress);
   const hint = acesso.features.tool
-    ? (getPath(progress.archetype)?.levels?.find(entry => entry.level === 2)?.note ?? 'A escolha vale para todo o perfil.')
+    ? (progress.archetype === 'nucleo_dez_forma' ? 'Forma Veloz e Q no início; Ultimate no nível 3; Quebra Sistemas no nível 4.' : getPath(progress.archetype)?.levels?.find(entry => entry.level === 2)?.note ?? 'A escolha vale para todo o perfil.')
     : `Instalar ${label.toLowerCase()} abre no nível ${getUnlockStepFor(2)?.level ?? 2}. Suba de nível com combate e missões.`;
   const titulo = !acesso.features.tool
     ? `${escapeHtml(label)} BLOQUEADA`

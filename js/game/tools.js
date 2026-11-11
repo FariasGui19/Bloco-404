@@ -22,11 +22,17 @@ export function getToolAccess(progress, archetype = progress?.archetype) {
   };
 }
 
+// A primeira forma funciona desde o kit básico; novas formas têm requisito
+// próprio. A escolha antiga é preservada no save, mas só vale após desbloqueio.
+export function isToolAvailable(progress, tool, archetype = progress?.archetype) {
+  return !!tool && tool.playable !== false && getArchetypeLevel(progress, archetype) >= (tool.requiredLevel ?? 1);
+}
+
 // Escolha válida para o arquétipo ativo. Ids desconhecidos (save antigo,
 // arquétipo trocado) simplesmente não valem nada.
 export function getSelectedToolId(progress, archetype = progress?.archetype) {
   const toolId = progress?.tools?.[archetype];
-  return getTool(archetype, toolId) ? toolId : null;
+  return isToolAvailable(progress, getTool(archetype, toolId), archetype) ? toolId : null;
 }
 
 export function getSelectedTool(progress, archetype = progress?.archetype) {
@@ -41,8 +47,8 @@ export function listTools(progress, archetype = progress?.archetype) {
     ...tool,
     selected: tool.id === selected,
     playable: tool.playable !== false,
-    locked: !access.unlocked || tool.playable === false,
-    requiredLevel: access.requiredLevel,
+    locked: !access.unlocked || !isToolAvailable(progress, tool, archetype),
+    requiredLevel: Math.max(access.requiredLevel, tool.requiredLevel ?? 1),
     ultimate: tool.ultimate,
   }));
 }
@@ -57,7 +63,7 @@ export function selectTool(progress, toolId, archetype = progress?.archetype) {
     return null;
   }
   const tool = getTool(archetype, toolId);
-  if (!tool || tool.playable === false) return null;
+  if (!isToolAvailable(progress, tool, archetype)) return null;
   progress.tools ??= {};
   progress.tools[archetype] = tool.id;
   return tool;

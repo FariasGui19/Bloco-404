@@ -91,3 +91,33 @@ Protótipo jogável em construção: vida, dano e progressão já funcionam cont
 alvos de treino e zonas de eco; inimigos agressivos e balanceamento final ainda
 não existem. Cada etapa concluída e cada
 pendência estão registradas em [`docs/roteiro-proximas-etapas.md`](docs/roteiro-proximas-etapas.md).
+
+### Afinidade aquática
+
+Na praia, todos podem aprender a boiar, atravessar na superfície e colocar a
+cabeça na água. Por enquanto, descer até o fundo exige Maré Astral e o degrau
+de travessia; a prova final também depende disso. Equipamentos, veículos e
+formas aquáticas do Núcleo ainda não estão disponíveis: a capacidade explícita
+`mergulhoLivre` em `atualizarNado` é o ponto de integração para eles.
+Segure ESPAÇO para descer e use SHIFT para a arrancada quando liberada. O Maré
+ganha velocidade com os degraus e o respeito do mar, adquirido no fundo e em
+socorros; cardumes se assustam menos com um Maré experiente, mas reagem à
+arrancada. O novo quadro de impulso complementa a animação existente.
+
+Na Travessia, o Maré também pode tocar **Z** para manter o mergulho sem
+segurar uma tecla; toque novamente para subir. A falta de ar cancela o
+mergulho sustentado e força a subida. ESPAÇO continua servindo para mergulhos
+momentâneos e para o treino inicial. No fundo, o jogo troca a superfície por
+uma camada de leito marinho, preservando os mesmos controles, colisões,
+fragmentos e fauna. A câmera continua isométrica para manter a orientação e
+a leitura das margens; não é uma câmera em primeira pessoa nem um mundo 3D.
+
+Na Praia Inicial, o Maré já mergulhado pode atravessar **sob** as pontes que
+possuem água mapeada abaixo delas. O deque e suas travas continuam sólidos na
+superfície; estacas e relevo continuam sólidos no fundo. Ao subir sob um deque,
+o personagem retorna à superfície dele. A batimetria, a transparência da
+passarela e a ordenação do personagem só mudam durante o mergulho profundo.
+No fundo, **Q** aplica a propulsão aquática (respeitando energia e recargas),
+e **R** detecta fragmentos não coletados e animais aquáticos próximos; **E**
+continua sendo o socorro. Em terra, Q e R preservam suas funções anteriores.
+O zoom de mergulho é temporário e não altera o zoom escolhido pelo jogador.

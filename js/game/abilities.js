@@ -349,7 +349,7 @@ export function updateAbilities(dt) {
       chargeFormHit(player);
     }
   }
-  for (const key of ['effect', 'reveal']) {
+  for (const key of ['effect', 'reveal', 'sonarAquatico']) {
     if (!ability[key]) continue;
     ability[key].timeLeft -= dt;
     if (ability[key].timeLeft <= 0) ability[key] = null;
@@ -406,6 +406,13 @@ export function updateAbilities(dt) {
     return false;
   }
 
+  // Ações terrestres não podem travar o relógio do nado ou executar
+  // um dash de chão em alto-mar. Nada é cobrado ao recusar.
+  if (player.nado?.ativo && state.progress.archetype !== 'mare_astral'
+      && (pressed('q', 'keyq') || pressed('r', 'keyr'))) {
+    showAbilityMessage('HABILIDADE TERRESTRE • SAIA DA ÁGUA');
+    return false;
+  }
   // Forma de força bruta: a marreta SUBSTITUI o pulso de arrancada. Não é um
   // dash — é preparação longa e impacto que derruba estruturas por peso.
   if (pressed('q', 'keyq') && player.nucleoForm === 'forma_bruta') {

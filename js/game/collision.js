@@ -417,7 +417,29 @@ function naBeira(map, x, y, radius, agua) {
   return true;
 }
 
-function podeIrPara(map, x, y, radius, ignore, agua) {
+function podeIrPara(map, x, y, radius, ignore, agua, submerso = false) {
+  if (submerso) {
+    // Embaixo d'água terra continua sólida, mesmo quando é andável por cima.
+    // Testa todo o círculo, não só o centro, contra a máscara aquática.
+    if (!agua || !agua(map, x, y)) return false;
+    for (let ty = Math.floor(y - radius); ty <= Math.floor(y + radius); ty++) {
+      for (let tx = Math.floor(x - radius); tx <= Math.floor(x + radius); tx++) {
+        if (!circleHitsRect(x, y, radius, tx, ty, 1, 1)) continue;
+        const px = Math.max(tx + .001, Math.min(tx + .999, x));
+        const py = Math.max(ty + .001, Math.min(ty + .999, y));
+        if (!agua(map, px, py)) return false;
+      }
+    }
+    // Pilares de sustentação são geometria do fundo, não da superfície.
+    for (const pilar of map.pilaresSubmersos ?? []) {
+      const r = radius + (pilar.raio ?? .16);
+      if (Math.hypot(x - pilar.x, y - pilar.y) < r) return false;
+    }
+    // Barreiras da ponte pertencem à superfície; pilares/rochas explícitos
+    // continuam sólidos. Atores da superfície não bloqueiam o mergulhador.
+    return !getBlockingObject(x, y, radius, ignore, o =>
+      !o.submersoSolido && (o.superficieSomente || o.gate));
+  }
   if (canStandAt(map, x, y, radius, ignore)) return true;
   if (!agua) return false;
   // Na água (ou na beira dela): não pode entrar em objeto sólido nem em
@@ -436,7 +458,7 @@ function podeIrPara(map, x, y, radius, ignore, agua) {
 
 const ehTravaDePonte = object => Boolean(object.gate);
 
-export function moveWithCollision(map, entity, dx, dy, radius, agua = null) {
+export function moveWithCollision(map, entity, dx, dy, radius, agua = null, options = {}) {
   const distance = Math.hypot(dx, dy);
 
   if (!distance || !map) return false;
@@ -448,7 +470,7 @@ export function moveWithCollision(map, entity, dx, dy, radius, agua = null) {
   let moved = false;
 
   for (let i = 0; i < steps; i++) {
-    if (podeIrPara(map, entity.x + stepX, entity.y + stepY, radius, entity, agua)) {
+    if (podeIrPara(map, entity.x + stepX, entity.y + stepY, radius, entity, agua, options.submerso)) {
       entity.x += stepX;
       entity.y += stepY;
       moved = true;
@@ -457,7 +479,7 @@ export function moveWithCollision(map, entity, dx, dy, radius, agua = null) {
 
     if (
       stepX !== 0 &&
-      podeIrPara(map, entity.x + stepX, entity.y, radius, entity, agua)
+      podeIrPara(map, entity.x + stepX, entity.y, radius, entity, agua, options.submerso)
     ) {
       entity.x += stepX;
       moved = true;
@@ -465,7 +487,7 @@ export function moveWithCollision(map, entity, dx, dy, radius, agua = null) {
 
     if (
       stepY !== 0 &&
-      podeIrPara(map, entity.x, entity.y + stepY, radius, entity, agua)
+      podeIrPara(map, entity.x, entity.y + stepY, radius, entity, agua, options.submerso)
     ) {
       entity.y += stepY;
       moved = true;

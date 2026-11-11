@@ -941,6 +941,13 @@ function espalharFlora(existentes, pontos) {
 
 export const map = {
   id: 'ilha_praia_inicial',
+  aguaSobPontes: true,
+  // Estacas de sustentação no fundo: pequenas, nas bordas dos dois canais.
+  // Coordenadas de mundo, independentes do gate da superfície.
+  pilaresSubmersos: [
+    { x: 18.5, y: 7.12, raio: .16 }, { x: 18.5, y: 8.88, raio: .16 },
+    { x: 7.12, y: 18.5, raio: .16 }, { x: 8.88, y: 18.5, raio: .16 },
+  ],
 
   meta: {
     nome: 'PRAIA INICIAL — ARQUIPÉLAGO',
@@ -956,7 +963,7 @@ export const map = {
 
   spawnPoints: {
     inicio: { x: 8.0, y: 7.5 },
-    vindo_do_trem: { x: 8.0, y: 5.5 },
+    vindo_do_trem: { x: 8.0, y: 7.5 },
     vindo_da_enseada: { x: 11.5, y: 10.5 },
     vindo_da_estacao: { x: 8.5, y: 23.5 },
   },
@@ -1079,36 +1086,57 @@ export const map = {
       // O totem fica na AREIA, à frente do trem: o embarque tem que ser
       // alcançável a pé (ele é o ponto de interação do trem).
       totem: { x: 7.2, y: 5.0, ajusteY: 12 },
-      trilho: { larguraPx: 300, ajusteX: 6, ajusteY: 26 },
-      trem: { larguraPx: 286, escalaY: .60, ajusteY: 40 },
+      // O leito é mais comprido que o trem e ambos compartilham o eixo.
+      // A frente e a traseira do trilho permanecem visíveis sob as rodas.
+      trilho: { larguraPx: 380, ajusteX: -3, ajusteY: 31 },
+      trem: { larguraPx: 350, ajusteX: 0, escalaY: .78, ajusteY: 70 },
     }),
+
+    // A traseira agora assenta mais abaixo; a coluna impede entrar na área
+    // do leito sem alterar a grade, o spawn ou o caminho do terminal.
+    { id: 'estacao_limite_trilho', tipo: 'decoracao', x: 6, y: 5,
+      invisivel: true, bloqueia: true, superficieSomente: true,
+      hitbox: { offsetX: -.30, offsetY: -.30, width: .60, height: .60 } },
+
+    // Pequenos limites nos pontos cobertos pelo trem ampliado. O spawn e
+    // a aproximação ao terminal continuam livres, sem mudar a grade.
+    ...[[5,5], [8,5], [6,6], [7,6]].map(([x,y], i) => ({
+      id: `estacao_limite_leito_${i}`, tipo: 'decoracao', x, y,
+      invisivel: true, bloqueia: true, superficieSomente: true,
+      hitbox: { offsetX: -.15, offsetY: -.15, width: .30, height: .30 },
+    })),
 
     // ---- ESTAÇÃO DO TREM ----
     // Antes eram dois pilares soltos a 6 tiles do trem, e o trem ficava
     // plantado no meio da areia. A estação agora é construída EM VOLTA dele
     // (que fica em 7.1, 2.0, camada 'fundo'): plataforma atrás, dossel
     // acima, pilares na frente, escada descendo para a praia.
-    // Tudo `bloqueia: false` — a estação é cenário, as rotas e o save não
-    // mudam. O totem de embarque continua sendo o único bloqueio.
-    { id: 'estacao_plataforma', tipo: 'decoracao', x: 6.8, y: 0.6, camada: 'fundo', ordem: 2,
+    // As peças do kit são cenográficas. Um limite discreto sob o trilho e
+    // o totem protegem a área do trem sem mudar o spawn nem as rotas.
+    { id: 'estacao_plataforma', tipo: 'decoracao', x: 7.1, y: 2.0, camada: 'fundo', ordem: -0.1,
       sprite: 'praia_plataforma_kit', frame: { col: 1, row: 0 }, useCrop: true,
-      larguraPx: 196, pivotX: .5, pivotY: 1, ajusteY: 32, escalaY: .50, bloqueia: false },
-    { id: 'estacao_dossel', tipo: 'decoracao', x: 7.3, y: 0.8, camada: 'fundo', ordem: 3,
+      larguraPx: 240, pivotX: .5, pivotY: 1, ajusteX: 8, ajusteY: 14, escalaY: .65, espelhar: true, bloqueia: false },
+    { id: 'estacao_dossel', tipo: 'decoracao', x: 7.1, y: 2.0, camada: 'fundo', ordem: 0.3,
       sprite: 'praia_plataforma_kit', frame: { col: 2, row: 0 }, useCrop: true,
-      larguraPx: 142, pivotX: .5, pivotY: 1, ajusteY: 74, escalaY: .78, bloqueia: false },
+      larguraPx: 92, pivotX: .5, pivotY: 1, ajusteX: -66, ajusteY: 14, escalaY: .65, bloqueia: false },
+    // Sapatas visuais sob as extremidades da plataforma, sem alterar rotas.
+    { id: 'estacao_sapata_oeste', tipo: 'decoracao', x: 4.4, y: 2.0, camada: 'fundo', ordem: -1,
+      sprite: 'praia_plataforma_kit', frame: { col: 0, row: 1 }, useCrop: true, larguraPx: 35, pivotY: 1, ajusteY: 50, escalaY: 1.05, bloqueia: false },
+    { id: 'estacao_sapata_leste', tipo: 'decoracao', x: 10.0, y: 2.0, camada: 'fundo', ordem: -1,
+      sprite: 'praia_plataforma_kit', frame: { col: 0, row: 1 }, useCrop: true, larguraPx: 35, pivotY: 1, ajusteY: 50, escalaY: 1.05, bloqueia: false },
     // Os dois pilares do contrato 0314: mesmo id, mesmo y=5, em chão firme.
     { id: 'plataforma_pilar_oeste', tipo: 'decoracao', x: 2, y: 5, sprite: 'praia_plataforma_kit', frame: { col: 0, row: 1 }, useCrop: true, larguraPx: 30, pivotY: 1, escalaY: .86, bloqueia: false },
     { id: 'plataforma_pilar_leste', tipo: 'decoracao', x: 13, y: 5, sprite: 'praia_plataforma_kit', frame: { col: 0, row: 1 }, useCrop: true, larguraPx: 30, pivotY: 1, escalaY: .86, bloqueia: false },
     { id: 'praia_placa_estacao', tipo: 'decoracao', x: 9.6, y: 3.4,
       sprite: 'praia_plataforma_kit', frame: { col: 1, row: 1 }, useCrop: true,
       larguraPx: 82, pivotY: 1, escalaY: .82, bloqueia: false, routeMarker: 'ESTAÇÃO' },
-    { id: 'estacao_luminaria', tipo: 'decoracao', x: 12.0, y: 1.5,
+    { id: 'estacao_luminaria', tipo: 'decoracao', x: 13.4, y: 1.3,
       sprite: 'praia_plataforma_kit', frame: { col: 2, row: 1 }, useCrop: true,
       larguraPx: 44, pivotY: 1, escalaY: .80, bloqueia: false },
     { id: 'estacao_escada', tipo: 'decoracao', x: 4.6, y: 4.1,
       sprite: 'praia_plataforma_kit', frame: { col: 3, row: 0 }, useCrop: true,
-      larguraPx: 86, pivotY: 1, escalaY: .72, bloqueia: false },
-    { id: 'estacao_guarda_corpo', tipo: 'decoracao', x: 10.4, y: 4.5,
+      larguraPx: 86, pivotY: 1, ajusteX: 65, ajusteY: 32, escalaY: .72, bloqueia: false },
+    { id: 'estacao_guarda_corpo', tipo: 'decoracao', x: 9.8, y: 5.8,
       sprite: 'praia_plataforma_kit', frame: { col: 3, row: 1 }, useCrop: true,
       larguraPx: 104, pivotY: 1, escalaY: .74, bloqueia: false },
     { id: 'praia_caixa_estacao', tipo: 'decoracao', x: 12.4, y: 5.4, sprite: 'bio_caixa', useCrop: true, larguraPx: 42, pivotY: 1, bloqueia: false },

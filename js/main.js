@@ -15,6 +15,7 @@ import { desenharMedidorAr } from './ui/nado-hud.js';
 import { atualizarMissaoMare, criarFragmentosDeMare } from './game/mare-missao.js';
 import { atualizarFauna, socorrerProximo } from './game/fauna-ferida.js';
 import { ganharRespeito } from './game/nado.js';
+import { criarClima, atualizarClima, criarParticulas } from './game/clima.js';
 import { getVidaAquatica } from './game/vida-aquatica.js';
 import { alternarMorfador, manterInfinitos, autorizado } from './game/morfador.js';
 import { alternarPainel, morfadorAberto, promoverAutoria } from './ui/morfador-panel.js';
@@ -280,6 +281,7 @@ await loadSprites([
   { id: 'visao_nucleo', src: 'assets/sprites/backgrounds/camara-nucleo-visao.jpg' },
   { id: 'beach_novas_artes', src: 'assets/sprites/tiles/beach-novas-artes.png' },
   { id: 'fauna_costeira', src: 'assets/sprites/fauna/fauna-costeira.png' },
+  { id: 'fauna_nova_1010', src: 'assets/sprites/fauna/fauna-nova-1010.png' },
   { id: 'fauna_caranguejo', src: 'assets/sprites/fauna/caranguejo.png' },
   { id: 'costa_rochosa', src: 'assets/sprites/objects/costa-rochosa.png' },
   { id: 'praia_plataforma_kit', src: 'assets/sprites/praia/plataforma-kit-0311.png' },
@@ -543,6 +545,16 @@ if (typeof window !== 'undefined') {
 }
 
 // =====================================================================
+// CLIMA
+//
+// Um único estado de clima para a sessão, criado no boot e atualizado no
+// loop. O buffer de partículas existe uma vez (120 posições fixas) e é
+// reaproveitado — nunca alocado por frame.
+// =====================================================================
+state.clima = criarClima(4);
+state.particulasClima = criarParticulas(7);
+
+// =====================================================================
 // LOOP
 // =====================================================================
 
@@ -556,6 +568,7 @@ async function frame(now) {
 
   last = now;
 
+  atualizarClima(state.clima, dt);
   await update(dt);
 
   const map = getFloor();

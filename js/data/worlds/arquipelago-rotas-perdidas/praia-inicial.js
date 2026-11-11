@@ -707,6 +707,27 @@ export const map = {
     // em célula `X` era filtrado por `habitatAllows` — o animal sumia.
     { id: 'praia_peixes_largo', species: 'peixes', x: 42.5, y: 18.5 },
     { id: 'praia_peixes_sul_largo', species: 'peixes', x: 17.5, y: 38.5 },
+    // ---- FAUNA 10.0 (folha fauna-nova-1010) ----
+    // Golfinho: água funda, longe das pontes. Ele salta — é o animal que
+    // faz o mapa parecer vivo de longe.
+    { id: 'praia_golfinho_enseada', species: 'golfinho', x: 42.5, y: 32.5 },
+    { id: 'praia_golfinho_cabo', species: 'golfinho', x: 41.5, y: 60.5 },
+    { id: 'praia_golfinho_largo', species: 'golfinho', x: 15.5, y: 16.5 },
+    // Tartaruga: água funda, perto dos recifes (onde ela pasta).
+    { id: 'praia_tartaruga_norte', species: 'tartaruga', x: 39.5, y: 2.5 },
+    { id: 'praia_tartaruga_oeste', species: 'tartaruga', x: 2.5, y: 22.5 },
+    { id: 'praia_tartaruga_sul', species: 'tartaruga', x: 19.5, y: 36.5 },
+    // Trinta-réis: areia molhada da costa — bando pequeno, não gaivota solta.
+    { id: 'praia_trinta_reis_1', species: 'trinta_reis', x: 48.5, y: 12.5 },
+    { id: 'praia_trinta_reis_2', species: 'trinta_reis', x: 26.5, y: 16.5 },
+    { id: 'praia_trinta_reis_3', species: 'trinta_reis', x: 57.5, y: 23.5 },
+    { id: 'praia_trinta_reis_4', species: 'trinta_reis', x: 8.5, y: 48.5 },
+    { id: 'praia_trinta_reis_5', species: 'trinta_reis', x: 31.5, y: 60.5 },
+    // Graxaim: areia seca, mais para dentro — o bicho que anda na praia.
+    { id: 'praia_graxaim_1', species: 'graxaim', x: 9.5, y: 22.5 },
+    { id: 'praia_graxaim_2', species: 'graxaim', x: 37.5, y: 25.5 },
+    { id: 'praia_graxaim_3', species: 'graxaim', x: 22.5, y: 49.5 },
+    { id: 'praia_graxaim_4', species: 'graxaim', x: 41.5, y: 50.5 },
   ],
   objects: [
     // Marcos costeiros em água, não bloqueantes; não são terreno jogável.

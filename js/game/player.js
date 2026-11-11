@@ -128,6 +128,9 @@ export function updatePlayer(dt) {
   const efeitoNado = atualizarNado(nado, {
     map, x: player.x, y: player.y, field: campoCosta, dt,
     tempo: performance.now() / 1000,
+    // Ressaca deixa a correnteza mais forte e o fôlego mais curto: o
+    // clima não é só visual, ele muda como o mar se comporta.
+    clima: state.clima,
   });
 
   const radius = CONFIG.PLAYER_RADIUS;

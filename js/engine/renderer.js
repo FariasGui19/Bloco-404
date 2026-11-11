@@ -21,6 +21,8 @@ import { getBioWalkFrame, bioWalkSheet } from '../data/bio-walk.js';
 import { faunaFootAnchor } from '../game/fauna-costeira.js';
 import { getFrame } from './sprite-clean.js';
 import { drawAmbientBack, drawAmbientFront } from './ambient.js';
+import { tintaDoClima, atualizarParticulas } from '../game/clima.js';
+import { animarFauna } from '../game/fauna-animacao.js';
 import { isDebugEnabled, drawDebugWorld } from '../game/debug.js';
 import { ACTION_SPRITES } from '../data/action-sprites.js';
 import { drawHubScreenFx, hasHubScreenFx } from './hub-screen-fx.js';
@@ -146,6 +148,9 @@ export function render(map, state) {
   drawUltimateCharge(state);
   drawUltimateEffect(state);
   drawAmbientFront(ctx, map, HW, HH);
+  // CLIMA por último entre as camadas de mundo: chuva e tinta cobrem
+  // tudo (inclusive o jogador), mas nunca a HUD, que é DOM.
+  drawClima(ctx, state, view);
   drawTarget(state.player);
 
   if (isDebugEnabled()) drawDebugWorld(ctx, map, state, CONFIG.TILE_W, CONFIG.TILE_H);
@@ -499,6 +504,64 @@ const MOD_COR = {
   lamina_dominio_anciao: '#EDB85A',
   motor_bio_forja: '#CE9C5F',
 };
+
+// ---------------------------------------------------------------------
+// CLIMA: tinta, chuva e clarão
+//
+// Peso por frame é constante: 120 partículas no máximo, um retângulo de
+// tinta e uma vinheta. Nada aqui cresce com o tamanho do mapa.
+// ---------------------------------------------------------------------
+function drawClima(ctx, state, view) {
+  const clima = state.clima;
+  if (!clima) return;
+
+  // 1. TINTA: esfria e escurece a cena inteira. É o efeito mais barato
+  //    e o que mais se lê de longe — em ressaca a praia "fecha".
+  const tinta = tintaDoClima(clima);
+  if (tinta.a > 0.004) {
+    ctx.save();
+    ctx.fillStyle = `rgba(${tinta.r},${tinta.g},${tinta.b},${tinta.a.toFixed(3)})`;
+    ctx.fillRect(0, 0, view.w, view.h);
+    ctx.restore();
+  }
+
+  // 2. CHUVA: só desenha se o buffer existir (evita alocar em mapa seco).
+  if (clima.chuva > 0.02 && state.particulasClima) {
+    const ativas = Math.round(state.particulasClima.length * Math.min(1, clima.chuva));
+    atualizarParticulas(state.particulasClima, clima, 1 / 60, ativas);
+    ctx.save();
+    ctx.globalCompositeOperation = 'lighter';
+    ctx.strokeStyle = `rgba(190,220,235,${(0.16 + clima.chuva * 0.26).toFixed(3)})`;
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    const W = view.w, H = view.h;
+    const dx = Math.cos(clima.direcao) * clima.vento * 26;
+    const dy = Math.sin(clima.direcao) * clima.vento * 10;
+    for (let i = 0; i < ativas; i++) {
+      const p = state.particulasClima[i];
+      const x = p.x * W, y = p.y * H;
+      const c = p.comprimento * H;
+      ctx.moveTo(x, y);
+      ctx.lineTo(x + dx * 0.25, y + c + dy * 0.25);
+    }
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  // 3. VINHETA: fecha o quadro nas bordas. Em tempo fechado ela aperta.
+  if (clima.forca > 0.15) {
+    const forca = Math.min(0.5, clima.forca * 0.42);
+    const g = ctx.createRadialGradient(
+      view.w * .5, view.h * .5, Math.min(view.w, view.h) * .32,
+      view.w * .5, view.h * .5, Math.max(view.w, view.h) * .72);
+    g.addColorStop(0, 'rgba(0,0,0,0)');
+    g.addColorStop(1, `rgba(8,18,24,${forca.toFixed(3)})`);
+    ctx.save();
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, view.w, view.h);
+    ctx.restore();
+  }
+}
 
 function drawVidaAquatica(map, state) {
   if (!map.aguaPraia) return;
@@ -1800,27 +1863,56 @@ function drawBasicAttack(player) {
 
 // As células são desenhadas integralmente: os peixes são um cardume, não
 // componentes desconectados a eliminar, e as âncoras não pulam entre quadros.
+// Espécies da folha NOVA (Praia 10.0), por linha e largura em px.
+// `ar` = passa tempo acima da linha d'água (o golfinho salta).
+const FAUNA_NOVA = {
+  trinta_reis: { linha: 0, largura: 46, ar: 'voo' },
+  graxaim:     { linha: 1, largura: 54 },
+  golfinho:    { linha: 2, largura: 62, ar: 'salto' },
+  tartaruga:   { linha: 3, largura: 52, ar: 'nado' },
+};
+
 function drawCoastalFauna(a) {
   const crab = a.species === 'caranguejo';
-  const image = getSprite(crab ? 'fauna_caranguejo' : 'fauna_costeira');
+  const nova = FAUNA_NOVA[a.species];
+  const image = getSprite(crab ? 'fauna_caranguejo' : nova ? 'fauna_nova_1010' : 'fauna_costeira');
   if (!image) return;
-  const cols = crab ? 4 : 8, rows = 4;
-  const flight = a.species === 'gaivota' && a.fleeing;
-  const row = crab ? (a.fleeing ? 2 : 0) : ({ gaivota: 1, peixes: 2, capivara: 3 }[a.species] ?? 0);
+  const cols = crab ? 4 : 8, rows = crab ? 4 : nova ? 4 : 4;
+  const flight = (a.species === 'gaivota' || a.species === 'trinta_reis') && a.fleeing;
+  const row = crab ? (a.fleeing ? 2 : 0)
+    : nova ? nova.linha
+    : ({ gaivota: 1, peixes: 2, capivara: 3 }[a.species] ?? 0);
   const tick = Math.floor(a.clock * (a.fleeing ? 8 : 4));
-  const col = crab ? tick % 4 : flight ? 4 + tick % 4 : a.species === 'gaivota' ? tick % 4 : a.species === 'capivara' ? tick % 7 : tick % 8;
-  const width = crab ? 54 : a.species === 'peixes' ? 65 : a.species === 'capivara' ? 62 : 48;
+  const col = crab ? tick % 4
+    : nova ? tick % 8
+    : flight ? 4 + tick % 4
+    : a.species === 'gaivota' ? tick % 4
+    : a.species === 'capivara' ? tick % 7 : tick % 8;
+  const width = crab ? 54
+    : nova ? nova.largura
+    : a.species === 'peixes' ? 65 : a.species === 'capivara' ? 62 : 48;
   const cw = image.width / cols, ch = image.height / rows;
   const height = width * ch / cw;
   const x = (a.x - a.y) * HW, y = (a.x + a.y) * HH;
+  // Golfinho e tartaruga vivem na água: a sombra deles é na própria
+  // lâmina d'água, e o golfinho ganha arco de salto.
+  const naAgua = a.species === 'golfinho' || a.species === 'tartaruga' || a.species === 'peixes';
+  // Animação vem do módulo de fauna: parábola de verdade para o golfinho,
+  // batida em rajada para o trinta-réis, passo para o graxaim. O renderer
+  // só obedece — nada de seno solto aqui dentro.
+  const anim = animarFauna(a);
   ctx.save();
-  if (a.species !== 'peixes') {
+  if (!naAgua) {
     ctx.fillStyle = 'rgba(12,25,24,.22)'; ctx.beginPath(); ctx.ellipse(x, y + 3, width * .22, 4, 0, 0, Math.PI * 2); ctx.fill();
   }
-  ctx.translate(x, y - (flight ? 18 + Math.sin(a.clock * 8) * 2 : 0));
+  ctx.translate(x, y + anim.y - (flight ? 18 + Math.sin(a.clock * 8) * 2 : 0));
   if (a.flip) ctx.scale(-1, 1);
+  // Inclinação do corpo: o golfinho mergulha e emerge com o corpo
+  // inclinado; quem está em terra firme mal inclina.
+  if (anim.rot) ctx.rotate(anim.rot * (a.flip ? -1 : 1));
+  if (anim.escalaY !== 1) ctx.scale(1, anim.escalaY);
   ctx.imageSmoothingEnabled = false;
-  const box = a.species === 'capivara' ? getVisibleBox(image, col * cw, row * ch, cw, ch) : null;
+  const box = (a.species === 'capivara' || nova) ? getVisibleBox(image, col * cw, row * ch, cw, ch) : null;
   // Usa a base opaca de cada quadro, sem redimensioná-lo ou deslocar a sombra.
   const anchor = faunaFootAnchor(box, ch);
   ctx.drawImage(image, col * cw, row * ch, cw, ch, -width / 2, -height * anchor, width, height);

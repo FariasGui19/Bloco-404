@@ -217,8 +217,14 @@ export function criarEstadoNado() {
  * Devolve efeitos para quem chamou aplicar (dano, eventos).
  */
 export function atualizarNado(nado, ctx) {
-  const { map, x, y, field, dt = 0, tempo = 0 } = ctx;
+  const { map, x, y, field, dt = 0, tempo = 0, clima = null } = ctx;
   const antes = nado.ativo;
+
+  // Ressaca: o clima entra no nado como fator de mar. Fica guardado no
+  // próprio estado para `moverNaAgua` e o HUD lerem sem recalcular.
+  nado.climaMar = clima?.mar ?? 0;
+  nado.climaCorrenteza = 1 + (clima?.mar ?? 0) * 0.55;
+  nado.climaFolego = 1 - (clima?.mar ?? 0) * 0.25;
 
   const prof = profundidadeEm(map, x, y, field);
   nado.ativo = prof > 0;
@@ -229,7 +235,9 @@ export function atualizarNado(nado, ctx) {
 
   // ---- correnteza local ----
   if (nado.ativo) {
-    nado.corrente = correnteEm(x, y, tempo);
+    const c = correnteEm(x, y, tempo);
+    // A correnteza do mar local é amplificada pela ressaca.
+    nado.corrente = { x: c.x * nado.climaCorrenteza, y: c.y * nado.climaCorrenteza, forca: c.forca * nado.climaCorrenteza };
   } else {
     nado.corrente = { x: 0, y: 0, forca: 0 };
   }
@@ -247,7 +255,7 @@ export function atualizarNado(nado, ctx) {
   const derivados = derivadosDoRespeito(nado.respeito);
 
   // ---- ar ----
-  const arMax = NADO.arMaximo * derivados.ar;
+  const arMax = NADO.arMaximo * derivados.ar * nado.climaFolego;
   if (!nado.ativo || !nado.submerso) {
     nado.ar = Math.min(arMax, nado.ar + NADO.recuperacao * dt);
     nado.afogando = false;

@@ -68,7 +68,30 @@ export function desenharBichoFerido(ctx, bicho, sx, sy, escala, t, opts = {}) {
   else if (bicho.tipo === 'passaro') desenharPassaro(ctx, t, ferido);
   else if (bicho.tipo === 'estrela') desenharEstrela(ctx, t, ferido);
   else if (bicho.tipo === 'arraia') desenharArraia(ctx, t, ferido);
+  else if (bicho.tipo === 'cavalo_marinho') desenharCavaloMarinho(ctx, t, ferido);
+  else if (bicho.tipo === 'peixe_palhaco') desenharPeixePalhaco(ctx, t, ferido);
 
+  ctx.restore();
+}
+
+function desenharPeixePalhaco(ctx, t, ferido) {
+  ctx.fillStyle = ferido ? '#9c8c72' : '#e49a50';
+  ctx.beginPath(); ctx.ellipse(0, 0, 8, 4.5, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.moveTo(-7, 0); ctx.lineTo(-12, -4); ctx.lineTo(-12, 4); ctx.closePath(); ctx.fill();
+  ctx.strokeStyle = '#e8eee1'; ctx.lineWidth = 2; ctx.beginPath();
+  ctx.moveTo(-3, -4); ctx.lineTo(-3, 4); ctx.moveTo(2, -4); ctx.lineTo(2, 4); ctx.stroke();
+  ctx.fillStyle = '#263e3b'; ctx.fillRect(5, -2, 1.5, 1.5);
+}
+
+// Silhueta legível também no fallback isométrico sem WebGL.
+function desenharCavaloMarinho(ctx, t, ferido) {
+  ctx.save(); ctx.rotate(Math.sin(t * 1.5) * .08);
+  ctx.strokeStyle = ferido ? '#88735a' : '#cb9d56'; ctx.lineWidth = 5;
+  ctx.beginPath(); ctx.moveTo(2, -10); ctx.quadraticCurveTo(-5, -4, 0, 3);
+  ctx.quadraticCurveTo(7, 12, 0, 12); ctx.quadraticCurveTo(-4, 12, -3, 8); ctx.stroke();
+  ctx.fillStyle = ferido ? '#a8956e' : '#e2b56d';
+  ctx.beginPath(); ctx.ellipse(3, -9, 4, 3.5, -.3, 0, Math.PI * 2); ctx.fill();
+  ctx.fillRect(5, -9, 5, 2); ctx.fillStyle = '#253d3c'; ctx.fillRect(4, -10, 1.5, 1.5);
   ctx.restore();
 }
 

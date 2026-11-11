@@ -20,6 +20,7 @@
 // =====================================================================
 
 import { MODULOS } from '../engine/selos-modulo.js';
+import { grantArchetypeXp } from './rpg.js';
 
 // Quanto tempo de presença (sem tocar) o jogador precisa para aliviar.
 export const CARINHO_SEGUNDOS = 2.4;
@@ -86,6 +87,20 @@ export const BICHOS = Object.freeze({
     falaSocorro: 'A água volta pela poça. Os braços se abrem um a um, sem pressa.',
     falaAlivio: 'Um fio de água chega à poça. Ela ainda está quase seca.',
   },
+  cavalo_marinho: {
+    nome: 'CAVALO-MARINHO EM APUROS',
+    problema: 'ficou preso entre detritos perto do recife.',
+    cura: 'mare_astral', meio: 'agua', xp: 50, respeito: .15,
+    falaSocorro: 'Você afasta os detritos com a corrente. Ele se agarra a uma alga e volta a nadar.',
+    falaAlivio: 'Ele se aquieta perto da alga, mas ainda precisa de ajuda.',
+  },
+  peixe_palhaco: {
+    nome: 'PEIXE-PALHAÇO EM APUROS',
+    problema: 'ficou cercado por uma linha de pesca junto ao recife.',
+    cura: 'mare_astral', meio: 'agua', xp: 45, respeito: .12,
+    falaSocorro: 'A corrente leva a linha para longe. O peixe volta a explorar o recife.',
+    falaAlivio: 'Ele se aproxima com cautela, ainda cercado pela linha.',
+  },
   arraia: {
     nome: 'ARRAIA ENREDADA',
     problema: 'linha de pesca enrolada na cauda, cortando a nadadeira.',
@@ -127,9 +142,10 @@ export function criarBichosFeridos(map, recifes = [], opts = {}) {
   if (!rows) return [];
   const limite = opts.limite ?? 4;
   const bichos = [];
+  const limiteOriginal = Math.min(limite, 4);
 
   // 1. Perto dos recifes: cada recife pode abrigar um bicho.
-  for (let i = 0; i < recifes.length && bichos.length < limite; i++) {
+  for (let i = 0; i < recifes.length && bichos.length < limiteOriginal; i++) {
     const r = recifes[i];
     const tipo = ORDEM_BICHOS[i % ORDEM_BICHOS.length];
     const def = BICHOS[tipo];
@@ -149,13 +165,31 @@ export function criarBichosFeridos(map, recifes = [], opts = {}) {
   // 2. Um na areia, sempre: o bicho de terra é o que ensina que existe
   //    mais de um jeito de ajudar.
   const deTerra = ORDEM_BICHOS.filter(t => BICHOS[t].meio === 'terra');
-  for (let i = 0; i < deTerra.length && bichos.length < limite; i++) {
+  for (let i = 0; i < deTerra.length && bichos.length < limiteOriginal; i++) {
     const pos = acharAreia(rows, i);
     if (!pos) break;
     if (bichos.some(b => Math.hypot(b.x - pos.x, b.y - pos.y) < 3)) continue;
     bichos.push(criarBicho(deTerra[i], pos.x, pos.y, map.id, 50 + i));
   }
 
+  // Acréscimo posterior à fauna original: mantém IDs e posições dos saves
+  // anteriores. Só aparece quando o mapa tem recife acessível e espaço.
+  if (bichos.length < limite && limite > 4) {
+    for (let i = 0; i < recifes.length; i++) {
+      const r = recifes[i], x = r.x + .35, y = r.y + .35;
+      if (!aguaEm(rows, x, y) || bichos.some(b => Math.hypot(b.x - x, b.y - y) < 2)) continue;
+      bichos.push(criarBicho('cavalo_marinho', x, y, map.id, 100 + i));
+      break;
+    }
+  }
+  if (bichos.length < limite && limite > 5) {
+    for (let i = 0; i < recifes.length; i++) {
+      const r = recifes[i], x = r.x - .35, y = r.y - .35;
+      if (!aguaEm(rows, x, y) || bichos.some(b => Math.hypot(b.x - x, b.y - y) < 2)) continue;
+      bichos.push(criarBicho('peixe_palhaco', x, y, map.id, 200 + i));
+      break;
+    }
+  }
   return bichos;
 }
 
@@ -350,7 +384,7 @@ export function detalhesFauna(map, progress, recifes = null) {
   let estado = cachePorMapa.get(map);
   if (!estado) {
     estado = criarEstadoFauna();
-    estado.bichos = criarBichosFeridos(map, recifes ?? [], { limite: 4 });
+    estado.bichos = criarBichosFeridos(map, recifes ?? [], { limite: 6 });
     cachePorMapa.set(map, estado);
   }
   // Sincroniza com o save a cada leitura (barato: 4 itens).
@@ -417,6 +451,7 @@ export function socorrerProximo(map, { player, progress, arquetipo, submerso, na
   // Missão: dois eventos, um por bicho e um por meio. O id estável no
   // save garante que socorrer o MESMO bicho de novo não conte outra vez.
   if (progress) {
+    grantArchetypeXp(progress, res.xp, arquetipo);
     recordQuestEvent(progress, { type: 'socorro', amount: 1 });
     if (alvo.def.meio === 'terra') recordQuestEvent(progress, { type: 'socorro_terra', amount: 1 });
   }

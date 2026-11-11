@@ -486,7 +486,7 @@ export function moverNaAgua(nado, dt, dirX, dirY, baseSpeed) {
     // Com direção: persegue o alvo sem saltar para ele (é a "pegada" da
     // braçada).
     // Curvas mais abertas no fundo; na superfície a resposta anterior fica intacta.
-    const aceleracao = nado.mareAstral && nado.profundidade > 1.25 ? 3.4 : NADO.aceleracao;
+    const aceleracao = nado.mareAstral && nado.profundidade > 1.25 ? 5.0 : NADO.aceleracao;
     const k = 1 - Math.exp(-aceleracao * dt);
     nado.vx += (alvoX - nado.vx) * k;
     nado.vy += (alvoY - nado.vy) * k;

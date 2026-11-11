@@ -12,7 +12,7 @@ import { updateNucleoForm } from './game/nucleo-form.js';
 import { canStandAt } from './game/collision.js';
 import { dispararPropulsao } from './game/nado.js';
 import { desenharMedidorAr, desenharDegrauNado } from './ui/nado-hud.js';
-import { atualizarProvas, garantirMissaoDeNado, lerArvore, provaDe, degrauDe, nomeDoDegrau } from './game/nado-arvore.js';
+import { atualizarProvas, garantirMissaoDeNado, garantirArvore, lerArvore, provaDe, degrauDe, nomeDoDegrau } from './game/nado-arvore.js';
 import { pushCombatText } from './game/combat-feedback.js';
 import { atualizarMissaoMare, criarFragmentosDeMare } from './game/mare-missao.js';
 import { atualizarFauna, socorrerProximo } from './game/fauna-ferida.js';
@@ -634,8 +634,13 @@ async function update(dt) {
         player.ability.lastMessage = `${res.nome} — SALVO`;
         player.ability.messageTimer = 3;
         // (era `player.nado`: o respeito do socorro nunca chegava a contar)
-        if (player.nado) ganharRespeito(player.nado.respeito, res.respeito);
+        if (player.nado) {
+          ganharRespeito(player.nado.respeito, res.respeito);
+          const arvore = garantirArvore(state.progress);
+          arvore.respeito = Math.max(arvore.respeito ?? 0, player.nado.respeito.valor);
+        }
         state.interaction.faunaPronta = null;
+        saveGame();
       } else if (res?.motivo) {
         player.ability ??= {};
         player.ability.lastMessage = res.motivo.toUpperCase();
@@ -710,6 +715,12 @@ async function frame(now) {
     c.font = 'bold 11px monospace'; c.textAlign = 'right';
     c.fillStyle = 'rgba(0,30,42,.72)'; c.fillRect(w - 510, h - 127, 496, 32);
     c.fillStyle = '#bdfaf0'; c.fillText('A/D GIRAR · W NADAR/DESCER · S SUBIR · Q IMPULSO · R SONAR', w - 24, h - 107);
+    if (state.interaction?.faunaPronta) {
+      const nome = state.interaction.faunaPronta.nome;
+      c.textAlign = 'center'; c.fillStyle = 'rgba(0,30,42,.82)';
+      c.fillRect(w / 2 - 190, h - 190, 380, 32);
+      c.fillStyle = '#bdfaf0'; c.fillText(`E · SOCORRER ${nome}`, w / 2, h - 170);
+    }
     c.restore();
   }
   // Degrau do nado + prova em curso: perto d'água, ou comemorando.

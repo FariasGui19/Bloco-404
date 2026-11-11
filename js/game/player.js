@@ -283,6 +283,13 @@ export function updatePlayer(dt) {
     const passo = moverNaAgua(nado, dt, dir.x, dir.y, velocidade);
     const antesX = player.x, antesY = player.y;
     moved = moveWithCollision(map, player, passo.dx, passo.dy, radius, devolvendo ? podeNadar : agua, { submerso: submerso && !devolvendo });
+    // Descarta a componente da inércia que colidiu, preservando o deslizamento
+    // paralelo à parede. Evita ficar preso empurrando uma estaca após virar.
+    if (submerso && dt > 0) {
+      const vxReal = (player.x - antesX) / dt, vyReal = (player.y - antesY) / dt;
+      if (Math.abs(passo.dx) > .001 && Math.abs(vxReal * dt) < Math.abs(passo.dx) * .5) nado.vx *= .45;
+      if (Math.abs(passo.dy) > .001 && Math.abs(vyReal * dt) < Math.abs(passo.dy) * .5) nado.vy *= .45;
+    }
     // Bateu no limite do degrau: queria ir, a água existe, o degrau não deixa.
     if (!devolvendo && (dir.x || dir.y)) {
       const m = Math.hypot(dir.x, dir.y) || 1;

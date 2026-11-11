@@ -1888,7 +1888,7 @@ function drawWorld(map, state) {
   // Fachada no extremo do trilho, atrás do trem; é cenográfica, não portal.
   if (map.id === 'ilha_praia_inicial') {
     const rail = backList.find(o => o.id === 'trilho_dimensional_principal');
-    if (rail) drawBeachRailTunnel(rail);
+    if (rail) { drawBeachRailTunnel(rail); drawBeachRailBed(rail); }
   }
   // Camada de fundo (trilho, trem): atrás de tudo, só acima do chão.
   for (const o of backList) if ((o.ordem ?? 0) >= 0) drawMapObject(o, state);
@@ -2059,6 +2059,26 @@ function drawBeachRailTunnel(rail) {
   ctx.beginPath(); ctx.moveTo(-52,0); ctx.lineTo(-52,-79); ctx.lineTo(-38,-101);
   ctx.lineTo(19,-101); ctx.lineTo(44,-79); ctx.lineTo(44,3); ctx.stroke();
   ctx.restore(); // escala do pórtico
+  ctx.restore();
+}
+
+// Base contínua sob o trilho. O PNG do leito tem perspectiva própria: sua
+// linha central sobe à esquerda e desce à direita. A sapata segue esse
+// mesmo eixo, e desce até o piso da estação em vez de deixar pontas no ar.
+function drawBeachRailBed(rail) {
+  const x = (rail.x - rail.y) * HW + (rail.ajusteX ?? 0);
+  const y = (rail.x + rail.y) * HH + (rail.ajusteY ?? 0);
+  const half = (rail.larguraPx ?? 350) * .5;
+  const dy = half * .45;
+  ctx.save(); ctx.translate(x, y); ctx.lineJoin = 'round';
+  ctx.fillStyle = '#273e42'; ctx.strokeStyle = '#182e34'; ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.moveTo(-half, -dy + 4); ctx.lineTo(half, dy + 4);
+  ctx.lineTo(half, dy + 34); ctx.lineTo(-half, -dy + 34); ctx.closePath(); ctx.fill(); ctx.stroke();
+  ctx.fillStyle = '#516966'; ctx.beginPath();
+  ctx.moveTo(-half, -dy + 4); ctx.lineTo(-half + 18, -dy - 8);
+  ctx.lineTo(half + 18, dy - 8); ctx.lineTo(half, dy + 4); ctx.closePath(); ctx.fill(); ctx.stroke();
+  ctx.strokeStyle = '#74847b'; ctx.lineWidth = 1.4; ctx.beginPath();
+  ctx.moveTo(-half, -dy + 28); ctx.lineTo(half, dy + 28); ctx.stroke();
   ctx.restore();
 }
 

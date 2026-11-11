@@ -2008,7 +2008,7 @@ export function beachRailEnd(rail, frame) {
 }
 export function beachTunnelAnchor(rail, frame) {
   const end = beachRailEnd(rail, frame);
-  return { x: end.x + HW + 16, y: end.y + 54 };
+  return { x: end.x + HW + 16, y: end.y + 29 };
 }
 function drawBeachRailTunnel(rail) {
   const image = getSprite(rail.sprite);
@@ -2073,12 +2073,12 @@ function drawBeachRailBed(rail) {
   ctx.save(); ctx.translate(x, y); ctx.lineJoin = 'round';
   ctx.fillStyle = '#273e42'; ctx.strokeStyle = '#182e34'; ctx.lineWidth = 2;
   ctx.beginPath(); ctx.moveTo(-half, -dy + 4); ctx.lineTo(half, dy + 4);
-  ctx.lineTo(half, dy + 34); ctx.lineTo(-half, -dy + 34); ctx.closePath(); ctx.fill(); ctx.stroke();
+  ctx.lineTo(half, dy + 20); ctx.lineTo(-half, -dy + 20); ctx.closePath(); ctx.fill(); ctx.stroke();
   ctx.fillStyle = '#516966'; ctx.beginPath();
   ctx.moveTo(-half, -dy + 4); ctx.lineTo(-half + 18, -dy - 8);
   ctx.lineTo(half + 18, dy - 8); ctx.lineTo(half, dy + 4); ctx.closePath(); ctx.fill(); ctx.stroke();
   ctx.strokeStyle = '#74847b'; ctx.lineWidth = 1.4; ctx.beginPath();
-  ctx.moveTo(-half, -dy + 28); ctx.lineTo(half, dy + 28); ctx.stroke();
+  ctx.moveTo(-half, -dy + 15); ctx.lineTo(half, dy + 15); ctx.stroke();
   ctx.restore();
 }
 
@@ -2517,6 +2517,7 @@ export function fatiaObjeto(object, altura) {
 }
 
 function drawMapObject(object, state) {
+  if (object.invisivel) return;
   if (object.hideWhenFlag && state.progress.flags?.[object.hideWhenFlag]) return;
   if (object.showWhenFlag && !state.progress.flags?.[object.showWhenFlag]) return; // NOVO
 

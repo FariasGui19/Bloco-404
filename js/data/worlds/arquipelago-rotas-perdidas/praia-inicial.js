@@ -1088,17 +1088,23 @@ export const map = {
       totem: { x: 7.2, y: 5.0, ajusteY: 12 },
       // O leito é mais comprido que o trem e ambos compartilham o eixo.
       // A frente e a traseira do trilho permanecem visíveis sob as rodas.
-      trilho: { larguraPx: 350, ajusteX: -3, ajusteY: -6 },
-      trem: { larguraPx: 310, ajusteX: 0, escalaY: .78, ajusteY: 33 },
+      trilho: { larguraPx: 350, ajusteX: -3, ajusteY: 19 },
+      trem: { larguraPx: 310, ajusteX: 0, escalaY: .78, ajusteY: 58 },
     }),
+
+    // A traseira agora assenta mais abaixo; a coluna impede entrar na área
+    // do leito sem alterar a grade, o spawn ou o caminho do terminal.
+    { id: 'estacao_limite_trilho', tipo: 'decoracao', x: 6, y: 5,
+      invisivel: true, bloqueia: true, superficieSomente: true,
+      hitbox: { offsetX: -.30, offsetY: -.30, width: .60, height: .60 } },
 
     // ---- ESTAÇÃO DO TREM ----
     // Antes eram dois pilares soltos a 6 tiles do trem, e o trem ficava
     // plantado no meio da areia. A estação agora é construída EM VOLTA dele
     // (que fica em 7.1, 2.0, camada 'fundo'): plataforma atrás, dossel
     // acima, pilares na frente, escada descendo para a praia.
-    // Tudo `bloqueia: false` — a estação é cenário, as rotas e o save não
-    // mudam. O totem de embarque continua sendo o único bloqueio.
+    // As peças do kit são cenográficas. Um limite discreto sob o trilho e
+    // o totem protegem a área do trem sem mudar o spawn nem as rotas.
     { id: 'estacao_plataforma', tipo: 'decoracao', x: 7.1, y: 2.0, camada: 'fundo', ordem: -0.1,
       sprite: 'praia_plataforma_kit', frame: { col: 1, row: 0 }, useCrop: true,
       larguraPx: 230, pivotX: .5, pivotY: 1, ajusteX: 5, ajusteY: 10, escalaY: .65, espelhar: true, bloqueia: false },

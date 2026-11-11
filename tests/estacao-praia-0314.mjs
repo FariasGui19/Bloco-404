@@ -9,7 +9,7 @@ assert.equal(end.x, (rail.x-rail.y)*32+rail.ajusteX-rail.larguraPx/2);
 assert.equal(end.y, (rail.x+rail.y)*16+rail.ajusteY-rail.larguraPx/2*rail.skewY-rail.larguraPx*.4*rail.pivotY);
 assert.equal(beachRailEnd({...rail,ajusteX:rail.ajusteX+15},frame).x,end.x+15);
 assert.equal(beachRailEnd({...rail,ajusteY:rail.ajusteY+20},frame).y,end.y+20);
-assert.deepEqual(beachTunnelAnchor(rail,frame),{x:end.x+48,y:end.y+54});
+assert.deepEqual(beachTunnelAnchor(rail,frame),{x:end.x+48,y:end.y+29});
 for(const id of ['plataforma_pilar_oeste','plataforma_pilar_leste']) {
  const pillar=map.objects.find(o=>o.id===id);
  assert(pillar && !pillar.bloqueia); assert.equal(pillar.sprite,'praia_plataforma_kit');

@@ -477,7 +477,7 @@ export function moverNaAgua(nado, dt, dirX, dirY, baseSpeed) {
 
   // Arrancada soma impulso forte na direção atual.
   if (nado.arrancada > 0) {
-    const impulso = NADO.arrancadaForca * d.arrancada * (nado.mareAstral ? NADO.arrancadaMare : 1);
+    const impulso = NADO.arrancadaForca * d.arrancada * (nado.mareAstral ? NADO.arrancadaMare : 1) * (nado.potenciaArrancada ?? 1);
     alvoX += nado.dirX * baseSpeed * impulso;
     alvoY += nado.dirY * baseSpeed * impulso;
   }
@@ -486,7 +486,7 @@ export function moverNaAgua(nado, dt, dirX, dirY, baseSpeed) {
     // Com direção: persegue o alvo sem saltar para ele (é a "pegada" da
     // braçada).
     // Curvas mais abertas no fundo; na superfície a resposta anterior fica intacta.
-    const aceleracao = nado.mareAstral && nado.profundidade > 1.25 ? 5.0 : NADO.aceleracao;
+    const aceleracao = nado.mareAstral && nado.profundidade > 1.25 ? 5.8 : NADO.aceleracao;
     const k = 1 - Math.exp(-aceleracao * dt);
     nado.vx += (alvoX - nado.vx) * k;
     nado.vy += (alvoY - nado.vy) * k;
@@ -494,7 +494,7 @@ export function moverNaAgua(nado, dt, dirX, dirY, baseSpeed) {
     // Sem direção: PLANEIO. A velocidade NÃO persegue zero — ela decai
     // devagar, como corpo deslizando na água. Perseguir zero dava um freio
     // instantâneo e matava a sensação de natação.
-    const atrito = Math.exp(-NADO.atrito * dt);
+    const atrito = Math.exp(-(nado.mareAstral && nado.profundidade > 1.25 ? .95 : NADO.atrito) * dt);
     nado.vx *= atrito;
     nado.vy *= atrito;
     if (Math.hypot(nado.vx, nado.vy) < NADO.epsilon) { nado.vx = 0; nado.vy = 0; }
@@ -507,15 +507,16 @@ export function moverNaAgua(nado, dt, dirX, dirY, baseSpeed) {
 }
 
 /** Dispara a arrancada. Maré Astral tem versão melhor. */
-export function dispararArrancada(nado, mareAstral) {
+export function dispararArrancada(nado, mareAstral, { potencia = 1 } = {}) {
   if (!nado?.ativo) return false;
   // Quem ainda só boia não tem braçada para arrancar; na poça também não.
   if (nado.nivel != null && !DEGRAUS[nado.nivel].arrancada) return false;
   if (nado.naPoca || nado.medo) return false;
   if (nado.recargaArrancada > 0) return false;
+  nado.potenciaArrancada = Math.max(0, Math.min(1, potencia));
   nado.arrancada = NADO.arrancadaDuracao * (mareAstral ? 1.15 : .85);
   if (mareAstral && nado.profundidade > 1.25) {
-    const impulso = 3.5 * derivadosDoRespeito(nado.respeito).arrancada;
+    const impulso = 3.5 * derivadosDoRespeito(nado.respeito).arrancada * nado.potenciaArrancada;
     nado.vx += nado.dirX * impulso; nado.vy += nado.dirY * impulso;
   }
   nado.recargaArrancada = mareAstral ? NADO.arrancadaRecargaMare : NADO.arrancadaRecarga;
@@ -525,8 +526,8 @@ export function dispararArrancada(nado, mareAstral) {
 // ---------------------------------------------------------------------
 // COMPATIBILIDADE (API da fase anterior)
 // ---------------------------------------------------------------------
-export function dispararPropulsao(nado, alinhadoAoMare) {
-  return dispararArrancada(nado, alinhadoAoMare);
+export function dispararPropulsao(nado, alinhadoAoMare, opcoes) {
+  return dispararArrancada(nado, alinhadoAoMare, opcoes);
 }
 
 export function multiplicadorVelocidade(nado, velocidadeBase) {

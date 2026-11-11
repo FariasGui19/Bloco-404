@@ -87,9 +87,12 @@ export function tryArchetypePower(id, showMessage) {
   if (naAgua && id === 'passo_corrente') {
     // Q usa a mesma física de nado e colisão submersa de SHIFT, sem
     // levantar o sprite nem trocar para o dash terrestre de walkMask.
-    dispararPropulsao(nado, true);
+    // Q submerso começa mais contido e se aproxima do impulso pleno com
+    // o respeito conquistado; SHIFT e o impulso na superfície não mudam.
+    const potencia = noFundo ? .78 + .12 * Math.max(0, Math.min(1, nado.respeito?.valor ?? 0)) : 1;
+    dispararPropulsao(nado, true, { potencia });
     if (noFundo) ganharRespeito(nado.respeito, .002);
-    recordMastery(state.progress, 'distance', 6);
+    recordMastery(state.progress, 'distance', 6 * potencia);
     recordMastery(state.progress, 'ability_use');
     showMessage(noFundo ? 'PASSO DE CORRENTE • PROPULSÃO SUBMERSA' : 'PASSO DE CORRENTE • PROPULSÃO NA SUPERFÍCIE');
     return false;

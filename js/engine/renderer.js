@@ -1,3 +1,4 @@
+import { perspectivaSubmersa } from './perspectiva-submersa.js';
 // js/engine/renderer.js
 // =====================================================================
 //  RENDERER
@@ -83,6 +84,15 @@ function resize() {
 export function render(map, state) {
   if (!map) return;
   const { dpr } = view;
+  const perspectiva = perspectivaSubmersa(map, state, view);
+  // Quando a transição terminou não desenhamos o mapa isométrico escondido:
+  // isso evita pagar dois renderizadores durante todo o mergulho.
+  if (perspectiva?.alpha >= .995) {
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.drawImage(perspectiva.canvas, 0, 0, view.w, view.h);
+    vinhetaSubmersa(state, view);
+    return;
+  }
 
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   ctx.fillStyle = map.meta?.corFundo ?? C.BG;
@@ -202,6 +212,22 @@ export function render(map, state) {
   }
   drawLabels(state);
   drawBubbles(state);
+  if (perspectiva) {
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.save(); ctx.globalAlpha = perspectiva.alpha;
+    ctx.drawImage(perspectiva.canvas, 0, 0, view.w, view.h);
+    vinhetaSubmersa(state, view); ctx.restore();
+  }
+}
+
+function vinhetaSubmersa(state, view) {
+  const profundidade = state.player?.nado?.profundidade ?? 1.25;
+  const intensidade = Math.max(0, Math.min(.45, .16 + (profundidade - 1.25) * .3));
+  const raio = Math.max(view.w, view.h) * .65;
+  const gradiente = ctx.createRadialGradient(view.w / 2, view.h / 2, raio * .25, view.w / 2, view.h / 2, raio);
+  gradiente.addColorStop(0, 'rgba(0,18,32,0)');
+  gradiente.addColorStop(1, `rgba(0,18,32,${intensidade})`);
+  ctx.fillStyle = gradiente; ctx.fillRect(0, 0, view.w, view.h);
 }
 
 // =====================================================================
@@ -1975,7 +2001,7 @@ export function beachRailEnd(rail, frame) {
 }
 export function beachTunnelAnchor(rail, frame) {
   const end = beachRailEnd(rail, frame);
-  return { x: end.x + HW + 16, y: end.y + 24 };
+  return { x: end.x + HW + 16, y: end.y + 54 };
 }
 function drawBeachRailTunnel(rail) {
   const image = getSprite(rail.sprite);
@@ -4020,7 +4046,7 @@ function drawEntity(entity, state) {
     const deitando = entity._nadoVis ?? (querDeitar ? 1 : 0);
     entity._nadoVis = Math.max(0, Math.min(1, deitando + (querDeitar ? 1 : -1) * .12));
     if (entity._nadoVis > .5 && entity.nado
-      && (nadadorNoFundo(entity, state.world?.currentMap) || (!(entity.combat?.timeLeft > 0)
+      && (entity.nado?.ativo || (!(entity.combat?.timeLeft > 0)
       && !(entity.ultimate?.charge > 0)
       && !getVisualEffect(entity)))
       && desenharNadador(ctx, entity, ix, iy, {

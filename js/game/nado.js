@@ -344,7 +344,8 @@ export function atualizarNado(nado, ctx) {
   if (grau) {
     if (!ctx.mergulhar) nado.semFolego = false;      // soltou a tecla: pode tentar de novo
     const quer = !!ctx.mergulhar && nado.ativo && grau.mergulho > 0 && !nado.semFolego;
-    alvo = quer ? Math.min(fundo, grau.mergulho, nado.mergulhoLivre ? Infinity : SUPERFICIE) : Math.min(fundo, SUPERFICIE);
+    const profundidadeAlvo = Number.isFinite(ctx.profundidadeAlvo) ? Math.max(.9, ctx.profundidadeAlvo) : Infinity;
+    alvo = quer ? Math.min(fundo, grau.mergulho, nado.mergulhoLivre ? profundidadeAlvo : SUPERFICIE) : Math.min(fundo, SUPERFICIE);
     cabecaNaAgua = quer;
     // Pela CÉLULA, não pela profundidade: na franja da praia a água ainda
     // tem profundidade 0 e mesmo assim já é mar para quem tem medo dele.

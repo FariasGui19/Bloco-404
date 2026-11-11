@@ -10,6 +10,7 @@ import { getCurrentMap } from './map-manager.js';
 import { tryAbilityDamage } from './combat.js';
 import { recordMastery } from './mastery.js';
 import { dispararPropulsao } from './nado.js';
+import { DEGRAUS } from './nado-arvore.js';
 import { fragmentosColetados } from './mare-missao.js';
 import { detalhesFauna } from './fauna-ferida.js';
 import { getVidaAquatica } from './vida-aquatica.js';
@@ -69,21 +70,30 @@ export function tryArchetypePower(id, showMessage) {
   const player = state.player;
   const nado = player.nado;
   const noFundo = state.progress.archetype === 'mare_astral' && nado?.ativo && nado.profundidade > 1.25;
-  if (noFundo && id === 'passo_corrente' && nado.recargaArrancada > 0) {
-    showMessage('PROPULSÃO RECARREGANDO');
-    return false;
+  const naAgua = !!nado?.ativo;
+  if (naAgua && state.progress.archetype !== 'mare_astral') {
+    showMessage('HABILIDADE TERRESTRE • SAIA DA ÁGUA'); return false;
+  }
+  if (naAgua && id !== 'passo_corrente' && id !== 'senso_corrente') {
+    showMessage('HABILIDADE TERRESTRE • SAIA DA ÁGUA'); return false;
+  }
+  if (naAgua && id === 'passo_corrente') {
+    if (nado.recargaArrancada > 0) { showMessage('PROPULSÃO RECARREGANDO'); return false; }
+    if (nado.naPoca || nado.medo || (nado.nivel != null && !DEGRAUS[nado.nivel]?.arrancada)) {
+      showMessage('PROPULSÃO • APRENDA A BRAÇADA NO MAR'); return false;
+    }
   }
   if (!canStart(id, showMessage)) return false;
-  if (noFundo && id === 'passo_corrente') {
+  if (naAgua && id === 'passo_corrente') {
     // Q usa a mesma física de nado e colisão submersa de SHIFT, sem
     // levantar o sprite nem trocar para o dash terrestre de walkMask.
     dispararPropulsao(nado, true);
     recordMastery(state.progress, 'distance', 6);
     recordMastery(state.progress, 'ability_use');
-    showMessage('PASSO DE CORRENTE • PROPULSÃO SUBMERSA');
+    showMessage(noFundo ? 'PASSO DE CORRENTE • PROPULSÃO SUBMERSA' : 'PASSO DE CORRENTE • PROPULSÃO NA SUPERFÍCIE');
     return false;
   }
-  if (noFundo && id === 'senso_corrente') {
+  if (naAgua && id === 'senso_corrente') {
     const map = getCurrentMap();
     const pegos = fragmentosColetados(state.progress);
     const fragmentos = (player.fragmentosMare ?? []).filter(f => !pegos.has(f.id)).map(f => ({...f, tipo: 'FRAGMENTO'}));

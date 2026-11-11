@@ -1088,8 +1088,8 @@ export const map = {
       totem: { x: 7.2, y: 5.0, ajusteY: 12 },
       // O leito é mais comprido que o trem e ambos compartilham o eixo.
       // A frente e a traseira do trilho permanecem visíveis sob as rodas.
-      trilho: { larguraPx: 332, ajusteX: 0, ajusteY: 25 },
-      trem: { larguraPx: 270, ajusteX: 0, escalaY: .60, ajusteY: 34 },
+      trilho: { larguraPx: 350, ajusteX: -3, ajusteY: -6 },
+      trem: { larguraPx: 310, ajusteX: 0, escalaY: .78, ajusteY: 33 },
     }),
 
     // ---- ESTAÇÃO DO TREM ----
@@ -1101,7 +1101,7 @@ export const map = {
     // mudam. O totem de embarque continua sendo o único bloqueio.
     { id: 'estacao_plataforma', tipo: 'decoracao', x: 7.1, y: 2.0, camada: 'fundo', ordem: -0.1,
       sprite: 'praia_plataforma_kit', frame: { col: 1, row: 0 }, useCrop: true,
-      larguraPx: 180, pivotX: .5, pivotY: 1, ajusteX: 24, ajusteY: 5, escalaY: .50, bloqueia: false },
+      larguraPx: 180, pivotX: .5, pivotY: 1, ajusteX: 67, ajusteY: -18, escalaY: .50, bloqueia: false },
     { id: 'estacao_dossel', tipo: 'decoracao', x: 7.1, y: 2.0, camada: 'fundo', ordem: 0.3,
       sprite: 'praia_plataforma_kit', frame: { col: 2, row: 0 }, useCrop: true,
       larguraPx: 92, pivotX: .5, pivotY: 1, ajusteX: -66, ajusteY: 14, escalaY: .65, bloqueia: false },

@@ -1090,12 +1090,12 @@ export const map = {
     // acima, pilares na frente, escada descendo para a praia.
     // Tudo `bloqueia: false` — a estação é cenário, as rotas e o save não
     // mudam. O totem de embarque continua sendo o único bloqueio.
-    { id: 'estacao_plataforma', tipo: 'decoracao', x: 6.8, y: 0.6, camada: 'fundo', ordem: 2,
+    { id: 'estacao_plataforma', tipo: 'decoracao', x: 7.1, y: 2.0, camada: 'fundo', ordem: -0.1,
       sprite: 'praia_plataforma_kit', frame: { col: 1, row: 0 }, useCrop: true,
-      larguraPx: 196, pivotX: .5, pivotY: 1, ajusteY: 32, escalaY: .50, bloqueia: false },
-    { id: 'estacao_dossel', tipo: 'decoracao', x: 7.3, y: 0.8, camada: 'fundo', ordem: 3,
+      larguraPx: 196, pivotX: .5, pivotY: 1, ajusteY: 18, escalaY: .50, bloqueia: false },
+    { id: 'estacao_dossel', tipo: 'decoracao', x: 7.1, y: 2.0, camada: 'fundo', ordem: 0.3,
       sprite: 'praia_plataforma_kit', frame: { col: 2, row: 0 }, useCrop: true,
-      larguraPx: 142, pivotX: .5, pivotY: 1, ajusteY: 74, escalaY: .78, bloqueia: false },
+      larguraPx: 142, pivotX: .5, pivotY: 1, ajusteY: 48, escalaY: .78, bloqueia: false },
     // Sapatas visuais sob as extremidades da plataforma, sem alterar rotas.
     { id: 'estacao_sapata_oeste', tipo: 'decoracao', x: 4.4, y: 2.0, camada: 'fundo', ordem: -1,
       sprite: 'praia_plataforma_kit', frame: { col: 0, row: 1 }, useCrop: true, larguraPx: 35, pivotY: 1, ajusteY: 50, escalaY: 1.05, bloqueia: false },

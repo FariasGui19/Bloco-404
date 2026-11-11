@@ -103,3 +103,11 @@ Segure ESPAÇO para descer e use SHIFT para a arrancada quando liberada. O Maré
 ganha velocidade com os degraus e o respeito do mar, adquirido no fundo e em
 socorros; cardumes se assustam menos com um Maré experiente, mas reagem à
 arrancada. O novo quadro de impulso complementa a animação existente.
+
+Na Travessia, o Maré também pode tocar **Z** para manter o mergulho sem
+segurar uma tecla; toque novamente para subir. A falta de ar cancela o
+mergulho sustentado e força a subida. ESPAÇO continua servindo para mergulhos
+momentâneos e para o treino inicial. No fundo, o jogo troca a superfície por
+uma camada de leito marinho, preservando os mesmos controles, colisões,
+fragmentos e fauna. A câmera continua isométrica para manter a orientação e
+a leitura das margens; não é uma câmera em primeira pessoa nem um mundo 3D.

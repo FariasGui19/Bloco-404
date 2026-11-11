@@ -314,6 +314,8 @@ await loadSprites([
   { id: 'nado_civil', src: 'assets/sprites/player/nado-civil.png' },
   { id: 'nado_mare', src: 'assets/sprites/player/nado-mare.png' },
   { id: 'nado_mare_impulso', src: 'assets/sprites/player/nado-mare-impulso.png' },
+  { id: 'nado_mare_submerso', src: 'assets/sprites/player/nado-mare-submerso.png' },
+  { id: 'fundo_mar_mare', src: 'assets/sprites/tiles/fundo-mar-mare.png' },
   { id: 'nado_bio', src: 'assets/sprites/player/nado-bio.png' },
   { id: 'nado_dominio', src: 'assets/sprites/player/nado-dominio.png' },
   { id: 'nado_nucleo', src: 'assets/sprites/player/nado-nucleo.png' },
@@ -530,7 +532,7 @@ async function update(dt) {
       const emCima = res.fragmentos.some(f => Math.hypot(player.x - f.x, player.y - f.y) < 1.1);
       if (emCima) {
         darDicaDeNado(lerArvore(state.progress).nivel >= 3
-          ? 'FRAGMENTO NO FUNDO • SEGURE ESPAÇO PARA MERGULHAR'
+          ? 'FRAGMENTO NO FUNDO • ESPAÇO OU Z PARA MERGULHAR'
           : 'FRAGMENTO NO FUNDO • FALTA O DEGRAU TRAVESSIA');
       }
     }
@@ -602,7 +604,7 @@ async function update(dt) {
     if (fauna.dica) {
       const nome = fauna.dica.bicho.def.nome;
       if (fauna.dica.meio !== 'agua') darDicaDeNado(`SAIA DA ÁGUA PARA SOCORRER • ${nome}`);
-      else if (player.nado?.ativo) darDicaDeNado(`SEGURE ESPAÇO PARA MERGULHAR • ${nome}`);
+      else if (player.nado?.ativo) darDicaDeNado(`${player.nado.mareAstral && player.nado.nivel >= 3 ? 'ESPAÇO OU Z PARA MERGULHAR' : 'SEGURE ESPAÇO PARA MERGULHAR'} • ${nome}`);
       else if (lerArvore(state.progress).nivel === 0) darDicaDeNado(`${nome} ESTÁ NA ÁGUA • APRENDA A BOIAR NA POÇA PRIMEIRO`);
       else darDicaDeNado(`${nome} ESTÁ NA ÁGUA • ENTRE E MERGULHE (ESPAÇO)`);
     }

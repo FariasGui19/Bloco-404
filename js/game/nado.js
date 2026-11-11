@@ -269,6 +269,17 @@ export function criarEstadoNado() {
   };
 }
 
+/** Alterna mergulho sustentado só quando a travessia do Maré foi conquistada.
+ * ESPAÇO continua independente e funciona como antes nas provas iniciais. */
+export function controlarMergulhoFixo(nado, disponivel, pressionou) {
+  if (!nado || !disponivel || !nado.ativo || nado.semFolego) {
+    if (nado) nado.mergulhoFixo = false;
+    return false;
+  }
+  if (pressionou) nado.mergulhoFixo = !nado.mergulhoFixo;
+  return !!nado.mergulhoFixo;
+}
+
 /**
  * Atualiza nado. `ctx`: { map, x, y, field, dt, dirX, dirY, tempo }
  * Devolve efeitos para quem chamou aplicar (dano, eventos).

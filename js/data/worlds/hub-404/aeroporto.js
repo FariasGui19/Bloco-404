@@ -5,10 +5,12 @@
 // Estação espacial panorâmica em visão frontal/lateral profunda
 // (estilo sci-fi anos 90: Flashback / Another World):
 //  - Movimento predominantemente horizontal (Esquerda / Direita)
-//  - Janelões panorâmicos com espaço sideral, planeta anelado e naves
-//  - Piso reflexivo espelhado na passarela principal
-//  - Guia do Aeroporto com sprite próprio no Concourse Central
-//  - 4 Portais verticais para as salas de missão por arquétipo
+//  - Janelões panorâmicos com espaço sideral, planetas gerados por IA e naves animadas
+//  - Piso reflexivo espelhado na passarela principal + varredura especular
+//  - Escala por profundidade: atores e móveis encolhem/crescem conforme a faixa da passarela
+//  - Guia do Aeroporto, Viajante ambiental e Unidade L-9 de patrulha
+//  - 4 Portais verticais com vórtice animado (arte tingida por doca)
+//  - Painel de LED corrido com saudação e estado real da Área de Carga
 //  - Terminal de Manutenção (Link de Diagnóstico [R]) + Hangar de Carga
 // =====================================================================
 
@@ -91,6 +93,43 @@ export const map = {
         ],
       },
     },
+    // Viajante ambiental: atravessa o concourse ida e volta, sempre na
+    // faixa frontal (y = 4.6), sem bloquear ninguém.
+    {
+      id: 'viajante_aeroporto',
+      tipo: 'viajante_ambiental',
+      sprite: 'hub_viajante',
+      x: 8,
+      y: 4.6,
+      nome: 'Viajante',
+      semNome: true,
+      solido: false,
+      facing: 'right',
+      visitorRoute: [{ x: 6.4, y: 4.6 }, { x: 20.8, y: 4.6 }],
+      interacao: {
+        label: 'CONVERSAR COM VIAJANTE',
+        speaker: 'VIAJANTE',
+        distancia: 1.25,
+        dialogue: [
+          'Minha conexão interdimensional atrasou de novo… ou adiantou? Relógio de bordo não ajuda.',
+          'Pelo menos o café do Saguão é melhor que o de Órion.',
+        ],
+      },
+    },
+    // Unidade L-9: patrulha a área das Docas de Arquétipo. Não bloqueia,
+    // não tem missão — só faz a estação parecer operada de verdade.
+    {
+      id: 'robo_aeroporto',
+      tipo: 'robo',
+      x: 27,
+      y: 4.7,
+      nome: 'L-9',
+      sprite: 'robo_limpeza',
+      semNome: true,
+      raio: 0.22,
+      raioPasseio: 5.5,
+      velocidade: 0.85,
+    },
   ],
 
   objects: [
@@ -113,8 +152,8 @@ export const map = {
     {
       id: 'malas_aero_01',
       tipo: 'malas',
-      x: 7,
-      y: 2,
+      x: 7.7,
+      y: 2.3,
       sprite: 'hub_props',
       frame: { col: 2, row: 1 },
       scale: 0.34,
@@ -124,7 +163,7 @@ export const map = {
     {
       id: 'terminal_info',
       tipo: 'terminal',
-      x: 9,
+      x: 9.4,
       y: 2,
       sprite: 'hub_props',
       frame: { col: 0, row: 1 },
@@ -145,11 +184,25 @@ export const map = {
         ],
       },
     },
+    // Máquina de venda de cafés Beta-7 (esquina do desembarque)
+    {
+      id: 'vending_aero_01',
+      tipo: 'vending',
+      x: 11.2,
+      y: 2,
+      sprite: 'hub_props',
+      frame: { col: 2, row: 2 },
+      scale: 0.42,
+      anchorY: 0.94,
+      bloqueia: true,
+      hitbox: { offsetX: -0.30, offsetY: -0.22, width: 0.60, height: 0.44 },
+      brilho: { cor: '#35E6D3', raio: 0.85, forca: 0.18 },
+    },
     {
       id: 'banco_aero_01',
       tipo: 'banco',
       x: 8,
-      y: 5,
+      y: 5.4,
       sprite: 'hub_props',
       frame: { col: 1, row: 1 },
       scale: 0.42,
@@ -165,7 +218,7 @@ export const map = {
       id: 'banco_aero_02',
       tipo: 'banco',
       x: 12,
-      y: 5,
+      y: 5.4,
       sprite: 'hub_props',
       frame: { col: 1, row: 1 },
       scale: 0.42,
@@ -176,7 +229,7 @@ export const map = {
     {
       id: 'painel_partidas',
       tipo: 'painel',
-      x: 17,
+      x: 16.5,
       y: 2,
       sprite: 'hub_props',
       frame: { col: 1, row: 3 },
@@ -198,11 +251,36 @@ export const map = {
         ],
       },
     },
+    // Luminária de piso âmbar entre os bancos do mirante
+    {
+      id: 'lamp_aero_01',
+      tipo: 'luminaria',
+      x: 15.4,
+      y: 5.6,
+      sprite: 'hub_props',
+      frame: { col: 3, row: 2 },
+      scale: 0.38,
+      anchorY: 0.94,
+      bloqueia: false,
+      brilho: { cor: '#ffd54f', raio: 1.0, forca: 0.22 },
+    },
+    // Planta-arcade ao lado do painel (quebra o escuro entre as Docas)
+    {
+      id: 'planta_aero_01',
+      tipo: 'planta',
+      x: 18.6,
+      y: 2.3,
+      sprite: 'hub_props',
+      frame: { col: 3, row: 1 },
+      scale: 0.40,
+      anchorY: 0.94,
+      bloqueia: false,
+    },
     {
       id: 'banco_aero_03',
       tipo: 'banco',
       x: 19,
-      y: 5,
+      y: 5.4,
       sprite: 'hub_props',
       frame: { col: 1, row: 1 },
       scale: 0.42,
@@ -217,19 +295,42 @@ export const map = {
     {
       id: 'malas_aero_02',
       tipo: 'malas',
-      x: 24,
-      y: 5,
+      x: 24.6,
+      y: 5.4,
       sprite: 'hub_props',
       frame: { col: 2, row: 1 },
       scale: 0.34,
       anchorY: 0.94,
       bloqueia: false,
     },
+    // Duas plantas ladeando as Docas A1/B2 e C3/D4
+    {
+      id: 'planta_aero_02',
+      tipo: 'planta',
+      x: 24.6,
+      y: 2.3,
+      sprite: 'hub_props',
+      frame: { col: 3, row: 1 },
+      scale: 0.40,
+      anchorY: 0.94,
+      bloqueia: false,
+    },
+    {
+      id: 'planta_aero_03',
+      tipo: 'planta',
+      x: 32.8,
+      y: 2.3,
+      sprite: 'hub_props',
+      frame: { col: 3, row: 1 },
+      scale: 0.40,
+      anchorY: 0.94,
+      bloqueia: false,
+    },
     {
       id: 'banco_aero_04',
       tipo: 'banco',
-      x: 28,
-      y: 5,
+      x: 28.4,
+      y: 5.4,
       sprite: 'hub_props',
       frame: { col: 1, row: 1 },
       scale: 0.42,
@@ -240,8 +341,8 @@ export const map = {
     {
       id: 'malas_aero_03',
       tipo: 'malas',
-      x: 32,
-      y: 5,
+      x: 31.8,
+      y: 5.4,
       sprite: 'hub_props',
       frame: { col: 2, row: 1 },
       scale: 0.34,
@@ -292,16 +393,54 @@ export const map = {
         forca: 0.26,
       },
     },
+    // Cone de segurança sinalizando a comporta da Área de Carga
+    {
+      id: 'cone_aero_01',
+      tipo: 'cone',
+      x: 38.9,
+      y: 3.6,
+      sprite: 'hub_props',
+      frame: { col: 2, row: 3 },
+      scale: 0.34,
+      anchorY: 0.90,
+      bloqueia: false,
+    },
+    // Luminária solitária da engenharia (o setor D fica mais escuro)
+    {
+      id: 'lamp_aero_02',
+      tipo: 'luminaria',
+      x: 36.3,
+      y: 5.6,
+      sprite: 'hub_props',
+      frame: { col: 3, row: 2 },
+      scale: 0.38,
+      anchorY: 0.94,
+      bloqueia: false,
+      brilho: { cor: '#ffd54f', raio: 1.0, forca: 0.20 },
+    },
     {
       id: 'malas_aero_04',
       tipo: 'caixa',
-      x: 38,
-      y: 5,
+      x: 38.3,
+      y: 5.3,
       sprite: 'hub_props',
       frame: { col: 0, row: 3 },
       scale: 0.38,
       anchorY: 0.94,
       bloqueia: false,
+    },
+    // Grade de contenção no extremo leste da passarela
+    {
+      id: 'barreira_aero_01',
+      tipo: 'barreira',
+      x: 42.1,
+      y: 4.9,
+      sprite: 'hub_props',
+      frame: { col: 3, row: 3 },
+      scale: 0.40,
+      anchorY: 0.94,
+      bloqueia: true,
+      hitbox: { offsetX: -0.30, offsetY: -0.18, width: 0.60, height: 0.36 },
     },
   ],
 

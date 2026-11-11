@@ -70,12 +70,12 @@ const PORTAL_THEMES = {
 // Posições X das grandes colunas estruturais ao longo da estação (0..44)
 const PILLAR_X_POSITIONS = [1.0, 6.2, 11.8, 18.2, 24.5, 28.5, 32.5, 36.5, 42.8];
 
-// Placas do mezanino superior
+// Placas do mezanino superior (agora no teto, fora da faixa dos pórticos)
 const MEZZANINE_SIGNS = [
-  { wx: 4.5, text: 'SETOR A · DESEMBARQUE & RECEPÇÃO', cor: '#35E6D3' },
-  { wx: 15.0, text: 'SETOR B · MIRANTE ORBITAL ZONA X10', cor: '#53d9f4' },
-  { wx: 28.5, text: 'SETOR C · PORTAIS DE ARQUÉTIPO', cor: '#ffd54f' },
-  { wx: 39.2, text: 'SETOR D · ENGENHARIA & CARGA', cor: '#ff9e44' },
+  { wx: 4.6, text: 'SETOR A · DESEMBARQUE', cor: '#35E6D3' },
+  { wx: 14.6, text: 'SETOR B · MIRANTE ORBITAL', cor: '#53d9f4' },
+  { wx: 27.6, text: 'SETOR C · DOCAS DE ARQUÉTIPO', cor: '#ffd54f' },
+  { wx: 39.0, text: 'SETOR D · ENGENHARIA & CARGA', cor: '#ff9e44' },
 ];
 
 // Estrelas pré-geradas de forma determinística (zero alocação por frame)
@@ -101,6 +101,116 @@ const SPACE_SHIPS = [
   { yRatio: 0.33, speed: 25, dir: 1, scale: 0.55, type: 'shuttle', offset: 990, color: '#35E6D3' },
 ];
 
+// Arte gerada para o "aeroporto vivo" (tools/preparar-aeroporto.py)
+const SHIP_SPRITES = {
+  freighter: 'aeroporto_nave_cargueiro',
+  cruiser: 'aeroporto_nave_cruzador',
+  shuttle: 'aeroporto_nave_shuttle',
+};
+const SHIP_HEIGHT = { freighter: 46, cruiser: 30, shuttle: 24 };
+
+// ---------------------------------------------------------------------
+// ESCALA POR PROFUNDIDADE (pseudo-3D): quem anda pelo fundo da passarela
+// (perto dos janelões) encolhe; quem vem para a borda frontal cresce.
+// ---------------------------------------------------------------------
+export function svDepthScale(wy) {
+  const t = Math.min(1, Math.max(0, (wy - WALL_WORLD_Y) / (FLOOR_FRONT_Y - WALL_WORLD_Y)));
+  return 0.8 + t * 0.34;
+}
+
+// ---------------------------------------------------------------------
+// PARALLAX DINÂMICO COM O MOUSE (leve, estilo "estação orbital de verdade")
+// Camada 1 move com o mouse; o foreground move no sentido oposto.
+// ---------------------------------------------------------------------
+const mouseFx = { target: 0.5, smooth: 0.5, ready: false };
+
+function ensureMouseParallax() {
+  if (mouseFx.ready) return;
+  mouseFx.ready = true;
+  try {
+    const w = globalThis.window;
+    w?.addEventListener?.('mousemove', (e) => {
+      const vw = (typeof w.innerWidth === 'number' && w.innerWidth) || 1280;
+      const cx = typeof e?.clientX === 'number' ? e.clientX : vw / 2;
+      mouseFx.target = Math.min(1, Math.max(0, cx / vw));
+    });
+  } catch {
+    // Ambiente sem window (testes headless): parallax fica centrado.
+  }
+}
+
+function tickMouseShift() {
+  ensureMouseParallax();
+  mouseFx.smooth += (mouseFx.target - mouseFx.smooth) * 0.045;
+  return (mouseFx.smooth - 0.5) * 2; // -1 (mouse à esquerda) .. +1 (direita)
+}
+
+// ---------------------------------------------------------------------
+// ESTRELA CADENTE OCASIONAL do lado de fora (a cada ~7–16 s)
+// ---------------------------------------------------------------------
+let shootingStar = null;
+let nextShootingStarAt = 5;
+
+function drawShootingStar(ctx, viewW, windowH, t) {
+  if (!shootingStar && t >= nextShootingStarAt) {
+    shootingStar = { t0: t, x0: viewW * (0.55 + 0.4 * Math.abs(Math.sin(t * 3.7))), y0: windowH * 0.08 };
+    nextShootingStarAt = t + 7 + Math.abs(Math.sin(t * 11.3)) * 9;
+  }
+  if (!shootingStar) return;
+  const k = (t - shootingStar.t0) / 0.9;
+  if (k >= 1) { shootingStar = null; return; }
+  const hx = shootingStar.x0 - k * viewW * 0.4;
+  const hy = shootingStar.y0 + k * windowH * 0.26;
+  const tx = hx + viewW * 0.085;
+  const ty = hy - windowH * 0.055;
+  const fade = Math.sin(Math.PI * k);
+  const grad = ctx.createLinearGradient(tx, ty, hx, hy);
+  grad.addColorStop(0, 'rgba(216, 243, 255, 0)');
+  grad.addColorStop(0.75, `rgba(216, 243, 255, ${0.55 * fade})`);
+  grad.addColorStop(1, `rgba(255, 255, 255, ${0.95 * fade})`);
+  ctx.strokeStyle = grad;
+  ctx.lineWidth = 1.6;
+  ctx.beginPath();
+  ctx.moveTo(tx, ty);
+  ctx.lineTo(hx, hy);
+  ctx.stroke();
+}
+
+// ---------------------------------------------------------------------
+// VÓRTICE DOS PORTAIS — a arte gerada (`aeroporto_portal_swirl`) é tingida
+// em tempo de execução para cada cor de doca e girada em duas camadas
+// (o braço espiral rodopiante é uma ÚNICA imagem rotacionada).
+// ---------------------------------------------------------------------
+const swirlTintCache = new Map();
+
+function getTintedSwirl(hexColor) {
+  if (swirlTintCache.has(hexColor)) return swirlTintCache.get(hexColor);
+  try {
+    const doc = globalThis.document;
+    const src = getSprite('aeroporto_portal_swirl');
+    if (!doc?.createElement || !src) return null;
+    const SIZE = 256;
+    const canvas = doc.createElement('canvas');
+    canvas.width = SIZE;
+    canvas.height = SIZE;
+    const g = canvas.getContext?.('2d');
+    if (!g) return null;
+    // 1) silhueta na cor da doca preservando o alpha do vórtice
+    g.fillStyle = hexColor;
+    g.fillRect(0, 0, SIZE, SIZE);
+    g.globalCompositeOperation = 'destination-in';
+    g.drawImage(src, 0, 0, SIZE, SIZE);
+    // 2) passa a luminância de volta por cima: o miolo branco continua branco
+    g.globalCompositeOperation = 'screen';
+    g.globalAlpha = 0.85;
+    g.drawImage(src, 0, 0, SIZE, SIZE);
+    swirlTintCache.set(hexColor, canvas);
+    return canvas;
+  } catch {
+    return null;
+  }
+}
+
 // Converte mundo -> tela usando a mesma fórmula da câmera
 export function svToScreen(wx, wy, cameraX, cameraY, viewW, viewH, zoom) {
   return svWorldToScreen(wx, wy, viewW, viewH, zoom);
@@ -109,9 +219,10 @@ export function svToScreen(wx, wy, cameraX, cameraY, viewW, viewH, zoom) {
 // =====================================================================
 //  CAMADA 1: BACKGROUND ESPACIAL PROFUNDO
 // =====================================================================
-function drawSpaceLayer(ctx, map, cameraX, cameraY, viewW, viewH, zoom, time, wallBaseY) {
+function drawSpaceLayer(ctx, map, cameraX, cameraY, viewW, viewH, zoom, time, wallBaseY, mouseShift = 0) {
   const windowH = Math.max(80, wallBaseY);
   const t = time / 1000;
+  const mousePx = mouseShift * 9; // deriva suave do céu com o mouse
 
   // 1.1 Gradiente do espaço sideral profundo
   const skyGrad = ctx.createLinearGradient(0, 0, 0, windowH);
@@ -124,7 +235,7 @@ function drawSpaceLayer(ctx, map, cameraX, cameraY, viewW, viewH, zoom, time, wa
 
   // 1.2 Nebulosa horizontal sutil
   const nebGrad = ctx.createRadialGradient(
-    viewW * 0.5 - (cameraX * 0.05) % (viewW * 0.6),
+    viewW * 0.5 - ((cameraX * 0.05) % (viewW * 0.6)) + mousePx,
     windowH * 0.42,
     10,
     viewW * 0.5,
@@ -140,7 +251,7 @@ function drawSpaceLayer(ctx, map, cameraX, cameraY, viewW, viewH, zoom, time, wa
   // 1.3 Campo de estrelas cintilando em 3 subcamadas de parallax
   const spanW = Math.max(1400, viewW + 400);
   for (const s of STARS) {
-    const rawX = (s.xNorm * spanW - cameraX * s.parallax) % spanW;
+    const rawX = (s.xNorm * spanW - cameraX * s.parallax + mousePx * 0.6) % spanW;
     const sx = rawX < 0 ? rawX + spanW : rawX;
     if (sx > viewW) continue;
     const sy = s.yNorm * (windowH * 0.92);
@@ -156,8 +267,10 @@ function drawSpaceLayer(ctx, map, cameraX, cameraY, viewW, viewH, zoom, time, wa
   }
   ctx.globalAlpha = 1;
 
-  // 1.4 Planeta Anelado e Lua Orbital (parallax 0.07x)
-  drawRingedPlanet(ctx, cameraX, viewW, windowH, zoom, t);
+  drawShootingStar(ctx, viewW, windowH, t);
+
+  // 1.4 Planetas anelado (IA) e rochoso + estações orbitais (parallax profundo)
+  drawSpacePlanets(ctx, cameraX, viewW, windowH, zoom, t, mousePx);
 
   // 1.5 Arte panorâmica (`aeroporto_background`) integrada nos janelões em parallax 0.22x
   const bgKey = map.meta?.sideViewBackground?.space ?? map.meta?.background?.sprite ?? 'aeroporto_background';
@@ -176,7 +289,7 @@ function drawSpaceLayer(ctx, map, cameraX, cameraY, viewW, viewH, zoom, time, wa
     // Na arte 2672x1504, a linha do horizonte/piso do hangar fica a ~68% da altura
     const drawY = wallBaseY - drawH * 0.68;
 
-    const parallaxX = -((cameraX * 0.22 * zoom) % drawW);
+    const parallaxX = -((cameraX * 0.22 * zoom - mousePx * 1.6) % drawW);
     let startX = parallaxX;
     if (startX > 0) startX -= drawW;
 
@@ -193,9 +306,64 @@ function drawSpaceLayer(ctx, map, cameraX, cameraY, viewW, viewH, zoom, time, wa
   ctx.rect(0, 0, viewW, windowH - 6);
   ctx.clip();
   for (const ship of SPACE_SHIPS) {
-    drawSpaceShip(ctx, ship, cameraX, viewW, windowH, zoom, t);
+    drawSpaceShip(ctx, ship, cameraX, viewW, windowH, zoom, t, mousePx);
   }
   ctx.restore();
+}
+
+// Planetas gerados por IA + estações orbitais. Se a arte falhar ao carregar,
+// cai no desenho procedural original (drawRingedPlanet) — nunca some o céu.
+function drawSpacePlanets(ctx, cameraX, viewW, windowH, zoom, t, mousePx = 0) {
+  const ringed = getSprite('aeroporto_planeta_anelado');
+  const red = getSprite('aeroporto_planeta_vermelho');
+
+  if (!ringed && !red) {
+    drawRingedPlanet(ctx, cameraX, viewW, windowH, zoom, t);
+    return;
+  }
+
+  // 1.5a Planeta rochoso âmbar (bem ao longe, parallax 0.04x)
+  if (red) {
+    const px = viewW * 0.17 - cameraX * 0.04 * zoom + mousePx * 0.5;
+    const py = windowH * 0.20 + Math.sin(t * 0.18) * 2;
+    const size = Math.max(64, 88 * zoom);
+    if (px > -size && px < viewW + size) {
+      ctx.save();
+      ctx.globalAlpha = 0.92;
+      ctx.drawImage(red, px - size / 2, py - size / 2, size, size * (red.height / red.width));
+      ctx.restore();
+    }
+  }
+
+  // 1.5b Planeta gasoso anelado (parallax 0.065x)
+  const px = viewW * 0.64 - cameraX * 0.065 * zoom + mousePx;
+  const py = windowH * 0.33;
+  const size = Math.max(120, 190 * zoom);
+  const aspect = ringed ? ringed.height / ringed.width : 0.84;
+  if (ringed && px > -size * 1.5 && px < viewW + size * 1.5) {
+    // Halo atmosférico externo
+    const halo = ctx.createRadialGradient(px, py, size * 0.28, px, py, size * 0.85);
+    halo.addColorStop(0, 'rgba(53, 230, 211, 0.22)');
+    halo.addColorStop(0.6, 'rgba(22, 110, 160, 0.07)');
+    halo.addColorStop(1, 'rgba(0, 0, 0, 0)');
+    ctx.fillStyle = halo;
+    ctx.beginPath();
+    ctx.arc(px, py, size * 0.85, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.drawImage(ringed, px - size / 2, py - (size * aspect) / 2, size, size * aspect);
+
+    // Pequena estação orbital perto do planeta (silhueta + farol piscando)
+    const satX = px - size * 0.52;
+    const satY = py - size * 0.30 + Math.sin(t * 1.2) * 3;
+    ctx.fillStyle = '#16273a';
+    ctx.fillRect(satX - 14, satY - 3, 28, 6);
+    ctx.fillRect(satX - 4, satY - 11, 8, 22);
+    ctx.fillStyle = Math.sin(t * 4) > 0 ? '#35E6D3' : '#ff6b6b';
+    ctx.fillRect(satX - 1, satY - 13, 2, 2);
+  } else if (!ringed) {
+    drawRingedPlanet(ctx, cameraX, viewW, windowH, zoom, t);
+  }
 }
 
 function drawRingedPlanet(ctx, cameraX, viewW, windowH, zoom, t) {
@@ -267,29 +435,61 @@ function drawRingedPlanet(ctx, cameraX, viewW, windowH, zoom, t) {
   ctx.restore();
 }
 
-function drawSpaceShip(ctx, ship, cameraX, viewW, windowH, zoom, t) {
+function drawSpaceShip(ctx, ship, cameraX, viewW, windowH, zoom, t, mousePx = 0) {
   const loopW = Math.max(2200, viewW + 900);
   const travel = (t * ship.speed + ship.offset) * ship.dir;
-  const rawX = (travel - cameraX * 0.16 * zoom) % loopW;
+  const rawX = (travel - cameraX * 0.16 * zoom + mousePx * 1.5) % loopW;
   const x = rawX < -200 ? rawX + loopW : (rawX > loopW - 200 ? rawX - loopW : rawX);
   const y = windowH * ship.yRatio + Math.sin(t * 1.5 + ship.offset) * 3;
   const s = ship.scale * Math.max(0.75, zoom * 0.85);
 
-  if (x < -160 || x > viewW + 160) return;
+  if (x < -260 || x > viewW + 260) return;
+
+  const img = SHIP_SPRITES[ship.type] ? getSprite(SHIP_SPRITES[ship.type]) : null;
+  const targetH = (SHIP_HEIGHT[ship.type] ?? 30) * s;
+  const pulse = 0.7 + 0.3 * Math.sin(t * 16 + ship.offset);
 
   ctx.save();
   ctx.translate(x, y);
   if (ship.dir < 0) ctx.scale(-1, 1);
-  ctx.scale(s, s);
 
-  // Rastro de plasma do propulsor
-  const pulse = 0.7 + 0.3 * Math.sin(t * 16 + ship.offset);
-  const trailGrad = ctx.createLinearGradient(-58, 0, -14, 0);
+  // Rastro de plasma do propulsor (sempre, mesmo com a arte nova)
+  const trailLen = (img ? targetH * 1.9 : 52 * s) * pulse;
+  const trailGrad = ctx.createLinearGradient(-trailLen - (img ? targetH * 1.5 : 14 * s), 0, -(img ? targetH * 1.5 : 14 * s), 0);
   trailGrad.addColorStop(0, 'rgba(53, 230, 211, 0)');
   trailGrad.addColorStop(1, ship.color === '#ffd54f' ? 'rgba(255, 213, 79, 0.75)' : 'rgba(53, 230, 211, 0.75)');
   ctx.fillStyle = trailGrad;
-  ctx.fillRect(-58 * pulse, -3, 44 * pulse, 6);
+  ctx.fillRect(-trailLen - (img ? targetH * 1.5 : 14 * s), -2.6 * s, trailLen, 5.2 * s);
 
+  if (img) {
+    // Arte gerada: nave real em pixel art, com clarão do motor e faróis
+    const w = targetH * (img.width / img.height);
+    // Clarão do motor (aditivo) tremulando na popa
+    const flare = ctx.createRadialGradient(-w / 2, 0, 1, -w / 2, 0, targetH * 0.55 * (0.8 + 0.4 * pulse));
+    flare.addColorStop(0, ship.color === '#ffd54f' ? 'rgba(255, 224, 130, 0.9)' : 'rgba(140, 255, 235, 0.9)');
+    flare.addColorStop(1, 'rgba(0, 0, 0, 0)');
+    ctx.save();
+    ctx.globalCompositeOperation = 'lighter';
+    ctx.fillStyle = flare;
+    ctx.fillRect(-w / 2 - targetH, -targetH * 0.6, targetH * 1.2, targetH * 1.2);
+    ctx.restore();
+
+    ctx.drawImage(img, -w / 2, -targetH / 2, w, targetH);
+
+    // Faróis de navegação: vermelho na proa / verde na boreste, alternando
+    const blink = Math.sin(t * 5.5 + ship.offset) > 0;
+    ctx.fillStyle = blink ? '#ff5f5f' : '#35ff8a';
+    ctx.fillRect(w / 2 - 2, -1.2, 3, 2.4);
+  } else {
+    ctx.scale(s, s);
+    drawSpaceShipBody(ctx, ship);
+  }
+
+  ctx.restore();
+}
+
+// Silhueta vetorial original (fallback caso a arte não carregue)
+function drawSpaceShipBody(ctx, ship) {
   if (ship.type === 'freighter') {
     // Cargueiro espacial pesado estilo anos 90
     ctx.fillStyle = '#152334';
@@ -328,8 +528,6 @@ function drawSpaceShip(ctx, ship, cameraX, viewW, windowH, zoom, t) {
     ctx.fillStyle = '#ffffff';
     ctx.fillRect(-13, -2, 2, 4);
   }
-
-  ctx.restore();
 }
 
 // =====================================================================
@@ -375,7 +573,9 @@ function drawMidStructuresLayer(ctx, map, state, cameraX, cameraY, viewW, viewH,
   }
 
   // 2.2 Mezanino / Passarela Superior Ao Fundo (parallax 0.62x)
-  const mezzY = wallBaseY - 118 * zoom;
+  // Ancorado acima da faixa das placas dos pórticos para não disputar
+  // espaço com "DOCA A1..D4" (antes os textos se sobrepunham).
+  const mezzY = wallBaseY - 156 * zoom;
   if (mezzY > 20) {
     // Viga principal do mezanino
     ctx.fillStyle = '#0d1622';
@@ -392,44 +592,34 @@ function drawMidStructuresLayer(ctx, map, state, cameraX, cameraY, viewW, viewH,
     ctx.lineTo(viewW, railTop);
     ctx.stroke();
 
-    // Luminárias pendentes sob o mezanino (luz âmbar/ciano como na arte)
-    const lampStep = 160 * zoom;
+    // Luminárias pendentes sob o mezanino (luz âmbar/ciano como na arte).
+    // Uma ou outra pisca de vez em quando — estação grande, lâmpada velha.
+    const lampStep = 150 * zoom;
     const lampShift = -((cameraX * 0.62 * zoom) % lampStep);
     for (let lx = lampShift - lampStep; lx < viewW + lampStep; lx += lampStep) {
-      const ly = mezzY + 18 * zoom;
+      const ly = mezzY + 17 * zoom;
+      const lampSeed = Math.abs(Math.sin(lx * 12.9898) * 43758.5453) % 1;
+      const flick = Math.sin(t * 7 + lampSeed * 97) > 0.93 ? 0.35 : 1;
       // Haste
       ctx.fillStyle = '#253952';
-      ctx.fillRect(lx - 1.5 * zoom, mezzY + 14 * zoom, 3 * zoom, 8 * zoom);
+      ctx.fillRect(lx - 1.5 * zoom, mezzY + 13 * zoom, 3 * zoom, 6 * zoom);
       // Cúpula da luminária
-      ctx.fillStyle = '#ffe082';
-      ctx.fillRect(lx - 8 * zoom, ly, 16 * zoom, 3.5 * zoom);
+      ctx.fillStyle = `rgba(255, 224, 130, ${flick})`;
+      ctx.fillRect(lx - 8 * zoom, ly, 16 * zoom, 3.2 * zoom);
       // Halo suave
-      const glow = ctx.createRadialGradient(lx, ly + 2 * zoom, 2, lx, ly + 10 * zoom, 38 * zoom);
-      glow.addColorStop(0, 'rgba(255, 224, 130, 0.24)');
-      glow.addColorStop(0.5, 'rgba(53, 230, 211, 0.08)');
+      const glow = ctx.createRadialGradient(lx, ly + 2 * zoom, 2, lx, ly + 8 * zoom, 30 * zoom);
+      glow.addColorStop(0, `rgba(255, 224, 130, ${0.24 * flick})`);
+      glow.addColorStop(0.5, `rgba(53, 230, 211, ${0.08 * flick})`);
       glow.addColorStop(1, 'rgba(0, 0, 0, 0)');
       ctx.fillStyle = glow;
       ctx.beginPath();
-      ctx.arc(lx, ly + 8 * zoom, 38 * zoom, 0, Math.PI * 2);
+      ctx.arc(lx, ly + 7 * zoom, 30 * zoom, 0, Math.PI * 2);
       ctx.fill();
     }
 
-    // Placas informativas de setor no mezanino
-    ctx.font = `bold ${Math.max(9, Math.round(10 * zoom))}px monospace`;
-    ctx.textAlign = 'center';
-    for (const sign of MEZZANINE_SIGNS) {
-      const sx = (sign.wx * TILE_W - cameraX) * 0.72 * zoom + viewW / 2;
-      if (sx < -200 || sx > viewW + 200) continue;
-      const boxW = 230 * zoom;
-      const boxH = 16 * zoom;
-      ctx.fillStyle = 'rgba(8, 14, 22, 0.92)';
-      ctx.fillRect(sx - boxW / 2, mezzY - 1 * zoom, boxW, boxH);
-      ctx.strokeStyle = sign.cor;
-      ctx.lineWidth = 1;
-      ctx.strokeRect(sx - boxW / 2, mezzY - 1 * zoom, boxW, boxH);
-      ctx.fillStyle = sign.cor;
-      ctx.fillText(sign.text, sx, mezzY + 10.5 * zoom);
-    }
+    // Painel de LED corrido na face da viga do mezanino (boas-vindas +
+    // estado real da Área de Carga, lido do save)
+    drawMezzanineTicker(ctx, state, viewW, mezzY, zoom, t);
   }
 
   // 2.3 Vigas arqueadas do teto do hangar
@@ -438,6 +628,40 @@ function drawMidStructuresLayer(ctx, map, state, cameraX, cameraY, viewW, viewH,
   ctx.fillRect(0, 0, viewW, roofH);
   ctx.fillStyle = '#18293e';
   ctx.fillRect(0, roofH - 3 * zoom, viewW, 3 * zoom);
+
+  // Faróis vermelhos de balizamento ao longo da treliça do teto
+  for (const bx of [0.18, 0.5, 0.82]) {
+    const lx = viewW * bx;
+    const on = Math.sin(t * 2.1 + bx * 9) > 0.2;
+    ctx.fillStyle = on ? '#ff5f5f' : 'rgba(255, 95, 95, 0.25)';
+    ctx.fillRect(lx - 1.5 * zoom, roofH - 10 * zoom, 3 * zoom, 2.5 * zoom);
+    if (on) {
+      ctx.fillStyle = 'rgba(255, 95, 95, 0.18)';
+      ctx.beginPath();
+      ctx.arc(lx, roofH - 9 * zoom, 6 * zoom, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+
+  // Placas de setor na faixa do teto (não disputam mais com os pórticos)
+  ctx.font = `bold ${Math.max(8, Math.round(8.5 * zoom))}px monospace`;
+  ctx.textAlign = 'center';
+  for (const sign of MEZZANINE_SIGNS) {
+    const sx = (sign.wx * TILE_W - cameraX) * 0.72 * zoom + viewW / 2;
+    if (sx < -160 || sx > viewW + 160) continue;
+    const boxW = 168 * zoom;
+    const boxH = 13.5 * zoom;
+    ctx.fillStyle = 'rgba(10, 16, 26, 0.88)';
+    ctx.fillRect(sx - boxW / 2, 4.5 * zoom, boxW, boxH);
+    ctx.globalAlpha = 0.75;
+    ctx.strokeStyle = sign.cor;
+    ctx.lineWidth = 1;
+    ctx.strokeRect(sx - boxW / 2, 4.5 * zoom, boxW, boxH);
+    ctx.globalAlpha = 0.9;
+    ctx.fillStyle = sign.cor;
+    ctx.fillText(sign.text, sx, 14.5 * zoom);
+    ctx.globalAlpha = 1;
+  }
 
   ctx.restore();
 
@@ -466,6 +690,42 @@ function drawMidStructuresLayer(ctx, map, state, cameraX, cameraY, viewW, viewH,
 
   // 2.6 Portais Dimensionais Verticais Arqueados na Parede de Fundo
   drawSidePortalsOnWall(ctx, map, state, cameraX, cameraY, viewW, viewH, zoom, t);
+}
+
+// Painel de LED corrido na viga do mezanino: saudação da estação e estado
+// real da Área de Carga (lido do save). Âmbar ponto-matricial sobre escuro.
+function drawMezzanineTicker(ctx, state, viewW, mezzY, zoom, t) {
+  const cargaLiberada = Boolean(state?.progress?.flags?.airportTerminalDiagnosed);
+  const status = cargaLiberada
+    ? 'ÁREA DE CARGA LIBERADA PARA EMBARQUE'
+    : 'ÁREA DE CARGA EM CONTENÇÃO — DIAGNÓSTICO DE TERMINAL NECESSÁRIO';
+  const ticker = `BLOCO 404 ▪ AEROPORTO CENTRAL — ZONA X10 ▪ BEM-VINDO, VIAJANTE ▪ ${status} ▪ DOCAS A1 BIO-FORJA ▪ B2 DOMÍNIO ▪ C3 MARÉ ASTRAL ▪ D4 NÚCLEO 10X ▪ OPERAÇÃO NORMAL ▪ `;
+
+  const stripY = mezzY + 2.5 * zoom;
+  const stripH = 11 * zoom;
+
+  // Face escura da viga com leve viés
+  ctx.fillStyle = 'rgba(5, 9, 15, 0.72)';
+  ctx.fillRect(0, stripY, viewW, stripH);
+  ctx.fillStyle = 'rgba(255, 202, 102, 0.10)';
+  ctx.fillRect(0, stripY + stripH - 1.2 * zoom, viewW, 1.2 * zoom);
+
+  ctx.save();
+  ctx.beginPath();
+  ctx.rect(0, stripY, viewW, stripH);
+  ctx.clip();
+  ctx.font = `bold ${Math.max(7.5, 8.5 * zoom)}px monospace`;
+  ctx.textAlign = 'left';
+  const textWidth = Math.max(1, ctx.measureText(ticker).width);
+  const offset = (t * 52 * zoom) % textWidth;
+  ctx.fillStyle = '#ffc966';
+  ctx.shadowColor = 'rgba(255, 201, 102, 0.55)';
+  ctx.shadowBlur = 4 * zoom;
+  for (let x = -offset; x < viewW; x += textWidth) {
+    ctx.fillText(ticker, x, stripY + stripH - 3 * zoom);
+  }
+  ctx.restore();
+  ctx.shadowBlur = 0;
 }
 
 function drawIndustrialPillar(ctx, px, wallBaseY, zoom, t, seed) {
@@ -604,6 +864,14 @@ function drawSidePortalsOnWall(ctx, map, state, cameraX, cameraY, viewW, viewH, 
         ctx.lineTo(halfW, ly);
         ctx.stroke();
       }
+      // Feixe de varredura do sistema de segurança descendo a comporta
+      const scanY = -archH + ((t * 34) % archH);
+      const scan = ctx.createLinearGradient(0, scanY - 13, 0, scanY + 13);
+      scan.addColorStop(0, 'rgba(255, 90, 90, 0)');
+      scan.addColorStop(0.5, 'rgba(255, 90, 90, 0.5)');
+      scan.addColorStop(1, 'rgba(255, 90, 90, 0)');
+      ctx.fillStyle = scan;
+      ctx.fillRect(-halfW, scanY - 13, archW, 26);
       // Trava central âmbar/vermelha
       ctx.fillStyle = '#ff6b6b';
       ctx.fillRect(-14, -archH * 0.55 - 8, 28, 16);
@@ -621,6 +889,28 @@ function drawSidePortalsOnWall(ctx, map, state, cameraX, cameraY, viewW, viewH, 
       ctx.fillStyle = vortexGrad;
       ctx.fillRect(-halfW, -archH, archW, archH);
 
+      // Arte gerada do vórtice rodopiante — duas camadas girando em sentidos
+      // opostos, tingidas na cor da doca (o braço espiral é uma única imagem)
+      const swirl = getTintedSwirl(mainColor);
+      const cx = 0;
+      const cy = -archH * 0.52;
+      if (swirl) {
+        ctx.save();
+        ctx.globalCompositeOperation = 'lighter';
+        ctx.translate(cx, cy);
+        const R = halfW * 1.45;
+        ctx.rotate(t * 0.85 + p.x * 0.7);
+        ctx.globalAlpha = 0.95;
+        ctx.drawImage(swirl, -R, -R, R * 2, R * 2);
+        ctx.rotate(-t * 1.85 + 1.2);
+        ctx.globalAlpha = 0.7;
+        const R2 = R * 0.58;
+        ctx.drawImage(swirl, -R2, -R2, R2 * 2, R2 * 2);
+        ctx.restore();
+        ctx.globalAlpha = 1;
+        ctx.globalCompositeOperation = 'source-over';
+      }
+
       // Anéis concêntricos pulsantes no horizonte de eventos
       ctx.strokeStyle = '#e8fbff';
       for (let r = 0; r < 3; r++) {
@@ -631,6 +921,21 @@ function drawSidePortalsOnWall(ctx, map, state, cameraX, cameraY, viewW, viewH, 
         ctx.beginPath();
         ctx.arc(0, -archH * 0.52, radius, 0, Math.PI * 2);
         ctx.stroke();
+      }
+      ctx.globalAlpha = 1;
+
+      // Faíscas espirais caindo para dentro do portal
+      const cy2 = -archH * 0.52;
+      for (let i = 0; i < 7; i++) {
+        const ph = (t * 0.42 + i / 7 + p.x * 0.11) % 1;
+        const ang = i * 2.399963 + t * 0.55;
+        const rad = (1 - ph) * (halfW * 0.95);
+        const px = Math.cos(ang) * rad;
+        const py = cy2 + Math.sin(ang) * rad * 0.88;
+        const sz = 1 + ph * 1.6;
+        ctx.globalAlpha = 0.15 + ph * 0.75;
+        ctx.fillStyle = '#eafffb';
+        ctx.fillRect(px - sz / 2, py - sz / 2, sz, sz);
       }
       ctx.globalAlpha = 1;
     }
@@ -645,6 +950,22 @@ function drawSidePortalsOnWall(ctx, map, state, cameraX, cameraY, viewW, viewH, 
     ctx.arc(0, -archH * 0.62, halfW - 3, Math.PI, 0, false);
     ctx.lineTo(halfW - 3, -2);
     ctx.stroke();
+
+    // Comporta trancada: moldura de perigo "marching ants" por cima do neon
+    if (locked) {
+      ctx.save();
+      ctx.setLineDash([8, 6]);
+      ctx.lineDashOffset = -t * 30;
+      ctx.strokeStyle = 'rgba(255, 120, 120, 0.95)';
+      ctx.lineWidth = 3.2;
+      ctx.beginPath();
+      ctx.moveTo(-halfW + 3, -2);
+      ctx.lineTo(-halfW + 3, -archH * 0.62);
+      ctx.arc(0, -archH * 0.62, halfW - 3, Math.PI, 0, false);
+      ctx.lineTo(halfW - 3, -2);
+      ctx.stroke();
+      ctx.restore();
+    }
 
     // Placa eletrônica no topo do pórtico
     const signY = -archH - 18;
@@ -762,6 +1083,22 @@ function drawReflectiveFloor(ctx, map, state, cameraX, cameraY, viewW, viewH, zo
   ctx.lineTo(viewW, laneBotY);
   ctx.stroke();
 
+  // 3.6 Varredura de reflexo especular — um "brilho de chão molhado"
+  // atravessando a passarela a cada poucos segundos
+  const sheenX = ((t * 72) % (viewW + 1600)) - 800;
+  const sheen = ctx.createLinearGradient(sheenX - 230, 0, sheenX + 230, 0);
+  sheen.addColorStop(0, 'rgba(190, 235, 255, 0)');
+  sheen.addColorStop(0.5, 'rgba(190, 235, 255, 0.085)');
+  sheen.addColorStop(1, 'rgba(190, 235, 255, 0)');
+  ctx.fillStyle = sheen;
+  ctx.beginPath();
+  ctx.moveTo(sheenX - 230, wallBaseY);
+  ctx.lineTo(sheenX + 230, wallBaseY);
+  ctx.lineTo(sheenX + 430, floorFrontY);
+  ctx.lineTo(sheenX - 30, floorFrontY);
+  ctx.closePath();
+  ctx.fill();
+
   ctx.restore();
 
   // Meio-fio metálico na borda frontal da passarela (floorFrontY)
@@ -782,11 +1119,12 @@ function drawMirroredEntitiesOnFloor(ctx, state, cameraX, cameraY, viewW, viewH,
 
   // NPCs espelhados
   for (const actor of state.actors ?? []) {
+    const ds = svDepthScale(actor.y);
     const { x, y } = svToScreen(actor.x, actor.y, cameraX, cameraY, viewW, viewH, zoom);
     if (x < -120 || x > viewW + 120) continue;
     ctx.save();
     ctx.translate(x, y + 2 * zoom);
-    ctx.scale(zoom, -zoom * 0.42);
+    ctx.scale(zoom * ds, -zoom * ds * 0.42);
     ctx.globalAlpha = 0.18;
     if (callbacks.drawActor) callbacks.drawActor(actor, 0, 0);
     ctx.restore();
@@ -794,10 +1132,11 @@ function drawMirroredEntitiesOnFloor(ctx, state, cameraX, cameraY, viewW, viewH,
 
   // Player espelhado no piso reflexivo
   if (state.player && callbacks.drawPlayer) {
+    const ds = svDepthScale(state.player.y);
     const { x, y } = svToScreen(state.player.x, state.player.y, cameraX, cameraY, viewW, viewH, zoom);
     ctx.save();
     ctx.translate(x, y + 2 * zoom);
-    ctx.scale(zoom, -zoom * 0.42);
+    ctx.scale(zoom * ds, -zoom * ds * 0.42);
     ctx.globalAlpha = 0.20;
     callbacks.drawPlayer(state.player, 0, 0);
     ctx.restore();
@@ -819,7 +1158,7 @@ export function drawSideObject(ctx, obj, cameraX, cameraY, viewW, viewH, zoom, t
   const rows = obj.sheetRows ?? 4;
   const col = obj.frame?.col ?? 0;
   const row = obj.frame?.row ?? 0;
-  const scale = (obj.scale ?? 0.45) * zoom;
+  const scale = (obj.scale ?? 0.45) * zoom * svDepthScale(obj.y);
 
   const fr = getFrame(image, col, row, cols, rows);
   const sourceCanvas = fr?.cell ?? image;
@@ -913,13 +1252,14 @@ function drawTerminalHologram(ctx, obj, state, zoom, time, drawH) {
 // =====================================================================
 //  CAMADA 4: FOREGROUND CINEMATOGRÁFICO (SILHUETAS, GRADES E LUZ VOLUMÉTRICA)
 // =====================================================================
-function drawForegroundLayer(ctx, cameraX, cameraY, viewW, viewH, zoom, time, wallBaseY, floorFrontY) {
+function drawForegroundLayer(ctx, cameraX, cameraY, viewW, viewH, zoom, time, wallBaseY, floorFrontY, mouseShift = 0) {
   const t = time / 1000;
+  const mousePx = mouseShift * 12;
 
   // 4.1 Feixes diagonais suaves de luz volumétrica vindos dos janelões
   ctx.save();
   const beamStep = 360 * zoom;
-  const beamShift = -((cameraX * 0.85 * zoom) % beamStep);
+  const beamShift = -((cameraX * 0.85 * zoom + mousePx * 0.7) % beamStep);
   for (let bx = beamShift - beamStep; bx < viewW + beamStep; bx += beamStep) {
     const grad = ctx.createLinearGradient(bx, 30 * zoom, bx + 110 * zoom, floorFrontY);
     grad.addColorStop(0, 'rgba(83, 217, 244, 0.055)');
@@ -938,8 +1278,8 @@ function drawForegroundLayer(ctx, cameraX, cameraY, viewW, viewH, zoom, time, wa
 
   // 4.2 Partículas de poeira quântica ciano flutuando na estação
   ctx.save();
-  for (let i = 0; i < 24; i++) {
-    const px = ((i * 197 - cameraX * 0.92 * zoom + Math.sin(t * 0.6 + i) * 18) % viewW + viewW) % viewW;
+  for (let i = 0; i < 36; i++) {
+    const px = ((i * 197 - cameraX * 0.92 * zoom + Math.sin(t * 0.6 + i) * 18 - mousePx * 0.5) % viewW + viewW) % viewW;
     const py = ((i * 89 + t * 8) % Math.max(120, floorFrontY - 30)) + 20;
     const alpha = 0.2 + 0.25 * Math.sin(t * 2.1 + i);
     ctx.fillStyle = `rgba(110, 247, 234, ${alpha})`;
@@ -973,7 +1313,7 @@ function drawForegroundLayer(ctx, cameraX, cameraY, viewW, viewH, zoom, time, wa
 
   // 4.4 Silhuetas de vigas verticais de primeiro plano passando nas laterais (parallax 1.35x)
   const fgBeamSpan = 920 * zoom;
-  const fgBeamX = -((cameraX * 1.35 * zoom) % fgBeamSpan);
+  const fgBeamX = -((cameraX * 1.35 * zoom + mousePx * 1.2) % fgBeamSpan);
   for (let fx = fgBeamX - fgBeamSpan; fx < viewW + fgBeamSpan; fx += fgBeamSpan) {
     // Fica mais translúcida perto do centro da tela para nunca obstruir o jogador
     const distFromCenter = Math.abs(fx - viewW / 2) / (viewW / 2 || 1);
@@ -1002,9 +1342,10 @@ export function renderSideViewMap(ctx, map, state, cameraX, cameraY, viewW, view
 
   const { y: wallBaseY } = svToScreen(0, WALL_WORLD_Y, cameraX, cameraY, viewW, viewH, zoom);
   const { y: floorFrontY } = svToScreen(0, FLOOR_FRONT_Y, cameraX, cameraY, viewW, viewH, zoom);
+  const mouseShift = tickMouseShift();
 
   // 1. Background Espacial (estrelas, planeta anelado, naves, arte espacial)
-  drawSpaceLayer(ctx, map, cameraX, cameraY, viewW, viewH, zoom, time, wallBaseY);
+  drawSpaceLayer(ctx, map, cameraX, cameraY, viewW, viewH, zoom, time, wallBaseY, mouseShift);
 
   // 2. Camada Intermediária (janelões, mezanino, colunas de neon, portais verticais)
   drawMidStructuresLayer(ctx, map, state, cameraX, cameraY, viewW, viewH, zoom, time, wallBaseY);
@@ -1053,23 +1394,29 @@ export function renderSideViewMap(ctx, map, state, cameraX, cameraY, viewW, view
     if (entry.kind === 'object' || entry.kind === 'collectible') {
       drawSideObject(ctx, entry.item, cameraX, cameraY, viewW, viewH, zoom, time, false);
     } else if (entry.kind === 'actor') {
+      const ds = svDepthScale(entry.item.y);
       const { x, y } = svToScreen(entry.item.x, entry.item.y, cameraX, cameraY, viewW, viewH, zoom);
       ctx.save();
       ctx.translate(x, y);
-      ctx.scale(zoom, zoom);
+      ctx.scale(zoom * ds, zoom * ds);
       if (callbacks.drawActor) {
         callbacks.drawActor(entry.item, 0, 0);
       }
       ctx.restore();
+      // Mantém a altura do sprite coerente com a escala de profundidade
+      // para o rótulo flutuante (drawLabels multiplica por zoom).
+      if (entry.item._topo) entry.item._topo = Math.round(entry.item._topo * ds);
     } else if (entry.kind === 'player') {
+      const ds = svDepthScale(entry.item.y);
       const { x, y } = svToScreen(entry.item.x, entry.item.y, cameraX, cameraY, viewW, viewH, zoom);
       ctx.save();
       ctx.translate(x, y);
-      ctx.scale(zoom, zoom);
+      ctx.scale(zoom * ds, zoom * ds);
       if (callbacks.drawPlayer) {
         callbacks.drawPlayer(entry.item, 0, 0);
       }
       ctx.restore();
+      if (entry.item._topo) entry.item._topo = Math.round(entry.item._topo * ds);
 
       // Anel de scan / diagnóstico (tecla R) em perspectiva side-view
       if (entry.item.ability?.scanning > 0) {
@@ -1086,7 +1433,7 @@ export function renderSideViewMap(ctx, map, state, cameraX, cameraY, viewW, view
   }
 
   // 6. Foreground Cinematográfico (feixes de luz, partículas e silhuetas de primeiro plano)
-  drawForegroundLayer(ctx, cameraX, cameraY, viewW, viewH, zoom, time, wallBaseY, floorFrontY);
+  drawForegroundLayer(ctx, cameraX, cameraY, viewW, viewH, zoom, time, wallBaseY, floorFrontY, mouseShift);
 }
 
 function hexToRgba(hex, alpha) {

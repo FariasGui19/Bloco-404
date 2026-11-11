@@ -65,6 +65,15 @@ pegar export faltando antes de abrir o navegador.
   profundo. Tudo é objeto de mapa dimensionado por `larguraPx`
   ([`js/data/relevo-praia.js`](js/data/relevo-praia.js)); a grade aprovada da
   praia não mudou.
+- **Piso 0 — Aeroporto Central 2.5D** em side-view profundo (estilo sci-fi
+  anos 90): 4 camadas de parallax com deriva suave pelo mouse, escala por
+  profundidade (o personagem encolhe perto dos janelões), naves geradas por
+  IA cruzando o espaço com rastro de plasma, planetas anelado e vermelho,
+  pórticos com vórtice animado tingido pela cor de cada doca, piso espelhado
+  em tempo real, painel de LED com o estado real da Área de Carga e dois NPCs
+  ambientais (a Viajante cruzando o concourse e a Unidade L-9 em patrulha).
+  Detalhes e o plano multi-gênero em
+  [`docs/plano-aeroporto-e-perspectivas.md`](docs/plano-aeroporto-e-perspectivas.md).
 - **Árvore de nado em 5 degraus** — MEDO DA ÁGUA → BOIAR → FÔLEGO → TRAVESSIA →
   MARÉ PLENA. Começa-se com medo do mar e aprende-se na Poça da Cascata; cada
   degrau abre mais mar, mais ar e mais fundura

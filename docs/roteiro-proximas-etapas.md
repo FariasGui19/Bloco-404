@@ -1,5 +1,35 @@
 # Próximas Etapas — Bloco 404
 
+## Concluído na 0.10.0 — Aeroporto Central 2.5D Vivo
+
+Registro completo, com a análise do que a implementação side-view entregou e o
+norte multi-gênero do projeto, em [`plano-aeroporto-e-perspectivas.md`](plano-aeroporto-e-perspectivas.md).
+Em resumo:
+
+1. **Perspectiva refinada** — escala por profundidade (0.80x no fundo → 1.14x
+   na borda frontal) aplicada a player, NPCs, objetos, sombras e reflexos;
+   parallax dinâmico com o mouse; varredura especular no piso; estrelas
+   cadentes ocasionais fora dos janelões.
+2. **Arte gerada por IA integrada** — vórtice dos pórticos (tingido em
+   runtime pela cor de cada doca, duas camadas giratórias), frota de naves
+   (cargueiro, cruzador, shuttle) com rastro de plasma e faróis, planeta
+   anelado e planeta vermelho. Fonte em `assets/source-art/aeroporto/`,
+   preparador em `tools/preparar-aeroporto.py`.
+3. **Aeroporto vivo** — painel de LED corrido no mezanino com o estado real
+   da Área de Carga (lido do save), perigo "marching ants" + varredura de
+   segurança na comporta trancada, faíscas espirais nos pórticos ativos,
+   Viajante ambiental cruzando o concourse e Unidade L-9 em patrulha.
+4. **Mobília remapeada** por setor (A desembarque, B mirante, C docas,
+   D engenharia), com vending, plantas, luminárias, cone e grade de
+   contenção — sem bloquear portais nem a faixa central.
+5. **Letreiros de setor** migrados para o teto — fim da sobreposição com as
+   placas dos pórticos.
+6. **Verificação** — novo `tests/aeroporto-vivo.mjs` renderiza o mapa inteiro
+   headless e falha se qualquer coordenada NaN/Infinity chegar ao canvas.
+   90 testes passando.
+
+Versão `0.10.0-aeroporto`.
+
 ## Concluído
 - Saguão (concluído)
 - Estação Bio 0.3.5-bio (cabeceira, distribuidor, rede, válvula, 30/30 testes, PR #30 mesclada)

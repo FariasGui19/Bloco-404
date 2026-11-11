@@ -175,7 +175,7 @@ function montar(map, state) {
   avatar.scale.set(1.65, .57, 1); cena.add(avatar);
   const poseParada = textura('assets/sprites/player/mare-nado-parado-3d.png');
   avatarParado = new THREE.Sprite(new THREE.SpriteMaterial({map:poseParada, transparent:true, depthWrite:false, opacity:0}));
-  avatarParado.scale.set(.54, 1.10, 1); cena.add(avatarParado);
+  avatarParado.scale.set(.72, 1.46, 1); cena.add(avatarParado);
   particulas = new THREE.InstancedMesh(new THREE.SphereGeometry(.025, 5, 4), new THREE.MeshBasicMaterial({color:'#b7e8db', transparent:true, opacity:.45}), 90);
   cena.add(particulas);
   rastros = new THREE.InstancedMesh(new THREE.SphereGeometry(.055, 6, 4), new THREE.MeshBasicMaterial({ color:'#a5f8ee', transparent:true, opacity:.65 }), 20);
@@ -253,11 +253,12 @@ export function perspectivaSubmersa(map, state, view) {
   avatar.position.set(p.x, py + Math.sin(agora * 3) * .035, p.y);
   avatar.quaternion.copy(camera.quaternion); avatar.rotateZ(n?.voo?.roll ?? 0);
   const verticesAvatar = avatar.geometry.attributes.position;
-  const movimento = Math.min(1, Math.hypot(n?.vx ?? 0, n?.vy ?? 0) / 2);
+  const impulsoAtivo = n?.arrancada > 0;
+  const movimento = impulsoAtivo ? 1 : Math.min(1, Math.hypot(n?.vx ?? 0, n?.vy ?? 0) / 2);
   for (let i = 0; i < verticesAvatar.count; i++) {
     const x = avatarVertices[i * 3], y = avatarVertices[i * 3 + 1];
     const peso = Math.max(0, .3 - x);
-    verticesAvatar.setY(i, y + Math.sin(agora * (2.5 + movimento * 3) + x * 5) * peso * (.015 + .11 * movimento));
+    verticesAvatar.setY(i, y + Math.sin(agora * (impulsoAtivo ? 11 : 2.5 + movimento * 3) + x * 5) * peso * (.015 + .11 * movimento));
   }
   verticesAvatar.needsUpdate = true;
   const particula = new THREE.Object3D();
@@ -307,7 +308,7 @@ export function perspectivaSubmersa(map, state, view) {
   for (const c of cardumes) {
     c.object.position.set(c.data.x, -1.6 + Math.sin(agora + c.data.fase) * .18, c.data.y);
     c.object.rotation.y = c.data.flip ? Math.PI : 0;
-    c.object.children.forEach((peixe, i) => { peixe.rotation.y = Math.sin(agora * 4 + i) * .15; });
+    c.object.children.forEach((peixe, i) => { peixe.rotation.y = Math.sin(agora * 4 + i) * .15; peixe.children[1].rotation.y = Math.sin(agora * 8 + i) * .45; });
   }
   webgl.render(cena, camera);
   return { canvas: webgl.domElement, alpha: transicao };

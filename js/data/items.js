@@ -85,6 +85,18 @@ export const ITEMS = Object.freeze({
     icon: 'progressao',
     description: 'Certificação gravada pela Oficina Bio-Forja após romper a Grade de Ímpeto Vivo com diagnóstico e propulsão.',
   }),
+  fragmento_eco_dominio: Object.freeze({
+    name: 'FRAGMENTO DE ECO — DOMÍNIO',
+    kind: 'fragmento',
+    icon: 'energia',
+    description: 'Relíquia ancestral recolhida além do Lacre de Frequência. Guarda o timbre exato da Coroa Antiga.',
+  }),
+  insignia_anel_dominio: Object.freeze({
+    name: 'INSÍGNIA DO ANEL ANCIÃO',
+    kind: 'registro',
+    icon: 'progressao',
+    description: 'Marca consagrada no Altar da Lâmina Ancestral por quem leu a frequência do Lacre e o partiu num só golpe.',
+  }),
 });
 
 export function getItem(id) {

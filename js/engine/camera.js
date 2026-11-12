@@ -90,19 +90,48 @@ export function snapCameraTo(wx, wy, map = null) {
   camera.follow = true;
 }
 
-export function updateCamera(dt, targetWx, targetWy, nado = null, map = null) {
+export function updateCamera(dt, targetWx, targetWy, nado = null, map = null, cameraCtx = null) {
   if (map) sideViewActive = !!map?.meta?.sideView;
+  let focusWx = targetWx;
+  let focusWy = targetWy;
+  let dominioZoomFactor = 1;
+
+  if (!sideViewActive && map?.meta?.estiloSala === 'dominio_anciao') {
+    const lacreAberto = !!cameraCtx?.flags?.gate_lacre_frequencia_sala;
+    // Passarela do Anel: antecipa o enquadramento do Lacre de Frequência à frente da lâmina
+    if (!lacreAberto && targetWx >= 5.2 && targetWx <= 10.3 && targetWy >= 3.8 && targetWy <= 8.2) {
+      const pesoPassarela = Math.min(1, Math.max(0, (targetWx - 5.2) / 3.0));
+      focusWx += 0.82 * pesoPassarela;
+      focusWy += (6.0 - targetWy) * 0.28 * pesoPassarela;
+      dominioZoomFactor *= 0.97;
+    } else if (lacreAberto && targetWx >= 10.0) {
+      // Câmara da Coroa: abre levemente o quadro para revelar o santuário conquistado
+      focusWx += (12.2 - targetWx) * 0.22;
+      focusWy += (6.0 - targetWy) * 0.25;
+      dominioZoomFactor *= 0.95;
+    }
+    // Postura do Domínio [R]: foco tático aproximado enquanto o ponto frágil pulsa
+    if ((cameraCtx?.ability?.reveal?.timeLeft ?? 0) > 0) {
+      dominioZoomFactor *= 1.10;
+    }
+    // Golpe de Ruptura [Q]: pulso curto de impacto no instante da clivagem
+    const flash = cameraCtx?.ability?.ruptureFlash;
+    if (flash && flash.timeLeft > 0 && flash.duration > 0) {
+      dominioZoomFactor *= 1 + 0.065 * (flash.timeLeft / flash.duration);
+    }
+  }
+
   if (camera.follow) {
     if (sideViewActive) {
       // Side-view: câmera acompanha o eixo horizontal X com precisão
       // e amortiza suavemente a profundidade Y para manter o janelão espacial estável.
-      const targetX = targetWx * TILE_W;
-      const targetY = targetWy * SIDE_DEPTH_STEP;
+      const targetX = focusWx * TILE_W;
+      const targetY = focusWy * SIDE_DEPTH_STEP;
       const k = 1 - Math.exp(-CONFIG.FOLLOW_SMOOTH * dt);
       camera.x += (targetX - camera.x) * k;
       camera.y += (targetY - camera.y) * k * 0.35;
     } else {
-      const t = worldToIso(targetWx, targetWy);
+      const t = worldToIso(focusWx, focusWy);
       const k = 1 - Math.exp(-CONFIG.FOLLOW_SMOOTH * dt); // independente de FPS
       camera.x += (t.x - camera.x) * k;
       camera.y += (t.y - camera.y) * k;
@@ -110,7 +139,8 @@ export function updateCamera(dt, targetWx, targetWy, nado = null, map = null) {
   }
   // Zoom é um offset transitório: roda do mouse e preferência são preservados.
   const mergulho = nado?.ativo && nado.mareAstral && nado.profundidade > 1.25;
-  const fator = mergulho ? (nado.arrancada > 0 ? .96 : 1.06) : 1;
+  const fatorBase = mergulho ? (nado.arrancada > 0 ? .96 : 1.06) : 1;
+  const fator = fatorBase * dominioZoomFactor;
   const zoomTemporario = Math.min(CONFIG.ZOOM_MAX, Math.max(mapMinZoom, camera.targetZoom * fator));
   camera.zoom += (zoomTemporario - camera.zoom) * (1 - Math.exp(-CONFIG.ZOOM_SMOOTH * dt));
 }

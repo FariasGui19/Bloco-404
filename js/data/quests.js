@@ -156,6 +156,28 @@ export const QUESTS = Object.freeze({
       flags: Object.freeze({ missao_dominio_concluida: true }),
     }),
   }),
+  // -------------------------------------------------------------------
+  // MARÉ ASTRAL — CALIBRAGEM DE CORRENTE (Dársena Abissal · Doca A2)
+  // -------------------------------------------------------------------
+  calibragem_de_corrente: Object.freeze({
+    id: 'calibragem_de_corrente',
+    title: 'CALIBRAGEM DE CORRENTE',
+    giver: 'NÚCLEO HIDRODIMENSIONAL',
+    kind: 'secundária',
+    description: 'Na Dársena Abissal (Doca A2), leia a janela laminar do Fluxo Contido com o Senso de Corrente [R], atravesse a cortina d’água com o Passo de Corrente [Q], recolha o Fragmento de Eco e sintonize-o no Núcleo Hidrodimensional.',
+    objectives: Object.freeze([
+      Object.freeze({ type: 'diagnose', target: 'scan_fluxo_sala', count: 1, label: 'Ler a janela do Fluxo Contido com Senso de Corrente [R]' }),
+      Object.freeze({ type: 'breach_gate', target: 'fluxo_contido_sala', count: 1, label: 'Atravessar o Fluxo Contido com Passo de Corrente [Q]' }),
+      Object.freeze({ type: 'collect', target: 'fragmento_eco_mare', count: 1, label: 'Recolher o Fragmento de Eco no Relicário de Coral' }),
+      Object.freeze({ type: 'sync_tide', target: 'gerador_corrente', count: 1, label: 'Sintonizar o fragmento no Núcleo Hidrodimensional [E]' }),
+    ]),
+    rewards: Object.freeze({
+      xp: 75,
+      points: 1,
+      items: Object.freeze(['amuleto_corrente_mare']),
+      flags: Object.freeze({ missao_mare_concluida: true }),
+    }),
+  }),
 });
 
 export function getQuest(id) {

@@ -109,6 +109,24 @@ export const ITEMS = Object.freeze({
     icon: 'progressao',
     description: 'Insígnia náutica gravada pelo Núcleo Hidrodimensional após ler a janela do Fluxo Contido e atravessá-lo sem atrito.',
   }),
+  fragmento_eco_nucleo: Object.freeze({
+    name: 'FRAGMENTO DE ECO — NÚCLEO 10X',
+    kind: 'fragmento',
+    icon: 'energia',
+    description: 'Assinatura estável-instável recolhida no Relicário de Vetor. Oscila entre velocidade e massa em sintonia com o Eixo de Adaptação.',
+  }),
+  selo_vetor_nucleo: Object.freeze({
+    name: 'SELO DE VETOR ADAPTATIVO',
+    kind: 'registro',
+    icon: 'progressao',
+    description: 'Certificação gravada pelo Eixo de Adaptação após ler a Malha Cinética e atravessá-la com a Forma Veloz.',
+  }),
+  registro_vetor_externo: Object.freeze({
+    name: 'REGISTRO DE VETOR EXTERNO',
+    kind: 'registro',
+    icon: 'inventario',
+    description: 'Cápsula de manutenção recolhida no Viaduto dos Vetores: a primeira prova de campo da Base dos Vetores fora do aeroporto.',
+  }),
 });
 
 export function getItem(id) {

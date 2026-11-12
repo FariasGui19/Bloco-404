@@ -178,6 +178,28 @@ export const QUESTS = Object.freeze({
       flags: Object.freeze({ missao_mare_concluida: true }),
     }),
   }),
+  // -------------------------------------------------------------------
+  // NÚCLEO 10X — SINCRONIA DOS VETORES (Base dos Vetores · Doca D4)
+  // -------------------------------------------------------------------
+  sincronia_dos_vetores: Object.freeze({
+    id: 'sincronia_dos_vetores',
+    title: 'SINCRONIA DOS VETORES',
+    giver: 'EIXO DE ADAPTAÇÃO',
+    kind: 'secundária',
+    description: 'Na Base dos Vetores (Doca D4), leia a janela da Malha Cinética com Eco Scan [R], atravesse-a com o Pulso Veloz [Q], recolha o Fragmento de Eco no relicário e sincronize-o no Eixo de Adaptação.',
+    objectives: Object.freeze([
+      Object.freeze({ type: 'diagnose', target: 'scan_malha_sala', count: 1, label: 'Ler a janela da Malha Cinética com Eco Scan [R]' }),
+      Object.freeze({ type: 'breach_gate', target: 'malha_cinetica_sala', count: 1, label: 'Atravessar a Malha Cinética com o Pulso Veloz [Q]' }),
+      Object.freeze({ type: 'collect', target: 'fragmento_eco_nucleo', count: 1, label: 'Recolher o Fragmento de Eco no Relicário de Vetor' }),
+      Object.freeze({ type: 'sync_vectors', target: 'nucleo_adaptacao', count: 1, label: 'Sincronizar o fragmento no Eixo de Adaptação [E]' }),
+    ]),
+    rewards: Object.freeze({
+      xp: 75,
+      points: 1,
+      items: Object.freeze(['selo_vetor_nucleo']),
+      flags: Object.freeze({ missao_nucleo_concluida: true }),
+    }),
+  }),
 });
 
 export function getQuest(id) {

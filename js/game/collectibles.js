@@ -10,6 +10,7 @@ import { state } from './state.js';
 import { saveGame } from './save.js';
 import { openDialogue } from '../ui/dialogue.js';
 import { recordQuestEvent } from './quests.js';
+import { grantArchetypeXp } from './rpg.js';
 
 const DEFAULT_COLLECT_DISTANCE = 1.25;
 
@@ -77,6 +78,11 @@ export function collectItem(item) {
     state.progress.inventory.push(item.id);
   }
 
+  // Coletáveis de campo podem conceder XP uma única vez (a flag de coletado
+  // acima impede repetição). Mantém os fragmentos antigos sem recompensa.
+  if (state.progress.flags[`collected_${item.id}`] !== true && item.xpReward > 0 && state.progress.archetype) {
+    grantArchetypeXp(state.progress, item.xpReward);
+  }
   state.progress.flags[`collected_${item.id}`] = true;
   if (item.id === 'lumeo_vinculo') state.progress.flags.companheiro_lumeo = true;
   recordQuestEvent(state.progress, { type: 'collect', target: item.id });

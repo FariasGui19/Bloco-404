@@ -155,6 +155,21 @@ export async function loadMap(mapId, spawnId = 'inicio') {
         if (fl.darsena_mare_sincronizada) recordQuestEvent(state.progress, { type: 'sync_tide', target: 'gerador_corrente' });
       }
     }
+    if (mapData.id === 'sala_nucleo' && state.progress?.archetype === 'nucleo_dez_forma') {
+      const entry = state.progress.questLog?.sincronia_dos_vetores;
+      if (!entry || entry.status !== 'completed') {
+        startQuest(state.progress, 'sincronia_dos_vetores');
+        const fl = state.progress.flags ?? {};
+        if (fl.scan_malha_sala) recordQuestEvent(state.progress, { type: 'diagnose', target: 'scan_malha_sala' });
+        if (fl.gate_malha_cinetica_sala) recordQuestEvent(state.progress, { type: 'breach_gate', target: 'malha_cinetica_sala' });
+        if (fl.collected_fragmento_eco_nucleo) recordQuestEvent(state.progress, { type: 'collect', target: 'fragmento_eco_nucleo' });
+        if (fl.base_vetores_sincronizada) recordQuestEvent(state.progress, { type: 'sync_vectors', target: 'nucleo_adaptacao' });
+      }
+    }
+    if (mapData.id === 'viaduto_dos_vetores' && state.progress) {
+      state.progress.flags ??= {};
+      state.progress.flags.visitou_viaduto_vetores = true;
+    }
     // Salva a última localização somente se um perfil estiver ativo.
     rememberMapLocation(mapData.id, spawnId);
     return true;

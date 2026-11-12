@@ -216,6 +216,7 @@ export function render(map, state) {
     drawHazards(state.hazards);
     if (map.id === 'hub_saguao') drawHubFloorMarkings();
     if (map.id === 'ilha_praia_inicial') drawBeachStation(map);
+    if (map.id === 'ilha_enseada_ecos') drawFrequencyExteriorFloor(state);
     if (map.id === 'bio_sala_controle') drawBioControlFloor();
     if (map.meta?.estiloSala === 'bio_forja') drawBioForjaFloorOverlay(map, state);
     if (map.meta?.estiloSala === 'dominio_anciao') drawDominioFloorOverlay(map, state);
@@ -2643,7 +2644,8 @@ function drawWorld(map, state) {
   if (map.meta?.estiloSala === 'dominio_anciao') drawDominioOuterWallShell(map);
   if (map.meta?.estiloSala === 'mare_astral') drawMareAstralOuterWallShell(map);
   if (map.meta?.estiloSala === 'nucleo_10x') drawNucleo10xOuterWallShell(map);
-  if ((map.meta?.estiloSala === 'carga_eco' || map.meta?.estiloSala === 'frequencia_limiar') && map.meta?.useBackgroundWalls) drawCargoEcoWallShell(map);
+  if (map.meta?.estiloSala === 'carga_eco' && map.meta?.useBackgroundWalls) drawCargoEcoWallShell(map);
+  if (map.meta?.estiloSala === 'frequencia_limiar' && map.meta?.useBackgroundWalls) drawFrequencyStationWalls(map);
   // Camada de fundo (trilho, trem, painéis murais): atrás de tudo, só acima do chão.
   for (const o of backList) if ((o.ordem ?? 0) >= 0) drawMapObject(o, state);
   if (map.meta?.estiloSala === 'mare_astral') drawMareAstralWindowLife(map, state);
@@ -3838,66 +3840,141 @@ function drawCargoEcoWallShell(map) {
   ctx.restore();
 }
 
-// Os cabos são cenográficos; a missão e a colisão não dependem do desenho.
-function drawFrequencyStationFloor(curState) {
-  const p = (x, y) => [(x - y) * HW, (x + y) * HH];
-  const objects = curState.objects ?? [], flags = curState.progress?.flags ?? {};
-  const control = objects.find(o => o.id === 'console_limiar_666');
-  if (!control) return;
-  const [cx, cy] = p(control.x, control.y);
-  const anchors = [
-    ['ancora_666_origem', 'freq666_ancora_origem'],
-    ['ancora_666_retorno', 'freq666_ancora_retorno'],
-    ['ancora_666_memoria', 'freq666_ancora_memoria'],
-  ];
+// Plataformas, trilhas e circuitos são cenografia: não alteram colisão.
+function frequencyPoint(x, y) { return [(x - y) * HW, (x + y) * HH]; }
+function frequencySlab(x0, y0, x1, y1, fill, line = '#73837e') {
+  const a = frequencyPoint(x0, y0), b = frequencyPoint(x1, y0);
+  const c = frequencyPoint(x1, y1), d = frequencyPoint(x0, y1);
+  quad(...a, ...b, ...c, ...d, fill, line, 1);
+}
+function frequencyLine(points, color, width) {
+  ctx.strokeStyle = color; ctx.lineWidth = width; ctx.lineJoin = 'round';
+  ctx.beginPath(); ctx.moveTo(...frequencyPoint(...points[0]));
+  for (const point of points.slice(1)) ctx.lineTo(...frequencyPoint(...point));
+  ctx.stroke();
+}
+
+function drawFrequencyExteriorFloor(curState) {
   ctx.save();
-  for (const [id, flag] of anchors) {
-    const item = objects.find(o => o.id === id); if (!item) continue;
-    const [x, y] = p(item.x, item.y);
-    ctx.strokeStyle = '#101a20'; ctx.lineWidth = 7;
-    ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(cx, cy); ctx.stroke();
-    ctx.strokeStyle = flags[flag] ? '#60e5d3' : '#9c6946';
-    ctx.globalAlpha = flags[flag] ? .65 : .35; ctx.lineWidth = 2;
-    ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(cx, cy); ctx.stroke();
-    ctx.globalAlpha = .8; ctx.beginPath(); ctx.ellipse(x, y + 3, 17, 8, 0, 0, Math.PI * 2); ctx.stroke();
-    ctx.globalAlpha = 1;
+  // Pequeno cais técnico em pedra, integrado à areia sob a entrada.
+  frequencySlab(16.4, 9.2, 19.6, 12.2, '#59615a', '#3d4743');
+  frequencySlab(16.55, 9.35, 19.45, 12.05, '#767b6c', '#9b9c88');
+  for (let x = 17; x < 19.5; x += .55) frequencyLine([[x, 9.4], [x, 12]], 'rgba(44,57,53,.35)', 1);
+  // Passarela baixa de manutenção liga o receptor à soleira, sem ocupar a rota da praia.
+  frequencyLine([[14.5, 12.5], [16, 12.5], [16.9, 11.55], [18.5, 11.25]], 'rgba(51,53,44,.42)', 13);
+  frequencyLine([[14.5, 12.5], [16, 12.5], [16.9, 11.55], [18.5, 11.25]], '#a8a18a', 8);
+  frequencyLine([[14.5, 12.5], [16, 12.5], [16.9, 11.55], [18.5, 11.25]], 'rgba(50,71,64,.7)', 1);
+  const [rx, ry] = frequencyPoint(14.5, 12.5);
+  ctx.fillStyle = 'rgba(38,42,36,.25)'; ctx.beginPath(); ctx.ellipse(rx, ry + 4, 32, 11, 0, 0, Math.PI * 2); ctx.fill();
+  const [ex, ey] = frequencyPoint(18.5, 10.5);
+  ctx.fillStyle = 'rgba(28,41,35,.2)'; ctx.beginPath(); ctx.ellipse(ex - 18, ey + 5, 68, 22, 0, 0, Math.PI * 2); ctx.fill();
+  // A iluminação da soleira confirma o sinal, sem substituir o aviso textual.
+  ctx.fillStyle = curState.progress?.flags?.frequencia666Registrada ? '#75e8d2' : '#d4a76d';
+  for (const [x,y] of [[18.15,11.45],[18.9,11.45]]) { const [px,py]=frequencyPoint(x,y); ctx.beginPath(); ctx.ellipse(px,py,3,1.5,0,0,Math.PI*2);ctx.fill(); }
+  ctx.restore();
+}
+
+function drawFrequencyStationWalls(map) {
+  const cols = map.layout[0].length - 1, rows = map.layout.length - 1, h = 31;
+  ctx.save();
+  function panel(x0,y0,x1,y1,back) {
+    const [ax,ay]=frequencyPoint(x0,y0), [bx,by]=frequencyPoint(x1,y1);
+    quad(ax,ay,bx,by,bx,by-h,ax,ay-h,back ? '#1d2a30' : '#101b21','#071015',1);
+    ctx.strokeStyle = '#65746e'; ctx.globalAlpha = .55; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(ax,ay-h+4);ctx.lineTo(bx,by-h+4);ctx.stroke();
+    ctx.strokeStyle = '#44bbae'; ctx.globalAlpha = .45;
+    ctx.beginPath();ctx.moveTo(ax,ay-7);ctx.lineTo(bx,by-7);ctx.stroke(); ctx.globalAlpha = 1;
+    ctx.fillStyle='#9b885f';ctx.beginPath();ctx.arc((ax+bx)/2,(ay+by)/2-h+9,1.5,0,Math.PI*2);ctx.fill();
   }
-  const gate = objects.find(o => o.id === 'anel_limiar_666');
-  if (gate) {
-    const [gx, gy] = p(gate.x, gate.y);
-    ctx.strokeStyle = flags.freq666_limiar_estavel ? '#72e5d6' : '#9d5d4c'; ctx.globalAlpha = .45;
-    ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(gx, gy); ctx.stroke();
-    ctx.beginPath(); ctx.ellipse(gx, gy + 4, 50, 22, 0, 0, Math.PI * 2); ctx.stroke();
+  for (let x=1;x<cols;x++) { panel(x,1,x+1,1,true); panel(x,rows,x+1,rows,false); }
+  for (let y=1;y<rows;y++) { panel(1,y,1,y+1,true); panel(cols,y,cols,y+1,false); }
+  // Tubulação presa à parede de fundo e janelas de serviço: detalhes fixos,
+  // desenhados no mesmo plano isométrico que os painéis da casca.
+  for (const offset of [13, 17]) {
+    const [ax,ay]=frequencyPoint(1,1), [bx,by]=frequencyPoint(cols,1);
+    ctx.strokeStyle=offset===13?'#080f12':'#8b8266';ctx.lineWidth=offset===13?4:1.2;
+    ctx.beginPath();ctx.moveTo(ax,ay-offset);ctx.lineTo(bx,by-offset);ctx.stroke();
+  }
+  for (const x of [2,3,11,12]) {
+    const a=frequencyPoint(x+.15,1), b=frequencyPoint(x+.85,1);
+    quad(a[0],a[1]-20,b[0],b[1]-20,b[0],b[1]-29,a[0],a[1]-29,'#0b292d','#50665e',1);
+    ctx.strokeStyle='#4cc7bd';ctx.globalAlpha=.6;ctx.lineWidth=1;
+    ctx.beginPath();ctx.moveTo(a[0]+2,a[1]-24);ctx.lineTo(b[0]-2,b[1]-24);ctx.stroke();ctx.globalAlpha=1;
   }
   ctx.restore();
 }
 
-function drawFrequencyThreshold(object, curState) {
-  const x = (object.x - object.y) * HW, y = (object.x + object.y) * HH;
-  const stable = !!curState.progress?.flags?.freq666_limiar_estavel;
-  const reducedMotion = typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
-  const t = reducedMotion ? 0 : performance.now() / 1000;
-  ctx.save(); ctx.translate(x, y);
-  // Base e aro: uma estrutura real no cenário, sem colisão nem destino falso.
-  ctx.fillStyle = '#10191d'; ctx.strokeStyle = '#42545b'; ctx.lineWidth = 3;
-  ctx.beginPath(); ctx.ellipse(0, 4, 58, 20, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
-  ctx.fillStyle = '#10161c'; ctx.strokeStyle = '#647078'; ctx.lineWidth = 12;
-  ctx.beginPath(); ctx.ellipse(0, -64, 50, 68, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
-  const interior = ctx.createRadialGradient(0, -62, 2, 0, -62, 65);
-  interior.addColorStop(0, stable ? '#3d1119' : '#0b171c');
-  interior.addColorStop(1, stable ? '#0a1820' : '#101a20');
-  ctx.fillStyle = interior; ctx.beginPath(); ctx.ellipse(0, -64, 43, 61, 0, 0, Math.PI * 2); ctx.fill();
-  ctx.strokeStyle = stable ? '#6de9df' : '#906b4f'; ctx.globalAlpha = stable ? .8 : .4; ctx.lineWidth = 2;
-  ctx.beginPath(); ctx.ellipse(0, -64, 44, 62, 0, 0, Math.PI * 2); ctx.stroke();
-  // Pontos de manutenção giram lentamente, sem flashes nem mudança de colisão.
-  for (let i = 0; i < 3; i++) {
-    const a = t * .25 + i * Math.PI * 2 / 3;
-    ctx.fillStyle = stable ? '#b4fff0' : '#daaa69';
-    ctx.beginPath(); ctx.arc(Math.cos(a) * 50, -64 + Math.sin(a) * 68, 2.5, 0, Math.PI * 2); ctx.fill();
+function drawFrequencyStationFloor(curState) {
+  const p = frequencyPoint, objects = curState.objects ?? [], flags = curState.progress?.flags ?? {};
+  const control = objects.find(o => o.id === 'console_limiar_666');
+  if (!control) return;
+  const [cx, cy] = p(control.x, control.y);
+  ctx.save();
+  // Dais em dois níveis, moldura e placas em vez de um piso uniforme.
+  frequencySlab(5.7,1.25,9.4,4.35,'#172b2d','#5e7974');
+  frequencySlab(5.95,1.5,9.15,4.05,'#26383a','#ad9b71');
+  frequencySlab(6.2,1.75,8.9,3.8,'#17282c','#546b63');
+  frequencySlab(1.4,8.8,3.6,9.8,'rgba(26,45,45,.85)','#766d55');
+  frequencySlab(2.0,5.3,4.4,7.35,'rgba(26,45,45,.85)','#766d55');
+  frequencySlab(12.3,5.5,13.8,7.2,'rgba(26,45,45,.85)','#766d55');
+  // Corredor central e faixa de segurança guiam até o limiar.
+  frequencySlab(6.65,4.4,8.35,8.8,'rgba(33,53,54,.72)','#718177');
+  for(let y=4.65;y<8.7;y+=.42) frequencyLine([[6.72,y],[6.94,y+.16]],'rgba(212,164,78,.65)',2);
+  // Conduítes seguem cantos da arquitetura, sem atravessar aleatoriamente a sala.
+  const anchors = [
+    ['ancora_666_origem', 'freq666_ancora_origem', '#ffc878', 'rgba(255,170,65,.24)'],
+    ['ancora_666_retorno', 'freq666_ancora_retorno', '#79e8d4', 'rgba(74,245,208,.23)'],
+    ['ancora_666_memoria', 'freq666_ancora_memoria', '#b9a8ff', 'rgba(159,139,255,.24)'],
+  ];
+  const reduced = typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+  const t = reduced ? 0 : performance.now()/1000;
+  for (const [id, flag, activeColor, activeGlow] of anchors) {
+    const item = objects.find(o => o.id === id); if (!item) continue;
+    const [x, y] = p(item.x, item.y);
+    const route = [[item.x,item.y],[control.x,item.y],[control.x,control.y]];
+    frequencyLine(route,'#090f13',8); frequencyLine(route,'#52615a',4);
+    frequencyLine(route,flags[flag] ? activeColor : '#a67949',1.5);
+    ctx.strokeStyle=flags[flag]?activeColor:'#ca9a55';ctx.globalAlpha=.75;ctx.lineWidth=1.4;
+    ctx.beginPath();ctx.ellipse(x,y+3,24,11,0,0,Math.PI*2);ctx.stroke();
+    ctx.beginPath();ctx.ellipse(x,y+3,19,8,0,0,Math.PI*2);ctx.stroke();ctx.globalAlpha=1;
+    const glow=ctx.createRadialGradient(x,y,1,x,y,32);glow.addColorStop(0,flags[flag]?activeGlow:'rgba(247,169,74,.13)');glow.addColorStop(1,'rgba(0,0,0,0)');ctx.fillStyle=glow;ctx.beginPath();ctx.ellipse(x,y,32,14,0,0,Math.PI*2);ctx.fill();
+    if (flags[flag]) { const q=(t*.25)%1; const [px,py]=p(item.x+(control.x-item.x)*q,item.y);ctx.fillStyle='#bcfff0';ctx.beginPath();ctx.arc(px,py,2,0,Math.PI*2);ctx.fill(); }
   }
-  if (stable) {
-    ctx.globalAlpha = .32; ctx.strokeStyle = '#ed7773'; ctx.lineWidth = 1;
-    for (let i = 0; i < 4; i++) { const dy = ((t * 9 + i * 28) % 112) - 120; ctx.beginPath(); ctx.moveTo(-30, dy); ctx.lineTo(30, dy); ctx.stroke(); }
+  const gate = objects.find(o => o.id === 'anel_limiar_666');
+  if (gate) {
+    const [gx,gy]=p(gate.x,gate.y);
+    frequencyLine([[control.x,control.y],[gate.x,gate.y]],'#090f13',8);
+    frequencyLine([[control.x,control.y],[gate.x,gate.y]],flags.freq666_limiar_estavel?'#65e5cf':'#a07850',2);
+    ctx.strokeStyle=flags.freq666_limiar_estavel?'#70e7d4':'#b5905a';ctx.globalAlpha=.45;ctx.lineWidth=1.5;
+    ctx.beginPath();ctx.ellipse(gx,gy+5,80,28,0,0,Math.PI*2);ctx.stroke();ctx.globalAlpha=1;
+  }
+  // Marcas de orientação diferenciadas por forma e cor, sem depender da cor.
+  ctx.font='bold 7px monospace'; ctx.textAlign='center';ctx.fillStyle='rgba(205,223,199,.75)';
+  for (const [x,y,label] of [[3.5,4.15,'I  ORIGEM'],[11.5,4.2,'II  RETORNO'],[11.5,8.2,'III  MEMÓRIA']]) { const [px,py]=p(x,y);ctx.fillText(label,px,py); }
+  ctx.restore();
+}
+
+function drawFrequencyThreshold(object, curState) {
+  const image = getSprite(object.sprite);
+  const config = getObjectSpriteConfig(object.sprite);
+  if (!image || !drawCroppedObject(object,image,config)) return;
+  const frame = getFrame(image,0,0,1,1)?.crop;
+  if (!frame) return;
+  const w=object.larguraPx, h=w*frame.h/frame.w;
+  const x=(object.x-object.y)*HW, y=(object.x+object.y)*HH;
+  const stable=!!curState.progress?.flags?.freq666_limiar_estavel;
+  const reduced=typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+  const t=reduced ? 0 : performance.now()/1000;
+  // Vórtice limitado à abertura da própria arte; o aro nunca é apagado.
+  ctx.save();ctx.translate(x-w*.02,y-h*.585);ctx.rotate(-.25);
+  ctx.beginPath();ctx.ellipse(0,0,w*.205,h*.225,0,0,Math.PI*2);ctx.clip();
+  if (!stable) { ctx.fillStyle='rgba(4,11,14,.84)';ctx.fillRect(-w,-h,w*2,h*2); }
+  else {
+    const light=ctx.createRadialGradient(0,0,1,0,0,w*.2);
+    light.addColorStop(0,'rgba(239,92,86,.35)');light.addColorStop(.45,'rgba(72,231,204,.12)');light.addColorStop(1,'rgba(6,25,26,0)');
+    ctx.fillStyle=light;ctx.fillRect(-w,-h,w*2,h*2);
+    ctx.strokeStyle='rgba(150,255,235,.28)';ctx.lineWidth=1;
+    for(let i=0;i<3;i++){ const r=9+i*6;ctx.beginPath();ctx.ellipse(0,0,r,r*1.38,t*.22+i,0,Math.PI*1.2);ctx.stroke(); }
   }
   ctx.restore();
 }
@@ -4463,6 +4540,7 @@ function drawWallProcedural(x, y, front) {
 // =====================================================================
 
 function getObjectSpriteConfig(spriteId) {
+  if (typeof spriteId === 'string' && spriteId.startsWith('freq666_')) return { SHEET_COLS: 1, SHEET_ROWS: 1, DEFAULT_SCALE: 1, FEET_ANCHOR_Y: 1 };
   if (typeof spriteId === 'string' && (spriteId.startsWith('bio_sala_') || spriteId.startsWith('dom_sala_') || spriteId.startsWith('mare_sala_') || spriteId.startsWith('nucleo_sala_') || spriteId.startsWith('viaduto_'))) return { SHEET_COLS: 1, SHEET_ROWS: 1, DEFAULT_SCALE: 1, FEET_ANCHOR_Y: 1 };
   if (['sala_bio_maquina', 'sala_bio_grade', 'sala_dominio_lacre', 'sala_mare_fluxo', 'sala_nucleo_malha', 'aero_painel_partidas', 'aero_carrinho_bagagem', 'aero_totem_holo', 'aero_planta_aliena'].includes(spriteId)) return { SHEET_COLS: 1, SHEET_ROWS: 1, DEFAULT_SCALE: 1, FEET_ANCHOR_Y: 1 };
   if (['bio_terminal', 'bio_reator', 'bio_ponte', 'bio_estufa', 'bio_floreira', 'bio_tubos', 'bio_caixa', 'bio_luminaria', 'bio_plataforma', 'bio_margem_canto', 'bio_margem_cano', 'bio_margem_ruina', 'bio_margem_mureta', 'bio_condutor_quebrado', 'bio_condutor_ativo', 'bio_regulador_quebrado', 'bio_regulador_ativo', 'bio_mato_cano', 'bio_mato_ventilacao', 'bio_mato_barris', 'bio_mato_fissura', 'bio_cabeceira', 'bio_distribuidor', 'bio_margem_baixa', 'bio_fundacao'].includes(spriteId)) return { SHEET_COLS: 1, SHEET_ROWS: 1, DEFAULT_SCALE: 1, FEET_ANCHOR_Y: 1 };

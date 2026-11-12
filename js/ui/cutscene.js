@@ -10,16 +10,16 @@ export const BOOT_SCENES = [
 ];
 
 export const SIGNAL_SCENES = [
-  { kind: 'boot', eyebrow: 'TERMINAL DE MANUTENÇÃO // ENSEADA', title: '66.6 MHz', text: 'A estática deixa de ser ruído. Uma segunda transmissão responde antes da sua.' },
+  { kind: 'boot', image: 'assets/cutscenes/sinal-receptor.png', eyebrow: 'TERMINAL DE MANUTENÇÃO // ENSEADA', title: '66.6 MHz', text: 'A estática deixa de ser ruído. Uma segunda transmissão responde antes da sua.' },
   { image: 'assets/cutscenes/frequencia-ruptura.png', eyebrow: 'VISÃO ATRAVÉS DO SINAL', title: 'CIDADELA DO CÓDIGO QUEIMADO', text: 'Por um instante, a tela mostra um corredor que não pertence à praia.', note: 'A imagem se desfaz antes que uma passagem se forme.' },
-  { kind: 'error', eyebrow: 'NEXO-04 // CANAL DE EMERGÊNCIA', title: 'FREQUÊNCIA 66.6 MHz', text: '“Não atravesse ainda. Registrei o sinal; a rota para a origem permanece instável.”', note: 'Uma porta de manutenção na enseada conduz à estação que recebia o sinal.' },
+  { kind: 'error', image: 'assets/cutscenes/sinal-nexo.png', eyebrow: 'NEXO-04 // CANAL DE EMERGÊNCIA', title: 'FREQUÊNCIA 66.6 MHz', text: '“Não atravesse ainda. Registrei o sinal; a rota para a origem permanece instável.”', note: 'Uma porta de manutenção na enseada conduz à estação que recebia o sinal.' },
 ];
 
 // A última imagem é um limiar, não um mapa jogável nem uma viagem simulada.
 export const THRESHOLD_SCENES = [
   { image: 'assets/cutscenes/limiar-666.png', eyebrow: 'ESTAÇÃO 66.6 // JANELA ESTÁVEL', title: 'DO OUTRO LADO', text: 'A água na plataforma treme. No anel, um corredor de metal substitui o reflexo da enseada.', note: 'A âncora de retorno continua acesa atrás de você.' },
   { image: 'assets/cutscenes/frequencia-ruptura.png', eyebrow: 'NEXO-04 // CANAL ABERTO', title: 'A RESPOSTA', text: '“A pessoa que pediu ajuda não necessariamente está do outro lado. Mas alguém manteve esta linha viva. Descubra por quê.”', note: 'Três pulsos. Uma resposta antes da pergunta.' },
-  { kind: 'error', eyebrow: 'PASSAGEM // 66.6 MHz', title: 'TRAVESSIA PREPARADA', text: 'Você dá o primeiro passo através do anel. A imagem se fecha sobre o corredor; a linha de retorno permanece ancorada.', note: 'Fim do trecho disponível. A próxima etapa começa quando a Cidadela estiver pronta.' },
+  { kind: 'error', image: 'assets/cutscenes/frequencia-ruptura.png', eyebrow: 'PASSAGEM // 66.6 MHz', title: 'TRAVESSIA PREPARADA', text: 'Você dá o primeiro passo através do anel. A imagem se fecha sobre o corredor; a linha de retorno permanece ancorada.', note: 'Fim do trecho disponível. A próxima etapa começa quando a Cidadela estiver pronta.' },
 ];
 
 let open = false;

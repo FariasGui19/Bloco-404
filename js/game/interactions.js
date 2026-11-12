@@ -290,7 +290,12 @@ function interactWithObject(object) {
     return;
   }
   if (object.id === 'console_limiar_666') {
-    openDialogue({ speaker: 'CONSOLE CENTRAL', dialogue: ['TRÊS ÂNCORAS PROTEGEM A JANELA: ORIGEM, RETORNO E MEMÓRIA.', 'EXAMINE-AS COM [E] E USE [R] AQUI PARA SINCRONIZAR O LIMIAR.'] }); return;
+    const n = countFrequencyAnchors(state.progress);
+    const ready = state.progress.flags?.freq666_limiar_estavel;
+    openDialogue({ speaker: 'CONSOLE CENTRAL', dialogue: [
+      `ÂNCORAS SINCRONIZADAS: ${n}/3. ORIGEM, RETORNO E MEMÓRIA.`,
+      ready ? 'JANELA ESTÁVEL. O ANEL AGUARDA VOCÊ.' : n === 3 ? 'AS TRÊS ÂNCORAS RESPONDERAM. USE [R] PARA ESTABILIZAR O LIMIAR.' : 'EXAMINE AS ÂNCORAS COM [E], DEPOIS USE [R] AQUI PARA SINCRONIZAR O LIMIAR.',
+    ] }); return;
   }
   if (object.id === 'anel_limiar_666') {
     if (!state.progress.flags?.freq666_limiar_estavel) {

@@ -168,6 +168,51 @@ export function updateCamera(dt, targetWx, targetWy, nado = null, map = null, ca
     }
   }
 
+  if (!sideViewActive && map?.meta?.estiloSala === 'nucleo_10x') {
+    const flags = cameraCtx?.flags ?? {};
+    const malhaAberta = !!flags.gate_malha_cinetica_sala;
+    const observatorio = !!flags.observatorio_vetores_nucleo && targetWy <= 3.6 && targetWx <= 10.4;
+
+    if (observatorio) {
+      // Lente panorâmica dos anéis: revela o Eixo de Adaptação e a pista.
+      focusWx += (6.4 - targetWx) * 0.48;
+      focusWy += (3.4 - targetWy) * 0.42;
+      dominioZoomFactor *= 0.86;
+    } else if (!malhaAberta && targetWx >= 5.2 && targetWx <= 10.3 && targetWy >= 3.8 && targetWy <= 8.2) {
+      // Corredor de aceleração antecipa a Malha Cinética antes do Pulso Veloz.
+      const pesoPista = Math.min(1, Math.max(0, (targetWx - 5.2) / 3.0));
+      focusWx += 0.82 * pesoPista;
+      focusWy += (6.0 - targetWy) * 0.28 * pesoPista;
+      dominioZoomFactor *= 0.97;
+    } else if (malhaAberta && targetWx >= 10.0 && targetWx < 14.2) {
+      // Relicário de Vetor + contrapeso: abre o quadro da câmara conquistada.
+      focusWx += (12.6 - targetWx) * 0.24;
+      focusWy += (6.0 - targetWy) * 0.22;
+      dominioZoomFactor *= 0.95;
+    } else if (malhaAberta && targetWx >= 14.2) {
+      // Eclusa de manutenção: antecipa o Viaduto dos Vetores a leste.
+      const pesoEclusa = Math.min(1, Math.max(0, (targetWx - 14.2) / 2.0));
+      focusWx += 0.70 * pesoEclusa;
+      dominioZoomFactor *= 1 - 0.06 * pesoEclusa;
+    }
+
+    // Eco Scan [R]: lente tática de leitura; Forma Veloz [Q]: pulso de avanço.
+    if ((cameraCtx?.ability?.reveal?.timeLeft ?? 0) > 0) dominioZoomFactor *= 1.10;
+    if (cameraCtx?.ability?.dash && cameraCtx?.ability?.active === 'forma_veloz') dominioZoomFactor *= 1.05;
+    // Quebra Sistemas: o quadro pesa junto com o corpo.
+    if (cameraCtx?.form === 'forma_bruta') dominioZoomFactor *= 0.97;
+    const massFlash = cameraCtx?.ability?.massFlash;
+    if (massFlash && massFlash.timeLeft > 0 && massFlash.duration > 0) {
+      const p = massFlash.timeLeft / massFlash.duration;
+      dominioZoomFactor *= 1 + 0.07 * Math.sin(p * Math.PI);
+    }
+    const tideFlash = cameraCtx?.ability?.tideFlash;
+    if (tideFlash && tideFlash.timeLeft > 0 && tideFlash.duration > 0) {
+      const p = tideFlash.timeLeft / tideFlash.duration;
+      dominioZoomFactor *= 1 + 0.05 * Math.sin(p * Math.PI);
+    }
+  }
+
   if (camera.follow) {
     if (sideViewActive) {
       // Side-view: câmera acompanha o eixo horizontal X com precisão

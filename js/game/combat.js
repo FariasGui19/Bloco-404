@@ -178,21 +178,34 @@ export function tryAbilityDamage({ player, progress, targets, abilityId, rng = M
 // A procura é curta e à frente do corpo, como o alcance da marreta; abrir
 // grava a flag do save, então a demolição é permanente.
 function breakWeightGates(player, dx, dy) {
-  const alcance = 1.9;
+  let broke = false;
   for (const object of state.objects ?? []) {
     if (!object?.gate || isGateOpen(object) || !checkGate(object.gate)) continue;
     if (object.gate.breaksWith !== 'peso') continue;
+    if (object.gate.requiredLevel && getArchetypeLevel(state.progress) < object.gate.requiredLevel) continue;
     if (!Number.isFinite(object.x) || !Number.isFinite(object.y)) continue;
     const ox = object.x - player.x, oy = object.y - player.y;
     const distancia = Math.hypot(ox, oy);
+    const alcance = object.gate.strikeRadius ?? 1.9;
     if (distancia > alcance || distancia < .001) continue;
     if ((ox * dx + oy * dy) / distancia < .35) continue;
     openGate(object);
-    saveGame();
+    recordQuestEvent(state.progress, { type: 'breach_gate', target: object.id });
+    if (object.gate.bonusXp > 0 && state.progress.archetype) grantArchetypeXp(state.progress, object.gate.bonusXp);
+    if (object.gate.routeFlag) {
+      state.progress.flags ??= {};
+      state.progress.flags[object.gate.routeFlag] = true;
+    }
     player.ability ??= {};
-    player.ability.lastMessage = 'ESTRUTURA DEMOLIDA • PESO CEDEU';
+    player.ability.massFlash = { x: object.x, y: object.y, timeLeft: 0.7, duration: 0.7 };
+    player.ultimate ??= {};
+    player.ultimate.shake = { timeLeft: 0.42, duration: 0.42, power: 10.5, source: 'contrapeso' };
+    player.ability.lastMessage = object.gate.breakMessage ?? 'ESTRUTURA DEMOLIDA • PESO CEDEU';
     player.ability.messageTimer = 2.2;
+    broke = true;
   }
+  if (broke) saveGame();
+  return broke;
 }
 
 // =====================================================================
@@ -238,6 +251,9 @@ export function executeBrutaSmash({ player, progress, targets, rng = Math.random
   player.ability ??= {};
   player.ability.lastMessage = total > 0 ? `PANCADA DE PESO • ${total} DE DANO` : 'PANCADA DE PESO • CHÃO RACHADO';
   player.ability.messageTimer = 1.4;
+  // A marreta da Quebra também demolia travas de peso no fim do windup do Q,
+  // não só no ataque básico. O helper grava gate/missão/XP e o flash de massa.
+  breakWeightGates(player, fx[0] / comprimento, fx[1] / comprimento);
   return { total, hits, center: centro, knockback: perfil.knockback };
 }
 

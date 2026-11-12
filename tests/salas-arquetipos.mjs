@@ -469,4 +469,219 @@ for (const room of rooms) {
   console.log('sala_mare: missão calibragem_de_corrente, câmera multi-perspectiva, aquário vivo e rota livre Enseada OK');
 }
 
+// ---------------------------------------------------------------------
+// Verificação dedicada da Base dos Vetores & Viaduto (Núcleo 10X)
+// ---------------------------------------------------------------------
+{
+  const { existsSync, readFileSync } = await import('node:fs');
+  const { getQuestState } = await import('../js/game/quests.js');
+  const { advanceDialogue } = await import('../js/ui/dialogue.js');
+  const { camera, updateCamera, snapCameraTo } = await import('../js/engine/camera.js');
+  const { toggleNucleoForm } = await import('../js/game/nucleo-form.js');
+  const { getInteractionPrompt, findNearestInteraction } = await import('../js/game/interactions.js');
+
+  const nucleoSprites = [
+    'piso-grafite.png', 'piso-cinetico.png', 'parede-canto.png', 'parede-modular.png',
+    'porta-doca.png', 'eixo-adaptacao.png', 'malha-cinetica.png', 'pilar-cinetico.png',
+    'terminal-registro.png', 'bigorna-contrapeso.png', 'contrapeso-liberado.png',
+    'regulador-inercia.png', 'relicario-vetor.png', 'arco-viaduto.png', 'viaduto-panorama.png',
+  ];
+  const mainJs = readFileSync(new URL('../js/main.js', import.meta.url), 'utf8');
+  for (const file of nucleoSprites) {
+    assert(existsSync(new URL(`../assets/sprites/sala-nucleo/${file}`, import.meta.url)), `sprite sala-nucleo presente: ${file}`);
+    assert(mainJs.includes(`assets/sprites/sala-nucleo/${file}`), `${file} registrado em js/main.js`);
+  }
+  assert(mainJs.includes('assets/sprites/backgrounds/camara-nucleo-visao.jpg'), 'arte canônica visao_nucleo registrada');
+
+  state.progress = {
+    archetype: 'nucleo_dez_forma',
+    abilities: getArchetypeAbilities('nucleo_dez_forma'),
+    flags: {},
+    inventory: [],
+    questLog: {},
+    archetypeProgress: { nucleo_dez_forma: { level: 1, xp: 0 } },
+  };
+
+  await loadMap('sala_nucleo', 'vindo_do_aeroporto');
+  const nucleoMap = state.world.currentMap;
+  assert.equal(nucleoMap.meta?.estiloSala, 'nucleo_10x', 'sala_nucleo usa estiloSala nucleo_10x');
+  assert.equal(nucleoMap.layout.length, 12, 'Base dos Vetores tem 12 linhas');
+  assert.equal(nucleoMap.layout[0].length, 18, 'Base dos Vetores tem 18 colunas');
+  assert.equal(nucleoMap.walkMask.length, 12, 'walkMask acompanha o layout');
+
+  let qState = getQuestState(state.progress, 'sincronia_dos_vetores');
+  assert(qState && qState.status === 'active', 'sincronia_dos_vetores inicia automaticamente em sala_nucleo');
+
+  // Etapa 1: Eco Scan [R] lê a Malha Cinética + lente tática de câmera
+  Object.assign(state.player, {
+    x: 8.7, y: 5.5, facing: 'right', energy: 100, maxEnergy: 100,
+    ability: { cooldowns: {}, dash: null, scanning: 0 },
+  });
+  camera.targetZoom = 1.3;
+  camera.zoom = 1.3;
+  snapCameraTo(state.player.x, state.player.y, nucleoMap);
+  const camCorredorX = camera.x;
+
+  press('r');
+  closeDialogue();
+  qState = getQuestState(state.progress, 'sincronia_dos_vetores');
+  assert.equal(qState.objectives[0].done, true, 'objetivo 1 (ler janela cinética com R) concluído');
+  for (let i = 0; i < 25; i++) {
+    updateCamera(0.05, state.player.x, state.player.y, null, nucleoMap, {
+      ability: state.player.ability,
+      flags: state.progress.flags,
+      form: state.player.nucleoForm,
+    });
+  }
+  assert(camera.x > camCorredorX + 5, 'câmera antecipa a Malha Cinética no corredor de aceleração');
+  assert(camera.zoom > camera.targetZoom * 1.03, 'Eco Scan aplica lente tática de câmera');
+
+  // Etapa 2: Pulso Veloz [Q] atravessa a Malha Cinética no vão duplo
+  state.player.ability.cooldowns = {};
+  press('q');
+  for (let i = 0; i < 30 && state.player.ability?.dash; i++) updateAbilities(0.03);
+  qState = getQuestState(state.progress, 'sincronia_dos_vetores');
+  assert.equal(qState.objectives[1].done, true, 'objetivo 2 (atravessar Malha Cinética com Q) concluído');
+  assert(state.player.x > 10.85, 'Pulso Veloz cruza a divisória x=10');
+
+  // Etapa 3: coletar Fragmento de Eco no Relicário de Vetor
+  const fragNucleo = state.collectibles.find(c => c.id === 'fragmento_eco_nucleo');
+  Object.assign(state.player, { x: fragNucleo.x, y: fragNucleo.y });
+  assert(collectItem(fragNucleo), 'fragmento_eco_nucleo coletado');
+  closeDialogue();
+  qState = getQuestState(state.progress, 'sincronia_dos_vetores');
+  assert.equal(qState.objectives[2].done, true, 'objetivo 3 (coletar fragmento Núcleo) concluído');
+
+  // Etapa 4: sincronizar o fragmento no Eixo de Adaptação
+  const eixo = state.objects.find(o => o.id === 'nucleo_adaptacao');
+  Object.assign(state.player, { x: eixo.x, y: eixo.y + 1.7, health: 45, maxHealth: 100, energy: 30, maxEnergy: 100 });
+  await checkInteractions(true);
+  advanceDialogue();
+  elements.dialogueChoices.children[0].click();
+  closeDialogue();
+  assert.equal(state.progress.flags.base_vetores_sincronizada, true, 'base_vetores_sincronizada gravada');
+  assert.equal(state.progress.flags.missao_nucleo_concluida, true, 'recompensa da Sincronia dos Vetores concedida');
+  assert(state.progress.inventory.includes('selo_vetor_nucleo'), 'selo_vetor_nucleo entregue no inventário');
+  assert.equal(state.player.health, 100, 'sincronização restaura integridade do operador');
+  assert.equal(state.player.energy, 100, 'sincronização restaura energia do operador');
+
+  // Regulador de Inércia opcional (+25 XP)
+  const regulador = state.objects.find(o => o.id === 'regulador_inercia_nucleo');
+  Object.assign(state.player, { x: regulador.x, y: regulador.y - 1.2 });
+  await checkInteractions(true);
+  closeDialogue();
+  assert.equal(state.progress.flags.regulador_inercia_nucleo_calibrado, true, 'regulador de inércia calibrado');
+
+  // Mirante dos Anéis: alterna lente panorâmica de câmera
+  const mirante = state.objects.find(o => o.id === 'mirante_vetores_nucleo');
+  Object.assign(state.player, { x: mirante.x, y: mirante.y + 1.2 });
+  await checkInteractions(true);
+  closeDialogue();
+  assert.equal(state.progress.flags.observatorio_vetores_nucleo, true, 'Lente Panorâmica dos Anéis ativada');
+  camera.zoom = 1.3;
+  for (let i = 0; i < 30; i++) {
+    updateCamera(0.05, 4.5, 2.2, null, nucleoMap, { ability: {}, flags: state.progress.flags, form: null });
+  }
+  assert(camera.zoom < camera.targetZoom * 0.90, 'Mirante abre o zoom panorâmico sobre o Eixo de Adaptação');
+
+  // Contrapeso do Viaduto: exige nível 4 + Quebra Sistemas + leitura [R] + impacto [Q]
+  const contrapeso = state.objects.find(o => o.id === 'contrapeso_viaduto');
+  assert.equal(contrapeso.bloqueia, true, 'contrapeso inicia bloqueando');
+  assert(!state.progress.flags.rota_viaduto_vetores_aberta, 'rota do viaduto inicia fechada');
+  Object.assign(state.player, {
+    x: contrapeso.x, y: contrapeso.y - 1.5, facing: 'down', energy: 100, maxEnergy: 100,
+    nucleoForm: null, nucleoRuntime: { remaining: 0, recharge: 0 },
+    ability: { cooldowns: {}, dash: null, scanning: 0, cast: null, effect: null },
+  });
+  press('r');
+  closeDialogue();
+  assert.equal(state.progress.flags.scan_contrapeso_nucleo, true, 'Eco Scan lê o ponto de carga do contrapeso');
+  assert(!toggleNucleoForm(state.progress, state.player, 'forma_bruta'), 'Quebra Sistemas não transforma abaixo do nível 4');
+  press('q');
+  for (let i = 0; i < 30 && state.player.ability?.dash; i++) updateAbilities(0.03);
+  assert(!isGateOpen(contrapeso), 'Pulso Veloz não parte contrapeso de peso');
+
+  // Sobe ao nível 4 e assume a Quebra Sistemas para demolir com Q
+  state.progress.archetypeProgress.nucleo_dez_forma.level = 4;
+  Object.assign(state.player, {
+    x: contrapeso.x, y: contrapeso.y - 1.5, facing: 'down', energy: 100, maxEnergy: 100,
+    nucleoForm: null, nucleoRuntime: { remaining: 0, recharge: 0 },
+    ability: { cooldowns: {}, dash: null, scanning: 0, cast: null, effect: null },
+  });
+  assert(toggleNucleoForm(state.progress, state.player, 'forma_bruta'), 'Quebra Sistemas transforma no nível 4');
+  state.player.ability.effect = null;
+  press('q');
+  for (let i = 0; i < 40 && state.player.ability?.cast; i++) updateAbilities(0.03);
+  assert(isGateOpen(contrapeso), 'Pancada de Peso [Q] parte o contrapeso após leitura');
+  assert.equal(contrapeso.sprite, 'nucleo_sala_contrapeso_liberado', 'contrapeso troca para sprite liberado');
+  assert.equal(contrapeso.bloqueia, false, 'contrapeso partido deixa a câmara livre');
+  assert.equal(state.progress.flags.rota_viaduto_vetores_aberta, true, 'rota_viaduto_vetores_aberta ativada');
+  assert(state.player.ability?.massFlash?.timeLeft > 0, 'demolição dispara flash de massa');
+
+  // Travessia física: sala_nucleo -> viaduto_dos_vetores -> ilha_estacao_bio
+  const portalIda = state.portals.find(p => p.id === 'entrada_viaduto_vetores');
+  assert(portalIda && portalIda.destino?.mapId === 'viaduto_dos_vetores', 'eclusa leste aponta para o Viaduto dos Vetores');
+  await loadMap(portalIda.destino.mapId, portalIda.destino.spawnId);
+  assert.equal(state.world.currentMap.id, 'viaduto_dos_vetores', 'chegou ao Viaduto dos Vetores');
+  assert.equal(state.world.currentMap.meta?.sideView, true, 'Viaduto usa perspectiva side-view');
+  assert(canStandAt(state.world.currentMap, state.player.x, state.player.y, 0.25, state.player), 'spawn do viaduto caminhável');
+  assert.equal(state.progress.flags.visitou_viaduto_vetores, true, 'visita ao viaduto registrada');
+
+  const terminal = state.objects.find(o => o.id === 'terminal_carga_viaduto');
+  Object.assign(state.player, { x: terminal.x, y: terminal.y + 1.2, nucleoForm: null });
+  await checkInteractions(true);
+  closeDialogue();
+  assert.equal(state.progress.flags.terminal_carga_viaduto_registrado, true, 'terminal de carga registra passagem');
+
+  const registro = state.collectibles.find(c => c.id === 'registro_vetor_externo');
+  Object.assign(state.player, { x: registro.x, y: registro.y });
+  assert(collectItem(registro), 'registro_vetor_externo coletável no viaduto');
+  closeDialogue();
+  assert(state.progress.inventory.includes('registro_vetor_externo'), 'registro_vetor_externo no inventário');
+  assert.equal(state.progress.flags.collected_registro_vetor_externo, true, 'flag de coletado gravada');
+
+  const portalEstacao = state.portals.find(p => p.id === 'chegada_estacao_bio_viaduto');
+  assert(portalEstacao && portalEstacao.destino?.mapId === 'ilha_estacao_bio', 'viaduto aponta para a Estação que Respira');
+  await loadMap(portalEstacao.destino.mapId, portalEstacao.destino.spawnId);
+  assert.equal(state.world.currentMap.id, 'ilha_estacao_bio', 'chegou à Estação que Respira pelo viaduto');
+  assert(canStandAt(state.world.currentMap, state.player.x, state.player.y, 0.25, state.player), 'spawn vindo_do_viaduto caminhável na Estação');
+  const portalVoltaEstacao = state.portals.find(p => p.id === 'retorno_viaduto_vetores');
+  assert(portalVoltaEstacao && portalVoltaEstacao.destino?.mapId === 'viaduto_dos_vetores', 'Estação tem portal recíproco de volta ao viaduto');
+  assert.equal(portalVoltaEstacao.requiresFlag, 'rota_viaduto_vetores_aberta', 'retorno da Estação exige a rota liberada');
+
+  await loadMap('viaduto_dos_vetores', 'vindo_da_estacao');
+  const portalVoltaBase = state.portals.find(p => p.id === 'retorno_base_vetores');
+  assert(portalVoltaBase && portalVoltaBase.destino?.mapId === 'sala_nucleo', 'viaduto tem portal de retorno à Base dos Vetores');
+  await loadMap(portalVoltaBase.destino.mapId, portalVoltaBase.destino.spawnId);
+  assert.equal(state.world.currentMap.id, 'sala_nucleo', 'retornou à Base dos Vetores pelo viaduto');
+  assert(canStandAt(state.world.currentMap, state.player.x, state.player.y, 0.25, state.player), 'spawn vindo_do_viaduto caminhável na Base');
+
+  // Persistência entre visitas: gates abertos, missão concluída, sem recompensa duplicada
+  const selosAntes = state.progress.inventory.filter(id => id === 'selo_vetor_nucleo').length;
+  await loadMap('sala_nucleo', 'vindo_do_aeroporto');
+  const malhaReload = state.objects.find(o => o.id === 'malha_cinetica_sala');
+  const contrapesoReload = state.objects.find(o => o.id === 'contrapeso_viaduto');
+  assert(isGateOpen(malhaReload), 'Malha Cinética continua aberta ao recarregar');
+  assert(isGateOpen(contrapesoReload), 'Contrapeso continua partido ao recarregar');
+  assert.equal(contrapesoReload.sprite, 'nucleo_sala_contrapeso_liberado', 'sprite liberado persiste');
+  qState = getQuestState(state.progress, 'sincronia_dos_vetores');
+  assert.equal(qState.status, 'completed', 'missão permanece concluída');
+  assert.equal(state.progress.inventory.filter(id => id === 'selo_vetor_nucleo').length, selosAntes, 'selo não duplica ao recarregar');
+
+  // Prompt contextual do contrapeso antes do nível 4
+  state.progress.archetypeProgress.nucleo_dez_forma.level = 1;
+  state.progress.flags.scan_contrapeso_nucleo = true;
+  state.progress.flags.base_vetores_sincronizada = true;
+  const contrapesoPrompt = state.objects.find(o => o.id === 'contrapeso_viaduto');
+  contrapesoPrompt.aberto = false;
+  contrapesoPrompt.bloqueia = true;
+  delete state.progress.flags.gate_contrapeso_viaduto;
+  Object.assign(state.player, { x: contrapesoPrompt.x, y: contrapesoPrompt.y - 1.5, nucleoForm: null });
+  const nearest = findNearestInteraction();
+  assert(nearest && nearest.data.id === 'contrapeso_viaduto', 'contrapeso é a interação mais próxima');
+  assert(getInteractionPrompt(nearest).includes('NÍVEL 4'), 'prompt do contrapeso exige Quebra Sistemas nível 4');
+
+  console.log('sala_nucleo: missão sincronia_dos_vetores, câmera multi-perspectiva, Quebra Sistemas nível 4 e rota física Viaduto -> Estação OK');
+}
+
 console.log('Salas de Missão: spawn, protocolo, persistência e fragmentos OK.');

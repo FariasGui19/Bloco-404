@@ -35,6 +35,11 @@ export const WORLD_REGISTRY = {
     dimensao: 'hub_404',
     load: () => import('./worlds/hub-404/salas-arquetipos.js').then(m => ({ map: m.salaNucleo })),
   },
+  viaduto_dos_vetores: {
+    nome: 'Viaduto dos Vetores — Núcleo 10X',
+    dimensao: 'hub_404',
+    load: () => import('./worlds/hub-404/viaduto-vetores.js'),
+  },
   hub_camara_dominio: { load: () => import('./worlds/hub-404/camara-dominio.js') },
   hub_camara_mare: { load: () => import('./worlds/hub-404/camara-mare.js') },
   hub_camara_nucleo: { load: () => import('./worlds/hub-404/camara-nucleo.js') },

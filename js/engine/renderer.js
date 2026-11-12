@@ -24,6 +24,7 @@ import { getFrame } from './sprite-clean.js';
 import { drawAmbientBack, drawAmbientFront } from './ambient.js';
 import { tintaDoClima, atualizarParticulas, climaVisivelNoMapa } from '../game/clima.js';
 import { renderSideViewMap } from './side-view.js';
+import { renderViadutoVetores } from './viaduto-view.js';
 import { animarFauna } from '../game/fauna-animacao.js';
 import { isDebugEnabled, drawDebugWorld } from '../game/debug.js';
 import { ACTION_SPRITES } from '../data/action-sprites.js';
@@ -104,7 +105,8 @@ export function render(map, state) {
 
   // SIDE-VIEW: Aeroporto Central usa perspectiva frontal/lateral profunda
   if (map.meta?.sideView) {
-    renderSideViewMap(
+    const renderSide = map.meta?.estiloSala === 'viaduto_vetores' ? renderViadutoVetores : renderSideViewMap;
+    renderSide(
       ctx, map, state,
       camera.x, camera.y,
       view.w, view.h,
@@ -208,6 +210,7 @@ export function render(map, state) {
     if (map.meta?.estiloSala === 'bio_forja') drawBioForjaUnderlay(map, state);
     if (map.meta?.estiloSala === 'dominio_anciao') drawDominioUnderlay(map, state);
     if (map.meta?.estiloSala === 'mare_astral') drawMareAstralUnderlay(map, state);
+    if (map.meta?.estiloSala === 'nucleo_10x') drawNucleo10xUnderlay(map, state);
     drawFloors(map, state);
     drawHazards(state.hazards);
     if (map.id === 'hub_saguao') drawHubFloorMarkings();
@@ -216,6 +219,7 @@ export function render(map, state) {
     if (map.meta?.estiloSala === 'bio_forja') drawBioForjaFloorOverlay(map, state);
     if (map.meta?.estiloSala === 'dominio_anciao') drawDominioFloorOverlay(map, state);
     if (map.meta?.estiloSala === 'mare_astral') drawMareAstralFloorOverlay(map, state);
+    if (map.meta?.estiloSala === 'nucleo_10x') drawNucleo10xFloorOverlay(map, state);
     if (map.id === 'ilha_estacao_bio') {
       drawStationPaving(map);
       drawStationCanalRims(map);
@@ -1117,6 +1121,11 @@ function drawFloorTile(type, x, y, map) {
   // Dársena Abissal — Maré Astral: ardósia úmida com veios ciano e grelhas hidráulicas submersas.
   if (map.meta?.estiloSala === 'mare_astral') {
     if (drawMareAstralFloorTile(x, y, tx, ty)) return;
+  }
+
+  // Base dos Vetores — Núcleo 10X: grafite usinado e trilhos de indução.
+  if (map.meta?.estiloSala === 'nucleo_10x') {
+    if (drawNucleo10xFloorTile(x, y, tx, ty)) return;
   }
 
   // Placa específica (map.pisos) ou mapa inteiro em placas
@@ -2616,6 +2625,7 @@ function drawWorld(map, state) {
   if (map.meta?.estiloSala === 'bio_forja') drawBioForjaOuterWallShell(map);
   if (map.meta?.estiloSala === 'dominio_anciao') drawDominioOuterWallShell(map);
   if (map.meta?.estiloSala === 'mare_astral') drawMareAstralOuterWallShell(map);
+  if (map.meta?.estiloSala === 'nucleo_10x') drawNucleo10xOuterWallShell(map);
   // Camada de fundo (trilho, trem, painéis murais): atrás de tudo, só acima do chão.
   for (const o of backList) if ((o.ordem ?? 0) >= 0) drawMapObject(o, state);
   if (map.meta?.estiloSala === 'mare_astral') drawMareAstralWindowLife(map, state);
@@ -2645,6 +2655,7 @@ function drawWorld(map, state) {
   if (map.meta?.estiloSala === 'bio_forja') drawBioForjaHudCallouts(map, state);
   if (map.meta?.estiloSala === 'dominio_anciao') drawDominioHudCallouts(map, state);
   if (map.meta?.estiloSala === 'mare_astral') drawMareAstralHudCallouts(map, state);
+  if (map.meta?.estiloSala === 'nucleo_10x') drawNucleo10xHudCallouts(map, state);
   drawCombatFeedback();
   drawPlayerHurt();
 }
@@ -2949,6 +2960,11 @@ function drawWallTile(x, y, map) {
 
   if (map.meta?.estiloSala === 'mare_astral') {
     drawMareAstralWallTile(x, y, front, map);
+    return;
+  }
+
+  if (map.meta?.estiloSala === 'nucleo_10x') {
+    drawNucleo10xWallTile(x, y, front);
     return;
   }
 
@@ -3725,6 +3741,227 @@ function drawMareAstralWallTile(x, y, front, map) {
   ctx.restore();
 }
 
+// =====================================================================
+// BASE DOS VETORES — NÚCLEO 10X (grafite usinado, indução verde-neon)
+// =====================================================================
+function drawNucleo10xFloorTile(x, y, tx, ty) {
+  const pista = (y === 5 || y === 6) && x >= 2 && x <= 16;
+  const spriteId = pista ? 'nucleo_sala_piso_cinetico' : 'nucleo_sala_piso_grafite';
+  const img = getSprite(spriteId);
+  const f = img && getFrame(img, 0, 0, 1, 1)?.crop;
+  if (!f) {
+    quad(tx, ty, tx + HW, ty + HH, tx, ty + TH, tx - HW, ty + HH, pista ? '#18261e' : '#172019', '#0a120d', 1);
+    return true;
+  }
+  const w = CONFIG.TILE_W * 1.03;
+  const h = w * (f.h / f.w);
+  ctx.save();
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = 'high';
+  const flip = !pista && ((x * 7 + y * 13) & 1) === 1;
+  ctx.translate(tx, ty - 0.8);
+  if (flip) ctx.scale(-1, 1);
+  ctx.drawImage(f.canvas, 0, 0, f.w, f.h, -w / 2, 0, w, h);
+  ctx.restore();
+  return true;
+}
+
+function drawNucleo10xUnderlay(map, curState) {
+  const cols = map.layout[0].length - 1;
+  const rows = map.layout.length - 1;
+  const p = (x, y) => [(x - y) * HW, (x + y) * HH];
+  const flags = curState?.progress?.flags ?? {};
+  const sincronizada = !!flags.base_vetores_sincronizada;
+  const rota = !!flags.rota_viaduto_vetores_aberta;
+  ctx.save();
+  const [cx, cy] = p((cols + 1) * 0.5, (rows + 1) * 0.5);
+  const halo = ctx.createRadialGradient(cx, cy + 20, 30, cx, cy + 20, 720);
+  halo.addColorStop(0, sincronizada ? 'rgba(116,255,138,0.26)' : 'rgba(64,180,96,0.18)');
+  halo.addColorStop(0.55, 'rgba(10,32,18,0.58)');
+  halo.addColorStop(1, 'rgba(4,10,6,0)');
+  ctx.fillStyle = halo;
+  ctx.beginPath(); ctx.ellipse(cx, cy + 24, 760, 360, 0, 0, Math.PI * 2); ctx.fill();
+
+  const skirtH = 26;
+  const [wTopX, wTopY] = p(1, rows);
+  const [sMidX, sMidY] = p(cols, rows);
+  const [eTopX, eTopY] = p(cols, 1);
+  quad(wTopX, wTopY, sMidX, sMidY, sMidX, sMidY + skirtH, wTopX, wTopY + skirtH, '#101a14', '#060c08', 1.2);
+  quad(sMidX, sMidY, eTopX, eTopY, eTopX, eTopY + skirtH, sMidX, sMidY + skirtH, '#0c1510', '#050a06', 1.2);
+  ctx.strokeStyle = sincronizada ? '#8cff9e' : rota ? '#5fbf78' : '#315c40';
+  ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.moveTo(wTopX, wTopY + 6); ctx.lineTo(sMidX, sMidY + 6); ctx.lineTo(eTopX, eTopY + 6); ctx.stroke();
+  for (let x = 2; x < cols; x += 2) {
+    const [rx, ry] = p(x, rows);
+    ctx.fillStyle = sincronizada ? '#9dffb8' : '#3f7a52';
+    ctx.globalAlpha = 0.72;
+    ctx.beginPath(); ctx.ellipse(rx, ry + 14, 4.5, 3.0, 0, 0, Math.PI * 2); ctx.fill();
+  }
+  ctx.restore();
+}
+
+function drawNucleo10xFloorOverlay(map, curState) {
+  const p = (x, y) => [(x - y) * HW, (x + y) * HH];
+  const flags = curState?.progress?.flags ?? {};
+  const gateOpen = !!flags.gate_malha_cinetica_sala;
+  const sincronizada = !!flags.base_vetores_sincronizada;
+  const calibrado = !!flags.regulador_inercia_nucleo_calibrado;
+  const rota = !!flags.rota_viaduto_vetores_aberta;
+  const t = performance.now() / 1000;
+  const pulse = 0.5 + 0.5 * Math.sin(t * 3.1);
+  ctx.save();
+
+  // Trilho de indução da pista de aceleração (vão duplo y=5..6).
+  const [a0, a1] = p(2.0, 6.0);
+  const [b0, b1] = p(gateOpen ? 16.2 : 9.6, 6.0);
+  const boost = (sincronizada ? 0.16 : 0) + (calibrado ? 0.10 : 0);
+  ctx.strokeStyle = `rgba(140,255,158,${(0.22 + boost + 0.12 * pulse).toFixed(3)})`;
+  ctx.lineWidth = 6;
+  ctx.beginPath(); ctx.moveTo(a0, a1); ctx.lineTo(b0, b1); ctx.stroke();
+  for (let i = 0; i < 6; i++) {
+    const u = ((t * 0.28 + i / 6) % 1);
+    const wx = 2.2 + u * (gateOpen ? 13.8 : 7.2);
+    const [px, py] = p(wx, 5.95 + 0.16 * Math.sin(t * 3 + i));
+    ctx.fillStyle = `rgba(190,255,205,${(0.55 * (1 - Math.abs(u - 0.5) * 1.4)).toFixed(3)})`;
+    ctx.beginPath(); ctx.ellipse(px, py, 5, 2.3, -0.45, 0, Math.PI * 2); ctx.fill();
+  }
+
+  // Anéis adaptativos do Eixo de Adaptação no piso.
+  const [ex, ey] = p(6.0, 2.5);
+  for (let r = 0; r < 3; r++) {
+    const phase = ((t * (sincronizada ? 0.55 : 0.32) + r / 3) % 1);
+    const rad = 26 + phase * (sincronizada ? 62 : 44);
+    ctx.strokeStyle = `rgba(140,255,158,${(0.42 * (1 - phase)).toFixed(3)})`;
+    ctx.lineWidth = 2.2 - phase * 1.2;
+    ctx.beginPath(); ctx.ellipse(ex, ey + 6, rad, rad * 0.5, 0, 0, Math.PI * 2); ctx.stroke();
+  }
+
+  // Relicário de Vetor: halo contido até o fragmento ser recolhido.
+  if (!flags.collected_fragmento_eco_nucleo) {
+    const [rx, ry] = p(12.5, 6.0);
+    ctx.strokeStyle = `rgba(157,255,184,${(0.35 + 0.25 * pulse).toFixed(3)})`;
+    ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.ellipse(rx, ry + 4, 30, 15, 0, 0, Math.PI * 2); ctx.stroke();
+  }
+
+  // Contrapeso: faixas de carga âmbar; após partido, fratura verde.
+  const [cx, cy] = p(12.7, 8.9);
+  ctx.strokeStyle = rota ? 'rgba(140,255,158,0.55)' : `rgba(255,201,74,${(0.35 + 0.25 * pulse).toFixed(3)})`;
+  ctx.lineWidth = 3;
+  ctx.beginPath(); ctx.ellipse(cx, cy + 4, 34, 17, 0, 0, Math.PI * 2); ctx.stroke();
+  if (rota) {
+    ctx.strokeStyle = 'rgba(190,255,205,0.7)'; ctx.lineWidth = 1.6;
+    ctx.beginPath(); ctx.moveTo(cx - 18, cy - 6); ctx.lineTo(cx - 4, cy + 4); ctx.lineTo(cx + 10, cy - 8); ctx.stroke();
+  }
+
+  // Regulador calibrado: pequeno volante de carga no piso sul.
+  if (calibrado) {
+    const [gx, gy] = p(2.7, 9.0);
+    ctx.strokeStyle = 'rgba(255,201,74,0.5)'; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.ellipse(gx, gy + 4, 24, 12, 0, 0, Math.PI * 2); ctx.stroke();
+  }
+  ctx.restore();
+}
+
+function drawNucleo10xOuterWallShell(map) {
+  const cols = map.layout[0].length - 1;
+  const rows = map.layout.length - 1;
+  const p = (x, y) => [(x - y) * HW, (x + y) * HH];
+  const h = 14;
+  const thick = 0.40;
+  ctx.save();
+  const [i0x, i0y] = p(1, 1);
+  const [i1x, i1y] = p(1, rows);
+  const [o0x, o0y] = p(1 - thick, 1 - thick);
+  const [o1x, o1y] = p(1 - thick, rows);
+  quad(i1x, i1y, i0x, i0y, i0x, i0y - h, i1x, i1y - h, '#111a15', '#060c08', 1);
+  quad(o1x, o1y - h, o0x, o0y - h, i0x, i0y - h, i1x, i1y - h, '#1d2a22', '#315c40', 1.1);
+  const [j1x, j1y] = p(cols, 1);
+  const [q1x, q1y] = p(cols, 1 - thick);
+  quad(i0x, i0y, j1x, j1y, j1x, j1y - h, i0x, i0y - h, '#0e1712', '#060c08', 1);
+  quad(o0x, o0y - h, q1x, q1y - h, j1x, j1y - h, i0x, i0y - h, '#1a261f', '#315c40', 1.1);
+  ctx.restore();
+}
+
+function drawNucleo10xHudCallouts(map, curState) {
+  const p = (x, y) => [(x - y) * HW, (x + y) * HH];
+  const flags = curState?.progress?.flags ?? {};
+  const scanned = !!flags.scan_malha_sala;
+  const gateOpen = !!flags.gate_malha_cinetica_sala;
+  const sincronizada = !!flags.base_vetores_sincronizada;
+  const rota = !!flags.rota_viaduto_vetores_aberta;
+  const revealActive = (curState?.player?.ability?.reveal?.timeLeft ?? 0) > 0;
+  const t = performance.now() / 1000;
+  ctx.save();
+
+  const [dx, dy] = p(1.5, 5.5);
+  ctx.font = 'bold 9px monospace'; ctx.textAlign = 'center';
+  ctx.fillStyle = 'rgba(7,16,10,0.90)'; ctx.fillRect(dx - 29, dy - 92, 58, 14);
+  ctx.strokeStyle = sincronizada ? '#8cff9e' : '#3f7a52'; ctx.lineWidth = 1;
+  ctx.strokeRect(dx - 29, dy - 92, 58, 14);
+  ctx.fillStyle = sincronizada ? '#d8ffe4' : '#9dffb8'; ctx.fillText('DOCA D4', dx, dy - 82);
+
+  if ((revealActive || scanned) && !gateOpen) {
+    const [gx, gy] = p(10.5, 6.0);
+    const r = 13 + 3.0 * Math.sin(t * 5.6);
+    ctx.strokeStyle = '#8cff9e'; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.arc(gx, gy - 26, r, 0, Math.PI * 2); ctx.stroke();
+    ctx.fillStyle = 'rgba(6,18,10,0.90)'; ctx.fillRect(gx - 62, gy - 58, 124, 14);
+    ctx.strokeStyle = 'rgba(140,255,158,0.80)'; ctx.lineWidth = 1;
+    ctx.strokeRect(gx - 62, gy - 58, 124, 14);
+    ctx.fillStyle = '#c8ffd8'; ctx.font = 'bold 8px monospace'; ctx.textAlign = 'center';
+    ctx.fillText('JANELA CINÉTICA • [Q]', gx, gy - 48);
+  }
+
+  if (gateOpen) {
+    const [ax, ay] = p(16.5, 5.7);
+    const label = rota ? 'VIADUTO -> ESTAÇÃO QUE RESPIRA' : 'VIADUTO • CONTRAPESO SELADO';
+    const w = label.length * 5.2 + 14;
+    ctx.fillStyle = 'rgba(6,18,10,0.88)'; ctx.fillRect(ax - w / 2, ay - 86, w, 14);
+    ctx.strokeStyle = rota ? '#8cff9e' : '#6c8a76'; ctx.lineWidth = 1;
+    ctx.strokeRect(ax - w / 2, ay - 86, w, 14);
+    ctx.fillStyle = rota ? '#d8ffe4' : '#a8c8b4'; ctx.font = 'bold 8px monospace'; ctx.textAlign = 'center';
+    ctx.fillText(label, ax, ay - 76);
+  }
+
+  const massFlash = curState?.player?.ability?.massFlash;
+  if (massFlash && massFlash.timeLeft > 0 && massFlash.duration > 0) {
+    const k = massFlash.timeLeft / massFlash.duration;
+    const [fx, fy] = p(massFlash.x, massFlash.y);
+    const rad = (1 - k) * 82 + 18;
+    ctx.strokeStyle = `rgba(255,201,74,${(0.88 * k).toFixed(3)})`;
+    ctx.lineWidth = 3.4 * k + 0.8;
+    ctx.beginPath(); ctx.ellipse(fx, fy - 8, rad, rad * 0.5, 0, 0, Math.PI * 2); ctx.stroke();
+  }
+  const tideFlash = curState?.player?.ability?.tideFlash;
+  if (tideFlash && tideFlash.timeLeft > 0 && tideFlash.duration > 0) {
+    const k = tideFlash.timeLeft / tideFlash.duration;
+    const [fx, fy] = p(tideFlash.x, tideFlash.y);
+    const rad = (1 - k) * 76 + 16;
+    ctx.strokeStyle = `rgba(140,255,158,${(0.88 * k).toFixed(3)})`;
+    ctx.lineWidth = 3.2 * k + 0.8;
+    ctx.beginPath(); ctx.ellipse(fx, fy - 10, rad, rad * 0.5, 0, 0, Math.PI * 2); ctx.stroke();
+  }
+  ctx.restore();
+}
+
+function drawNucleo10xWallTile(x, y, front) {
+  if (front || x === 0 || y === 0) return;
+  if (x !== 10 && x !== 14) return;
+  const tx = (x - y) * HW, ty = (x + y) * HH;
+  const h = 22;
+  const flags = state?.progress?.flags ?? {};
+  const active = !!flags.gate_malha_cinetica_sala || !!flags.scan_malha_sala;
+  const stroke = active ? '#8cff9e' : '#315c40';
+  quad(tx - HW, ty + HH, tx, ty + TH, tx, ty + TH - h, tx - HW, ty + HH - h, '#121c16', '#060c08', 1);
+  quad(tx, ty + TH, tx + HW, ty + HH, tx + HW, ty + HH - h, tx, ty + TH - h, '#0e1712', '#050a06', 0.9);
+  quad(tx, ty - h, tx + HW, ty + HH - h, tx, ty + TH - h, tx - HW, ty + HH - h, '#1d2a22', stroke, 1);
+  ctx.save();
+  ctx.strokeStyle = stroke; ctx.lineWidth = 1.8;
+  ctx.beginPath(); ctx.moveTo(tx - HW * 0.5, ty + HH * 1.5 - 6); ctx.lineTo(tx - HW * 0.5, ty + HH * 1.5 - h + 6); ctx.stroke();
+  ctx.restore();
+}
+
 function drawDominioWallTile(x, y, front) {
   if (front) return;
   if (x === 0 || y === 0) return;
@@ -3861,7 +4098,7 @@ function drawWallProcedural(x, y, front) {
 // =====================================================================
 
 function getObjectSpriteConfig(spriteId) {
-  if (typeof spriteId === 'string' && (spriteId.startsWith('bio_sala_') || spriteId.startsWith('dom_sala_') || spriteId.startsWith('mare_sala_'))) return { SHEET_COLS: 1, SHEET_ROWS: 1, DEFAULT_SCALE: 1, FEET_ANCHOR_Y: 1 };
+  if (typeof spriteId === 'string' && (spriteId.startsWith('bio_sala_') || spriteId.startsWith('dom_sala_') || spriteId.startsWith('mare_sala_') || spriteId.startsWith('nucleo_sala_') || spriteId === 'nucleo_viaduto_panorama')) return { SHEET_COLS: 1, SHEET_ROWS: 1, DEFAULT_SCALE: 1, FEET_ANCHOR_Y: 1 };
   if (['sala_bio_maquina', 'sala_bio_grade', 'sala_dominio_lacre', 'sala_mare_fluxo', 'sala_nucleo_malha', 'aero_painel_partidas', 'aero_carrinho_bagagem', 'aero_totem_holo', 'aero_planta_aliena'].includes(spriteId)) return { SHEET_COLS: 1, SHEET_ROWS: 1, DEFAULT_SCALE: 1, FEET_ANCHOR_Y: 1 };
   if (['bio_terminal', 'bio_reator', 'bio_ponte', 'bio_estufa', 'bio_floreira', 'bio_tubos', 'bio_caixa', 'bio_luminaria', 'bio_plataforma', 'bio_margem_canto', 'bio_margem_cano', 'bio_margem_ruina', 'bio_margem_mureta', 'bio_condutor_quebrado', 'bio_condutor_ativo', 'bio_regulador_quebrado', 'bio_regulador_ativo', 'bio_mato_cano', 'bio_mato_ventilacao', 'bio_mato_barris', 'bio_mato_fissura', 'bio_cabeceira', 'bio_distribuidor', 'bio_margem_baixa', 'bio_fundacao'].includes(spriteId)) return { SHEET_COLS: 1, SHEET_ROWS: 1, DEFAULT_SCALE: 1, FEET_ANCHOR_Y: 1 };
   if (['hub_vaso_novo', 'hub_reciclagem', 'hub_carrinho', 'hub_bebedouro'].includes(spriteId)) return { SHEET_COLS: 1, SHEET_ROWS: 1, DEFAULT_SCALE: .25, FEET_ANCHOR_Y: 1 };

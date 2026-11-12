@@ -230,6 +230,22 @@ await loadSprites([
   { id: 'mare_sala_terminal_sonar', src: 'assets/sprites/sala-mare/terminal-sonar-mare.png' },
   { id: 'mare_sala_valvula_fechada', src: 'assets/sprites/sala-mare/valvula-pressao-mare.png' },
   { id: 'mare_sala_valvula_ativa', src: 'assets/sprites/sala-mare/valvula-ativa-mare.png' },
+  // Base dos Vetores & Viaduto — Núcleo 10X (tools/preparar-sala-nucleo.py)
+  { id: 'nucleo_sala_piso_grafite', src: 'assets/sprites/sala-nucleo/piso-grafite.png' },
+  { id: 'nucleo_sala_piso_cinetico', src: 'assets/sprites/sala-nucleo/piso-cinetico.png' },
+  { id: 'nucleo_sala_parede_canto', src: 'assets/sprites/sala-nucleo/parede-canto.png' },
+  { id: 'nucleo_sala_parede_modular', src: 'assets/sprites/sala-nucleo/parede-modular.png' },
+  { id: 'nucleo_sala_porta_doca', src: 'assets/sprites/sala-nucleo/porta-doca.png' },
+  { id: 'nucleo_sala_eixo_adaptacao', src: 'assets/sprites/sala-nucleo/eixo-adaptacao.png' },
+  { id: 'nucleo_sala_malha_cinetica', src: 'assets/sprites/sala-nucleo/malha-cinetica.png' },
+  { id: 'nucleo_sala_pilar_cinetico', src: 'assets/sprites/sala-nucleo/pilar-cinetico.png' },
+  { id: 'nucleo_sala_terminal_registro', src: 'assets/sprites/sala-nucleo/terminal-registro.png' },
+  { id: 'nucleo_sala_bigorna_contrapeso', src: 'assets/sprites/sala-nucleo/bigorna-contrapeso.png' },
+  { id: 'nucleo_sala_contrapeso_liberado', src: 'assets/sprites/sala-nucleo/contrapeso-liberado.png' },
+  { id: 'nucleo_sala_regulador_inercia', src: 'assets/sprites/sala-nucleo/regulador-inercia.png' },
+  { id: 'nucleo_sala_relicario_vetor', src: 'assets/sprites/sala-nucleo/relicario-vetor.png' },
+  { id: 'nucleo_sala_arco_viaduto', src: 'assets/sprites/sala-nucleo/arco-viaduto.png' },
+  { id: 'nucleo_viaduto_panorama', src: 'assets/sprites/sala-nucleo/viaduto-panorama.png' },
   { id: 'pet_bolt', src: 'assets/sprites/companions/bolt.png' },
   { id: 'hub_nexo_lateral', src: 'assets/sprites/saguao/nexo-lateral-limpo.png' },
   { id: 'hub_viajante', src: 'assets/sprites/saguao/viajante-2026.png' },
@@ -790,6 +806,7 @@ async function update(dt) {
   updateCamera(dt, player.x, player.y, player.nado, mapaAtual, {
     ability: player.ability,
     flags: state.progress?.flags,
+    form: player.nucleoForm,
   });
 }
 

@@ -15,7 +15,7 @@ import { startNexoOnboarding } from './onboarding.js';
 import { getNearestCollectible, getCollectiblePrompt, collectItem } from './collectibles.js';
 import { checkGate, getGateFailureMessage, getGateSuccessMessage, isGateOpen, openGate } from './gates.js';
 import { recordQuestEvent } from './quests.js';
-import { grantArchetypeXp } from './rpg.js';
+import { grantArchetypeXp, getArchetypeLevel } from './rpg.js';
 import { lerArvore, DEGRAUS } from './nado-arvore.js';
 
 const DEFAULT_INTERACTION_DISTANCE = 1.35;
@@ -184,6 +184,25 @@ export function getInteractionPrompt(interaction) {
       return 'ABRIR COMPORTA DO CONDUTO OCEÂNICO';
     }
     return 'COMPORTA DO AQUÁRIO • REQUISITOS DE MARÉ';
+  }
+
+  if (kind === 'object' && data.id === 'nucleo_adaptacao') {
+    if (state.progress.flags?.base_vetores_sincronizada) return 'EIXO DE ADAPTAÇÃO • SINCRONIZADO';
+    if (state.progress.flags?.collected_fragmento_eco_nucleo) return 'SINCRONIZAR FRAGMENTO NO EIXO';
+  }
+  if (kind === 'object' && data.id === 'mirante_vetores_nucleo') {
+    return state.progress.flags?.observatorio_vetores_nucleo ? 'RETOMAR FOCO TÁTICO DA BASE' : 'LENTE PANORÂMICA DOS ANÉIS';
+  }
+  if (kind === 'object' && data.id === 'regulador_inercia_nucleo' && state.progress.flags?.regulador_inercia_nucleo_calibrado) {
+    return 'REGULADOR DE INÉRCIA • CALIBRADO';
+  }
+  if (kind === 'object' && data.id === 'terminal_carga_viaduto' && state.progress.flags?.terminal_carga_viaduto_registrado) {
+    return 'PASSAGEM PELO VIADUTO • REGISTRADA';
+  }
+  if (kind === 'object' && data.id === 'contrapeso_viaduto' && data.gate && checkGate(data.gate)) {
+    const nivel = getArchetypeLevel(state.progress);
+    if (nivel < (data.gate.requiredLevel ?? 4)) return data.gate.promptFalha ?? 'CONTRAPESO EXIGE QUEBRA SISTEMAS • NÍVEL 4';
+    return state.player.nucleoForm === 'forma_bruta' ? 'PARTIR CONTRAPESO • Q' : 'ASSUMIR QUEBRA SISTEMAS [T] • Q: PESO';
   }
 
   return data.interacao?.label ?? data.label ?? 'INTERAGIR';
@@ -538,6 +557,105 @@ function interactWithObject(object) {
     return;
   }
 
+  if (object.id === 'nucleo_adaptacao') {
+    const flags = state.progress.flags ??= {};
+    const restaurar = () => {
+      state.player.health = state.player.maxHealth ?? state.player.health;
+      state.player.energy = state.player.maxEnergy ?? state.player.energy;
+    };
+    if (flags.base_vetores_sincronizada) {
+      restaurar();
+      openDialogue({
+        speaker: 'EIXO DE ADAPTAÇÃO',
+        dialogue: [
+          'BASE DOS VETORES EM RESSONÂNCIA ESTÁVEL. RESERVAS DO OPERADOR RESTAURADAS.',
+          flags.rota_viaduto_vetores_aberta
+            ? 'VIADUTO LIBERADO: A ECLUSA LESTE CONDUZ À ESTAÇÃO QUE RESPIRA. A PERSPECTIVA MUDA NA TRAVESSIA; SUA FORMA CONTINUA SENDO A FERRAMENTA.'
+            : 'PROTOCOLO AVANÇADO: NO NÍVEL 4, ASSUMA A QUEBRA SISTEMAS [T], LEIA O CONTRAPESO AO SUL COM [R] E PARTA-O COM [Q] PARA ABRIR O VIADUTO DOS VETORES.',
+        ],
+      });
+      return;
+    }
+    if (flags.collected_fragmento_eco_nucleo) {
+      openDialogue({
+        speaker: 'EIXO DE ADAPTAÇÃO',
+        dialogue: ['O FRAGMENTO ENTRA NO CAMPO DOS ANÉIS. SINCRONIZAR A ASSINATURA VAI ESTABILIZAR A BASE E RESTAURAR SUAS RESERVAS. CONFIRMAR?'],
+        choices: [
+          {
+            text: 'SINCRONIZAR FRAGMENTO NO EIXO DE ADAPTAÇÃO',
+            onSelect: () => {
+              flags.base_vetores_sincronizada = true;
+              restaurar();
+              state.player.ability ??= { cooldowns: {} };
+              state.player.ability.tideFlash = { x: object.x, y: object.y, timeLeft: 0.85, duration: 0.85 };
+              recordQuestEvent(state.progress, { type: 'sync_vectors', target: 'nucleo_adaptacao' });
+              saveGame();
+              openDialogue({
+                speaker: 'EIXO DE ADAPTAÇÃO',
+                dialogue: [
+                  'SINCRONIA DOS VETORES CONCLUÍDA — OS ANÉIS GRAVARAM SUA ASSINATURA ADAPTATIVA.',
+                  'SELO DE VETOR ADAPTATIVO REGISTRADO NO CÓDEX [J].',
+                  'A BASE ESTÁ VIVA. O CONTRAPESO AO SUL AINDA GUARDA A LIGAÇÃO EXTERNA: QUEBRA SISTEMAS (NÍVEL 4) + LEITURA [R] + IMPACTO [Q].',
+                ],
+              });
+            },
+          },
+          {
+            text: 'MANTER EM AGUARDO',
+            onSelect: () => openDialogue({ speaker: 'EIXO DE ADAPTAÇÃO', dialogue: ['OS ANÉIS SEGUEM GIRANDO EM COMPASSO CALMO. A SINCRONIA PODE SER FEITA A QUALQUER MOMENTO.'] }),
+          },
+        ],
+        cancelable: true,
+      });
+      return;
+    }
+  }
+
+  if (object.id === 'mirante_vetores_nucleo') {
+    const flags = state.progress.flags ??= {};
+    flags.observatorio_vetores_nucleo = !flags.observatorio_vetores_nucleo;
+    saveGame();
+    openDialogue({
+      speaker: 'MIRANTE DOS ANÉIS',
+      dialogue: flags.observatorio_vetores_nucleo
+        ? ['LENTE PANORÂMICA ATIVADA — A CÂMERA ABRE O QUADRO SOBRE O EIXO DE ADAPTAÇÃO E A MALHA CINÉTICA.', 'Caminhe para o sul ou interaja novamente para retomar o enquadramento tático.']
+        : ['ENQUADRAMENTO TÁTICO RESTAURADO NA BASE DOS VETORES.'],
+    });
+    return;
+  }
+
+  if (object.id === 'regulador_inercia_nucleo') {
+    const flags = state.progress.flags ??= {};
+    if (flags.regulador_inercia_nucleo_calibrado) {
+      openDialogue({ speaker: 'REGULADOR DE INÉRCIA', dialogue: ['VOLANTE EM RESSONÂNCIA — A MALHA CINÉTICA RECEBE CARGA CONTÍNUA SEM OSCILAÇÃO.'] });
+      return;
+    }
+    flags.regulador_inercia_nucleo_calibrado = true;
+    if (state.progress.archetype) grantArchetypeXp(state.progress, 25);
+    saveGame();
+    openDialogue({
+      speaker: 'REGULADOR DE INÉRCIA',
+      dialogue: ['VOLANTE DE LATÃO GIRADO — O PONTEIRO VERDE ESTABILIZA E A MALHA PASSA A RESPIRAR EM CARGA CONTÍNUA.', 'EXPERIÊNCIA DE CAMPO REGISTRADA (+25 XP).'],
+    });
+    return;
+  }
+
+  if (object.id === 'terminal_carga_viaduto') {
+    const flags = state.progress.flags ??= {};
+    if (flags.terminal_carga_viaduto_registrado) {
+      openDialogue({ speaker: 'TERMINAL DE CARGA', dialogue: ['PASSAGEM REGISTRADA. O VIADUTO SEGUE ÍNTEGRO ENTRE A BASE DOS VETORES E A ESTAÇÃO QUE RESPIRA.'] });
+      return;
+    }
+    flags.terminal_carga_viaduto_registrado = true;
+    if (state.progress.archetype) grantArchetypeXp(state.progress, 25);
+    saveGame();
+    openDialogue({
+      speaker: 'TERMINAL DE CARGA',
+      dialogue: ['PRIMEIRA TRAVESSIA EXTERNA CONFIRMADA. O CONTRAPESO LIBEROU UMA ROTA FÍSICA DE MANUTENÇÃO, NÃO UM ATALHO DIMENSIONAL.', 'EXPERIÊNCIA DE CAMPO REGISTRADA (+25 XP).'],
+    });
+    return;
+  }
+
   if (object.gate) {
     if (!checkGate(object.gate)) {
       openDialogue({
@@ -547,10 +665,12 @@ function interactWithObject(object) {
       return;
     }
     if (object.gate.requiredAction) {
-      openDialogue({
-        speaker: object.nome ?? 'OBSTÁCULO',
-        dialogue: [object.gate.actionMessage ?? 'APONTE PARA O OBSTÁCULO E USE [Q] PARA ROMPÊ-LO.'],
-      });
+      const mensagens = [];
+      if (object.gate.breaksWith === 'peso' && getArchetypeLevel(state.progress) < (object.gate.requiredLevel ?? 4)) {
+        mensagens.push(object.gate.promptFalha ?? 'ESTRUTURA EXIGE MAIS MASSA DO QUE SEU NÍVEL ATUAL FORNECE.');
+      }
+      mensagens.push(object.gate.actionMessage ?? 'APONTE PARA O OBSTÁCULO E USE [Q] PARA ROMPÊ-LO.');
+      openDialogue({ speaker: object.nome ?? 'OBSTÁCULO', dialogue: mensagens });
       return;
     }
     openGate(object);

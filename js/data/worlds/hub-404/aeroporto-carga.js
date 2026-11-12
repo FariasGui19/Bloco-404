@@ -73,9 +73,6 @@ export const map = {
     { id: 'incubadora_carga_bio', tipo: 'decoracao', x: 2.2, y: 4.8,
       sprite: 'bio_sala_incubadora', useCrop: true, larguraPx: 42, pivotX: 0.5, pivotY: 0.94,
       sombra: [20, 8], bloqueia: false, brilho: { cor: '#35E6D3', raio: 0.7, forca: 0.2 } },
-    { id: 'banco_carga_bio', tipo: 'decoracao', x: 6.5, y: 2,
-      sprite: 'bio_sala_banco_reconstrucao', useCrop: true, larguraPx: 58, pivotX: 0.5, pivotY: 0.92,
-      sombra: [25, 10], bloqueia: false },
     { id: 'berco_fragmento_bio', tipo: 'decoracao', x: 11, y: 4,
       sprite: 'nucleo_sala_relicario_vetor', useCrop: true, larguraPx: 48, pivotX: 0.5, pivotY: 0.92,
       sombra: [22, 9], bloqueia: false, showWhenFlag: 'cargoSecurityDiagnosed',
@@ -230,10 +227,11 @@ export const map = {
 
       sprite: 'bio_sala_grade_contencao',
       useCrop: true,
-      larguraPx: 50,
+      larguraPx: 40,
       pivotX: 0.5,
-      pivotY: 0.78,
+      pivotY: 0.686,
       escalaY: 1.6,
+      skewY: 0.345,
       colunas: { count: 6, esq: 0.5, dir: -0.5 },
       sombra: [22, 9],
 

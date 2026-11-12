@@ -31,6 +31,20 @@ for (const [archetype, room] of [
   assert(Math.abs(box.x + box.width / 2 - gate.x) < 1e-9);
   assert(Math.abs(box.y + box.height / 2 - gate.y) < 1e-9);
   assert(box.height >= 1 && gate.larguraPx <= 54 && !gate.espelhar);
+  // Pés dos sprites medidos no recorte alfa (12% e 88% da largura):
+  // seus apoios devem seguir a inclinação do piso, não entrar nas paredes.
+  const feet = {
+    motor_bio_forja: [518, 373, 360, 152],
+    lamina_dominio_anciao: [540, 311, 310, 203],
+    mare_astral: [428, 323, 320, 156],
+    nucleo_dez_forma: [268, 264, 244, 143],
+  }[archetype];
+  const [w, h, left, right] = feet;
+  const footY = (y, x) => gate.escalaY * (y - h * gate.pivotY) * gate.larguraPx / w + gate.skewY * x;
+  const halfSpan = gate.larguraPx * .38;
+  assert(Math.abs(halfSpan - 16) < 1, 'postes encaixam no vão projetado');
+  assert(Math.abs(footY(left, -halfSpan) - halfSpan / 2) < 1, 'pé esquerdo segue o piso');
+  assert(Math.abs(footY(right, halfSpan) + halfSpan / 2) < 1, 'pé direito segue o piso');
   assert(!canStandAt(map, gate.x, gate.y, 0.25, state.player));
   assert(canStandAt(map, map.spawnPoints.inicio.x, map.spawnPoints.inicio.y, 0.25, state.player));
   const frag = state.collectibles.find(o => o.id === 'fragmento_sincronizacao');

@@ -79,7 +79,10 @@ export function buildEchoChamber(key) {
     objects: [{
       id: v.obstacle, nome: v.objeto, tipo: 'obstaculo', x: 5, y: 4,
       sprite: v.sprite, useCrop: true, pivotX: 0.5,
-      larguraPx: 50, pivotY: 0.78, escalaY: key === 'dominio' ? 1.7 : key === 'mare' ? 1.5 : 1.35,
+      // Pés no vão de um tile; compensar a inclinação após alongar a arte.
+      larguraPx: 40, pivotY: key === 'dominio' ? 0.825 : 0.735,
+      escalaY: key === 'dominio' ? 1.7 : key === 'mare' ? 1.5 : 1.35,
+      skewY: key === 'dominio' ? -0.056 : key === 'mare' ? 0.256 : 0.170,
       colunas: { count: 6, esq: 0.5, dir: -0.5 },
       sombra: [22, 9], bloqueia: true,
       hitbox: { offsetX: -0.18, offsetY: -0.5, width: 0.36, height: 1.0 },

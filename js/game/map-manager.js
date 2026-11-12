@@ -14,6 +14,7 @@ import { createHazards } from './hazards.js';
 import { rememberMapLocation } from './save.js';
 import { applyGateStates } from './gates.js';
 import { startQuest, recordQuestEvent } from './quests.js';
+import { reachFirstRoute } from './frequencia-quest.js';
 
 function findDefaultSpawn(layout) {
   const height = layout.length;
@@ -176,6 +177,7 @@ export async function loadMap(mapId, spawnId = 'inicio') {
       state.progress.flags ??= {};
       state.progress.flags.visitou_viaduto_vetores = true;
     }
+    reachFirstRoute(state.progress, mapData.id);
     // Salva a última localização somente se um perfil estiver ativo.
     rememberMapLocation(mapData.id, spawnId);
     return true;

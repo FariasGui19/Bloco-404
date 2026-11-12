@@ -92,3 +92,14 @@ limite". Tudo nesta página pode ser lapidado.
   de combustível, como já registra o roteiro.
 - Nada de multiplayer, universo infinito ou física orbital realista antes de
   validar desempenho e navegação do primeiro trecho.
+
+## 8. Atualização de direção — perspectivas universais e primeira missão
+
+Nenhum arquétipo é proprietário de uma câmera: a lente é da dimensão, fenda
+ou estado de sincronização. As principais referências atuais incluem
+isométrico, side-view profundo, 3D livre, low-poly analógico/PSX e Retro-FPS,
+sem limitar lentes futuras. A história da chegada, a Calibração de Eco e a
+missão canônica **Frequência 66.6 MHz** foram integradas ao plano em
+[`lore-primeira-missao-66-6.md`](lore-primeira-missao-66-6.md), com storyboard,
+continuidade, direção sonora e contrato para a dimensão futura. O documento
+separa explicitamente o prólogo jogável do FPS, chefe e pós-jogo planejados.

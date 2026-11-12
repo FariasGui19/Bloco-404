@@ -25,7 +25,7 @@ export const QUESTS = Object.freeze({
     title: 'CALIBRAÇÃO DE CAMPO',
     giver: 'NEXO-04',
     kind: 'secundária',
-    description: 'Disperte três ecos de treino para o Núcleo registrar sua assinatura de combate.',
+    description: 'Treino voluntário de NEXO-04: disperse três ecos simulados para registrar sua assinatura de combate. A linha do metrô não depende deste teste.',
     objectives: Object.freeze([
       Object.freeze({ type: 'defeat', target: 'training', count: 3, label: 'Ecos de treino dispersos' }),
     ]),
@@ -44,7 +44,7 @@ export const QUESTS = Object.freeze({
     title: 'MARÉ PROFUNDA',
     giver: 'MARÉ ASTRAL',
     kind: 'secundária',
-    description: 'A maré esconde o que a areia não mostra. Desça na enseada, alcance o fundo e volte com o que o mar guardou.',
+    description: 'A maré guarda vestígios que a areia não mostra. Enquanto a enseada responde ao sinal, desça, alcance o fundo e volte com o que o mar guardou.',
     objectives: Object.freeze([
       Object.freeze({ type: 'mergulho', count: 3, label: 'Mergulhos fundos na enseada' }),
       Object.freeze({ type: 'coleta_marinha', count: 4, label: 'Fragmentos de maré recolhidos' }),

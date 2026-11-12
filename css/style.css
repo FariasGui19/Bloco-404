@@ -4225,3 +4225,22 @@ body.in-menu #controls {
   letter-spacing: .16em;
   color: #5f8b86;
 }
+
+/* Quadros narrativos: leitura no ritmo do jogador, sem flashes obrigatórios. */
+.cutscene { position: fixed; inset: 0; z-index: 10000; overflow: hidden; background: #03090d; color: #e1f9f6; font-family: monospace; }
+.cutscene-art { position: absolute; inset: 0; background-position: center; background-size: cover; background-repeat: no-repeat; }
+.cutscene::after { content: ''; position: absolute; inset: 0; pointer-events: none; background: linear-gradient(90deg, rgba(2,9,13,.88), rgba(3,10,14,.3) 62%, rgba(3,10,14,.12)), linear-gradient(0deg, #03090d 0%, transparent 34%); }
+.cutscene-scanlines { position: absolute; inset: 0; z-index: 1; opacity: .22; pointer-events: none; background: repeating-linear-gradient(0deg, transparent 0 3px, #020808 4px 5px); }
+.cutscene-content { position: absolute; z-index: 2; left: clamp(24px, 7vw, 108px); bottom: clamp(120px, 20vh, 210px); max-width: min(580px, 82vw); text-shadow: 0 2px 8px #000; }
+.cutscene-eyebrow { color: #6ae8db; font-size: clamp(10px, 1.1vw, 14px); letter-spacing: .2em; line-height: 1.6; }
+.cutscene-title { font-size: clamp(25px, 4vw, 58px); line-height: 1.05; margin: 18px 0; letter-spacing: .06em; }
+.cutscene-text { font-size: clamp(15px, 1.5vw, 20px); line-height: 1.6; margin: 0; }
+.cutscene-note { color: #a9c5c4; font-size: 13px; line-height: 1.5; }
+.cutscene[data-kind="error"] .cutscene-title { color: #ff766d; }
+.cutscene[data-kind="boot"] .cutscene-title { color: #a5ffcf; }
+.cutscene[data-kind="boot"] .cutscene-art { background: radial-gradient(ellipse at center, #102b23, #03090d 72%); }
+.cutscene-controls { position: absolute; z-index: 3; bottom: 7%; left: clamp(24px, 7vw, 108px); right: clamp(24px, 7vw, 108px); display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.cutscene-count { color: #8da8a6; margin-right: auto; }
+.cutscene-controls button { font: bold 12px monospace; letter-spacing: .06em; color: #dffcf7; background: #10232a; border: 1px solid #438c86; padding: 12px 16px; cursor: pointer; }
+.cutscene-controls button:focus-visible, .cutscene-controls button:hover { outline: 2px solid #b4fff0; outline-offset: 3px; }
+@media (max-height: 500px) { .cutscene-content { bottom: 92px; } .cutscene-title { margin: 8px 0; } .cutscene-controls { bottom: 3%; } }

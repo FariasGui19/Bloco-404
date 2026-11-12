@@ -10,6 +10,8 @@ import { recordAirportDiagnosis, recordCargoDiagnosis, installMetroFragment } fr
 import { isGateOpen } from './gates.js';
 import { hasAbility, showAbilityMessage, ARCHETYPE_ABILITIES } from './abilities.js';
 import { recordQuestEvent } from './quests.js';
+import { recordFrequencySignal } from './frequencia-quest.js';
+import { playCutscene, SIGNAL_SCENES } from '../ui/cutscene.js';
 
 const DEFAULT_MODULE_DISTANCE = 1.65;
 
@@ -135,8 +137,8 @@ function diagnoseMetroSystem(target) {
       dialogue: [
         'LINHA INTERDIMENSIONAL OPERACIONAL.',
         'PLATAFORMA DE EMBARQUE DISPONÍVEL.',
-        'ROTA PRIMÁRIA DETECTADA: ARQUIPÉLAGO DAS ROTAS PERDIDAS.',
-        'AVISO: DESTINO AINDA ESTÁ EM CALIBRAÇÃO.',
+        'ROTA PRIMÁRIA: PRAIA INICIAL, ARQUIPÉLAGO DAS ROTAS PERDIDAS.',
+        'UMA TRANSMISSÃO IRREGULAR VEM DA ENSEADA DOS ECOS. INVESTIGUE COM [R].',
       ],
     });
     return;
@@ -148,8 +150,10 @@ function diagnoseMetroSystem(target) {
       'FRAGMENTO DE SINCRONIZAÇÃO DETECTADO.',
       'COMPATIBILIDADE DO MÓDULO: APROVADA.',
       'A INSTALAÇÃO DO FRAGMENTO REATIVARÁ A LINHA INTERDIMENSIONAL.',
+      'DESTINO MAIS ESTÁVEL: PRAIA INICIAL. UM SINAL ANALÓGICO VEM DA ENSEADA.',
       'ATENÇÃO: A ENERGIA RESTANTE PODE ATRAIR ECOS INSTÁVEIS.',
     ],
+    choicesAfterDialogue: true,
     choices: [
       {
         text: 'INSTALAR FRAGMENTO DE SINCRONIZAÇÃO',
@@ -167,7 +171,7 @@ function diagnoseMetroSystem(target) {
               // A MENSAGEM DO RIVAL ENTRA AQUI:
               'ALERTA: ASSINATURA ANTERIOR DETECTADA.',
               'ARQUIVO 0 VALIDOU ESTA LINHA HÁ 00:00:03.',
-              'RECOMENDAÇÃO: PROSSIGA COM CAUTELA.'
+              'ORIGEM DO SINAL COSTEIRO: ENSEADA DOS ECOS. INVESTIGUE O TERMINAL COM [R].'
             ],
           });
         },
@@ -258,6 +262,31 @@ function diagnoseCargoSecurityPanel() {
   });
 }
 
+function diagnoseFrequencyTerminal() {
+  if (!state.progress.flags?.metroCalibrado) {
+    showDiagnosis({ speaker: 'TERMINAL DA ENSEADA', dialogue: [
+      'UM RUÍDO PULSA NO CANAL DE MANUTENÇÃO. O RECEPTOR DO HUB AINDA NÃO TEM SINCRONIA.',
+      'RESTAURE A LINHA DO METRÔ ANTES DE TENTAR RASTREAR A ORIGEM.',
+    ] });
+    return;
+  }
+  if (!recordFrequencySignal(state.progress)) {
+    showDiagnosis({ speaker: 'TERMINAL DA ENSEADA', dialogue: [
+      '66.6 MHz // SINAL REGISTRADO.',
+      'A CIDADELA DO CÓDIGO QUEIMADO CONTINUA SEM ROTA ESTÁVEL. NEXO-04 MANTÉM A FREQUÊNCIA EM ESCUTA.',
+    ], choicesAfterDialogue: true, choices: [
+      { text: 'REVER REGISTRO', onSelect: () => { state.player.ability.scanning = 0; void playCutscene(SIGNAL_SCENES); } },
+      { text: 'ENCERRAR', onSelect: () => { state.player.ability.scanning = 0; } },
+    ] });
+    return;
+  }
+  saveGame();
+  showDiagnosis({ speaker: 'TERMINAL DA ENSEADA', dialogue: [
+    'CANAL ANALÓGICO DETECTADO: 66.6 MHz.',
+    'A RESPOSTA CHEGOU ANTES DA TRANSMISSÃO. SINCRONIZANDO IMAGEM...',
+  ], onFinish: () => { void playCutscene(SIGNAL_SCENES); } });
+}
+
 function diagnoseGeneric(target) {
   const system = target.item.moduleSystem;
   showDiagnosis({
@@ -285,7 +314,7 @@ function showDiagnosis(opts) {
 
 export function hasSharedQuestSystem() {
   const id = getNearestModuleSystem()?.item.moduleSystem?.id;
-  return id === 'airport_maintenance_terminal' || id === 'metro_navigation_core';
+  return id === 'airport_maintenance_terminal' || id === 'metro_navigation_core' || id === 'frequencia_666_terminal';
 }
 
 export function tryModuleInteraction() {
@@ -319,6 +348,7 @@ export function tryModuleInteraction() {
   const sharedId = target.item.moduleSystem?.id;
   if (sharedId === 'airport_maintenance_terminal') { diagnoseAirportTerminal(target); return true; }
   if (sharedId === 'metro_navigation_core') { diagnoseMetroSystem(target); return true; }
+  if (sharedId === 'frequencia_666_terminal') { diagnoseFrequencyTerminal(); return true; }
   if (archetype === 'motor_bio_forja') {
     const systemId = target.item.moduleSystem?.id;
     switch (systemId) {

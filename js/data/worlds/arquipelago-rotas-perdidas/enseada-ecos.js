@@ -46,6 +46,12 @@ export const map = {
     { id: 'enseada_capivara', species: 'capivara', x: 19.5, y: 8.5 },
   ],
   objects: [
+    { id: 'terminal_frequencia_666', nome: 'TERMINAL DE MANUTENÇÃO', tipo: 'painel', x: 14, y: 12,
+      sprite: 'bio_sala_pilar_sensor', useCrop: true, larguraPx: 38, pivotX: .5, pivotY: .94,
+      sombra: [16, 7], bloqueia: false, brilho: { cor: '#ff7e71', raio: .7, forca: .2 },
+      interacao: { label: 'EXAMINAR TERMINAL', distancia: 1.4, speaker: 'TERMINAL DA ENSEADA',
+        dialogue: ['O RECEPTOR ESTÁ RISCADO DE SAL. ENTRE A ESTÁTICA, UM PULSO REPETE UMA FREQUÊNCIA IMPOSSÍVEL.', 'USE [R] PARA DIAGNOSTICAR O SINAL.'] },
+      moduleSystem: { id: 'frequencia_666_terminal', label: 'RASTREAR SINAL ANALÓGICO', distance: 1.6, speaker: 'TERMINAL DA ENSEADA' } },
     // Cenário costeiro: bases em água não caminhável, sem criar obstáculos.
     { id: 'enseada_cascata', tipo: 'decoracao', x: 30, y: 17, sprite: 'costa_rochosa', frame: { col: 0, row: 0 }, useCrop: true, larguraPx: 145, pivotY: 1, bloqueia: false },
     { id: 'enseada_pedra_leste', tipo: 'decoracao', x: 25, y: 7, sprite: 'costa_rochosa', frame: { col: 1, row: 0 }, useCrop: true, larguraPx: 110, pivotY: 1, bloqueia: false },
@@ -75,8 +81,8 @@ export const map = {
     { id: 'lumeo_encontro', nome: 'SINAL DE LÚMEO', tipo: 'eco', x: 10, y: 15, requiresFlag: 'enseada_ecos_mapeada', label: 'OUVIR O ECO DISTANTE', speaker: 'ECO DISTANTE', dialogue: ['TRÊS SINAIS RESPONDEM ÀS SUAS DESCOBERTAS. UM PEQUENO ECO SE ESCONDE NA ENSEADA.', 'UMA VIBRAÇÃO INSTÁVEL VEM DAS RUÍNAS A LESTE. INVESTIGUE SEM ASSUSTÁ-LO.'] },
     { id: 'lumeo_ressonancia', nome: 'RESSONÂNCIA', tipo: 'eco', x: 18, y: 13, requiresFlag: 'collected_lumeo_encontro', label: 'ACALMAR A RESSONÂNCIA', speaker: 'RESSONÂNCIA', dialogue: ['O PULSO AGITADO DIMINUI QUANDO VOCÊ SE APROXIMA SEM AGREDIR.', 'UMA LUZ PEQUENA SEGUE EM DIREÇÃO À MATA. VÁ ATÉ ELA.'] },
     { id: 'lumeo_vinculo', nome: 'LÚMEO', tipo: 'eco', x: 20, y: 19, requiresFlag: 'collected_lumeo_ressonancia', label: 'OFERECER COMPANHIA A LÚMEO', speaker: 'LÚMEO', dialogue: ['VOCÊ ESPERA. O PEQUENO ECO SE APROXIMA POR VONTADE PRÓPRIA.', 'UMA LUZ ENTRELAÇA SEU CAMINHO AO DELE. LÚMEO ESCOLHE ACOMPANHAR VOCÊ.'] },
-    { id: 'enseada_rastro_mar', nome: 'RASTRO DA MARÉ', tipo: 'fragmento', x: 10, y: 14, label: 'INVESTIGAR RASTRO DA MARÉ', dialogue: ['UM ECO SE MOVE COM A MARÉ.', 'ALGUÉM MARCOU UMA ROTA ANTES DE VOCÊ.'] },
-    { id: 'enseada_rastro_pedra', nome: 'MARCA NO BASALTO', tipo: 'fragmento', x: 19, y: 12, label: 'EXAMINAR MARCA NA PEDRA', dialogue: ['UM SÍMBOLO DESCONHECIDO FOI GRAVADO NA PEDRA.', 'ELE APONTA PARA ALÉM DA ENSEADA.'] },
+    { id: 'enseada_rastro_mar', nome: 'RASTRO DA MARÉ', tipo: 'fragmento', x: 10, y: 14, label: 'INVESTIGAR RASTRO DA MARÉ', dialogue: ['UM ECO SE MOVE CONTRA A MARÉ. O PULSO COINCIDE COM O RUÍDO DO TERMINAL.', 'ALGUÉM MARCOU UMA ROTA ANTES DE VOCÊ.'] },
+    { id: 'enseada_rastro_pedra', nome: 'MARCA NO BASALTO', tipo: 'fragmento', x: 19, y: 12, label: 'EXAMINAR MARCA NA PEDRA', dialogue: ['UM SÍMBOLO FOI GRAVADO NO BASALTO: UM CÍRCULO INTERROMPIDO POR TRÊS RISCOS.', 'A PEDRA ESTÁ QUENTE, MAS NÃO HÁ FOGO POR PERTO.'] },
     { id: 'enseada_rastro_mata', nome: 'VESTÍGIO DA MATA', tipo: 'fragmento', x: 21, y: 20, label: 'EXAMINAR VESTÍGIO DA MATA', dialogue: ['FOLHAS E PEGADAS INDICAM UMA TRILHA PARA O INTERIOR.', 'O CAMINHO PARA O MANGUE AINDA PRECISA SER EXPLORADO.'] },
   ],
   portals: [{ id: 'rota_correntes', tipo: 'door', x: 25, y: 15, label: 'NAVEGAR: CAMINHO DAS CORRENTES', interactionDistance: 1.4, destino: { mapId: 'mar_caminho_das_correntes', spawnId: 'vindo_da_enseada' }, transition: 'fade' },

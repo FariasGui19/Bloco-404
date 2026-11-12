@@ -248,3 +248,14 @@ real. Ver `manifesto-multiverso.md` para a arquitetura e outros gêneros.
 - O prólogo não comprova que Arquivo 0 e Operador Nulo sejam a mesma pessoa.
 - Testar legibilidade das chaves sem cor, telegraphs do chefe, saída segura,
   reentrada no mundo estabilizado e desempenho antes de chamar a missão pronta.
+
+### Encaixe visual da estação
+
+O abrigo da Enseada é ancorado pela escadaria, junto ao portal existente; o
+receptor foi deslocado para ficar visível ao lado da construção ampliada. A
+saída interna fica na parede de `x=1`, com o ponto de interação no primeiro
+piso acessível. Não confundir a posição da arte com a do portal: objetos são
+centralizados pelo map-manager, portais são centralizados na interação.
+As luzes, sinal, vapor, partículas e vórtice são sobreposições cenográficas,
+sem novas interações ou itens; a animação respeita movimento reduzido. A
+estabilização ainda controla o efeito do limiar e não abre uma dimensão FPS.

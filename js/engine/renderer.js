@@ -216,7 +216,7 @@ export function render(map, state) {
     drawHazards(state.hazards);
     if (map.id === 'hub_saguao') drawHubFloorMarkings();
     if (map.id === 'ilha_praia_inicial') drawBeachStation(map);
-    if (map.id === 'ilha_enseada_ecos') drawFrequencyExteriorFloor(state);
+    if (map.id === 'ilha_enseada_ecos') { drawFrequencyExteriorFloor(state); drawObjectContactShadows(map); }
     if (map.id === 'bio_sala_controle') drawBioControlFloor();
     if (map.meta?.estiloSala === 'bio_forja') drawBioForjaFloorOverlay(map, state);
     if (map.meta?.estiloSala === 'dominio_anciao') drawDominioFloorOverlay(map, state);
@@ -3861,13 +3861,12 @@ function drawFrequencyExteriorFloor(curState) {
   frequencySlab(16.55, 9.35, 19.45, 12.05, '#767b6c', '#9b9c88');
   for (let x = 17; x < 19.5; x += .55) frequencyLine([[x, 9.4], [x, 12]], 'rgba(44,57,53,.35)', 1);
   // Passarela baixa de manutenção liga o receptor à soleira, sem ocupar a rota da praia.
-  frequencyLine([[14.5, 12.5], [16, 12.5], [16.9, 11.55], [18.5, 11.25]], 'rgba(51,53,44,.42)', 13);
-  frequencyLine([[14.5, 12.5], [16, 12.5], [16.9, 11.55], [18.5, 11.25]], '#a8a18a', 8);
-  frequencyLine([[14.5, 12.5], [16, 12.5], [16.9, 11.55], [18.5, 11.25]], 'rgba(50,71,64,.7)', 1);
-  const [rx, ry] = frequencyPoint(14.5, 12.5);
-  ctx.fillStyle = 'rgba(38,42,36,.25)'; ctx.beginPath(); ctx.ellipse(rx, ry + 4, 32, 11, 0, 0, Math.PI * 2); ctx.fill();
-  const [ex, ey] = frequencyPoint(18.5, 10.5);
-  ctx.fillStyle = 'rgba(28,41,35,.2)'; ctx.beginPath(); ctx.ellipse(ex - 18, ey + 5, 68, 22, 0, 0, Math.PI * 2); ctx.fill();
+  frequencyLine([[13.5, 13.5], [15, 13.5], [16.9, 11.55], [18.5, 11.25]], 'rgba(51,53,44,.42)', 13);
+  frequencyLine([[13.5, 13.5], [15, 13.5], [16.9, 11.55], [18.5, 11.25]], '#a8a18a', 8);
+  frequencyLine([[13.5, 13.5], [15, 13.5], [16.9, 11.55], [18.5, 11.25]], 'rgba(50,71,64,.7)', 1);
+  const [rx, ry] = frequencyPoint(13.5, 13.5);
+  // Contato sob o pedestal, não uma sombra separada à frente.
+  ctx.fillStyle = 'rgba(38,42,36,.35)'; ctx.beginPath(); ctx.ellipse(rx, ry - 5, 26, 10, 0, 0, Math.PI * 2); ctx.fill();
   // A iluminação da soleira confirma o sinal, sem substituir o aviso textual.
   ctx.fillStyle = curState.progress?.flags?.frequencia666Registrada ? '#75e8d2' : '#d4a76d';
   for (const [x,y] of [[18.15,11.45],[18.9,11.45]]) { const [px,py]=frequencyPoint(x,y); ctx.beginPath(); ctx.ellipse(px,py,3,1.5,0,0,Math.PI*2);ctx.fill(); }
@@ -3877,7 +3876,8 @@ function drawFrequencyExteriorFloor(curState) {
 function drawFrequencyStationWalls(map) {
   const cols = map.layout[0].length - 1, rows = map.layout.length - 1, h = 31;
   ctx.save();
-  function panel(x0,y0,x1,y1,back) {
+  function panel(x0,y0,x1,y1,back, height = h) {
+    const h = height;
     const [ax,ay]=frequencyPoint(x0,y0), [bx,by]=frequencyPoint(x1,y1);
     quad(ax,ay,bx,by,bx,by-h,ax,ay-h,back ? '#1d2a30' : '#101b21','#071015',1);
     ctx.strokeStyle = '#65746e'; ctx.globalAlpha = .55; ctx.lineWidth = 1;
@@ -3887,7 +3887,7 @@ function drawFrequencyStationWalls(map) {
     ctx.fillStyle='#9b885f';ctx.beginPath();ctx.arc((ax+bx)/2,(ay+by)/2-h+9,1.5,0,Math.PI*2);ctx.fill();
   }
   for (let x=1;x<cols;x++) { panel(x,1,x+1,1,true); panel(x,rows,x+1,rows,false); }
-  for (let y=1;y<rows;y++) { panel(1,y,1,y+1,true); panel(cols,y,cols,y+1,false); }
+  for (let y=1;y<rows;y++) { panel(1,y,1,y+1,true, y >= 7 && y <= 9 ? 102 : h); panel(cols,y,cols,y+1,false); }
   // Tubulação presa à parede de fundo e janelas de serviço: detalhes fixos,
   // desenhados no mesmo plano isométrico que os painéis da casca.
   for (const offset of [13, 17]) {
@@ -3914,7 +3914,7 @@ function drawFrequencyStationFloor(curState) {
   frequencySlab(5.7,1.25,9.4,4.35,'#172b2d','#5e7974');
   frequencySlab(5.95,1.5,9.15,4.05,'#26383a','#ad9b71');
   frequencySlab(6.2,1.75,8.9,3.8,'#17282c','#546b63');
-  frequencySlab(1.4,8.8,3.6,9.8,'rgba(26,45,45,.85)','#766d55');
+  frequencySlab(1,7.2,2.25,9.7,'rgba(26,45,45,.85)','#766d55');
   frequencySlab(2.0,5.3,4.4,7.35,'rgba(26,45,45,.85)','#766d55');
   frequencySlab(12.3,5.5,13.8,7.2,'rgba(26,45,45,.85)','#766d55');
   // Corredor central e faixa de segurança guiam até o limiar.
@@ -3935,8 +3935,8 @@ function drawFrequencyStationFloor(curState) {
     frequencyLine(route,'#090f13',8); frequencyLine(route,'#52615a',4);
     frequencyLine(route,flags[flag] ? activeColor : '#a67949',1.5);
     ctx.strokeStyle=flags[flag]?activeColor:'#ca9a55';ctx.globalAlpha=.75;ctx.lineWidth=1.4;
-    ctx.beginPath();ctx.ellipse(x,y+3,24,11,0,0,Math.PI*2);ctx.stroke();
-    ctx.beginPath();ctx.ellipse(x,y+3,19,8,0,0,Math.PI*2);ctx.stroke();ctx.globalAlpha=1;
+    ctx.beginPath();ctx.ellipse(x,y-5,24,11,0,0,Math.PI*2);ctx.stroke();
+    ctx.beginPath();ctx.ellipse(x,y-5,19,8,0,0,Math.PI*2);ctx.stroke();ctx.globalAlpha=1;
     const glow=ctx.createRadialGradient(x,y,1,x,y,32);glow.addColorStop(0,flags[flag]?activeGlow:'rgba(247,169,74,.13)');glow.addColorStop(1,'rgba(0,0,0,0)');ctx.fillStyle=glow;ctx.beginPath();ctx.ellipse(x,y,32,14,0,0,Math.PI*2);ctx.fill();
     if (flags[flag]) { const q=(t*.25)%1; const [px,py]=p(item.x+(control.x-item.x)*q,item.y);ctx.fillStyle='#bcfff0';ctx.beginPath();ctx.arc(px,py,2,0,Math.PI*2);ctx.fill(); }
   }
@@ -3946,11 +3946,45 @@ function drawFrequencyStationFloor(curState) {
     frequencyLine([[control.x,control.y],[gate.x,gate.y]],'#090f13',8);
     frequencyLine([[control.x,control.y],[gate.x,gate.y]],flags.freq666_limiar_estavel?'#65e5cf':'#a07850',2);
     ctx.strokeStyle=flags.freq666_limiar_estavel?'#70e7d4':'#b5905a';ctx.globalAlpha=.45;ctx.lineWidth=1.5;
-    ctx.beginPath();ctx.ellipse(gx,gy+5,80,28,0,0,Math.PI*2);ctx.stroke();ctx.globalAlpha=1;
+    ctx.beginPath();ctx.ellipse(gx,gy-7,70,20,0,0,Math.PI*2);ctx.stroke();ctx.globalAlpha=1;
   }
+  // Partículas discretas de luz, congeladas quando movimento reduzido é pedido.
+  const mote = getSprite('freq666_fx_poeira');
+  if (mote) { ctx.save(); ctx.globalCompositeOperation='screen'; ctx.globalAlpha=.28;
+    for (let i=0;i<6;i++) { const [mx,my]=p(3+(i*1.7)%9, 3+(i*2.3)%5);
+      ctx.drawImage(mote,mx-2,my-18-(reduced?0:(t*3+i*7)%18),4,4); } ctx.restore(); }
   // Marcas de orientação diferenciadas por forma e cor, sem depender da cor.
   ctx.font='bold 7px monospace'; ctx.textAlign='center';ctx.fillStyle='rgba(205,223,199,.75)';
   for (const [x,y,label] of [[3.5,4.15,'I  ORIGEM'],[11.5,4.2,'II  RETORNO'],[11.5,8.2,'III  MEMÓRIA']]) { const [px,py]=p(x,y);ctx.fillText(label,px,py); }
+  ctx.restore();
+}
+
+// Sobreposições discretas na arte existente: nenhum objeto ou interação extra.
+function drawFrequencyObjectLife(object, image) {
+  const ids = ['terminal_frequencia_666', 'registro_estacao_666', 'baliza_666_receptor',
+    'baliza_666_entrada', 'reator_estacao_666', 'console_limiar_666'];
+  if (!ids.includes(object.id)) return;
+  const frame = getFrame(image, 0, 0, 1, 1)?.crop;
+  if (!frame) return;
+  const w = object.larguraPx, h = w * frame.h / frame.w;
+  const x = (object.x - object.y) * HW + (object.ajusteX ?? 0) - w * (object.pivotX ?? .5);
+  const y = (object.x + object.y) * HH + (object.ajusteY ?? 0) - h * (object.pivotY ?? 1);
+  const reduced = typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+  const t = reduced ? 0 : performance.now() / 1000;
+  ctx.save(); ctx.globalCompositeOperation = 'screen';
+  if (object.id === 'terminal_frequencia_666' || object.id === 'registro_estacao_666') {
+    const fx = getSprite('freq666_fx_sinal');
+    if (fx) { ctx.globalAlpha = .25 + .12 * Math.sin(t * 2); ctx.drawImage(fx, x+w*.48, y+h*.40, w*.18, h*.035); }
+  } else if (object.id.startsWith('baliza_666_')) {
+    const fx = getSprite('freq666_fx_baliza');
+    if (fx) { ctx.globalAlpha = .24 + .08 * Math.sin(t * 1.7); ctx.drawImage(fx, x+w*.23, y+h*.20, w*.54, w*.54); }
+  } else if (object.id === 'reator_estacao_666') {
+    const fx = getSprite('freq666_fx_vapor');
+    if (fx) { ctx.globalAlpha = .12 + .05 * Math.sin(t); ctx.drawImage(fx, x+w*.38, y-h*.14 - (reduced ? 0 : (t*2)%5), w*.16, h*.20); }
+  } else {
+    const fx = getSprite('freq666_fx_centelha');
+    if (fx) { ctx.globalAlpha = .13 + .10 * Math.max(0, Math.sin(t * 2)); ctx.drawImage(fx, x+w*.49, y+h*.18, w*.12, w*.12); }
+  }
   ctx.restore();
 }
 
@@ -3970,6 +4004,11 @@ function drawFrequencyThreshold(object, curState) {
   ctx.beginPath();ctx.ellipse(0,0,w*.205,h*.225,0,0,Math.PI*2);ctx.clip();
   if (!stable) { ctx.fillStyle='rgba(4,11,14,.84)';ctx.fillRect(-w,-h,w*2,h*2); }
   else {
+    const vortex = getSprite('freq666_fx_vortice');
+    if (vortex) {
+      ctx.save(); ctx.globalAlpha = .18 + .05 * Math.sin(t * 1.2);
+      ctx.rotate(t * .07); ctx.drawImage(vortex, -w*.22, -h*.22, w*.44, h*.44); ctx.restore();
+    }
     const light=ctx.createRadialGradient(0,0,1,0,0,w*.2);
     light.addColorStop(0,'rgba(239,92,86,.35)');light.addColorStop(.45,'rgba(72,231,204,.12)');light.addColorStop(1,'rgba(6,25,26,0)');
     ctx.fillStyle=light;ctx.fillRect(-w,-h,w*2,h*2);
@@ -4832,6 +4871,7 @@ function drawMapObject(object, state) {
   const filtro = filtroObjeto(object);
 
   if (object.useCrop && drawCroppedObject(object, image, sheet)) {
+    drawFrequencyObjectLife(object, image);
     if (object.id === 'grade_impeto_vivo' && (!object.__coluna || object.__coluna.index === object.__coluna.count - 1)) {
       drawBioGateResonance(object, state);
     }

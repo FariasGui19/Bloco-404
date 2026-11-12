@@ -188,7 +188,7 @@ await loadSprites([
   { id: 'bio_margem_baixa', src: 'assets/sprites/estacao-bio/bio-margem-baixa.png' },
   { id: 'bio_fundacao', src: 'assets/sprites/estacao-bio/bio-fundacao.png' },
   // Estação 66.6: artes próprias, recortadas com transparência real.
-  { id: 'freq666_entrada', src: 'assets/sprites/frequencia-666/abrigo-costeiro.png' },
+  { id: 'freq666_entrada', src: 'assets/sprites/frequencia-666/abrigo-ampliado.png' },
   { id: 'freq666_receptor', src: 'assets/sprites/frequencia-666/receptor-costeiro.png' },
   { id: 'freq666_portal', src: 'assets/sprites/frequencia-666/limiar-industrial.png' },
   { id: 'freq666_console', src: 'assets/sprites/frequencia-666/mesa-controle.png' },
@@ -201,6 +201,12 @@ await loadSprites([
   { id: 'freq666_rack', src: 'assets/sprites/frequencia-666/rack-estacao.png' },
   { id: 'freq666_mesa', src: 'assets/sprites/frequencia-666/mesa-arquivo.png' },
   { id: 'freq666_reator', src: 'assets/sprites/frequencia-666/reator-estacao.png' },
+  { id: 'freq666_fx_vortice', src: 'assets/sprites/frequencia-666/fx-vortice.png' },
+  { id: 'freq666_fx_vapor', src: 'assets/sprites/frequencia-666/fx-vapor.png' },
+  { id: 'freq666_fx_centelha', src: 'assets/sprites/frequencia-666/fx-centelha.png' },
+  { id: 'freq666_fx_sinal', src: 'assets/sprites/frequencia-666/fx-sinal.png' },
+  { id: 'freq666_fx_baliza', src: 'assets/sprites/frequencia-666/fx-baliza.png' },
+  { id: 'freq666_fx_poeira', src: 'assets/sprites/frequencia-666/fx-poeira.png' },
   // Oficina Inicial — Motor Bio-Forja (tools/preparar-sala-bio.py)
   { id: 'bio_sala_piso_placa', src: 'assets/sprites/sala-bio/piso-placa.png' },
   { id: 'bio_sala_piso_grade', src: 'assets/sprites/sala-bio/piso-grade.png' },

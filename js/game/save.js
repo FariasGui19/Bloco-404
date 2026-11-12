@@ -84,7 +84,8 @@ export function createNewSave(slot, profileName = null) {
       facing: 'down',
     },
 
-    progress: createDefaultProgress(),
+    // Só saves novos recebem a abertura; saves antigos não são reiniciados.
+    progress: { ...createDefaultProgress(), flags: { prologoPendente: true } },
 
     world: {
       lastMapId: 'hub_saguao',

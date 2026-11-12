@@ -24,6 +24,7 @@ import { alternarMorfador, manterInfinitos, autorizado } from './game/morfador.j
 import { alternarPainel, morfadorAberto, promoverAutoria } from './ui/morfador-panel.js';
 import { getCoastFieldForMap } from './engine/coast-field.js';
 import { CONFIG } from './config.js';
+import { playCutscene, isCutsceneOpen, BOOT_SCENES } from './ui/cutscene.js';
 import { isCodexOpen, openCodex, closeCodex, handleCodexInput } from './ui/codex.js';
 import { updateOwnedCompanion } from './game/companions.js';
 import { updateCoastalFauna } from './game/fauna-costeira.js';
@@ -479,6 +480,11 @@ if (bioMissing.length) {
 // =====================================================================
 
 async function update(dt) {
+  if (isCutsceneOpen()) {
+    state.player.moving = false; state.player.target = null;
+    input.click = null; input.attackClick = null;
+    return;
+  }
   updateDebugInput();
   // Atualiza a ferramenta de calibração antes de qualquer outro input.
   updateBackgroundCalibration();
@@ -890,14 +896,18 @@ async function startGameFromSave({ mapId, spawnId }) {
 
   gameStarted = true;
 
-  initInput(canvas);
-
   // Carrega o mapa do save/perfil selecionado.
   await loadMap(
     mapId ?? 'hub_saguao',
     spawnId ?? 'inicio'
   );
 
+  if (state.progress.flags?.prologoPendente) {
+    await playCutscene(BOOT_SCENES);
+    state.progress.flags.prologoPendente = false;
+    saveGame();
+  }
+  initInput(canvas);
   last = performance.now();
   requestAnimationFrame(frame);
 }

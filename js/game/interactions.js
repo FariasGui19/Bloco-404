@@ -267,6 +267,15 @@ function interactWithObject(object) {
   const interaction = object.interacao;
   if (!interaction) return;
 
+  if (object.id === 'terminal_rota_metro' && state.progress.flags?.metroCalibrado) {
+    openDialogue({ speaker: 'TERMINAL DE EMBARQUE', dialogue: [
+      'LINHA PRIMÁRIA OPERACIONAL. DESTINO: PRAIA INICIAL.',
+      'NA PRAIA, SIGA A TRILHA PARA A ENSEADA DOS ECOS. O RECEPTOR DE MANUTENÇÃO DETECTOU UM SINAL IRREGULAR.',
+      'EMBARQUE PELO TREM NA PLATAFORMA PRINCIPAL.',
+    ] });
+    return;
+  }
+
   if (object.id === 'maquina_bio') {
     const flags = state.progress.flags ??= {};
     if (flags.oficina_bio_sincronizada) {

@@ -38,7 +38,8 @@ export function installMetroFragment(progress) {
     progress.activeQuest = {
       id: 'embarque_dimensional',
       title: 'EMBARQUE DIMENSIONAL',
-      description: 'A linha acordou. Acesse a Plataforma Interdimensional pelo Metrô e investigue a primeira rota — algo passou por ali três segundos antes de você.',
+      description: 'Embarque no Metrô para a Praia Inicial. De lá, siga à Enseada dos Ecos e investigue a origem do sinal costeiro.',
+      stage: 'embarcar',
       status: 'active',
     };
   }

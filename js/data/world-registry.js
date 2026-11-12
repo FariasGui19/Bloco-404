@@ -63,6 +63,7 @@ export const WORLD_REGISTRY = {
     bio_sala_controle: { nome: 'Sala de Controle Bio', dimensao: 'arquipelago', load: () => import('./worlds/arquipelago-rotas-perdidas/bio-sala-controle.js') },
     ilha_estacao_bio: { nome: 'Estação que Respira', dimensao: 'arquipelago', load: () => import('./worlds/arquipelago-rotas-perdidas/estacao-bio.js') },
     mar_caminho_das_correntes: { nome: 'Caminho das Correntes', dimensao: 'arquipelago', load: () => import('./worlds/arquipelago-rotas-perdidas/caminho-correntes.js') },
+    estacao_limiar_666: { nome: 'Estação 66.6 — Limiar', dimensao: 'arquipelago', load: () => import('./worlds/arquipelago-rotas-perdidas/estacao-666.js') },
     ilha_enseada_ecos: { nome: 'Enseada dos Ecos', dimensao: 'arquipelago', load: () => import('./worlds/arquipelago-rotas-perdidas/enseada-ecos.js') },
     ilha_praia_inicial: {
     nome: 'Praia Inicial',

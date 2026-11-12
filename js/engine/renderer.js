@@ -211,7 +211,7 @@ export function render(map, state) {
     if (map.meta?.estiloSala === 'dominio_anciao') drawDominioUnderlay(map, state);
     if (map.meta?.estiloSala === 'mare_astral') drawMareAstralUnderlay(map, state);
     if (map.meta?.estiloSala === 'nucleo_10x') drawNucleo10xUnderlay(map, state);
-    if (map.meta?.estiloSala === 'carga_eco') drawCargoEcoUnderlay(map, state);
+    if (map.meta?.estiloSala === 'carga_eco' || map.meta?.estiloSala === 'frequencia_limiar') drawCargoEcoUnderlay(map, state);
     drawFloors(map, state);
     drawHazards(state.hazards);
     if (map.id === 'hub_saguao') drawHubFloorMarkings();
@@ -223,6 +223,10 @@ export function render(map, state) {
     if (map.meta?.estiloSala === 'nucleo_10x') drawNucleo10xFloorOverlay(map, state);
     if (map.meta?.estiloSala === 'carga_eco') {
       drawCargoEcoFloorOverlay(map, state);
+      drawObjectContactShadows(map);
+    }
+    if (map.meta?.estiloSala === 'frequencia_limiar') {
+      drawFrequencyStationFloor(state);
       drawObjectContactShadows(map);
     }
     if (map.id === 'ilha_estacao_bio') {
@@ -1136,7 +1140,7 @@ function drawFloorTile(type, x, y, map) {
     if (drawNucleo10xFloorTile(x, y, tx, ty)) return;
   }
   // Área de Carga viva: piso pintado do módulo, não placa genérica.
-  if (map.meta?.estiloSala === 'carga_eco') {
+  if (map.meta?.estiloSala === 'carga_eco' || map.meta?.estiloSala === 'frequencia_limiar') {
     if (drawCargoEcoFloorTile(x, y, tx, ty, map)) return;
   }
 
@@ -2639,7 +2643,7 @@ function drawWorld(map, state) {
   if (map.meta?.estiloSala === 'dominio_anciao') drawDominioOuterWallShell(map);
   if (map.meta?.estiloSala === 'mare_astral') drawMareAstralOuterWallShell(map);
   if (map.meta?.estiloSala === 'nucleo_10x') drawNucleo10xOuterWallShell(map);
-  if (map.meta?.estiloSala === 'carga_eco' && map.meta?.useBackgroundWalls) drawCargoEcoWallShell(map);
+  if ((map.meta?.estiloSala === 'carga_eco' || map.meta?.estiloSala === 'frequencia_limiar') && map.meta?.useBackgroundWalls) drawCargoEcoWallShell(map);
   // Camada de fundo (trilho, trem, painéis murais): atrás de tudo, só acima do chão.
   for (const o of backList) if ((o.ordem ?? 0) >= 0) drawMapObject(o, state);
   if (map.meta?.estiloSala === 'mare_astral') drawMareAstralWindowLife(map, state);
@@ -3816,8 +3820,12 @@ function drawCargoEcoWallShell(map) {
     for (let x = 1; x < cols; x++) {
       const y = d - x;
       if (y < 1 || y >= rows || map.layout[y]?.[x] !== 1) continue;
-      const [ax, ay] = p(x, y), [bx, by] = p(x + 1, y);
-      const [cx, cy] = p(x + 1, y + 1), [dx, dy] = p(x, y + 1);
+      // A divisória termina no MESMO plano dos postes da trava. Cubos de
+      // um tile inteiro engoliam as extremidades mesmo com o sprite alinhado.
+      const divider = x === (map.meta?.cargoKey === 'bio' ? 10 : 5);
+      const x0 = divider ? x + .46 : x, x1 = divider ? x + .54 : x + 1;
+      const [ax, ay] = p(x0, y), [bx, by] = p(x1, y);
+      const [cx, cy] = p(x1, y + 1), [dx, dy] = p(x0, y + 1);
       const ch = 24;
       quad(ax, ay - ch, bx, by - ch, cx, cy - ch, dx, dy - ch, '#202c37', '#101820', 1);
       quad(dx, dy, cx, cy, cx, cy - ch, dx, dy - ch, '#121c25', '#080e14', 1);
@@ -3826,6 +3834,70 @@ function drawCargoEcoWallShell(map) {
       ctx.beginPath(); ctx.moveTo(dx + 3, dy - 6); ctx.lineTo(cx - 3, cy - 6); ctx.stroke();
       ctx.globalAlpha = 1;
     }
+  }
+  ctx.restore();
+}
+
+// Os cabos são cenográficos; a missão e a colisão não dependem do desenho.
+function drawFrequencyStationFloor(curState) {
+  const p = (x, y) => [(x - y) * HW, (x + y) * HH];
+  const objects = curState.objects ?? [], flags = curState.progress?.flags ?? {};
+  const control = objects.find(o => o.id === 'console_limiar_666');
+  if (!control) return;
+  const [cx, cy] = p(control.x, control.y);
+  const anchors = [
+    ['ancora_666_origem', 'freq666_ancora_origem'],
+    ['ancora_666_retorno', 'freq666_ancora_retorno'],
+    ['ancora_666_memoria', 'freq666_ancora_memoria'],
+  ];
+  ctx.save();
+  for (const [id, flag] of anchors) {
+    const item = objects.find(o => o.id === id); if (!item) continue;
+    const [x, y] = p(item.x, item.y);
+    ctx.strokeStyle = '#101a20'; ctx.lineWidth = 7;
+    ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(cx, cy); ctx.stroke();
+    ctx.strokeStyle = flags[flag] ? '#60e5d3' : '#9c6946';
+    ctx.globalAlpha = flags[flag] ? .65 : .35; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(cx, cy); ctx.stroke();
+    ctx.globalAlpha = .8; ctx.beginPath(); ctx.ellipse(x, y + 3, 17, 8, 0, 0, Math.PI * 2); ctx.stroke();
+    ctx.globalAlpha = 1;
+  }
+  const gate = objects.find(o => o.id === 'anel_limiar_666');
+  if (gate) {
+    const [gx, gy] = p(gate.x, gate.y);
+    ctx.strokeStyle = flags.freq666_limiar_estavel ? '#72e5d6' : '#9d5d4c'; ctx.globalAlpha = .45;
+    ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(gx, gy); ctx.stroke();
+    ctx.beginPath(); ctx.ellipse(gx, gy + 4, 50, 22, 0, 0, Math.PI * 2); ctx.stroke();
+  }
+  ctx.restore();
+}
+
+function drawFrequencyThreshold(object, curState) {
+  const x = (object.x - object.y) * HW, y = (object.x + object.y) * HH;
+  const stable = !!curState.progress?.flags?.freq666_limiar_estavel;
+  const reducedMotion = typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+  const t = reducedMotion ? 0 : performance.now() / 1000;
+  ctx.save(); ctx.translate(x, y);
+  // Base e aro: uma estrutura real no cenário, sem colisão nem destino falso.
+  ctx.fillStyle = '#10191d'; ctx.strokeStyle = '#42545b'; ctx.lineWidth = 3;
+  ctx.beginPath(); ctx.ellipse(0, 4, 58, 20, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+  ctx.fillStyle = '#10161c'; ctx.strokeStyle = '#647078'; ctx.lineWidth = 12;
+  ctx.beginPath(); ctx.ellipse(0, -64, 50, 68, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+  const interior = ctx.createRadialGradient(0, -62, 2, 0, -62, 65);
+  interior.addColorStop(0, stable ? '#3d1119' : '#0b171c');
+  interior.addColorStop(1, stable ? '#0a1820' : '#101a20');
+  ctx.fillStyle = interior; ctx.beginPath(); ctx.ellipse(0, -64, 43, 61, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.strokeStyle = stable ? '#6de9df' : '#906b4f'; ctx.globalAlpha = stable ? .8 : .4; ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.ellipse(0, -64, 44, 62, 0, 0, Math.PI * 2); ctx.stroke();
+  // Pontos de manutenção giram lentamente, sem flashes nem mudança de colisão.
+  for (let i = 0; i < 3; i++) {
+    const a = t * .25 + i * Math.PI * 2 / 3;
+    ctx.fillStyle = stable ? '#b4fff0' : '#daaa69';
+    ctx.beginPath(); ctx.arc(Math.cos(a) * 50, -64 + Math.sin(a) * 68, 2.5, 0, Math.PI * 2); ctx.fill();
+  }
+  if (stable) {
+    ctx.globalAlpha = .32; ctx.strokeStyle = '#ed7773'; ctx.lineWidth = 1;
+    for (let i = 0; i < 4; i++) { const dy = ((t * 9 + i * 28) % 112) - 120; ctx.beginPath(); ctx.moveTo(-30, dy); ctx.lineTo(30, dy); ctx.stroke(); }
   }
   ctx.restore();
 }
@@ -4644,6 +4716,7 @@ function drawMapObject(object, state) {
   if (object.bioMarker) { drawBioMarker(object); return; }
   if (object.cableStation) { drawCableStation(object); return; }
   if (object.tipo === 'holograma_decorativo') { drawHubHologram(object); return; }
+  if (object.tipo === 'limiar_frequencia') { drawFrequencyThreshold(object, state); return; }
   if (object.porta) { drawDoor(object); return; }
   if (object.routeMarker) {
     const x = (object.x - object.y) * HW, y = (object.x + object.y) * HH;

@@ -53,7 +53,7 @@ interfaces. Uma mudança de lente precisa explicar controles, limites e
 capacidades na própria experiência. Nenhum arquétipo deve perder a história ou
 ter vantagem narrativa obrigatória por sua câmera de origem.
 
-## Percurso implementado: do Ponto 0 ao sinal
+## Percurso implementado: do Ponto 0 ao limiar
 
 1. **Novo arquivo:** a abertura apresenta o boot, o erro, o Aeroporto Central
    e o portal, com a mensagem intrusa de Nulo. O jogador avança por quadro ou
@@ -73,11 +73,37 @@ ter vantagem narrativa obrigatória por sua câmera de origem.
 5. **Enseada:** o terminal de manutenção investiga-se com [R] por qualquer
    arquétipo. Antes da calibração do metrô, ele é uma pista, não uma passagem.
    Depois, registra 66.6 MHz e mostra uma visão da cidadela. O NEXO explica que
-   a imagem não é uma travessia segura. A missão permanece ativa em
-   `sinal_registrado` até a próxima implementação; não há portal falso.
-6. **Retorno:** terminal pode ser consultado novamente e permite rever o registro; explorar, regressar e
-   completar secundárias continua possível. Flags e IDs antigos não são
-   substituídos; não há recompensa pela cidadela antes de ela existir.
+   a imagem não é uma travessia segura. A porta de manutenção próxima ao
+   terminal abre para a **Estação 66.6** somente após o sinal ser registrado.
+6. **Estação:** examinar as três âncoras ambientais [E] em qualquer ordem:
+   Origem (o reator), Retorno (a linha para casa) e Memória (a resposta três
+   segundos antecipada). Elas não são as chaves mnemônicas da futura cidadela.
+   Um caderno opcional conta a história da equipe de escuta. Os cabos acendem
+   conforme as âncoras respondem; o anel permanece inativo.
+7. **Limiar:** depois das três âncoras, usar [R] no console central. NEXO
+   estabiliza a janela e o anel se ilumina. Em [E], o jogador pode esperar ou
+   preparar a passagem: a cena mostra o primeiro passo, e termina no corte
+   imediatamente anterior ao futuro gameplay. A estação continua acessível
+   como ponto seguro; não há mapa FPS nem teleporte fingido. A cena pode ser
+   revista e o jogador pode sair para explorar. A missão não é concluída.
+
+### Contrato de continuidade e saves
+
+- Mapa: `estacao_limiar_666`, entrada na Enseada `acesso_estacao_666`,
+  retorno `voltar_enseada_666`. O sinal legado `frequencia666Registrada`
+  abre a porta; saves que já o registraram podem seguir diretamente.
+- Âncoras `freq666_ancora_origem`, `freq666_ancora_retorno`,
+  `freq666_ancora_memoria`; console `freq666_limiar_estavel`; escolha final
+  `freq666_limiar_preparado`. São independentes do arquétipo e persistidas.
+- A missão legada `embarque_dimensional` permanece ativa, com etapas
+  `sinal_registrado` → `ancoras_em_andamento` → `calibrar_limiar` →
+  `limiar_estavel` → `limiar_preparado`. Outros IDs, missões concluídas e
+  etapas futuras desconhecidas não são reescritos. Não há recompensa antecipada.
+- Handoff: a futura implementação deve conectar a escolha de travessia ao
+  carregamento real da dimensão, tratar saves já preparados (inclusive ao
+  retomar a cena) e permitir voltar à estação. Só entregar controle em primeira
+  pessoa depois de mapa, controles e retorno existirem. Não criar as três chaves
+  da cidadela usando as flags das âncoras da estação.
 
 ### Secundárias e tom
 
@@ -96,14 +122,14 @@ ter vantagem narrativa obrigatória por sua câmera de origem.
 
 | Quadro | Imagem / mensagem | Intenção sonora para produção futura |
 | --- | --- | --- |
-| 01 — escuro | Sistema em escuta; fundo CRT escuro. | Ligada suave de tubo, ruído baixo, modem 56k irregular. |
-| 02 — erro | `CRITICAL_ERROR` / `REALITY_INDEX_404_NOT_FOUND`. | Discagem interrompida, clique seco, silêncio curto. |
+| 01 — escuro | Sistema em escuta; `assets/cutscenes/boot-sistema.png`. | Ligada suave de tubo, ruído baixo, modem 56k irregular. |
+| 02 — erro | `assets/cutscenes/boot-falha.png`; `CRITICAL_ERROR` / `REALITY_INDEX_404_NOT_FOUND`. | Discagem interrompida, clique seco, silêncio curto. |
 | 03 — estação | `assets/cutscenes/boot-aeroporto.png`; BLOCO 404 como texto real da interface. | Drone subgrave, nota ciano distante, ruído do casco; não uma fanfarra heroica. |
 | 04 — chegada | `assets/cutscenes/boot-operador.png`; voz intrusa. | Voz de Nulo filtrada e sintética: “Toda linha de código tem um fim... menos a sua exclusão.” O portal responde com um pulso grave. |
 | 05 — controle | Abertura fecha no saguão existente; fale com NEXO. | Cortar para ambiência de saguão e zumbido de luzes, sem fala automática sobreposta. |
 
 Os quadros têm legenda/texto e podem ser pulados com Esc. Não há áudio
-embutido neste trabalho. A distorção é sugestiva e estática; evitar flashes
+embutido neste trabalho. As imagens recebem uma aproximação lenta, respeitando redução de movimento; evitar flashes
 rápidos, manter redução de movimento e nunca fazer a fala depender de som.
 A arte do portal é uma evocação cinematográfica, não uma mudança do spawn.
 
@@ -117,12 +143,10 @@ mundo anômalo: é impedir que a falha o destrua e descobrir quem pediu ajuda.
 
 ### Sequência futura proposta
 
-1. **Estabilização / ruptura:** após o sinal registrado, um novo objetivo e um
-   portal reais são introduzidos quando a dimensão estiver pronta. O terminal
-   amplia a tela; ruído e falha de perspectiva puxam para primeira pessoa.
-   Dar aviso, opção de acessibilidade e controles claros antes da movimentação;
-   preservar o caminho de volta e o save. Não transferir o jogador para uma
-   cena plana fingindo que é o mapa FPS.
+1. **Travessia:** conectar o limiar já preparado ao destino real quando a
+   dimensão estiver pronta. O corte atual já mostra o primeiro passo, mas
+   não carrega a dimensão. Dar aviso, opção de acessibilidade e controles
+   claros antes da movimentação; preservar o caminho de volta e o save.
 2. **Infiltração na Cidadela do Código Queimado:** corredores de tijolo escuro,
    metal e luz vermelha, mapas mentais claros e pontos de referência visuais.
    Chuva de dados e ruído de rádio nunca devem encobrir portas ou ameaças.
@@ -170,6 +194,7 @@ ou o autor da mensagem até a história posterior estabelecer evidências.
 | Aeroporto e saguão | Ventilação larga, passos metálicos, pulsos cianos discretos; motivo de três notas incompleto. | Loop alto que fatigue, buzinas de aeroporto realistas em excesso. |
 | NEXO | Voz acolhedora, levemente sintética, ritmo humano; humor seco. | Robô incompreensível, filtros que prejudiquem legendas. |
 | Terminal e 66.6 | Sal, vento e ondas cedem espaço a estática direcional; três bips retornam antes de serem emitidos; pausa antes da visão. | Sustos de volume sem aviso, frequência aguda contínua. |
+| Estação e âncoras | Relés lentos, água em tubulações, cada âncora acrescenta uma nota ao motivo; anel estável com drone discreto. | Tons agudos contínuos e confirmação apenas por áudio. |
 | Ruptura | Modem, buffer quebrado, rotação sonora e queda para um pulso grave; versão suave para acessibilidade. | Flash estroboscópico obrigatório ou dependência de som espacial. |
 | Cidadela | Percussão industrial em camadas, baixos pulsantes, motivo do sinal em rádio degradado; exploração menos intensa que combate. | Cópia de trilhas identificáveis; música cobrindo o feedback de ameaça. |
 | Vigilante | Camadas rítmicas reativas e intervalo audível antes de cada rajada; núcleo aberto ganha harmônico limpo. | Picos agressivos ou telegraph apenas sonoro. |

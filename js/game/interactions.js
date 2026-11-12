@@ -128,10 +128,15 @@ export function getInteractionPrompt(interaction) {
 
   // NOVO: Se o objeto tem um gate e você não passa, o prompt muda
   if (kind === 'object' && data.gate && !checkGate(data.gate)) {
-    if (data.gate.prerequisiteFlag && !state.progress.flags?.[data.gate.prerequisiteFlag]) return data.gate.promptPrerequisito ?? 'SISTEMA ANTERIOR PENDENTE';
+    if (data.gate.prerequisiteFlag && !state.progress.flags?.[data.gate.prerequisiteFlag]) {
+      return data.gate.promptPrerequisito ?? 'REPARO ANTERIOR PENDENTE';
+    }
     if (data.gate.requiresFlag && !state.progress.flags?.[data.gate.requiresFlag] &&
         state.progress.archetype === data.gate.diagnosisArchetype) {
-      return 'EXAMINAR • DIAGNÓSTICO: R';
+      return 'EXAMINAR • R: DIAGNOSTICAR';
+    }
+    if (data.gate.requiresFlag && state.progress.flags?.[data.gate.requiresFlag]) {
+      return 'PRONTO PARA AGIR • Q';
     }
     return data.gate.promptFalha ?? 'BLOQUEADO';
   }

@@ -78,7 +78,7 @@ state.player.x = cableCar.x;
 state.player.y = cableCar.y - 1.5;
 assert.equal(getModuleInteractionPrompt(), 'DIAGNOSTICAR CONDUTOR');
 assert(!checkGate(cableCar.gate), 'E deve exigir diagnóstico');
-assert.equal(getInteractionPrompt(findNearestInteraction()), 'EXAMINAR • DIAGNÓSTICO: R');
+assert.equal(getInteractionPrompt(findNearestInteraction()), 'EXAMINAR • R: DIAGNOSTICAR');
 await checkInteractions(true);
 assert(isDialogueOpen());
 assert(!isGateOpen(cableCar));

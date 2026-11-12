@@ -3,9 +3,9 @@
 // VIADUTO DOS VETORES — ligação exterior da Base dos Vetores (Núcleo 10X)
 //
 // Passarela de manutenção em side-view 2.5D sobre o canal da Estação que
-// Respira. A perspectiva muda na eclusa; a física continua a do mapa
-// (layout/walkMask + colisão padrão). Não é um portal temático solto: o
-// jogador caminha pelo viaduto e chega ao setor exterior da Estação Bio.
+// Respira. O renderer usa peças pintadas (guindaste, treliça, pod aéreo,
+// totens e bomba), com logística e iluminação próprias. A física continua
+// layout/walkMask + colisão padrão; os dois portais têm retorno recíproco.
 // =====================================================================
 
 const width = 34;
@@ -36,17 +36,19 @@ export const map = {
   },
   objects: [
     { id: 'terminal_carga_viaduto', tipo: 'painel', nome: 'TERMINAL DE CARGA DO VIADUTO', x: 7.5, y: 3.4,
-      sprite: 'nucleo_sala_terminal_registro', sheetCols: 1, sheetRows: 1, scale: 0.16, anchorY: 0.95,
+      sprite: 'nucleo_sala_terminal_registro', sheetCols: 1, sheetRows: 1, scale: 0.20, anchorY: 0.96,
+      holograma: false,
       bloqueia: true, hitbox: { offsetX: -0.32, offsetY: -0.24, width: 0.64, height: 0.48 },
       brilho: { cor: '#74ff8a', raio: 0.8, forca: 0.22 },
       interacao: { label: 'REGISTRAR PASSAGEM PELO VIADUTO (+25 XP)', speaker: 'TERMINAL DE CARGA', distancia: 1.7 } },
-    { id: 'pilar_viaduto_1', tipo: 'decoracao', x: 11.5, y: 3.0,
-      sprite: 'nucleo_sala_pilar_cinetico', sheetCols: 1, sheetRows: 1, scale: 0.22, anchorY: 0.95, bloqueia: false },
-    { id: 'pilar_viaduto_2', tipo: 'decoracao', x: 22.5, y: 3.0,
-      sprite: 'nucleo_sala_pilar_cinetico', sheetCols: 1, sheetRows: 1, scale: 0.22, anchorY: 0.95, bloqueia: false },
+    { id: 'bomba_inducao_viaduto', tipo: 'painel', nome: 'BOMBA DE INDUÇÃO DO VIADUTO', x: 16.2, y: 3.2,
+      sprite: 'viaduto_modulo_bomba', sheetCols: 1, sheetRows: 1, scale: 0.50, anchorY: 0.96,
+      holograma: false, bloqueia: true, hitbox: { offsetX: -0.72, offsetY: -0.32, width: 1.44, height: 0.64 },
+      filterOnFlag: 'bomba_viaduto_estabilizada', filterOn: 'brightness(1.14) saturate(1.12)',
+      interacao: { label: 'ESTABILIZAR BOMBA DE INDUÇÃO (+25 XP)', speaker: 'BOMBA DE INDUÇÃO', distancia: 2.2 } },
   ],
   collectibles: [
-    { id: 'registro_vetor_externo', tipo: 'fragmento', nome: 'REGISTRO DE VETOR EXTERNO', x: 18.5, y: 5.5,
+    { id: 'registro_vetor_externo', tipo: 'fragmento', nome: 'REGISTRO DE VETOR EXTERNO', x: 19.5, y: 5.5,
       requiresFlag: 'rota_viaduto_vetores_aberta', xpReward: 25, interactionDistance: 1.35,
       label: 'RECOLHER REGISTRO DE VETOR EXTERNO (+25 XP)',
       dialogue: [

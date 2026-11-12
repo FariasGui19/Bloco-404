@@ -46,6 +46,8 @@ function changeForm(player, activating, form, duration) {
   const id = form?.id ?? NUCLEO_VELOZ;
   player.nucleoForm = activating ? id : null;
   player.nucleoFormSuit = activating ? (form?.toolId ?? null) : null;
+  player.ability.cast = null;
+  player.ability.queuedSmash = null;
   player.nucleoRuntime.remaining = activating ? duration : 0;
   player.nucleoRuntime.recharge = activating ? 0 : getFormRecharge(form);
   player.nucleoRuntime.form = activating ? id : (player.nucleoRuntime.form ?? null);

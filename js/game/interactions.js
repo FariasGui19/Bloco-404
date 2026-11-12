@@ -129,8 +129,10 @@ export function getInteractionPrompt(interaction) {
     return 'FALAR COM NEXO-04';
   }
 
-  // NOVO: Se o objeto tem um gate e você não passa, o prompt muda
-  if (kind === 'object' && data.gate && !checkGate(data.gate)) {
+  // NOVO: Se o objeto tem um gate e você não passa, o prompt muda.
+  // O contrapeso tem máquina de estados própria (pré-requisito/nível/scan/
+  // forma) logo abaixo; não deixa o texto genérico de scan escondê-la.
+  if (kind === 'object' && data.gate && data.id !== 'contrapeso_viaduto' && !checkGate(data.gate)) {
     if (data.gate.prerequisiteFlag && !state.progress.flags?.[data.gate.prerequisiteFlag]) {
       return data.gate.promptPrerequisito ?? 'REPARO ANTERIOR PENDENTE';
     }
@@ -199,9 +201,16 @@ export function getInteractionPrompt(interaction) {
   if (kind === 'object' && data.id === 'terminal_carga_viaduto' && state.progress.flags?.terminal_carga_viaduto_registrado) {
     return 'PASSAGEM PELO VIADUTO • REGISTRADA';
   }
-  if (kind === 'object' && data.id === 'contrapeso_viaduto' && data.gate && checkGate(data.gate)) {
+  if (kind === 'object' && data.id === 'bomba_inducao_viaduto' && state.progress.flags?.bomba_viaduto_estabilizada) {
+    return 'BOMBA DE INDUÇÃO • ESTÁVEL';
+  }
+  if (kind === 'object' && data.id === 'contrapeso_viaduto' && data.gate) {
+    if (isGateOpen(data)) return 'CONTRAPESO PARTIDO • ROTA LIBERADA';
+    const flags = state.progress.flags ?? {};
+    if (!flags[data.gate.prerequisiteFlag]) return data.gate.promptPrerequisito;
     const nivel = getArchetypeLevel(state.progress);
     if (nivel < (data.gate.requiredLevel ?? 4)) return data.gate.promptFalha ?? 'CONTRAPESO EXIGE QUEBRA SISTEMAS • NÍVEL 4';
+    if (!flags[data.gate.requiresFlag]) return 'LER PONTO DE CARGA [R] • DEPOIS PARTIR COM [Q]';
     return state.player.nucleoForm === 'forma_bruta' ? 'PARTIR CONTRAPESO • Q' : 'ASSUMIR QUEBRA SISTEMAS [T] • Q: PESO';
   }
 
@@ -636,6 +645,25 @@ function interactWithObject(object) {
     openDialogue({
       speaker: 'REGULADOR DE INÉRCIA',
       dialogue: ['VOLANTE DE LATÃO GIRADO — O PONTEIRO VERDE ESTABILIZA E A MALHA PASSA A RESPIRAR EM CARGA CONTÍNUA.', 'EXPERIÊNCIA DE CAMPO REGISTRADA (+25 XP).'],
+    });
+    return;
+  }
+
+  if (object.id === 'bomba_inducao_viaduto') {
+    const flags = state.progress.flags ??= {};
+    if (flags.bomba_viaduto_estabilizada) {
+      openDialogue({ speaker: 'BOMBA DE INDUÇÃO', dialogue: ['PRESSÃO EQUALIZADA. A FITA DE INDUÇÃO DO VIADUTO RECEBE CARGA CONTÍNUA — O POD DE MANUTENÇÃO SEGUE SEU CICLO SEM OSCILAÇÃO.'] });
+      return;
+    }
+    flags.bomba_viaduto_estabilizada = true;
+    if (state.progress.archetype) grantArchetypeXp(state.progress, 25);
+    saveGame();
+    openDialogue({
+      speaker: 'BOMBA DE INDUÇÃO',
+      dialogue: [
+        'VÁLVULA DE RETORNO AJUSTADA — O COBRE AQUECE, O MANÔMETRO ESTABILIZA E A TRELIÇA RESPONDE EM CARGA CONTÍNUA.',
+        'MANUTENÇÃO REGISTRADA (+25 XP). O REGISTRO DE VETOR EXTERNO ESTÁ LOGO À FRENTE, NO MEIO DA PASSARELA.',
+      ],
     });
     return;
   }

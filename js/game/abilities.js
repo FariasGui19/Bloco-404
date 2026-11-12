@@ -110,7 +110,7 @@ function pressed(...keys) {
 // Converte a direção visual do player para direção de mundo isométrico.
 // ---------------------------------------------------------------------
 
-function getFacingWorldDirection(facing) {
+export function getFacingWorldDirection(facing) {
   if (getFloor()?.meta?.sideView) {
     const sideDirs = {
       down: { x: 0, y: 1 },
@@ -313,8 +313,11 @@ function tryBrutaSmash(player) {
     showAbilityMessage('ENERGIA INSUFICIENTE');
     return true;
   }
-  // Preparação: o corpo trava, o golpe básico dura mais e o dano sai no fim
-  // (o combate básico já aplica o dano quando a marreta desce).
+  // Fixa a mira no início do windup. O helper conhece as duas projeções:
+  // direita no viaduto é +X, não a diagonal +X/-Y da sala isométrica.
+  const facing = player.facing ?? 'down';
+  const direction = getFacingWorldDirection(facing);
+  player.facing = facing;
   player.ability.cooldowns[perfil.id] = perfil.cooldown;
   recordMastery(state.progress, 'ability_use');
   const form = NUCLEO_FORMS[player.nucleoForm];
@@ -328,6 +331,9 @@ function tryBrutaSmash(player) {
     duration: perfil.windup,
     timeLeft: perfil.windup,
     form: player.nucleoForm,
+    facing,
+    dx: direction.x,
+    dy: direction.y,
     windup: true,
   };
   player.moving = false;
@@ -359,13 +365,21 @@ export function updateAbilities(dt) {
       const cast = ability.cast;
       ability.cast = null;
       // A marreta desce: dano em disco à frente, empurrão e tremor.
+      player.facing = cast.facing ?? player.facing;
       executeBrutaSmash({ player, progress: state.progress, targets: state.trainingTargets });
-      // Corpo e animação de golpe: a folha de ataque da Quebra é escolhida
-      // pelo estilo do arquétipo, então o mesmo ataque básico anima a marreta.
-      player.combat = { ...(player.combat ?? {}), style: 'nucleo_dez_forma', dx: cast.dx ?? 1, dy: cast.dy ?? 1, duration: .48, timeLeft: .48, cooldown: 0 };
+      // O impacto usa a mira congelada no Q, inclusive na passarela side-view.
+      player.combat = {
+        ...(player.combat ?? {}), style: 'nucleo_dez_forma', form: 'forma_bruta',
+        dx: cast.dx ?? 1, dy: cast.dy ?? 1, color: cast.color,
+        duration: .48, timeLeft: .48, cooldown: 0,
+      };
       // O peso do impacto consome barra além do custo de energia.
       chargeFormHit(player);
     }
+  }
+  if (ability.queuedSmash) {
+    ability.queuedSmash.timeLeft -= dt;
+    if (ability.queuedSmash.timeLeft <= 0 || player.nucleoForm !== 'forma_bruta') ability.queuedSmash = null;
   }
   for (const key of ['effect', 'reveal', 'sonarAquatico', 'ruptureFlash', 'tideFlash', 'massFlash']) {
     if (!ability[key]) continue;
@@ -408,8 +422,29 @@ export function updateAbilities(dt) {
     }
   }
 
-  // A transição de forma é uma ação curta e não permite interromper com Q/T.
-  if (ability.effect?.id === 'transformacao_10x') return true;
+  // T ainda está vestindo o corpo: não interrompe a animação, mas também não
+  // joga o Q do jogador no lixo. Guarda UM pedido, com a mira deste instante;
+  // ele sai sozinho no primeiro quadro livre (ou expira se houver cancelamento).
+  if (ability.effect?.id === 'transformacao_10x') {
+    if (pressed('q', 'keyq') && player.nucleoForm === 'forma_bruta' && ability.effect.activating) {
+      const facing = player.facing ?? 'down';
+      const direction = getFacingWorldDirection(facing);
+      ability.queuedSmash = {
+        timeLeft: ability.effect.timeLeft + .2,
+        facing, dx: direction.x, dy: direction.y,
+      };
+      showAbilityMessage('TRANSFORMANDO • PANCADA NA FILA');
+    }
+    return true;
+  }
+  if (ability.queuedSmash) {
+    const queued = ability.queuedSmash;
+    ability.queuedSmash = null;
+    if (queued.timeLeft > 0 && player.nucleoForm === 'forma_bruta' && !ability.dash && !(ability.scanning > 0)) {
+      player.facing = queued.facing;
+      return tryBrutaSmash(player);
+    }
+  }
   // A preparação da marreta também finca o corpo no chão: o golpe sai de onde
   // o jogador mirou, e o peso aparece no tempo de resposta.
   if (ability.cast?.id === 'pancada_quebra') return true;

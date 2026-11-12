@@ -484,7 +484,7 @@ for (const room of rooms) {
     'piso-grafite.png', 'piso-cinetico.png', 'parede-canto.png', 'parede-modular.png',
     'porta-doca.png', 'eixo-adaptacao.png', 'malha-cinetica.png', 'pilar-cinetico.png',
     'terminal-registro.png', 'bigorna-contrapeso.png', 'contrapeso-liberado.png',
-    'regulador-inercia.png', 'relicario-vetor.png', 'arco-viaduto.png', 'viaduto-panorama.png',
+    'regulador-inercia.png', 'relicario-vetor.png', 'arco-viaduto.png',
   ];
   const mainJs = readFileSync(new URL('../js/main.js', import.meta.url), 'utf8');
   for (const file of nucleoSprites) {

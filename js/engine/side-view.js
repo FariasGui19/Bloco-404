@@ -1321,7 +1321,7 @@ export function drawSideObject(ctx, obj, cameraX, cameraY, viewW, viewH, zoom, t
   );
 
   // Indicador holográfico sci-fi acima de terminais interativos
-  if (!isReflection && (obj.moduleSystem || obj.interacao)) {
+  if (!isReflection && obj.holograma !== false && (obj.moduleSystem || obj.interacao)) {
     drawTerminalHologram(ctx, obj, stateRef, zoom, time, drawH);
   }
 

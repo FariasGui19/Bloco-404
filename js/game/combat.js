@@ -12,9 +12,10 @@ import { pushCombatText, updateCombatFeedback } from './combat-feedback.js';
 import { applyUnlocks } from './unlocks.js';
 import { ARCHETYPE_KITS } from '../data/archetype-kits.js';
 import { chargeFormHit } from './nucleo-form.js';
-import { BRUTA_SMASH } from './abilities.js';
+import { BRUTA_SMASH, getFacingWorldDirection } from './abilities.js';
+import { SIDE_DEPTH_STEP } from '../engine/camera.js';
 import { NUCLEO_FORMS } from '../data/nucleo-forms.js';
-import { checkGate, isGateOpen, openGate } from './gates.js';
+import { checkGate, getGateFailureMessage, isGateOpen, openGate } from './gates.js';
 import { saveGame } from './save.js';
 
 // Compatibilidade: HUD e testes antigos leem rótulo e strain daqui.
@@ -179,30 +180,60 @@ export function tryAbilityDamage({ player, progress, targets, abilityId, rng = M
 // grava a flag do save, então a demolição é permanente.
 function breakWeightGates(player, dx, dy) {
   let broke = false;
+  let nearby = null;
+  let nearest = Infinity;
   for (const object of state.objects ?? []) {
-    if (!object?.gate || isGateOpen(object) || !checkGate(object.gate)) continue;
-    if (object.gate.breaksWith !== 'peso') continue;
-    if (object.gate.requiredLevel && getArchetypeLevel(state.progress) < object.gate.requiredLevel) continue;
+    const gate = object?.gate;
+    if (!gate || gate.breaksWith !== 'peso' || isGateOpen(object)) continue;
     if (!Number.isFinite(object.x) || !Number.isFinite(object.y)) continue;
     const ox = object.x - player.x, oy = object.y - player.y;
     const distancia = Math.hypot(ox, oy);
-    const alcance = object.gate.strikeRadius ?? 1.9;
+    const alcance = gate.strikeRadius ?? 1.9;
     if (distancia > alcance || distancia < .001) continue;
-    if ((ox * dx + oy * dy) / distancia < .35) continue;
+    if ((ox * dx + oy * dy) / distancia < .35) {
+      if (distancia < nearest) {
+        nearest = distancia;
+        nearby = { message: 'VIRE DE FRENTE PARA A TRAVA E ACERTE COM [Q]', object };
+      }
+      continue;
+    }
+    // Uma trava perto da marreta SEMPRE responde. Antes, scan/nível/pré-
+    // requisito ausentes faziam `continue` em silêncio e o Q parecia vazio.
+    if (!checkGate(gate)) {
+      if (distancia < nearest) {
+        nearest = distancia;
+        nearby = { message: getGateFailureMessage(gate)[0], object };
+      }
+      continue;
+    }
+    if (gate.requiredLevel && getArchetypeLevel(state.progress) < gate.requiredLevel) {
+      if (distancia < nearest) {
+        nearest = distancia;
+        nearby = { message: gate.promptFalha ?? `PESO INSUFICIENTE • EXIGE NÍVEL ${gate.requiredLevel}`, object };
+      }
+      continue;
+    }
     openGate(object);
     recordQuestEvent(state.progress, { type: 'breach_gate', target: object.id });
-    if (object.gate.bonusXp > 0 && state.progress.archetype) grantArchetypeXp(state.progress, object.gate.bonusXp);
-    if (object.gate.routeFlag) {
+    if (gate.bonusXp > 0 && state.progress.archetype) grantArchetypeXp(state.progress, gate.bonusXp);
+    if (gate.routeFlag) {
       state.progress.flags ??= {};
-      state.progress.flags[object.gate.routeFlag] = true;
+      state.progress.flags[gate.routeFlag] = true;
     }
     player.ability ??= {};
     player.ability.massFlash = { x: object.x, y: object.y, timeLeft: 0.7, duration: 0.7 };
     player.ultimate ??= {};
     player.ultimate.shake = { timeLeft: 0.42, duration: 0.42, power: 10.5, source: 'contrapeso' };
-    player.ability.lastMessage = object.gate.breakMessage ?? 'ESTRUTURA DEMOLIDA • PESO CEDEU';
-    player.ability.messageTimer = 2.2;
+    player.ability.lastMessage = gate.sucesso?.[0] ?? gate.breakMessage ?? 'ESTRUTURA DEMOLIDA • PESO CEDEU';
+    player.ability.messageTimer = 2.8;
+    pushCombatText(object.x, object.y - .7, 'TRAVA PARTIDA', { color: '#ffe18a', kind: 'xp', duration: 1.5 });
     broke = true;
+  }
+  if (!broke && nearby) {
+    player.ability ??= {};
+    player.ability.lastMessage = nearby.message;
+    player.ability.messageTimer = 3;
+    pushCombatText(nearby.object.x, nearby.object.y - .7, 'BLOQUEADO', { color: '#ffc94a', duration: 1.1 });
   }
   if (broke) saveGame();
   return broke;
@@ -218,7 +249,8 @@ function breakWeightGates(player, dx, dy) {
 export function executeBrutaSmash({ player, progress, targets, rng = Math.random }) {
   if (!player) return null;
   const perfil = BRUTA_SMASH;
-  const fx = { down: [1, 1], up: [-1, -1], left: [-1, 1], right: [1, -1] }[player.facing] ?? [1, 1];
+  const direction = getFacingWorldDirection(player.facing);
+  const fx = [direction.x, direction.y];
   const comprimento = Math.hypot(fx[0], fx[1]) || 1;
   const centro = {
     x: player.x + (fx[0] / comprimento) * perfil.reach * .6,
@@ -267,7 +299,10 @@ export function tryBasicAttack({ player, progress, map, targets, point, rng = Ma
   if (player.ability?.dash || player.ability?.scanning > 0 || player.ability?.effect?.timeLeft > 0 || (player.combat?.cooldown ?? 0) > 0) return false;
 
   // Um clique na parte alta do holograma deve mirar na base do alvo.
-  const iso = p => ({ x: (p.x - p.y) * CONFIG.TILE_W / 2, y: (p.x + p.y) * CONFIG.TILE_H / 2 });
+  const sideView = !!map.meta?.sideView;
+  const iso = p => sideView
+    ? { x: p.x * CONFIG.TILE_W, y: p.y * SIDE_DEPTH_STEP }
+    : { x: (p.x - p.y) * CONFIG.TILE_W / 2, y: (p.x + p.y) * CONFIG.TILE_H / 2 };
   const click = iso(point);
   const selected = (targets ?? []).find(target => {
     if (target.health <= 0) return false;
@@ -279,12 +314,12 @@ export function tryBasicAttack({ player, progress, map, targets, point, rng = Ma
   let dx = point.x - player.x, dy = point.y - player.y;
   let length = Math.hypot(dx, dy);
   if (length < .05) {
-    const vectors = { down: [1, 1], up: [-1, -1], left: [-1, 1], right: [1, -1] };
-    [dx, dy] = vectors[player.facing] ?? vectors.down;
-    length = Math.SQRT2;
+    const direction = getFacingWorldDirection(player.facing);
+    dx = direction.x; dy = direction.y;
+    length = Math.hypot(dx, dy) || 1;
   }
   dx /= length; dy /= length;
-  const sx = dx - dy, sy = dx + dy;
+  const sx = sideView ? dx : dx - dy, sy = sideView ? dy * .78 : dx + dy;
   player.facing = Math.abs(sx) > Math.abs(sy) ? (sx > 0 ? 'right' : 'left') : (sy > 0 ? 'down' : 'up');
   player.target = null;
 

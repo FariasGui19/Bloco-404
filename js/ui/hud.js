@@ -205,7 +205,9 @@ function updateAbilityHud(state) {
   setText('abilityEnergyText', `${energy} / ${maxEnergy}`);
   if (el.abilityEnergyFill) el.abilityEnergyFill.style.width = `${percent}%`;
 
-  const primaryId = ARCHETYPE_ABILITIES[archetypeId]?.[0];
+  const brutaAtiva = archetypeId === 'nucleo_dez_forma' && state.player.nucleoForm === 'forma_bruta';
+  // O Q realmente muda com a forma; a HUD precisa anunciar a mesma ação.
+  const primaryId = brutaAtiva ? 'pancada_quebra' : ARCHETYPE_ABILITIES[archetypeId]?.[0];
   const secondaryId = ARCHETYPE_ABILITIES[archetypeId]?.[1];
 
   if (primaryId && el.abilityPrimary) {
@@ -215,7 +217,8 @@ function updateAbilityHud(state) {
     const bioProfile = primaryId === 'bio_dash' ? getBioDashProfile(state.progress, state.player) : null;
     const readyText = bioProfile
       ? `${bioProfile.mode === 'equipped' ? 'TRAJE ATIVO' : 'MODO RÁPIDO'} • ${bioProfile.energyCost} ENERGIA`
-      : (state.progress.archetype === 'nucleo_dez_forma' && NUCLEO_FORMS[state.player.nucleoForm]
+      : (brutaAtiva ? '20 ENERGIA • 3s DE FORMA'
+        : state.progress.archetype === 'nucleo_dez_forma' && NUCLEO_FORMS[state.player.nucleoForm]
         ? `${NUCLEO_FORMS[state.player.nucleoForm].name} ATIVA`
         : ['dominio', 'mare'].includes(state.player.equippedSuit) ? 'TRAJE ATIVO' : 'PRONTO');
 

@@ -1,5 +1,31 @@
 # Próximas Etapas — Bloco 404
 
+## Concluído na 0.11.6 — Núcleo: polimento e Viaduto vivo
+
+- **Arte pintada, face SE** — regulador, relicário e pórtico deixaram de ser
+  procedurais; eixo/terminal foram espelhados **na fonte** (pipeline), sem
+  `espelhar:true` no objeto, preservando a hitbox. Chroma-key agora apaga
+  magenta fechado (`holes`) e franja de reamostragem; a malha rosa virou
+  vidro verde translúcido. Asserts no pipeline + teste de pixel RGBA.
+- **Colisão e escala** — hitboxes acompanharam a base larga das máquinas
+  (contrapeso 1.32×1.04, relicário sólido 1.10×0.86, eixo 2.10×1.40);
+  campo `sombra:[w,h]` consumido no renderer do Núcleo (contato + difusa).
+- **Q da Quebra confiável** — mira congelada no windup; Q durante a
+  metamorfose entra em `queuedSmash` e dispara no 1º frame livre; fila
+  limpa em `loadMap`/retorno ao operador. HUD anuncia `PANCADA DA QUEBRA`.
+  Trava perto sempre responde: nível, scan, pré-requisito e mira de costas
+  têm mensagem própria (nada de Q silencioso).
+- **Viaduto dos Vetores reconstruído** — 6 peças pintadas (panorama,
+  treliça, pod aéreo, guindaste, totem, bomba) em side-view 2.5D na mesma
+  câmera do Aeroporto; logística animada, água/reflexos, clima, portais
+  virados para a rota e bomba de indução interativa (+25 XP, persiste).
+  Panorama antigo removido; retorno recíproco Base ↔ Estação mantido.
+- **Verificação** — `tests/nucleo-polimento.mjs` (arte/colisão/Q/feedback/
+  render side-view) + suíte completa 92/92; QA de navegador com save nível 4
+  fotografando as duas cenas e abrindo a rota com Q enfileirado.
+
+Versão `0.11.6-nucleo-polimento`.
+
 ## Concluído na 0.11.1 — Refinamento e organização
 
 Ajustes de proporção e enquadramento após revisão visual:

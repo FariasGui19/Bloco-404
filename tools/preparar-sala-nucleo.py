@@ -1,10 +1,9 @@
 #!/usr/bin/env python3
-"""Prepara a Base dos Vetores (Núcleo 10X) — 0.11.5.
+"""Prepara a Base dos Vetores (Núcleo 10X) — 0.11.6.
 
-Fontes pintadas em assets/source-art/sala-nucleo/*.png (fundo magenta) viro
-PNGs RGBA standalone em assets/sprites/sala-nucleo/. O script também desenha
-proceduralmente as peças que não passaram por geração de imagem (regulador,
-relicário, arco do viaduto e panorama exterior), mantendo a mesma paleta.
+Fontes pintadas em assets/source-art/sala-nucleo/*.png (fundo magenta) viram
+PNGs RGBA standalone em assets/sprites/sala-nucleo/. Todas as máquinas usam
+arte pintada; regulador, relicário e pórtico não são mais desenhos procedurais.
 
 Invariantes verificadas ao salvar cada sprite de objeto:
   * modo RGBA;
@@ -16,28 +15,34 @@ Dependências: Pillow, numpy, scipy (mesmo pipeline das outras salas).
 """
 from pathlib import Path
 import math
-import random
 
 import numpy as np
-from PIL import Image, ImageDraw, ImageFilter
+from PIL import Image, ImageOps
 from scipy import ndimage
 
 ROOT = Path(__file__).resolve().parents[1]
 SRC = ROOT / "assets/source-art/sala-nucleo"
 OUT = ROOT / "assets/sprites/sala-nucleo"
 PAD = 6
-GREEN = (126, 252, 174, 255)
-GREEN_DARK = (38, 112, 78, 255)
-AMBER = (255, 190, 74, 255)
-METAL = (55, 65, 73, 255)
-METAL_DARK = (27, 34, 40, 255)
-METAL_LIGHT = (88, 101, 111, 255)
 
 
-def remove_magenta(im: Image.Image, holo: bool = False) -> Image.Image:
-    """Chroma-key do magenta, preservando verdes/âmbaras e vidro holográfico."""
+def remove_magenta(im: Image.Image, holo: bool = False, holes: bool = False, membrane: bool = False) -> Image.Image:
+    """Chroma-key do magenta, preservando verdes/âmbaras e vidro holográfico.
+
+    `holes=True` também apaga o magenta FECHADO dentro da silhueta (o vão de
+    um pórtico, por exemplo): sem isso o flood a partir da borda não alcança
+    a abertura e a porta nasce tampada. `membrane=True` converte o campo rosa
+    da malha em vidro verde translúcido ANTES do key, preservando a treliça.
+    """
     arr = np.array(im.convert("RGBA"), dtype=np.float32)
     r, g, b, a = arr[..., 0], arr[..., 1], arr[..., 2], arr[..., 3]
+    if membrane:
+        pink = (np.minimum(r, b) - g > 24) & (np.abs(r - b) < 100)
+        intensity = np.clip((np.minimum(r, b) - g) / 255, 0, 1)
+        r = np.where(pink, 30 + 40 * (1 - intensity), r)
+        g = np.where(pink, np.maximum(g, 140 + 80 * intensity), g)
+        b = np.where(pink, 90 + 40 * (1 - intensity), b)
+        a = np.where(pink, np.minimum(a, 42 + 70 * (1 - intensity)), a)
     if holo:
         # O feixe do terminal foi pintado rosa sobre o fundo magenta. Converte
         # só a região superior em vidro verde translúcido antes do key.
@@ -53,7 +58,7 @@ def remove_magenta(im: Image.Image, holo: bool = False) -> Image.Image:
     seed = (mag > 48) & (np.sqrt((r - 255) ** 2 + g ** 2 + (b - 255) ** 2) < 150)
     lbl, n = ndimage.label(seed | strong)
     border = (set(lbl[0, :]) | set(lbl[-1, :]) | set(lbl[:, 0]) | set(lbl[:, -1])) - {0}
-    bg = strong.copy()
+    bg = strong.copy() if holes else np.zeros_like(strong)
     for lab in border:
         bg |= lbl == lab
     flbl, fn = ndimage.label(~bg)
@@ -70,7 +75,20 @@ def remove_magenta(im: Image.Image, holo: bool = False) -> Image.Image:
         r[spill] = np.minimum(r[spill], cap)
         b[spill] = np.minimum(b[spill], cap * 1.08)
         a[spill] *= np.clip(1 - (mag[spill] - 16) / 125, .25, 1)
+    # O antialias do fundo deixa roxo translúcido mesmo depois do key.
+    # Remove esse resíduo sem apagar material opaco; um reflexo violeta
+    # saturado remanescente vira luz verde, não volta a ser chroma-key rosa.
+    faint_spill = (mag > 42) & (np.abs(r - b) < 95) & (a > 0) & (a < 235)
+    a[faint_spill] = 0
+    hot = strong & (a > 0)
+    if np.any(hot):
+        light = np.maximum(g[hot], np.minimum(r[hot], b[hot]))
+        r[hot] = light * .48
+        g[hot] = light
+        b[hot] = light * .72
     out = np.stack([r, g, b, a], axis=-1).clip(0, 255).astype(np.uint8)
+    final_mag = np.minimum(out[..., 0], out[..., 2]).astype(np.int16) - out[..., 1]
+    assert not np.any((final_mag > 82) & (np.abs(out[..., 0].astype(np.int16) - out[..., 2]) < 64) & (out[..., 1] < 150) & (out[..., 3] > 0)), "magenta visível sobrevivendo dentro da silhueta"
     return Image.fromarray(out, "RGBA")
 
 
@@ -91,11 +109,35 @@ def resize_premult(im: Image.Image, size: tuple[int, int]) -> Image.Image:
     return Image.fromarray((np.concatenate([rgb, sa], axis=-1).clip(0, 1) * 255).round().astype(np.uint8), "RGBA")
 
 
+def clean_resize_spill(im: Image.Image) -> Image.Image:
+    """Lanczos/unpremultiply pode recriar franja roxa em alpha baixo.
+
+    Limpa DEPOIS da redução também; o assert do remove_magenta sozinho não
+    enxerga esse resíduo de reamostragem. Material opaco não é apagado.
+    """
+    arr = np.array(im.convert("RGBA"), dtype=np.int16)
+    r, g, b, a = arr[..., 0], arr[..., 1], arr[..., 2], arr[..., 3]
+    mag = np.minimum(r, b) - g
+    faint = (mag > 42) & (np.abs(r - b) < 95) & (a > 0) & (a < 235)
+    a[faint] = 0
+    hot = (mag > 82) & (np.abs(r - b) < 64) & (g < 150) & (a > 0)
+    if np.any(hot):
+        light = np.maximum(g[hot], np.minimum(r[hot], b[hot]))
+        r[hot] = (light * .48).round()
+        g[hot] = light
+        b[hot] = (light * .72).round()
+    out = np.stack([r, g, b, a], axis=-1).clip(0, 255).astype(np.uint8)
+    fm = np.minimum(out[..., 0], out[..., 2]).astype(np.int16) - out[..., 1]
+    assert not np.any((fm > 82) & (np.abs(out[..., 0].astype(np.int16) - out[..., 2]) < 64) & (out[..., 1] < 150) & (out[..., 3] > 0)), "franja magenta após reamostragem"
+    return Image.fromarray(out, "RGBA")
+
+
 def pad_save(im: Image.Image, name: str, max_w: int | None = None) -> Image.Image:
     im = trim(im)
     if max_w and im.width > max_w - 2 * PAD:
         h = max(1, round(im.height * (max_w - 2 * PAD) / im.width))
         im = resize_premult(im, (max_w - 2 * PAD, h))
+    im = clean_resize_spill(im)
     canvas = Image.new("RGBA", (im.width + 2 * PAD, im.height + 2 * PAD), (0, 0, 0, 0))
     canvas.paste(im, (PAD, PAD))
     a = np.array(canvas)[..., 3]
@@ -160,143 +202,6 @@ def floor_tile(src: Image.Image, name: str):
     pad_save(tile, name, max_w=260)
 
 
-def iso_poly(d, pts, fill, outline=METAL_DARK, width=3):
-    d.polygon(pts, fill=fill)
-    d.line(pts + [pts[0]], fill=outline, width=width, joint="curve")
-
-
-def draw_regulator() -> Image.Image:
-    im = Image.new("RGBA", (280, 280), (0, 0, 0, 0))
-    d = ImageDraw.Draw(im)
-    # Pipes connected to the weighted foot.
-    d.line([(54, 220), (24, 238), (24, 258)], fill=METAL_DARK, width=14)
-    d.line([(226, 220), (254, 238), (254, 258)], fill=METAL_DARK, width=14)
-    iso_poly(d, [(48, 218), (140, 264), (232, 218), (140, 174)], METAL_DARK)
-    iso_poly(d, [(48, 204), (140, 250), (232, 204), (140, 160)], METAL)
-    iso_poly(d, [(78, 128), (140, 158), (202, 128), (140, 98)], METAL_LIGHT)
-    iso_poly(d, [(78, 128), (140, 158), (140, 226), (78, 196)], METAL)
-    iso_poly(d, [(140, 158), (202, 128), (202, 196), (140, 226)], METAL_DARK)
-    # Brass flywheel, front face.
-    d.ellipse((84, 74, 196, 186), fill=METAL_DARK, outline=(154, 106, 38, 255), width=10)
-    d.ellipse((96, 86, 184, 174), outline=AMBER, width=7)
-    for k in range(6):
-        a = k * math.pi / 3
-        d.line([(140, 130), (140 + 40 * math.cos(a), 130 + 40 * math.sin(a))], fill=(190, 132, 44, 255), width=7)
-    d.ellipse((126, 116, 154, 144), fill=METAL_LIGHT, outline=AMBER, width=3)
-    # Gauge and green needle.
-    d.rounded_rectangle((164, 52, 216, 92), 6, fill=METAL_DARK, outline=METAL_LIGHT, width=3)
-    d.arc((172, 58, 208, 88), 180, 360, fill=GREEN, width=3)
-    d.line([(190, 82), (201, 64)], fill=GREEN, width=3)
-    d.ellipse((186, 78, 194, 86), fill=AMBER)
-    return im
-
-
-def draw_relicario() -> Image.Image:
-    im = Image.new("RGBA", (260, 260), (0, 0, 0, 0))
-    d = ImageDraw.Draw(im)
-    base = [(40, 190), (85, 168), (175, 168), (220, 190), (175, 214), (85, 214)]
-    iso_poly(d, [(40, 190), (85, 214), (175, 214), (220, 190), (220, 216), (175, 240), (85, 240), (40, 216)], METAL_DARK)
-    iso_poly(d, base, METAL)
-    d.line([(52, 194), (88, 212), (172, 212), (208, 194)], fill=GREEN_DARK, width=4)
-    # Three armored prongs, all connected to the plinth.
-    for x, y in [(72, 176), (130, 166), (188, 176)]:
-        iso_poly(d, [(x - 10, y + 20), (x + 10, y + 20), (x + 7, y - 22), (x - 4, y - 30)], METAL_LIGHT)
-        d.line([(x, y - 20), (x, y + 10)], fill=GREEN, width=3)
-    # Suspended crystal, joined by faint filaments so sprite-clean keeps it.
-    d.line([(82, 150), (130, 104), (178, 150)], fill=(90, 210, 145, 130), width=2)
-    d.line([(130, 166), (130, 124)], fill=(90, 210, 145, 130), width=2)
-    crystal = [(130, 58), (160, 92), (130, 132), (100, 92)]
-    iso_poly(d, crystal, (112, 246, 166, 255), GREEN_DARK, 3)
-    d.polygon([(130, 58), (130, 132), (100, 92)], fill=(64, 178, 116, 255))
-    d.line([(100, 92), (160, 92)], fill=(210, 255, 226, 255), width=2)
-    d.ellipse((116, 218, 144, 228), fill=AMBER)
-    return im
-
-
-def draw_arch() -> Image.Image:
-    im = Image.new("RGBA", (300, 360), (0, 0, 0, 0))
-    d = ImageDraw.Draw(im)
-    # Chamfered rectangular maintenance arch, empty inside.
-    outer = [(34, 330), (34, 54), (62, 26), (238, 26), (266, 54), (266, 330), (222, 330), (222, 76), (78, 76), (78, 330)]
-    d.polygon(outer, fill=METAL)
-    d.line(outer + [outer[0]], fill=METAL_DARK, width=8, joint="curve")
-    d.line([(78, 326), (78, 76), (222, 76), (222, 326)], fill=GREEN, width=5)
-    d.rectangle((20, 320, 92, 346), fill=METAL_DARK, outline=METAL_LIGHT, width=3)
-    d.rectangle((208, 320, 280, 346), fill=METAL_DARK, outline=METAL_LIGHT, width=3)
-    for x in (46, 232):
-        for y in (110, 170, 230):
-            d.rectangle((x, y, x + 22, y + 12), fill=METAL_DARK)
-            d.rectangle((x + 4, y + 3, x + 18, y + 6), fill=GREEN_DARK)
-    for x in (34, 222):
-        d.rectangle((x, 286, x + 44, 306), fill=AMBER)
-        for k in range(3):
-            d.line([(x + 6 + k * 14, 304), (x + 16 + k * 14, 288)], fill=METAL_DARK, width=5)
-    d.line([(48, 80), (40, 140), (48, 200), (40, 260)], fill=METAL_DARK, width=7)
-    d.rectangle((112, 36, 188, 60), fill=METAL_DARK, outline=METAL_LIGHT, width=2)
-    d.ellipse((142, 42, 158, 56), fill=GREEN)
-    return im
-
-
-def draw_panorama() -> Image.Image:
-    """Pintura procedural em camadas: céu, ilhas, estación bio e canal."""
-    W, H = 1600, 640
-    im = Image.new("RGB", (W, H))
-    px = im.load()
-    for y in range(H):
-        t = y / H
-        top = (10, 20, 34)
-        hor = (44, 86, 92)
-        c = tuple(int(top[i] + (hor[i] - top[i]) * min(1, t * 1.5)) for i in range(3))
-        for x in range(W):
-            px[x, y] = c
-    d = ImageDraw.Draw(im)
-    rng = random.Random(40410)
-    for _ in range(110):
-        x, y = rng.randrange(W), rng.randrange(250)
-        s = rng.choice([1, 1, 1, 2])
-        d.rectangle((x, y, x + s, y + s), fill=rng.choice([(180, 220, 220), (120, 170, 180), (230, 210, 150)]))
-    d.ellipse((1240, 64, 1304, 128), fill=(190, 214, 202))
-    d.ellipse((1252, 60, 1316, 124), fill=(16, 29, 42))
-    # Distant island silhouettes.
-    for layer, (base, color, amp) in enumerate([(330, (28, 58, 66), 42), (390, (24, 66, 62), 60), (455, (18, 54, 48), 74)]):
-        pts = [(0, H)]
-        for x in range(0, W + 24, 24):
-            y = base + int(math.sin(x * .006 + layer * 2) * amp + math.sin(x * .021 + layer) * amp * .35)
-            pts.append((x, y))
-        pts.append((W, H))
-        d.polygon(pts, fill=color)
-    # Botanical research station on the right horizon.
-    for x, y, w, h in [(1110, 300, 150, 110), (1280, 270, 120, 140), (1410, 320, 130, 90)]:
-        d.rectangle((x, y, x + w, y + h), fill=(30, 48, 52))
-        d.rectangle((x + 8, y + 8, x + w - 8, y + h), fill=(38, 62, 64))
-        d.arc((x, y - 44, x + w, y + 44), 180, 360, fill=(72, 126, 112), width=10)
-        for wx in range(x + 16, x + w - 10, 24):
-            for wy in range(y + 24, y + h - 10, 26):
-                d.rectangle((wx, wy, wx + 10, wy + 8), fill=rng.choice([(110, 220, 150), (230, 176, 80), (48, 90, 86)]))
-    # Turquoise channel far below, with horizontal glints.
-    d.rectangle((0, 478, W, H), fill=(16, 66, 78))
-    for _ in range(260):
-        x, y = rng.randrange(W), rng.randrange(482, H)
-        length = rng.randrange(8, 70)
-        d.line([(x, y), (x + length, y)], fill=rng.choice([(32, 96, 104), (48, 120, 122), (22, 78, 90)]), width=2)
-    # Jungle canopy texture on the nearest island band.
-    for _ in range(420):
-        x = rng.randrange(W)
-        y = rng.randrange(410, 478)
-        r = rng.randrange(5, 18)
-        d.ellipse((x - r, y - r, x + r, y + r // 2), fill=rng.choice([(20, 62, 48), (26, 76, 54), (16, 50, 42), (34, 88, 60)]))
-    # Mist bands.
-    mist = Image.new("RGBA", (W, H), (0, 0, 0, 0))
-    md = ImageDraw.Draw(mist)
-    for y in (350, 418, 470):
-        md.rectangle((0, y, W, y + 18), fill=(130, 190, 184, 24))
-    mist = mist.filter(ImageFilter.GaussianBlur(10))
-    im = Image.alpha_composite(im.convert("RGBA"), mist).convert("RGB")
-    im.save(OUT / "viaduto-panorama.png", optimize=True)
-    print(f"saved viaduto-panorama.png {im.size} (background, opaque by design)")
-    return im
-
-
 def main():
     OUT.mkdir(parents=True, exist_ok=True)
     floor_tile(Image.open(SRC / "piso-grafite.png"), "piso-grafite.png")
@@ -316,27 +221,42 @@ def main():
     # O eixo veio em tira de cinco estudos: usa um único estudo completo.
     spindle = Image.open(SRC / "eixo-adaptacao.png")
     spindle = spindle.crop((0, 0, spindle.width // 5, spindle.height))
-    pad_save(remove_magenta(spindle), "eixo-adaptacao.png", max_w=420)
+    # Espelha a FONTE, não o objeto: a face de serviço fica a sudeste, como
+    # nas salas aprovadas, sem trocar os eixos da hitbox no collision.js.
+    spindle = ImageOps.mirror(remove_magenta(spindle, holes=True))
+    pad_save(spindle, "eixo-adaptacao.png", max_w=420)
 
     # Mantém só o pórtico + umbrais; as abas laterais da fonte virariam uma
     # muralha larga demais para o vão duplo (y=5..6) da câmara.
     gate_src = Image.open(SRC / "malha-cinetica.png")
     gate_src = gate_src.crop((int(gate_src.width * .22), 0, int(gate_src.width * .78), gate_src.height))
-    gate = shear(remove_magenta(gate_src), -.5)
+    gate = shear(remove_magenta(gate_src, membrane=True), -.5)
     pad_save(gate, "malha-cinetica.png", max_w=280)
-    pad_save(remove_magenta(Image.open(SRC / "pilar-cinetico.png")), "pilar-cinetico.png", max_w=150)
-    pad_save(remove_magenta(Image.open(SRC / "terminal-registro.png"), holo=True), "terminal-registro.png", max_w=220)
+    pad_save(remove_magenta(Image.open(SRC / "pilar-cinetico.png"), holes=True), "pilar-cinetico.png", max_w=150)
+    terminal = ImageOps.mirror(remove_magenta(Image.open(SRC / "terminal-registro.png"), holo=True, holes=True))
+    pad_save(terminal, "terminal-registro.png", max_w=220)
 
     # Contrapeso: estudo intacto + estudo com a fissura âmbar acesa.
     anvil = Image.open(SRC / "bigorna-contrapeso.png")
     step = anvil.width // 5
-    pad_save(remove_magenta(anvil.crop((step * 3, 0, step * 4, anvil.height))), "bigorna-contrapeso.png", max_w=240)
-    pad_save(remove_magenta(anvil.crop((step * 4, 0, step * 5, anvil.height))), "contrapeso-liberado.png", max_w=240)
+    pad_save(remove_magenta(anvil.crop((step * 3, 0, step * 4, anvil.height)), holes=True), "bigorna-contrapeso.png", max_w=240)
+    pad_save(remove_magenta(anvil.crop((step * 4, 0, step * 5, anvil.height)), holes=True), "contrapeso-liberado.png", max_w=240)
 
-    pad_save(draw_regulator(), "regulador-inercia.png", max_w=220)
-    pad_save(draw_relicario(), "relicario-vetor.png", max_w=220)
-    pad_save(draw_arch(), "arco-viaduto.png", max_w=300)
-    draw_panorama()
+    # 0.11.6: as três peças que antes eram procedurais agora vêm de arte
+    # pintada (mesma linguagem visual das salas Maré/Domínio, face SE).
+    regulator = Image.open(SRC / "regulador-inercia-v2.png")
+    pad_save(remove_magenta(regulator, holes=True), "regulador-inercia.png", max_w=230)
+
+    # A fonte do relicário trouxe dois estudos lado a lado; fica o da direita
+    # (cristal maior + lâmpada âmbar na face sudeste).
+    relic = Image.open(SRC / "relicario-vetor-v2.png")
+    relic = relic.crop((relic.width // 2, 0, relic.width, relic.height))
+    pad_save(remove_magenta(relic, holes=True), "relicario-vetor.png", max_w=220)
+
+    # Idem para o pórtico: estudo da direita, com o vão vazado de verdade.
+    arch = Image.open(SRC / "arco-viaduto-v2.png")
+    arch = arch.crop((arch.width // 2, 0, arch.width, arch.height))
+    pad_save(remove_magenta(arch, holes=True), "arco-viaduto.png", max_w=300)
 
 
 if __name__ == "__main__":

@@ -356,6 +356,7 @@ await loadSprites([
   { id: 'visao_dominio', src: 'assets/sprites/backgrounds/camara-dominio-visao.jpg' },
   { id: 'visao_mare', src: 'assets/sprites/backgrounds/camara-mare-visao.jpg' },
   { id: 'visao_nucleo', src: 'assets/sprites/backgrounds/camara-nucleo-visao.jpg' },
+  { id: 'visao_bio', src: 'assets/sprites/backgrounds/camara-bio-visao.jpg' },
   { id: 'beach_novas_artes', src: 'assets/sprites/tiles/beach-novas-artes.png' },
   { id: 'fauna_costeira', src: 'assets/sprites/fauna/fauna-costeira.png' },
   { id: 'fauna_nova_1010', src: 'assets/sprites/fauna/fauna-nova-1010.png' },

@@ -3745,7 +3745,7 @@ function drawGuiaSprite(npc, ix, iy) {
   if (!fr) return false;
 
   const pe = pePos(fr);
-  const scale = 0.165;
+  const scale = 0.215;
   const bob = npc.moving ? Math.abs(Math.sin(performance.now() / 120)) * 2 : 0;
 
   ctx.save();

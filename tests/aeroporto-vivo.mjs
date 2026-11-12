@@ -85,6 +85,10 @@ assert(!(map.objects ?? []).some(o => o.id === 'painel_partidas' && o.sprite !==
   'painel de partidas deve usar a arte nova');
 const viajante = map.actors.find(a => a.id === 'viajante_aeroporto');
 assert(viajante?.tipo === 'viajante_ambiental', 'viajante ambiental ausente');
+// Escalas calibradas (nov/2026): L-9 presença grande mas não dominante; Guia legível
+const l9 = map.actors.find(a => a.id === 'robo_aeroporto');
+assert(l9?.tipo === 'robo', 'L-9 ausente');
+assert(l9.spriteScale > 1 && l9.spriteScale <= 1.4, `L-9 fora da proporção (${l9.spriteScale})`);
 assert(Array.isArray(viajante.visitorRoute) && viajante.visitorRoute.length === 2, 'viajante sem rota própria');
 assert(map.actors.some(a => a.id === 'robo_aeroporto' && a.tipo === 'robo'), 'unidade L-9 ausente');
 assert(map.spawnPoints.inicio && map.spawnPoints.vindo_da_carga, 'spawns preservados');

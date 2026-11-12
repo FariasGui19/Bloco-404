@@ -6,9 +6,12 @@ export function recordAirportDiagnosis(progress) {
   progress.flags.airportTerminalDiagnosed = true;
   if (progress.activeQuest?.id === 'calibracao_de_eco') {
     progress.activeQuest.stage = 'find_fragment';
-    progress.activeQuest.description = progress.archetype === 'motor_bio_forja'
-      ? 'O Terminal de Manutenção detectou um Fragmento de Sincronização na Área de Carga Desativada do Aeroporto.'
-      : 'O terminal detectou um Fragmento de Sincronização na câmara acessível pela porta da carga do Aeroporto.';
+    progress.activeQuest.description = {
+      motor_bio_forja: 'O Terminal de Manutenção detectou um Fragmento de Sincronização na Área de Carga Desativada. Reconfigure o painel [R] e cruze a grade de impulso [Q].',
+      lamina_dominio_anciao: 'O terminal detectou um Fragmento de Sincronização na Câmara de Frequência. Leia o lacre [R] e rompa-o com a Lâmina [Q].',
+      mare_astral: 'O terminal detectou um Fragmento de Sincronização na Câmara de Fluxo. Leia a corrente [R] e atravesse com o Passo de Corrente [Q].',
+      nucleo_dez_forma: 'O terminal detectou um Fragmento de Sincronização na Câmara de Eco Cinético. Leia a janela [R] e cruze com o Pulso Veloz [Q].',
+    }[progress.archetype] ?? 'O terminal detectou um Fragmento de Sincronização na câmara acessível pela porta da carga do Aeroporto.';
   }
 }
 
@@ -17,7 +20,7 @@ export function recordCargoDiagnosis(progress) {
   progress.flags.cargoSecurityDiagnosed = true;
   if (progress.activeQuest?.id === 'calibracao_de_eco') {
     progress.activeQuest.stage = 'collect_fragment';
-    progress.activeQuest.description = 'A Grade de Impulso foi reconfigurada. Use o Propulsor de Impulso para atravessar o campo e coletar o Fragmento de Sincronização.';
+    progress.activeQuest.description = 'A grade de impulso foi reconfigurada. Use o Propulsor [Q] para cruzar o campo e recolher o Fragmento no berço além da grade.';
   }
 }
 
@@ -35,7 +38,7 @@ export function installMetroFragment(progress) {
     progress.activeQuest = {
       id: 'embarque_dimensional',
       title: 'EMBARQUE DIMENSIONAL',
-      description: 'Acesse a Plataforma Interdimensional pelo Metrô e investigue a primeira rota disponível.',
+      description: 'A linha acordou. Acesse a Plataforma Interdimensional pelo Metrô e investigue a primeira rota — algo passou por ali três segundos antes de você.',
       status: 'active',
     };
   }

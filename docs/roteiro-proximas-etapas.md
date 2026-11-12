@@ -1,5 +1,26 @@
 # Próximas Etapas — Bloco 404
 
+## Concluído na 0.11.7 — Área de Carga viva
+
+- **Refinos do Núcleo** — o arco do Viaduto agora olha para a rota
+  (espelhado em tela, sem hitbox) e ganhou filme de energia, varredura e
+  LEDs de status. O contrapeso partido **mantém colisão** (`manterColisao`):
+  vira entulho sólido; a rota livre é o portal, não o corpo da bigorna.
+- **Área de Carga viva** — os bays compactos por arquétipo ganharam piso
+  pintado do módulo, casca de contêineres, esteira de conferência, drone
+  de patrulha, campo animado da trava e berço do fragmento. Travas com
+  arte pintada: Malha Cinética (Núcleo), Lacre de Frequência (Domínio),
+  Fluxo Contido (Maré) e Grade de Impulso (Bio). Gramática R → Q →
+  fragmento além da trava → metrô.
+- **Missão mais dinâmica** — `calibracao_de_eco` fala a língua do módulo
+  equipado; abrir a trava puxa o estágio para `collect_fragment` na hora;
+  manifestos e fragmentos têm falas próprias por arquétipo.
+- **Verificação** — `tests/carga-viva.mjs` + suíte completa **93/93**;
+  QA de navegador com os 4 bays, contrapeso sólido, eclusa animada e
+  R → Q → fragmento no Núcleo, zero erros de página.
+
+Versão `0.11.7-carga-viva`.
+
 ## Concluído na 0.11.6 — Núcleo: polimento e Viaduto vivo
 
 - **Arte pintada, face SE** — regulador, relicário e pórtico deixaram de ser

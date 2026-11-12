@@ -175,10 +175,10 @@ export function render(map, state) {
       const clipMareAquario = map.meta?.estiloSala === 'mare_astral';
       if (clipMareAquario) {
         const p = (x, y) => [(x - y) * HW, (x + y) * HH];
-        const [a0, a1] = p(14.32, 1.0);
+        const [a0, a1] = p(15.0, 1.0);
         const [b0, b1] = p(21.0, 1.0);
         const [c0, c1] = p(21.0, 11.0);
-        const [d0, d1] = p(14.32, 11.0);
+        const [d0, d1] = p(15.0, 11.0);
         ctx.save();
         ctx.beginPath();
         ctx.moveTo(a0, a1); ctx.lineTo(b0, b1); ctx.lineTo(c0, c1); ctx.lineTo(d0, d1);
@@ -2947,6 +2947,11 @@ function drawWallTile(x, y, map) {
     return;
   }
 
+  if (map.meta?.estiloSala === 'mare_astral') {
+    drawMareAstralWallTile(x, y, front, map);
+    return;
+  }
+
   if (!front && (x === 0 || y === 0) && map.meta?.estiloParede !== 'simples') {
     if (drawWallSprite(x, y, map)) return;
   }
@@ -3348,9 +3353,9 @@ function drawMareAstralFloorOverlay(map, curState) {
     }
   }
 
-  // 2) Anel hidro-harmônico sob o Núcleo Hidrodimensional (6.5, 2.6) e sob o Relicário (12.5, 6.0)
+  // 2) Anel hidro-harmônico sob o Núcleo Hidrodimensional (6.1, 3.5) e sob o Relicário (12.5, 6.0)
   {
-    const [gx, gy] = p(6.5, 2.65);
+    const [gx, gy] = p(6.1, 3.5);
     const grad = ctx.createRadialGradient(gx, gy, 6, gx, gy, 74);
     grad.addColorStop(0, sincronizada ? 'rgba(92, 247, 235, 0.42)' : 'rgba(42, 198, 224, 0.26)');
     grad.addColorStop(1, 'rgba(12, 60, 88, 0)');
@@ -3369,28 +3374,20 @@ function drawMareAstralFloorOverlay(map, curState) {
     ctx.fill();
   }
 
-  // 3) Cais de bronze naval separando a Dársena (x=14) do Grande Aquário Oceânico (x=14..21)
+  // 3) Degraus submersos da rampa náutica (x=14..15, y=5..7) rumo ao Grande Aquário Oceânico
   {
-    for (const [y0, y1] of [[1, 5], [7, rows]]) {
-      const [p0x, p0y] = p(dockCols, y0);
-      const [p1x, p1y] = p(dockCols, y1);
-      const [q0x, q0y] = p(dockCols + 0.42, y0);
-      const [q1x, q1y] = p(dockCols + 0.42, y1);
-      quad(p0x, p0y, q0x, q0y, q1x, q1y, p1x, p1y, '#21384a', '#8c7548', 1.4);
-    }
-    // Rampa submersa de bronze/ardósia em x=14..15, y=5..7
     for (let step = 0; step < 3; step++) {
-      const sx0 = dockCols + step * 0.30;
-      const sx1 = sx0 + 0.28;
-      const [r0x, r0y] = p(sx0, 5.05);
-      const [r1x, r1y] = p(sx1, 5.05);
-      const [r2x, r2y] = p(sx1, 6.95);
-      const [r3x, r3y] = p(sx0, 6.95);
-      const alpha = (0.72 - step * 0.20).toFixed(2);
+      const sx0 = dockCols + step * 0.32;
+      const sx1 = sx0 + 0.30;
+      const [r0x, r0y] = p(sx0, 5.06);
+      const [r1x, r1y] = p(sx1, 5.06);
+      const [r2x, r2y] = p(sx1, 6.94);
+      const [r3x, r3y] = p(sx0, 6.94);
+      const alpha = (0.76 - step * 0.20).toFixed(2);
       quad(
         r0x, r0y, r1x, r1y, r2x, r2y, r3x, r3y,
-        `rgba(26, 62, 82, ${alpha})`,
-        comportaAberta ? 'rgba(92, 247, 235, 0.65)' : 'rgba(140, 117, 72, 0.55)',
+        `rgba(24, 58, 78, ${alpha})`,
+        comportaAberta ? 'rgba(92, 247, 235, 0.68)' : 'rgba(140, 117, 72, 0.58)',
         1
       );
     }
@@ -3522,55 +3519,55 @@ function drawMareAstralOuterWallShell(map) {
 }
 
 function drawMareAstralWindowLife(map, curState) {
-  // Animação viva por cima dos janelões panorâmicos da parede nordeste (sem cobrir objetos à frente)
+  // Animação viva contida exatamente dentro dos 3 janelões panorâmicos da parede nordeste (y=1.0)
   const p = (x, y) => [(x - y) * HW, (x + y) * HH];
   const t = performance.now() / 1000;
   const windows = [
-    { wx: 4.1, wy: 0.92, seed: 1.1 },
-    { wx: 7.7, wy: 0.92, seed: 3.4 },
-    { wx: 12.2, wy: 0.92, seed: 5.7 },
+    { wx: 5.25, wy: 1.0, seed: 1.1 },
+    { wx: 8.35, wy: 1.0, seed: 3.4 },
+    { wx: 12.55, wy: 1.0, seed: 5.7 },
   ];
 
   ctx.save();
   for (const w of windows) {
     const [cx, cy] = p(w.wx, w.wy);
-    // Feixes de luz cáustica inclinados dentro do vidro
+    // Feixes de luz cáustica suaves dentro da moldura do vidro
     for (let k = -1; k <= 1; k++) {
-      const sway = Math.sin(t * 1.1 + w.seed + k) * 5;
-      const bx = cx + k * 24 + sway;
-      const by = cy - 42 + k * 11;
-      const ray = ctx.createLinearGradient(bx - 6, by - 22, bx + 8, by + 20);
-      ray.addColorStop(0, 'rgba(130, 252, 255, 0.22)');
+      const sway = Math.sin(t * 1.1 + w.seed + k) * 3.5;
+      const bx = cx + k * 18 + sway;
+      const by = cy - 34 + k * 9;
+      const ray = ctx.createLinearGradient(bx - 4, by - 16, bx + 6, by + 14);
+      ray.addColorStop(0, 'rgba(130, 252, 255, 0.20)');
       ray.addColorStop(1, 'rgba(30, 170, 210, 0)');
       ctx.fillStyle = ray;
       ctx.beginPath();
-      ctx.moveTo(bx - 5, by - 20);
-      ctx.lineTo(bx + 5, by - 16);
-      ctx.lineTo(bx + 11, by + 18);
-      ctx.lineTo(bx - 3, by + 14);
+      ctx.moveTo(bx - 4, by - 15);
+      ctx.lineTo(bx + 4, by - 12);
+      ctx.lineTo(bx + 8, by + 13);
+      ctx.lineTo(bx - 2, by + 10);
       ctx.closePath();
       ctx.fill();
     }
 
-    // Cardume luminoso cruzando suavemente o janelão (paralaxe 2:1)
-    for (let f = 0; f < 4; f++) {
-      const u = ((t * 0.14 + w.seed * 0.2 + f * 0.23) % 1) - 0.5;
-      const fx = cx + u * 82;
-      const fy = cy - 38 + u * 41 + Math.sin(t * 2.4 + f + w.seed) * 4;
-      ctx.fillStyle = 'rgba(148, 252, 255, 0.58)';
+    // Cardume luminoso cruzando suavemente o janelão ao longo do eixo +2:+1
+    for (let f = 0; f < 3; f++) {
+      const u = ((t * 0.14 + w.seed * 0.2 + f * 0.31) % 1) - 0.5;
+      const fx = cx + u * 58;
+      const fy = cy - 33 + u * 29 + Math.sin(t * 2.4 + f + w.seed) * 2.5;
+      ctx.fillStyle = 'rgba(148, 252, 255, 0.56)';
       ctx.beginPath();
-      ctx.ellipse(fx, fy, 3.6, 1.5, 0.46, 0, Math.PI * 2);
+      ctx.ellipse(fx, fy, 3.0, 1.3, 0.46, 0, Math.PI * 2);
       ctx.fill();
     }
 
-    // Esporos bioluminescentes ascendentes
-    for (let s = 0; s < 5; s++) {
-      const v = (t * 0.28 + s * 0.19 + w.seed) % 1;
-      const sx = cx + (s - 2) * 16 + Math.sin(t * 1.8 + s) * 3;
-      const sy = cy - 18 + (s - 2) * 7 - v * 34;
-      ctx.fillStyle = `rgba(176, 255, 252, ${(0.65 * (1 - v)).toFixed(3)})`;
+    // Esporos bioluminescentes ascendentes dentro do vidro
+    for (let s = 0; s < 4; s++) {
+      const v = (t * 0.26 + s * 0.24 + w.seed) % 1;
+      const sx = cx + (s - 1.5) * 13 + Math.sin(t * 1.8 + s) * 2;
+      const sy = cy - 18 + (s - 1.5) * 6.5 - v * 24;
+      ctx.fillStyle = `rgba(176, 255, 252, ${(0.60 * (1 - v)).toFixed(3)})`;
       ctx.beginPath();
-      ctx.arc(sx, sy, 1.6, 0, Math.PI * 2);
+      ctx.arc(sx, sy, 1.4, 0, Math.PI * 2);
       ctx.fill();
     }
   }
@@ -3589,44 +3586,44 @@ function drawMareAstralHudCallouts(map, curState) {
   const t = performance.now() / 1000;
 
   ctx.save();
-  // 1) Letreiro náutico sobre a Eclusa Doca A2
+  // 1) Letreiro náutico centrado no lintel da Eclusa Doca A2
   {
     const [dx, dy] = p(1.05, 5.95);
     ctx.font = 'bold 9px monospace';
     ctx.textAlign = 'center';
     ctx.fillStyle = 'rgba(7, 19, 29, 0.90)';
-    ctx.fillRect(dx - 29, dy - 120, 58, 14);
+    ctx.fillRect(dx - 29, dy - 92, 58, 14);
     ctx.strokeStyle = sincronizada ? '#5cf7eb' : '#2fb8cc';
     ctx.lineWidth = 1;
-    ctx.strokeRect(dx - 29, dy - 120, 58, 14);
+    ctx.strokeRect(dx - 29, dy - 92, 58, 14);
     ctx.fillStyle = sincronizada ? '#b8ffff' : '#6eeeff';
-    ctx.fillText('DOCA A2', dx, dy - 110);
+    ctx.fillText('DOCA A2', dx, dy - 82);
   }
 
   // 2) Janela laminar revelada pelo Senso de Corrente [R] sobre o Fluxo Contido
   if ((revealActive || scanned) && !gateOpen) {
     const [gx, gy] = p(10.5, 6.0);
-    const r = 14 + 3.2 * Math.sin(t * 5.6);
+    const r = 13 + 3.0 * Math.sin(t * 5.6);
     ctx.strokeStyle = '#5cf7eb';
     ctx.lineWidth = 2;
     ctx.beginPath();
-    ctx.arc(gx, gy - 28, r, 0, Math.PI * 2);
+    ctx.arc(gx, gy - 26, r, 0, Math.PI * 2);
     ctx.stroke();
 
     ctx.fillStyle = 'rgba(6, 22, 34, 0.90)';
-    ctx.fillRect(gx - 58, gy - 60, 116, 14);
+    ctx.fillRect(gx - 58, gy - 58, 116, 14);
     ctx.strokeStyle = 'rgba(92, 247, 235, 0.80)';
     ctx.lineWidth = 1;
-    ctx.strokeRect(gx - 58, gy - 60, 116, 14);
+    ctx.strokeRect(gx - 58, gy - 58, 116, 14);
     ctx.fillStyle = '#9efcff';
     ctx.font = 'bold 8px monospace';
     ctx.textAlign = 'center';
-    ctx.fillText('JANELA LAMINAR • [Q]', gx, gy - 50);
+    ctx.fillText('JANELA LAMINAR • [Q]', gx, gy - 48);
   }
 
   // 3) Indicador da Comporta do Aquário / Rota de Nado Livre para a Enseada dos Ecos
   if (gateOpen) {
-    const [ax, ay] = comportaAberta ? p(19.6, 5.8) : p(14.2, 6.0);
+    const [ax, ay] = comportaAberta ? p(18.5, 5.7) : p(13.85, 4.65);
     const prontoAbrir = !comportaAberta && sincronizada && !!flags.visitou_praia_inicial && nadoPronto;
     const label = comportaAberta
       ? 'CONDUTO -> ENSEADA DOS ECOS'
@@ -3634,15 +3631,16 @@ function drawMareAstralHudCallouts(map, curState) {
         ? 'ABRIR ROTA OCEÂNICA • [E]'
         : 'ROTA MARINHA • TREINE NA PRAIA';
     const w = label.length * 5.2 + 14;
+    const yOff = comportaAberta ? 86 : 74;
     ctx.fillStyle = 'rgba(6, 22, 34, 0.88)';
-    ctx.fillRect(ax - w / 2, ay - 76, w, 14);
+    ctx.fillRect(ax - w / 2, ay - yOff, w, 14);
     ctx.strokeStyle = comportaAberta || prontoAbrir ? '#5cf7eb' : '#6c8ea3';
     ctx.lineWidth = 1;
-    ctx.strokeRect(ax - w / 2, ay - 76, w, 14);
+    ctx.strokeRect(ax - w / 2, ay - yOff, w, 14);
     ctx.fillStyle = comportaAberta || prontoAbrir ? '#b8ffff' : '#a8c8d8';
     ctx.font = 'bold 8px monospace';
     ctx.textAlign = 'center';
-    ctx.fillText(label, ax, ay - 66);
+    ctx.fillText(label, ax, ay - yOff + 10);
   }
 
   // 4) Onda de expansão fluida no Passo de Corrente [Q] / abertura da comporta
@@ -3657,6 +3655,73 @@ function drawMareAstralHudCallouts(map, curState) {
     ctx.ellipse(fx, fy - 10, rad, rad * 0.5, 0, 0, Math.PI * 2);
     ctx.stroke();
   }
+  ctx.restore();
+}
+
+function drawMareAstralWallTile(x, y, front, map) {
+  if (front || x === 0 || y === 0) return;
+  const water = map?.aguaPraia?.[y]?.[x];
+  if (water && 'YyDdX'.includes(water)) return;
+
+  const tx = (x - y) * HW;
+  const ty = (x + y) * HH;
+  const flags = state?.progress?.flags ?? {};
+  const sincronizada = !!flags.darsena_mare_sincronizada;
+  const active = sincronizada || !!flags.gate_fluxo_contido_sala || !!flags.scan_fluxo_sala;
+  const cyanStroke = sincronizada ? '#7efcff' : active ? '#4ef2e4' : '#2b8ea8';
+
+  // Cais leste rebaixado (x = 14): mureta náutica de ardósia e bronze entre o Relicário e o Aquário
+  const isSeawall = x === 14;
+  const h = isSeawall ? 20 : 48;
+
+  // Face sudoeste
+  quad(
+    tx - HW, ty + HH,
+    tx, ty + TH,
+    tx, ty + TH - h,
+    tx - HW, ty + HH - h,
+    isSeawall ? '#132838' : '#102231',
+    '#07111a',
+    1
+  );
+  quad(tx - HW, ty + HH, tx, ty + TH, tx, ty + TH - 5, tx - HW, ty + HH - 5, '#6d5b38', '#141c24', 0.8);
+  quad(tx - HW, ty + HH - h + 5, tx, ty + TH - h + 5, tx, ty + TH - h, tx - HW, ty + HH - h, '#8c7548', '#18222c', 0.8);
+
+  // Face sudeste
+  quad(
+    tx, ty + TH,
+    tx + HW, ty + HH,
+    tx + HW, ty + HH - h,
+    tx, ty + TH - h,
+    isSeawall ? '#0e2231' : '#0c1b27',
+    '#060f17',
+    0.9
+  );
+  quad(tx, ty + TH, tx + HW, ty + HH, tx + HW, ty + HH - 5, tx, ty + TH - 5, '#594a2d', '#111820', 0.8);
+  quad(tx, ty + TH - h + 5, tx + HW, ty + HH - h + 5, tx + HW, ty + HH - h, tx, ty + TH - h, '#75613b', '#141d26', 0.8);
+
+  // Topo em titânio naval com duto hidrodinâmico ciano rumo ao pórtico
+  quad(tx, ty - h, tx + HW, ty + HH - h, tx, ty + TH - h, tx - HW, ty + HH - h, '#1c3548', '#8a7346', 1);
+  ctx.save();
+  if (!isSeawall) {
+    ctx.strokeStyle = cyanStroke;
+    ctx.lineWidth = 1.8;
+    ctx.beginPath();
+    ctx.moveTo(tx - HW * 0.5, ty + HH * 1.5 - 8);
+    ctx.lineTo(tx - HW * 0.5, ty + HH * 1.5 - h + 8);
+    ctx.stroke();
+  }
+  const cTopX = tx + HW * 0.5, cTopY = ty + HH * 0.5 - h;
+  const cBotX = tx - HW * 0.5, cBotY = ty + HH * 1.5 - h;
+  ctx.strokeStyle = '#07131d';
+  ctx.lineWidth = 4.5;
+  ctx.beginPath();
+  ctx.moveTo(cTopX, cTopY);
+  ctx.lineTo(cBotX, cBotY);
+  ctx.stroke();
+  ctx.strokeStyle = cyanStroke;
+  ctx.lineWidth = 2.0;
+  ctx.stroke();
   ctx.restore();
 }
 

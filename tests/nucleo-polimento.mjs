@@ -86,6 +86,8 @@ assert.match(pipeline, /ImageOps\.mirror\(remove_magenta\(spindle/, 'eixo espelh
 assert.match(pipeline, /ImageOps\.mirror\(remove_magenta\(Image\.open\(SRC \/ "terminal-registro\.png"\)/, 'terminal espelhado na fonte para face SE');
 const rendererSrc = readFileSync(new URL('../js/engine/renderer.js', import.meta.url), 'utf8');
 assert.match(rendererSrc, /nucleo_10x'\) drawObjectContactShadows/, 'campo sombra:[w,h] é consumido no renderer do Núcleo');
+assert.match(rendererSrc, /drawNucleo10xViadutoGate/, 'eclusa do viaduto tem filme/varredura animados');
+assert.match(rendererSrc, /estiloSala === 'carga_eco'/, 'Área de Carga tem renderer vivo próprio');
 for (const file of ['regulador-inercia-v2.png', 'relicario-vetor-v2.png', 'arco-viaduto-v2.png']) {
   assert(existsSync(new URL(`../assets/source-art/sala-nucleo/${file}`, import.meta.url)), `fonte pintada ${file}`);
 }
@@ -155,6 +157,8 @@ await loadMap('sala_nucleo', 'vindo_do_aeroporto');
 const map = state.world.currentMap;
 const weight = state.objects.find(o => o.id === 'contrapeso_viaduto');
 assert.equal(weight.bloqueia, true);
+const arch = state.objects.find(o => o.id === 'arco_viaduto_nucleo');
+assert.equal(arch?.espelhar, true, 'arco do viaduto olha para a rota, não para fora da sala');
 const box = getObjectHitbox(weight);
 assert(box.width >= 1.2 && box.height >= .9, 'hitbox acompanha a base larga da bigorna');
 assert(!canStandAt(map, weight.x, weight.y, .25, state.player));
@@ -200,7 +204,8 @@ assert(Math.abs(state.player.ability.cast.dx - Math.SQRT1_2) < 1e-12, 'mira cong
 tick(.6);
 assert(isGateOpen(weight), 'Q enfileirado parte o contrapeso de verdade');
 assert.equal(state.progress.flags.rota_viaduto_vetores_aberta, true);
-assert.equal(weight.bloqueia, false, 'depois de partido, libera a câmara');
+assert.equal(weight.bloqueia, true, 'contrapeso partido vira entulho sólido, não porta atravessável');
+assert(!canStandAt(map, weight.x, weight.y, .25, state.player), 'rota liberada não deixa o corpo entrar no entulho');
 assert.match(state.player.ability.lastMessage, /CONTRAPESO PARTIDO/);
 
 // Cancelar a forma limpa a fila; trocar de mapa também. Nada dispara depois.

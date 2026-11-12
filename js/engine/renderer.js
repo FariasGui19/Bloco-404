@@ -211,6 +211,7 @@ export function render(map, state) {
     if (map.meta?.estiloSala === 'dominio_anciao') drawDominioUnderlay(map, state);
     if (map.meta?.estiloSala === 'mare_astral') drawMareAstralUnderlay(map, state);
     if (map.meta?.estiloSala === 'nucleo_10x') drawNucleo10xUnderlay(map, state);
+    if (map.meta?.estiloSala === 'carga_eco') drawCargoEcoUnderlay(map, state);
     drawFloors(map, state);
     drawHazards(state.hazards);
     if (map.id === 'hub_saguao') drawHubFloorMarkings();
@@ -220,6 +221,10 @@ export function render(map, state) {
     if (map.meta?.estiloSala === 'dominio_anciao') drawDominioFloorOverlay(map, state);
     if (map.meta?.estiloSala === 'mare_astral') drawMareAstralFloorOverlay(map, state);
     if (map.meta?.estiloSala === 'nucleo_10x') drawNucleo10xFloorOverlay(map, state);
+    if (map.meta?.estiloSala === 'carga_eco') {
+      drawCargoEcoFloorOverlay(map, state);
+      drawObjectContactShadows(map);
+    }
     if (map.id === 'ilha_estacao_bio') {
       drawStationPaving(map);
       drawStationCanalRims(map);
@@ -1129,6 +1134,10 @@ function drawFloorTile(type, x, y, map) {
   // Base dos Vetores — Núcleo 10X: grafite usinado e trilhos de indução.
   if (map.meta?.estiloSala === 'nucleo_10x') {
     if (drawNucleo10xFloorTile(x, y, tx, ty)) return;
+  }
+  // Área de Carga viva: piso pintado do módulo, não placa genérica.
+  if (map.meta?.estiloSala === 'carga_eco') {
+    if (drawCargoEcoFloorTile(x, y, tx, ty, map)) return;
   }
 
   // Placa específica (map.pisos) ou mapa inteiro em placas
@@ -2629,6 +2638,7 @@ function drawWorld(map, state) {
   if (map.meta?.estiloSala === 'dominio_anciao') drawDominioOuterWallShell(map);
   if (map.meta?.estiloSala === 'mare_astral') drawMareAstralOuterWallShell(map);
   if (map.meta?.estiloSala === 'nucleo_10x') drawNucleo10xOuterWallShell(map);
+  if (map.meta?.estiloSala === 'carga_eco' && map.meta?.useBackgroundWalls) drawCargoEcoWallShell(map);
   // Camada de fundo (trilho, trem, painéis murais): atrás de tudo, só acima do chão.
   for (const o of backList) if ((o.ordem ?? 0) >= 0) drawMapObject(o, state);
   if (map.meta?.estiloSala === 'mare_astral') drawMareAstralWindowLife(map, state);
@@ -2659,6 +2669,7 @@ function drawWorld(map, state) {
   if (map.meta?.estiloSala === 'dominio_anciao') drawDominioHudCallouts(map, state);
   if (map.meta?.estiloSala === 'mare_astral') drawMareAstralHudCallouts(map, state);
   if (map.meta?.estiloSala === 'nucleo_10x') drawNucleo10xHudCallouts(map, state);
+  if (map.meta?.estiloSala === 'carga_eco') drawCargoEcoHudCallouts(map, state);
   drawCombatFeedback();
   drawPlayerHurt();
 }
@@ -3747,6 +3758,298 @@ function drawMareAstralWallTile(x, y, front, map) {
 // =====================================================================
 // BASE DOS VETORES — NÚCLEO 10X (grafite usinado, indução verde-neon)
 // =====================================================================
+// =====================================================================
+// ÁREA DE CARGA VIVA — bay compacto por arquétipo (R → Q → fragmento).
+// Mesmo tamanho das câmaras antigas; a vida é luz, esteira, guindaste,
+// drone de conferência e campo da trava. Nada aqui decide colisão.
+// =====================================================================
+function drawCargoEcoFloorTile(x, y, tx, ty, map) {
+  const spriteId = {
+    bio: 'bio_sala_piso_placa',
+    dominio: 'dom_sala_piso_obsidiana',
+    mare: 'mare_sala_piso_ardosia',
+    nucleo: 'nucleo_sala_piso_grafite',
+  }[map.meta?.cargoKey] ?? 'nucleo_sala_piso_grafite';
+  const img = getSprite(spriteId);
+  const f = img && getFrame(img, 0, 0, 1, 1)?.crop;
+  if (!f) return false;
+  const w = CONFIG.TILE_W * 1.03;
+  const h = w * (f.h / f.w);
+  ctx.save();
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = 'high';
+  const flip = ((x * 7 + y * 13) & 1) === 1;
+  ctx.translate(tx, ty - 0.8);
+  if (flip) ctx.scale(-1, 1);
+  ctx.drawImage(f.canvas, 0, 0, f.w, f.h, -w / 2, 0, w, h);
+  ctx.restore();
+  return true;
+}
+
+// Casca do bay: paredes-contêiner baixas e divisória de carga no lugar dos
+// blocos genéricos. Colisão continua vindo do layout/walkMask.
+function drawCargoEcoWallShell(map) {
+  const p = (x, y) => [(x - y) * HW, (x + y) * HH];
+  const theme = cargoTheme(map);
+  const cols = map.layout[0].length - 1, rows = map.layout.length - 1;
+  const h = 20;
+  ctx.save();
+  const panel = (x0, y0, x1, y1, fill) => {
+    const [ax, ay] = p(x0, y0), [bx, by] = p(x1, y1);
+    quad(ax, ay, bx, by, bx, by - h, ax, ay - h, fill, '#05080c', 1);
+    ctx.strokeStyle = theme; ctx.globalAlpha = 0.32; ctx.lineWidth = 1.2;
+    ctx.beginPath(); ctx.moveTo(ax, ay - h + 5); ctx.lineTo(bx, by - h + 5); ctx.stroke();
+    ctx.globalAlpha = 1;
+  };
+  for (let x = 1; x < cols; x++) {
+    panel(x, 1, x + 1, 1, '#141c26');
+    panel(x, rows, x + 1, rows, '#0e151e');
+  }
+  for (let y = 1; y < rows; y++) {
+    panel(1, y, 1, y + 1, '#101822');
+    panel(cols, y, cols, y + 1, '#0c131b');
+  }
+  for (let y = 1; y < rows; y++) {
+    if (map.layout[y]?.[5] !== 1) continue;
+    const [ax, ay] = p(5, y), [bx, by] = p(6, y), [cx, cy] = p(6, y + 1), [dx, dy] = p(5, y + 1);
+    const ch = 34;
+    quad(ax, ay - ch, bx, by - ch, cx, cy - ch, dx, dy - ch, '#1b2733', '#05080c', 1);
+    quad(ax, ay, bx, by, bx, by - ch, ax, ay - ch, '#141c26', '#05080c', 1);
+    quad(bx, by, cx, cy, cx, cy - ch, bx, by - ch, '#0e151e', '#05080c', 1);
+    ctx.strokeStyle = theme; ctx.globalAlpha = 0.5; ctx.lineWidth = 1.4;
+    ctx.beginPath(); ctx.moveTo(ax + 4, ay - ch + 8); ctx.lineTo(bx - 4, by - ch + 8); ctx.stroke();
+    ctx.globalAlpha = 1;
+  }
+  ctx.restore();
+}
+
+function cargoTheme(map) { return map.meta?.corTema || '#35E6D3'; }
+function cargoGateObject(curState) {
+  return (curState?.objects ?? []).find(o => o?.gate || o?.dashPassable) ?? null;
+}
+function cargoFragmentObject(curState) {
+  return (curState?.collectibles ?? []).find(c => c.id === 'fragmento_sincronizacao') ?? null;
+}
+function cargoGateOpen(gate, flags) {
+  if (!gate) return false;
+  if (gate.dashPassable) return !!flags.fragmentoSincronizacaoColetado;
+  return !!(gate.aberto || flags[`gate_${gate.id}`]);
+}
+
+function drawCargoEcoUnderlay(map, curState) {
+  const p = (x, y) => [(x - y) * HW, (x + y) * HH];
+  const theme = cargoTheme(map);
+  const cols = map.layout[0].length - 1, rows = map.layout.length - 1;
+  const [cx, cy] = p((cols + 1) / 2, (rows + 1) / 2);
+  ctx.save();
+  const halo = ctx.createRadialGradient(cx, cy + 16, 24, cx, cy + 16, 520);
+  halo.addColorStop(0, 'rgba(20,32,40,0.55)');
+  halo.addColorStop(0.6, 'rgba(8,14,20,0.72)');
+  halo.addColorStop(1, 'rgba(3,6,10,0)');
+  ctx.fillStyle = halo;
+  ctx.beginPath(); ctx.ellipse(cx, cy + 18, 560, 280, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.globalAlpha = 0.16; ctx.fillStyle = theme;
+  ctx.beginPath(); ctx.ellipse(cx, cy + 18, 380, 190, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.globalAlpha = 1;
+  const skirt = 22;
+  const [wTopX, wTopY] = p(1, rows);
+  const [sMidX, sMidY] = p(cols, rows);
+  const [eTopX, eTopY] = p(cols, 1);
+  quad(wTopX, wTopY, sMidX, sMidY, sMidX, sMidY + skirt, wTopX, wTopY + skirt, '#0c1218', '#05080c', 1);
+  quad(sMidX, sMidY, eTopX, eTopY, eTopX, eTopY + skirt, sMidX, sMidY + skirt, '#0a1016', '#05080c', 1);
+  ctx.strokeStyle = theme; ctx.globalAlpha = 0.5; ctx.lineWidth = 1.6;
+  ctx.beginPath(); ctx.moveTo(wTopX, wTopY + 5); ctx.lineTo(sMidX, sMidY + 5); ctx.lineTo(eTopX, eTopY + 5); ctx.stroke();
+  ctx.restore();
+}
+
+function drawCargoEcoFloorOverlay(map, curState) {
+  const p = (x, y) => [(x - y) * HW, (x + y) * HH];
+  const theme = cargoTheme(map);
+  const flags = curState?.progress?.flags ?? {};
+  const gate = cargoGateObject(curState);
+  const frag = cargoFragmentObject(curState);
+  const t = performance.now() / 1000;
+  const open = cargoGateOpen(gate, flags);
+  ctx.save();
+
+  // Esteira de conferência: do spawn ao berço, passando pela trava.
+  const [sx, sy] = p(2.2, 4.5);
+  const [fx, fy] = frag ? p(frag.x, frag.y) : p(8.5, 4.5);
+  ctx.strokeStyle = 'rgba(10,16,22,0.85)'; ctx.lineWidth = 16;
+  ctx.beginPath(); ctx.moveTo(sx, sy); ctx.lineTo(fx, fy); ctx.stroke();
+  ctx.strokeStyle = theme; ctx.globalAlpha = 0.14; ctx.lineWidth = 12;
+  ctx.beginPath(); ctx.moveTo(sx, sy); ctx.lineTo(fx, fy); ctx.stroke();
+  ctx.globalAlpha = 1;
+  for (let i = 0; i < 10; i++) {
+    const u = (t * 0.22 + i / 10) % 1;
+    const x = sx + (fx - sx) * u, y = sy + (fy - sy) * u;
+    ctx.fillStyle = theme; ctx.globalAlpha = 0.4 * (1 - Math.abs(u - 0.5) * 1.3);
+    ctx.beginPath(); ctx.ellipse(x, y, 5, 2.4, -0.46, 0, Math.PI * 2); ctx.fill();
+  }
+  ctx.globalAlpha = 1;
+
+  if (gate) {
+    const [gx, gy] = p(gate.x, gate.y);
+    // Chevrons de segurança no piso, pulsando quando a trava está fechada.
+    ctx.strokeStyle = open ? theme : '#ffc94a';
+    ctx.lineWidth = 2;
+    ctx.globalAlpha = open ? 0.35 : 0.45 + 0.25 * Math.sin(t * 4);
+    for (let k = -1; k <= 1; k += 2) {
+      ctx.beginPath();
+      ctx.moveTo(gx + k * 44 - 8, gy + 10); ctx.lineTo(gx + k * 44, gy + 14); ctx.lineTo(gx + k * 44 + 8, gy + 10);
+      ctx.stroke();
+    }
+    ctx.globalAlpha = 1;
+
+    // Campo da trava: plano vertical de energia. Pós-abertura, fase continua
+    // presente (calmo); lacre rompido some; grade de impulso só apaga com o
+    // fragmento recolhido.
+    const broken = !gate.phaseAction && !gate.dashPassable && open;
+    if (!broken) {
+      const scanned = gate.gate?.scanFlag ? !!flags[gate.gate.scanFlag] : !!flags.cargoSecurityDiagnosed;
+      const w = 66, h = 88;
+      ctx.save();
+      ctx.translate(gx, gy - 46);
+      ctx.globalAlpha = open ? 0.28 : 0.72;
+      const field = ctx.createLinearGradient(0, -h / 2, 0, h / 2);
+      field.addColorStop(0, 'rgba(8,14,20,0.10)');
+      field.addColorStop(0.5, theme);
+      field.addColorStop(1, 'rgba(8,14,20,0.10)');
+      ctx.fillStyle = field; ctx.globalAlpha *= 0.32;
+      ctx.fillRect(-w / 2, -h / 2, w, h);
+      ctx.globalAlpha = open ? 0.3 : 0.8;
+      ctx.strokeStyle = theme; ctx.lineWidth = 1.6;
+      ctx.strokeRect(-w / 2, -h / 2, w, h);
+      ctx.globalAlpha = open ? 0.18 : 0.4;
+      for (let i = 1; i < 6; i++) {
+        const y = -h / 2 + (h / 6) * i;
+        ctx.beginPath(); ctx.moveTo(-w / 2, y); ctx.lineTo(w / 2, y); ctx.stroke();
+      }
+      if (gate.dashPassable) {
+        for (let i = 1; i < 5; i++) {
+          const x = -w / 2 + (w / 5) * i;
+          ctx.beginPath(); ctx.moveTo(x, -h / 2); ctx.lineTo(x, h / 2); ctx.stroke();
+        }
+      }
+      if (scanned && !open) {
+        const wy = -h / 2 + ((t * 0.55) % 1) * h;
+        ctx.globalAlpha = 0.85; ctx.fillStyle = '#eafff4';
+        ctx.fillRect(-w / 2, wy - 2, w, 4);
+        ctx.globalAlpha = 0.35; ctx.fillRect(-w / 2, wy - 8, w, 16);
+      }
+      ctx.restore();
+    }
+  }
+
+  // Berço do fragmento: feixe contido + anéis de sincronização.
+  if (frag && (!frag.requiresFlag || flags[frag.requiresFlag]) && !flags[`collected_${frag.id}`]) {
+    const [bx, by] = p(frag.x, frag.y);
+    const pulse = 0.5 + 0.5 * Math.sin(t * 2.4);
+    const beam = ctx.createLinearGradient(bx, by - 96, bx, by);
+    beam.addColorStop(0, 'rgba(234,255,244,0)');
+    beam.addColorStop(1, theme);
+    ctx.globalAlpha = 0.16 + 0.1 * pulse; ctx.fillStyle = beam;
+    ctx.beginPath(); ctx.moveTo(bx - 10, by - 96); ctx.lineTo(bx + 10, by - 96);
+    ctx.lineTo(bx + 20, by); ctx.lineTo(bx - 20, by); ctx.closePath(); ctx.fill();
+    ctx.globalAlpha = 0.5; ctx.strokeStyle = theme; ctx.lineWidth = 1.6;
+    for (let r = 0; r < 2; r++) {
+      const ph = (t * 0.5 + r / 2) % 1;
+      ctx.globalAlpha = 0.45 * (1 - ph);
+      ctx.beginPath(); ctx.ellipse(bx, by + 4, 18 + ph * 26, (18 + ph * 26) * 0.5, 0, 0, Math.PI * 2); ctx.stroke();
+    }
+    ctx.globalAlpha = 1;
+  }
+  ctx.restore();
+}
+
+function drawCargoEcoHudCallouts(map, curState) {
+  const p = (x, y) => [(x - y) * HW, (x + y) * HH];
+  const theme = cargoTheme(map);
+  const flags = curState?.progress?.flags ?? {};
+  const gate = cargoGateObject(curState);
+  const frag = cargoFragmentObject(curState);
+  const open = cargoGateOpen(gate, flags);
+  const t = performance.now() / 1000;
+  ctx.save();
+  ctx.font = 'bold 9px monospace'; ctx.textAlign = 'center';
+
+  const [bx, by] = p(2.4, 1.2);
+  const bay = `CARGA 04 · ${(map.meta?.cargoKey ?? 'eco').toUpperCase()}`;
+  ctx.fillStyle = 'rgba(6,10,16,0.9)'; ctx.fillRect(bx - 58, by - 78, 116, 15);
+  ctx.strokeStyle = theme; ctx.lineWidth = 1; ctx.strokeRect(bx - 58, by - 78, 116, 15);
+  ctx.fillStyle = '#dff7ff'; ctx.fillText(bay, bx, by - 67);
+
+  if (gate) {
+    const [gx, gy] = p(gate.x, gate.y);
+    const label = open ? 'TRAVA LIBERADA' : (gate.gate?.scanFlag && flags[gate.gate.scanFlag]) || flags.cargoSecurityDiagnosed ? 'JANELA REVELADA · [Q]' : 'LEIA COM [R]';
+    const w = label.length * 5.4 + 16;
+    ctx.fillStyle = 'rgba(6,10,16,0.9)'; ctx.fillRect(gx - w / 2, gy - 112, w, 15);
+    ctx.strokeStyle = open ? theme : '#ffc94a'; ctx.strokeRect(gx - w / 2, gy - 112, w, 15);
+    ctx.fillStyle = open ? '#eafff4' : '#ffe6b0'; ctx.fillText(label, gx, gy - 101);
+  }
+  if (frag && (!frag.requiresFlag || flags[frag.requiresFlag]) && !flags[`collected_${frag.id}`]) {
+    const [fx, fy] = p(frag.x, frag.y);
+    ctx.fillStyle = 'rgba(6,10,16,0.9)'; ctx.fillRect(fx - 62, fy - 118, 124, 15);
+    ctx.strokeStyle = theme; ctx.strokeRect(fx - 62, fy - 118, 124, 15);
+    ctx.fillStyle = '#eafff4'; ctx.fillText('FRAGMENTO · [E]', fx, fy - 107);
+  }
+
+  // Drone de conferência: patrulha curta, luz de leitura, sem colisão.
+  const u = (Math.sin(t * 0.45) + 1) / 2;
+  const [d0x, d0y] = p(2.4, 2.1), [d1x, d1y] = p(7.6, 2.1);
+  const dx = d0x + (d1x - d0x) * u, dy = d0y + (d1y - d0y) * u - 42 + Math.sin(t * 2.2) * 3;
+  ctx.globalAlpha = 0.12; ctx.fillStyle = theme;
+  ctx.beginPath(); ctx.moveTo(dx - 4, dy + 6); ctx.lineTo(dx + 4, dy + 6); ctx.lineTo(dx + 18, dy + 48); ctx.lineTo(dx - 18, dy + 48); ctx.closePath(); ctx.fill();
+  ctx.globalAlpha = 1;
+  ctx.fillStyle = '#1b2733'; ctx.strokeStyle = theme; ctx.lineWidth = 1.2;
+  ctx.beginPath(); ctx.ellipse(dx, dy, 9, 5, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+  ctx.strokeStyle = 'rgba(223,247,255,0.7)';
+  ctx.beginPath(); ctx.moveTo(dx - 12, dy - 3); ctx.lineTo(dx + 12, dy - 3); ctx.stroke();
+  ctx.fillStyle = Math.sin(t * 6) > 0 ? '#ff6b6b' : theme; ctx.fillRect(dx - 1, dy - 1, 2, 2);
+  ctx.restore();
+}
+
+// Eclusa do Viaduto na Base dos Vetores: filme de energia animado, varredura
+// e status. O arco é espelhado na fonte de tela para olhar para a rota.
+function drawNucleo10xViadutoGate(map, curState) {
+  const p = (x, y) => [(x - y) * HW, (x + y) * HH];
+  const flags = curState?.progress?.flags ?? {};
+  const rota = !!flags.rota_viaduto_vetores_aberta;
+  const [ax, ay] = p(16.5, 5.7);
+  const t = performance.now() / 1000;
+  const color = rota ? '#8cff9e' : '#ffc94a';
+  ctx.save();
+  ctx.strokeStyle = color; ctx.globalAlpha = 0.4 + 0.2 * Math.sin(t * 3);
+  ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.ellipse(ax, ay + 5, 40, 18, 0, 0, Math.PI * 2); ctx.stroke();
+  ctx.translate(ax, ay - 46);
+  // O filme acompanha o plano isométrico da eclusa, não um retângulo de frente.
+  ctx.transform(1, 0.5, 0, 1, 0, 0);
+  const w = 54, h = 78;
+  const film = ctx.createLinearGradient(0, -h / 2, 0, h / 2);
+  film.addColorStop(0, 'rgba(6,18,10,0.05)');
+  film.addColorStop(0.5, color);
+  film.addColorStop(1, 'rgba(6,18,10,0.05)');
+  ctx.globalAlpha = rota ? 0.22 : 0.14; ctx.fillStyle = film;
+  ctx.fillRect(-w / 2, -h / 2, w, h);
+  ctx.globalAlpha = rota ? 0.75 : 0.5; ctx.strokeStyle = color; ctx.lineWidth = 1.4;
+  ctx.strokeRect(-w / 2, -h / 2, w, h);
+  const scan = (t * (rota ? 0.5 : 0.28)) % 1;
+  const sy = -h / 2 + scan * h;
+  ctx.globalAlpha = 0.8; ctx.fillStyle = '#eafff4';
+  ctx.fillRect(-w / 2, sy - 1.5, w, 3);
+  ctx.globalAlpha = 0.5;
+  for (let i = 0; i < 3; i++) {
+    const cy = -h / 2 + ((t * 0.35 + i / 3) % 1) * h;
+    ctx.beginPath(); ctx.moveTo(-10, cy - 4); ctx.lineTo(0, cy); ctx.lineTo(-10, cy + 4); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(10, cy - 4); ctx.lineTo(0, cy); ctx.lineTo(10, cy + 4); ctx.stroke();
+  }
+  ctx.globalAlpha = 1; ctx.fillStyle = color;
+  ctx.fillRect(-w / 2 - 4, -h / 2 + 6, 3, 3);
+  ctx.fillRect(w / 2 + 1, -h / 2 + 6, 3, 3);
+  ctx.restore();
+}
+
 function drawNucleo10xFloorTile(x, y, tx, ty) {
   const pista = (y === 5 || y === 6) && x >= 2 && x <= 16;
   const spriteId = pista ? 'nucleo_sala_piso_cinetico' : 'nucleo_sala_piso_grafite';
@@ -3896,6 +4199,7 @@ function drawNucleo10xHudCallouts(map, curState) {
   const revealActive = (curState?.player?.ability?.reveal?.timeLeft ?? 0) > 0;
   const t = performance.now() / 1000;
   ctx.save();
+  drawNucleo10xViadutoGate(map, curState);
 
   const [dx, dy] = p(1.5, 5.5);
   ctx.font = 'bold 9px monospace'; ctx.textAlign = 'center';

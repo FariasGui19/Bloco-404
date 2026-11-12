@@ -100,6 +100,21 @@
     state.progress.flags ??= {};
     state.progress.flags[flagKey(object)] = true;
 
+    // Área de Carga viva: abrir a trava do módulo atualiza a missão na hora.
+    if (state.world?.currentMap?.meta?.estiloSala === 'carga_eco' &&
+        state.progress.activeQuest?.id === 'calibracao_de_eco') {
+      const desc = {
+        motor_bio_forja: 'O campo de impulso cedeu. Colete o Fragmento de Sincronização no berço além da grade.',
+        lamina_dominio_anciao: 'O lacre se partiu. Colete o Fragmento de Sincronização no berço além do selo.',
+        mare_astral: 'A corrente reconheceu sua passagem. Colete o Fragmento de Sincronização no berço além do fluxo.',
+        nucleo_dez_forma: 'A janela cinética foi cruzada. Colete o Fragmento de Sincronização no berço além da malha.',
+      }[state.progress.archetype];
+      if (desc) {
+        state.progress.activeQuest.stage = 'collect_fragment';
+        state.progress.activeQuest.description = desc;
+      }
+    }
+
     applyGateOpenState(object);
   }
 

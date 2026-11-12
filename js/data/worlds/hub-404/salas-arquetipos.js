@@ -1419,6 +1419,8 @@ export const salaNucleo = {
         diagnosisArchetype: 'nucleo_dez_forma', requiredAction: 'pancada_quebra',
         requiredLevel: 4,
         scanFlag: 'scan_contrapeso_nucleo', breaksWith: 'peso', strikeRadius: 1.9,
+        // Partido, o contrapeso vira entulho sólido: libera a ROTA, não o corpo.
+        manterColisao: true,
         spriteAberto: 'nucleo_sala_contrapeso_liberado', manterVisivel: true,
         routeFlag: 'rota_viaduto_vetores_aberta', bonusXp: 40,
         promptPrerequisito: 'SINCRONIZE O EIXO DE ADAPTAÇÃO PRIMEIRO',
@@ -1439,6 +1441,8 @@ export const salaNucleo = {
       sprite: 'nucleo_sala_pilar_cinetico', useCrop: true, larguraPx: 46, pivotX: 0.50, pivotY: 0.93, bloqueia: false },
     { id: 'arco_viaduto_nucleo', tipo: 'decoracao', nome: 'ARCO DO VIADUTO DOS VETORES', x: 16.0, y: 5.2,
       sprite: 'nucleo_sala_arco_viaduto', useCrop: true, larguraPx: 150, pivotX: 0.50, pivotY: 0.90,
+      // A face de serviço olha para a rota (sudoeste), não para fora da sala.
+      espelhar: true, portalAnim: 'viaduto_vetores', sombra: [56, 22],
       bloqueia: false, brilho: { cor: '#74ff8a', raio: 1.8, forca: 0.34 } },
   ],
   collectibles: [{

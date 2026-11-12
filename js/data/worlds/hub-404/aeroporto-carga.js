@@ -15,6 +15,9 @@ export const map = {
 
     corFundo: '#0d1118',
     estiloPiso: 'placas',
+    estiloSala: 'carga_eco',
+    cargoKey: 'bio',
+    corTema: '#35E6D3',
 
     alturaParede: 1.20,
 
@@ -156,11 +159,12 @@ export const map = {
 
       ajusteY: 10,
 
-      sprite: 'hub_props',
-      frame: { col: 1, row: 3 },
-
-      scale: 0.43,
-      anchorY: 0.94,
+      sprite: 'bio_sala_pilar_sensor',
+      useCrop: true,
+      larguraPx: 66,
+      pivotX: 0.5,
+      pivotY: 0.94,
+      sombra: [24, 10],
 
       bloqueia: true,
 
@@ -215,11 +219,12 @@ export const map = {
 
       ajusteY: 18,
 
-      sprite: 'hub_props',
-      frame: { col: 3, row: 3 },
-
-      scale: 0.44,
-      anchorY: 0.95,
+      sprite: 'bio_sala_grade_contencao',
+      useCrop: true,
+      larguraPx: 124,
+      pivotX: 0.5,
+      pivotY: 0.92,
+      sombra: [48, 19],
 
       bloqueia: true,
 

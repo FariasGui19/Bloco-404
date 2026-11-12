@@ -614,7 +614,7 @@ for (const room of rooms) {
   for (let i = 0; i < 40 && state.player.ability?.cast; i++) updateAbilities(0.03);
   assert(isGateOpen(contrapeso), 'Pancada de Peso [Q] parte o contrapeso após leitura');
   assert.equal(contrapeso.sprite, 'nucleo_sala_contrapeso_liberado', 'contrapeso troca para sprite liberado');
-  assert.equal(contrapeso.bloqueia, false, 'contrapeso partido deixa a câmara livre');
+  assert.equal(contrapeso.bloqueia, true, 'contrapeso partido vira entulho sólido; a rota livre é o portal, não o corpo da bigorna');
   assert.equal(state.progress.flags.rota_viaduto_vetores_aberta, true, 'rota_viaduto_vetores_aberta ativada');
   assert(state.player.ability?.massFlash?.timeLeft > 0, 'demolição dispara flash de massa');
 

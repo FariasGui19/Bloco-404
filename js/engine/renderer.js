@@ -190,11 +190,13 @@ export function render(map, state) {
     }
     // O nadador no fundo é desenhado antes das passarelas da superfície.
     if (nadadorNoFundo(state.player, map)) drawEntity(state.player, state);
+    if (map.meta?.estiloSala === 'bio_forja') drawBioForjaUnderlay(map, state);
     drawFloors(map, state);
     drawHazards(state.hazards);
     if (map.id === 'hub_saguao') drawHubFloorMarkings();
     if (map.id === 'ilha_praia_inicial') drawBeachStation(map);
     if (map.id === 'bio_sala_controle') drawBioControlFloor();
+    if (map.meta?.estiloSala === 'bio_forja') drawBioForjaFloorOverlay(map, state);
     if (map.id === 'ilha_estacao_bio') {
       drawStationPaving(map);
       drawStationCanalRims(map);
@@ -1064,6 +1066,11 @@ function drawFloorTile(type, x, y, map) {
   // Costão: laje de pedra escura com poças de maré (não é placa de sprite).
   if (map.costao?.[`${x},${y}`]) { drawCostao(x, y, tx, ty, map); return; }
 
+  // Oficina Inicial — Motor Bio-Forja: placas de ferro/bronze e grades luminosas.
+  if (map.meta?.estiloSala === 'bio_forja') {
+    if (drawBioForjaFloorTile(x, y, tx, ty, map)) return;
+  }
+
   // Placa específica (map.pisos) ou mapa inteiro em placas
   const placas = map.meta?.estiloPiso === 'placas';
   const rc = map.pisos?.[`${x},${y}`] ?? (placas ? pickVariant(CONFIG.FLOOR_SPRITE, x, y) : null);
@@ -1197,6 +1204,340 @@ function drawBioControlFloor() {
     route.forEach(([x,y], i) => { const [a,b] = p(x,y); if (!i) ctx.moveTo(a,b); else ctx.lineTo(a,b); });
     ctx.stroke();
   }
+  ctx.restore();
+}
+
+// =====================================================================
+// OFICINA INICIAL — MOTOR BIO-FORJA (piso, fundação e rede viva)
+// =====================================================================
+function ehGradeBioForja(x, y) {
+  // Baia do Banco de Reconstrução, pista central de impulso e relicário leste.
+  if (x >= 4 && x <= 7 && y >= 1 && y <= 3) return true;
+  if (x >= 7 && x <= 10 && (y === 5 || y === 6)) return true;
+  if (x >= 11 && x <= 13 && y >= 4 && y <= 7) return true;
+  if ((x === 3 || x === 4) && y === 9) return true;
+  return false;
+}
+
+function drawBioForjaFloorTile(x, y, tx, ty) {
+  const usaGrade = ehGradeBioForja(x, y);
+  const spriteId = usaGrade ? 'bio_sala_piso_grade' : 'bio_sala_piso_placa';
+  const img = getSprite(spriteId);
+  const f = img && getFrame(img, 0, 0, 1, 1)?.crop;
+  if (!f) {
+    const base = usaGrade ? '#1d312c' : '#242c29';
+    quad(tx, ty, tx + HW, ty + HH, tx, ty + TH, tx - HW, ty + HH, base, '#121a18', 1);
+    return true;
+  }
+  const w = CONFIG.TILE_W * 1.03;
+  const h = w * (f.h / f.w);
+  ctx.save();
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = 'high';
+  // Pequena variação espelhada quebra repetição sem desalinhar o bisel 2:1.
+  const flip = !usaGrade && ((x * 7 + y * 13) & 1) === 1;
+  ctx.translate(tx, ty - 0.8);
+  if (flip) ctx.scale(-1, 1);
+  ctx.drawImage(f.canvas, 0, 0, f.w, f.h, -w / 2, 0, w, h);
+  ctx.restore();
+  return true;
+}
+
+function drawBioForjaUnderlay(map, curState) {
+  const cols = map.layout[0].length - 1; // 14
+  const rows = map.layout.length - 1;    // 11
+  const p = (x, y) => [(x - y) * HW, (x + y) * HH];
+  const synced = !!curState?.progress?.flags?.oficina_bio_sincronizada;
+  const gateOpen = !!curState?.progress?.flags?.gate_grade_impeto_vivo;
+
+  ctx.save();
+  // 1) Halo atmosférico subterrâneo sob a oficina (elimina o vazio chapado).
+  const [cx, cy] = p(cols * 0.52, rows * 0.52);
+  const amb = ctx.createRadialGradient(cx, cy, 40, cx, cy, 480);
+  amb.addColorStop(0, synced ? 'rgba(42, 118, 98, 0.28)' : 'rgba(24, 78, 68, 0.22)');
+  amb.addColorStop(0.6, 'rgba(11, 32, 29, 0.14)');
+  amb.addColorStop(1, 'rgba(5, 10, 10, 0)');
+  ctx.fillStyle = amb;
+  ctx.beginPath();
+  ctx.ellipse(cx, cy + 16, 490, 265, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  // 2) Sombra projetada da plataforma suspensa.
+  const [nX, nY] = p(0.8, 0.8);
+  const [eX, eY] = p(cols + 0.15, 0.8);
+  const [sX, sY] = p(cols + 0.15, rows + 0.15);
+  const [wX, wY] = p(0.8, rows + 0.15);
+  ctx.fillStyle = 'rgba(2, 6, 7, 0.68)';
+  ctx.beginPath();
+  ctx.moveTo(wX, wY + 14);
+  ctx.lineTo(sX, sY + 34);
+  ctx.lineTo(eX, eY + 30);
+  ctx.lineTo(eX, eY + 6);
+  ctx.lineTo(sX, sY + 6);
+  ctx.lineTo(wX, wY + 2);
+  ctx.closePath();
+  ctx.fill();
+
+  // 3) Laje estrutural escura sob todo o piso e sob a divisória x=10.
+  const [fN0, fN1] = p(1, 1);
+  const [fE0, fE1] = p(cols, 1);
+  const [fS0, fS1] = p(cols, rows);
+  const [fW0, fW1] = p(1, rows);
+  quad(fN0, fN1, fE0, fE1, fS0, fS1, fW0, fW1, '#141d1b', '#0c1312', 2);
+
+  // 4) Saia arquitetônica frontal esculpida (ferro forjado + nervuras de bronze + fendas bio).
+  const skirtH = 26;
+  const glowColor = synced ? '#7efce0' : gateOpen ? '#35e6d3' : '#2aa89a';
+  // Face sudoeste: (1, rows) -> (cols, rows)
+  for (let x = 1; x < cols; x++) {
+    const [ax, ay] = p(x, rows);
+    const [bx, by] = p(x + 1, rows);
+    quad(ax, ay, bx, by, bx, by + skirtH, ax, ay + skirtH, (x % 2 === 0) ? '#232d2b' : '#1e2726', '#101716', 1);
+    // Friso de bronze oxidado superior
+    quad(ax, ay, bx, by, bx, by + 5, ax, ay + 5, '#5a4631', '#281f16', 0.8);
+    // Nervura estrutural vertical
+    ctx.strokeStyle = '#6e563c';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(ax, ay + 1);
+    ctx.lineTo(ax, ay + skirtH - 1);
+    ctx.stroke();
+    // Fenda bioluminescente alternada
+    if (x % 2 === 0) {
+      const mx = (ax + bx) * 0.5, my = (ay + by) * 0.5 + 14;
+      ctx.strokeStyle = '#0c1716';
+      ctx.lineWidth = 4;
+      ctx.beginPath();
+      ctx.moveTo(mx - 8, my - 4);
+      ctx.lineTo(mx + 8, my + 4);
+      ctx.stroke();
+      ctx.strokeStyle = glowColor;
+      ctx.lineWidth = 1.8;
+      ctx.beginPath();
+      ctx.moveTo(mx - 7, my - 3.5);
+      ctx.lineTo(mx + 7, my + 3.5);
+      ctx.stroke();
+    }
+  }
+  // Face sudeste: (cols, 1) -> (cols, rows)
+  for (let y = 1; y < rows; y++) {
+    const [ax, ay] = p(cols, y);
+    const [bx, by] = p(cols, y + 1);
+    quad(ax, ay, bx, by, bx, by + skirtH, ax, ay + skirtH, (y % 2 === 0) ? '#1a2322' : '#161e1d', '#0d1413', 1);
+    quad(ax, ay, bx, by, bx, by + 5, ax, ay + 5, '#473726', '#211911', 0.8);
+    ctx.strokeStyle = '#57432e';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(ax, ay + 1);
+    ctx.lineTo(ax, ay + skirtH - 1);
+    ctx.stroke();
+    if (y === 5 || y === 6 || y % 3 === 0) {
+      const mx = (ax + bx) * 0.5, my = (ay + by) * 0.5 + 14;
+      ctx.strokeStyle = '#091211';
+      ctx.lineWidth = 4;
+      ctx.beginPath();
+      ctx.moveTo(mx + 8, my - 4);
+      ctx.lineTo(mx - 8, my + 4);
+      ctx.stroke();
+      ctx.strokeStyle = glowColor;
+      ctx.lineWidth = 1.7;
+      ctx.beginPath();
+      ctx.moveTo(mx + 7, my - 3.5);
+      ctx.lineTo(mx - 7, my + 3.5);
+      ctx.stroke();
+    }
+  }
+  ctx.restore();
+}
+
+function drawBioForjaFloorOverlay(map, curState) {
+  const cols = map.layout[0].length - 1; // 14
+  const rows = map.layout.length - 1;    // 11
+  const p = (x, y) => [(x - y) * HW, (x + y) * HH];
+  const flags = curState?.progress?.flags ?? {};
+  const diagnosed = !!flags.bio_placa_diagnostico;
+  const gateOpen = !!flags.gate_grade_impeto_vivo;
+  const fragmentTaken = !!flags.collected_fragmento_eco_bio;
+  const southRepaired = !!flags.gate_condutor_oficina_bio;
+  const synced = !!flags.oficina_bio_sincronizada;
+  const t = performance.now() / 1000;
+  const pulse = 0.72 + Math.sin(t * 3.2) * 0.22;
+
+  ctx.save();
+  ctx.lineJoin = 'round';
+  ctx.lineCap = 'round';
+
+  // 1) Moldura de bronze da Baia do Banco de Reconstrução (x=4..8, y=1.15..4.15)
+  {
+    const [a0, a1] = p(4.1, 1.18);
+    const [b0, b1] = p(7.9, 1.18);
+    const [c0, c1] = p(7.9, 4.05);
+    const [d0, d1] = p(4.1, 4.05);
+    ctx.strokeStyle = 'rgba(14, 24, 22, 0.85)';
+    ctx.lineWidth = 5;
+    ctx.beginPath();
+    ctx.moveTo(a0, a1); ctx.lineTo(b0, b1); ctx.lineTo(c0, c1); ctx.lineTo(d0, d1); ctx.closePath();
+    ctx.stroke();
+    ctx.strokeStyle = synced ? '#ffd36e' : '#8b6c47';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    // Halo esmeralda sob o tanque central do Banco de Reconstrução (6.0, 2.55)
+    const [bx, by] = p(6.0, 2.65);
+    const g = ctx.createRadialGradient(bx, by, 6, bx, by, 56);
+    g.addColorStop(0, synced ? 'rgba(126, 252, 224, 0.42)' : 'rgba(53, 230, 211, 0.24)');
+    g.addColorStop(1, 'rgba(53, 230, 211, 0)');
+    ctx.fillStyle = g;
+    ctx.beginPath();
+    ctx.ellipse(bx, by, 56, 28, 0, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  // 2) Soleira da Eclusa Doca A1 (x=1.08..2.65, y=4.85..6.75)
+  {
+    const [a0, a1] = p(1.08, 4.85);
+    const [b0, b1] = p(2.65, 4.85);
+    const [c0, c1] = p(2.65, 6.75);
+    const [d0, d1] = p(1.08, 6.75);
+    quad(a0, a1, b0, b1, c0, c1, d0, d1, 'rgba(20, 32, 30, 0.58)', '#7c613e', 1.6);
+    const [lx, ly] = p(2.05, 5.85);
+    ctx.save();
+    ctx.translate(lx, ly);
+    ctx.transform(1, -0.5, 1, 0.5, 0, 0);
+    ctx.fillStyle = 'rgba(53, 230, 211, 0.78)';
+    ctx.font = 'bold 6.5px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText('◂ DOCA A1', 0, 2);
+    ctx.restore();
+  }
+
+  // 3) Rede viva de conduítes de bio-energia no piso
+  const drawConduit = (pts, active, overdrive = false) => {
+    // Calha escura
+    ctx.strokeStyle = 'rgba(9, 18, 17, 0.92)';
+    ctx.lineWidth = 6.5;
+    ctx.beginPath();
+    pts.forEach(([wx, wy], i) => {
+      const [sx, sy] = p(wx, wy);
+      if (i === 0) ctx.moveTo(sx, sy); else ctx.lineTo(sx, sy);
+    });
+    ctx.stroke();
+
+    // Borda de bronze
+    ctx.strokeStyle = 'rgba(118, 91, 58, 0.62)';
+    ctx.lineWidth = 3.8;
+    ctx.stroke();
+
+    // Filamento de plasma/seiva
+    ctx.strokeStyle = overdrive
+      ? `rgba(146, 255, 224, ${(0.78 + 0.2 * pulse).toFixed(2)})`
+      : active
+        ? `rgba(53, 230, 211, ${(0.65 + 0.25 * pulse).toFixed(2)})`
+        : 'rgba(208, 148, 72, 0.52)';
+    ctx.lineWidth = active ? 2.2 : 1.6;
+    ctx.stroke();
+
+    // Pulso viajante luminoso ao longo do conduíte
+    const segs = pts.length - 1;
+    if (segs > 0) {
+      const prog = ((t * (active ? 0.65 : 0.28)) % 1) * segs;
+      const idx = Math.min(segs - 1, Math.floor(prog));
+      const frac = prog - idx;
+      const wx = pts[idx][0] + (pts[idx + 1][0] - pts[idx][0]) * frac;
+      const wy = pts[idx][1] + (pts[idx + 1][1] - pts[idx][1]) * frac;
+      const [px, py] = p(wx, wy);
+      ctx.fillStyle = overdrive ? '#fff3b8' : active ? '#aefcf0' : '#f0b96b';
+      ctx.beginPath();
+      ctx.arc(px, py, active ? 2.6 : 1.9, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  };
+
+  // Tronco principal: Eclusa -> Terminal -> Banco -> Pista -> Grade -> Relicário
+  drawConduit([[1.9, 5.8], [3.3, 5.8], [3.3, 3.2], [5.2, 3.2]], true, synced);
+  drawConduit([[6.0, 3.85], [6.0, 6.0], [10.5, 6.0]], diagnosed || gateOpen, synced);
+  drawConduit([[10.5, 6.0], [12.5, 6.0]], gateOpen, synced);
+  // Ramal das incubadoras do relicário
+  drawConduit([[12.5, 6.0], [12.5, 2.7]], gateOpen, synced);
+  drawConduit([[12.5, 6.0], [12.5, 9.3]], gateOpen, synced);
+  // Ramal sul (estação auxiliar de pressão e treino)
+  drawConduit([[6.0, 6.0], [6.0, 8.2], [4.0, 9.5]], southRepaired || synced, synced);
+
+  // 4) Pista tática de Impulso (x=7.2..9.9, y=6.0) apontando para a Grade (10.5, 6.0)
+  {
+    const chevColor = gateOpen
+      ? 'rgba(110, 242, 198, 0.42)'
+      : diagnosed
+        ? `rgba(53, 230, 211, ${(0.62 + 0.32 * pulse).toFixed(2)})`
+        : 'rgba(232, 172, 84, 0.55)';
+
+    for (let i = 0; i < 3; i++) {
+      const cx = 7.55 + i * 0.82;
+      const cy = 6.0;
+      const [pL0, pL1] = p(cx - 0.22, cy - 0.42);
+      const [pM0, pM1] = p(cx + 0.26, cy);
+      const [pR0, pR1] = p(cx - 0.22, cy + 0.42);
+      ctx.strokeStyle = chevColor;
+      ctx.lineWidth = 2.4;
+      ctx.beginPath();
+      ctx.moveTo(pL0, pL1);
+      ctx.lineTo(pM0, pM1);
+      ctx.lineTo(pR0, pR1);
+      ctx.stroke();
+    }
+  }
+
+  // 5) Altar / Berço do Fragmento de Eco no Relicário Leste (12.5, 6.0)
+  {
+    const [sx, sy] = p(12.5, 6.0);
+    // Plataforma octogonal concêntrica em bronze e jade
+    const drawIsoOct = (r, fill, stroke, lw = 1.5) => {
+      const k = r * 0.72;
+      const pts = [
+        [r, 0], [k, k], [0, r], [-k, k],
+        [-r, 0], [-k, -k], [0, -r], [k, -k],
+      ];
+      ctx.beginPath();
+      pts.forEach(([ox, oy], idx) => {
+        const [px, py] = p(12.5 + ox, 6.0 + oy);
+        if (idx === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+      });
+      ctx.closePath();
+      if (fill) { ctx.fillStyle = fill; ctx.fill(); }
+      if (stroke) { ctx.strokeStyle = stroke; ctx.lineWidth = lw; ctx.stroke(); }
+    };
+    drawIsoOct(1.05, 'rgba(20, 31, 29, 0.88)', '#7d613e', 2);
+    drawIsoOct(0.72, 'rgba(16, 44, 40, 0.92)', synced ? '#ffd36e' : '#35e6d3', 1.6);
+    drawIsoOct(0.38, !fragmentTaken ? 'rgba(53, 230, 211, 0.34)' : 'rgba(32, 72, 66, 0.45)', '#9efce9', 1.2);
+
+    if (!fragmentTaken) {
+      const beam = ctx.createRadialGradient(sx, sy - 10, 3, sx, sy - 4, 44);
+      beam.addColorStop(0, 'rgba(130, 255, 232, 0.36)');
+      beam.addColorStop(1, 'rgba(53, 230, 211, 0)');
+      ctx.fillStyle = beam;
+      ctx.beginPath();
+      ctx.ellipse(sx, sy, 42, 21, 0, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+
+  // 6) Meio-fio de corte arquitetônico nas bordas frontais (cols e rows)
+  {
+    const [e0, e1] = p(cols, 1);
+    const [s0, s1] = p(cols, rows);
+    const [w0, w1] = p(1, rows);
+    ctx.strokeStyle = '#141c1b';
+    ctx.lineWidth = 5;
+    ctx.beginPath();
+    ctx.moveTo(w0, w1); ctx.lineTo(s0, s1); ctx.lineTo(e0, e1);
+    ctx.stroke();
+    ctx.strokeStyle = '#7b6040';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(w0, w1 - 1); ctx.lineTo(s0, s1 - 1); ctx.lineTo(e0, e1 - 1);
+    ctx.stroke();
+  }
+
   ctx.restore();
 }
 
@@ -1934,7 +2275,9 @@ function drawWorld(map, state) {
     const rail = backList.find(o => o.id === 'trilho_dimensional_principal');
     if (rail) drawBeachRailTunnel(rail);
   }
-  // Camada de fundo (trilho, trem): atrás de tudo, só acima do chão.
+  // Casca estrutural das paredes externas da Oficina Bio-Forja (atrás de backList).
+  if (map.meta?.estiloSala === 'bio_forja') drawBioForjaOuterWallShell(map);
+  // Camada de fundo (trilho, trem, painéis murais): atrás de tudo, só acima do chão.
   for (const o of backList) if ((o.ordem ?? 0) >= 0) drawMapObject(o, state);
 
   let ei = 0;
@@ -1959,6 +2302,7 @@ function drawWorld(map, state) {
 
   while (ei < drawList.length) drawItem(drawList[ei++]);
 
+  if (map.meta?.estiloSala === 'bio_forja') drawBioForjaHudCallouts(map, state);
   drawCombatFeedback();
   drawPlayerHurt();
 }
@@ -2251,11 +2595,178 @@ function drawWallTile(x, y, map) {
   const lastY = map.layout.length - 1;
   const front = y === lastY || x === lastX;
 
+  if (map.meta?.estiloSala === 'bio_forja') {
+    drawBioForjaWallTile(x, y, front);
+    return;
+  }
+
   if (!front && (x === 0 || y === 0) && map.meta?.estiloParede !== 'simples') {
     if (drawWallSprite(x, y, map)) return;
   }
 
   drawWallProcedural(x, y, front);
+}
+
+function drawBioForjaOuterWallShell(map) {
+  const cols = map.layout[0].length - 1; // 14
+  const rows = map.layout.length - 1;    // 11
+  const p = (x, y) => [(x - y) * HW, (x + y) * HH];
+  const wallH = 66;
+  const thick = 0.42;
+
+  ctx.save();
+  // Ala noroeste (x=1, y=1..rows): respaldo contínuo em ferro e bronze oxidado
+  {
+    const [i0x, i0y] = p(1, 1);
+    const [i1x, i1y] = p(1, rows);
+    const [o0x, o0y] = p(1 - thick, 1 - thick);
+    const [o1x, o1y] = p(1 - thick, rows);
+    // Face interna visível entre painéis
+    quad(i1x, i1y, i0x, i0y, i0x, i0y - wallH, i1x, i1y - wallH, '#1d2725', '#101716', 1);
+    // Topo de coroamento da muralha noroeste
+    quad(o1x, o1y - wallH, o0x, o0y - wallH, i0x, i0y - wallH, i1x, i1y - wallH, '#2c3835', '#5e4932', 1.2);
+    // Testa frontal do topo na ponta oeste
+    quad(o1x, o1y, i1x, i1y, i1x, i1y - wallH, o1x, o1y - wallH, '#25302e', '#121918', 1);
+  }
+  // Ala nordeste (y=1, x=1..cols): respaldo contínuo em ferro e bronze oxidado
+  {
+    const [i0x, i0y] = p(1, 1);
+    const [i1x, i1y] = p(cols, 1);
+    const [o0x, o0y] = p(1 - thick, 1 - thick);
+    const [o1x, o1y] = p(cols, 1 - thick);
+    quad(i0x, i0y, i1x, i1y, i1x, i1y - wallH, i0x, i0y - wallH, '#18211f', '#101716', 1);
+    quad(o0x, o0y - wallH, o1x, o1y - wallH, i1x, i1y - wallH, i0x, i0y - wallH, '#26312f', '#523f2b', 1.2);
+    quad(i1x, i1y, o1x, o1y, o1x, o1y - wallH, i1x, i1y - wallH, '#151e1d', '#0f1615', 1);
+  }
+  ctx.restore();
+}
+
+function drawBioForjaHudCallouts(map, curState) {
+  const p = (x, y) => [(x - y) * HW, (x + y) * HH];
+  const flags = curState?.progress?.flags ?? {};
+  const diagnosed = !!flags.bio_placa_diagnostico;
+  const gateOpen = !!flags.gate_grade_impeto_vivo;
+  const synced = !!flags.oficina_bio_sincronizada;
+
+  ctx.save();
+  // 1) Dica tática na pista de impulso (sempre nítida acima dos pilares)
+  {
+    const [hx, hy] = p(7.65, 6.95);
+    const label = gateOpen
+      ? (synced ? 'OFICINA SINCRONIZADA' : 'PASSAGEM ESTABILIZADA')
+      : diagnosed
+        ? 'ALINHE E USE [Q] IMPULSO ▸'
+        : '1º [R] DIAGNOSTICAR GRADE';
+    ctx.font = 'bold 7.5px monospace';
+    ctx.textAlign = 'center';
+    const halfW = Math.ceil(ctx.measureText(label).width * 0.5) + 7;
+    ctx.fillStyle = 'rgba(8, 20, 20, 0.88)';
+    ctx.fillRect(hx - halfW, hy - 8, halfW * 2, 13);
+    ctx.strokeStyle = gateOpen ? 'rgba(110, 242, 198, 0.6)' : diagnosed ? '#35e6d3' : '#d89b48';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(hx - halfW, hy - 8, halfW * 2, 13);
+    ctx.fillStyle = gateOpen ? '#b8f7e2' : diagnosed ? '#c8fff7' : '#ffe2b0';
+    ctx.fillText(label, hx, hy + 1.5);
+  }
+
+  // 2) Etiqueta de trava exposta sobre a Grade de Ímpeto Vivo após [R]
+  if (diagnosed && !gateOpen) {
+    const [gx, gy] = p(10.5, 6.0);
+    const cx = gx, cy = gy - 66;
+    const badge = 'TRAVA EXPOSTA · [Q]';
+    ctx.font = 'bold 7.5px monospace';
+    ctx.textAlign = 'center';
+    const hw = Math.ceil(ctx.measureText(badge).width * 0.5) + 7;
+    ctx.fillStyle = 'rgba(6, 22, 22, 0.92)';
+    ctx.fillRect(cx - hw, cy - 8, hw * 2, 13);
+    ctx.strokeStyle = '#35e6d3';
+    ctx.lineWidth = 1.1;
+    ctx.strokeRect(cx - hw, cy - 8, hw * 2, 13);
+    ctx.fillStyle = '#d4fff6';
+    ctx.fillText(badge, cx, cy + 1.5);
+  }
+  ctx.restore();
+}
+
+function drawBioForjaWallTile(x, y, front) {
+  // Bordas frontais usam meio-fio + saia; paredes externas (x=0, y=0) usam
+  // casca contínua + painéis murais em backList (nunca cobrem objetos!).
+  if (front || x === 0 || y === 0) return;
+
+  const tx = (x - y) * HW;
+  const ty = (x + y) * HH;
+
+  // Sapatas dos dois pilares de contenção que ladeiam a Grade de Ímpeto Vivo.
+  if (x === 10 && (y === 4 || y === 7)) {
+    const h = 9;
+    quad(tx - HW, ty + HH, tx, ty + TH, tx, ty + TH - h, tx - HW, ty + HH - h, '#2b3634', '#141c1b', 1);
+    quad(tx, ty + TH, tx + HW, ty + HH, tx + HW, ty + HH - h, tx, ty + TH - h, '#202928', '#141c1b', 1);
+    quad(tx, ty - h, tx + HW, ty + HH - h, tx, ty + TH - h, tx - HW, ty + HH - h, '#5c4731', '#221a12', 1);
+    return;
+  }
+
+  // Anteparo interno de contenção Bio-Forja (x=10): blindagem isométrica de
+  // meia-altura (46 px) com almofadas metálicas, tubulação de cobre e plasma.
+  const h = 46;
+  const synced = !!state.progress?.flags?.oficina_bio_sincronizada;
+  const active = synced || !!state.progress?.flags?.gate_grade_impeto_vivo || !!state.progress?.flags?.bio_placa_diagnostico;
+
+  // Face esquerda (voltada para a oficina oeste)
+  quad(tx - HW, ty + HH, tx, ty + TH, tx, ty + TH - h, tx - HW, ty + HH - h, '#283432', '#121a19', 1);
+  // Almofada recuada escura na face oeste
+  quad(
+    tx - HW * 0.84, ty + HH * 1.16 - 8,
+    tx - HW * 0.16, ty + HH * 1.84 - 8,
+    tx - HW * 0.16, ty + HH * 1.84 - h + 9,
+    tx - HW * 0.84, ty + HH * 1.16 - h + 9,
+    '#1c2625', '#0f1615', 0.9
+  );
+  // Rodapé e friso superior de bronze oxidado na face esquerda
+  quad(tx - HW, ty + HH, tx, ty + TH, tx, ty + TH - 6, tx - HW, ty + HH - 6, '#624b33', '#1e1710', 0.8);
+  quad(tx - HW, ty + HH - h + 6, tx, ty + TH - h + 6, tx, ty + TH - h, tx - HW, ty + HH - h, '#7b5f41', '#241b12', 0.8);
+
+  // Face direita (voltada para o relicário leste)
+  quad(tx, ty + TH, tx + HW, ty + HH, tx + HW, ty + HH - h, tx, ty + TH - h, '#1d2726', '#111817', 1);
+  quad(
+    tx + HW * 0.16, ty + HH * 1.84 - 8,
+    tx + HW * 0.84, ty + HH * 1.16 - 8,
+    tx + HW * 0.84, ty + HH * 1.16 - h + 9,
+    tx + HW * 0.16, ty + HH * 1.84 - h + 9,
+    '#151d1c', '#0d1312', 0.9
+  );
+  quad(tx, ty + TH, tx + HW, ty + HH, tx + HW, ty + HH - 6, tx, ty + TH - 6, '#4b3a27', '#1b150e', 0.8);
+  quad(tx, ty + TH - h + 6, tx + HW, ty + HH - h + 6, tx + HW, ty + HH - h, tx, ty + TH - h, '#5e4831', '#201810', 0.8);
+
+  // Tubo vertical de cobre + visor de plasma na face oeste
+  ctx.save();
+  ctx.strokeStyle = '#9c6638';
+  ctx.lineWidth = 2.2;
+  ctx.beginPath();
+  ctx.moveTo(tx - HW * 0.5, ty + HH * 1.5 - 6);
+  ctx.lineTo(tx - HW * 0.5, ty + HH * 1.5 - h + 6);
+  ctx.stroke();
+
+  ctx.strokeStyle = active ? '#35e6d3' : '#d89b48';
+  ctx.lineWidth = 1.8;
+  ctx.beginPath();
+  ctx.moveTo(tx - HW * 0.76, ty + HH * 1.24 - h * 0.50);
+  ctx.lineTo(tx - HW * 0.24, ty + HH * 1.76 - h * 0.50);
+  ctx.stroke();
+
+  // Topo chanfrado com trilho energético correndo ao longo do eixo y (rumo à grade)
+  quad(tx, ty - h, tx + HW, ty + HH - h, tx, ty + TH - h, tx - HW, ty + HH - h, '#33413e', '#6d5439', 1);
+  const cTopX = tx + HW * 0.5, cTopY = ty + HH * 0.5 - h;
+  const cBotX = tx - HW * 0.5, cBotY = ty + HH * 1.5 - h;
+  ctx.strokeStyle = '#101a19';
+  ctx.lineWidth = 5;
+  ctx.beginPath();
+  ctx.moveTo(cTopX, cTopY);
+  ctx.lineTo(cBotX, cBotY);
+  ctx.stroke();
+  ctx.strokeStyle = synced ? '#9effe6' : active ? '#35e6d3' : '#d89b48';
+  ctx.lineWidth = 2.2;
+  ctx.stroke();
+  ctx.restore();
 }
 
 function drawWallSprite(x, y, map) {
@@ -2328,6 +2839,7 @@ function drawWallProcedural(x, y, front) {
 // =====================================================================
 
 function getObjectSpriteConfig(spriteId) {
+  if (typeof spriteId === 'string' && spriteId.startsWith('bio_sala_')) return { SHEET_COLS: 1, SHEET_ROWS: 1, DEFAULT_SCALE: 1, FEET_ANCHOR_Y: 1 };
   if (['sala_bio_maquina', 'sala_bio_grade', 'sala_dominio_lacre', 'sala_mare_fluxo', 'sala_nucleo_malha', 'aero_painel_partidas', 'aero_carrinho_bagagem', 'aero_totem_holo', 'aero_planta_aliena'].includes(spriteId)) return { SHEET_COLS: 1, SHEET_ROWS: 1, DEFAULT_SCALE: 1, FEET_ANCHOR_Y: 1 };
   if (['bio_terminal', 'bio_reator', 'bio_ponte', 'bio_estufa', 'bio_floreira', 'bio_tubos', 'bio_caixa', 'bio_luminaria', 'bio_plataforma', 'bio_margem_canto', 'bio_margem_cano', 'bio_margem_ruina', 'bio_margem_mureta', 'bio_condutor_quebrado', 'bio_condutor_ativo', 'bio_regulador_quebrado', 'bio_regulador_ativo', 'bio_mato_cano', 'bio_mato_ventilacao', 'bio_mato_barris', 'bio_mato_fissura', 'bio_cabeceira', 'bio_distribuidor', 'bio_margem_baixa', 'bio_fundacao'].includes(spriteId)) return { SHEET_COLS: 1, SHEET_ROWS: 1, DEFAULT_SCALE: 1, FEET_ANCHOR_Y: 1 };
   if (['hub_vaso_novo', 'hub_reciclagem', 'hub_carrinho', 'hub_bebedouro'].includes(spriteId)) return { SHEET_COLS: 1, SHEET_ROWS: 1, DEFAULT_SCALE: .25, FEET_ANCHOR_Y: 1 };
@@ -2541,6 +3053,29 @@ export function fatiaObjeto(object, altura) {
   return { sy, sh: Math.max(1, fim - sy) };
 }
 
+function drawBioGateResonance(object, curState) {
+  const diagnosed = !!curState?.progress?.flags?.bio_placa_diagnostico;
+  if (!diagnosed) return;
+  const ix = (object.x - object.y) * HW + (object.ajusteX ?? 0);
+  const iy = (object.x + object.y) * HH + (object.ajusteY ?? 0);
+  const t = performance.now() / 1000;
+  const pulse = 0.65 + Math.sin(t * 5.2) * 0.3;
+
+  ctx.save();
+  const cx = ix, cy = iy - 28;
+  ctx.strokeStyle = `rgba(126, 252, 224, ${pulse.toFixed(2)})`;
+  ctx.lineWidth = 1.6;
+  const r = 11 + Math.sin(t * 4) * 1.5;
+  for (const [sx, sy] of [[-1, -1], [1, -1], [1, 1], [-1, 1]]) {
+    ctx.beginPath();
+    ctx.moveTo(cx + sx * r, cy + sy * (r * 0.45));
+    ctx.lineTo(cx + sx * r, cy + sy * r * 0.85);
+    ctx.lineTo(cx + sx * (r * 0.55), cy + sy * r * 0.85);
+    ctx.stroke();
+  }
+  ctx.restore();
+}
+
 function drawMapObject(object, state) {
   if (object.invisivel) return;
   if (object.hideWhenFlag && state.progress.flags?.[object.hideWhenFlag]) return;
@@ -2548,7 +3083,7 @@ function drawMapObject(object, state) {
 
   if (['rocha_rachada', 'travessia_mare_eco', 'passagem_mare_eco', 'caverna_alagada', 'fenda_estreita', 'teleferico_quebrado'].includes(object.id)) { drawBridgeThreshold(object, state.world?.currentMap, state); return; }
 
-  if (object.gate) {
+  if (object.gate && (!object.__coluna || object.__coluna.index === 0)) {
     const x = (object.x - object.y) * HW, y = (object.x + object.y) * HH;
     ctx.save(); ctx.fillStyle = 'rgba(11,24,28,.28)'; ctx.beginPath();
     ctx.ellipse(x, y + 3, 30, 9, 0, 0, Math.PI * 2); ctx.fill(); ctx.restore();
@@ -2593,7 +3128,12 @@ function drawMapObject(object, state) {
   // Estado ligado a uma flag de progresso (ex.: válvula da estufa aberta).
   const filtro = filtroObjeto(object);
 
-  if (object.useCrop && drawCroppedObject(object, image, sheet)) return;
+  if (object.useCrop && drawCroppedObject(object, image, sheet)) {
+    if (object.id === 'grade_impeto_vivo' && (!object.__coluna || object.__coluna.index === object.__coluna.count - 1)) {
+      drawBioGateResonance(object, state);
+    }
+    return;
+  }
 
   // fallback antigo (não usado pelo trem/trilho)
   const frameW = image.width / sheet.SHEET_COLS;

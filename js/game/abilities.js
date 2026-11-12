@@ -30,6 +30,7 @@ import { recordMastery } from './mastery.js';
 import { executeBrutaSmash } from './combat.js';
 import { chargeFormHit } from './nucleo-form.js';
 import { NUCLEO_FORMS } from '../data/nucleo-forms.js';
+import { recordQuestEvent } from './quests.js';
 
 // ---------------------------------------------------------------------
 // CONFIGURAÇÃO INTERNA DE HABILIDADES
@@ -214,9 +215,11 @@ export function activateBioDashSensors(start, end) {
   for (const sensor of state.objects ?? []) {
     if (!sensor.dashSensor || !sensor.gate || isGateOpen(sensor) || !checkGate(sensor.gate)) continue;
     const t = Math.max(0, Math.min(1, ((sensor.x - start.x) * dx + (sensor.y - start.y) * dy) / len2));
-    if (Math.hypot(start.x + dx * t - sensor.x, start.y + dy * t - sensor.y) > .45) continue;
-    openGate(sensor); saveGame(); activated = true;
-    if (state.player.ability) showAbilityMessage('IMPULSO REGISTRADO • ATIVE O PAINEL');
+    if (Math.hypot(start.x + dx * t - sensor.x, start.y + dy * t - sensor.y) > (sensor.dashRadius ?? .45)) continue;
+    openGate(sensor);
+    recordQuestEvent(state.progress, { type: 'breach_gate', target: sensor.id });
+    saveGame(); activated = true;
+    if (state.player.ability) showAbilityMessage(sensor.dashMessage ?? 'IMPULSO REGISTRADO • ATIVE O PAINEL');
   }
   return activated;
 }

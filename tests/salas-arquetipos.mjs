@@ -12,9 +12,21 @@ import { getNearestCollectible, collectItem } from '../js/game/collectibles.js';
 import { checkInteractions } from '../js/game/interactions.js';
 import { closeDialogue } from '../js/ui/dialogue.js';
 
-const element = () => ({ dataset: {}, classList: { add() {}, remove() {} }, addEventListener() {}, textContent: '', innerHTML: '' });
+const element = () => {
+  const listeners = {};
+  return {
+    dataset: {}, children: [],
+    classList: { add() {}, remove() {} },
+    addEventListener(type, fn) { listeners[type] = fn; },
+    click() { listeners.click?.({ preventDefault() {}, stopPropagation() {} }); },
+    appendChild(c) { this.children.push(c); },
+    textContent: '',
+    get innerHTML() { return this._html ?? ''; },
+    set innerHTML(v) { this._html = v; if (v === '') this.children = []; },
+  };
+};
 const elements = Object.fromEntries(['dialogueBox', 'dialogueSpeaker', 'dialogueText', 'dialogueHint', 'dialogueChoices'].map(id => [id, element()]));
-globalThis.document = { getElementById: id => elements[id] };
+globalThis.document = { getElementById: id => elements[id], createElement: () => element() };
 globalThis.window = { addEventListener() {} };
 state.save.loaded = false;
 state.save.activeSlot = null;
@@ -105,6 +117,88 @@ for (const room of rooms) {
     `${room.map}: portal de volta ao aeroporto presente`);
 
   console.log(`${room.map}: protocolo R → Q, portão, fragmento e retorno OK`);
+}
+
+// ---------------------------------------------------------------------
+// Verificação dedicada da Oficina Bio-Forja (arte 2:1, missão e bancada)
+// ---------------------------------------------------------------------
+{
+  const { existsSync, readFileSync } = await import('node:fs');
+  const { getQuestState } = await import('../js/game/quests.js');
+
+  const bioSprites = [
+    'piso-placa.png', 'piso-grade.png', 'parede-canto.png', 'parede-tubos.png',
+    'parede-tanque.png', 'porta-eclusa.png', 'banco-reconstrucao.png',
+    'grade-contencao.png', 'pilar-contencao.png', 'pilar-sensor.png', 'incubadora-eco.png',
+  ];
+  const mainJs = readFileSync(new URL('../js/main.js', import.meta.url), 'utf8');
+  for (const file of bioSprites) {
+    assert(existsSync(new URL(`../assets/sprites/sala-bio/${file}`, import.meta.url)), `sprite ${file} presente`);
+    assert(mainJs.includes(`assets/sprites/sala-bio/${file}`), `sprite ${file} registrado no main.js`);
+  }
+
+  state.progress = {
+    archetype: 'motor_bio_forja',
+    abilities: getArchetypeAbilities('motor_bio_forja'),
+    flags: {},
+    inventory: [],
+  };
+  await loadMap('sala_bio_forja', 'vindo_do_aeroporto');
+
+  // A missão da oficina inicia automaticamente para Motor Bio-Forja
+  let qState = getQuestState(state.progress, 'forja_do_propulsor');
+  assert(qState && qState.status === 'active', 'forja_do_propulsor inicia ativa na sala_bio_forja');
+
+  // Grade usa fatiamento diagonal (colunas) e sprite isométrico 2:1
+  const grade = state.objects.find(o => o.id === 'grade_impeto_vivo');
+  assert.equal(grade.sprite, 'bio_sala_grade_contencao');
+  assert(grade.colunas?.count > 1, 'grade_impeto_vivo usa colunas para profundidade diagonal');
+
+  // Etapa 1: R diagnostica
+  Object.assign(state.player, { x: 9.2, y: 6.8, facing: 'right', energy: 100, maxEnergy: 100,
+    ability: { cooldowns: {}, dash: null, scanning: 0 } });
+  press('r');
+  closeDialogue();
+  qState = getQuestState(state.progress, 'forja_do_propulsor');
+  assert.equal(qState.objectives[0].done, true, 'objetivo 1 (diagnosticar grade) concluído');
+
+  // Etapa 2: Q rompe a grade em qualquer faixa do vão duplo (ex.: y = 6.0 reto)
+  Object.assign(state.player, { x: 8.8, y: 6.4, facing: 'right', energy: 100, maxEnergy: 100,
+    ability: { cooldowns: {}, dash: null, scanning: 0 } });
+  press('q');
+  for (let i = 0; i < 30 && state.player.ability?.dash; i++) updateAbilities(0.03);
+  qState = getQuestState(state.progress, 'forja_do_propulsor');
+  assert.equal(qState.objectives[1].done, true, 'objetivo 2 (romper grade) concluído');
+
+  // Etapa 3: coletar Fragmento de Eco
+  const frag = state.collectibles.find(c => c.id === 'fragmento_eco_bio');
+  Object.assign(state.player, { x: frag.x, y: frag.y });
+  assert(collectItem(frag));
+  closeDialogue();
+  qState = getQuestState(state.progress, 'forja_do_propulsor');
+  assert.equal(qState.objectives[2].done, true, 'objetivo 3 (coletar fragmento) concluído');
+
+  // Etapa 4: sincronizar no Banco de Reconstrução
+  const { advanceDialogue } = await import('../js/ui/dialogue.js');
+  const banco = state.objects.find(o => o.id === 'maquina_bio');
+  assert.equal(banco.sprite, 'bio_sala_banco_reconstrucao');
+  Object.assign(state.player, { x: banco.x, y: banco.y + 1.5 });
+  await checkInteractions(true);
+  advanceDialogue();
+  elements.dialogueChoices.children[0].click();
+  closeDialogue();
+
+  assert.equal(state.progress.flags.oficina_bio_sincronizada, true, 'oficina_bio_sincronizada gravada');
+  assert.equal(state.progress.flags.missao_bio_forja_concluida, true, 'recompensa de missão concedida');
+  assert(state.progress.inventory.includes('selo_forja_bio'), 'selo_forja_bio entregue no inventário');
+
+  // Reparo opcional do regulador auxiliar sul
+  const condutor = state.objects.find(o => o.id === 'condutor_oficina_bio');
+  Object.assign(state.player, { x: condutor.x, y: condutor.y - 1.0 });
+  await checkInteractions(true);
+  closeDialogue();
+  assert.equal(condutor.sprite, 'bio_condutor_ativo', 'regulador auxiliar troca para sprite ativo');
+  console.log('sala_bio_forja: missão forja_do_propulsor, sincronia no Banco e reparo auxiliar OK');
 }
 
 console.log('Salas de Missão: spawn, protocolo, persistência e fragmentos OK.');

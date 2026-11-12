@@ -9,6 +9,7 @@
 import { state } from './state.js';
 import { saveGame } from './save.js';
 import { openDialogue } from '../ui/dialogue.js';
+import { recordQuestEvent } from './quests.js';
 
 const DEFAULT_COLLECT_DISTANCE = 1.25;
 
@@ -78,6 +79,7 @@ export function collectItem(item) {
 
   state.progress.flags[`collected_${item.id}`] = true;
   if (item.id === 'lumeo_vinculo') state.progress.flags.companheiro_lumeo = true;
+  recordQuestEvent(state.progress, { type: 'collect', target: item.id });
 
   // Descobertas opcionais da Enseada não substituem a missão ativa.
   const tracks = ['enseada_rastro_mar', 'enseada_rastro_pedra', 'enseada_rastro_mata'];

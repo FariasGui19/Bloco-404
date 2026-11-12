@@ -14,6 +14,8 @@ import { saveGame } from './save.js';
 import { startNexoOnboarding } from './onboarding.js';
 import { getNearestCollectible, getCollectiblePrompt, collectItem } from './collectibles.js';
 import { checkGate, getGateFailureMessage, getGateSuccessMessage, isGateOpen, openGate } from './gates.js';
+import { recordQuestEvent } from './quests.js';
+import { grantArchetypeXp } from './rpg.js';
 
 const DEFAULT_INTERACTION_DISTANCE = 1.35;
 
@@ -141,6 +143,15 @@ export function getInteractionPrompt(interaction) {
     return data.gate.promptFalha ?? 'BLOQUEADO';
   }
 
+  if (kind === 'object' && data.id === 'maquina_bio') {
+    if (state.progress.flags?.oficina_bio_sincronizada) {
+      return 'BANCO DE RECONSTRUÇÃO • ATIVO';
+    }
+    if (state.progress.flags?.collected_fragmento_eco_bio) {
+      return 'SINCRONIZAR FRAGMENTO NA FORJA';
+    }
+  }
+
   return data.interacao?.label ?? data.label ?? 'INTERAGIR';
 }
 
@@ -194,6 +205,67 @@ function interactWithObject(object) {
   const interaction = object.interacao;
   if (!interaction) return;
 
+  if (object.id === 'maquina_bio') {
+    const flags = state.progress.flags ??= {};
+    if (flags.oficina_bio_sincronizada) {
+      if (state.player) {
+        state.player.health = state.player.maxHealth ?? state.player.health;
+        state.player.energy = state.player.maxEnergy ?? state.player.energy;
+      }
+      openDialogue({
+        speaker: 'BANCO DE RECONSTRUÇÃO',
+        dialogue: [
+          'CUBA DE SÍNTESE ESTABILIZADA EM RESSONÂNCIA MÁXIMA.',
+          'MÓDULOS CALIBRADOS: PROPULSOR ATIVO • LÂMINA, ESCUDO E ASA EM EXPANSÃO.',
+          'TRAJE REVITALIZADO. SIGA PELA ECLUSA DOCA A1 RUMO AO TERMINAL DO AEROPORTO.',
+        ],
+      });
+      return;
+    }
+    if (flags.collected_fragmento_eco_bio) {
+      openDialogue({
+        speaker: 'BANCO DE RECONSTRUÇÃO',
+        dialogue: [
+          'FRAGMENTO DE ECO DETECTADO — A CUBA DE SÍNTESE PODE GRAVAR SUA RESSONÂNCIA NO PROPULSOR.',
+        ],
+        choices: [
+          {
+            text: 'SINCRONIZAR FRAGMENTO NO BANCO DE RECONSTRUÇÃO',
+            onSelect: () => {
+              flags.oficina_bio_sincronizada = true;
+              if (state.player) {
+                state.player.health = state.player.maxHealth ?? state.player.health;
+                state.player.energy = state.player.maxEnergy ?? state.player.energy;
+              }
+              recordQuestEvent(state.progress, { type: 'sync_forge', target: 'maquina_bio' });
+              saveGame();
+              openDialogue({
+                speaker: 'BANCO DE RECONSTRUÇÃO',
+                dialogue: [
+                  'SINCRONIA BIO-FORJA CONCLUÍDA.',
+                  'TODA A REDE DA OFICINA ENTROU EM REGIME ESTÁVEL.',
+                  'SELO DE IMPULSO REGISTRADO NO CÓDEX [J].',
+                  'PRÓXIMO PASSO: RETORNE PELA DOCA A1 E DIAGNOSTIQUE O TERMINAL DO AEROPORTO.',
+                ],
+              });
+            },
+          },
+          {
+            text: 'MANTER EM AGUARDO',
+            onSelect: () => {
+              openDialogue({
+                speaker: 'BANCO DE RECONSTRUÇÃO',
+                dialogue: ['CUBA EM ESPERA. VOCÊ PODE SINCRONIZAR A QUALQUER MOMENTO.'],
+              });
+            },
+          },
+        ],
+        cancelable: true,
+      });
+      return;
+    }
+  }
+
   if (object.gate) {
     if (!checkGate(object.gate)) {
       openDialogue({
@@ -210,6 +282,8 @@ function interactWithObject(object) {
       return;
     }
     openGate(object);
+    if (object.gate.xpReward) grantArchetypeXp(state.progress, object.gate.xpReward);
+    recordQuestEvent(state.progress, { type: 'repair_gate', target: object.id });
     saveGame();
     openDialogue({
       speaker: object.nome ?? 'SISTEMA',

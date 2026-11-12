@@ -3,8 +3,8 @@
 import { input } from '../engine/input.js';
 
 export const BOOT_SCENES = [
-  { kind: 'boot', eyebrow: 'INICIALIZAÇÃO // BLOCO 404', title: 'SISTEMA EM ESCUTA', text: 'Um chiado atravessa o escuro. Alguma coisa tenta estabelecer uma conexão.' },
-  { kind: 'error', eyebrow: 'FALHA DE INDEXAÇÃO', title: 'CRITICAL_ERROR', text: 'REALITY_INDEX_404_NOT_FOUND', note: 'O registro de origem não pôde ser recuperado.' },
+  { kind: 'boot', image: 'assets/cutscenes/boot-sistema.png', eyebrow: 'INICIALIZAÇÃO // BLOCO 404', title: 'SISTEMA EM ESCUTA', text: 'Um chiado atravessa o escuro. Alguma coisa tenta estabelecer uma conexão.' },
+  { kind: 'error', image: 'assets/cutscenes/boot-falha.png', eyebrow: 'FALHA DE INDEXAÇÃO', title: 'CRITICAL_ERROR', text: 'REALITY_INDEX_404_NOT_FOUND', note: 'O registro de origem não pôde ser recuperado.' },
   { image: 'assets/cutscenes/boot-aeroporto.png', eyebrow: 'PONTO 0 // AEROPORTO CENTRAL', title: 'BLOCO 404', text: 'Entre rotas que já não concordam entre si, uma estação continua de pé.' },
   { image: 'assets/cutscenes/boot-operador.png', eyebrow: 'TRANSMISSÃO DESCONHECIDA', title: 'OPERADOR NULO', text: '“Toda linha de código tem um fim... menos a sua exclusão.”', note: 'A transmissão é interrompida. O portal responde à sua presença.' },
 ];
@@ -12,7 +12,14 @@ export const BOOT_SCENES = [
 export const SIGNAL_SCENES = [
   { kind: 'boot', eyebrow: 'TERMINAL DE MANUTENÇÃO // ENSEADA', title: '66.6 MHz', text: 'A estática deixa de ser ruído. Uma segunda transmissão responde antes da sua.' },
   { image: 'assets/cutscenes/frequencia-ruptura.png', eyebrow: 'VISÃO ATRAVÉS DO SINAL', title: 'CIDADELA DO CÓDIGO QUEIMADO', text: 'Por um instante, a tela mostra um corredor que não pertence à praia.', note: 'A imagem se desfaz antes que uma passagem se forme.' },
-  { kind: 'error', eyebrow: 'NEXO-04 // CANAL DE EMERGÊNCIA', title: 'FREQUÊNCIA 66.6 MHz', text: '“Não atravesse ainda. Registrei o sinal; a rota para a origem permanece instável.”', note: 'A investigação continua. A dimensão ainda não está acessível.' },
+  { kind: 'error', eyebrow: 'NEXO-04 // CANAL DE EMERGÊNCIA', title: 'FREQUÊNCIA 66.6 MHz', text: '“Não atravesse ainda. Registrei o sinal; a rota para a origem permanece instável.”', note: 'Uma porta de manutenção na enseada conduz à estação que recebia o sinal.' },
+];
+
+// A última imagem é um limiar, não um mapa jogável nem uma viagem simulada.
+export const THRESHOLD_SCENES = [
+  { image: 'assets/cutscenes/limiar-666.png', eyebrow: 'ESTAÇÃO 66.6 // JANELA ESTÁVEL', title: 'DO OUTRO LADO', text: 'A água na plataforma treme. No anel, um corredor de metal substitui o reflexo da enseada.', note: 'A âncora de retorno continua acesa atrás de você.' },
+  { image: 'assets/cutscenes/frequencia-ruptura.png', eyebrow: 'NEXO-04 // CANAL ABERTO', title: 'A RESPOSTA', text: '“A pessoa que pediu ajuda não necessariamente está do outro lado. Mas alguém manteve esta linha viva. Descubra por quê.”', note: 'Três pulsos. Uma resposta antes da pergunta.' },
+  { kind: 'error', eyebrow: 'PASSAGEM // 66.6 MHz', title: 'TRAVESSIA PREPARADA', text: 'Você dá o primeiro passo através do anel. A imagem se fecha sobre o corredor; a linha de retorno permanece ancorada.', note: 'Fim do trecho disponível. A próxima etapa começa quando a Cidadela estiver pronta.' },
 ];
 
 let open = false;
@@ -42,7 +49,12 @@ export function playCutscene(scenes) {
     const render = () => {
       const scene = scenes[index];
       root.dataset.kind = scene.kind || 'art';
+      root.dataset.hasImage = scene.image ? 'true' : 'false';
+      art.getAnimations?.().forEach(animation => animation.cancel());
       art.style.backgroundImage = scene.image ? `url("${scene.image}")` : '';
+      if (scene.image && !window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) {
+        art.animate?.([{ transform: 'scale(1.035)', opacity: .8 }, { transform: 'scale(1)', opacity: 1 }], { duration: 1800, easing: 'ease-out' });
+      }
       eyebrow.textContent = scene.eyebrow;
       title.textContent = scene.title;
       text.textContent = scene.text;

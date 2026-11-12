@@ -30,7 +30,7 @@ export const map = {
   meta: { nome: 'ENSEADA DOS ECOS', tipo: 'exterior', dimensao: 'arquipelago', corFundo: '#025074',
     estiloPiso: 'livre', useBackgroundWalls: true, sandSprite: 'beach_novas_artes', ambiente: { poeira: 12, cor: '#ffd98a' } },
   corChao: '#e6c280', layout, walkMask: ground.walkMask, pisos: ground.pisos, aguaPraia: rows,
-  spawnPoints: { inicio: { x: 6.5, y: 15.5 }, vindo_da_praia: { x: 6.5, y: 15.5 }, vindo_do_mar: { x: 24.5, y: 15.5 }, vindo_da_darsena_mare: { x: 28.2, y: 12.6 } },
+  spawnPoints: { inicio: { x: 6.5, y: 15.5 }, vindo_da_praia: { x: 6.5, y: 15.5 }, vindo_da_estacao_666: { x: 17.5, y: 14.5 }, vindo_do_mar: { x: 24.5, y: 15.5 }, vindo_da_darsena_mare: { x: 28.2, y: 12.6 } },
   trainingTargets: [{ id: 'eco_treino_enseada', x: 14, y: 15, maxHealth: 60 }],
   // Fonte de dano ambiental enquanto inimigos agressivos não existem.
   // Longe do spawn, do alvo de treino e dos vestígios obrigatórios.
@@ -52,6 +52,8 @@ export const map = {
       interacao: { label: 'EXAMINAR TERMINAL', distancia: 1.4, speaker: 'TERMINAL DA ENSEADA',
         dialogue: ['O RECEPTOR ESTÁ RISCADO DE SAL. ENTRE A ESTÁTICA, UM PULSO REPETE UMA FREQUÊNCIA IMPOSSÍVEL.', 'USE [R] PARA DIAGNOSTICAR O SINAL.'] },
       moduleSystem: { id: 'frequencia_666_terminal', label: 'RASTREAR SINAL ANALÓGICO', distance: 1.6, speaker: 'TERMINAL DA ENSEADA' } },
+    { id: 'porta_estacao_666_visual', tipo: 'decoracao', x: 17, y: 11, sprite: 'nucleo_sala_porta_doca',
+      useCrop: true, larguraPx: 75, pivotX: .5, pivotY: .95, bloqueia: false },
     // Cenário costeiro: bases em água não caminhável, sem criar obstáculos.
     { id: 'enseada_cascata', tipo: 'decoracao', x: 30, y: 17, sprite: 'costa_rochosa', frame: { col: 0, row: 0 }, useCrop: true, larguraPx: 145, pivotY: 1, bloqueia: false },
     { id: 'enseada_pedra_leste', tipo: 'decoracao', x: 25, y: 7, sprite: 'costa_rochosa', frame: { col: 1, row: 0 }, useCrop: true, larguraPx: 110, pivotY: 1, bloqueia: false },
@@ -85,7 +87,11 @@ export const map = {
     { id: 'enseada_rastro_pedra', nome: 'MARCA NO BASALTO', tipo: 'fragmento', x: 19, y: 12, label: 'EXAMINAR MARCA NA PEDRA', dialogue: ['UM SÍMBOLO FOI GRAVADO NO BASALTO: UM CÍRCULO INTERROMPIDO POR TRÊS RISCOS.', 'A PEDRA ESTÁ QUENTE, MAS NÃO HÁ FOGO POR PERTO.'] },
     { id: 'enseada_rastro_mata', nome: 'VESTÍGIO DA MATA', tipo: 'fragmento', x: 21, y: 20, label: 'EXAMINAR VESTÍGIO DA MATA', dialogue: ['FOLHAS E PEGADAS INDICAM UMA TRILHA PARA O INTERIOR.', 'O CAMINHO PARA O MANGUE AINDA PRECISA SER EXPLORADO.'] },
   ],
-  portals: [{ id: 'rota_correntes', tipo: 'door', x: 25, y: 15, label: 'NAVEGAR: CAMINHO DAS CORRENTES', interactionDistance: 1.4, destino: { mapId: 'mar_caminho_das_correntes', spawnId: 'vindo_da_enseada' }, transition: 'fade' },
+  portals: [{ id: 'acesso_estacao_666', tipo: 'door', x: 17, y: 11, label: 'ENTRAR NA ESTAÇÃO 66.6',
+    requiresFlag: 'frequencia666Registrada', lockedLabel: 'ESTAÇÃO DE ESCUTA // SEM SINAL',
+    mensagemBloqueado: ['A PORTA AGUARDA UMA ASSINATURA. INVESTIGUE O TERMINAL DE MANUTENÇÃO COM [R].'],
+    interactionDistance: 1.2, destino: { mapId: 'estacao_limiar_666', spawnId: 'vindo_da_enseada' }, transition: 'fade' },
+    { id: 'rota_correntes', tipo: 'door', x: 25, y: 15, label: 'NAVEGAR: CAMINHO DAS CORRENTES', interactionDistance: 1.4, destino: { mapId: 'mar_caminho_das_correntes', spawnId: 'vindo_da_enseada' }, transition: 'fade' },
     { id: 'retorno_darsena_mare', tipo: 'door', x: 28, y: 12, requiresFlag: 'rota_livre_enseada_aberta', lockedLabel: 'CONDUTO ABISSAL INATIVO', mensagemBloqueado: ['UM VÓRTICE PROFUNDO RESSOA COM A DÁRSENA DA MARÉ ASTRAL, MAS PERMANECE SELADO DO OUTRO LADO.'], label: 'NADAR PELO CONDUTO -> DÁRSENA ABISSAL (MARÉ ASTRAL)', interactionDistance: 1.95, destino: { mapId: 'sala_mare', spawnId: 'vindo_da_enseada' }, transition: 'fade' },
     { id: 'enseada_retorno', tipo: 'door', x: 5, y: 15, label: 'VOLTAR À PRAIA INICIAL', interactionDistance: 1.4,
     destino: { mapId: 'ilha_praia_inicial', spawnId: 'vindo_da_enseada' }, transition: 'fade' }],

@@ -17,6 +17,8 @@ import { checkGate, getGateFailureMessage, getGateSuccessMessage, isGateOpen, op
 import { recordQuestEvent } from './quests.js';
 import { grantArchetypeXp, getArchetypeLevel } from './rpg.js';
 import { lerArvore, DEGRAUS } from './nado-arvore.js';
+import { recordFrequencyAnchor, countFrequencyAnchors, prepareFrequencyCrossing } from './frequencia-quest.js';
+import { playCutscene, THRESHOLD_SCENES } from '../ui/cutscene.js';
 
 const DEFAULT_INTERACTION_DISTANCE = 1.35;
 
@@ -266,6 +268,49 @@ function interactWithActor(actor) {
 function interactWithObject(object) {
   const interaction = object.interacao;
   if (!interaction) return;
+
+  if (object.id?.startsWith('ancora_666_')) {
+    const id = object.id.slice('ancora_666_'.length);
+    const logs = {
+      origem: ['ÂNCORA DE ORIGEM: UM PEDIDO REPETIDO A PARTIR DE UM REATOR QUE ESTÁ SUPERAQUECENDO.',
+        'NEXO-04: A TRANSMISSÃO NÃO TRAZ UM NOME. ALGUÉM QUER QUE O REATOR CONTINUE FUNCIONANDO.'],
+      retorno: ['ÂNCORA DE RETORNO: UMA LINHA PARA A ENSEADA AINDA RESPIRA SOB A ESTÁTICA.',
+        'NEXO-04: NÃO POSSO GARANTIR O QUE HÁ DO OUTRO LADO. POSSO GARANTIR QUE NÃO VOU CORTAR SUA VOLTA.'],
+      memoria: ['ÂNCORA DE MEMÓRIA: A RESPOSTA FOI GRAVADA TRÊS SEGUNDOS ANTES DO PEDIDO.',
+        'NEXO-04: É O MESMO INTERVALO DO ARQUIVO 0 NO METRÔ. COINCIDÊNCIA NÃO É IDENTIDADE; VAMOS GUARDAR A PISTA.'],
+    };
+    if (!state.progress.flags?.frequencia666Registrada) {
+      openDialogue({ speaker: 'NEXO-04', dialogue: ['O RECEPTOR AINDA NÃO TEM UMA ASSINATURA. INVESTIGUE O TERMINAL DA ENSEADA COM [R].'] }); return;
+    }
+    const first = recordFrequencyAnchor(state.progress, id);
+    if (first) saveGame();
+    const n = countFrequencyAnchors(state.progress);
+    openDialogue({ speaker: 'ESTAÇÃO 66.6', dialogue: [...(logs[id] ?? ['SEM REGISTRO.']),
+      n === 3 ? 'TRÊS ÂNCORAS SINCRONIZADAS. USE [R] NO CONSOLE CENTRAL.' : `ÂNCORAS SINCRONIZADAS: ${n}/3. EXAMINE AS OUTRAS COM [E].`] });
+    return;
+  }
+  if (object.id === 'console_limiar_666') {
+    openDialogue({ speaker: 'CONSOLE CENTRAL', dialogue: ['TRÊS ÂNCORAS PROTEGEM A JANELA: ORIGEM, RETORNO E MEMÓRIA.', 'EXAMINE-AS COM [E] E USE [R] AQUI PARA SINCRONIZAR O LIMIAR.'] }); return;
+  }
+  if (object.id === 'anel_limiar_666') {
+    if (!state.progress.flags?.freq666_limiar_estavel) {
+      openDialogue({ speaker: 'NEXO-04', dialogue: ['O ANEL ESTÁ FRIO. HÁ ALGO DO OUTRO LADO, MAS AINDA NÃO TEMOS UMA JANELA SEGURA.', 'SINCRONIZE AS TRÊS ÂNCORAS E DIAGNOSTIQUE O CONSOLE CENTRAL COM [R].'] }); return;
+    }
+    const already = !!state.progress.flags.freq666_limiar_preparado;
+    openDialogue({ speaker: 'NEXO-04', dialogue: already ? [
+      'O LIMIAR ESTÁ PREPARADO E A LINHA DE RETORNO PERMANECE ANCORADA.',
+      'O DESTINO AINDA NÃO ESTÁ DISPONÍVEL. VOCÊ PODE REVER A JANELA OU VOLTAR À ENSEADA.',
+    ] : [
+      'A JANELA ESTÁ ESTÁVEL. VEJO UM CORREDOR, MAS NÃO O FIM DELE.',
+      'VOCÊ PODE PREPARAR A TRAVESSIA AGORA OU ESPERAR. A LINHA DE RETORNO FICARÁ ABERTA.',
+    ], choicesAfterDialogue: true, choices: [
+      { text: already ? 'REVER O LIMIAR' : 'PREPARAR TRAVESSIA', onSelect: () => {
+        if (prepareFrequencyCrossing(state.progress)) saveGame();
+        void playCutscene(THRESHOLD_SCENES);
+      } },
+      { text: 'AINDA NÃO', onSelect: () => {} },
+    ] }); return;
+  }
 
   if (object.id === 'terminal_rota_metro' && state.progress.flags?.metroCalibrado) {
     openDialogue({ speaker: 'TERMINAL DE EMBARQUE', dialogue: [

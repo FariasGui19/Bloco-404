@@ -10,7 +10,7 @@ import { recordAirportDiagnosis, recordCargoDiagnosis, installMetroFragment } fr
 import { isGateOpen } from './gates.js';
 import { hasAbility, showAbilityMessage, ARCHETYPE_ABILITIES } from './abilities.js';
 import { recordQuestEvent } from './quests.js';
-import { recordFrequencySignal } from './frequencia-quest.js';
+import { recordFrequencySignal, countFrequencyAnchors, stabilizeFrequencyThreshold } from './frequencia-quest.js';
 import { playCutscene, SIGNAL_SCENES } from '../ui/cutscene.js';
 
 const DEFAULT_MODULE_DISTANCE = 1.65;
@@ -273,7 +273,7 @@ function diagnoseFrequencyTerminal() {
   if (!recordFrequencySignal(state.progress)) {
     showDiagnosis({ speaker: 'TERMINAL DA ENSEADA', dialogue: [
       '66.6 MHz // SINAL REGISTRADO.',
-      'A CIDADELA DO CÓDIGO QUEIMADO CONTINUA SEM ROTA ESTÁVEL. NEXO-04 MANTÉM A FREQUÊNCIA EM ESCUTA.',
+      'A PORTA DE MANUTENÇÃO PRÓXIMA LEVA À ESTAÇÃO 66.6. NEXO-04 MANTÉM O CANAL EM ESCUTA.',
     ], choicesAfterDialogue: true, choices: [
       { text: 'REVER REGISTRO', onSelect: () => { state.player.ability.scanning = 0; void playCutscene(SIGNAL_SCENES); } },
       { text: 'ENCERRAR', onSelect: () => { state.player.ability.scanning = 0; } },
@@ -284,7 +284,32 @@ function diagnoseFrequencyTerminal() {
   showDiagnosis({ speaker: 'TERMINAL DA ENSEADA', dialogue: [
     'CANAL ANALÓGICO DETECTADO: 66.6 MHz.',
     'A RESPOSTA CHEGOU ANTES DA TRANSMISSÃO. SINCRONIZANDO IMAGEM...',
+    'O SINAL ABRIU A PORTA DE MANUTENÇÃO PRÓXIMA A ESTE TERMINAL.',
   ], onFinish: () => { void playCutscene(SIGNAL_SCENES); } });
+}
+
+function diagnoseFrequencyConsole() {
+  const flags = state.progress.flags ??= {};
+  if (!flags.frequencia666Registrada) {
+    showDiagnosis({ speaker: 'NEXO-04', dialogue: ['O CONSOLE PRECISA DO SINAL DA ENSEADA. VOLTE AO RECEPTOR E USE [R].'] }); return;
+  }
+  const count = countFrequencyAnchors(state.progress);
+  if (count < 3) {
+    showDiagnosis({ speaker: 'NEXO-04', dialogue: [
+      `ÂNCORAS SINCRONIZADAS: ${count}/3.`,
+      'EXAMINE ORIGEM, RETORNO E MEMÓRIA NA ESTAÇÃO COM [E]. NÃO ABRIREMOS UMA JANELA SEM CAMINHO DE VOLTA.',
+    ] }); return;
+  }
+  if (flags.freq666_limiar_estavel) {
+    showDiagnosis({ speaker: 'NEXO-04', dialogue: ['A JANELA SEGUE ESTÁVEL. O ANEL AGUARDA VOCÊ; APROXIME-SE E USE [E].'] }); return;
+  }
+  stabilizeFrequencyThreshold(state.progress); saveGame();
+  showDiagnosis({ speaker: 'NEXO-04', dialogue: [
+    'ORIGEM CONFIRMADA. RETORNO CONFIRMADO. MEMÓRIA PRESERVADA.',
+    'O SINAL NÃO ESTÁ CHAMANDO O BLOCO 404. ESTÁ PEDINDO QUE ALGUÉM MANTENHA O REATOR VIVO.',
+    'JANELA ESTABILIZADA. APROXIME-SE DO ANEL E PREPARE A TRAVESSIA COM [E].',
+    'VOU MANTER A LINHA DE RETORNO ABERTA. VOCÊ NÃO PRECISA RESPONDER A ESSE CHAMADO SOZINHO.',
+  ] });
 }
 
 function diagnoseGeneric(target) {
@@ -314,7 +339,7 @@ function showDiagnosis(opts) {
 
 export function hasSharedQuestSystem() {
   const id = getNearestModuleSystem()?.item.moduleSystem?.id;
-  return id === 'airport_maintenance_terminal' || id === 'metro_navigation_core' || id === 'frequencia_666_terminal';
+  return id === 'airport_maintenance_terminal' || id === 'metro_navigation_core' || id === 'frequencia_666_terminal' || id === 'frequencia_666_console';
 }
 
 export function tryModuleInteraction() {
@@ -349,6 +374,7 @@ export function tryModuleInteraction() {
   if (sharedId === 'airport_maintenance_terminal') { diagnoseAirportTerminal(target); return true; }
   if (sharedId === 'metro_navigation_core') { diagnoseMetroSystem(target); return true; }
   if (sharedId === 'frequencia_666_terminal') { diagnoseFrequencyTerminal(); return true; }
+  if (sharedId === 'frequencia_666_console') { diagnoseFrequencyConsole(); return true; }
   if (archetype === 'motor_bio_forja') {
     const systemId = target.item.moduleSystem?.id;
     switch (systemId) {

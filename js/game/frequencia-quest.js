@@ -37,7 +37,13 @@ export function syncFrequencyQuest(progress) {
 }
 export function reachFirstRoute(progress, mapId) {
   if (!progress?.flags?.metroCalibrado || !isPreludeQuest(progress)) return;
-  if (progress.flags.frequencia666Registrada) { syncFrequencyQuest(progress); return; }
+  if (progress.flags.frequencia666Registrada) {
+    syncFrequencyQuest(progress);
+    if (mapId === 'estacao_limiar_666' && progress.activeQuest.stage === 'sinal_registrado') {
+      progress.activeQuest.description = 'Estação 66.6: examine as âncoras de Origem, Retorno e Memória [E] (0/3).';
+    }
+    return;
+  }
   if (mapId !== 'ilha_praia_inicial' && mapId !== 'ilha_enseada_ecos') return;
   Object.assign(progress.activeQuest, { stage: 'investigar_sinal', title: 'FREQUÊNCIA 66.6 MHz',
     description: 'Siga da Praia Inicial à Enseada dos Ecos. Procure o terminal de manutenção e investigue o sinal com [R].' });

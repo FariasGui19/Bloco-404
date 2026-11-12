@@ -75,10 +75,14 @@ ter vantagem narrativa obrigatória por sua câmera de origem.
    Depois, registra 66.6 MHz e mostra uma visão da cidadela. O NEXO explica que
    a imagem não é uma travessia segura. A porta de manutenção próxima ao
    terminal abre para a **Estação 66.6** somente após o sinal ser registrado.
-6. **Estação:** examinar as três âncoras ambientais [E] em qualquer ordem:
+6. **Estação:** o receptor e o abrigo de basalto na Enseada formam um posto
+   costeiro com uma passarela de manutenção. No interior, examine as três
+   âncoras ambientais [E] em qualquer ordem:
    Origem (o reator), Retorno (a linha para casa) e Memória (a resposta três
    segundos antecipada). Elas não são as chaves mnemônicas da futura cidadela.
-   Um caderno opcional conta a história da equipe de escuta. Os cabos acendem
+   Um caderno opcional, a carta náutica, o banco de escuta, a fonte auxiliar e o receptor local
+   acrescentam registros e distinguem o reator da estação do reator da cidadela.
+   A nova maquinaria usa artes próprias; os cabos e as bases acendem
    conforme as âncoras respondem; o anel permanece inativo.
 7. **Limiar:** depois das três âncoras, usar [R] no console central. NEXO
    estabiliza a janela e o anel se ilumina. Em [E], o jogador pode esperar ou
@@ -86,6 +90,17 @@ ter vantagem narrativa obrigatória por sua câmera de origem.
    imediatamente anterior ao futuro gameplay. A estação continua acessível
    como ponto seguro; não há mapa FPS nem teleporte fingido. A cena pode ser
    revista e o jogador pode sair para explorar. A missão não é concluída.
+
+### Direção visual da estação
+
+O abrigo de basalto, receptor e balizas formam um pequeno posto costeiro; a
+passarela os conecta sem bloquear a praia. Por dentro, Origem tem núcleo âmbar,
+Retorno uma bússola ciano e Memória um gravador violeta: formas e nomes
+identificam cada uma mesmo sem cor. Cabos e anéis do chão acendem após cada
+exame. A peça central é uma máquina dimensional com pedestal e vórtice, que
+muda de aparência quando a janela é estabilizada. O movimento é suave e pode
+ser reduzido pela preferência do sistema. A carta náutica é um registro
+opcional, não um pré-requisito nem a confirmação da origem do pedido.
 
 ### Contrato de continuidade e saves
 
@@ -193,6 +208,7 @@ ou o autor da mensagem até a história posterior estabelecer evidências.
 | --- | --- | --- |
 | Aeroporto e saguão | Ventilação larga, passos metálicos, pulsos cianos discretos; motivo de três notas incompleto. | Loop alto que fatigue, buzinas de aeroporto realistas em excesso. |
 | NEXO | Voz acolhedora, levemente sintética, ritmo humano; humor seco. | Robô incompreensível, filtros que prejudiquem legendas. |
+| Estação de escuta | Canais de relés, ventilação funda, vidro da fonte auxiliar vibrando; cada âncora soma uma nota ao tema. Banco de escuta e receptor local têm legendas e não dependem de áudio. | Ruído constante excessivo, pulsos repentinos ou informações acessíveis apenas pelo som. |
 | Terminal e 66.6 | Sal, vento e ondas cedem espaço a estática direcional; três bips retornam antes de serem emitidos; pausa antes da visão. | Sustos de volume sem aviso, frequência aguda contínua. |
 | Estação e âncoras | Relés lentos, água em tubulações, cada âncora acrescenta uma nota ao motivo; anel estável com drone discreto. | Tons agudos contínuos e confirmação apenas por áudio. |
 | Ruptura | Modem, buffer quebrado, rotação sonora e queda para um pulso grave; versão suave para acessibilidade. | Flash estroboscópico obrigatório ou dependência de som espacial. |

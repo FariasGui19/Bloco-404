@@ -1,6 +1,6 @@
 // node --experimental-default-type=module tests/limiar-frequencia.mjs
 import assert from 'node:assert/strict';
-import { existsSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { state } from '../js/game/state.js';
 import { loadMap } from '../js/game/map-manager.js';
 import { canStandAt } from '../js/game/collision.js';
@@ -8,7 +8,7 @@ import { checkInteractions, findNearestInteraction } from '../js/game/interactio
 import { tryModuleInteraction } from '../js/game/module-interactions.js';
 import { getArchetypeAbilities } from '../js/game/abilities.js';
 import { advanceDialogue, closeDialogue, hasDialogueChoices } from '../js/ui/dialogue.js';
-import { isCutsceneOpen, BOOT_SCENES, THRESHOLD_SCENES } from '../js/ui/cutscene.js';
+import { isCutsceneOpen, BOOT_SCENES, SIGNAL_SCENES, THRESHOLD_SCENES } from '../js/ui/cutscene.js';
 import { syncFrequencyQuest } from '../js/game/frequencia-quest.js';
 import { saveGame, loadSaveIntoState } from '../js/game/save.js';
 
@@ -21,7 +21,14 @@ globalThis.document = { activeElement: el(), getElementById: id => elements[id],
 globalThis.window = { addEventListener() {}, removeEventListener() {} };
 state.save.loaded = false; state.save.activeSlot = null;
 assert(BOOT_SCENES[0].image && BOOT_SCENES[1].image);
-for (const s of [...BOOT_SCENES, ...THRESHOLD_SCENES]) if (s.image) assert(existsSync(s.image), s.image);
+for (const s of [...BOOT_SCENES, ...SIGNAL_SCENES, ...THRESHOLD_SCENES]) {
+  assert(s.image, `${s.title} precisa ter arte`);
+  assert(existsSync(s.image), s.image);
+}
+for (const file of ['abrigo-costeiro','receptor-costeiro','limiar-industrial','mesa-controle','ancora-origem','ancora-retorno','ancora-memoria','mesa-cartografia','poste-baliza','painel-escuta','rack-estacao','mesa-arquivo','reator-estacao']) {
+  const png = readFileSync(`assets/sprites/frequencia-666/${file}.png`);
+  assert.equal(png[25], 6, `${file} deve ter canal alfa RGBA real`);
+}
 
 for (const archetype of ['motor_bio_forja', 'lamina_dominio_anciao', 'mare_astral', 'nucleo_dez_forma']) {
   // Save antigo com sinal já registrado: nenhuma migração precisa ser manual.
@@ -32,7 +39,11 @@ for (const archetype of ['motor_bio_forja', 'lamina_dominio_anciao', 'mare_astra
   const entrance = state.portals.find(p => p.id === 'acesso_estacao_666');
   assert.equal(entrance.requiresFlag, 'frequencia666Registrada');
   assert(canStandAt(state.world.currentMap, entrance.x + .5, entrance.y + .5, .25, state.player), 'entrada acessível');
+  const exitSpawn = state.world.currentMap.spawnPoints.vindo_da_estacao_666;
+  assert(canStandAt(state.world.currentMap, exitSpawn.x, exitSpawn.y, .25, state.player), 'retorno seguro');
+  assert(Math.hypot(exitSpawn.x-(entrance.x+.5),exitSpawn.y-(entrance.y+.5)) > entrance.interactionDistance, 'não retorna automaticamente à estação');
   await loadMap(entrance.destino.mapId, entrance.destino.spawnId);
+  assert.match(state.progress.activeQuest.description, /0\/3/, 'objetivo da estação ao chegar');
   const map = state.world.currentMap;
   const spawn = map.spawnPoints.vindo_da_enseada;
   assert(canStandAt(map, spawn.x, spawn.y, .25, state.player));
@@ -44,6 +55,14 @@ for (const archetype of ['motor_bio_forja', 'lamina_dominio_anciao', 'mare_astra
     for (const [dx,dy] of [[1,0],[-1,0],[0,1],[0,-1]]) queue.push([x+dx,y+dy]);
   }
   for (const obj of state.objects.filter(o => o.interacao)) assert(reachable.has(`${Math.floor(obj.x)},${Math.floor(obj.y)}`), `${obj.id} deve ser alcançável`);
+  for (const id of ['arquivo_estacao_666', 'cartografia_estacao_666', 'rack_estacao_666_c', 'reator_estacao_666', 'registro_estacao_666']) {
+    const obj = state.objects.find(o => o.id === id);
+    Object.assign(state.player, { x: obj.x, y: obj.y });
+    assert.equal(findNearestInteraction()?.data.id, id, `${id} deve ser interativo`);
+    await checkInteractions(true);
+    assert(elements.dialogueText.textContent.length > 10, `${id} tem registro legível`);
+    closeDialogue();
+  }
   const consoleObj = state.objects.find(o => o.id === 'console_limiar_666');
   const ring = state.objects.find(o => o.id === 'anel_limiar_666');
   const approach = obj => Object.assign(state.player, { x: obj.x, y: obj.y, energy: 100, ability: { cooldowns: {}, dash: null } });

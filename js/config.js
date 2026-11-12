@@ -1,7 +1,7 @@
 // js/config.js
 export const CONFIG = {
   GAME_NAME: 'BLOCO 404',
-  VERSION: '0.11.2-sala-bio-forja',
+  VERSION: '0.11.3-sala-dominio',
 
   TILE_W: 64,
   TILE_H: 32,

@@ -198,6 +198,21 @@ await loadSprites([
   { id: 'bio_sala_pilar_contencao', src: 'assets/sprites/sala-bio/pilar-contencao.png' },
   { id: 'bio_sala_pilar_sensor', src: 'assets/sprites/sala-bio/pilar-sensor.png' },
   { id: 'bio_sala_incubadora', src: 'assets/sprites/sala-bio/incubadora-eco.png' },
+  // Santuário Inicial — Lâmina Domínio Ancião (tools/preparar-sala-dominio.py)
+  { id: 'dom_sala_piso_obsidiana', src: 'assets/sprites/sala-dominio/piso-obsidiana.png' },
+  { id: 'dom_sala_piso_runa', src: 'assets/sprites/sala-dominio/piso-runa.png' },
+  { id: 'dom_sala_parede_canto', src: 'assets/sprites/sala-dominio/parede-canto.png' },
+  { id: 'dom_sala_parede_plana', src: 'assets/sprites/sala-dominio/parede-plana.png' },
+  { id: 'dom_sala_parede_relevo', src: 'assets/sprites/sala-dominio/parede-relevo.png' },
+  { id: 'dom_sala_porta_doca', src: 'assets/sprites/sala-dominio/porta-doca.png' },
+  { id: 'dom_sala_altar_lamina', src: 'assets/sprites/sala-dominio/altar-lamina.png' },
+  { id: 'dom_sala_lacre_frequencia', src: 'assets/sprites/sala-dominio/lacre-frequencia.png' },
+  { id: 'dom_sala_pilar', src: 'assets/sprites/sala-dominio/pilar-dominio.png' },
+  { id: 'dom_sala_pira', src: 'assets/sprites/sala-dominio/pira-dominio.png' },
+  { id: 'dom_sala_estela_registro', src: 'assets/sprites/sala-dominio/estela-registro.png' },
+  { id: 'dom_sala_armeiro', src: 'assets/sprites/sala-dominio/armeiro-dominio.png' },
+  { id: 'dom_sala_monolito_intacto', src: 'assets/sprites/sala-dominio/monolito-intacto.png' },
+  { id: 'dom_sala_monolito_partido', src: 'assets/sprites/sala-dominio/monolito-partido.png' },
   { id: 'pet_bolt', src: 'assets/sprites/companions/bolt.png' },
   { id: 'hub_nexo_lateral', src: 'assets/sprites/saguao/nexo-lateral-limpo.png' },
   { id: 'hub_viajante', src: 'assets/sprites/saguao/viajante-2026.png' },
@@ -755,7 +770,10 @@ async function update(dt) {
   }
 
   updateOwnedCompanion(getFloor(), dt, canStandAt);
-  updateCamera(dt, player.x, player.y, player.nado, mapaAtual);
+  updateCamera(dt, player.x, player.y, player.nado, mapaAtual, {
+    ability: player.ability,
+    flags: state.progress?.flags,
+  });
 }
 
 // =====================================================================

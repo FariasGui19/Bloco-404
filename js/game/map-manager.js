@@ -131,6 +131,16 @@ export async function loadMap(mapId, spawnId = 'inicio') {
         if (fl.oficina_bio_sincronizada) recordQuestEvent(state.progress, { type: 'sync_forge', target: 'maquina_bio' });
       }
     }
+    if (mapData.id === 'sala_dominio' && state.progress?.archetype === 'lamina_dominio_anciao') {
+      if (!state.progress.questLog?.prova_da_ruptura) {
+        startQuest(state.progress, 'prova_da_ruptura');
+        const fl = state.progress.flags ?? {};
+        if (fl.scan_lacre_sala) recordQuestEvent(state.progress, { type: 'diagnose', target: 'scan_lacre_sala' });
+        if (fl.gate_lacre_frequencia_sala) recordQuestEvent(state.progress, { type: 'breach_gate', target: 'lacre_frequencia_sala' });
+        if (fl.collected_fragmento_eco_dominio) recordQuestEvent(state.progress, { type: 'collect', target: 'fragmento_eco_dominio' });
+        if (fl.santuario_dominio_consagrado) recordQuestEvent(state.progress, { type: 'consecrate_blade', target: 'pedestal_lamina' });
+      }
+    }
     // Salva a última localização somente se um perfil estiver ativo.
     rememberMapLocation(mapData.id, spawnId);
     return true;

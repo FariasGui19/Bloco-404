@@ -191,12 +191,14 @@ export function render(map, state) {
     // O nadador no fundo é desenhado antes das passarelas da superfície.
     if (nadadorNoFundo(state.player, map)) drawEntity(state.player, state);
     if (map.meta?.estiloSala === 'bio_forja') drawBioForjaUnderlay(map, state);
+    if (map.meta?.estiloSala === 'dominio_anciao') drawDominioUnderlay(map, state);
     drawFloors(map, state);
     drawHazards(state.hazards);
     if (map.id === 'hub_saguao') drawHubFloorMarkings();
     if (map.id === 'ilha_praia_inicial') drawBeachStation(map);
     if (map.id === 'bio_sala_controle') drawBioControlFloor();
     if (map.meta?.estiloSala === 'bio_forja') drawBioForjaFloorOverlay(map, state);
+    if (map.meta?.estiloSala === 'dominio_anciao') drawDominioFloorOverlay(map, state);
     if (map.id === 'ilha_estacao_bio') {
       drawStationPaving(map);
       drawStationCanalRims(map);
@@ -247,6 +249,25 @@ export function render(map, state) {
     g.addColorStop(0, 'rgba(0,20,30,0)');
     g.addColorStop(1, `rgba(0,26,46,${(imersaoTela * .42).toFixed(3)})`);
     ctx.fillStyle = g; ctx.fillRect(0, 0, view.w, view.h);
+    ctx.restore();
+  }
+  // Vinheta tática de Postura do Domínio [R]: fecha o foco periférico em obsidiana e ouro
+  if (map.meta?.estiloSala === 'dominio_anciao' && (state.player?.ability?.reveal?.timeLeft ?? 0) > 0) {
+    const rev = state.player.ability.reveal;
+    const peso = Math.min(1, rev.timeLeft / 0.45) * Math.min(1, (4.1 - rev.timeLeft) / 0.25 + 0.35);
+    ctx.save();
+    const vg = ctx.createRadialGradient(
+      view.w * 0.5, view.h * 0.5, Math.min(view.w, view.h) * 0.28,
+      view.w * 0.5, view.h * 0.5, Math.max(view.w, view.h) * 0.72
+    );
+    vg.addColorStop(0, 'rgba(0, 0, 0, 0)');
+    vg.addColorStop(0.72, `rgba(18, 11, 6, ${(0.22 * peso).toFixed(3)})`);
+    vg.addColorStop(1, `rgba(42, 24, 6, ${(0.46 * peso).toFixed(3)})`);
+    ctx.fillStyle = vg;
+    ctx.fillRect(0, 0, view.w, view.h);
+    ctx.strokeStyle = `rgba(255, 212, 92, ${(0.28 * peso).toFixed(3)})`;
+    ctx.lineWidth = 2;
+    ctx.strokeRect(10, 10, view.w - 20, view.h - 20);
     ctx.restore();
   }
   // Clarão curto no instante da soltura (não cobre a HUD, que é DOM).
@@ -1071,6 +1092,11 @@ function drawFloorTile(type, x, y, map) {
     if (drawBioForjaFloorTile(x, y, tx, ty, map)) return;
   }
 
+  // Santuário do Anel — Lâmina Domínio Ancião: obsidiana kintsugi e grelhas rúnicas douradas.
+  if (map.meta?.estiloSala === 'dominio_anciao') {
+    if (drawDominioFloorTile(x, y, tx, ty)) return;
+  }
+
   // Placa específica (map.pisos) ou mapa inteiro em placas
   const placas = map.meta?.estiloPiso === 'placas';
   const rc = map.pisos?.[`${x},${y}`] ?? (placas ? pickVariant(CONFIG.FLOOR_SPRITE, x, y) : null);
@@ -1532,6 +1558,295 @@ function drawBioForjaFloorOverlay(map, curState) {
     ctx.moveTo(w0, w1); ctx.lineTo(s0, s1); ctx.lineTo(e0, e1);
     ctx.stroke();
     ctx.strokeStyle = '#7b6040';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(w0, w1 - 1); ctx.lineTo(s0, s1 - 1); ctx.lineTo(e0, e1 - 1);
+    ctx.stroke();
+  }
+
+  ctx.restore();
+}
+
+function ehRunaDominio(x, y) {
+  // Passarela Imperial (y=5..6) da Doca B2 até o Trono da Coroa + adro do Altar da Lâmina
+  if ((y === 5 || y === 6) && x >= 2 && x <= 13) return true;
+  if (x >= 5 && x <= 7 && y >= 2 && y <= 3) return true;
+  if (x >= 11 && x <= 13 && y >= 4 && y <= 7) return true;
+  return false;
+}
+
+function drawDominioFloorTile(x, y, tx, ty) {
+  const usaRuna = ehRunaDominio(x, y);
+  const spriteId = usaRuna ? 'dom_sala_piso_runa' : 'dom_sala_piso_obsidiana';
+  const img = getSprite(spriteId);
+  const f = img && getFrame(img, 0, 0, 1, 1)?.crop;
+  if (!f) {
+    const base = usaRuna ? '#352613' : '#1b1920';
+    quad(tx, ty, tx + HW, ty + HH, tx, ty + TH, tx - HW, ty + HH, base, '#0e0c12', 1);
+    return true;
+  }
+  const w = CONFIG.TILE_W * 1.03;
+  const h = w * (f.h / f.w);
+  ctx.save();
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = 'high';
+  const flip = !usaRuna && ((x * 11 + y * 5) & 1) === 1;
+  ctx.translate(tx, ty - 0.8);
+  if (flip) ctx.scale(-1, 1);
+  ctx.drawImage(f.canvas, 0, 0, f.w, f.h, -w / 2, 0, w, h);
+  ctx.restore();
+  return true;
+}
+
+function drawDominioUnderlay(map, curState) {
+  const cols = map.layout[0].length - 1; // 14
+  const rows = map.layout.length - 1;    // 11
+  const p = (x, y) => [(x - y) * HW, (x + y) * HH];
+  const flags = curState?.progress?.flags ?? {};
+  const consagrado = !!flags.santuario_dominio_consagrado;
+  const gateOpen = !!flags.gate_lacre_frequencia_sala;
+
+  ctx.save();
+  // 1) Abismo vulcânico-solar sob o santuário suspenso de obsidiana
+  const [cx, cy] = p((cols + 1) * 0.5, (rows + 1) * 0.5);
+  const abyss = ctx.createRadialGradient(cx, cy + 28, 36, cx, cy + 28, 600);
+  abyss.addColorStop(0, consagrado ? 'rgba(245, 182, 56, 0.28)' : gateOpen ? 'rgba(218, 138, 34, 0.22)' : 'rgba(176, 98, 22, 0.17)');
+  abyss.addColorStop(0.55, 'rgba(34, 18, 10, 0.52)');
+  abyss.addColorStop(1, 'rgba(8, 6, 10, 0)');
+  ctx.fillStyle = abyss;
+  ctx.beginPath();
+  ctx.ellipse(cx, cy + 32, 620, 320, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  // 2) Saia monumental em basalto negro e bronze dourado nas bordas frontais
+  const skirtH = 30;
+  const [eTopX, eTopY] = p(cols, 1);
+  const [sMidX, sMidY] = p(cols, rows);
+  const [wTopX, wTopY] = p(1, rows);
+
+  // Face sudeste (x = cols, y = 1..rows)
+  quad(
+    sMidX, sMidY,
+    eTopX, eTopY,
+    eTopX, eTopY + skirtH,
+    sMidX, sMidY + skirtH,
+    '#15131a', '#09080c', 1.2
+  );
+  // Face sudoeste (y = rows, x = 1..cols)
+  quad(
+    wTopX, wTopY,
+    sMidX, sMidY,
+    sMidX, sMidY + skirtH,
+    wTopX, wTopY + skirtH,
+    '#1d1923', '#09080c', 1.2
+  );
+
+  // Friso real de bronze dourado ao longo da fundação
+  ctx.strokeStyle = consagrado ? '#ffd54f' : '#a87d34';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(wTopX, wTopY + 7);
+  ctx.lineTo(sMidX, sMidY + 7);
+  ctx.lineTo(eTopX, eTopY + 7);
+  ctx.stroke();
+
+  // Nervuras e respiradouros solares na saia sudoeste e sudeste
+  const glowColor = consagrado ? '#ffe27a' : '#f0a429';
+  for (let x = 2; x < cols; x += 2) {
+    const [rx, ry] = p(x, rows);
+    ctx.strokeStyle = '#3b2e22';
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(rx, ry + 2);
+    ctx.lineTo(rx, ry + skirtH - 2);
+    ctx.stroke();
+
+    const [vx0, vy0] = p(x + 0.65, rows);
+    const [vx1, vy1] = p(x + 1.35, rows);
+    ctx.strokeStyle = glowColor;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(vx0, vy0 + 16);
+    ctx.lineTo(vx1, vy1 + 16);
+    ctx.stroke();
+  }
+  for (let y = 2; y < rows; y += 2) {
+    const [rx, ry] = p(cols, y);
+    ctx.strokeStyle = '#2c231b';
+    ctx.lineWidth = 2.6;
+    ctx.beginPath();
+    ctx.moveTo(rx, ry + 2);
+    ctx.lineTo(rx, ry + skirtH - 2);
+    ctx.stroke();
+  }
+  ctx.restore();
+}
+
+function drawDominioFloorOverlay(map, curState) {
+  const cols = map.layout[0].length - 1; // 14
+  const rows = map.layout.length - 1;    // 11
+  const p = (x, y) => [(x - y) * HW, (x + y) * HH];
+  const flags = curState?.progress?.flags ?? {};
+  const scanned = !!flags.scan_lacre_sala;
+  const gateOpen = !!flags.gate_lacre_frequencia_sala;
+  const fragmentTaken = !!flags.collected_fragmento_eco_dominio;
+  const consagrado = !!flags.santuario_dominio_consagrado;
+  const stanceActive = (curState?.player?.ability?.reveal?.timeLeft ?? 0) > 0;
+  const t = performance.now() / 1000;
+  const pulse = 0.5 + 0.5 * Math.sin(t * 3.4);
+
+  ctx.save();
+
+  // 1) Trilhos imperiais de bronze flanqueando a Passarela de Ruptura (y=5..7)
+  const drawRail = (x0, y0, x1, y1, color, w = 2.2) => {
+    const [ax, ay] = p(x0, y0);
+    const [bx, by] = p(x1, y1);
+    ctx.strokeStyle = '#120f16';
+    ctx.lineWidth = w + 3.2;
+    ctx.beginPath(); ctx.moveTo(ax, ay); ctx.lineTo(bx, by); ctx.stroke();
+    ctx.strokeStyle = color;
+    ctx.lineWidth = w;
+    ctx.beginPath(); ctx.moveTo(ax, ay); ctx.lineTo(bx, by); ctx.stroke();
+  };
+  const railTone = consagrado ? '#ffe074' : gateOpen ? '#edb847' : '#9c7430';
+  drawRail(1.3, 5.0, 13.4, 5.0, railTone, 2.2);
+  drawRail(1.3, 7.0, 13.4, 7.0, railTone, 2.2);
+
+  // 2) O ANEL DE RUPTURA — grande círculo concêntrico rúnico no centro da nave (6.4, 6.0)
+  {
+    const rcx = 6.4, rcy = 6.0;
+    const [icx, icy] = p(rcx, rcy);
+    const drawIsoCircle = (radW, stroke, lw, fill = null, dash = null) => {
+      ctx.save();
+      if (dash) ctx.setLineDash(dash);
+      ctx.beginPath();
+      ctx.ellipse(icx, icy, radW * HW * 1.414, radW * HH * 1.414, 0, 0, Math.PI * 2);
+      if (fill) { ctx.fillStyle = fill; ctx.fill(); }
+      if (stroke) { ctx.strokeStyle = stroke; ctx.lineWidth = lw; ctx.stroke(); }
+      ctx.restore();
+    };
+
+    const ringGlow = consagrado
+      ? 'rgba(255, 224, 112, 0.92)'
+      : stanceActive || scanned
+        ? `rgba(255, 210, 88, ${(0.66 + 0.28 * pulse).toFixed(2)})`
+        : 'rgba(198, 148, 56, 0.72)';
+
+    drawIsoCircle(2.25, '#120f17', 7, 'rgba(18, 14, 20, 0.42)');
+    drawIsoCircle(2.25, ringGlow, 2.6);
+    drawIsoCircle(1.82, '#8b6629', 1.6);
+    drawIsoCircle(1.18, ringGlow, 1.8, consagrado ? 'rgba(255, 196, 64, 0.10)' : 'rgba(24, 18, 14, 0.32)');
+
+    // 16 glifos rúnicos radiais entre o anel externo (2.25) e o interno (1.82)
+    ctx.strokeStyle = stanceActive || consagrado ? '#ffe588' : '#d69f3a';
+    ctx.lineWidth = 1.8;
+    for (let i = 0; i < 16; i++) {
+      const ang = (i / 16) * Math.PI * 2 + (consagrado ? t * 0.08 : 0);
+      const wx0 = rcx + Math.cos(ang) * 1.86;
+      const wy0 = rcy + Math.sin(ang) * 1.86;
+      const wx1 = rcx + Math.cos(ang) * 2.19;
+      const wy1 = rcy + Math.sin(ang) * 2.19;
+      const [gx0, gy0] = p(wx0, wy0);
+      const [gx1, gy1] = p(wx1, wy1);
+      ctx.beginPath();
+      ctx.moveTo(gx0, gy0);
+      ctx.lineTo(gx1, gy1);
+      ctx.stroke();
+    }
+
+    // Brasão de lâmina apontando da coroa do Anel direto para o Lacre (10.5, 6.0)
+    const [b0x, b0y] = p(7.6, 6.0);
+    const [bLx, bLy] = p(8.35, 5.68);
+    const [bTx, bTy] = p(9.75, 6.0);
+    const [bRx, bRy] = p(8.35, 6.32);
+    ctx.fillStyle = stanceActive || scanned ? 'rgba(255, 204, 72, 0.34)' : 'rgba(176, 128, 44, 0.22)';
+    ctx.strokeStyle = ringGlow;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(b0x, b0y);
+    ctx.lineTo(bLx, bLy);
+    ctx.lineTo(bTx, bTy);
+    ctx.lineTo(bRx, bRy);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+  }
+
+  // 3) Veios de falha harmônica (revelados por Postura do Domínio [R]) + fenda de Ruptura [Q]
+  if (stanceActive || scanned || gateOpen) {
+    const veinAlpha = gateOpen ? 0.55 : stanceActive ? (0.72 + 0.26 * pulse) : (0.42 + 0.24 * pulse);
+    const drawFault = (pts, width, color) => {
+      ctx.strokeStyle = color;
+      ctx.lineWidth = width;
+      ctx.beginPath();
+      pts.forEach(([wx, wy], i) => {
+        const [px, py] = p(wx, wy);
+        if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+      });
+      ctx.stroke();
+    };
+    const veinCol = `rgba(255, 212, 84, ${veinAlpha.toFixed(2)})`;
+    drawFault([[8.2, 5.75], [9.0, 5.55], [9.7, 5.82], [10.45, 5.95]], 2.2, veinCol);
+    drawFault([[8.2, 6.25], [9.1, 6.42], [9.8, 6.18], [10.45, 6.05]], 2.2, veinCol);
+  }
+
+  // Fenda sísmica permanente onde o Lacre de Frequência foi partido ao meio
+  if (gateOpen) {
+    const [s0x, s0y] = p(10.45, 4.95);
+    const [sMx, sMy] = p(10.52, 6.0);
+    const [s1x, s1y] = p(10.45, 7.05);
+    ctx.strokeStyle = '#0d090c';
+    ctx.lineWidth = 7;
+    ctx.beginPath(); ctx.moveTo(s0x, s0y); ctx.lineTo(sMx, sMy); ctx.lineTo(s1x, s1y); ctx.stroke();
+    ctx.strokeStyle = consagrado ? '#ffe680' : '#ffab2e';
+    ctx.lineWidth = 2.6;
+    ctx.beginPath(); ctx.moveTo(s0x, s0y); ctx.lineTo(sMx, sMy); ctx.lineTo(s1x, s1y); ctx.stroke();
+  }
+
+  // 4) Trono Octogonal da Coroa Antiga (12.5, 6.0) na Câmara Leste
+  {
+    const [sx, sy] = p(12.5, 6.0);
+    const drawIsoOct = (r, fill, stroke, lw = 1.6) => {
+      const k = r * 0.72;
+      const pts = [
+        [r, 0], [k, k], [0, r], [-k, k],
+        [-r, 0], [-k, -k], [0, -r], [k, -k],
+      ];
+      ctx.beginPath();
+      pts.forEach(([ox, oy], idx) => {
+        const [px, py] = p(12.5 + ox, 6.0 + oy);
+        if (idx === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+      });
+      ctx.closePath();
+      if (fill) { ctx.fillStyle = fill; ctx.fill(); }
+      if (stroke) { ctx.strokeStyle = stroke; ctx.lineWidth = lw; ctx.stroke(); }
+    };
+    drawIsoOct(1.08, 'rgba(18, 15, 22, 0.92)', '#9e7632', 2.2);
+    drawIsoOct(0.74, 'rgba(32, 22, 14, 0.94)', consagrado ? '#ffe680' : '#f2b63d', 1.8);
+    drawIsoOct(0.38, !fragmentTaken ? 'rgba(255, 198, 68, 0.36)' : 'rgba(56, 38, 18, 0.52)', '#ffe89c', 1.3);
+
+    if (!fragmentTaken) {
+      const beam = ctx.createRadialGradient(sx, sy - 10, 3, sx, sy - 4, 46);
+      beam.addColorStop(0, 'rgba(255, 226, 122, 0.42)');
+      beam.addColorStop(1, 'rgba(245, 168, 36, 0)');
+      ctx.fillStyle = beam;
+      ctx.beginPath();
+      ctx.ellipse(sx, sy, 44, 22, 0, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+
+  // 5) Meio-fio de corte arquitetônico nas bordas frontais
+  {
+    const [e0, e1] = p(cols, 1);
+    const [s0, s1] = p(cols, rows);
+    const [w0, w1] = p(1, rows);
+    ctx.strokeStyle = '#0d0b11';
+    ctx.lineWidth = 5;
+    ctx.beginPath();
+    ctx.moveTo(w0, w1); ctx.lineTo(s0, s1); ctx.lineTo(e0, e1);
+    ctx.stroke();
+    ctx.strokeStyle = consagrado ? '#ffd54f' : '#967030';
     ctx.lineWidth = 2;
     ctx.beginPath();
     ctx.moveTo(w0, w1 - 1); ctx.lineTo(s0, s1 - 1); ctx.lineTo(e0, e1 - 1);
@@ -2275,8 +2590,9 @@ function drawWorld(map, state) {
     const rail = backList.find(o => o.id === 'trilho_dimensional_principal');
     if (rail) drawBeachRailTunnel(rail);
   }
-  // Casca estrutural das paredes externas da Oficina Bio-Forja (atrás de backList).
+  // Casca estrutural das paredes externas da Oficina Bio-Forja / Santuário Domínio (atrás de backList).
   if (map.meta?.estiloSala === 'bio_forja') drawBioForjaOuterWallShell(map);
+  if (map.meta?.estiloSala === 'dominio_anciao') drawDominioOuterWallShell(map);
   // Camada de fundo (trilho, trem, painéis murais): atrás de tudo, só acima do chão.
   for (const o of backList) if ((o.ordem ?? 0) >= 0) drawMapObject(o, state);
 
@@ -2303,6 +2619,7 @@ function drawWorld(map, state) {
   while (ei < drawList.length) drawItem(drawList[ei++]);
 
   if (map.meta?.estiloSala === 'bio_forja') drawBioForjaHudCallouts(map, state);
+  if (map.meta?.estiloSala === 'dominio_anciao') drawDominioHudCallouts(map, state);
   drawCombatFeedback();
   drawPlayerHurt();
 }
@@ -2600,6 +2917,11 @@ function drawWallTile(x, y, map) {
     return;
   }
 
+  if (map.meta?.estiloSala === 'dominio_anciao') {
+    drawDominioWallTile(x, y, front);
+    return;
+  }
+
   if (!front && (x === 0 || y === 0) && map.meta?.estiloParede !== 'simples') {
     if (drawWallSprite(x, y, map)) return;
   }
@@ -2769,6 +3091,178 @@ function drawBioForjaWallTile(x, y, front) {
   ctx.restore();
 }
 
+function drawDominioOuterWallShell(map) {
+  const cols = map.layout[0].length - 1; // 14
+  const rows = map.layout.length - 1;    // 11
+  const p = (x, y) => [(x - y) * HW, (x + y) * HH];
+  const wallH = 68;
+  const thick = 0.44;
+
+  ctx.save();
+  // Ala noroeste (x=1, y=1..rows): respaldo contínuo em obsidiana negra e bronze real
+  {
+    const [i0x, i0y] = p(1, 1);
+    const [i1x, i1y] = p(1, rows);
+    const [o0x, o0y] = p(1 - thick, 1 - thick);
+    const [o1x, o1y] = p(1 - thick, rows);
+    quad(i1x, i1y, i0x, i0y, i0x, i0y - wallH, i1x, i1y - wallH, '#16141c', '#0a080d', 1);
+    quad(o1x, o1y - wallH, o0x, o0y - wallH, i0x, i0y - wallH, i1x, i1y - wallH, '#24202d', '#8e6b2d', 1.2);
+    quad(o1x, o1y, i1x, i1y, i1x, i1y - wallH, o1x, o1y - wallH, '#1d1925', '#0b090f', 1);
+  }
+  // Ala nordeste (y=1, x=1..cols): respaldo contínuo em obsidiana negra e bronze real
+  {
+    const [i0x, i0y] = p(1, 1);
+    const [i1x, i1y] = p(cols, 1);
+    const [o0x, o0y] = p(1 - thick, 1 - thick);
+    const [o1x, o1y] = p(cols, 1 - thick);
+    quad(i0x, i0y, i1x, i1y, i1x, i1y - wallH, i0x, i0y - wallH, '#121018', '#0a080d', 1);
+    quad(o0x, o0y - wallH, o1x, o1y - wallH, i1x, i1y - wallH, i0x, i0y - wallH, '#1f1b28', '#826128', 1.2);
+    quad(i1x, i1y, o1x, o1y, o1x, o1y - wallH, i1x, i1y - wallH, '#110e16', '#09070c', 1);
+  }
+  ctx.restore();
+}
+
+function drawDominioHudCallouts(map, curState) {
+  const p = (x, y) => [(x - y) * HW, (x + y) * HH];
+  const flags = curState?.progress?.flags ?? {};
+  const scanned = !!flags.scan_lacre_sala;
+  const gateOpen = !!flags.gate_lacre_frequencia_sala;
+  const consagrado = !!flags.santuario_dominio_consagrado;
+  const stanceActive = (curState?.player?.ability?.reveal?.timeLeft ?? 0) > 0;
+  const t = performance.now() / 1000;
+
+  ctx.save();
+  // Letreiro dourado na Doca B2 (acima do pórtico oeste, sem cobrir as runas do lintel)
+  {
+    const [dx, dy] = p(1.05, 5.95);
+    ctx.font = 'bold 9px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillStyle = 'rgba(14, 11, 18, 0.90)';
+    ctx.fillRect(dx - 29, dy - 92, 58, 14);
+    ctx.strokeStyle = consagrado ? '#ffe074' : '#c9963a';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(dx - 29, dy - 92, 58, 14);
+    ctx.fillStyle = consagrado ? '#fff0ad' : '#ffd54f';
+    ctx.fillText('DOCA B2', dx, dy - 82);
+  }
+
+  // Mira harmônica do ponto frágil sobre o Lacre de Frequência (após [R], antes de [Q])
+  if ((stanceActive || scanned) && !gateOpen) {
+    const [gx, gy] = p(10.5, 6.0);
+    const r = 13 + 3.2 * Math.sin(t * 6.0);
+    ctx.strokeStyle = '#ffd54f';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(gx, gy - 26 - r);
+    ctx.lineTo(gx + r, gy - 26);
+    ctx.lineTo(gx, gy - 26 + r);
+    ctx.lineTo(gx - r, gy - 26);
+    ctx.closePath();
+    ctx.stroke();
+
+    ctx.fillStyle = 'rgba(18, 12, 8, 0.90)';
+    ctx.fillRect(gx - 54, gy - 58, 108, 14);
+    ctx.strokeStyle = 'rgba(255, 213, 79, 0.78)';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(gx - 54, gy - 58, 108, 14);
+    ctx.fillStyle = '#ffe380';
+    ctx.font = 'bold 8px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText('PONTO FRÁGIL • [Q]', gx, gy - 48);
+  }
+
+  // Rasgo luminoso de clivagem no instante em que Golpe de Ruptura [Q] parte um obstáculo
+  const flash = curState?.player?.ability?.ruptureFlash;
+  if (flash && flash.timeLeft > 0 && flash.duration > 0) {
+    const k = flash.timeLeft / flash.duration;
+    const [fx, fy] = p(flash.x, flash.y);
+    const rad = (1 - k) * 68 + 14;
+    ctx.save();
+    ctx.strokeStyle = `rgba(255, 224, 112, ${(0.85 * k).toFixed(3)})`;
+    ctx.lineWidth = 3.2 * k + 0.8;
+    ctx.beginPath();
+    ctx.ellipse(fx, fy - 12, rad, rad * 0.5, 0, 0, Math.PI * 2);
+    ctx.stroke();
+
+    // Traço diagonal de espada cortando o selo ao meio
+    const len = 54 * (0.65 + 0.35 * (1 - k));
+    ctx.strokeStyle = `rgba(255, 248, 210, ${(0.95 * k).toFixed(3)})`;
+    ctx.lineWidth = 4.5 * k;
+    ctx.beginPath();
+    ctx.moveTo(fx - len, fy - 34 - len * 0.42);
+    ctx.lineTo(fx + len, fy - 10 + len * 0.42);
+    ctx.stroke();
+    ctx.restore();
+  }
+  ctx.restore();
+}
+
+function drawDominioWallTile(x, y, front) {
+  if (front) return;
+  if (x === 0 || y === 0) return;
+
+  // Divisória interna do Santuário (x = 10): blocos de obsidiana entalhada e ouro real
+  const tx = (x - y) * HW;
+  const ty = (x + y) * HH;
+  const h = 50;
+  const flags = state?.progress?.flags ?? {};
+  const consagrado = !!flags.santuario_dominio_consagrado;
+  const active = consagrado || !!flags.gate_lacre_frequencia_sala || !!flags.scan_lacre_sala;
+  const goldStroke = consagrado ? '#ffe074' : active ? '#f5b83d' : '#96702e';
+
+  // Face sudoeste (voltada para o Anel de Ruptura)
+  quad(
+    tx - HW, ty + HH,
+    tx, ty + TH,
+    tx, ty + TH - h,
+    tx - HW, ty + HH - h,
+    '#1c1824', '#0c0a10', 1
+  );
+  // Frisos de bronze dourado na base e na cornija
+  quad(tx - HW, ty + HH, tx, ty + TH, tx, ty + TH - 6, tx - HW, ty + HH - 6, '#6e5224', '#1d150c', 0.8);
+  quad(tx - HW, ty + HH - h + 6, tx, ty + TH - h + 6, tx, ty + TH - h, tx - HW, ty + HH - h, '#87652c', '#22180e', 0.8);
+
+  // Face sudeste (voltada para a Câmara da Coroa)
+  quad(
+    tx, ty + TH,
+    tx + HW, ty + HH,
+    tx + HW, ty + HH - h,
+    tx, ty + TH - h,
+    '#14111a', '#09070d', 0.9
+  );
+  quad(tx, ty + TH, tx + HW, ty + HH, tx + HW, ty + HH - 6, tx, ty + TH - 6, '#57401c', '#18110a', 0.8);
+  quad(tx, ty + TH - h + 6, tx + HW, ty + HH - h + 6, tx + HW, ty + HH - h, tx, ty + TH - h, '#6e5224', '#1d150c', 0.8);
+
+  // Entalhe rúnico vertical dourado na face oeste
+  ctx.save();
+  ctx.strokeStyle = goldStroke;
+  ctx.lineWidth = 2.0;
+  ctx.beginPath();
+  ctx.moveTo(tx - HW * 0.5, ty + HH * 1.5 - 8);
+  ctx.lineTo(tx - HW * 0.5, ty + HH * 1.5 - h + 8);
+  ctx.stroke();
+
+  ctx.beginPath();
+  ctx.moveTo(tx - HW * 0.72, ty + HH * 1.28 - h * 0.52);
+  ctx.lineTo(tx - HW * 0.28, ty + HH * 1.72 - h * 0.52);
+  ctx.stroke();
+
+  // Topo de obsidiana com canal harmônico dourado rumo aos pilares do Lacre
+  quad(tx, ty - h, tx + HW, ty + HH - h, tx, ty + TH - h, tx - HW, ty + HH - h, '#282334', '#8e6b2d', 1);
+  const cTopX = tx + HW * 0.5, cTopY = ty + HH * 0.5 - h;
+  const cBotX = tx - HW * 0.5, cBotY = ty + HH * 1.5 - h;
+  ctx.strokeStyle = '#0d0a12';
+  ctx.lineWidth = 5;
+  ctx.beginPath();
+  ctx.moveTo(cTopX, cTopY);
+  ctx.lineTo(cBotX, cBotY);
+  ctx.stroke();
+  ctx.strokeStyle = goldStroke;
+  ctx.lineWidth = 2.2;
+  ctx.stroke();
+  ctx.restore();
+}
+
 function drawWallSprite(x, y, map) {
   const cfg = CONFIG.WALL_SPRITE;
   if (!cfg) return false;
@@ -2839,7 +3333,7 @@ function drawWallProcedural(x, y, front) {
 // =====================================================================
 
 function getObjectSpriteConfig(spriteId) {
-  if (typeof spriteId === 'string' && spriteId.startsWith('bio_sala_')) return { SHEET_COLS: 1, SHEET_ROWS: 1, DEFAULT_SCALE: 1, FEET_ANCHOR_Y: 1 };
+  if (typeof spriteId === 'string' && (spriteId.startsWith('bio_sala_') || spriteId.startsWith('dom_sala_'))) return { SHEET_COLS: 1, SHEET_ROWS: 1, DEFAULT_SCALE: 1, FEET_ANCHOR_Y: 1 };
   if (['sala_bio_maquina', 'sala_bio_grade', 'sala_dominio_lacre', 'sala_mare_fluxo', 'sala_nucleo_malha', 'aero_painel_partidas', 'aero_carrinho_bagagem', 'aero_totem_holo', 'aero_planta_aliena'].includes(spriteId)) return { SHEET_COLS: 1, SHEET_ROWS: 1, DEFAULT_SCALE: 1, FEET_ANCHOR_Y: 1 };
   if (['bio_terminal', 'bio_reator', 'bio_ponte', 'bio_estufa', 'bio_floreira', 'bio_tubos', 'bio_caixa', 'bio_luminaria', 'bio_plataforma', 'bio_margem_canto', 'bio_margem_cano', 'bio_margem_ruina', 'bio_margem_mureta', 'bio_condutor_quebrado', 'bio_condutor_ativo', 'bio_regulador_quebrado', 'bio_regulador_ativo', 'bio_mato_cano', 'bio_mato_ventilacao', 'bio_mato_barris', 'bio_mato_fissura', 'bio_cabeceira', 'bio_distribuidor', 'bio_margem_baixa', 'bio_fundacao'].includes(spriteId)) return { SHEET_COLS: 1, SHEET_ROWS: 1, DEFAULT_SCALE: 1, FEET_ANCHOR_Y: 1 };
   if (['hub_vaso_novo', 'hub_reciclagem', 'hub_carrinho', 'hub_bebedouro'].includes(spriteId)) return { SHEET_COLS: 1, SHEET_ROWS: 1, DEFAULT_SCALE: .25, FEET_ANCHOR_Y: 1 };
@@ -4391,8 +4885,9 @@ function drawCollectible(item, state) {
     26
   );
 
-  gradient.addColorStop(0, 'rgba(53,230,211,0.42)');
-  gradient.addColorStop(1, 'rgba(53,230,211,0)');
+  const isDominioFrag = item.id === 'fragmento_eco_dominio';
+  gradient.addColorStop(0, isDominioFrag ? 'rgba(255,213,79,0.52)' : 'rgba(53,230,211,0.42)');
+  gradient.addColorStop(1, isDominioFrag ? 'rgba(255,172,42,0)' : 'rgba(53,230,211,0)');
 
   ctx.fillStyle = gradient;
   ctx.beginPath();
@@ -4411,11 +4906,11 @@ function drawCollectible(item, state) {
   ctx.lineTo(-9, 0);
   ctx.closePath();
 
-  ctx.fillStyle = '#83fff5';
+  ctx.fillStyle = isDominioFrag ? '#ffe994' : '#83fff5';
   ctx.fill();
 
   ctx.lineWidth = 2;
-  ctx.strokeStyle = '#0ba8b2';
+  ctx.strokeStyle = isDominioFrag ? '#d48d1e' : '#0ba8b2';
   ctx.stroke();
 
   ctx.restore();

@@ -134,6 +134,28 @@ export const QUESTS = Object.freeze({
       flags: Object.freeze({ missao_bio_forja_concluida: true }),
     }),
   }),
+  // -------------------------------------------------------------------
+  // LÂMINA DOMÍNIO ANCIÃO — PROVA DA RUPTURA (Santuário do Anel · Doca B2)
+  // -------------------------------------------------------------------
+  prova_da_ruptura: Object.freeze({
+    id: 'prova_da_ruptura',
+    title: 'PROVA DA RUPTURA',
+    giver: 'ALTAR DA LÂMINA ANCESTRAL',
+    kind: 'secundária',
+    description: 'No Santuário do Anel (Doca B2), assuma a Postura do Domínio [R] para expor a falha do Lacre de Frequência, parta o selo com o Golpe de Ruptura [Q], recolha o Fragmento de Eco e consagre o juramento no Altar da Lâmina.',
+    objectives: Object.freeze([
+      Object.freeze({ type: 'diagnose', target: 'scan_lacre_sala', count: 1, label: 'Revelar o ponto frágil do Lacre com Postura do Domínio [R]' }),
+      Object.freeze({ type: 'breach_gate', target: 'lacre_frequencia_sala', count: 1, label: 'Partir o Lacre de Frequência com Golpe de Ruptura [Q]' }),
+      Object.freeze({ type: 'collect', target: 'fragmento_eco_dominio', count: 1, label: 'Recolher o Fragmento de Eco na Câmara da Coroa' }),
+      Object.freeze({ type: 'consecrate_blade', target: 'pedestal_lamina', count: 1, label: 'Consagrar o fragmento no Altar da Lâmina Ancestral [E]' }),
+    ]),
+    rewards: Object.freeze({
+      xp: 75,
+      points: 1,
+      items: Object.freeze(['insignia_anel_dominio']),
+      flags: Object.freeze({ missao_dominio_concluida: true }),
+    }),
+  }),
 });
 
 export function getQuest(id) {

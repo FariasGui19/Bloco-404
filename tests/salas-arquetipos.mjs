@@ -201,4 +201,113 @@ for (const room of rooms) {
   console.log('sala_bio_forja: missão forja_do_propulsor, sincronia no Banco e reparo auxiliar OK');
 }
 
+// ---------------------------------------------------------------------
+// Verificação dedicada do Santuário do Anel — Lâmina Domínio Ancião
+// ---------------------------------------------------------------------
+{
+  const { existsSync, readFileSync } = await import('node:fs');
+  const { getQuestState } = await import('../js/game/quests.js');
+  const { advanceDialogue } = await import('../js/ui/dialogue.js');
+  const { camera, snapCameraTo, updateCamera } = await import('../js/engine/camera.js');
+  const { getCurrentMap } = await import('../js/game/map-manager.js');
+
+  const domSprites = [
+    'piso-obsidiana.png', 'piso-runa.png', 'parede-canto.png', 'parede-plana.png',
+    'parede-relevo.png', 'porta-doca.png', 'altar-lamina.png', 'lacre-frequencia.png',
+    'pilar-dominio.png', 'pira-dominio.png', 'estela-registro.png', 'armeiro-dominio.png',
+    'monolito-intacto.png', 'monolito-partido.png',
+  ];
+  const mainJs = readFileSync(new URL('../js/main.js', import.meta.url), 'utf8');
+  for (const file of domSprites) {
+    assert(existsSync(new URL(`../assets/sprites/sala-dominio/${file}`, import.meta.url)), `sprite Domínio ${file} presente`);
+    assert(mainJs.includes(`assets/sprites/sala-dominio/${file}`), `sprite Domínio ${file} registrado no main.js`);
+  }
+
+  state.progress = {
+    archetype: 'lamina_dominio_anciao',
+    abilities: getArchetypeAbilities('lamina_dominio_anciao'),
+    flags: {},
+    inventory: [],
+  };
+  await loadMap('sala_dominio', 'vindo_do_aeroporto');
+  const domMap = getCurrentMap();
+  assert.equal(domMap.meta?.estiloSala, 'dominio_anciao', 'sala_dominio usa estiloSala dominio_anciao');
+  assert(!state.objects.some(o => o.sprite === 'hub_props'), 'sala_dominio não usa placeholders hub_props');
+
+  // A missão Prova da Ruptura inicia automaticamente para Lâmina Domínio Ancião
+  let qState = getQuestState(state.progress, 'prova_da_ruptura');
+  assert(qState && qState.status === 'active', 'prova_da_ruptura inicia ativa na sala_dominio');
+
+  // Lacre usa alinhamento diagonal (-2:+1 com skewY) e colunas de profundidade
+  const lacre = state.objects.find(o => o.id === 'lacre_frequencia_sala');
+  assert.equal(lacre.sprite, 'dom_sala_lacre_frequencia');
+  assert(lacre.colunas?.count > 1, 'lacre_frequencia_sala usa colunas para profundidade diagonal');
+
+  // Etapa 1: Postura do Domínio [R] revela o ponto frágil + ativa zoom tático de postura
+  Object.assign(state.player, {
+    x: 8.2, y: 6.0, facing: 'right', energy: 100, maxEnergy: 100,
+    ability: { cooldowns: {}, dash: null, scanning: 0 },
+  });
+  camera.targetZoom = 1.3;
+  camera.zoom = 1.3;
+  snapCameraTo(state.player.x, state.player.y, domMap);
+  const camBaseX = camera.x;
+
+  press('r');
+  qState = getQuestState(state.progress, 'prova_da_ruptura');
+  assert.equal(qState.objectives[0].done, true, 'objetivo 1 (revelar ponto frágil com R) concluído');
+  assert(state.player.ability?.reveal?.timeLeft > 0, 'Postura do Domínio ativa reveal tático');
+
+  for (let i = 0; i < 25; i++) {
+    updateCamera(0.05, state.player.x, state.player.y, null, domMap, {
+      ability: state.player.ability,
+      flags: state.progress.flags,
+    });
+  }
+  assert(camera.x > camBaseX + 5, 'câmera antecipa o enquadramento do Lacre na Passarela do Anel');
+  assert(camera.zoom > camera.targetZoom * 1.03, 'Postura do Domínio aplica foco aproximado de câmera');
+
+  // Etapa 2: Golpe de Ruptura [Q] parte o Lacre com tremor de câmera e flash de clivagem
+  state.player.ability.cooldowns = {};
+  press('q');
+  qState = getQuestState(state.progress, 'prova_da_ruptura');
+  assert.equal(qState.objectives[1].done, true, 'objetivo 2 (partir Lacre com Q) concluído');
+  assert(state.player.ultimate?.shake?.timeLeft > 0, 'Golpe de Ruptura dispara tremor de impacto na câmera');
+  assert(state.player.ability?.ruptureFlash?.timeLeft > 0, 'Golpe de Ruptura dispara flash diagonal de clivagem');
+
+  // Etapa 3: coletar Fragmento de Eco na Câmara da Coroa
+  const frag = state.collectibles.find(c => c.id === 'fragmento_eco_dominio');
+  Object.assign(state.player, { x: frag.x, y: frag.y });
+  assert(collectItem(frag), 'fragmento_eco_dominio coletado');
+  closeDialogue();
+  qState = getQuestState(state.progress, 'prova_da_ruptura');
+  assert.equal(qState.objectives[2].done, true, 'objetivo 3 (coletar fragmento Domínio) concluído');
+
+  // Etapa 4: consagrar o juramento no Altar da Lâmina Ancestral
+  const altar = state.objects.find(o => o.id === 'pedestal_lamina');
+  assert.equal(altar.sprite, 'dom_sala_altar_lamina');
+  Object.assign(state.player, { x: altar.x, y: altar.y + 1.5, health: 40, maxHealth: 100 });
+  await checkInteractions(true);
+  advanceDialogue();
+  elements.dialogueChoices.children[0].click();
+  closeDialogue();
+
+  assert.equal(state.progress.flags.santuario_dominio_consagrado, true, 'santuario_dominio_consagrado gravado');
+  assert.equal(state.progress.flags.missao_dominio_concluida, true, 'recompensa da Prova da Ruptura concedida');
+  assert(state.progress.inventory.includes('insignia_anel_dominio'), 'insignia_anel_dominio entregue no inventário');
+  assert.equal(state.player.health, 100, 'consagração restaura integridade do operador');
+
+  // Prova opcional na ala sul: clivar o Monólito de Prova em duas metades incandescentes
+  const monolito = state.objects.find(o => o.id === 'monolito_prova_dominio');
+  assert.equal(monolito.sprite, 'dom_sala_monolito_intacto');
+  Object.assign(state.player, {
+    x: monolito.x - 1.2, y: monolito.y + 1.2, facing: 'right', energy: 100,
+    ability: { cooldowns: {}, dash: null, scanning: 0 },
+  });
+  press('q');
+  assert.equal(monolito.sprite, 'dom_sala_monolito_partido', 'Monólito de Prova troca para sprite partido ao meio');
+  assert.equal(monolito.bloqueia, false, 'Monólito partido deixa a arena livre');
+  console.log('sala_dominio: missão prova_da_ruptura, câmera de postura/impacto, consagração e monólito OK');
+}
+
 console.log('Salas de Missão: spawn, protocolo, persistência e fragmentos OK.');

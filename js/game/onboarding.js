@@ -248,6 +248,7 @@ function finalizeArchetype(actor, archetypeId) {
   // respira embaixo d'água e o que mais ganha com a praia nova.
   if (archetypeId === 'mare_astral') startQuest(state.progress, 'mare_profunda');
   if (archetypeId === 'motor_bio_forja') startQuest(state.progress, 'forja_do_propulsor');
+  if (archetypeId === 'lamina_dominio_anciao') startQuest(state.progress, 'prova_da_ruptura');
 
   saveGame();
 

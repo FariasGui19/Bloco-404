@@ -152,6 +152,15 @@ export function getInteractionPrompt(interaction) {
     }
   }
 
+  if (kind === 'object' && data.id === 'pedestal_lamina') {
+    if (state.progress.flags?.santuario_dominio_consagrado) {
+      return 'ALTAR DA LÂMINA • CONSAGRADO';
+    }
+    if (state.progress.flags?.collected_fragmento_eco_dominio) {
+      return 'CONSAGRAR FRAGMENTO NO ALTAR';
+    }
+  }
+
   return data.interacao?.label ?? data.label ?? 'INTERAGIR';
 }
 
@@ -256,6 +265,68 @@ function interactWithObject(object) {
               openDialogue({
                 speaker: 'BANCO DE RECONSTRUÇÃO',
                 dialogue: ['CUBA EM ESPERA. VOCÊ PODE SINCRONIZAR A QUALQUER MOMENTO.'],
+              });
+            },
+          },
+        ],
+        cancelable: true,
+      });
+      return;
+    }
+  }
+
+  if (object.id === 'pedestal_lamina') {
+    const flags = state.progress.flags ??= {};
+    if (flags.santuario_dominio_consagrado) {
+      if (state.player) {
+        state.player.health = state.player.maxHealth ?? state.player.health;
+        state.player.energy = state.player.maxEnergy ?? state.player.energy;
+      }
+      openDialogue({
+        speaker: 'ALTAR DA LÂMINA ANCESTRAL',
+        dialogue: [
+          'A LÂMINA RESSOA EM UNÍSSONO COM O ANEL DE RUPTURA.',
+          'FERRAMENTAS DE DOMÍNIO: ESPADA • ESCUDO • POSTURA • INVESTIDA.',
+          'TRAJE E LÂMINA REVIGORADOS. RETORNE PELA DOCA B2 AO AEROPORTO.',
+        ],
+      });
+      return;
+    }
+    if (flags.collected_fragmento_eco_dominio) {
+      openDialogue({
+        speaker: 'ALTAR DA LÂMINA ANCESTRAL',
+        dialogue: [
+          'O FRAGMENTO DE ECO VIBRA DIANTE DA BIGORNA DE OBSIDIANA — PRONTO PARA SELAR O JURAMENTO DA COROA ANTIGA.',
+        ],
+        choices: [
+          {
+            text: 'CONSAGRAR FRAGMENTO NO ALTAR DA LÂMINA',
+            onSelect: () => {
+              flags.santuario_dominio_consagrado = true;
+              if (state.player) {
+                state.player.health = state.player.maxHealth ?? state.player.health;
+                state.player.energy = state.player.maxEnergy ?? state.player.energy;
+                state.player.ultimate ??= {};
+                state.player.ultimate.shake = { timeLeft: 0.35, duration: 0.35, power: 8 };
+              }
+              recordQuestEvent(state.progress, { type: 'consecrate_blade', target: 'pedestal_lamina' });
+              saveGame();
+              openDialogue({
+                speaker: 'ALTAR DA LÂMINA ANCESTRAL',
+                dialogue: [
+                  'JURAMENTO SELADO — O ANEL DE RUPTURA ACENDEU EM OURO SOLAR.',
+                  'INSÍGNIA DO ANEL ANCIÃO REGISTRADA NO CÓDEX [J].',
+                  'ARMA, POSTURA E COROA: LEVE SUA LÂMINA DE VOLTA PELA DOCA B2.',
+                ],
+              });
+            },
+          },
+          {
+            text: 'GUARDAR PARA DEPOIS',
+            onSelect: () => {
+              openDialogue({
+                speaker: 'ALTAR DA LÂMINA ANCESTRAL',
+                dialogue: ['A LÂMINA AGUARDA EM SILÊNCIO SOBRE A BIGORNA PARTIDA.'],
               });
             },
           },

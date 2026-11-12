@@ -16,7 +16,7 @@ const variants = {
     archive: ['ARQUIVO DE FREQUÊNCIA: O LACRE VIBRA EM PADRÕES GEOMÉTRICOS.', 'A LEITURA REVELA A FISSURA. UM GOLPE CONCENTRADO ROMPE O LACRE.'],
     manifest: ['MANIFESTO DE CARGA 04-B: UM SELO ANCESTRAL PRENDE O FRAGMENTO NO BERÇO LESTE.', 'A LÂMINA NÃO NEGOCIA COM O LACRE: LEIA [R] E ROMPA [Q].'],
     fragment: ['O LACRE SE DESFAZ EM RUNAS FRIAS. O FRAGMENTO PULSA NO BERÇO.', 'ASSINATURA DE DOMÍNIO ESTÁVEL. A LINHA INTERDIMENSIONAL PODE ACEITAR CALIBRAÇÃO.'],
-    details: [[1, 1, 0, 3], [8, 2, 2, 1], [8, 6, 0, 3]],
+    details: [['dom_sala_pira', 3.5, 1.5, 30], ['dom_sala_pilar', 9, 2, 28]],
   },
   mare: {
     id: 'hub_camara_mare', nome: 'CÂMARA DE FLUXO', cor: '#4dd8e7',
@@ -30,7 +30,7 @@ const variants = {
     archive: ['ARQUIVO HIDRODINÂMICO: UMA CORRENTE ESTÁ PRESA NO ANEL.', 'SINTA O FLUXO COM R. O PASSO DE CORRENTE ATRAVESSA SEM DESTRUIR O ANEL.'],
     manifest: ['MANIFESTO DE CARGA 04-C: O ANEL HIDRÁULICO NÃO DEIXA A CARGA CRUZAR A PÉ.', 'LEIA A CORRENTE [R] E ATRAVESSE COM O PASSO DE CORRENTE [Q].'],
     fragment: ['A ÁGUA PARA DE GRITAR. O FRAGMENTO BOIA NO BERÇO COMO UMA BOLHA DE LUZ.', 'ASSINATURA DE MARÉ ESTÁVEL. A LINHA INTERDIMENSIONAL PODE ACEITAR CALIBRAÇÃO.'],
-    details: [[1, 1, 3, 1], [8, 2, 3, 1], [8, 6, 0, 1]],
+    details: [['mare_sala_lanterna_abissal', 3.5, 1.5, 27], ['mare_sala_pilar_hidro', 9, 2, 30]],
   },
   nucleo: {
     id: 'hub_camara_nucleo', nome: 'CÂMARA DE ECO CINÉTICO', cor: '#70f995',
@@ -44,7 +44,7 @@ const variants = {
     archive: ['ARQUIVO CINÉTICO: A MALHA REAGE A UMA ASSINATURA VELOZ.', 'USE R PARA LOCALIZAR A JANELA. Q ATRAVESSA; A ESTRUTURA PERMANECE INTACTA.'],
     manifest: ['MANIFESTO DE CARGA 04-D: A MALHA SÓ ABRE PARA MASSA EM MOVIMENTO.', 'LEIA A JANELA [R], ALINHE-SE AO VÃO E CRUZ COM O PULSO VELOZ [Q].'],
     fragment: ['A MALHA PARA DE ZUMBIR. O FRAGMENTO GIRA NO BERÇO, PESADO E LEVE AO MESMO TEMPO.', 'ASSINATURA CINÉTICA ESTÁVEL. A LINHA INTERDIMENSIONAL PODE ACEITAR CALIBRAÇÃO.'],
-    details: [[1, 1, 3, 2], [8, 2, 0, 1], [8, 6, 3, 2]],
+    details: [['nucleo_sala_pilar_cinetico', 3.5, 1.5, 27], ['nucleo_sala_regulador_inercia', 9, 2, 30]],
   },
 };
 
@@ -79,11 +79,10 @@ export function buildEchoChamber(key) {
     objects: [{
       id: v.obstacle, nome: v.objeto, tipo: 'obstaculo', x: 5, y: 4,
       sprite: v.sprite, useCrop: true, pivotX: 0.5,
-      ...(key === 'nucleo'
-        ? { larguraPx: 132, pivotY: 0.70, ajusteY: -5, colunas: { count: 8, esq: 1.5, dir: -1.5 } }
-        : { larguraPx: 118, pivotY: 0.92 }),
-      sombra: [46, 19], bloqueia: true,
-      hitbox: { offsetX: -0.5, offsetY: -0.5, width: 1.0, height: 1.0 },
+      larguraPx: 50, pivotY: 0.78, escalaY: key === 'dominio' ? 1.7 : key === 'mare' ? 1.5 : 1.35,
+      colunas: { count: 6, esq: 0.5, dir: -0.5 },
+      sombra: [22, 9], bloqueia: true,
+      hitbox: { offsetX: -0.18, offsetY: -0.5, width: 0.36, height: 1.0 },
       ...(traversable ? { phaseAction: v.action } : { hideWhenFlag: gateFlag }),
       brilho: { cor: v.cor, raio: 1.2, forca: 0.34 },
       interacao: { label: `EXAMINAR ${v.objeto} • R: LER / Q: AGIR`, distancia: 2.6 },
@@ -96,29 +95,30 @@ export function buildEchoChamber(key) {
       },
     },
       // Mural de arquivo + manifesto vivo: leitura curta, sem bloquear o bay.
-      { id: `arquivo_${key}`, nome: 'REGISTRO DE ECO', tipo: 'painel', x: 2, y: 2,
-        sprite: v.terminal, sceneSprite: `visao_${key}`, useCrop: true, larguraPx: 74, pivotX: 0.5, pivotY: 0.94,
+      { id: `arquivo_${key}`, nome: 'REGISTRO DE ECO', tipo: 'painel', x: 2.5, y: 2.2,
+        sprite: v.terminal, useCrop: true, larguraPx: 48, pivotX: 0.5, pivotY: 0.94,
         sombra: [26, 11], bloqueia: true, hitbox: { offsetX: -0.3, offsetY: -0.24, width: 0.6, height: 0.48 },
         brilho: { cor: v.cor, raio: 0.8, forca: 0.23 },
         interacao: { label: 'LER REGISTRO', distancia: 1.5, speaker: v.nome, dialogue: v.archive } },
-      { id: `manifesto_carga_${key}`, nome: 'MANIFESTO DE CARGA', tipo: 'painel', x: 2, y: 6,
-        sprite: v.terminal, useCrop: true, larguraPx: 62, pivotX: 0.5, pivotY: 0.94,
+      { id: `manifesto_carga_${key}`, nome: 'MANIFESTO DE CARGA', tipo: 'painel', x: 2.5, y: 6.7,
+        sprite: v.terminal, useCrop: true, larguraPx: 40, pivotX: 0.5, pivotY: 0.94,
         sombra: [24, 10], bloqueia: true, hitbox: { offsetX: -0.28, offsetY: -0.22, width: 0.56, height: 0.44 },
         brilho: { cor: v.cor, raio: 0.7, forca: 0.2 },
         interacao: { label: 'CONSULTAR MANIFESTO DE CARGA', distancia: 1.5, speaker: 'MANIFESTO 04', dialogue: v.manifest } },
-      // Berço do fragmento: a peça é sólida só na base; o coletável flutua acima.
+      // O cristal faz parte do sprite: aparece e desaparece com o coletável.
       { id: `berco_fragmento_${key}`, nome: 'BERÇO DE SINCRONIZAÇÃO', tipo: 'pedestal', x: 8, y: 4,
-        sprite: 'nucleo_sala_relicario_vetor', useCrop: true, larguraPx: 78, pivotX: 0.5, pivotY: 0.92,
-        sombra: [34, 14], bloqueia: false, brilho: { cor: v.cor, raio: 1.1, forca: 0.3 } },
+        sprite: 'nucleo_sala_relicario_vetor', useCrop: true, larguraPx: 54, pivotX: 0.5, pivotY: 0.92,
+        sombra: [24, 10], bloqueia: false, showWhenFlag: gateFlag, hideWhenFlag: 'collected_fragmento_sincronizacao',
+        brilho: { cor: v.cor, raio: 1.1, forca: 0.3 } },
       // Carga de verdade nas quinas: sólidas, mas fora do corredor R→Q.
-      { id: `caixa_carga_${key}_a`, tipo: 'caixa', x: 1, y: 1, sprite: 'hub_props', frame: { col: 0, row: 3 },
-        scale: 0.38, anchorY: 0.94, bloqueia: true, hitbox: { offsetX: -0.32, offsetY: -0.32, width: 0.64, height: 0.64 } },
-      { id: `caixa_carga_${key}_b`, tipo: 'caixa', x: 8, y: 6, sprite: 'hub_props', frame: { col: 0, row: 3 },
-        scale: 0.38, anchorY: 0.94, bloqueia: true, hitbox: { offsetX: -0.32, offsetY: -0.32, width: 0.64, height: 0.64 } },
-      { id: `totem_carga_${key}`, tipo: 'decoracao', x: 7, y: 1, sprite: 'aero_totem_holo',
-        scale: 0.16, anchorY: 0.95, bloqueia: false, brilho: { cor: v.cor, raio: 0.8, forca: 0.2 } },
-      ...v.details.map(([x, y, col, row], i) => ({ id: `cenario_${key}_${i}`, tipo: 'decoracao', x, y,
-        sprite: 'hub_props', frame: { col, row }, scale: 0.22, anchorY: 0.94, bloqueia: false,
+      { id: `caixa_carga_${key}_a`, tipo: 'caixa', x: 1.6, y: 1.6, sprite: 'hub_props', frame: { col: 0, row: 3 },
+        scale: 0.26, anchorY: 0.94, bloqueia: true, hitbox: { offsetX: -0.32, offsetY: -0.32, width: 0.64, height: 0.64 } },
+      { id: `caixa_carga_${key}_b`, tipo: 'caixa', x: 8.5, y: 6.6, sprite: 'hub_props', frame: { col: 0, row: 3 },
+        scale: 0.26, anchorY: 0.94, bloqueia: true, hitbox: { offsetX: -0.32, offsetY: -0.32, width: 0.64, height: 0.64 } },
+      { id: `totem_carga_${key}`, tipo: 'decoracao', x: 7.3, y: 1.6, sprite: 'aero_totem_holo',
+        scale: 0.10, anchorY: 0.95, bloqueia: false, brilho: { cor: v.cor, raio: 0.8, forca: 0.2 } },
+      ...v.details.map(([sprite, x, y, larguraPx], i) => ({ id: `cenario_${key}_${i}`, tipo: 'decoracao', x, y,
+        sprite, useCrop: true, larguraPx, pivotX: 0.5, pivotY: 0.94, sombra: [14, 6], bloqueia: false,
         brilho: { cor: v.cor, raio: 0.6, forca: 0.14 } })),
     ],
     collectibles: [{

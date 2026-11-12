@@ -20,6 +20,7 @@ export const map = {
     corTema: '#35E6D3',
 
     alturaParede: 1.20,
+    useBackgroundWalls: true,
 
     ambiente: {
       poeira: 22,
@@ -68,8 +69,19 @@ export const map = {
   actors: [],
 
   objects: [
-    { id: 'registro_bio_carga', nome: 'REGISTRO DE MANUTENÇÃO', tipo: 'painel', x: 2, y: 2,
-      sprite: 'hub_props', frame: { col: 0, row: 1 }, scale: 0.28, anchorY: 0.94,
+    // Equipamentos da oficina reaproveitados em escala de carga, fora do corredor.
+    { id: 'incubadora_carga_bio', tipo: 'decoracao', x: 2.2, y: 4.8,
+      sprite: 'bio_sala_incubadora', useCrop: true, larguraPx: 42, pivotX: 0.5, pivotY: 0.94,
+      sombra: [20, 8], bloqueia: false, brilho: { cor: '#35E6D3', raio: 0.7, forca: 0.2 } },
+    { id: 'banco_carga_bio', tipo: 'decoracao', x: 6.5, y: 2,
+      sprite: 'bio_sala_banco_reconstrucao', useCrop: true, larguraPx: 58, pivotX: 0.5, pivotY: 0.92,
+      sombra: [25, 10], bloqueia: false },
+    { id: 'berco_fragmento_bio', tipo: 'decoracao', x: 11, y: 4,
+      sprite: 'nucleo_sala_relicario_vetor', useCrop: true, larguraPx: 48, pivotX: 0.5, pivotY: 0.92,
+      sombra: [22, 9], bloqueia: false, showWhenFlag: 'cargoSecurityDiagnosed',
+      hideWhenFlag: 'collected_fragmento_sincronizacao' },
+    { id: 'registro_bio_carga', nome: 'REGISTRO DE MANUTENÇÃO', tipo: 'painel', x: 2.5, y: 2.5,
+      sprite: 'bio_sala_pilar_sensor', useCrop: true, larguraPx: 36, pivotX: 0.5, pivotY: 0.94,
       bloqueia: false, brilho: { cor: '#35E6D3', raio: 0.8, forca: 0.20 },
       interacao: { label: 'LER REGISTRO', distancia: 1.3, speaker: 'ARQUIVO DE CARGA',
         dialogue: ['A GRADE PROTEGE O FRAGMENTO APÓS UMA FALHA NO SETOR.', 'RECONFIGURE O PAINEL COM R E USE Q PARA ATRAVESSAR O CAMPO.'] } },
@@ -80,12 +92,12 @@ export const map = {
       x: 4,
       y: 6,
 
-      ajusteY: 14,
+      ajusteY: 0,
 
       sprite: 'hub_props',
       frame: { col: 0, row: 3 },
 
-      scale: 0.42,
+      scale: 0.28,
       anchorY: 0.94,
 
       bloqueia: true,
@@ -105,12 +117,12 @@ export const map = {
       x: 5,
       y: 6,
 
-      ajusteY: 14,
+      ajusteY: 0,
 
       sprite: 'hub_props',
       frame: { col: 0, row: 3 },
 
-      scale: 0.42,
+      scale: 0.28,
       anchorY: 0.94,
 
       bloqueia: true,
@@ -131,12 +143,12 @@ export const map = {
       x: 3,
       y: 3,
 
-      ajusteY: 13,
+      ajusteY: 0,
 
       sprite: 'hub_props',
       frame: { col: 2, row: 1 },
 
-      scale: 0.42,
+      scale: 0.28,
       anchorY: 0.94,
 
       bloqueia: true,
@@ -157,11 +169,11 @@ export const map = {
       x: 8,
       y: 5,
 
-      ajusteY: 10,
+      ajusteY: 0,
 
       sprite: 'bio_sala_pilar_sensor',
       useCrop: true,
-      larguraPx: 66,
+      larguraPx: 42,
       pivotX: 0.5,
       pivotY: 0.94,
       sombra: [24, 10],
@@ -215,16 +227,15 @@ export const map = {
       // Abertura entre a área principal e a zona do Fragmento.
       x: 10,
       y: 5,
-      espelhar: true,
-
-      ajusteY: 18,
 
       sprite: 'bio_sala_grade_contencao',
       useCrop: true,
-      larguraPx: 124,
+      larguraPx: 50,
       pivotX: 0.5,
-      pivotY: 0.92,
-      sombra: [48, 19],
+      pivotY: 0.78,
+      escalaY: 1.6,
+      colunas: { count: 6, esq: 0.5, dir: -0.5 },
+      sombra: [22, 9],
 
       bloqueia: true,
 
@@ -236,10 +247,10 @@ export const map = {
       dashPassableRequiresFlag: 'cargoSecurityDiagnosed',
 
       hitbox: {
-        offsetX: -0.70,
-        offsetY: -0.18,
-        width: 1.40,
-        height: 0.38,
+        offsetX: -0.18,
+        offsetY: -0.5,
+        width: 0.36,
+        height: 1.0,
       },
 
       depthOffset: 0.12,

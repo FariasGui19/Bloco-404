@@ -2172,7 +2172,8 @@ function drawObjectContactShadows() {
     ctx.beginPath(); ctx.moveTo(...d); ctx.lineTo(...c); ctx.lineTo(...b); ctx.stroke();
   }
   for (const o of state.objects ?? []) {
-    if (!o.sombra || o.oculto) continue;
+    if (!o.sombra || o.oculto || (o.hideWhenFlag && state.progress?.flags?.[o.hideWhenFlag]) ||
+        (o.showWhenFlag && !state.progress?.flags?.[o.showWhenFlag])) continue;
     const ix = (o.x - o.y) * HW, iy = (o.x + o.y) * HH;
     // Sombra larga difusa + contato duro junto à base: a peça "assenta".
     ctx.fillStyle = 'rgba(10,26,27,.22)';
@@ -3809,16 +3810,22 @@ function drawCargoEcoWallShell(map) {
     panel(1, y, 1, y + 1, '#101822');
     panel(cols, y, cols, y + 1, '#0c131b');
   }
-  for (let y = 1; y < rows; y++) {
-    if (map.layout[y]?.[5] !== 1) continue;
-    const [ax, ay] = p(5, y), [bx, by] = p(6, y), [cx, cy] = p(6, y + 1), [dx, dy] = p(5, y + 1);
-    const ch = 34;
-    quad(ax, ay - ch, bx, by - ch, cx, cy - ch, dx, dy - ch, '#1b2733', '#05080c', 1);
-    quad(ax, ay, bx, by, bx, by - ch, ax, ay - ch, '#141c26', '#05080c', 1);
-    quad(bx, by, cx, cy, cx, cy - ch, bx, by - ch, '#0e151e', '#05080c', 1);
-    ctx.strokeStyle = theme; ctx.globalAlpha = 0.5; ctx.lineWidth = 1.4;
-    ctx.beginPath(); ctx.moveTo(ax + 4, ay - ch + 8); ctx.lineTo(bx - 4, by - ch + 8); ctx.stroke();
-    ctx.globalAlpha = 1;
+  // As divisórias acompanham TODOS os tiles sólidos internos, inclusive os
+  // da Bio-Forja. Sua altura baixa mantém a leitura da sala e da passagem.
+  for (let d = 2; d < cols + rows; d++) {
+    for (let x = 1; x < cols; x++) {
+      const y = d - x;
+      if (y < 1 || y >= rows || map.layout[y]?.[x] !== 1) continue;
+      const [ax, ay] = p(x, y), [bx, by] = p(x + 1, y);
+      const [cx, cy] = p(x + 1, y + 1), [dx, dy] = p(x, y + 1);
+      const ch = 24;
+      quad(ax, ay - ch, bx, by - ch, cx, cy - ch, dx, dy - ch, '#202c37', '#101820', 1);
+      quad(dx, dy, cx, cy, cx, cy - ch, dx, dy - ch, '#121c25', '#080e14', 1);
+      quad(bx, by, cx, cy, cx, cy - ch, bx, by - ch, '#101922', '#080e14', 1);
+      ctx.strokeStyle = theme; ctx.globalAlpha = 0.28; ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(dx + 3, dy - 6); ctx.lineTo(cx - 3, cy - 6); ctx.stroke();
+      ctx.globalAlpha = 1;
+    }
   }
   ctx.restore();
 }
@@ -3848,8 +3855,11 @@ function drawCargoEcoUnderlay(map, curState) {
   halo.addColorStop(1, 'rgba(3,6,10,0)');
   ctx.fillStyle = halo;
   ctx.beginPath(); ctx.ellipse(cx, cy + 18, 560, 280, 0, 0, Math.PI * 2); ctx.fill();
-  ctx.globalAlpha = 0.16; ctx.fillStyle = theme;
-  ctx.beginPath(); ctx.ellipse(cx, cy + 18, 380, 190, 0, 0, Math.PI * 2); ctx.fill();
+  // Um brilho difuso, sem a elipse sólida que parecia uma plataforma.
+  const tintHalo = ctx.createRadialGradient(cx, cy + 18, 20, cx, cy + 18, 390);
+  tintHalo.addColorStop(0, theme); tintHalo.addColorStop(1, 'rgba(0,0,0,0)');
+  ctx.globalAlpha = 0.10; ctx.fillStyle = tintHalo;
+  ctx.beginPath(); ctx.ellipse(cx, cy + 18, 390, 195, 0, 0, Math.PI * 2); ctx.fill();
   ctx.globalAlpha = 1;
   const skirt = 22;
   const [wTopX, wTopY] = p(1, rows);
@@ -3872,73 +3882,55 @@ function drawCargoEcoFloorOverlay(map, curState) {
   const open = cargoGateOpen(gate, flags);
   ctx.save();
 
-  // Esteira de conferência: do spawn ao berço, passando pela trava.
-  const [sx, sy] = p(2.2, 4.5);
-  const [fx, fy] = frag ? p(frag.x, frag.y) : p(8.5, 4.5);
-  ctx.strokeStyle = 'rgba(10,16,22,0.85)'; ctx.lineWidth = 16;
-  ctx.beginPath(); ctx.moveTo(sx, sy); ctx.lineTo(fx, fy); ctx.stroke();
-  ctx.strokeStyle = theme; ctx.globalAlpha = 0.14; ctx.lineWidth = 12;
-  ctx.beginPath(); ctx.moveTo(sx, sy); ctx.lineTo(fx, fy); ctx.stroke();
+  // A rota acompanha o corredor de cada planta, sem cortar paredes.
+  const spawn = map.spawnPoints?.vindo_do_aeroporto ?? { x: 2.5, y: 4.5 };
+  const route = map.meta?.cargoKey === 'bio'
+    ? [spawn, { x: 5.5, y: 9.5 }, { x: 5.5, y: 5.5 }, { x: 10.5, y: 5.5 }, { x: 11.5, y: 5.5 }]
+    : [spawn, { x: 5.5, y: 4.5 }];
+  if (frag) route.push({ x: frag.x, y: frag.y });
+  const points = route.map(({ x, y }) => p(x, y));
+  const trace = () => {
+    ctx.beginPath(); ctx.moveTo(...points[0]);
+    for (const point of points.slice(1)) ctx.lineTo(...point);
+    ctx.stroke();
+  };
+  ctx.strokeStyle = 'rgba(10,16,22,0.7)'; ctx.lineWidth = 10; trace();
+  ctx.strokeStyle = theme; ctx.globalAlpha = 0.13; ctx.lineWidth = 6; trace();
   ctx.globalAlpha = 1;
-  for (let i = 0; i < 10; i++) {
-    const u = (t * 0.22 + i / 10) % 1;
-    const x = sx + (fx - sx) * u, y = sy + (fy - sy) * u;
-    ctx.fillStyle = theme; ctx.globalAlpha = 0.4 * (1 - Math.abs(u - 0.5) * 1.3);
-    ctx.beginPath(); ctx.ellipse(x, y, 5, 2.4, -0.46, 0, Math.PI * 2); ctx.fill();
+  const segments = points.slice(1).map((point, i) => ({
+    from: points[i], to: point,
+    length: Math.hypot(point[0] - points[i][0], point[1] - points[i][1]),
+  }));
+  const total = segments.reduce((sum, segment) => sum + segment.length, 0);
+  if (total > 0) for (let i = 0; i < 10; i++) {
+    let distance = ((t * 0.16 + i / 10) % 1) * total;
+    for (const segment of segments) {
+      if (distance > segment.length) { distance -= segment.length; continue; }
+      if (!segment.length) continue;
+      const u = distance / segment.length;
+      const x = segment.from[0] + (segment.to[0] - segment.from[0]) * u;
+      const y = segment.from[1] + (segment.to[1] - segment.from[1]) * u;
+      ctx.fillStyle = theme; ctx.globalAlpha = 0.35;
+      ctx.beginPath(); ctx.ellipse(x, y, 3, 1.5, 0, 0, Math.PI * 2); ctx.fill();
+      break;
+    }
   }
   ctx.globalAlpha = 1;
 
   if (gate) {
-    const [gx, gy] = p(gate.x, gate.y);
-    // Chevrons de segurança no piso, pulsando quando a trava está fechada.
+    // Marcas nas duas aproximações, projetadas no próprio piso.
     ctx.strokeStyle = open ? theme : '#ffc94a';
-    ctx.lineWidth = 2;
-    ctx.globalAlpha = open ? 0.35 : 0.45 + 0.25 * Math.sin(t * 4);
-    for (let k = -1; k <= 1; k += 2) {
-      ctx.beginPath();
-      ctx.moveTo(gx + k * 44 - 8, gy + 10); ctx.lineTo(gx + k * 44, gy + 14); ctx.lineTo(gx + k * 44 + 8, gy + 10);
-      ctx.stroke();
+    ctx.lineWidth = 1.2;
+    ctx.globalAlpha = open ? 0.3 : 0.42 + 0.16 * Math.sin(t * 4);
+    for (const side of [-1, 1]) {
+      const [mx, my] = p(gate.x + side * 0.65, gate.y);
+      ctx.beginPath(); ctx.moveTo(mx - 5, my + 1); ctx.lineTo(mx, my + 4); ctx.lineTo(mx + 5, my + 1); ctx.stroke();
     }
     ctx.globalAlpha = 1;
 
-    // Campo da trava: plano vertical de energia. Pós-abertura, fase continua
-    // presente (calmo); lacre rompido some; grade de impulso só apaga com o
-    // fragmento recolhido.
-    const broken = !gate.phaseAction && !gate.dashPassable && open;
-    if (!broken) {
-      const scanned = gate.gate?.scanFlag ? !!flags[gate.gate.scanFlag] : !!flags.cargoSecurityDiagnosed;
-      const w = 66, h = 88;
-      ctx.save();
-      ctx.translate(gx, gy - 46);
-      ctx.globalAlpha = open ? 0.28 : 0.72;
-      const field = ctx.createLinearGradient(0, -h / 2, 0, h / 2);
-      field.addColorStop(0, 'rgba(8,14,20,0.10)');
-      field.addColorStop(0.5, theme);
-      field.addColorStop(1, 'rgba(8,14,20,0.10)');
-      ctx.fillStyle = field; ctx.globalAlpha *= 0.32;
-      ctx.fillRect(-w / 2, -h / 2, w, h);
-      ctx.globalAlpha = open ? 0.3 : 0.8;
-      ctx.strokeStyle = theme; ctx.lineWidth = 1.6;
-      ctx.strokeRect(-w / 2, -h / 2, w, h);
-      ctx.globalAlpha = open ? 0.18 : 0.4;
-      for (let i = 1; i < 6; i++) {
-        const y = -h / 2 + (h / 6) * i;
-        ctx.beginPath(); ctx.moveTo(-w / 2, y); ctx.lineTo(w / 2, y); ctx.stroke();
-      }
-      if (gate.dashPassable) {
-        for (let i = 1; i < 5; i++) {
-          const x = -w / 2 + (w / 5) * i;
-          ctx.beginPath(); ctx.moveTo(x, -h / 2); ctx.lineTo(x, h / 2); ctx.stroke();
-        }
-      }
-      if (scanned && !open) {
-        const wy = -h / 2 + ((t * 0.55) % 1) * h;
-        ctx.globalAlpha = 0.85; ctx.fillStyle = '#eafff4';
-        ctx.fillRect(-w / 2, wy - 2, w, 4);
-        ctx.globalAlpha = 0.35; ctx.fillRect(-w / 2, wy - 8, w, 16);
-      }
-      ctx.restore();
-    }
+    // O campo já está pintado na arte da trava. Um retângulo frontal aqui
+    // criava uma segunda barreira flutuante e fora da perspectiva.
+
   }
 
   // Berço do fragmento: feixe contido + anéis de sincronização.
@@ -3973,25 +3965,19 @@ function drawCargoEcoHudCallouts(map, curState) {
   ctx.save();
   ctx.font = 'bold 9px monospace'; ctx.textAlign = 'center';
 
-  const [bx, by] = p(2.4, 1.2);
-  const bay = `CARGA 04 · ${(map.meta?.cargoKey ?? 'eco').toUpperCase()}`;
-  ctx.fillStyle = 'rgba(6,10,16,0.9)'; ctx.fillRect(bx - 58, by - 78, 116, 15);
-  ctx.strokeStyle = theme; ctx.lineWidth = 1; ctx.strokeRect(bx - 58, by - 78, 116, 15);
-  ctx.fillStyle = '#dff7ff'; ctx.fillText(bay, bx, by - 67);
-
-  if (gate) {
+  // Indicação discreta apenas ao se aproximar; o HUD de interação já traz
+  // os detalhes. Não deixar placas permanentes cobrindo a arte e o jogador.
+  if (gate && !open && curState.player &&
+      Math.hypot(curState.player.x - gate.x, curState.player.y - gate.y) < 2.2) {
     const [gx, gy] = p(gate.x, gate.y);
-    const label = open ? 'TRAVA LIBERADA' : (gate.gate?.scanFlag && flags[gate.gate.scanFlag]) || flags.cargoSecurityDiagnosed ? 'JANELA REVELADA · [Q]' : 'LEIA COM [R]';
-    const w = label.length * 5.4 + 16;
-    ctx.fillStyle = 'rgba(6,10,16,0.9)'; ctx.fillRect(gx - w / 2, gy - 112, w, 15);
-    ctx.strokeStyle = open ? theme : '#ffc94a'; ctx.strokeRect(gx - w / 2, gy - 112, w, 15);
-    ctx.fillStyle = open ? '#eafff4' : '#ffe6b0'; ctx.fillText(label, gx, gy - 101);
-  }
-  if (frag && (!frag.requiresFlag || flags[frag.requiresFlag]) && !flags[`collected_${frag.id}`]) {
-    const [fx, fy] = p(frag.x, frag.y);
-    ctx.fillStyle = 'rgba(6,10,16,0.9)'; ctx.fillRect(fx - 62, fy - 118, 124, 15);
-    ctx.strokeStyle = theme; ctx.strokeRect(fx - 62, fy - 118, 124, 15);
-    ctx.fillStyle = '#eafff4'; ctx.fillText('FRAGMENTO · [E]', fx, fy - 107);
+    const scanned = gate.gate?.scanFlag ? flags[gate.gate.scanFlag] : flags.cargoSecurityDiagnosed;
+    const label = scanned ? 'USE [Q]' : 'LEIA COM [R]';
+    ctx.font = 'bold 7px monospace';
+    const w = label.length * 4.2 + 10;
+    ctx.fillStyle = 'rgba(6,10,16,0.84)'; ctx.fillRect(gx - w / 2, gy - 58, w, 12);
+    ctx.strokeStyle = scanned ? theme : '#ffc94a'; ctx.lineWidth = 0.7;
+    ctx.strokeRect(gx - w / 2, gy - 58, w, 12);
+    ctx.fillStyle = '#eafff4'; ctx.fillText(label, gx, gy - 49);
   }
 
   // Drone de conferência: patrulha curta, luz de leitura, sem colisão.
@@ -5965,6 +5951,13 @@ function drawCollectible(item, state) {
   ctx.beginPath();
   ctx.ellipse(ix, iy, 26, 12, 0, 0, Math.PI * 2);
   ctx.fill();
+
+  // Nas câmaras de carga, o cristal já integra a arte do berço.
+  if (state.world?.currentMap?.meta?.estiloSala === 'carga_eco' &&
+      (state.objects ?? []).some(o => o.id.startsWith('berco_fragmento_'))) {
+    ctx.restore();
+    return;
+  }
 
   // Fragmento.
   ctx.save();

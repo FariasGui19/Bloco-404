@@ -1,5 +1,26 @@
 # Próximas Etapas — Bloco 404
 
+## Concluído na 0.11.1 — Refinamento e organização
+
+Ajustes de proporção e enquadramento após revisão visual:
+
+- **Salas de Missão** — paredes mais baixas (`alturaParede` 0.85), portões de
+  contenção maiores e levemente elevados (preenchem o vão sem afundar no
+  piso), heróis reescalados (máquina da Bio-Forja 0.36→0.155, matriz do
+  Núcleo 0.46→0.27, lâmina 0.48→0.36), plantas alienígenas em escala de
+  vaso (0.13). Novo quadro de arquivo **visão da Bio-Forja**
+  (`visao_bio`) completa a série — todos os quatro registros agora exibem a
+  arte da câmara em moldura. Gerador da Dársena corrigido (era um quadro de
+  planta; agora é um gabinete de máquina). Luminárias/barris/caixas extras
+  adensam cada sala.
+- **Aeroporto** — L-9 em 1.25× (1.7 era dominante demais), Guia do
+  Aeroporto 0.165→0.215, totens holográficos menores (0.28–0.30) e fora da
+  frente dos pórticos (GATE 00 e intervalo B2/C3), plantas alienígenas
+  menores (0.13–0.14) e realocadas aos vãos entre docas (nada obstruindo
+  portais).
+
+Versão `0.11.1-refinamento`.
+
 ## Concluído na 0.11.0 — Lapidação do Aeroporto e Salas de Missão
 
 1. **Escala por profundidade aposentada** — o pseudo-3D de W/S que encolhia/

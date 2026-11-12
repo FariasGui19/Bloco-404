@@ -1,0 +1,31 @@
+// node --experimental-default-type=module tests/estacao-encaixe.mjs
+import assert from 'node:assert/strict';
+import { existsSync } from 'node:fs';
+import { map as station } from '../js/data/worlds/arquipelago-rotas-perdidas/estacao-666.js';
+import { map as coast } from '../js/data/worlds/arquipelago-rotas-perdidas/enseada-ecos.js';
+import { state } from '../js/game/state.js';
+import { loadMap } from '../js/game/map-manager.js';
+import { canStandAt } from '../js/game/collision.js';
+import { findNearestInteraction } from '../js/game/interactions.js';
+
+globalThis.window = { addEventListener() {}, removeEventListener() {} };
+const visual = station.objects.find(o => o.id === 'saida_estacao_666_visual');
+const exit = station.portals.find(o => o.id === 'voltar_enseada_666');
+assert.equal(visual.x + .5, 1, 'eclusa deve estar no plano da parede x=1');
+assert.equal(visual.y, exit.y, 'eclusa e interação devem apontar para a mesma seção');
+assert(visual.larguraPx >= 95 && visual.camada === 'fundo');
+assert(Math.hypot(station.spawnPoints.vindo_da_enseada.x-(exit.x+.5),station.spawnPoints.vindo_da_enseada.y-(exit.y+.5)) > exit.interactionDistance);
+const entrance = coast.objects.find(o => o.id === 'porta_estacao_666_visual');
+assert(entrance.larguraPx >= 280 && entrance.depthOffset < 0);
+for (const file of ['abrigo-ampliado','fx-vortice','fx-vapor','fx-centelha','fx-sinal','fx-baliza','fx-poeira']) assert(existsSync(`assets/sprites/frequencia-666/${file}.png`));
+state.save.loaded = false; state.progress.flags = { frequencia666Registrada: true };
+await loadMap('estacao_limiar_666', 'vindo_da_enseada');
+Object.assign(state.player,{x:exit.x+.5,y:exit.y+.5});
+assert(canStandAt(station,state.player.x,state.player.y,.25,state.player));
+assert.equal(findNearestInteraction()?.data.id, exit.id, 'saída é alcançável e selecionável');
+await loadMap('ilha_enseada_ecos', 'vindo_da_estacao_666');
+const receptor = state.objects.find(o => o.id === 'terminal_frequencia_666');
+assert(canStandAt(coast,receptor.x,receptor.y,.25,state.player));
+Object.assign(state.player,{x:receptor.x,y:receptor.y});
+assert.equal(findNearestInteraction()?.data.id,receptor.id,'terminal continua selecionável');
+console.log('Encaixe e acesso da Estação 66.6 OK.');

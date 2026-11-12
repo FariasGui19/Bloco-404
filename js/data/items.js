@@ -97,6 +97,18 @@ export const ITEMS = Object.freeze({
     icon: 'progressao',
     description: 'Marca consagrada no Altar da Lâmina Ancestral por quem leu a frequência do Lacre e o partiu num só golpe.',
   }),
+  fragmento_eco_mare: Object.freeze({
+    name: 'FRAGMENTO DE ECO — MARÉ ASTRAL',
+    kind: 'fragmento',
+    icon: 'energia',
+    description: 'Pérola de maré recolhida além do Fluxo Contido na Dársena Abissal. Pulsa em fase com o Núcleo Hidrodimensional.',
+  }),
+  amuleto_corrente_mare: Object.freeze({
+    name: 'AMULETO DA CORRENTE ABISSAL',
+    kind: 'registro',
+    icon: 'progressao',
+    description: 'Insígnia náutica gravada pelo Núcleo Hidrodimensional após ler a janela do Fluxo Contido e atravessá-lo sem atrito.',
+  }),
 });
 
 export function getItem(id) {

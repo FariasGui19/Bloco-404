@@ -171,15 +171,30 @@ export function render(map, state) {
   // O metrô modular volta a usar chão e tiles.
   if (!map.meta?.backgroundCoversFloor) {
     if (map.aguaPraia) {
+      // Na Dársena Maré Astral, recorta a água contínua exatamente dentro da bacia do Grande Aquário Oceânico (x=14.35..21, y=1..11).
+      const clipMareAquario = map.meta?.estiloSala === 'mare_astral';
+      if (clipMareAquario) {
+        const p = (x, y) => [(x - y) * HW, (x + y) * HH];
+        const [a0, a1] = p(14.32, 1.0);
+        const [b0, b1] = p(21.0, 1.0);
+        const [c0, c1] = p(21.0, 11.0);
+        const [d0, d1] = p(14.32, 11.0);
+        ctx.save();
+        ctx.beginPath();
+        ctx.moveTo(a0, a1); ctx.lineTo(b0, b1); ctx.lineTo(c0, c1); ctx.lineTo(d0, d1);
+        ctx.closePath();
+        ctx.clip();
+      }
       // AREIA primeiro, MAR por cima: o mar recorta a própria borda pelo campo
       // de costa (`beach-water.js`), então a linha d'água é curva em vez de
       // seguir a borda quadrada das células de areia.
-      if (map.id !== 'ilha_estacao_bio') drawBeachSurface(map);
+      if (map.id !== 'ilha_estacao_bio' && map.meta?.estiloSala !== 'mare_astral') drawBeachSurface(map);
       drawBeachSea(map);
       const imersao = intensidadeSubmersa(state.player?.nado);
       if (imersao > 0) drawFundoSubmerso(map, imersao);
       drawVidaAquatica(map, state);
       if (imersao < .5) drawBeachRipples(map);
+      if (clipMareAquario) ctx.restore();
       // Poças de treino: água por cima da areia (zona, não célula da grade).
       desenharPocas(ctx, map, performance.now() / 1000, HW, HH);
       // Cordão de boias: o limite do degrau de nado, só perto do operador.
@@ -192,6 +207,7 @@ export function render(map, state) {
     if (nadadorNoFundo(state.player, map)) drawEntity(state.player, state);
     if (map.meta?.estiloSala === 'bio_forja') drawBioForjaUnderlay(map, state);
     if (map.meta?.estiloSala === 'dominio_anciao') drawDominioUnderlay(map, state);
+    if (map.meta?.estiloSala === 'mare_astral') drawMareAstralUnderlay(map, state);
     drawFloors(map, state);
     drawHazards(state.hazards);
     if (map.id === 'hub_saguao') drawHubFloorMarkings();
@@ -199,6 +215,7 @@ export function render(map, state) {
     if (map.id === 'bio_sala_controle') drawBioControlFloor();
     if (map.meta?.estiloSala === 'bio_forja') drawBioForjaFloorOverlay(map, state);
     if (map.meta?.estiloSala === 'dominio_anciao') drawDominioFloorOverlay(map, state);
+    if (map.meta?.estiloSala === 'mare_astral') drawMareAstralFloorOverlay(map, state);
     if (map.id === 'ilha_estacao_bio') {
       drawStationPaving(map);
       drawStationCanalRims(map);
@@ -1095,6 +1112,11 @@ function drawFloorTile(type, x, y, map) {
   // Santuário do Anel — Lâmina Domínio Ancião: obsidiana kintsugi e grelhas rúnicas douradas.
   if (map.meta?.estiloSala === 'dominio_anciao') {
     if (drawDominioFloorTile(x, y, tx, ty)) return;
+  }
+
+  // Dársena Abissal — Maré Astral: ardósia úmida com veios ciano e grelhas hidráulicas submersas.
+  if (map.meta?.estiloSala === 'mare_astral') {
+    if (drawMareAstralFloorTile(x, y, tx, ty)) return;
   }
 
   // Placa específica (map.pisos) ou mapa inteiro em placas
@@ -2590,11 +2612,13 @@ function drawWorld(map, state) {
     const rail = backList.find(o => o.id === 'trilho_dimensional_principal');
     if (rail) drawBeachRailTunnel(rail);
   }
-  // Casca estrutural das paredes externas da Oficina Bio-Forja / Santuário Domínio (atrás de backList).
+  // Casca estrutural das paredes externas da Oficina Bio-Forja / Santuário Domínio / Dársena Maré (atrás de backList).
   if (map.meta?.estiloSala === 'bio_forja') drawBioForjaOuterWallShell(map);
   if (map.meta?.estiloSala === 'dominio_anciao') drawDominioOuterWallShell(map);
+  if (map.meta?.estiloSala === 'mare_astral') drawMareAstralOuterWallShell(map);
   // Camada de fundo (trilho, trem, painéis murais): atrás de tudo, só acima do chão.
   for (const o of backList) if ((o.ordem ?? 0) >= 0) drawMapObject(o, state);
+  if (map.meta?.estiloSala === 'mare_astral') drawMareAstralWindowLife(map, state);
 
   let ei = 0;
   for (let d = range.x0 + range.y0; d <= range.x1 + range.y1; d++) {
@@ -2620,6 +2644,7 @@ function drawWorld(map, state) {
 
   if (map.meta?.estiloSala === 'bio_forja') drawBioForjaHudCallouts(map, state);
   if (map.meta?.estiloSala === 'dominio_anciao') drawDominioHudCallouts(map, state);
+  if (map.meta?.estiloSala === 'mare_astral') drawMareAstralHudCallouts(map, state);
   drawCombatFeedback();
   drawPlayerHurt();
 }
@@ -3197,6 +3222,444 @@ function drawDominioHudCallouts(map, curState) {
   ctx.restore();
 }
 
+function ehGradeMare(x, y) {
+  // Canal central de corrente (y=5..6), berço do Núcleo Hidrodimensional e galeria dos janelões
+  if ((y === 5 || y === 6) && x >= 2 && x <= 13) return true;
+  if (x >= 5 && x <= 7 && y >= 2 && y <= 3) return true;
+  if (y === 1 && (x === 3 || x === 4 || x === 7 || x === 8 || x === 12)) return true;
+  return false;
+}
+
+function drawMareAstralFloorTile(x, y, tx, ty) {
+  const usaGrade = ehGradeMare(x, y);
+  const spriteId = usaGrade ? 'mare_sala_piso_grade' : 'mare_sala_piso_ardosia';
+  const img = getSprite(spriteId);
+  const f = img && getFrame(img, 0, 0, 1, 1)?.crop;
+  if (!f) {
+    const base = usaGrade ? '#0d3146' : '#122230';
+    quad(tx, ty, tx + HW, ty + HH, tx, ty + TH, tx - HW, ty + HH, base, '#08131d', 1);
+    return true;
+  }
+  const w = CONFIG.TILE_W * 1.03;
+  const h = w * (f.h / f.w);
+  ctx.save();
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = 'high';
+  const flip = !usaGrade && ((x * 7 + y * 13) & 1) === 1;
+  ctx.translate(tx, ty - 0.8);
+  if (flip) ctx.scale(-1, 1);
+  ctx.drawImage(f.canvas, 0, 0, f.w, f.h, -w / 2, 0, w, h);
+  ctx.restore();
+  return true;
+}
+
+function drawMareAstralUnderlay(map, curState) {
+  const cols = map.layout[0].length - 1; // 21
+  const rows = map.layout.length - 1;    // 11
+  const dockCols = 14;
+  const p = (x, y) => [(x - y) * HW, (x + y) * HH];
+  const flags = curState?.progress?.flags ?? {};
+  const sincronizada = !!flags.darsena_mare_sincronizada;
+  const rotaAberta = !!flags.gate_comporta_aquario_mare;
+
+  ctx.save();
+  // 1) Halo abissal pelágico sob a Dársena + Grande Aquário Oceânico
+  const [cx, cy] = p((cols + 1) * 0.5, (rows + 1) * 0.5);
+  const abyss = ctx.createRadialGradient(cx, cy + 24, 40, cx, cy + 24, 780);
+  abyss.addColorStop(0, sincronizada ? 'rgba(53, 230, 211, 0.30)' : 'rgba(28, 168, 212, 0.22)');
+  abyss.addColorStop(0.55, 'rgba(6, 32, 52, 0.62)');
+  abyss.addColorStop(1, 'rgba(3, 12, 22, 0)');
+  ctx.fillStyle = abyss;
+  ctx.beginPath();
+  ctx.ellipse(cx, cy + 28, 820, 390, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  // 2) Saia submarina rebitada da Dársena (x=1..14, y=rows) + saia oceânica do Grande Aquário (x=14..cols)
+  const skirtH = 30;
+  const [wTopX, wTopY] = p(1, rows);
+  const [dMidX, dMidY] = p(dockCols, rows);
+  const [sMidX, sMidY] = p(cols, rows);
+  const [eTopX, eTopY] = p(cols, 1);
+
+  // Face sudoeste da Dársena (titânio naval)
+  quad(wTopX, wTopY, dMidX, dMidY, dMidX, dMidY + skirtH, wTopX, wTopY + skirtH, '#10202e', '#07111a', 1.2);
+  // Face sudoeste e sudeste da Bacia Oceânica (basalto marinho + vidro temperado abissal)
+  quad(dMidX, dMidY, sMidX, sMidY, sMidX, sMidY + skirtH, dMidX, dMidY + skirtH, '#09293d', '#06131e', 1.2);
+  quad(sMidX, sMidY, eTopX, eTopY, eTopX, eTopY + skirtH, sMidX, sMidY + skirtH, '#072234', '#051019', 1.2);
+
+  // Friso de bronze naval contínuo
+  ctx.strokeStyle = sincronizada ? '#4ef2e4' : '#8c7548';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(wTopX, wTopY + 7);
+  ctx.lineTo(sMidX, sMidY + 7);
+  ctx.lineTo(eTopX, eTopY + 7);
+  ctx.stroke();
+
+  // Vigias bioluminescentes ao longo da saia frontal
+  for (let x = 2; x < cols; x += 2) {
+    const [rx, ry] = p(x, rows);
+    const isSea = x > dockCols;
+    ctx.fillStyle = isSea ? (rotaAberta ? '#5cf7eb' : '#25b8d4') : (sincronizada ? '#4ef2e4' : '#2aa6bd');
+    ctx.globalAlpha = 0.72;
+    ctx.beginPath();
+    ctx.ellipse(rx, ry + 16, isSea ? 7 : 4.5, 3.2, 0, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.restore();
+}
+
+function drawMareAstralFloorOverlay(map, curState) {
+  const cols = map.layout[0].length - 1; // 21
+  const rows = map.layout.length - 1;    // 11
+  const dockCols = 14;
+  const p = (x, y) => [(x - y) * HW, (x + y) * HH];
+  const flags = curState?.progress?.flags ?? {};
+  const gateOpen = !!flags.gate_fluxo_contido_sala;
+  const sincronizada = !!flags.darsena_mare_sincronizada;
+  const valvulaAtiva = !!flags.valvula_pressao_mare_equalizada;
+  const comportaAberta = !!flags.gate_comporta_aquario_mare;
+  const t = performance.now() / 1000;
+  const pulse = 0.5 + 0.5 * Math.sin(t * 2.6);
+
+  ctx.save();
+
+  // 1) Correntes bioluminescentes pulsando sob as grelhas da Dársena (x=2..13, y=5..6)
+  {
+    const [a0, a1] = p(2.0, 6.0);
+    const [b0, b1] = p(13.6, 6.0);
+    const boost = (sincronizada ? 0.16 : 0) + (valvulaAtiva ? 0.10 : 0);
+    ctx.strokeStyle = `rgba(53, 230, 211, ${(0.22 + boost + 0.12 * pulse).toFixed(3)})`;
+    ctx.lineWidth = 6;
+    ctx.beginPath();
+    ctx.moveTo(a0, a1);
+    ctx.lineTo(b0, b1);
+    ctx.stroke();
+
+    // Partículas laminares correndo rumo ao Grande Aquário a leste
+    for (let i = 0; i < 6; i++) {
+      const u = ((t * 0.24 + i / 6) % 1);
+      const wx = 2.2 + u * (gateOpen ? 11.4 : 7.8);
+      const [px, py] = p(wx, 5.95 + 0.18 * Math.sin(t * 3 + i));
+      ctx.fillStyle = `rgba(150, 252, 255, ${(0.55 * (1 - Math.abs(u - 0.5) * 1.4)).toFixed(3)})`;
+      ctx.beginPath();
+      ctx.ellipse(px, py, 5, 2.3, -0.45, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+
+  // 2) Anel hidro-harmônico sob o Núcleo Hidrodimensional (6.5, 2.6) e sob o Relicário (12.5, 6.0)
+  {
+    const [gx, gy] = p(6.5, 2.65);
+    const grad = ctx.createRadialGradient(gx, gy, 6, gx, gy, 74);
+    grad.addColorStop(0, sincronizada ? 'rgba(92, 247, 235, 0.42)' : 'rgba(42, 198, 224, 0.26)');
+    grad.addColorStop(1, 'rgba(12, 60, 88, 0)');
+    ctx.fillStyle = grad;
+    ctx.beginPath();
+    ctx.ellipse(gx, gy, 74, 37, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    const [rx, ry] = p(12.5, 6.0);
+    const rGrad = ctx.createRadialGradient(rx, ry, 4, rx, ry, 54);
+    rGrad.addColorStop(0, gateOpen ? 'rgba(92, 247, 235, 0.40)' : 'rgba(38, 178, 210, 0.22)');
+    rGrad.addColorStop(1, 'rgba(10, 48, 72, 0)');
+    ctx.fillStyle = rGrad;
+    ctx.beginPath();
+    ctx.ellipse(rx, ry, 52, 26, 0, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  // 3) Cais de bronze naval separando a Dársena (x=14) do Grande Aquário Oceânico (x=14..21)
+  {
+    for (const [y0, y1] of [[1, 5], [7, rows]]) {
+      const [p0x, p0y] = p(dockCols, y0);
+      const [p1x, p1y] = p(dockCols, y1);
+      const [q0x, q0y] = p(dockCols + 0.42, y0);
+      const [q1x, q1y] = p(dockCols + 0.42, y1);
+      quad(p0x, p0y, q0x, q0y, q1x, q1y, p1x, p1y, '#21384a', '#8c7548', 1.4);
+    }
+    // Rampa submersa de bronze/ardósia em x=14..15, y=5..7
+    for (let step = 0; step < 3; step++) {
+      const sx0 = dockCols + step * 0.30;
+      const sx1 = sx0 + 0.28;
+      const [r0x, r0y] = p(sx0, 5.05);
+      const [r1x, r1y] = p(sx1, 5.05);
+      const [r2x, r2y] = p(sx1, 6.95);
+      const [r3x, r3y] = p(sx0, 6.95);
+      const alpha = (0.72 - step * 0.20).toFixed(2);
+      quad(
+        r0x, r0y, r1x, r1y, r2x, r2y, r3x, r3y,
+        `rgba(26, 62, 82, ${alpha})`,
+        comportaAberta ? 'rgba(92, 247, 235, 0.65)' : 'rgba(140, 117, 72, 0.55)',
+        1
+      );
+    }
+  }
+
+  // 4) Vida abissal extra dentro do Grande Aquário Oceânico (x=15..20, y=1..10):
+  //    águas-vivas bioluminescentes, anéis de corrente rumo ao Arco da Enseada e cáusticas
+  {
+    const medusas = [
+      { bx: 16.2, by: 2.8, amp: 0.42, spd: 0.75, ph: 0.4, sz: 8.5 },
+      { bx: 18.4, by: 3.4, amp: 0.50, spd: 0.62, ph: 2.1, sz: 10.0 },
+      { bx: 16.8, by: 8.6, amp: 0.46, spd: 0.68, ph: 3.7, sz: 9.2 },
+      { bx: 19.1, by: 8.2, amp: 0.38, spd: 0.82, ph: 5.0, sz: 7.8 },
+      { bx: 17.6, by: 5.9, amp: 0.34, spd: 0.90, ph: 1.3, sz: 8.0 },
+    ];
+    for (const m of medusas) {
+      const wx = m.bx + Math.cos(t * m.spd + m.ph) * m.amp * 0.6;
+      const wy = m.by + Math.sin(t * m.spd + m.ph) * m.amp;
+      const [mx, my] = p(wx, wy);
+      const bell = m.sz * (0.88 + 0.16 * Math.sin(t * 3.1 + m.ph));
+
+      const halo = ctx.createRadialGradient(mx, my, 1, mx, my, bell * 2.3);
+      halo.addColorStop(0, 'rgba(130, 255, 248, 0.42)');
+      halo.addColorStop(1, 'rgba(30, 180, 210, 0)');
+      ctx.fillStyle = halo;
+      ctx.beginPath();
+      ctx.arc(mx, my, bell * 2.3, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Umbela translúcida da água-viva
+      ctx.fillStyle = 'rgba(116, 250, 242, 0.62)';
+      ctx.strokeStyle = 'rgba(200, 255, 255, 0.82)';
+      ctx.lineWidth = 1.1;
+      ctx.beginPath();
+      ctx.ellipse(mx, my, bell, bell * 0.62, -0.3, Math.PI, Math.PI * 2);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+
+      // Tentáculos ondulantes
+      ctx.strokeStyle = 'rgba(126, 248, 255, 0.48)';
+      ctx.lineWidth = 1;
+      for (let k = -1; k <= 1; k++) {
+        ctx.beginPath();
+        ctx.moveTo(mx + k * bell * 0.42, my);
+        ctx.quadraticCurveTo(
+          mx + k * bell * 0.5 + Math.sin(t * 4 + m.ph + k) * 4,
+          my + bell * 0.7,
+          mx + k * bell * 0.35 - Math.cos(t * 3.4 + m.ph) * 3,
+          my + bell * 1.35
+        );
+        ctx.stroke();
+      }
+    }
+
+    // Trilha luminosa de corrente guiando da rampa (15.0, 6.0) até o Arco da Enseada (19.6, 5.8)
+    for (let i = 0; i < 4; i++) {
+      const wx = 15.4 + i * 1.15;
+      const [cx, cy] = p(wx, 5.95);
+      const glow = 0.24 + 0.18 * Math.sin(t * 2.8 - i * 0.8);
+      ctx.strokeStyle = `rgba(92, 247, 235, ${glow.toFixed(3)})`;
+      ctx.lineWidth = 1.6;
+      ctx.beginPath();
+      ctx.ellipse(cx, cy, 16, 8, 0, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+  }
+
+  // 5) Meio-fio arquitetônico frontal ao redor de toda a sala + aquário
+  {
+    const [e0, e1] = p(cols, 1);
+    const [s0, s1] = p(cols, rows);
+    const [w0, w1] = p(1, rows);
+    ctx.strokeStyle = '#07131d';
+    ctx.lineWidth = 5;
+    ctx.beginPath();
+    ctx.moveTo(w0, w1); ctx.lineTo(s0, s1); ctx.lineTo(e0, e1);
+    ctx.stroke();
+    ctx.strokeStyle = sincronizada ? '#4ef2e4' : '#8c7548';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(w0, w1 - 1); ctx.lineTo(s0, s1 - 1); ctx.lineTo(e0, e1 - 1);
+    ctx.stroke();
+  }
+
+  ctx.restore();
+}
+
+function drawMareAstralOuterWallShell(map) {
+  const cols = map.layout[0].length - 1; // 21
+  const rows = map.layout.length - 1;    // 11
+  const dockCols = 14;
+  const p = (x, y) => [(x - y) * HW, (x + y) * HH];
+  const wallH = 68;
+  const seaWallH = 26;
+  const thick = 0.44;
+
+  ctx.save();
+  // Ala noroeste (x=1, y=1..rows): antepara submarina em aço-titânio e bronze
+  {
+    const [i0x, i0y] = p(1, 1);
+    const [i1x, i1y] = p(1, rows);
+    const [o0x, o0y] = p(1 - thick, 1 - thick);
+    const [o1x, o1y] = p(1 - thick, rows);
+    quad(i1x, i1y, i0x, i0y, i0x, i0y - wallH, i1x, i1y - wallH, '#0f1f2d', '#071019', 1);
+    quad(o1x, o1y - wallH, o0x, o0y - wallH, i0x, i0y - wallH, i1x, i1y - wallH, '#1b3347', '#8a7346', 1.2);
+    quad(o1x, o1y, i1x, i1y, i1x, i1y - wallH, o1x, o1y - wallH, '#152838', '#08121b', 1);
+  }
+  // Ala nordeste da Dársena (y=1, x=1..dockCols): galeria dos janelões do aquário
+  {
+    const [i0x, i0y] = p(1, 1);
+    const [i1x, i1y] = p(dockCols, 1);
+    const [o0x, o0y] = p(1 - thick, 1 - thick);
+    const [o1x, o1y] = p(dockCols, 1 - thick);
+    quad(i0x, i0y, i1x, i1y, i1x, i1y - wallH, i0x, i0y - wallH, '#0d1c29', '#071019', 1);
+    quad(o0x, o0y - wallH, o1x, o1y - wallH, i1x, i1y - wallH, i0x, i0y - wallH, '#193042', '#8a7346', 1.2);
+    quad(i1x, i1y, o1x, o1y, o1x, o1y - wallH, i1x, i1y - wallH, '#0f202e', '#071019', 1);
+  }
+  // Borda nordeste rebaixada do Grande Aquário Oceânico (y=1, x=dockCols..cols): parapeito oceânico aberto
+  {
+    const [i0x, i0y] = p(dockCols, 1);
+    const [i1x, i1y] = p(cols, 1);
+    const [o0x, o0y] = p(dockCols, 1 - thick);
+    const [o1x, o1y] = p(cols, 1 - thick);
+    quad(i0x, i0y, i1x, i1y, i1x, i1y - seaWallH, i0x, i0y - seaWallH, '#0c283b', '#07141f', 1);
+    quad(o0x, o0y - seaWallH, o1x, o1y - seaWallH, i1x, i1y - seaWallH, i0x, i0y - seaWallH, '#194258', '#44c9c2', 1.2);
+  }
+  ctx.restore();
+}
+
+function drawMareAstralWindowLife(map, curState) {
+  // Animação viva por cima dos janelões panorâmicos da parede nordeste (sem cobrir objetos à frente)
+  const p = (x, y) => [(x - y) * HW, (x + y) * HH];
+  const t = performance.now() / 1000;
+  const windows = [
+    { wx: 4.1, wy: 0.92, seed: 1.1 },
+    { wx: 7.7, wy: 0.92, seed: 3.4 },
+    { wx: 12.2, wy: 0.92, seed: 5.7 },
+  ];
+
+  ctx.save();
+  for (const w of windows) {
+    const [cx, cy] = p(w.wx, w.wy);
+    // Feixes de luz cáustica inclinados dentro do vidro
+    for (let k = -1; k <= 1; k++) {
+      const sway = Math.sin(t * 1.1 + w.seed + k) * 5;
+      const bx = cx + k * 24 + sway;
+      const by = cy - 42 + k * 11;
+      const ray = ctx.createLinearGradient(bx - 6, by - 22, bx + 8, by + 20);
+      ray.addColorStop(0, 'rgba(130, 252, 255, 0.22)');
+      ray.addColorStop(1, 'rgba(30, 170, 210, 0)');
+      ctx.fillStyle = ray;
+      ctx.beginPath();
+      ctx.moveTo(bx - 5, by - 20);
+      ctx.lineTo(bx + 5, by - 16);
+      ctx.lineTo(bx + 11, by + 18);
+      ctx.lineTo(bx - 3, by + 14);
+      ctx.closePath();
+      ctx.fill();
+    }
+
+    // Cardume luminoso cruzando suavemente o janelão (paralaxe 2:1)
+    for (let f = 0; f < 4; f++) {
+      const u = ((t * 0.14 + w.seed * 0.2 + f * 0.23) % 1) - 0.5;
+      const fx = cx + u * 82;
+      const fy = cy - 38 + u * 41 + Math.sin(t * 2.4 + f + w.seed) * 4;
+      ctx.fillStyle = 'rgba(148, 252, 255, 0.58)';
+      ctx.beginPath();
+      ctx.ellipse(fx, fy, 3.6, 1.5, 0.46, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // Esporos bioluminescentes ascendentes
+    for (let s = 0; s < 5; s++) {
+      const v = (t * 0.28 + s * 0.19 + w.seed) % 1;
+      const sx = cx + (s - 2) * 16 + Math.sin(t * 1.8 + s) * 3;
+      const sy = cy - 18 + (s - 2) * 7 - v * 34;
+      ctx.fillStyle = `rgba(176, 255, 252, ${(0.65 * (1 - v)).toFixed(3)})`;
+      ctx.beginPath();
+      ctx.arc(sx, sy, 1.6, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+  ctx.restore();
+}
+
+function drawMareAstralHudCallouts(map, curState) {
+  const p = (x, y) => [(x - y) * HW, (x + y) * HH];
+  const flags = curState?.progress?.flags ?? {};
+  const scanned = !!flags.scan_fluxo_sala;
+  const gateOpen = !!flags.gate_fluxo_contido_sala;
+  const sincronizada = !!flags.darsena_mare_sincronizada;
+  const comportaAberta = !!flags.gate_comporta_aquario_mare;
+  const nadoPronto = !!flags.aprendeu_a_nadar || lerArvore(curState?.progress).nivel >= 4;
+  const revealActive = (curState?.player?.ability?.reveal?.timeLeft ?? 0) > 0;
+  const t = performance.now() / 1000;
+
+  ctx.save();
+  // 1) Letreiro náutico sobre a Eclusa Doca A2
+  {
+    const [dx, dy] = p(1.05, 5.95);
+    ctx.font = 'bold 9px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillStyle = 'rgba(7, 19, 29, 0.90)';
+    ctx.fillRect(dx - 29, dy - 120, 58, 14);
+    ctx.strokeStyle = sincronizada ? '#5cf7eb' : '#2fb8cc';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(dx - 29, dy - 120, 58, 14);
+    ctx.fillStyle = sincronizada ? '#b8ffff' : '#6eeeff';
+    ctx.fillText('DOCA A2', dx, dy - 110);
+  }
+
+  // 2) Janela laminar revelada pelo Senso de Corrente [R] sobre o Fluxo Contido
+  if ((revealActive || scanned) && !gateOpen) {
+    const [gx, gy] = p(10.5, 6.0);
+    const r = 14 + 3.2 * Math.sin(t * 5.6);
+    ctx.strokeStyle = '#5cf7eb';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(gx, gy - 28, r, 0, Math.PI * 2);
+    ctx.stroke();
+
+    ctx.fillStyle = 'rgba(6, 22, 34, 0.90)';
+    ctx.fillRect(gx - 58, gy - 60, 116, 14);
+    ctx.strokeStyle = 'rgba(92, 247, 235, 0.80)';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(gx - 58, gy - 60, 116, 14);
+    ctx.fillStyle = '#9efcff';
+    ctx.font = 'bold 8px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText('JANELA LAMINAR • [Q]', gx, gy - 50);
+  }
+
+  // 3) Indicador da Comporta do Aquário / Rota de Nado Livre para a Enseada dos Ecos
+  if (gateOpen) {
+    const [ax, ay] = comportaAberta ? p(19.6, 5.8) : p(14.2, 6.0);
+    const prontoAbrir = !comportaAberta && sincronizada && !!flags.visitou_praia_inicial && nadoPronto;
+    const label = comportaAberta
+      ? 'CONDUTO -> ENSEADA DOS ECOS'
+      : prontoAbrir
+        ? 'ABRIR ROTA OCEÂNICA • [E]'
+        : 'ROTA MARINHA • TREINE NA PRAIA';
+    const w = label.length * 5.2 + 14;
+    ctx.fillStyle = 'rgba(6, 22, 34, 0.88)';
+    ctx.fillRect(ax - w / 2, ay - 76, w, 14);
+    ctx.strokeStyle = comportaAberta || prontoAbrir ? '#5cf7eb' : '#6c8ea3';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(ax - w / 2, ay - 76, w, 14);
+    ctx.fillStyle = comportaAberta || prontoAbrir ? '#b8ffff' : '#a8c8d8';
+    ctx.font = 'bold 8px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText(label, ax, ay - 66);
+  }
+
+  // 4) Onda de expansão fluida no Passo de Corrente [Q] / abertura da comporta
+  const tideFlash = curState?.player?.ability?.tideFlash;
+  if (tideFlash && tideFlash.timeLeft > 0 && tideFlash.duration > 0) {
+    const k = tideFlash.timeLeft / tideFlash.duration;
+    const [fx, fy] = p(tideFlash.x, tideFlash.y);
+    const rad = (1 - k) * 76 + 16;
+    ctx.strokeStyle = `rgba(92, 247, 235, ${(0.88 * k).toFixed(3)})`;
+    ctx.lineWidth = 3.2 * k + 0.8;
+    ctx.beginPath();
+    ctx.ellipse(fx, fy - 10, rad, rad * 0.5, 0, 0, Math.PI * 2);
+    ctx.stroke();
+  }
+  ctx.restore();
+}
+
 function drawDominioWallTile(x, y, front) {
   if (front) return;
   if (x === 0 || y === 0) return;
@@ -3333,7 +3796,7 @@ function drawWallProcedural(x, y, front) {
 // =====================================================================
 
 function getObjectSpriteConfig(spriteId) {
-  if (typeof spriteId === 'string' && (spriteId.startsWith('bio_sala_') || spriteId.startsWith('dom_sala_'))) return { SHEET_COLS: 1, SHEET_ROWS: 1, DEFAULT_SCALE: 1, FEET_ANCHOR_Y: 1 };
+  if (typeof spriteId === 'string' && (spriteId.startsWith('bio_sala_') || spriteId.startsWith('dom_sala_') || spriteId.startsWith('mare_sala_'))) return { SHEET_COLS: 1, SHEET_ROWS: 1, DEFAULT_SCALE: 1, FEET_ANCHOR_Y: 1 };
   if (['sala_bio_maquina', 'sala_bio_grade', 'sala_dominio_lacre', 'sala_mare_fluxo', 'sala_nucleo_malha', 'aero_painel_partidas', 'aero_carrinho_bagagem', 'aero_totem_holo', 'aero_planta_aliena'].includes(spriteId)) return { SHEET_COLS: 1, SHEET_ROWS: 1, DEFAULT_SCALE: 1, FEET_ANCHOR_Y: 1 };
   if (['bio_terminal', 'bio_reator', 'bio_ponte', 'bio_estufa', 'bio_floreira', 'bio_tubos', 'bio_caixa', 'bio_luminaria', 'bio_plataforma', 'bio_margem_canto', 'bio_margem_cano', 'bio_margem_ruina', 'bio_margem_mureta', 'bio_condutor_quebrado', 'bio_condutor_ativo', 'bio_regulador_quebrado', 'bio_regulador_ativo', 'bio_mato_cano', 'bio_mato_ventilacao', 'bio_mato_barris', 'bio_mato_fissura', 'bio_cabeceira', 'bio_distribuidor', 'bio_margem_baixa', 'bio_fundacao'].includes(spriteId)) return { SHEET_COLS: 1, SHEET_ROWS: 1, DEFAULT_SCALE: 1, FEET_ANCHOR_Y: 1 };
   if (['hub_vaso_novo', 'hub_reciclagem', 'hub_carrinho', 'hub_bebedouro'].includes(spriteId)) return { SHEET_COLS: 1, SHEET_ROWS: 1, DEFAULT_SCALE: .25, FEET_ANCHOR_Y: 1 };

@@ -30,7 +30,7 @@ export const map = {
   meta: { nome: 'ENSEADA DOS ECOS', tipo: 'exterior', dimensao: 'arquipelago', corFundo: '#025074',
     estiloPiso: 'livre', useBackgroundWalls: true, sandSprite: 'beach_novas_artes', ambiente: { poeira: 12, cor: '#ffd98a' } },
   corChao: '#e6c280', layout, walkMask: ground.walkMask, pisos: ground.pisos, aguaPraia: rows,
-  spawnPoints: { inicio: { x: 6.5, y: 15.5 }, vindo_da_praia: { x: 6.5, y: 15.5 }, vindo_do_mar: { x: 24.5, y: 15.5 } },
+  spawnPoints: { inicio: { x: 6.5, y: 15.5 }, vindo_da_praia: { x: 6.5, y: 15.5 }, vindo_do_mar: { x: 24.5, y: 15.5 }, vindo_da_darsena_mare: { x: 28.2, y: 12.6 } },
   trainingTargets: [{ id: 'eco_treino_enseada', x: 14, y: 15, maxHealth: 60 }],
   // Fonte de dano ambiental enquanto inimigos agressivos não existem.
   // Longe do spawn, do alvo de treino e dos vestígios obrigatórios.
@@ -69,6 +69,7 @@ export const map = {
     tropical('enseada_palmeira_3', 22, 21, 2, 86), prop('enseada_arbusto_1', 11, 21, 3, 0, 48),
     prop('enseada_arbusto_2', 24, 15, 3, 0, 50), prop('enseada_tronco', 16, 18, 3, 1, 62),
     prop('enseada_pedras', 19, 13, 2, 1, 57), prop('enseada_concha', 14, 9, 1, 3, 40),
+    { id: 'arco_conduto_retorno_mare', tipo: 'decoracao', x: 28.9, y: 12.1, sprite: 'mare_sala_arco_enseada', useCrop: true, larguraPx: 142, anchorY: 0.92, bloqueia: false, brilho: { cor: '#5cf7eb', raio: 2.2, forca: 0.44 } },
   ],
   collectibles: [
     { id: 'lumeo_encontro', nome: 'SINAL DE LÚMEO', tipo: 'eco', x: 10, y: 15, requiresFlag: 'enseada_ecos_mapeada', label: 'OUVIR O ECO DISTANTE', speaker: 'ECO DISTANTE', dialogue: ['TRÊS SINAIS RESPONDEM ÀS SUAS DESCOBERTAS. UM PEQUENO ECO SE ESCONDE NA ENSEADA.', 'UMA VIBRAÇÃO INSTÁVEL VEM DAS RUÍNAS A LESTE. INVESTIGUE SEM ASSUSTÁ-LO.'] },
@@ -79,6 +80,7 @@ export const map = {
     { id: 'enseada_rastro_mata', nome: 'VESTÍGIO DA MATA', tipo: 'fragmento', x: 21, y: 20, label: 'EXAMINAR VESTÍGIO DA MATA', dialogue: ['FOLHAS E PEGADAS INDICAM UMA TRILHA PARA O INTERIOR.', 'O CAMINHO PARA O MANGUE AINDA PRECISA SER EXPLORADO.'] },
   ],
   portals: [{ id: 'rota_correntes', tipo: 'door', x: 25, y: 15, label: 'NAVEGAR: CAMINHO DAS CORRENTES', interactionDistance: 1.4, destino: { mapId: 'mar_caminho_das_correntes', spawnId: 'vindo_da_enseada' }, transition: 'fade' },
+    { id: 'retorno_darsena_mare', tipo: 'door', x: 28, y: 12, requiresFlag: 'rota_livre_enseada_aberta', lockedLabel: 'CONDUTO ABISSAL INATIVO', mensagemBloqueado: ['UM VÓRTICE PROFUNDO RESSOA COM A DÁRSENA DA MARÉ ASTRAL, MAS PERMANECE SELADO DO OUTRO LADO.'], label: 'NADAR PELO CONDUTO -> DÁRSENA ABISSAL (MARÉ ASTRAL)', interactionDistance: 1.95, destino: { mapId: 'sala_mare', spawnId: 'vindo_da_enseada' }, transition: 'fade' },
     { id: 'enseada_retorno', tipo: 'door', x: 5, y: 15, label: 'VOLTAR À PRAIA INICIAL', interactionDistance: 1.4,
     destino: { mapId: 'ilha_praia_inicial', spawnId: 'vindo_da_enseada' }, transition: 'fade' }],
 };

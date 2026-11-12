@@ -121,6 +121,53 @@ export function updateCamera(dt, targetWx, targetWy, nado = null, map = null, ca
     }
   }
 
+  if (!sideViewActive && map?.meta?.estiloSala === 'mare_astral') {
+    const flags = cameraCtx?.flags ?? {};
+    const fluxoAberto = !!flags.gate_fluxo_contido_sala;
+    const observatorio = !!flags.observatorio_aquario_mare && targetWy <= 4.2 && targetWx <= 11.2;
+
+    if (observatorio) {
+      // Modo Observatório Abissal: abre o quadro sobre os janelões e o Grande Aquário Oceânico
+      focusWx += (11.6 - targetWx) * 0.52;
+      focusWy += (4.8 - targetWy) * 0.45;
+      dominioZoomFactor *= 0.83;
+    } else if (targetWx >= 13.4) {
+      // Travessia do Grande Aquário Oceânico: amplia o horizonte aquático rumo ao Conduto da Enseada
+      const pesoMar = Math.min(1, Math.max(0, (targetWx - 13.4) / 2.2));
+      focusWx += (17.8 - targetWx) * 0.28 * pesoMar;
+      focusWy += (5.8 - targetWy) * 0.24 * pesoMar;
+      dominioZoomFactor *= 1 - 0.15 * pesoMar;
+    } else if (targetWy <= 2.85 && targetWx >= 2.0 && targetWx <= 9.6) {
+      // Galeria dos Janelões Bioluminescentes: inclina o foco para o aquário mural de águas-vivas
+      const pesoGaleria = Math.min(1, Math.max(0, (2.85 - targetWy) / 1.4));
+      focusWy -= 0.62 * pesoGaleria;
+      focusWx += 0.30 * pesoGaleria;
+      dominioZoomFactor *= 1 + 0.06 * pesoGaleria;
+    } else if (!fluxoAberto && targetWx >= 5.2 && targetWx <= 10.3 && targetWy >= 3.8 && targetWy <= 8.2) {
+      // Corredor de Pressão: antecipa o Fluxo Contido antes do Passo de Corrente
+      const pesoFluxo = Math.min(1, Math.max(0, (targetWx - 5.2) / 3.0));
+      focusWx += 0.80 * pesoFluxo;
+      focusWy += (6.0 - targetWy) * 0.28 * pesoFluxo;
+      dominioZoomFactor *= 0.97;
+    } else if (fluxoAberto && targetWx >= 10.0 && targetWx < 13.4) {
+      // Relicário de Coral + vista da Comporta do Aquário Oceânico
+      focusWx += (13.4 - targetWx) * 0.26;
+      focusWy += (5.8 - targetWy) * 0.22;
+      dominioZoomFactor *= 0.94;
+    }
+
+    // Senso de Corrente [R]: lente de sonar tático
+    if ((cameraCtx?.ability?.reveal?.timeLeft ?? 0) > 0) {
+      dominioZoomFactor *= 1.09;
+    }
+    // Passo de Corrente [Q]: onda fluida de expansão na travessia
+    const tideFlash = cameraCtx?.ability?.tideFlash;
+    if (tideFlash && tideFlash.timeLeft > 0 && tideFlash.duration > 0) {
+      const p = tideFlash.timeLeft / tideFlash.duration;
+      dominioZoomFactor *= 1 + 0.055 * Math.sin(p * Math.PI);
+    }
+  }
+
   if (camera.follow) {
     if (sideViewActive) {
       // Side-view: câmera acompanha o eixo horizontal X com precisão

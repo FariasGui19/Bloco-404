@@ -25,7 +25,7 @@ import { getBioDashProfile } from './ability-context.js';
 import { tryArchetypePower, POWER_PROFILES } from './archetype-powers.js';
 import { openGate, checkGate, isGateOpen } from './gates.js';
 import { saveGame } from './save.js';
-import { getDerivedStats } from './rpg.js';
+import { getDerivedStats, grantArchetypeXp } from './rpg.js';
 import { recordMastery } from './mastery.js';
 import { executeBrutaSmash } from './combat.js';
 import { chargeFormHit } from './nucleo-form.js';
@@ -258,6 +258,11 @@ function updateBioDash(dt) {
     const gate = state.objects.find(o => o.id === dash.phaseGateId);
     if (gate && dash.phaseCrosses && (player[dash.phaseAxis ?? 'x'] - gate[dash.phaseAxis ?? 'x']) * dash.phaseDirection >= 0.85 && !state.progress.flags?.[`gate_${gate.id}`]) {
       openGate(gate);
+      recordQuestEvent(state.progress, { type: 'breach_gate', target: gate.id });
+      if (gate.gate?.bonusXp > 0 && state.progress.archetype) {
+        grantArchetypeXp(state.progress, gate.gate.bonusXp);
+      }
+      player.ability.tideFlash = { x: gate.x, y: gate.y, timeLeft: 0.7, duration: 0.7 };
       saveGame();
     }
   }
@@ -362,7 +367,7 @@ export function updateAbilities(dt) {
       chargeFormHit(player);
     }
   }
-  for (const key of ['effect', 'reveal', 'sonarAquatico', 'ruptureFlash']) {
+  for (const key of ['effect', 'reveal', 'sonarAquatico', 'ruptureFlash', 'tideFlash']) {
     if (!ability[key]) continue;
     ability[key].timeLeft -= dt;
     if (ability[key].timeLeft <= 0) ability[key] = null;

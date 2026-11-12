@@ -310,4 +310,163 @@ for (const room of rooms) {
   console.log('sala_dominio: missão prova_da_ruptura, câmera de postura/impacto, consagração e monólito OK');
 }
 
+// ---------------------------------------------------------------------
+// Verificação dedicada da Dársena Abissal & Aquário Oceânico (Maré Astral)
+// ---------------------------------------------------------------------
+{
+  const { existsSync, readFileSync } = await import('node:fs');
+  const { getQuestState } = await import('../js/game/quests.js');
+  const { advanceDialogue } = await import('../js/ui/dialogue.js');
+  const { camera, updateCamera, snapCameraTo } = await import('../js/engine/camera.js');
+  const { aguaDoDegrau, tileAtWorld, profundidadeSubmersaEm } = await import('../js/game/nado.js');
+
+  const mareSprites = [
+    'piso-ardosia-mare.png', 'piso-grade-mare.png', 'parede-canto-mare.png',
+    'parede-tubos-mare.png', 'parede-aquario-mare.png', 'porta-eclusa-mare.png',
+    'gerador-corrente-mare.png', 'fluxo-contido-mare.png', 'fluxo-aberto-mare.png',
+    'arco-conduto-mare.png', 'arco-conduto-enseada.png', 'pilar-hidro-mare.png',
+    'lanterna-abissal-mare.png', 'terminal-sonar-mare.png', 'valvula-pressao-mare.png',
+    'valvula-ativa-mare.png',
+  ];
+  const mainJs = readFileSync(new URL('../js/main.js', import.meta.url), 'utf8');
+  for (const file of mareSprites) {
+    assert(existsSync(new URL(`../assets/sprites/sala-mare/${file}`, import.meta.url)), `sprite sala-mare presente: ${file}`);
+    assert(mainJs.includes(`assets/sprites/sala-mare/${file}`), `${file} registrado em js/main.js`);
+  }
+
+  state.progress = {
+    archetype: 'mare_astral',
+    abilities: getArchetypeAbilities('mare_astral'),
+    flags: {},
+    inventory: [],
+    questLog: {},
+    nado: { nivel: 0, provas: {}, respeito: 0 },
+  };
+
+  await loadMap('sala_mare', 'vindo_do_aeroporto');
+  const mareMap = state.world.currentMap;
+  assert.equal(mareMap.meta?.estiloSala, 'mare_astral', 'sala_mare usa estiloSala mare_astral');
+  assert(Array.isArray(mareMap.aguaPraia) && mareMap.aguaPraia.length === 12, 'sala_mare possui grade aguaPraia integrada');
+  assert.equal(tileAtWorld(mareMap, 17.5, 5.5), 'D', 'Grande Aquário Oceânico possui célula de água funda real (D)');
+  assert(profundidadeSubmersaEm(mareMap, 17.5, 5.5) > 1.25, 'Grande Aquário Oceânico suporta mergulho profundo em perspectiva 3D');
+
+  let qState = getQuestState(state.progress, 'calibragem_de_corrente');
+  assert(qState && qState.status === 'active', 'calibragem_de_corrente inicia automaticamente em sala_mare');
+
+  // Etapa 1: Senso de Corrente [R] lê o Fluxo Contido + lente tática de câmera
+  Object.assign(state.player, {
+    x: 8.7, y: 5.5, facing: 'right', energy: 100, maxEnergy: 100,
+    ability: { cooldowns: {}, dash: null, scanning: 0 },
+  });
+  camera.targetZoom = 1.3;
+  camera.zoom = 1.3;
+  snapCameraTo(state.player.x, state.player.y, mareMap);
+  const camCorredorX = camera.x;
+
+  press('r');
+  qState = getQuestState(state.progress, 'calibragem_de_corrente');
+  assert.equal(qState.objectives[0].done, true, 'objetivo 1 (ler janela laminar com R) concluído');
+  for (let i = 0; i < 25; i++) {
+    updateCamera(0.05, state.player.x, state.player.y, null, mareMap, {
+      ability: state.player.ability,
+      flags: state.progress.flags,
+    });
+  }
+  assert(camera.x > camCorredorX + 5, 'câmera antecipa o Fluxo Contido no corredor de pressão');
+  assert(camera.zoom > camera.targetZoom * 1.03, 'Senso de Corrente aplica lente aproximada de câmera');
+
+  // Etapa 2: Passo de Corrente [Q] atravessa o Fluxo Contido e dispara tideFlash
+  state.player.ability.cooldowns = {};
+  press('q');
+  for (let i = 0; i < 30 && state.player.ability?.dash; i++) updateAbilities(0.03);
+  qState = getQuestState(state.progress, 'calibragem_de_corrente');
+  assert.equal(qState.objectives[1].done, true, 'objetivo 2 (atravessar Fluxo Contido com Q) concluído');
+  assert(state.player.ability?.tideFlash?.timeLeft > 0, 'Passo de Corrente dispara onda fluida tideFlash');
+
+  // Etapa 3: coletar Fragmento de Eco no Relicário de Coral
+  const fragMare = state.collectibles.find(c => c.id === 'fragmento_eco_mare');
+  Object.assign(state.player, { x: fragMare.x, y: fragMare.y });
+  assert(collectItem(fragMare), 'fragmento_eco_mare coletado');
+  closeDialogue();
+  qState = getQuestState(state.progress, 'calibragem_de_corrente');
+  assert.equal(qState.objectives[2].done, true, 'objetivo 3 (coletar fragmento Maré) concluído');
+
+  // Etapa 4: sintonizar o fragmento no Núcleo Hidrodimensional
+  const gerador = state.objects.find(o => o.id === 'gerador_corrente');
+  Object.assign(state.player, { x: gerador.x, y: gerador.y + 1.4, health: 45, maxHealth: 100 });
+  await checkInteractions(true);
+  advanceDialogue();
+  elements.dialogueChoices.children[0].click();
+  closeDialogue();
+  assert.equal(state.progress.flags.darsena_mare_sincronizada, true, 'darsena_mare_sincronizada gravada');
+  assert.equal(state.progress.flags.missao_mare_concluida, true, 'recompensa da Calibragem de Corrente concedida');
+  assert(state.progress.inventory.includes('amuleto_corrente_mare'), 'amuleto_corrente_mare entregue no inventário');
+  assert.equal(state.player.health, 100, 'sintonização restaura integridade do operador');
+
+  // Mirante do Aquário: alterna perspectiva panorâmica de câmera
+  const mirante = state.objects.find(o => o.id === 'mirante_aquario_mare');
+  Object.assign(state.player, { x: mirante.x, y: mirante.y + 0.9 });
+  await checkInteractions(true);
+  closeDialogue();
+  assert.equal(state.progress.flags.observatorio_aquario_mare, true, 'Modo Observatório Abissal ativado');
+  camera.zoom = 1.3;
+  for (let i = 0; i < 30; i++) {
+    updateCamera(0.05, 4.5, 2.2, null, mareMap, { ability: {}, flags: state.progress.flags });
+  }
+  assert(camera.zoom < camera.targetZoom * 0.90, 'Modo Observatório abre o zoom panorâmico sobre os janelões e o aquário');
+
+  // Válvula auxiliar opcional (+25 XP)
+  const valvula = state.objects.find(o => o.id === 'valvula_pressao_mare');
+  Object.assign(state.player, { x: valvula.x, y: valvula.y - 1.0 });
+  await checkInteractions(true);
+  closeDialogue();
+  assert.equal(state.progress.flags.valvula_pressao_mare_equalizada, true, 'válvula auxiliar equalizada');
+  assert.equal(valvula.sprite, 'mare_sala_valvula_ativa', 'válvula troca para sprite ativo');
+
+  // TRAVA DA ROTA OCEÂNICA: sem visitar Praia Inicial e sem concluir Aprender a Nadar, a comporta NÃO abre!
+  const comporta = state.objects.find(o => o.id === 'comporta_aquario_mare');
+  assert.equal(comporta.bloqueia, true, 'comporta do aquário inicia fechada');
+  assert(!canStandAt(mareMap, 14.3, 5.6, 0.25, state.player), 'rampa do aquário bloqueada antes do treino de nado');
+  Object.assign(state.player, { x: 13.4, y: 5.5 });
+  await checkInteractions(true);
+  closeDialogue();
+  assert(!isGateOpen(comporta), 'comporta continua fechada antes da Praia Inicial');
+  assert(!state.progress.flags.rota_livre_enseada_aberta, 'rota livre para Enseada permanece fechada');
+
+  // Visitar a Praia Inicial grava visitou_praia_inicial automaticamente, mas ainda exige aprendeu_a_nadar
+  await loadMap('ilha_praia_inicial', 'inicio');
+  assert.equal(state.progress.flags.visitou_praia_inicial, true, 'visita à Praia Inicial registrada');
+  await loadMap('sala_mare', 'vindo_do_aeroporto');
+  const comportaReload1 = state.objects.find(o => o.id === 'comporta_aquario_mare');
+  Object.assign(state.player, { x: 13.4, y: 5.5 });
+  await checkInteractions(true);
+  closeDialogue();
+  assert(!isGateOpen(comportaReload1), 'comporta exige concluir o treino de nado além de visitar a praia');
+
+  // Concluir o treino de nado libera a comporta, o nado livre no Grande Aquário e a rota direta até a Enseada dos Ecos!
+  state.progress.flags.aprendeu_a_nadar = true;
+  state.progress.nado = { nivel: 4, provas: { boiar: true, respirar: true, travessia: true, fundo: true }, respeito: 0.5 };
+  await checkInteractions(true);
+  advanceDialogue();
+  elements.dialogueChoices.children[0].click();
+  closeDialogue();
+
+  assert(isGateOpen(comportaReload1), 'comporta do aquário abre após Praia + Aprender a Nadar + Calibragem');
+  assert.equal(state.progress.flags.rota_livre_enseada_aberta, true, 'rota_livre_enseada_aberta ativada');
+  assert(canStandAt(state.world.currentMap, 14.3, 5.6, 0.25, state.player), 'rampa do aquário liberada após abrir comporta');
+  assert(aguaDoDegrau(4)(state.world.currentMap, 17.5, 5.8), 'operador treinado nada livremente na bacia do Grande Aquário');
+
+  // Travessia completa: sala_mare -> ilha_enseada_ecos -> sala_mare
+  const portalIda = state.portals.find(p => p.id === 'conduto_enseada_mare');
+  assert(portalIda && portalIda.destino?.mapId === 'ilha_enseada_ecos', 'portal de nado livre aponta para ilha_enseada_ecos');
+  await loadMap(portalIda.destino.mapId, portalIda.destino.spawnId);
+  assert.equal(state.world.currentMap.id, 'ilha_enseada_ecos', 'chegou à Enseada dos Ecos pelo conduto oceânico');
+  assert(Math.hypot(state.player.x - 28.2, state.player.y - 12.6) < 0.5, 'emerge no mar leste da Enseada perto do Caminho das Correntes');
+  const portalVolta = state.portals.find(p => p.id === 'retorno_darsena_mare');
+  assert(portalVolta && portalVolta.destino?.mapId === 'sala_mare', 'portal de retorno submerso aponta de volta para sala_mare');
+  await loadMap(portalVolta.destino.mapId, portalVolta.destino.spawnId);
+  assert.equal(state.world.currentMap.id, 'sala_mare', 'retornou ao Grande Aquário da Dársena Abissal');
+  console.log('sala_mare: missão calibragem_de_corrente, câmera multi-perspectiva, aquário vivo e rota livre Enseada OK');
+}
+
 console.log('Salas de Missão: spawn, protocolo, persistência e fragmentos OK.');

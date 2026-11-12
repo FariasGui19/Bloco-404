@@ -121,6 +121,10 @@ export async function loadMap(mapId, spawnId = 'inicio') {
 
     setMapZoomMin(mapData.meta?.minZoom);
     snapCameraTo(p.x, p.y, mapData);
+    if (mapData.id === 'ilha_praia_inicial' && state.progress) {
+      state.progress.flags ??= {};
+      state.progress.flags.visitou_praia_inicial = true;
+    }
     if (mapData.id === 'sala_bio_forja' && state.progress?.archetype === 'motor_bio_forja') {
       if (!state.progress.questLog?.forja_do_propulsor) {
         startQuest(state.progress, 'forja_do_propulsor');
@@ -139,6 +143,16 @@ export async function loadMap(mapId, spawnId = 'inicio') {
         if (fl.gate_lacre_frequencia_sala) recordQuestEvent(state.progress, { type: 'breach_gate', target: 'lacre_frequencia_sala' });
         if (fl.collected_fragmento_eco_dominio) recordQuestEvent(state.progress, { type: 'collect', target: 'fragmento_eco_dominio' });
         if (fl.santuario_dominio_consagrado) recordQuestEvent(state.progress, { type: 'consecrate_blade', target: 'pedestal_lamina' });
+      }
+    }
+    if (mapData.id === 'sala_mare' && state.progress?.archetype === 'mare_astral') {
+      if (!state.progress.questLog?.calibragem_de_corrente) {
+        startQuest(state.progress, 'calibragem_de_corrente');
+        const fl = state.progress.flags ?? {};
+        if (fl.scan_fluxo_sala) recordQuestEvent(state.progress, { type: 'diagnose', target: 'scan_fluxo_sala' });
+        if (fl.gate_fluxo_contido_sala) recordQuestEvent(state.progress, { type: 'breach_gate', target: 'fluxo_contido_sala' });
+        if (fl.collected_fragmento_eco_mare) recordQuestEvent(state.progress, { type: 'collect', target: 'fragmento_eco_mare' });
+        if (fl.darsena_mare_sincronizada) recordQuestEvent(state.progress, { type: 'sync_tide', target: 'gerador_corrente' });
       }
     }
     // Salva a última localização somente se um perfil estiver ativo.

@@ -9,6 +9,7 @@ import { saveGame } from './save.js';
 import { recordAirportDiagnosis, recordCargoDiagnosis, installMetroFragment } from './metro-quest.js';
 import { isGateOpen } from './gates.js';
 import { hasAbility, showAbilityMessage, ARCHETYPE_ABILITIES } from './abilities.js';
+import { recordQuestEvent } from './quests.js';
 
 const DEFAULT_MODULE_DISTANCE = 1.65;
 
@@ -304,7 +305,11 @@ export function tryModuleInteraction() {
   const diagnosisFlag = target.item.moduleSystem?.diagnosisFlag;
   if (diagnosisFlag) {
     state.progress.flags ??= {};
+    const firstDiag = !state.progress.flags[diagnosisFlag];
     state.progress.flags[diagnosisFlag] = true;
+    if (firstDiag) {
+      recordQuestEvent(state.progress, { type: 'diagnose', target: diagnosisFlag });
+    }
     saveGame();
   }
 

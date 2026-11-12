@@ -73,6 +73,18 @@ export const ITEMS = Object.freeze({
     icon: 'progressao',
     description: 'Pulso estabilizado da estufa. O setor inicial está concluído.',
   }),
+  fragmento_eco_bio: Object.freeze({
+    name: 'FRAGMENTO DE ECO — BIO-FORJA',
+    kind: 'fragmento',
+    icon: 'energia',
+    description: 'Núcleo vivo recolhido no relicário da Oficina Bio-Forja. Vibra em sintonia com o Banco de Reconstrução.',
+  }),
+  selo_forja_bio: Object.freeze({
+    name: 'SELO DE IMPULSO BIO-FORJA',
+    kind: 'registro',
+    icon: 'progressao',
+    description: 'Certificação gravada pela Oficina Bio-Forja após romper a Grade de Ímpeto Vivo com diagnóstico e propulsão.',
+  }),
 });
 
 export function getItem(id) {

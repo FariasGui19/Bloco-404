@@ -112,6 +112,28 @@ export const QUESTS = Object.freeze({
       flags: Object.freeze({ aprendeu_a_nadar: true }),
     }),
   }),
+  // -------------------------------------------------------------------
+  // MOTOR BIO-FORJA — FORJA DO PROPULSOR (Oficina Inicial · Doca A1)
+  // -------------------------------------------------------------------
+  forja_do_propulsor: Object.freeze({
+    id: 'forja_do_propulsor',
+    title: 'FORJA DO PROPULSOR',
+    giver: 'BANCO DE RECONSTRUÇÃO',
+    kind: 'secundária',
+    description: 'Na Oficina Bio-Forja (Doca A1), exponha a falha da Grade de Ímpeto Vivo com [R], rompa o campo com o Propulsor [Q], recolha o Fragmento de Eco no relicário e sincronize-o no Banco de Reconstrução.',
+    objectives: Object.freeze([
+      Object.freeze({ type: 'diagnose', target: 'bio_placa_diagnostico', count: 1, label: 'Diagnosticar a Grade de Ímpeto Vivo com [R]' }),
+      Object.freeze({ type: 'breach_gate', target: 'grade_impeto_vivo', count: 1, label: 'Romper a grade com o Propulsor de Impulso [Q]' }),
+      Object.freeze({ type: 'collect', target: 'fragmento_eco_bio', count: 1, label: 'Recolher o Fragmento de Eco no relicário leste' }),
+      Object.freeze({ type: 'sync_forge', target: 'maquina_bio', count: 1, label: 'Sincronizar o fragmento no Banco de Reconstrução [E]' }),
+    ]),
+    rewards: Object.freeze({
+      xp: 75,
+      points: 1,
+      items: Object.freeze(['selo_forja_bio']),
+      flags: Object.freeze({ missao_bio_forja_concluida: true }),
+    }),
+  }),
 });
 
 export function getQuest(id) {

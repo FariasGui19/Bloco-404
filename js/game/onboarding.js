@@ -247,6 +247,7 @@ function finalizeArchetype(actor, archetypeId) {
   // O Maré Astral já nasce com a missão da maré aberta: é o arquétipo que
   // respira embaixo d'água e o que mais ganha com a praia nova.
   if (archetypeId === 'mare_astral') startQuest(state.progress, 'mare_profunda');
+  if (archetypeId === 'motor_bio_forja') startQuest(state.progress, 'forja_do_propulsor');
 
   saveGame();
 

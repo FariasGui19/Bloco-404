@@ -13,6 +13,7 @@ import { createTrainingTargets } from './combat.js';
 import { createHazards } from './hazards.js';
 import { rememberMapLocation } from './save.js';
 import { applyGateStates } from './gates.js';
+import { startQuest, recordQuestEvent } from './quests.js';
 
 function findDefaultSpawn(layout) {
   const height = layout.length;
@@ -120,6 +121,16 @@ export async function loadMap(mapId, spawnId = 'inicio') {
 
     setMapZoomMin(mapData.meta?.minZoom);
     snapCameraTo(p.x, p.y, mapData);
+    if (mapData.id === 'sala_bio_forja' && state.progress?.archetype === 'motor_bio_forja') {
+      if (!state.progress.questLog?.forja_do_propulsor) {
+        startQuest(state.progress, 'forja_do_propulsor');
+        const fl = state.progress.flags ?? {};
+        if (fl.bio_placa_diagnostico) recordQuestEvent(state.progress, { type: 'diagnose', target: 'bio_placa_diagnostico' });
+        if (fl.gate_grade_impeto_vivo) recordQuestEvent(state.progress, { type: 'breach_gate', target: 'grade_impeto_vivo' });
+        if (fl.collected_fragmento_eco_bio) recordQuestEvent(state.progress, { type: 'collect', target: 'fragmento_eco_bio' });
+        if (fl.oficina_bio_sincronizada) recordQuestEvent(state.progress, { type: 'sync_forge', target: 'maquina_bio' });
+      }
+    }
     // Salva a última localização somente se um perfil estiver ativo.
     rememberMapLocation(mapData.id, spawnId);
     return true;

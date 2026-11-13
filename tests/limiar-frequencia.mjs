@@ -47,17 +47,27 @@ for (const archetype of ['motor_bio_forja', 'lamina_dominio_anciao', 'mare_astra
   const map = state.world.currentMap;
   const spawn = map.spawnPoints.vindo_da_enseada;
   assert(canStandAt(map, spawn.x, spawn.y, .25, state.player));
-  const reachable = new Set(), queue = [[Math.floor(spawn.x), Math.floor(spawn.y)]];
+  // Navegue em meia célula: os centros dos móveis agora são sólidos.
+  const reachable = new Set(), queue = [[Math.round(spawn.x*2), Math.round(spawn.y*2)]];
   for (let i = 0; i < queue.length; i++) {
-    const [x,y] = queue[i], key = `${x},${y}`; if (reachable.has(key)) continue;
-    if (!canStandAt(map, x+.5, y+.5, .25, state.player)) continue;
+    const [ix,iy] = queue[i], key = `${ix},${iy}`; if (reachable.has(key)) continue;
+    if (!canStandAt(map, ix/2, iy/2, .25, state.player)) continue;
     reachable.add(key);
-    for (const [dx,dy] of [[1,0],[-1,0],[0,1],[0,-1]]) queue.push([x+dx,y+dy]);
+    for (const [dx,dy] of [[1,0],[-1,0],[0,1],[0,-1]]) queue.push([ix+dx,iy+dy]);
   }
-  for (const obj of state.objects.filter(o => o.interacao)) assert(reachable.has(`${Math.floor(obj.x)},${Math.floor(obj.y)}`), `${obj.id} deve ser alcançável`);
+  const approach = obj => {
+    for (const key of reachable) {
+      const [x,y]=key.split(',').map(n=>Number(n)/2);
+      Object.assign(state.player,{x,y,energy:100,ability:{cooldowns:{},dash:null}});
+      if (Math.hypot(x-obj.x,y-obj.y) <= (obj.moduleSystem?.distance ?? obj.interacao?.distancia ?? 1.35)
+          && findNearestInteraction()?.data.id === obj.id) return;
+    }
+    assert.fail(`${obj.id} precisa ser alcançável sem atravessar a máquina`);
+  };
+  for (const obj of state.objects.filter(o => o.interacao)) approach(obj);
   for (const id of ['arquivo_estacao_666', 'cartografia_estacao_666', 'rack_estacao_666_c', 'reator_estacao_666', 'registro_estacao_666']) {
     const obj = state.objects.find(o => o.id === id);
-    Object.assign(state.player, { x: obj.x, y: obj.y });
+    approach(obj);
     assert.equal(findNearestInteraction()?.data.id, id, `${id} deve ser interativo`);
     await checkInteractions(true);
     assert(elements.dialogueText.textContent.length > 10, `${id} tem registro legível`);
@@ -65,7 +75,6 @@ for (const archetype of ['motor_bio_forja', 'lamina_dominio_anciao', 'mare_astra
   }
   const consoleObj = state.objects.find(o => o.id === 'console_limiar_666');
   const ring = state.objects.find(o => o.id === 'anel_limiar_666');
-  const approach = obj => Object.assign(state.player, { x: obj.x, y: obj.y, energy: 100, ability: { cooldowns: {}, dash: null } });
   approach(ring); await checkInteractions(true); assert(!state.progress.flags.freq666_limiar_preparado); closeDialogue();
   approach(consoleObj); assert(tryModuleInteraction()); assert(!state.progress.flags.freq666_limiar_estavel); closeDialogue();
   for (const id of ['memoria', 'origem', 'retorno']) {

@@ -154,6 +154,14 @@ export function desenharNadador(ctx, player, ix, iy, opt) {
     ctx.restore();
   }
 
+  // Espuma de emergência é curta e nasce no peito ao voltar à superfície.
+  if (!submerso && nado.respiroVisual > 0) {
+    const espuma = getSprite('mare_encontro_respiro_superficie') || getSprite('rota_mare_espuma_respiro');
+    if (espuma) { ctx.save(); ctx.globalAlpha = .5 * Math.min(1, nado.respiroVisual / .5);
+      const tamanho = 45 + (1 - nado.respiroVisual / .9) * 17;
+      ctx.drawImage(espuma, ix-tamanho/2, iy-10, tamanho, 20); ctx.restore(); }
+  }
+
   // ---- anel de quem boia parado ----
   if (!movendo && !submerso) {
     ctx.save();
@@ -206,7 +214,8 @@ export function desenharNadador(ctx, player, ix, iy, opt) {
 
   ctx.save();
   ctx.translate(ix, iy - 7 + boia + fundura * 9);
-  ctx.rotate(ang);
+  const gesto = player.mareAcao?.timeLeft > 0 ? Math.sin(Math.PI * (1-player.mareAcao.timeLeft/player.mareAcao.duration)) : 0;
+  ctx.rotate(ang - gesto*.08 - (nado.subindoVisual ? .05 : 0));
   if (viradoParaEsquerda) ctx.scale(1, -1);
   const alisavaAntes = ctx.imageSmoothingEnabled;
   ctx.imageSmoothingEnabled = true;
@@ -275,8 +284,19 @@ export function desenharNadador(ctx, player, ix, iy, opt) {
   }
   ctx.restore();
 
+  if (player.mareAcao?.timeLeft > 0 && submerso) {
+    const img=getSprite('mare_encontro_anel_cuidado');
+    if (img) {const k=1-player.mareAcao.timeLeft/player.mareAcao.duration;ctx.save();ctx.globalAlpha=.7*(1-k);ctx.drawImage(img,ix-25-k*12,iy-18,50+k*24,26);ctx.restore();}
+  }
+  if (nado.subindoVisual && nado.emRotaMare) {
+    const img=getSprite('mare_encontro_bolhas_subida');
+    if (img) {ctx.save();ctx.globalAlpha=.55;ctx.drawImage(img,ix-7,iy-52,15,44);ctx.restore();}
+  }
+
   // ---- bolhas de quem prende o ar ----
   if (nado.submerso) {
+    const bolhas = nado.emRotaMare && getSprite('rota_mare_bolhas');
+    if (bolhas) { ctx.save(); ctx.globalAlpha=.25; ctx.drawImage(bolhas,ix+5,iy-30,14,23); ctx.restore(); }
     ctx.save();
     ctx.strokeStyle = 'rgba(232,255,250,.85)';
     ctx.lineWidth = 1;

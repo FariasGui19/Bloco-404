@@ -1,4 +1,7 @@
 import { perspectivaSubmersa } from './perspectiva-submersa.js';
+import { posicaoVidaRota } from '../game/vida-rota-mare.js';
+import { animacaoMar } from '../game/mar-vivo.js';
+import { encontroConcluido, posicaoEncontro } from '../game/encontros-mare.js';
 // js/engine/renderer.js
 // =====================================================================
 //  RENDERER
@@ -22,7 +25,7 @@ import { getBioWalkFrame, bioWalkSheet } from '../data/bio-walk.js';
 import { faunaFootAnchor } from '../game/fauna-costeira.js';
 import { getFrame } from './sprite-clean.js';
 import { drawAmbientBack, drawAmbientFront } from './ambient.js';
-import { tintaDoClima, atualizarParticulas, climaVisivelNoMapa } from '../game/clima.js';
+import { tintaDoClima, atualizarParticulas, climaVisivelNoMapa, neblinaDoClima } from '../game/clima.js';
 import { renderSideViewMap } from './side-view.js';
 import { renderViadutoVetores } from './viaduto-view.js';
 import { animarFauna } from '../game/fauna-animacao.js';
@@ -195,7 +198,10 @@ export function render(map, state) {
       const imersao = intensidadeSubmersa(state.player?.nado);
       if (imersao > 0) drawFundoSubmerso(map, imersao);
       drawVidaAquatica(map, state);
-      if (imersao < .5) drawBeachRipples(map);
+      if (map.vidaRota) drawVidaRota(map, state);
+      if (map.fundoMar) drawFundoMarVivo(map);
+      if (map.encontrosMare) drawEncontrosMare(map, state);
+      if (imersao < .5) { drawBeachRipples(map); if (map.ondasMar) drawOndasMarVivo(map, state); }
       if (clipMareAquario) ctx.restore();
       // Poças de treino: água por cima da areia (zona, não célula da grade).
       desenharPocas(ctx, map, performance.now() / 1000, HW, HH);
@@ -775,6 +781,16 @@ function drawClima(ctx, state, view) {
     ctx.restore();
   }
 
+  // Névoa translúcida sem partículas: entra e sai junto ao clima e não
+  // encobre a HUD. Mais densa no horizonte, sem bloquear visão da costa.
+  const neblina = neblinaDoClima(clima);
+  if (neblina > .01) {
+    const g = ctx.createLinearGradient(0, 0, 0, view.h);
+    g.addColorStop(0, `rgba(196,222,224,${(.24*neblina).toFixed(3)})`);
+    g.addColorStop(1, `rgba(196,222,224,${(.04*neblina).toFixed(3)})`);
+    ctx.fillStyle=g;ctx.fillRect(0,0,view.w,view.h);
+  }
+
   // 2. CHUVA: só desenha se o buffer existir (evita alocar em mapa seco).
   if (clima.chuva > 0.02 && state.particulasClima) {
     const ativas = Math.round(state.particulasClima.length * Math.min(1, clima.chuva));
@@ -812,6 +828,86 @@ function drawClima(ctx, state, view) {
     ctx.restore();
   }
   ctx.restore();
+}
+
+// Orçamento definido pelo mapa; ondas e pingos nunca criam partículas por
+// quadro. A ressaca aumenta a espuma, não a colisão nem o tamanho do mapa.
+function drawOndasMarVivo(map, state) {
+  const reduzir = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+  const t = performance.now() / 1000;
+  const { clima } = state;
+  for (let i = 0; i < map.ondasMar.length; i++) {
+    const p = map.ondasMar[i];
+    if (p.x < range.x0-2 || p.x > range.x1+2 || p.y < range.y0-2 || p.y > range.y1+2) continue;
+    const a = animacaoMar(i, t, clima, reduzir);
+    const img = getSprite(p.tipo ? 'mar_vivo_onda_larga' : 'mar_vivo_onda_crista');
+    const x=(p.x-p.y)*HW, y=(p.x+p.y)*HH;
+    if (img) {
+      const w=p.tipo ? 62 : 35, h=w*img.height/img.width*.62;
+      ctx.save(); ctx.globalAlpha=a.espuma * .52; ctx.translate(x, y + a.deslocamento*4);
+      ctx.rotate(a.inclinacao); ctx.drawImage(img,-w/2,-h/2,w,h); ctx.restore();
+    }
+    if (a.chuva > .12 && i % 2 === 0) {
+      const splash=getSprite('mar_vivo_chuva_mar');
+      if (splash) { const pulso=reduzir ? .45 : Math.max(0,Math.sin(a.fase*2));
+        ctx.save(); ctx.globalAlpha=a.chuva*pulso*.45; ctx.drawImage(splash,x-13,y-6,26,13); ctx.restore(); }
+    }
+  }
+}
+function drawFundoMarVivo(map) {
+  for (const p of map.fundoMar) {
+    if (p.x < range.x0-2 || p.x > range.x1+2 || p.y < range.y0-2 || p.y > range.y1+2) continue;
+    const img=getSprite(`mar_vivo_${p.tipo.replaceAll('-', '_')}`); if (!img) continue;
+    const w=42*p.tamanho,h=w*img.height/img.width,x=(p.x-p.y)*HW,y=(p.x+p.y)*HH;
+    ctx.save();ctx.globalAlpha=.26;ctx.drawImage(img,x-w/2,y-h/2,w,h);ctx.restore();
+  }
+}
+function drawEncontrosMare(map, state) {
+  const reduzido=window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+  const t=reduzido ? 0 : performance.now()/1000;
+  for (let i=0;i<map.encontrosMare.length;i++) {
+    const p=map.encontrosMare[i], concluido=encontroConcluido(state.progress,p.id);
+    if (p.id === 'rede' && concluido) continue;
+    if (p.x < range.x0-2 || p.x > range.x1+2 || p.y < range.y0-2 || p.y > range.y1+2) continue;
+    const id=concluido && p.spriteConcluido ? p.spriteConcluido : p.sprite;
+    const img=getSprite(`mare_encontro_${id.replaceAll('-', '_')}`); if (!img) continue;
+    const w=48*p.tamanho,h=w*img.height/img.width;
+    const pos=posicaoEncontro(p,state.progress,t,reduzido);
+    const x=(pos.x-pos.y)*HW,y=(pos.x+pos.y)*HH;
+    ctx.save();ctx.globalAlpha=state.player.nado?.submerso ? .8 : .3;
+    ctx.translate(x,y-pos.altura*18);
+    ctx.drawImage(img,-w/2,-h*.72,w,h);
+    if (!concluido && state.player.nado?.submerso) {
+      ctx.fillStyle='#c7fff1';ctx.globalAlpha=.7;ctx.beginPath();ctx.arc(0,-h*.8,2.5,0,Math.PI*2);ctx.fill();
+    }
+    ctx.restore();
+  }
+}
+
+function drawFlutuanteMar(object, state) {
+  const img=getSprite(`mar_vivo_${object.flutuanteMar.replaceAll('-', '_')}`); if (!img) return;
+  const reduzir=window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+  const a=animacaoMar(object.x+object.y,performance.now()/1000,state.clima,reduzir);
+  const x=(object.x-object.y)*HW,y=(object.x+object.y)*HH,w=object.larguraPx,h=w*img.height/img.width;
+  ctx.save();ctx.translate(x,y+a.deslocamento*2);ctx.rotate(a.inclinacao);
+  ctx.drawImage(img,-w/2,-h*.72,w,h);ctx.restore();
+}
+
+// Na superfície, silhuetas sob a água; a versão submersa usa os mesmos
+// trajetos em sprites 3D. Culling e limite fixo mantêm o custo pequeno.
+function drawVidaRota(map, state) {
+  const reduced = typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+  const t = performance.now()/1000;
+  for (let i=0; i<map.vidaRota.length; i++) {
+    const item = map.vidaRota[i], p = posicaoVidaRota(item,i,t,reduced);
+    if (p.x < range.x0-2 || p.x > range.x1+2 || p.y < range.y0-2 || p.y > range.y1+2) continue;
+    const image = getSprite(`rota_mare_${item.tipo.replaceAll('-', '_')}`); if (!image) continue;
+    const w = (item.tipo === 'alga' ? 27 : 48) * item.tamanho, h = w*image.height/image.width;
+    const x=(p.x-p.y)*HW, y=(p.x+p.y)*HH;
+    ctx.save();ctx.translate(x,y);ctx.rotate(p.inclinacao);
+    ctx.globalAlpha = item.tipo === 'golfinho' || item.tipo === 'tartaruga' ? .53 : .29;
+    ctx.drawImage(image,-w/2,-h/2,w,h);ctx.restore();
+  }
 }
 
 function drawVidaAquatica(map, state) {
@@ -3861,10 +3957,10 @@ function drawFrequencyExteriorFloor(curState) {
   frequencySlab(16.55, 9.35, 19.45, 12.05, '#767b6c', '#9b9c88');
   for (let x = 17; x < 19.5; x += .55) frequencyLine([[x, 9.4], [x, 12]], 'rgba(44,57,53,.35)', 1);
   // Passarela baixa de manutenção liga o receptor à soleira, sem ocupar a rota da praia.
-  frequencyLine([[13.5, 13.5], [15, 13.5], [16.9, 11.55], [18.5, 11.25]], 'rgba(51,53,44,.42)', 13);
-  frequencyLine([[13.5, 13.5], [15, 13.5], [16.9, 11.55], [18.5, 11.25]], '#a8a18a', 8);
-  frequencyLine([[13.5, 13.5], [15, 13.5], [16.9, 11.55], [18.5, 11.25]], 'rgba(50,71,64,.7)', 1);
-  const [rx, ry] = frequencyPoint(13.5, 13.5);
+  frequencyLine([[12.5, 14.5], [14.5, 14.5], [16.9, 11.55], [18.5, 11.25]], 'rgba(51,53,44,.42)', 13);
+  frequencyLine([[12.5, 14.5], [14.5, 14.5], [16.9, 11.55], [18.5, 11.25]], '#a8a18a', 8);
+  frequencyLine([[12.5, 14.5], [14.5, 14.5], [16.9, 11.55], [18.5, 11.25]], 'rgba(50,71,64,.7)', 1);
+  const [rx, ry] = frequencyPoint(12.5, 14.5);
   // Contato sob o pedestal, não uma sombra separada à frente.
   ctx.fillStyle = 'rgba(38,42,36,.35)'; ctx.beginPath(); ctx.ellipse(rx, ry - 5, 26, 10, 0, 0, Math.PI * 2); ctx.fill();
   // A iluminação da soleira confirma o sinal, sem substituir o aviso textual.
@@ -4000,7 +4096,7 @@ function drawFrequencyThreshold(object, curState) {
   const reduced=typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
   const t=reduced ? 0 : performance.now()/1000;
   // Vórtice limitado à abertura da própria arte; o aro nunca é apagado.
-  ctx.save();ctx.translate(x-w*.02,y-h*.585);ctx.rotate(-.25);
+  ctx.save();ctx.translate(x-w*.02,y-h*((object.pivotY ?? 1)-.395));ctx.rotate(-.25);
   ctx.beginPath();ctx.ellipse(0,0,w*.205,h*.225,0,0,Math.PI*2);ctx.clip();
   if (!stable) { ctx.fillStyle='rgba(4,11,14,.84)';ctx.fillRect(-w,-h,w*2,h*2); }
   else {
@@ -4830,6 +4926,7 @@ function drawMapObject(object, state) {
     ctx.ellipse(x, y + 3, 30, 9, 0, 0, Math.PI * 2); ctx.fill(); ctx.restore();
   }
 
+  if (object.flutuanteMar) { drawFlutuanteMar(object, state); return; }
   if (object.bioMarker) { drawBioMarker(object); return; }
   if (object.cableStation) { drawCableStation(object); return; }
   if (object.tipo === 'holograma_decorativo') { drawHubHologram(object); return; }

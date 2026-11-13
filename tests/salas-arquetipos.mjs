@@ -456,16 +456,20 @@ for (const room of rooms) {
   assert(canStandAt(state.world.currentMap, 14.3, 5.6, 0.25, state.player), 'rampa do aquário liberada após abrir comporta');
   assert(aguaDoDegrau(4)(state.world.currentMap, 17.5, 5.8), 'operador treinado nada livremente na bacia do Grande Aquário');
 
-  // Travessia completa: sala_mare -> ilha_enseada_ecos -> sala_mare
+  // A conexão agora tem uma travessia navegável nos dois sentidos.
   const portalIda = state.portals.find(p => p.id === 'conduto_enseada_mare');
-  assert(portalIda && portalIda.destino?.mapId === 'ilha_enseada_ecos', 'portal de nado livre aponta para ilha_enseada_ecos');
+  assert.equal(portalIda.destino.mapId, 'mar_rota_mare_astral');
   await loadMap(portalIda.destino.mapId, portalIda.destino.spawnId);
-  assert.equal(state.world.currentMap.id, 'ilha_enseada_ecos', 'chegou à Enseada dos Ecos pelo conduto oceânico');
-  assert(Math.hypot(state.player.x - 28.2, state.player.y - 12.6) < 0.5, 'emerge no mar leste da Enseada perto do Caminho das Correntes');
+  assert.equal(state.world.currentMap.id, 'mar_rota_mare_astral');
+  const paraEnseada = state.portals.find(p => p.id === 'rota_mare_para_enseada');
+  await loadMap(paraEnseada.destino.mapId, paraEnseada.destino.spawnId);
+  assert.equal(state.world.currentMap.id, 'ilha_enseada_ecos');
   const portalVolta = state.portals.find(p => p.id === 'retorno_darsena_mare');
-  assert(portalVolta && portalVolta.destino?.mapId === 'sala_mare', 'portal de retorno submerso aponta de volta para sala_mare');
+  assert.equal(portalVolta.destino.mapId, 'mar_rota_mare_astral');
   await loadMap(portalVolta.destino.mapId, portalVolta.destino.spawnId);
-  assert.equal(state.world.currentMap.id, 'sala_mare', 'retornou ao Grande Aquário da Dársena Abissal');
+  const paraDarsena = state.portals.find(p => p.id === 'rota_mare_para_darsena');
+  await loadMap(paraDarsena.destino.mapId, paraDarsena.destino.spawnId);
+  assert.equal(state.world.currentMap.id, 'sala_mare');
   console.log('sala_mare: missão calibragem_de_corrente, câmera multi-perspectiva, aquário vivo e rota livre Enseada OK');
 }
 

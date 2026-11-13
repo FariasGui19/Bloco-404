@@ -312,6 +312,8 @@ export function controlarMergulhoFixo(nado, disponivel, pressionou) {
 export function atualizarNado(nado, ctx) {
   const { map, x, y, field, dt = 0, tempo = 0, clima = null, arvore = null } = ctx;
   const antes = nado.ativo;
+  const antesSubmerso = nado.submerso;
+  const profundidadeAnterior = nado.profundidade;
 
   // Ressaca: o clima entra no nado como fator de mar. Fica guardado no
   // próprio estado para `moverNaAgua` e o HUD lerem sem recalcular.
@@ -326,6 +328,7 @@ export function atualizarNado(nado, ctx) {
   const fundo = emMergulho ? profundidadeSubmersaEm(map, x, y, field) : profundidadeEm(map, x, y, field);
   nado.fundo = fundo;
   nado.naPoca = !!poca;
+  nado.emRotaMare = !!map?.meta?.rotaMare;
   nado.ativo = fundo > 0;
 
   // ---- profundidade do CORPO ----
@@ -342,7 +345,7 @@ export function atualizarNado(nado, ctx) {
   let alvo = fundo;
   let cabecaNaAgua = nado.ativo && fundo > 1.25;
   if (grau) {
-    if (!ctx.mergulhar && nado.profundidade <= 1.25) nado.semFolego = false;      // soltou a tecla: pode tentar de novo
+    if (!ctx.mergulhar && nado.profundidade <= 1.25 && (!nado.emRotaMare || nado.ar >= Math.min(4, nado.arMax * .25))) nado.semFolego = false;      // soltou a tecla: pode tentar de novo
     const quer = !!ctx.mergulhar && nado.ativo && grau.mergulho > 0 && !nado.semFolego;
     const profundidadeAlvo = Number.isFinite(ctx.profundidadeAlvo) ? Math.max(.9, ctx.profundidadeAlvo) : Infinity;
     alvo = quer ? Math.min(fundo, grau.mergulho, nado.mergulhoLivre ? profundidadeAlvo : SUPERFICIE) : Math.min(fundo, SUPERFICIE);
@@ -361,6 +364,11 @@ export function atualizarNado(nado, ctx) {
   // Suavização visual da profundidade: entrar na água não "pula".
   nado.profundidade += (alvo - nado.profundidade) * Math.min(1, NADO.suavidade * dt);
   nado.submerso = nado.ativo && (cabecaNaAgua || nado.profundidade > 1.25);
+  // Visualiza a subida real (inclusive a automática), nunca prevê o ar.
+  nado.subindoVisual = nado.ativo && nado.profundidade > 1.25 && nado.profundidade < profundidadeAnterior - .0001;
+  // Um único respiro ao romper a superfície, sem resetar o fôlego na troca de mapa.
+  nado.respiroVisual = Math.max(0, (nado.respiroVisual ?? 0) - dt);
+  if (map?.meta?.rotaMare && nado.ativo && antesSubmerso && !nado.submerso) nado.respiroVisual = .9;
   // "Fundo de verdade": é o que conta para respeito, fragmentos e fauna.
   const noFundo = nado.submerso && (grau ? nado.profundidade > 1.25 : true);
 

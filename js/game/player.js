@@ -1,4 +1,4 @@
-import { iniciarVoo, atualizarVoo } from './nado-voo.js';
+import { iniciarVoo, atualizarVoo, controlarSolturaAposSubida } from './nado-voo.js';
 // js/game/player.js
 // =====================================================================
 // PLAYER
@@ -148,7 +148,7 @@ export function updatePlayer(dt) {
   const campoCosta = getCoastFieldForMap(map);
   // ESPAÇO = mergulhar (segurar). Em terra a tecla não faz nada.
   const mergulhoFixoDisponivel = state.progress?.archetype === 'mare_astral' && (arvore?.nivel ?? 0) >= 3;
-  controlarMergulhoFixo(nado, mergulhoFixoDisponivel, input.pressed.has('z') || input.pressed.has('keyz'));
+  controlarMergulhoFixo(nado, mergulhoFixoDisponivel && !nado.aguardaSoltarAposSubida, input.pressed.has('z') || input.pressed.has('keyz'));
   let vooDir = null;
   // Só troca os controles depois que a perspectiva realmente está disponível.
   if (nado.perspectiva3d && nado.ativo && nado.profundidade > 1.25 && mergulhoFixoDisponivel) {
@@ -161,7 +161,9 @@ export function updatePlayer(dt) {
     nado.dirX = vooDir.x; nado.dirY = vooDir.y;
     if (vooDir.subir) nado.mergulhoFixo = false;
   } else if (!nado.ativo || nado.profundidade <= 1.25 || !nado.perspectiva3d) nado.voo = null;
-  const querMergulhar = !vooDir?.subir && !!(input.keys[' '] || input.keys['space'] || nado.mergulhoFixo);
+  const espaco = !!(input.keys[' '] || input.keys['space']);
+  const esperaSoltar = controlarSolturaAposSubida(nado, !!vooDir?.subir, espaco);
+  const querMergulhar = !vooDir?.subir && !esperaSoltar && !!(espaco || nado.mergulhoFixo);
   const efeitoNado = atualizarNado(nado, {
     map, x: player.x, y: player.y, field: campoCosta, dt,
     tempo: performance.now() / 1000,
@@ -298,7 +300,7 @@ export function updatePlayer(dt) {
     moved = moveWithCollision(map, player, passo.dx, passo.dy, radius, devolvendo ? podeNadar : agua, { submerso: submerso && !devolvendo });
     // Descarta a componente da inércia que colidiu, preservando o deslizamento
     // paralelo à parede. Evita ficar preso empurrando uma estaca após virar.
-    if (submerso && dt > 0) {
+    if (dt > 0) {
       const vxReal = (player.x - antesX) / dt, vyReal = (player.y - antesY) / dt;
       if (Math.abs(passo.dx) > .001 && Math.abs(vxReal * dt) < Math.abs(passo.dx) * .5) nado.vx *= .45;
       if (Math.abs(passo.dy) > .001 && Math.abs(vyReal * dt) < Math.abs(passo.dy) * .5) nado.vy *= .45;

@@ -25,7 +25,7 @@ while (queue.length) {
 for (const item of enseada.collectibles) assert(seen.has(`${item.x},${item.y}`), `${item.id} inacessível`);
 assert(seen.has(`${back.x},${back.y}`));
 assert.equal(enseada.collectibles.filter(i => i.id.startsWith('enseada_rastro_')).length, 3);
-assert(enseada.objects.filter(o => o.bloqueia).every(o => o.hitbox && o.sprite === 'vegetacao_tropical'));
+assert(enseada.objects.filter(o => o.bloqueia).every(o => o.hitbox && (o.sprite === 'vegetacao_tropical' || ['porta_estacao_666_visual','terminal_frequencia_666'].includes(o.id))));
 console.log('Enseada: ida, volta e três vestígios acessíveis OK.');
 
 // As descobertas persistem em flags separadas e não reescrevem a missão do metrô.

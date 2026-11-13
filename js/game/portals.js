@@ -35,7 +35,8 @@ export async function usePortal(portal) {
     return false;
   }
 
-  if (portal.bloqueado) {
+  if (portal.bloqueado || (portal.requiresFlag && state.progress.flags?.[portal.requiresFlag] !== true) ||
+      (portal.requiresArchetype && state.progress.archetype !== portal.requiresArchetype)) {
     return false;
   }
 

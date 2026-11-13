@@ -79,12 +79,16 @@ function mareRoutes(progress, map) {
   const atual = ARQUIPELAGO_REGIONS.find(region => region.mapId && region.mapId === map?.id)
     ?? ARQUIPELAGO_REGIONS.find(region => region.id === 'praia_inicial');
   const vizinhas = ARQUIPELAGO_REGIONS.filter(region => atual.neighbours.includes(region.id));
-  const rota = region => `<li class="codex-route ${region.status === 'jogavel' ? 'pronto' : 'projeto'}">
-      <span class="codex-route-pin" aria-hidden="true">${region.status === 'jogavel' ? '◆' : '◇'}</span>
+  const rota = region => {
+    const aberta = region.status === 'jogavel' && (!region.requiresFlag || progress?.flags?.[region.requiresFlag]);
+    const estado = aberta ? 'ROTA ABERTA' : region.status === 'jogavel' ? 'COMPORTA SELADA' : 'EM PROJETO';
+    return `<li class="codex-route ${aberta ? 'pronto' : 'projeto'}">
+      <span class="codex-route-pin" aria-hidden="true">${aberta ? '◆' : '◇'}</span>
       <strong>${escapeHtml(region.nome)}</strong>
-      <em>${region.status === 'jogavel' ? 'ROTA ABERTA' : 'EM PROJETO'}</em>
+      <em>${estado}</em>
       <small>${escapeHtml(region.biome)}</small>
     </li>`;
+  };
   const lista = vizinhas.length ? vizinhas.map(rota).join('') : '<li class="codex-route projeto"><strong>Nenhuma vizinha mapeada</strong></li>';
   return `<aside class="codex-mare" aria-label="Rotas de maré">
       <span class="codex-tag">ROTAS DE MARÉ</span>
@@ -95,7 +99,7 @@ function mareRoutes(progress, map) {
         <span class="codex-mare-mode projeto"><b>NAVEGAÇÃO</b><em>EM PROJETO</em><small>correntes levam a ilhas e portos</small></span>
         <span class="codex-mare-mode projeto"><b>MISSÕES DE TRAVESSIA</b><em>EM PROJETO</em><small>rotas com carga e pouso</small></span>
       </div>
-      <p class="codex-note">Mapa do arquipélago já registra as ilhas; navegar entre elas fica para o sistema de navegação.</p>
+      <p class="codex-note">A Rota das Marés liga a Enseada à Dársena após abrir a comporta; outras rotas permanecem em projeto.</p>
     </aside>`;
 }
 

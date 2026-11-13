@@ -1,11 +1,9 @@
 # Bloco 404 — bíblia narrativa: Ponto 0 e Frequência 66.6 MHz
 
-> Direção canônica para a abertura e a primeira grande missão. Este documento
-> incorpora o manifesto expandido do criador e o conecta ao jogo existente.
-> **Jogável agora:** abertura em quadros, NEXO, calibração, metrô, praia,
-> enseada e registro do sinal. **Planejado, não implementado:** ruptura real
-> para FPS, cidadela, inimigos, chefe, recompensas e retorno livre. As imagens
-> da cidadela são conceitos/cutscenes, não mapas transitáveis.
+> Direção canônica para a abertura e a primeira missão. A Estação 66.6 agora
+> conecta a Cidadela Retro-FPS jogável; detalhes técnicos, controles, limites e
+> persistência estão em [cidadela-404.md](cidadela-404.md). A direção narrativa
+> abaixo inclui também ideias futuras que não são promessa de implementação.
 
 ## O coração da história
 
@@ -79,17 +77,20 @@ ter vantagem narrativa obrigatória por sua câmera de origem.
    costeiro com uma passarela de manutenção. No interior, examine as três
    âncoras ambientais [E] em qualquer ordem:
    Origem (o reator), Retorno (a linha para casa) e Memória (a resposta três
-   segundos antecipada). Elas não são as chaves mnemônicas da futura cidadela.
+   segundos antecipada). Elas não são as chaves mnemônicas da cidadela.
    Um caderno opcional, a carta náutica, o banco de escuta, a fonte auxiliar e o receptor local
    acrescentam registros e distinguem o reator da estação do reator da cidadela.
    A nova maquinaria usa artes próprias; os cabos e as bases acendem
    conforme as âncoras respondem; o anel permanece inativo.
-7. **Limiar:** depois das três âncoras, usar [R] no console central. NEXO
-   estabiliza a janela e o anel se ilumina. Em [E], o jogador pode esperar ou
-   preparar a passagem: a cena mostra o primeiro passo, e termina no corte
-   imediatamente anterior ao futuro gameplay. A estação continua acessível
-   como ponto seguro; não há mapa FPS nem teleporte fingido. A cena pode ser
-   revista e o jogador pode sair para explorar. A missão não é concluída.
+7. **Limiar:** depois das três âncoras, use [R] no console central e [E] no
+   anel. A escolha abre a cena pulável e carrega a Cidadela; saves já preparados
+   podem atravessar diretamente. A saída no ponto de chegada retorna à estação.
+8. **Cidadela:** três registros identificados por símbolo, nome e cor abrem as
+   eclusas. O Echovore reage ao uso de ressonâncias; o Vigilante protege o
+   núcleo, que só pode ser atingido na janela exposta. A estabilização conclui
+   a missão legada e permite revisitar a dimensão. Três arquivos opcionais
+   ecoam Origem, Retorno e Memória; não identificam a figura dos CRTs nem
+   substituem as âncoras da estação.
 
 ### Direção visual da estação
 
@@ -114,11 +115,9 @@ opcional, não um pré-requisito nem a confirmação da origem do pedido.
   `sinal_registrado` → `ancoras_em_andamento` → `calibrar_limiar` →
   `limiar_estavel` → `limiar_preparado`. Outros IDs, missões concluídas e
   etapas futuras desconhecidas não são reescritos. Não há recompensa antecipada.
-- Handoff: a futura implementação deve conectar a escolha de travessia ao
-  carregamento real da dimensão, tratar saves já preparados (inclusive ao
-  retomar a cena) e permitir voltar à estação. Só entregar controle em primeira
-  pessoa depois de mapa, controles e retorno existirem. Não criar as três chaves
-  da cidadela usando as flags das âncoras da estação.
+- A travessia é real; a Cidadela usa flags próprias para chaves e vitória,
+  checkpoints por registro e retorno à estação. A recompensa de XP tem flag
+  própria para não duplicar. A vida segue a convenção existente: sessão, não save.
 
 ### Secundárias e tom
 
@@ -156,12 +155,10 @@ superaquecendo. NEXO pode estabilizar a entrada, mas não entende se a entidade
 que responde é vítima, sentinela ou isca. O objetivo humano não é apagar um
 mundo anômalo: é impedir que a falha o destrua e descobrir quem pediu ajuda.
 
-### Sequência futura proposta
+### Direção original da sequência (alguns detalhes ainda futuros)
 
-1. **Travessia:** conectar o limiar já preparado ao destino real quando a
-   dimensão estiver pronta. O corte atual já mostra o primeiro passo, mas
-   não carrega a dimensão. Dar aviso, opção de acessibilidade e controles
-   claros antes da movimentação; preservar o caminho de volta e o save.
+1. **Travessia:** o limiar preparado carrega a dimensão real, com aviso de
+   controles, cena pulável, checkpoints persistidos e caminho de volta.
 2. **Infiltração na Cidadela do Código Queimado:** corredores de tijolo escuro,
    metal e luz vermelha, mapas mentais claros e pontos de referência visuais.
    Chuva de dados e ruído de rádio nunca devem encobrir portas ou ameaças.
@@ -225,7 +222,7 @@ continuam pendentes; nenhuma gravação é fornecida agora.
 O Metrô Interdimensional é o hub de viagem entre destinos desbloqueados: oceano
 abissal, ruínas mitológicas, fenda retrô e colmeias orgânicas, entre outros.
 O acesso livre surge após a história de cada mundo, não antes. Caçadas ao
-Nemetrix: variantes de chefes geradas por Nulo podem invadir zonas sob regras
+Echovore: variantes de chefes geradas por Nulo podem invadir zonas sob regras
 de tempo e aviso ainda a definir; não transformar exploração tranquila em
 punição inevitável. Nada disso é implementado por este prólogo.
 
@@ -235,7 +232,7 @@ não módulos já existentes. CRT/vinheta como efeito leve e opcional, com
 preferência de movimento respeitada; metas de desempenho a medir no hardware
 real. Ver `manifesto-multiverso.md` para a arquitetura e outros gêneros.
 
-## Contrato de implementação para a próxima IA
+## Contrato histórico de implementação (referência de continuidade)
 
 - Entrada atual: `frequencia666Registrada` e missão legada
   `embarque_dimensional`, etapa `sinal_registrado`. Não trocar IDs existentes
@@ -258,4 +255,4 @@ piso acessível. Não confundir a posição da arte com a do portal: objetos sã
 centralizados pelo map-manager, portais são centralizados na interação.
 As luzes, sinal, vapor, partículas e vórtice são sobreposições cenográficas,
 sem novas interações ou itens; a animação respeita movimento reduzido. A
-estabilização ainda controla o efeito do limiar e não abre uma dimensão FPS.
+estabilização controla o efeito do limiar e permite acessar a dimensão FPS.

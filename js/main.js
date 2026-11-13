@@ -31,6 +31,7 @@ import { isCodexOpen, openCodex, closeCodex, handleCodexInput } from './ui/codex
 import { updateOwnedCompanion } from './game/companions.js';
 import { updateCoastalFauna } from './game/fauna-costeira.js';
 import { state } from './game/state.js';
+import { updateCitadel, renderCitadel, clearCitadelRuntime } from './game/cidadela-fps.js';
 
 import { getFloor } from './game/world.js';
 import { loadMap, getSafeSpawn } from './game/map-manager.js';
@@ -553,6 +554,10 @@ if (bioMissing.length) {
 // =====================================================================
 
 async function update(dt) {
+  if (state.world.currentMap?.meta?.camera === 'retro-fps') {
+    if (!isCutsceneOpen() && !isDialogueOpen() && !state.world.isLoading) updateCitadel(dt, state, input);
+    return;
+  }
   if (isCutsceneOpen()) {
     state.player.moving = false; state.player.target = null;
     input.click = null; input.attackClick = null;
@@ -962,6 +967,15 @@ async function frame(now) {
   await update(dt);
 
   const map = getFloor();
+  const fpsWorld = map?.meta?.camera === 'retro-fps';
+  document.body.classList.toggle('retro-fps', !!fpsWorld);
+  if (fpsWorld) {
+    renderCitadel(canvas, state);
+    endInputFrame();
+    return;
+  }
+  clearCitadelRuntime();
+  if (document.pointerLockElement === canvas) document.exitPointerLock?.();
 
   render(map, state);
   updateHud(map, state);

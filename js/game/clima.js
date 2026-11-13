@@ -42,7 +42,7 @@ export const CLIMAS = Object.freeze({
 
 // Ordem de transição: o clima só "anda" um passo por vez entre vizinhos.
 // É o que impede sol virar ressaca em dois segundos.
-export const CORRENTE = Object.freeze(['limpo', 'brisa', 'nublado', 'garoa', 'chuva', 'ressaca']);
+export const CORRENTE = Object.freeze(['limpo', 'brisa', 'nublado', 'garoa', 'chuva', 'ressaca', 'chuva', 'garoa', 'nublado', 'neblina', 'brisa']);
 
 export const CLIMA = Object.freeze({
   // Segundos, em média, para o clima mudar de faixa. Um dia de jogo tem
@@ -143,6 +143,13 @@ export function nomeDoClima(clima) {
   if (!clima) return CLIMAS.limpo.nome;
   if (clima.fracao > 0.75) return CLIMAS[clima.proximo].nome;
   return CLIMAS[clima.atual].nome;
+}
+
+/** Intensidade da neblina acompanha a mesma curva das demais faixas. */
+export function neblinaDoClima(clima) {
+  if (!clima) return 0;
+  const f = curva(Math.max(0, Math.min(1, clima.fracao ?? 0)));
+  return (clima.atual === 'neblina' ? 1 - f : 0) + (clima.proximo === 'neblina' ? f : 0);
 }
 
 /** Cor de tinta para o HUD (sol = claro, ressaca = escuro). */

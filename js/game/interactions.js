@@ -53,6 +53,7 @@ function getPortalRuntimePosition(portal) {
 
 function isPortalBlockedByRequirement(portal) {
   if (portal.bloqueado) return true;
+  if (portal.requiresArchetype && state.progress.archetype !== portal.requiresArchetype) return true;
 
   // Compatibilidade com o sistema antigo
   if (portal.requiresFlag && state.progress.flags?.[portal.requiresFlag] !== true) return true;
@@ -233,7 +234,9 @@ async function interactWithPortal(portal) {
 
   if (isPortalBlockedByRequirement(portal)) {
     // NOVO: Se falhou por causa do Gate, usa a mensagem do Gate
-    const mensagens = portal.gate ? getGateFailureMessage(portal.gate) : (portal.mensagemBloqueado ?? ['ACESSO BLOQUEADO.']);
+    const mensagens = portal.requiresArchetype && state.progress.archetype !== portal.requiresArchetype
+      ? ['ESTA TRAVESSIA EXIGE MARÉ ASTRAL E NADO LIVRE. OUTROS CAMINHOS SERÃO ABERTOS NO FUTURO.']
+      : portal.gate ? getGateFailureMessage(portal.gate) : (portal.mensagemBloqueado ?? ['ACESSO BLOQUEADO.']);
 
     openDialogue({
       speaker: 'SISTEMA DE ACESSO',

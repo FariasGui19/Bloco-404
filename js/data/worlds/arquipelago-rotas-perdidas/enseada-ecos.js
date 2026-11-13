@@ -31,7 +31,8 @@ export const map = {
     estiloPiso: 'livre', useBackgroundWalls: true, sandSprite: 'beach_novas_artes', ambiente: { poeira: 12, cor: '#ffd98a' } },
   corChao: '#e6c280', layout, walkMask: ground.walkMask, pisos: ground.pisos, aguaPraia: rows,
   spawnPoints: { inicio: { x: 6.5, y: 15.5 }, vindo_da_praia: { x: 6.5, y: 15.5 }, vindo_da_estacao_666: { x: 16.5, y: 13.5 }, vindo_do_mar: { x: 24.5, y: 15.5 }, vindo_da_darsena_mare: { x: 28.2, y: 12.6 } },
-  trainingTargets: [{ id: 'eco_treino_enseada', x: 14, y: 15, maxHealth: 60 }],
+  ondasMar: [[3,3,1],[8,2,0],[22,2,1],[29,5,0],[30,20,1],[25,30,0],[7,29,1],[2,23,0]].map(([x,y,tipo])=>({x,y,tipo})),
+  trainingTargets: [{ id: 'eco_treino_enseada', x: 15, y: 16, maxHealth: 60 }],
   // Fonte de dano ambiental enquanto inimigos agressivos não existem.
   // Longe do spawn, do alvo de treino e dos vestígios obrigatórios.
   hazards: [
@@ -46,15 +47,16 @@ export const map = {
     { id: 'enseada_capivara', species: 'capivara', x: 19.5, y: 8.5 },
   ],
   objects: [
-    { id: 'terminal_frequencia_666', nome: 'TERMINAL DE MANUTENÇÃO', tipo: 'painel', x: 13, y: 13,
+    { id: 'terminal_frequencia_666', nome: 'TERMINAL DE MANUTENÇÃO', tipo: 'painel', x: 12, y: 14,
       sprite: 'freq666_receptor', useCrop: true, larguraPx: 58, pivotX: .5, pivotY: .88,
-      sombra: [16, 7], bloqueia: false, brilho: { cor: '#ff7e71', raio: .7, forca: .2 },
+      sombra: [16, 7], bloqueia: true, hitbox: { offsetX: -.28, offsetY: -.28, width: .56, height: .56 }, brilho: { cor: '#ff7e71', raio: .7, forca: .2 },
       interacao: { label: 'EXAMINAR TERMINAL', distancia: 1.4, speaker: 'TERMINAL DA ENSEADA',
         dialogue: ['O RECEPTOR ESTÁ RISCADO DE SAL. ENTRE A ESTÁTICA, UM PULSO REPETE UMA FREQUÊNCIA IMPOSSÍVEL.', 'USE [R] PARA DIAGNOSTICAR O SINAL.'] },
       moduleSystem: { id: 'frequencia_666_terminal', label: 'RASTREAR SINAL ANALÓGICO', distance: 1.6, speaker: 'TERMINAL DA ENSEADA' } },
     { id: 'porta_estacao_666_visual', tipo: 'decoracao', x: 18, y: 10, sprite: 'freq666_entrada',
-      useCrop: true, larguraPx: 300, pivotX: .76, pivotY: .93, depthOffset: -2, bloqueia: false },
-    { id: 'baliza_666_receptor', tipo: 'decoracao', x: 13, y: 12, sprite: 'freq666_baliza', useCrop: true, larguraPx: 24, pivotX: .5, pivotY: .98, bloqueia: false },
+      useCrop: true, larguraPx: 350, pivotX: .76, pivotY: .93, depthOffset: -2, bloqueia: true,
+      hitbox: { offsetX: -4.65, offsetY: -1.4, width: 3.8, height: 2.95 } },
+    { id: 'baliza_666_receptor', tipo: 'decoracao', x: 12, y: 13, sprite: 'freq666_baliza', useCrop: true, larguraPx: 24, pivotX: .5, pivotY: .98, bloqueia: false },
     { id: 'baliza_666_entrada', tipo: 'decoracao', x: 19, y: 11, sprite: 'freq666_baliza', useCrop: true, larguraPx: 24, pivotX: .5, pivotY: .98, bloqueia: false },
     // Cenário costeiro: bases em água não caminhável, sem criar obstáculos.
     { id: 'enseada_cascata', tipo: 'decoracao', x: 30, y: 17, sprite: 'costa_rochosa', frame: { col: 0, row: 0 }, useCrop: true, larguraPx: 145, pivotY: 1, bloqueia: false },
@@ -94,7 +96,7 @@ export const map = {
     mensagemBloqueado: ['A PORTA AGUARDA UMA ASSINATURA. INVESTIGUE O TERMINAL DE MANUTENÇÃO COM [R].'],
     interactionDistance: 1.2, destino: { mapId: 'estacao_limiar_666', spawnId: 'vindo_da_enseada' }, transition: 'fade' },
     { id: 'rota_correntes', tipo: 'door', x: 25, y: 15, label: 'NAVEGAR: CAMINHO DAS CORRENTES', interactionDistance: 1.4, destino: { mapId: 'mar_caminho_das_correntes', spawnId: 'vindo_da_enseada' }, transition: 'fade' },
-    { id: 'retorno_darsena_mare', tipo: 'door', x: 28, y: 12, requiresFlag: 'rota_livre_enseada_aberta', lockedLabel: 'CONDUTO ABISSAL INATIVO', mensagemBloqueado: ['UM VÓRTICE PROFUNDO RESSOA COM A DÁRSENA DA MARÉ ASTRAL, MAS PERMANECE SELADO DO OUTRO LADO.'], label: 'NADAR PELO CONDUTO -> DÁRSENA ABISSAL (MARÉ ASTRAL)', interactionDistance: 1.95, destino: { mapId: 'sala_mare', spawnId: 'vindo_da_enseada' }, transition: 'fade' },
+    { id: 'retorno_darsena_mare', tipo: 'door', x: 28, y: 12, requiresFlag: 'rota_livre_enseada_aberta', lockedLabel: 'CONDUTO ABISSAL INATIVO', mensagemBloqueado: ['UM VÓRTICE PROFUNDO RESSOA COM A DÁRSENA DA MARÉ ASTRAL, MAS PERMANECE SELADO DO OUTRO LADO.'], label: 'NADAR: ROTA DAS MARÉS ATÉ A DÁRSENA', requiresArchetype: 'mare_astral', interactionDistance: 1.95, destino: { mapId: 'mar_rota_mare_astral', spawnId: 'vindo_da_enseada' }, transition: 'fade' },
     { id: 'enseada_retorno', tipo: 'door', x: 5, y: 15, label: 'VOLTAR À PRAIA INICIAL', interactionDistance: 1.4,
     destino: { mapId: 'ilha_praia_inicial', spawnId: 'vindo_da_enseada' }, transition: 'fade' }],
 };

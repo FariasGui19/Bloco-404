@@ -71,6 +71,10 @@ export async function loadMap(mapId, spawnId = 'inicio') {
     state.objects = [];
     state.portals = [];
     state.collectibles = [];
+    // Prompts e gestos são efêmeros; nunca atravessam a troca de mapa.
+    state.interaction.encontroMare = null;
+    state.interaction.faunaPronta = null;
+    state.player.mareAcao = null;
 
     state.world.currentMapId = mapData.id;
     state.world.currentDimension = mapData.meta?.dimensao ?? 'unknown';

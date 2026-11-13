@@ -10,6 +10,26 @@
 // =====================================================================
 
 export const QUESTS = Object.freeze({
+  jardim_de_retorno: Object.freeze({
+    id:'jardim_de_retorno', title:'JARDIM DE RETORNO', giver:'O MAR', kind:'secundária',
+    description:'Na Rota das Marés, retire a rede perdida, liberte a tartaruga e restaure o coral. Mergulhe até cada sinal e use [E]; volte à superfície sempre que precisar respirar.',
+    objectives:Object.freeze([
+      Object.freeze({type:'encontro_mare',target:'rede',count:1,label:'Recolher a rede perdida [E]'}),
+      Object.freeze({type:'encontro_mare',target:'tartaruga',count:1,label:'Libertar a tartaruga [E]'}),
+      Object.freeze({type:'encontro_mare',target:'coral',count:1,label:'Restaurar o coral [E]'}),
+    ]),
+    rewards:Object.freeze({xp:100,items:Object.freeze(['registro_jardim_mare']),flags:Object.freeze({jardim_de_retorno_concluido:true})}),
+  }),
+  testemunhas_do_azul: Object.freeze({
+    id:'testemunhas_do_azul', title:'TESTEMUNHAS DO AZUL', giver:'O MAR', kind:'secundária',
+    description:'Na Rota das Marés, aproxime-se sem atacar: observe a arraia e o peixe-guia e registre a pérola de eco no fundo com [E].',
+    objectives:Object.freeze([
+      Object.freeze({type:'encontro_mare',target:'arraia',count:1,label:'Observar a arraia [E]'}),
+      Object.freeze({type:'encontro_mare',target:'peixe',count:1,label:'Observar o peixe-guia [E]'}),
+      Object.freeze({type:'encontro_mare',target:'perola',count:1,label:'Registrar a pérola de eco [E]'}),
+    ]),
+    rewards:Object.freeze({xp:90,items:Object.freeze(['registro_testemunhas_azul']),flags:Object.freeze({testemunhas_do_azul_concluida:true})}),
+  }),
   caminho_das_correntes: Object.freeze({
     id: 'caminho_das_correntes', title: 'CAMINHO DAS CORRENTES', giver: 'O MAR', kind: 'secundária',
     description: 'Na Enseada dos Ecos, siga para o Caminho das Correntes. Com Maré Astral, mergulhe junto às três balizas: Recife da Escuta, Jardim das Marés e Farol Submerso.',

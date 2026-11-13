@@ -12,9 +12,11 @@ import { updateNucleoForm } from './game/nucleo-form.js';
 import { canStandAt } from './game/collision.js';
 import { dispararPropulsao } from './game/nado.js';
 import { desenharMedidorAr, desenharDegrauNado } from './ui/nado-hud.js';
+import { desenharRotaMare } from './ui/rota-mare-hud.js';
 import { atualizarProvas, garantirMissaoDeNado, garantirArvore, lerArvore, provaDe, degrauDe, nomeDoDegrau } from './game/nado-arvore.js';
 import { pushCombatText } from './game/combat-feedback.js';
 import { atualizarMissaoMare, criarFragmentosDeMare } from './game/mare-missao.js';
+import { iniciarMissoesEncontros, encontroProximo, realizarEncontro } from './game/encontros-mare.js';
 import { atualizarRotaCorrentes } from './game/rota-correntes.js';
 import { atualizarFauna, socorrerProximo } from './game/fauna-ferida.js';
 import { ganharRespeito, cabecaSubmersa, noFundoDoMar } from './game/nado.js';
@@ -201,6 +203,36 @@ await loadSprites([
   { id: 'freq666_rack', src: 'assets/sprites/frequencia-666/rack-estacao.png' },
   { id: 'freq666_mesa', src: 'assets/sprites/frequencia-666/mesa-arquivo.png' },
   { id: 'freq666_reator', src: 'assets/sprites/frequencia-666/reator-estacao.png' },
+  { id: 'mar_vivo_onda_crista', src: 'assets/sprites/mar-vivo/onda-crista.png' },
+  { id: 'mar_vivo_onda_larga', src: 'assets/sprites/mar-vivo/onda-larga.png' },
+  { id: 'mar_vivo_chuva_mar', src: 'assets/sprites/mar-vivo/chuva-mar.png' },
+  { id: 'mar_vivo_barco_pescador', src: 'assets/sprites/mar-vivo/barco-pescador.png' },
+  { id: 'mar_vivo_barco_carga', src: 'assets/sprites/mar-vivo/barco-carga.png' },
+  { id: 'mar_vivo_boia_sinal', src: 'assets/sprites/mar-vivo/boia-sinal.png' },
+  { id: 'mar_vivo_coral_leque', src: 'assets/sprites/mar-vivo/coral-leque.png' },
+  { id: 'mar_vivo_medusa_luz', src: 'assets/sprites/mar-vivo/medusa-luz.png' },
+  { id: 'mar_vivo_ruina_submersa', src: 'assets/sprites/mar-vivo/ruina-submersa.png' },
+  { id: 'mar_vivo_peixes_luz', src: 'assets/sprites/mar-vivo/peixes-luz.png' },
+  { id: 'mare_encontro_tartaruga_resgate', src: 'assets/sprites/mare-encontros/tartaruga-resgate.png' },
+  { id: 'mare_encontro_arraia_curiosa', src: 'assets/sprites/mare-encontros/arraia-curiosa.png' },
+  { id: 'mare_encontro_peixe_guia', src: 'assets/sprites/mare-encontros/peixe-guia.png' },
+  { id: 'mare_encontro_rede_perdida', src: 'assets/sprites/mare-encontros/rede-perdida.png' },
+  { id: 'mare_encontro_coral_ferido', src: 'assets/sprites/mare-encontros/coral-ferido.png' },
+  { id: 'mare_encontro_coral_restaurado', src: 'assets/sprites/mare-encontros/coral-restaurado.png' },
+  { id: 'mare_encontro_eco_perola', src: 'assets/sprites/mare-encontros/eco-perola.png' },
+  { id: 'mare_encontro_anel_cuidado', src: 'assets/sprites/mare-encontros/anel-cuidado.png' },
+  { id: 'mare_encontro_bolhas_subida', src: 'assets/sprites/mare-encontros/bolhas-subida.png' },
+  { id: 'mare_encontro_respiro_superficie', src: 'assets/sprites/mare-encontros/respiro-superficie.png' },
+  { id: 'rota_mare_tartaruga', src: 'assets/sprites/rota-mare/tartaruga.png' },
+  { id: 'rota_mare_arraia', src: 'assets/sprites/rota-mare/arraia.png' },
+  { id: 'rota_mare_golfinho', src: 'assets/sprites/rota-mare/golfinho.png' },
+  { id: 'rota_mare_cardume', src: 'assets/sprites/rota-mare/cardume.png' },
+  { id: 'rota_mare_agua_viva', src: 'assets/sprites/rota-mare/agua-viva.png' },
+  { id: 'rota_mare_cavalo_marinho', src: 'assets/sprites/rota-mare/cavalo-marinho.png' },
+  { id: 'rota_mare_peixe_lanterna', src: 'assets/sprites/rota-mare/peixe-lanterna.png' },
+  { id: 'rota_mare_alga', src: 'assets/sprites/rota-mare/alga.png' },
+  { id: 'rota_mare_espuma_respiro', src: 'assets/sprites/rota-mare/espuma-respiro.png' },
+  { id: 'rota_mare_bolhas', src: 'assets/sprites/rota-mare/bolhas.png' },
   { id: 'freq666_fx_vortice', src: 'assets/sprites/frequencia-666/fx-vortice.png' },
   { id: 'freq666_fx_vapor', src: 'assets/sprites/frequencia-666/fx-vapor.png' },
   { id: 'freq666_fx_centelha', src: 'assets/sprites/frequencia-666/fx-centelha.png' },
@@ -755,7 +787,7 @@ async function update(dt) {
         avisar(`O MAR ASSUSTA • TREINE ${ondeTreinar}`, 3.2);
         player.nadoAviso = 2.4; player.nadoDestaque = 4;
       } else if (eventos.engoliu) {
-        avisar('ENGOLIU ÁGUA • SOLTE ESPAÇO ANTES DO AR ACABAR', 3);
+        avisar('ENGOLIU ÁGUA • SUBA PARA RESPIRAR ANTES DO AR ACABAR', 3);
         player.nadoAviso = 2.4;
       } else if (eventos.limite) {
         avisar(arvore.nivel === 0
@@ -766,6 +798,16 @@ async function update(dt) {
     }
     eventos.susto = eventos.engoliu = eventos.limite = false;
     player.nadoDestaque = Math.max(0, (player.nadoDestaque ?? 0) - dt);
+  }
+  if (player.mareAcao) {
+    player.mareAcao.timeLeft = Math.max(0, player.mareAcao.timeLeft - dt);
+    if (!player.mareAcao.timeLeft) player.mareAcao = null;
+  }
+  if (iniciarMissoesEncontros(mapaAtual, player, state.progress)) {
+    player.ability ??= {};
+    player.ability.lastMessage = 'NOVAS MISSÕES SUBMERSAS • CONSULTE O CÓDEX [J]';
+    player.ability.messageTimer = 4;
+    saveGame();
   }
   // Fauna ferida: presença alivia, o módulo certo socorre.
   const ancoraFauna = getFloor();
@@ -814,12 +856,28 @@ async function update(dt) {
           arvore.respeito = Math.max(arvore.respeito ?? 0, player.nado.respeito.valor);
         }
         state.interaction.faunaPronta = null;
+        if (submerso) player.mareAcao = {tipo:'socorro',timeLeft:1.1,duration:1.1};
         saveGame();
       } else if (res?.motivo) {
         player.ability ??= {};
         player.ability.lastMessage = res.motivo.toUpperCase();
         player.ability.messageTimer = 2;
       }
+    }
+  }
+
+  // Um único E por quadro: socorro existente tem prioridade, depois os
+  // encontros da rota, por fim os portais/objetos habituais.
+  const encontro = encontroProximo(mapaAtual, player, state.progress);
+  state.interaction.encontroMare = state.interaction.faunaPronta ? null : encontro;
+  if (encontro && !state.interaction.socorroConsumiuE && (input.pressed.has('e') || input.pressed.has('keye'))) {
+    state.interaction.socorroConsumiuE = true;
+    const res = realizarEncontro(mapaAtual, player, state.progress);
+    if (res) {
+      player.ability ??= {};
+      player.ability.lastMessage = res.concluidas?.length ? `MISSÃO CONCLUÍDA • ${res.concluidas[0].title}` : res.mensagem;
+      player.ability.messageTimer = 3.5;
+      if (res.ok) { state.interaction.encontroMare = null; saveGame(); }
     }
   }
 
@@ -887,9 +945,12 @@ async function frame(now) {
   updateHud(map, state);
   // Fôlego só aparece quando importa (nadando); em terra não ocupa tela.
   if (state.player?.nado?.ativo) desenharMedidorAr(state.player.nado);
+  desenharRotaMare(canvas, map, state);
   if (state.player?.nado?.perspectiva3d) {
-    const dpr = Math.min(window.devicePixelRatio || 1, 2), w = canvas.width / dpr, h = canvas.height / dpr;
+    const dpr = Math.min(window.devicePixelRatio || 1, 1.5), w = canvas.width / dpr, h = canvas.height / dpr;
     const c = canvas.getContext('2d'); c.save(); c.setTransform(dpr, 0, 0, dpr, 0, 0);
+    const bolhasRota = map?.meta?.rotaMare && getSprite('rota_mare_bolhas');
+    if (bolhasRota) { c.save(); c.globalAlpha=.15; c.drawImage(bolhasRota,w/2+18,h/2-35,22,38); c.restore(); }
     c.font = 'bold 11px monospace'; c.textAlign = 'right';
     c.fillStyle = 'rgba(0,30,42,.72)'; c.fillRect(w - 510, h - 127, 496, 32);
     c.fillStyle = '#bdfaf0'; c.fillText('A/D GIRAR · W NADAR/DESCER · S SUBIR · Q IMPULSO · R SONAR', w - 24, h - 107);
@@ -900,6 +961,13 @@ async function frame(now) {
       c.fillStyle = '#bdfaf0'; c.fillText(`E · SOCORRER ${nome}`, w / 2, h - 170);
     }
     c.restore();
+  }
+  if (state.interaction?.encontroMare && !state.interaction?.faunaPronta) {
+    const dpr=Math.min(window.devicePixelRatio || 1,1.5), w=canvas.width/dpr, h=canvas.height/dpr;
+    const c=canvas.getContext('2d'); c.save(); c.setTransform(dpr,0,0,dpr,0,0);
+    c.textAlign='center';c.font='bold 11px monospace';c.fillStyle='rgba(0,30,42,.88)';
+    c.fillRect(w/2-190,h-190,380,32);c.fillStyle='#cafff3';
+    c.fillText(`E · ${state.interaction.encontroMare.label}`,w/2,h-170);c.restore();
   }
   // Degrau do nado + prova em curso: perto d'água, ou comemorando.
   if (map?.aguaPraia) desenharDegrauNado(state, map);

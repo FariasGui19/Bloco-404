@@ -23,9 +23,28 @@ await loadMap('estacao_limiar_666', 'vindo_da_enseada');
 Object.assign(state.player,{x:exit.x+.5,y:exit.y+.5});
 assert(canStandAt(station,state.player.x,state.player.y,.25,state.player));
 assert.equal(findNearestInteraction()?.data.id, exit.id, 'saída é alcançável e selecionável');
+for (const obj of state.objects.filter(o => o.id !== 'saida_estacao_666_visual')) {
+  assert(obj.bloqueia && obj.hitbox, `${obj.id} deve ter pegada sólida`);
+  assert(!canStandAt(station,obj.x,obj.y,.25,state.player), `${obj.id} não permite atravessar o centro`);
+}
 await loadMap('ilha_enseada_ecos', 'vindo_da_estacao_666');
+assert(!canStandAt(coast,16.3,11,.25,state.player),'o corpo do abrigo não é atravessável');
+assert(canStandAt(coast,18.5,10.5,.25,state.player),'escadaria e entrada seguem acessíveis');
+assert(canStandAt(coast,16.5,13.5,.25,state.player),'retorno da estação continua seguro');
+// Da saída ao degrau, há um caminho real de meia célula apesar da fundação.
+const entrancePortal = state.portals.find(p => p.id === 'acesso_estacao_666');
+const seen = new Set(), queue = [[33,27]]; let entradaAlcancada = false;
+for (let i=0;i<queue.length;i++) {
+  const [ix,iy] = queue[i], key=`${ix},${iy}`; if (seen.has(key)) continue;
+  if (!canStandAt(coast,ix/2,iy/2,.25,state.player)) continue;
+  seen.add(key); Object.assign(state.player,{x:ix/2,y:iy/2});
+  if (findNearestInteraction()?.data.id === entrancePortal.id) entradaAlcancada = true;
+  for (const [dx,dy] of [[1,0],[-1,0],[0,1],[0,-1]]) queue.push([ix+dx,iy+dy]);
+}
+assert(entradaAlcancada,'porta acessível a partir do retorno sem atravessar a estrutura');
 const receptor = state.objects.find(o => o.id === 'terminal_frequencia_666');
-assert(canStandAt(coast,receptor.x,receptor.y,.25,state.player));
-Object.assign(state.player,{x:receptor.x,y:receptor.y});
+assert(!canStandAt(coast,receptor.x,receptor.y,.25,state.player));
+Object.assign(state.player,{x:receptor.x+.8,y:receptor.y});
+assert(canStandAt(coast,state.player.x,state.player.y,.25,state.player));
 assert.equal(findNearestInteraction()?.data.id,receptor.id,'terminal continua selecionável');
 console.log('Encaixe e acesso da Estação 66.6 OK.');

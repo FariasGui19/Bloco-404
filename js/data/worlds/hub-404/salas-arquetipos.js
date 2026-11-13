@@ -1259,9 +1259,10 @@ export const salaMare = {
       mensagemBloqueado: [
         'O VÓRTICE PERMANECE EM CONTENÇÃO ATÉ A COMPORTA DO AQUÁRIO OCEÂNICO SER ABERTA.',
       ],
-      label: 'MERGULHAR NO CONDUTO ABISSAL -> ENSEADA DOS ECOS',
+      label: 'NADAR: ROTA DAS MARÉS ATÉ A ENSEADA',
+      requiresArchetype: 'mare_astral',
       interactionDistance: 1.95,
-      destino: { mapId: 'ilha_enseada_ecos', spawnId: 'vindo_da_darsena_mare' },
+      destino: { mapId: 'mar_rota_mare_astral', spawnId: 'vindo_da_darsena' },
       transition: 'fade',
     },
   ],

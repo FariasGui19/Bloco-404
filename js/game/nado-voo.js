@@ -20,3 +20,11 @@ export function atualizarVoo(voo, controles, dt) {
   voo.pitch += (vertical * .3 - voo.pitch) * k;
   return { x: Math.cos(voo.heading), y: Math.sin(voo.heading), ativo: vertical > 0, subir: voo.profundidadeAlvo <= 1.30 && vertical < 0 };
 }
+
+// Se S fez subir enquanto ESPAÇO continua pressionado, exigir que ESPAÇO
+// seja solto evita um mergulho involuntário assim que a câmera retorna 2D.
+export function controlarSolturaAposSubida(nado, subindo, espaco) {
+  if (subindo && espaco) nado.aguardaSoltarAposSubida = true;
+  if (!espaco) nado.aguardaSoltarAposSubida = false;
+  return !!nado.aguardaSoltarAposSubida;
+}

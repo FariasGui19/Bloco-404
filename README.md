@@ -30,11 +30,16 @@ Após registrar o sinal na Enseada, examine as três âncoras da Estação 66.6,
 estabilize o console com **R** e escolha atravessar no anel com **E**. Na
 Cidadela, **WASD** movimenta, **setas ou mouse** miram, **espaço ou clique**
 dispara, **T** recarrega, **E** interage, **Q** usa o módulo, **R** abre o
-radar e **F** usa a Ultimate quando desbloqueada. **Shift** dá um impulso, **P** pausa e **L** abre os registros encontrados.
+radar e **F** usa a Ultimate quando desbloqueada. **Shift** dá impulso na
+direção de movimento, **P** pausa, **L** abre os registros encontrados e
+**J** consulta missões da Cidadela e **M** liga ou desliga os efeitos sonoros opcionais.
 Clique na tela para capturar o mouse; Esc libera o cursor e pausa o combate. As setas dispensam
 mouse capturado. Três registros abrem as eclusas; a saída fica junto à chegada.
 Três arquivos opcionais, encontrados em terminais e consultáveis com **L**,
-contam mais da história e concedem XP uma vez ao completar a coleção.
+contam mais da história e concedem XP uma vez ao completar a coleção. Após
+estabilizar o reator, NEXO-04 oferece missões de exploração e uma simulação
+repetível na arena, além de três fendas opcionais com ondas e cofres.
+A saída e a revisita continuam disponíveis.
 Veja [a documentação da Cidadela](docs/cidadela-404.md) para regras e limites.
 
 ## Organização

@@ -26,6 +26,7 @@ export const input = {
   click: null,
   attackClick: null,
   fpsFire: false,
+  fpsFireHeld: false,
   mouseDeltaX: 0,
 };
 
@@ -140,14 +141,15 @@ export function initInput(canvas) {
     input.pressed.clear();
     input.click = null;
     input.attackClick = null;
-    drag.left = false; drag.pan = false; input.fpsFire = false; input.mouseDeltaX = 0;
+    drag.left = false; drag.pan = false; input.fpsFire = false; input.fpsFireHeld = false; input.mouseDeltaX = 0;
     if (state.world.currentMap?.meta?.camera === 'retro-fps' && !state.world.fpsPaused) state.world.fpsPauseRequested = true;
   });
 
   // A saída do pointer lock pelo navegador também deve pausar o combate.
   globalThis.document?.addEventListener?.('pointerlockchange', () => {
-    if (state.world.currentMap?.meta?.camera === 'retro-fps' && !document.pointerLockElement && !state.world.fpsPaused) {
-      state.world.fpsPauseRequested = true;
+    if (state.world.currentMap?.meta?.camera === 'retro-fps' && !document.pointerLockElement) {
+      input.fpsFire=false; input.fpsFireHeld=false;
+      if (!state.world.fpsPaused) state.world.fpsPauseRequested = true;
     }
   });
 
@@ -169,7 +171,7 @@ export function initInput(canvas) {
   // -------------------------------------------------------------------
   canvas.addEventListener('mousedown', event => {
     if (state.world.currentMap?.meta?.camera === 'retro-fps') {
-      if (event.button === 0 && !state.world.fpsPaused) { input.fpsFire = true; if (document.pointerLockElement !== canvas) { const request=canvas.requestPointerLock?.(); request?.catch?.(() => {}); } }
+      if (event.button === 0 && !state.world.fpsPaused) { input.fpsFire = true; input.fpsFireHeld = true; if (document.pointerLockElement !== canvas) { const request=canvas.requestPointerLock?.(); request?.catch?.(() => {}); } }
       return;
     }
     drag.startX = event.clientX;
@@ -211,6 +213,7 @@ export function initInput(canvas) {
   });
 
   window.addEventListener('mouseup', event => {
+    if (event.button === 0) input.fpsFireHeld=false;
     // Clique esquerdo.
     if (event.button === 0 && drag.left) {
       drag.left = false;

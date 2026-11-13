@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import { input, initInput } from '../js/engine/input.js';
+import { state } from '../js/game/state.js';
 const listeners = {}, canvasListeners = {};
 globalThis.window = { addEventListener: (name, fn) => { listeners[name] = fn; } };
 const canvas = { addEventListener: (name, fn) => { canvasListeners[name] = fn; } };
@@ -17,4 +18,9 @@ canvasListeners.mousedown(event()); listeners.mouseup(event({ target: {} }));
 assert.equal(input.attackClick, null, 'soltar em UI não ataca');
 canvasListeners.mousedown(event()); listeners.blur(); listeners.mouseup(event());
 assert.equal(input.attackClick, null, 'perda de foco cancela gesto');
+// No modo FPS o botão é mantido para rajada e soltar/blur sempre cancela.
+globalThis.document={pointerLockElement:canvas};state.world.currentMap={meta:{camera:'retro-fps'}};state.world.fpsPaused=false;
+canvasListeners.mousedown(event());assert(input.fpsFire && input.fpsFireHeld);listeners.mouseup(event());assert(!input.fpsFireHeld);
+canvasListeners.mousedown(event());listeners.blur();assert(!input.fpsFire && !input.fpsFireHeld);
+state.world.fpsPaused=true;canvasListeners.mousedown(event());assert(!input.fpsFireHeld);
 console.log('Controles: clique ataca, Shift+clique move e menus/arrastos não disparam.');

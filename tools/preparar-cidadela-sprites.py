@@ -3,7 +3,7 @@ Requer Pillow. Os originais ficam em assets/source-art/cidadela-404.
 """
 from collections import deque
 from pathlib import Path
-from PIL import Image
+from PIL import Image, ImageDraw, ImageChops
 
 src = Path('assets/source-art/cidadela-404')
 dst = Path('assets/sprites/cidadela-404')
@@ -78,3 +78,74 @@ for name in ['parede-metal', 'parede-tijolo', 'parede-eclusa']:
     image=Image.open(src / f'{name}.png').convert('RGB').resize((128,128), Image.Resampling.LANCZOS)
     image.save(dst / f'{name}.png', optimize=True)
     print(name, image.size)
+
+# Efeitos pequenos. O croma mais seletivo preserva os roxos de Domínio e do
+# projétil; a versão de Núcleo chegou dentro de um falso quadriculado.
+for name in ['disparo-mare','disparo-nucleo','disparo-dominio','disparo-bio',
+             'selo-mare','selo-nucleo','selo-dominio','selo-bio',
+             'projetil-echo','projetil-orbe']:
+    image=Image.open(src / f'{name}.png').convert('RGBA')
+    if name == 'selo-nucleo': image=image.crop((493,175,915,610))
+    pixels=image.load()
+    for y in range(image.height):
+        for x in range(image.width):
+            r,g,b,a=pixels[x,y]
+            if r>185 and b>185 and g<85 and abs(r-b)<55:
+                pixels[x,y]=(0,0,0,0)
+    box=image.getbbox()
+    if not box: raise ValueError(f'Sprite vazio: {name}')
+    image=image.crop(box)
+    image.thumbnail((128,128), Image.Resampling.LANCZOS)
+    image.save(dst / f'{name}.png', optimize=True)
+    print(name, image.size)
+
+# Adereços e personagens da exploração após o reator ser estabilizado.
+for name in ['nexo-sonda','baliza-escuta','rele-emergencia','rele-ativo',
+             'fragmento-sinal','painel-transmissao','registro-sobrevivente','nucleo-estavel']:
+    image=Image.open(src / f'{name}.png').convert('RGBA')
+    pixels=image.load()
+    for y in range(image.height):
+        for x in range(image.width):
+            r,g,b,a=pixels[x,y]
+            if r>110 and b>110 and g<85 and min(r,b)-g>85:
+                pixels[x,y]=(0,0,0,0)
+    box=image.getbbox()
+    if not box: raise ValueError(f'Sprite vazio: {name}')
+    image=image.crop(box)
+    image.thumbnail((160,160), Image.Resampling.LANCZOS)
+    image.save(dst / f'{name}.png', optimize=True)
+    print(name, image.size)
+
+# As duas imagens de passagem são exibidas só durante a troca dimensional.
+cutscenes=Path('assets/cutscenes')
+cutscenes.mkdir(parents=True,exist_ok=True)
+for source,target in [('transicao-travessia','cidadela-transicao-entrada'),('transicao-retorno','cidadela-transicao-retorno')]:
+    image=Image.open(src / f'{source}.png').convert('RGB')
+    image.thumbnail((1280,720), Image.Resampling.LANCZOS)
+    image.save(cutscenes / f'{target}.jpg',quality=83,optimize=True,progressive=True)
+    print(target,image.size)
+
+# Fendas opcionais, cofres, impacto e poses de colapso.
+for name in ['fenda-instavel','fenda-selada','cofre-fechado','cofre-aberto',
+             'imp-colapso','orbe-colapso','echovore-colapso','impacto-disparo',
+             'onda-fenda','terminal-estabilizacao']:
+    image=Image.open(src / f'{name}.png').convert('RGBA')
+    if name == 'fenda-instavel':
+        # O original veio cortado nas bordas. Isola o anel central completo
+        # e remove o campo externo para não ocupar toda a visão do jogador.
+        image=image.crop((450,70,960,695))
+        mask=Image.new('L', image.size, 0)
+        ImageDraw.Draw(mask).ellipse((5,5,image.width-5,image.height-5), fill=255)
+        image.putalpha(ImageChops.multiply(image.getchannel('A'),mask))
+    pixels=image.load()
+    for y in range(image.height):
+        for x in range(image.width):
+            r,g,b,a=pixels[x,y]
+            if r>110 and b>110 and g<85 and min(r,b)-g>85:
+                pixels[x,y]=(0,0,0,0)
+    box=image.getbbox()
+    if not box: raise ValueError(f'Sprite vazio: {name}')
+    image=image.crop(box)
+    image.thumbnail((160,160),Image.Resampling.LANCZOS)
+    image.save(dst / f'{name}.png',optimize=True)
+    print(name,image.size)

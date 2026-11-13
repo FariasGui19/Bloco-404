@@ -33,5 +33,11 @@ assert.equal(state.world.currentSpawnId,'vindo_da_cidadela');
 assert.equal(state.progress.archetype,'mare_astral');assert.deepEqual(state.progress.inventory,['teste']);
 // Ao voltar após a vitória, o anel reconhece o reator estável e mantém a escolha de revisita.
 state.progress.flags.cidadela_estavel=true;Object.assign(state.player,{x:8.5,y:3.5});await checkInteractions(true);
-assert.match(elements.dialogueText.textContent,/REATOR DA CIDADELA ESTÁ ESTÁVEL/);advanceDialogue();assert(hasDialogueChoices());closeDialogue();
+assert.match(elements.dialogueText.textContent,/REATOR DA CIDADELA ESTÁ ESTÁVEL/);advanceDialogue();assert(hasDialogueChoices());
+state.world.portalLockUntil=0;
+elements.dialogueChoices.children.at(-2).click({preventDefault(){},stopPropagation(){}});
+await new Promise(resolve=>setTimeout(resolve,1100));
+assert.equal(state.world.currentMapId,'cidadela_404','a escolha após a vitória permite reentrada real');
+clearCitadelRuntime();updateCitadel(.033,state,{keys:{},pressed:new Set(),mouseDeltaX:0});
+assert(state.progress.flags.cidadela_estavel);assert.deepEqual(state.progress.inventory,['teste']);
 console.log('Travessia real e retorno pela Estação 66.6 OK.');

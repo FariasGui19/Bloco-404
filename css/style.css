@@ -4247,3 +4247,31 @@ body.in-menu #controls {
 
 /* A realidade FPS desenha sua própria interface no framebuffer. */
 body.retro-fps #ui, body.retro-fps #controls, body.retro-fps #elevatorPrompt { display: none !important; }
+
+/* Passagem entre perspectivas: só aparece nos portais 66.6, nunca nas
+   comportas normais. As imagens são leves e carregadas pelo CSS sob demanda. */
+#mapTransitionOverlay.dimensional-entrada {
+  background: linear-gradient(rgba(2,10,14,.4),rgba(2,10,14,.72)), url('../assets/cutscenes/cidadela-transicao-entrada.jpg') center / cover no-repeat;
+}
+#mapTransitionOverlay.dimensional-retorno {
+  background: linear-gradient(rgba(2,10,14,.4),rgba(2,10,14,.72)), url('../assets/cutscenes/cidadela-transicao-retorno.jpg') center / cover no-repeat;
+}
+#mapTransitionOverlay.dimensional .hangar-shutter { display:none; }
+#mapTransitionOverlay.dimensional::before {
+  content:''; position:absolute; left:50%; top:50%; width:min(70vh,70vw); aspect-ratio:1;
+  border:2px solid rgba(112,240,229,.8); border-radius:50%;
+  box-shadow:0 0 22px #4ad1cc, inset 0 0 28px #4ad1cc, 0 0 0 20px rgba(45,156,151,.12);
+  transform:translate(-50%,-50%) scale(.7); opacity:0; pointer-events:none;
+}
+#mapTransitionOverlay.dimensional.active::before { animation: passagem-666 .85s ease-out both; }
+#mapTransitionOverlay.dimensional .hangar-terminal-hud { margin-top:min(65vh,430px); background:rgba(5,14,19,.88); }
+@keyframes passagem-666 {
+  0% {transform:translate(-50%,-50%) scale(.35);opacity:0;}
+  35% {opacity:.65;}
+  100% {transform:translate(-50%,-50%) scale(1.35);opacity:.15;}
+}
+@media (prefers-reduced-motion: reduce) {
+  #mapTransitionOverlay.dimensional.active::before { animation:none; opacity:.3; transform:translate(-50%,-50%) scale(1); }
+  #mapTransitionOverlay.dimensional,
+  #mapTransitionOverlay.dimensional .hangar-progress-fill { transition:none; }
+}

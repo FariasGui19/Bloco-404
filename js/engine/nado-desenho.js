@@ -97,6 +97,22 @@ export function desenharNadador(ctx, player, ix, iy, opt) {
   const vel = Math.hypot(nado.vx ?? 0, nado.vy ?? 0);
   const movendo = vel > .35;
   const arrancando = nado.arrancada > 0;
+  const esteiraArte = !(typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) && opt.arquetipo === 'mare_astral' && movendo && !submerso && getSprite('oceano_vivo_esteira_nado');
+  if (esteiraArte) {
+    const dx=(nado.dirX ?? 0)-(nado.dirY ?? 0), dy=((nado.dirX ?? 0)+(nado.dirY ?? 1))*.5;
+    ctx.save();ctx.translate(ix,iy);ctx.rotate(Math.atan2(dy,dx));ctx.globalAlpha=.35;
+    ctx.drawImage(esteiraArte,-100,-15,100,30);ctx.restore();
+  }
+  if (submerso && movendo && opt.arquetipo === 'mare_astral' && !(typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches)) {
+    const efeito=getSprite(arrancando ? 'mare_animacao_bolhas_impulso' : 'mare_animacao_bracada_mare');
+    if (efeito) {
+      const dx=(nado.dirX ?? 0)-(nado.dirY ?? 0),dy=((nado.dirX ?? 0)+(nado.dirY ?? 1))*.5;
+      ctx.save();ctx.translate(ix,iy);ctx.rotate(Math.atan2(dy,dx));ctx.globalAlpha=arrancando ? .5 : .18+.08*Math.sin(t*4);
+      if (arrancando) ctx.drawImage(efeito,-95,-16,90,32);
+      else ctx.drawImage(efeito,-10,-25,42,50);
+      ctx.restore();
+    }
+  }
   const impulsoMare = id === 'nado_mare' && arrancando && getSprite('nado_mare_impulso');
   if (impulsoMare) imagem = impulsoMare;
   const mare = id === 'nado_mare';

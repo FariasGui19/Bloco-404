@@ -27,6 +27,7 @@
 // =====================================================================
 
 import { pocaEm } from '../engine/pocas.js';
+import { profundidadeOceano } from './oceano-regioes.js';
 import { createCoastField } from '../engine/coast-field.js';
 import { DEGRAUS, SUPERFICIE, dentroDoAlcance } from './nado-arvore.js';
 
@@ -125,6 +126,8 @@ export function profundidadeEm(map, x, y, field) {
   const poca = pocaEm(map, x, y);
   if (poca) return poca.profundidade ?? .45;
   if (!podeNadar(map, x, y)) return 0;
+  const fundoOceano = profundidadeOceano(map, x, y);
+  if (fundoOceano != null) return fundoOceano;
   if (field?.distLand) {
     const px = Math.min(field.width - 1, Math.max(0, Math.floor(x * field.scale)));
     const py = Math.min(field.height - 1, Math.max(0, Math.floor(y * field.scale)));

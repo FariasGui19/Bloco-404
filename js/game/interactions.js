@@ -86,6 +86,8 @@ export function findNearestInteraction() {
   }
 
   for (const rawPortal of state.portals ?? []) {
+    // Passagens abertas são atravessadas nadando; fechadas ainda explicam o requisito.
+    if (rawPortal.automaticoNado && !isPortalBlockedByRequirement(rawPortal)) continue;
     consider('portal', getPortalRuntimePosition(rawPortal), 1);
   }
 
@@ -99,6 +101,7 @@ export function findNearestInteraction() {
 
   for (const object of state.objects ?? []) {
     if (!object.interacao) continue;
+    if (object.interacao.somenteSubmerso && (!player.nado?.ativo || !player.nado.submerso || player.nado.profundidade <= 1.25)) continue;
     if (isGateOpen(object)) continue;
     consider('object', object, 4);
   }

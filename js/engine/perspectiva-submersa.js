@@ -3,6 +3,7 @@
 // Fallback: sem WebGL o jogo mantém a câmera isométrica e seus controles.
 import * as THREE from '../vendor/three.module.js';
 import { estadoMar, animacaoMar } from '../game/mar-vivo.js';
+import { alturaLeitoOceano } from '../game/oceano-regioes.js';
 import { encontroConcluido, posicaoEncontro } from '../game/encontros-mare.js';
 import { posicaoVidaRota } from '../game/vida-rota-mare.js';
 import { getVidaAquatica, elementosDeRecife, atualizarCardumes } from '../game/vida-aquatica.js';
@@ -11,7 +12,8 @@ import { fragmentosColetados } from '../game/mare-missao.js';
 
 let webgl = null, falhou = false, mapaAtual = null, cena = null, camera = null;
 let avatar, avatarParado, misturaParado = 0, avatarVertices, rastros, sonar3d, particulas, algaInstancias, algaPontos = [], algas = [], raios3d = [], cardumes = [], fragmentos = [], bichos = [], anterior = 0, transicao = 0;
-let balizas = [], vidaRota3d = [], fundoMar3d = [], encontros3d = [], gesto3d, subida3d, recursosEncontros = [];
+let balizas = [], vidaRota3d = [], fundoMar3d = [], encontros3d = [], gesto3d, subida3d, bolhasImpulso3d, bracada3d, luzesOceano = [], recursosEncontros = [];
+const matrizReutilizada = new THREE.Object3D();
 const corMarCalmo = new THREE.Color(), corMarRessaca = new THREE.Color('#123e4b');
 let suavX = 0, suavY = 0, suavZ = 0, suavHeading = 0, cameraInicializada = false;
 const minimo = (v, a, b) => Math.max(a, Math.min(b, v));
@@ -19,6 +21,7 @@ const minimo = (v, a, b) => Math.max(a, Math.min(b, v));
 function textura(url) {
   const t = new THREE.TextureLoader().load(url);
   t.colorSpace = THREE.SRGBColorSpace;
+  if (url.includes('/mare-animacao/')) t.magFilter = THREE.NearestFilter;
   return t;
 }
 function iniciar() {
@@ -57,7 +60,9 @@ function montar(map, state) {
   const vertices = relevo.attributes.position;
   for (let i = 0; i < vertices.count; i++) {
     const x = vertices.getX(i), y = vertices.getY(i);
-    vertices.setZ(i, .10 * Math.sin(x * .48) * Math.cos(y * .37) + .06 * Math.sin(x * .9 + y * .6));
+    const detalhe = map.meta?.batimetriaOceano ? .05 * Math.sin(x * .48) * Math.cos(y * .37)
+      : .10 * Math.sin(x * .48) * Math.cos(y * .37) + .06 * Math.sin(x * .9 + y * .6);
+    vertices.setZ(i, alturaLeitoOceano(map, x + w/2, h/2 - y) + 2.9 + detalhe);
   }
   relevo.computeVertexNormals();
   const fundo = new THREE.Mesh(relevo, new THREE.MeshLambertMaterial({ map: areia, color: '#9ad5c9' }));
@@ -93,7 +98,7 @@ function montar(map, state) {
   const coral = textura('assets/sprites/praia/coral-astral-submerso.png');
   const coralMat = new THREE.SpriteMaterial({ map: coral, transparent: true, depthWrite: false });
   for (const r of elementosDeRecife(vida?.recifes ?? [])) {
-    const s = new THREE.Sprite(coralMat); s.position.set(r.x, -2.55 + r.tipo * .05, r.y); s.scale.set((r.tipo === 0 ? .7 : .45) * r.tamanho, (.6 + .15 * r.tipo) * r.tamanho, 1); cena.add(s);
+    const s = new THREE.Sprite(coralMat); s.position.set(r.x, alturaLeitoOceano(map,r.x,r.y) + .35 + r.tipo * .05, r.y); s.scale.set((r.tipo === 0 ? .7 : .45) * r.tamanho, (.6 + .15 * r.tipo) * r.tamanho, 1); cena.add(s);
   }
   // Algas e pedras pertencem aos mesmos recifes, não introduzem novos
   // obstáculos invisíveis nem ocupam rotas ou pontos de interação.
@@ -105,20 +110,27 @@ function montar(map, state) {
   for (const r of elementosDeRecife(vida?.recifes ?? [])) {
     if (r.tipo === 1) {
       const alga = new THREE.Mesh(algaGeo, algaMat);
-      alga.position.set(r.x, -2.53, r.y); alga.scale.setScalar(r.tamanho); cena.add(alga); algas.push({object:alga, fase:r.fase});
+      alga.position.set(r.x, alturaLeitoOceano(map,r.x,r.y) + .37, r.y); alga.scale.setScalar(r.tamanho); cena.add(alga); algas.push({object:alga, fase:r.fase});
     } else if (r.tipo === 2) {
       const pedra = new THREE.Mesh(pedraGeo, pedraMat);
-      pedra.position.set(r.x, -2.72, r.y); pedra.scale.set(1.3 * r.tamanho, .6 * r.tamanho, r.tamanho); cena.add(pedra);
+      pedra.position.set(r.x, alturaLeitoOceano(map,r.x,r.y) + .18, r.y); pedra.scale.set(1.3 * r.tamanho, .6 * r.tamanho, r.tamanho); cena.add(pedra);
     }
   }
   // Vegetação visual em grupos pequenos de água. Duas faces cruzadas por
   // planta permanecem legíveis de todos os ângulos em uma única draw call.
   const algaTextura = textura('assets/sprites/praia/alga-submersa.png');
   algaInstancias = null; algaPontos = [];
-  for (let y = 1; y < h - 1 && algaPontos.length < 70; y++) for (let x = 1; x < w - 1 && algaPontos.length < 70; x++) {
+  if (map.meta?.rotaMare) {
+    // Amostragem espalhada pelo trecho inteiro, não só pelas primeiras linhas.
+    for (let i=0; i<70; i++) {
+      const x=1+((i*37)%Math.max(1,w-2)), y=1+((i*23+Math.floor(i/7)*11)%Math.max(1,h-2));
+      if ('YyDdX'.includes(rows[y][x])) algaPontos.push({x:x+.5,y:y+.5,altura:.6+((x*17+y*13)%5)*.12,fase:(x*3+y)%7});
+    }
+  } else for (let y = 1; y < h - 1 && algaPontos.length < 70; y++) for (let x = 1; x < w - 1 && algaPontos.length < 70; x++) {
     if (!'YyDdX'.includes(rows[y][x]) || ((x * 73 + y * 139) % 47 !== 0)) continue;
     algaPontos.push({ x:x + .5, y:y + .5, altura:.6 + ((x * 17 + y * 13) % 5) * .12, fase:(x * 3 + y) % 7 });
   }
+  for (const a of algaPontos) a.solo = alturaLeitoOceano(map,a.x,a.y);
   if (algaPontos.length) {
     const mat = new THREE.MeshBasicMaterial({map:algaTextura, transparent:true, alphaTest:.35, side:THREE.DoubleSide});
     algaInstancias = new THREE.InstancedMesh(new THREE.PlaneGeometry(1, 1), mat, algaPontos.length * 2);
@@ -157,7 +169,7 @@ function montar(map, state) {
         const x = p.x + Math.cos(ang) * raio, z = p.y + Math.sin(ang) * raio;
         const altura = .38 + ((i * 7 + k) % 6) * .07;
         for (let lado=0; lado<2; lado++) {
-          dummy.position.set(x, -2.87 + altura / 2, z);
+          dummy.position.set(x, alturaLeitoOceano(map,x,z) + .03 + altura / 2, z);
           dummy.rotation.set(0, lado * Math.PI / 2 + ang, 0);
           dummy.scale.set(altura, altura, 1); dummy.updateMatrix();
           corais.setMatrixAt(k * 36 + i * 2 + lado, dummy.matrix);
@@ -165,7 +177,8 @@ function montar(map, state) {
       }
       for (let i=0; i<8; i++) {
         const ang = i * Math.PI / 4 + k, raio = 2.4 + (i % 3) * .6;
-        dummy.position.set(p.x + Math.cos(ang)*raio, -2.76, p.y + Math.sin(ang)*raio);
+        const px=p.x + Math.cos(ang)*raio, pz=p.y + Math.sin(ang)*raio;
+        dummy.position.set(px, alturaLeitoOceano(map,px,pz) + .14, pz);
         dummy.rotation.set(0, ang, 0); dummy.scale.set(.35 + i % 3 * .12, .18 + i % 2 * .1, .35);
         dummy.updateMatrix(); pedras.setMatrixAt(k * 8 + i, dummy.matrix);
       }
@@ -216,13 +229,29 @@ function montar(map, state) {
     marcador.rotation.x = -Math.PI / 2; marcador.position.set(b.x, -2.76, b.y); cena.add(marcador);
     return { data: b, object: o, marcador };
   });
+  // A fachada também existe no mergulho, na mesma coordenada da entrada.
+  if (map.meta?.rotaMare) {
+    const fachada = new THREE.Sprite(new THREE.SpriteMaterial({map:textura('assets/sprites/oceano-vivo/darsena-marinha.png'),transparent:true,depthWrite:false,alphaTest:.04}));
+    fachada.scale.set(7, 4.2, 1); fachada.position.set(87.5, -1.0, 30.5); cena.add(fachada);
+  }
+  // Cáusticas em poucos planos compartilhados, sem luzes dinâmicas por peixe.
+  luzesOceano = [];
+  if (map.meta?.rotaMare) {
+    const geo=new THREE.PlaneGeometry(4.5,2.4);
+    const mat=new THREE.MeshBasicMaterial({map:textura('assets/sprites/mare-animacao/luz-ondulante.png'),transparent:true,opacity:.12,depthWrite:false,side:THREE.DoubleSide,blending:THREE.AdditiveBlending});
+    for (const p of (map.detalhesOceano ?? []).filter((_,i)=>i%7===0)) {
+      const luz=new THREE.Mesh(geo,mat);luz.rotation.x=-Math.PI/2;
+      luz.position.set(p.x,alturaLeitoOceano(map,p.x,p.y)+.07,p.y);cena.add(luz);luzesOceano.push({luz,fase:p.fase});
+    }
+  }
   // Texturas compartilhadas por espécie, construídas uma vez por mapa.
   const materiaisRota = new Map();
   vidaRota3d = (map.vidaRota ?? []).map((item, indice) => {
     if (!materiaisRota.has(item.tipo)) materiaisRota.set(item.tipo, new THREE.SpriteMaterial({
-      map:textura(`assets/sprites/rota-mare/${item.tipo}.png`), transparent:true, depthWrite:false, opacity:.9,
+      map:textura(`assets/sprites/${item.origem ?? 'rota-mare'}/${item.tipo}.png`), transparent:true, depthWrite:false, opacity:.9,
     }));
     const sprite = new THREE.Sprite(materiaisRota.get(item.tipo));
+    sprite.visible = !item.soSuperficie;
     const vertical = ['alga','agua-viva','cavalo-marinho'].includes(item.tipo);
     const tamanho = item.tipo === 'cavalo-marinho' ? item.tamanho * .55 : item.tamanho;
     sprite.scale.set(tamanho * (vertical ? .65 : 1.7), tamanho * (vertical ? 1.1 : .85), 1);
@@ -231,7 +260,7 @@ function montar(map, state) {
   const materiaisFundo = new Map();
   fundoMar3d = (map.fundoMar ?? []).map((item, indice) => {
     if (!materiaisFundo.has(item.tipo)) materiaisFundo.set(item.tipo, new THREE.SpriteMaterial({
-      map:textura(`assets/sprites/mar-vivo/${item.tipo}.png`), transparent:true, depthWrite:false, alphaTest:.04,
+      map:textura(`assets/sprites/${item.origem ?? 'mar-vivo'}/${item.tipo}.png`), transparent:true, depthWrite:false, alphaTest:.04,
     }));
     const sprite=new THREE.Sprite(materiaisFundo.get(item.tipo));
     const largo=item.tipo === 'ruina-submersa' || item.tipo === 'peixes-luz';
@@ -252,7 +281,7 @@ function montar(map, state) {
     const vertical=item.id === 'coral';
     sprite.scale.set(item.tamanho*(vertical ? .75 : 1.1),item.tamanho*(vertical ? 1.0 : .72),1);
     const marcador=new THREE.Mesh(marcadorGeo,marcadorMat);marcador.rotation.x=-Math.PI/2;
-    marcador.position.set(item.x,-2.76,item.y);marcador.scale.setScalar(.7);
+    marcador.position.set(item.x,alturaLeitoOceano(map,item.x,item.y)+.14,item.y);marcador.scale.setScalar(.7);
     cena.add(sprite,marcador);return {item,indice,sprite,normal,concluido,marcador};
   });
   gesto3d=null; subida3d=null;
@@ -260,6 +289,12 @@ function montar(map, state) {
     gesto3d=new THREE.Sprite(materialEncontro('anel-cuidado'));
     subida3d=new THREE.Sprite(materialEncontro('bolhas-subida'));
     gesto3d.visible=subida3d.visible=false;cena.add(gesto3d,subida3d);
+  }
+  bolhasImpulso3d = bracada3d = null;
+  if (map.meta?.rotaMare) {
+    const efeito = nome => new THREE.Sprite(new THREE.SpriteMaterial({map:textura(`assets/sprites/mare-animacao/${nome}.png`),transparent:true,depthWrite:false,opacity:.55}));
+    bolhasImpulso3d=efeito('bolhas-impulso'); bracada3d=efeito('bracada-mare');
+    bolhasImpulso3d.visible=bracada3d.visible=false;cena.add(bolhasImpulso3d,bracada3d);
   }
   // A folha é deformada suavemente como uma nadadeira; não há sobreposição
   // de poses semitransparentes nem saltos entre quadros desenhados distintos.
@@ -307,6 +342,8 @@ export function perspectivaSubmersa(map, state, view) {
   if (quer && mapaAtual !== map) montar(map, state);
   if (!cena || !mapaAtual) return null;
   const agora = performance.now() / 1000;
+  const reduced = typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+  const visual = reduced ? 0 : agora;
   const dt = anterior ? minimo(agora - anterior, 0, .05) : 0; anterior = agora;
   transicao = minimo(transicao + (quer ? 1 : -1) * dt * 2.8, 0, 1);
   if (n) n.perspectiva3d = quer;
@@ -346,9 +383,9 @@ export function perspectivaSubmersa(map, state, view) {
   avatar.material.opacity = 1 - misturaParado;
   avatarParado.material.opacity = misturaParado;
   avatarParado.visible = misturaParado > .01; avatar.visible = misturaParado < .99;
-  avatarParado.position.set(p.x, py + Math.sin(agora * 1.8) * .045, p.y);
-  avatarParado.material.rotation = Math.sin(agora * 1.3) * .045 + (n?.voo?.roll ?? 0) * .3 + gesto*.12;
-  avatar.position.set(p.x, py + Math.sin(agora * 3) * .035, p.y);
+  avatarParado.position.set(p.x, py + Math.sin(visual * 1.8) * .045, p.y);
+  avatarParado.material.rotation = Math.sin(visual * 1.3) * .045 + (n?.voo?.roll ?? 0) * .3 + gesto*.12;
+  avatar.position.set(p.x, py + Math.sin(visual * 3) * .035, p.y);
   avatar.quaternion.copy(camera.quaternion); avatar.rotateZ((n?.voo?.roll ?? 0) - gesto*.14 + (n?.subindoVisual ? -.09 : 0));
   const verticesAvatar = avatar.geometry.attributes.position;
   const impulsoAtivo = n?.arrancada > 0;
@@ -358,21 +395,23 @@ export function perspectivaSubmersa(map, state, view) {
     const peso = Math.max(0, .3 - x);
     const alcance = Math.max(0, x - .18);
     verticesAvatar.setX(i, x + gesto * alcance * .12);
-    verticesAvatar.setY(i, y + Math.sin(agora * (impulsoAtivo ? 11 : 2.5 + movimento * 3) + x * 5) * peso * (.015 + .11 * movimento) + gesto * alcance * .11);
+    verticesAvatar.setY(i, y + Math.sin(visual * (impulsoAtivo ? 11 : 2.5 + movimento * 3) + x * 5) * peso * (.015 + .11 * movimento) + gesto * alcance * .11);
   }
   verticesAvatar.needsUpdate = true;
-  const particula = new THREE.Object3D();
+  const particula = matrizReutilizada;
+  particula.rotation.set(0,0,0); particula.scale.set(1,1,1);
   for (let i = 0; i < 90; i++) {
     const x = ((i * 37.17) % 12) - 6, z = ((i * 19.31) % 12) - 6;
-    particula.position.set(p.x + x, -2.7 + ((i * .73 + agora * .12) % 2.5), p.y + z);
+    particula.position.set(p.x + x, -2.7 + ((i * .73 + visual * .12) % 2.5), p.y + z);
     particula.updateMatrix(); particulas.setMatrixAt(i, particula.matrix);
   }
   particulas.instanceMatrix.needsUpdate = true;
   sonar3d.visible = !!(n?.submerso && p.ability?.sonarAquatico);
   if (sonar3d.visible) { sonar3d.position.set(p.ability.sonarAquatico.x, -2.7, p.ability.sonarAquatico.y); sonar3d.scale.setScalar(1 + .15 * Math.sin(agora * 5)); }
-  rastros.visible = !!(n?.arrancada > 0);
+  // Na rota, a esteira em pixel art substitui as esferas geométricas.
+  rastros.visible = !!(n?.arrancada > 0) && !map.meta?.rotaMare;
   if (rastros.visible) {
-    const dummy = new THREE.Object3D();
+    const dummy = matrizReutilizada; dummy.rotation.set(0,0,0);
     for (let i = 0; i < 20; i++) {
       const t = (agora * 2 + i / 20) % 1;
       const lateral = Math.sin(i * 8.1) * .28;
@@ -396,7 +435,6 @@ export function perspectivaSubmersa(map, state, view) {
     b.object.position.y = -2.35 + Math.sin(agora * 1.4 + b.data.fase) * .08;
     if (b.object.isSprite) b.object.material.rotation = Math.sin(agora * 1.6 + b.data.fase) * .06;
   }
-  const reduced = typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
   for (const b of vidaRota3d) {
     const pos = posicaoVidaRota(b.item,b.indice,agora,reduced);
     b.sprite.position.set(pos.x, (b.item.tipo === 'alga' ? -2.45 : -1.8) + pos.altura, pos.y);
@@ -408,7 +446,7 @@ export function perspectivaSubmersa(map, state, view) {
     b.sprite.material=feito ? b.concluido : b.normal;
     const animal=['tartaruga','arraia','peixe'].includes(b.item.id);
     const pos=posicaoEncontro(b.item,state.progress,agora,reduced);
-    b.sprite.position.set(pos.x, (animal ? -2.10 : -2.52)+pos.altura, pos.y);
+    b.sprite.position.set(pos.x, alturaLeitoOceano(map,pos.x,pos.y) + (animal ? .8 : .38)+pos.altura, pos.y);
   }
   if (gesto3d) {
     gesto3d.visible=gesto > .01;
@@ -419,28 +457,35 @@ export function perspectivaSubmersa(map, state, view) {
   for (const b of fundoMar3d) {
     const a=animacaoMar(b.indice,agora,state.clima,reduced);
     const flutuante=b.item.tipo === 'medusa-luz' || b.item.tipo === 'peixes-luz';
-    b.sprite.position.set(b.item.x, flutuante ? -1.85 + a.deslocamento*.12 : -2.54, b.item.y);
+    b.sprite.position.set(b.item.x, flutuante ? -1.85 + a.deslocamento*.12 : alturaLeitoOceano(map,b.item.x,b.item.y)+.36, b.item.y);
   }
-  for (const a of algas) a.object.rotation.z = Math.sin(agora * 1.1 + a.fase) * .15;
+  if (bolhasImpulso3d) {
+    bolhasImpulso3d.visible=impulsoAtivo && !reduced;
+    if (bolhasImpulso3d.visible) {bolhasImpulso3d.position.set(p.x-fx*.85,py,p.y-fz*.85);bolhasImpulso3d.scale.set(1.4,.5,1);}
+    bracada3d.visible=movimento>.2 && !impulsoAtivo && !reduced;
+    if (bracada3d.visible) {bracada3d.position.set(p.x+fx*.3,py,p.y+fz*.3);bracada3d.scale.set(.75,.5,1);bracada3d.material.opacity=.12+.1*(.5+.5*Math.sin(agora*4));}
+    for (const l of luzesOceano) l.luz.rotation.z=reduced?0:Math.sin(agora*.25+l.fase)*.04;
+  }
+  for (const a of algas) a.object.rotation.z = Math.sin(visual * 1.1 + a.fase) * .15;
   if (algaInstancias) {
-    const matriz = new THREE.Object3D();
+    const matriz = matrizReutilizada;
     algaPontos.forEach((a, i) => {
       for (let face = 0; face < 2; face++) {
-        matriz.position.set(a.x, -2.9 + a.altura / 2, a.y);
-        matriz.rotation.set(0, face * Math.PI / 2, Math.sin(agora * .9 + a.fase) * .06);
+        matriz.position.set(a.x, a.solo + a.altura / 2, a.y);
+        matriz.rotation.set(0, face * Math.PI / 2, Math.sin(visual * .9 + a.fase) * .06);
         matriz.scale.set(a.altura, a.altura, 1); matriz.updateMatrix();
         algaInstancias.setMatrixAt(i * 2 + face, matriz.matrix);
       }
     });
     algaInstancias.instanceMatrix.needsUpdate = true;
   }
-  for (const r of raios3d) r.object.rotation.z = .18 + Math.sin(agora * .4 + r.fase) * .04;
+  for (const r of raios3d) r.object.rotation.z = .18 + Math.sin(visual * .4 + r.fase) * .04;
   const vida = getVidaAquatica(mapaAtual);
-  if (quer && transicao >= .99) atualizarCardumes(vida?.cardumes ?? [], p, dt, true);
+  if (quer && transicao >= .99 && !reduced) atualizarCardumes(vida?.cardumes ?? [], p, dt, true);
   for (const c of cardumes) {
-    c.object.position.set(c.data.x, -1.6 + Math.sin(agora + c.data.fase) * .18, c.data.y);
+    c.object.position.set(c.data.x, -1.6 + Math.sin(visual + c.data.fase) * .18, c.data.y);
     c.object.rotation.y = c.data.flip ? Math.PI : 0;
-    c.object.children.forEach((peixe, i) => { peixe.rotation.y = Math.sin(agora * 4 + i) * .15; peixe.children[1].rotation.y = Math.sin(agora * 8 + i) * .45; });
+    c.object.children.forEach((peixe, i) => { peixe.rotation.y = Math.sin(visual * 4 + i) * .15; peixe.children[1].rotation.y = Math.sin(visual * 8 + i) * .45; });
   }
   webgl.render(cena, camera);
   return { canvas: webgl.domElement, alpha: transicao };

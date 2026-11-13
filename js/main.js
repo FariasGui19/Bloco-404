@@ -36,6 +36,7 @@ import { getFloor } from './game/world.js';
 import { loadMap, getSafeSpawn } from './game/map-manager.js';
 
 import { updatePlayer } from './game/player.js';
+import { atualizarPassagemNado } from './game/passagem-nado.js';
 import { updateAbilities, showAbilityMessage } from './game/abilities.js';
 import { beginUltimate, updateUltimate } from './game/ultimate.js';
 import { toggleArchetypeSuit } from './game/ability-context.js';
@@ -203,6 +204,26 @@ await loadSprites([
   { id: 'freq666_rack', src: 'assets/sprites/frequencia-666/rack-estacao.png' },
   { id: 'freq666_mesa', src: 'assets/sprites/frequencia-666/mesa-arquivo.png' },
   { id: 'freq666_reator', src: 'assets/sprites/frequencia-666/reator-estacao.png' },
+  { id: 'mare_animacao_mar_calmo', src: 'assets/sprites/mare-animacao/mar-calmo.png' },
+  { id: 'mare_animacao_vento_leve', src: 'assets/sprites/mare-animacao/vento-leve.png' },
+  { id: 'mare_animacao_onda_ressaca', src: 'assets/sprites/mare-animacao/onda-ressaca.png' },
+  { id: 'mare_animacao_gotas_chuva', src: 'assets/sprites/mare-animacao/gotas-chuva.png' },
+  { id: 'mare_animacao_nevoa_mar', src: 'assets/sprites/mare-animacao/nevoa-mar.png' },
+  { id: 'mare_animacao_cardume_superficie', src: 'assets/sprites/mare-animacao/cardume-superficie.png' },
+  { id: 'mare_animacao_cardume_fundo', src: 'assets/sprites/mare-animacao/cardume-fundo.png' },
+  { id: 'mare_animacao_luz_ondulante', src: 'assets/sprites/mare-animacao/luz-ondulante.png' },
+  { id: 'mare_animacao_bolhas_impulso', src: 'assets/sprites/mare-animacao/bolhas-impulso.png' },
+  { id: 'mare_animacao_bracada_mare', src: 'assets/sprites/mare-animacao/bracada-mare.png' },
+  { id: 'oceano_vivo_darsena_marinha', src: 'assets/sprites/oceano-vivo/darsena-marinha.png' },
+  { id: 'oceano_vivo_baliza_navegacao', src: 'assets/sprites/oceano-vivo/baliza-navegacao.png' },
+  { id: 'oceano_vivo_alga_longa', src: 'assets/sprites/oceano-vivo/alga-longa.png' },
+  { id: 'oceano_vivo_alga_vermelha', src: 'assets/sprites/oceano-vivo/alga-vermelha.png' },
+  { id: 'oceano_vivo_peixe_recife', src: 'assets/sprites/oceano-vivo/peixe-recife.png' },
+  { id: 'oceano_vivo_peixe_abissal', src: 'assets/sprites/oceano-vivo/peixe-abissal.png' },
+  { id: 'oceano_vivo_lula_astral', src: 'assets/sprites/oceano-vivo/lula-astral.png' },
+  { id: 'oceano_vivo_coral_profundo', src: 'assets/sprites/oceano-vivo/coral-profundo.png' },
+  { id: 'oceano_vivo_rocha_arco', src: 'assets/sprites/oceano-vivo/rocha-arco.png' },
+  { id: 'oceano_vivo_esteira_nado', src: 'assets/sprites/oceano-vivo/esteira-nado.png' },
   { id: 'mar_vivo_onda_crista', src: 'assets/sprites/mar-vivo/onda-crista.png' },
   { id: 'mar_vivo_onda_larga', src: 'assets/sprites/mar-vivo/onda-larga.png' },
   { id: 'mar_vivo_chuva_mar', src: 'assets/sprites/mar-vivo/chuva-mar.png' },
@@ -695,6 +716,7 @@ async function update(dt) {
         dispararPropulsao(nado, mareAlinhado);
       }
       updatePlayer(dt);
+      atualizarPassagemNado();
     }
 
     // Vida e dano ambiental só correm durante a exploração, nunca em menus

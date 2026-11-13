@@ -1251,6 +1251,7 @@ export const salaMare = {
     },
     {
       id: 'conduto_enseada_mare',
+      automaticoNado: true, raioAutomatico: .7,
       tipo: 'door',
       x: 18,
       y: 5,

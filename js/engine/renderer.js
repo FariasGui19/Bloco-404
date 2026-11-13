@@ -1,6 +1,6 @@
 import { perspectivaSubmersa } from './perspectiva-submersa.js';
 import { posicaoVidaRota } from '../game/vida-rota-mare.js';
-import { animacaoMar } from '../game/mar-vivo.js';
+import { animacaoMar, detalhesDoMar } from '../game/mar-vivo.js';
 import { encontroConcluido, posicaoEncontro } from '../game/encontros-mare.js';
 // js/engine/renderer.js
 // =====================================================================
@@ -193,11 +193,12 @@ export function render(map, state) {
       // AREIA primeiro, MAR por cima: o mar recorta a própria borda pelo campo
       // de costa (`beach-water.js`), então a linha d'água é curva em vez de
       // seguir a borda quadrada das células de areia.
-      if (map.id !== 'ilha_estacao_bio' && map.meta?.estiloSala !== 'mare_astral') drawBeachSurface(map);
+      if (map.id !== 'ilha_estacao_bio' && map.meta?.estiloSala !== 'mare_astral' && !map.meta?.rotaMare) drawBeachSurface(map);
       drawBeachSea(map);
       const imersao = intensidadeSubmersa(state.player?.nado);
       if (imersao > 0) drawFundoSubmerso(map, imersao);
       drawVidaAquatica(map, state);
+      if (map.detalhesOceano) drawDetalhesOceano(map, state);
       if (map.vidaRota) drawVidaRota(map, state);
       if (map.fundoMar) drawFundoMarVivo(map);
       if (map.encontrosMare) drawEncontrosMare(map, state);
@@ -647,15 +648,16 @@ function drawFundoSubmerso(map, intensidade) {
   let tela = fundoSubmersoCache.get(map);
   if (!tela) {
     // Um único canvas por mapa; custo e memória não dependem do zoom.
-    const escala = 8, rows = map.aguaPraia, cols = rows[0].length;
+    const escala = 8, rows = map.aguaPraia, cols = rows[0].length, margem = map.meta?.rotaMare ? 18 : 0;
     const padrao = document.createElement('canvas');
     padrao.width = 64; padrao.height = 64;
     padrao.getContext('2d').drawImage(imagem, 0, 0, 64, 64);
     tela = document.createElement('canvas');
-    tela.width = cols * escala; tela.height = rows.length * escala;
+    tela.width = (cols + margem * 2) * escala; tela.height = (rows.length + margem * 2) * escala;
     const pincel = tela.getContext('2d');
     pincel.fillStyle = pincel.createPattern(padrao, 'repeat');
-    for (let y = 0; y < rows.length; y++) for (let x = 0; x < cols; x++) {
+    if (margem) pincel.fillRect(0, 0, tela.width, tela.height);
+    else for (let y = 0; y < rows.length; y++) for (let x = 0; x < cols; x++) {
       if ('YyDdX'.includes(rows[y][x]) || (map.aguaSobPontes && 'Bb'.includes(rows[y][x]))) pincel.fillRect(x * escala, y * escala, escala, escala);
     }
     fundoSubmersoCache.set(map, tela);
@@ -664,7 +666,8 @@ function drawFundoSubmerso(map, intensidade) {
   ctx.globalAlpha = intensidade * .95;
   ctx.transform(HW, HH, -HW, HH, 0, 0);
   ctx.imageSmoothingEnabled = true;
-  ctx.drawImage(tela, 0, 0, map.aguaPraia[0].length, map.aguaPraia.length);
+  const margem = map.meta?.rotaMare ? 18 : 0;
+  ctx.drawImage(tela, -margem, -margem, map.aguaPraia[0].length + margem * 2, map.aguaPraia.length + margem * 2);
   ctx.restore();
 }
 
@@ -832,6 +835,36 @@ function drawClima(ctx, state, view) {
 
 // Orçamento definido pelo mapa; ondas e pingos nunca criam partículas por
 // quadro. A ressaca aumenta a espuma, não a colisão nem o tamanho do mapa.
+function drawDetalhesOceano(map, state) {
+  const reduzido=window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+  const tempo=performance.now()/1000, clima=state.clima, imersao=intensidadeSubmersa(state.player.nado);
+  const neblina=neblinaDoClima(clima), vento=clima?.direcao ?? 0;
+  // Vetor físico do vento projetado sobre o plano isométrico.
+  const vx=Math.cos(vento), vy=Math.sin(vento), ang=Math.atan2((vx+vy)*HH,(vx-vy)*HW);
+  const imgs=['mar_calmo','vento_leve','onda_ressaca','gotas_chuva','nevoa_mar','luz_ondulante'].map(id=>getSprite(`mare_animacao_${id}`));
+  let visiveis=0;
+  for (const p of map.detalhesOceano) {
+    if (p.x<range.x0-2 || p.x>range.x1+2 || p.y<range.y0-2 || p.y>range.y1+2) continue;
+    if (++visiveis>28) break;
+    const a=detalhesDoMar(p.fase,tempo,clima,neblina,reduzido);
+    const x=(p.x-p.y)*HW, y=(p.x+p.y)*HH;
+    const pintar=(img,alpha,w,h,rot=0,offset=0)=>{
+      if (!img || alpha<.01) return;
+      ctx.save();ctx.globalAlpha=alpha;ctx.translate(x,y+offset);ctx.rotate(rot);
+      ctx.drawImage(img,-w/2,-h/2,w,h);ctx.restore();
+    };
+    if (imersao>.1) {
+      if (p.fase%3===0) pintar(imgs[5],imersao*.10,90,45,0,a.deslocamento);
+      continue;
+    }
+    const vis=1-imersao;
+    if (p.fase%2===0) pintar(imgs[0],a.calmo*vis,85,16,ang*.15,a.deslocamento);
+    if (p.fase%3===0) pintar(imgs[1],a.vento*vis,80,14,ang,a.deslocamento*2);
+    if (p.fase%4===1) pintar(imgs[2],a.ressaca*vis,75,24,ang*.15,a.deslocamento*2);
+    if (p.fase%3===1) pintar(imgs[3],a.chuva*vis,48,20,0,a.deslocamento);
+    if (p.fase%4===2) pintar(imgs[4],a.neblina*vis,115,20,ang*.15,a.deslocamento*3);
+  }
+}
 function drawOndasMarVivo(map, state) {
   const reduzir = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
   const t = performance.now() / 1000;
@@ -857,7 +890,7 @@ function drawOndasMarVivo(map, state) {
 function drawFundoMarVivo(map) {
   for (const p of map.fundoMar) {
     if (p.x < range.x0-2 || p.x > range.x1+2 || p.y < range.y0-2 || p.y > range.y1+2) continue;
-    const img=getSprite(`mar_vivo_${p.tipo.replaceAll('-', '_')}`); if (!img) continue;
+    const img=getSprite(`${p.origem === 'oceano-vivo' ? 'oceano_vivo' : 'mar_vivo'}_${p.tipo.replaceAll('-', '_')}`); if (!img) continue;
     const w=42*p.tamanho,h=w*img.height/img.width,x=(p.x-p.y)*HW,y=(p.x+p.y)*HH;
     ctx.save();ctx.globalAlpha=.26;ctx.drawImage(img,x-w/2,y-h/2,w,h);ctx.restore();
   }
@@ -890,6 +923,9 @@ function drawFlutuanteMar(object, state) {
   const a=animacaoMar(object.x+object.y,performance.now()/1000,state.clima,reduzir);
   const x=(object.x-object.y)*HW,y=(object.x+object.y)*HH,w=object.larguraPx,h=w*img.height/img.width;
   ctx.save();ctx.translate(x,y+a.deslocamento*2);ctx.rotate(a.inclinacao);
+  // Sombra e espuma prendem o casco à superfície em vez de deixá-lo colado sobre ela.
+  ctx.fillStyle='rgba(1,30,40,.25)';ctx.beginPath();ctx.ellipse(0,3,w*.39,Math.max(5,w*.055),0,0,Math.PI*2);ctx.fill();
+  ctx.strokeStyle='rgba(180,250,237,.35)';ctx.lineWidth=2;ctx.beginPath();ctx.ellipse(0,3,w*.42,Math.max(7,w*.07),0,0,Math.PI*2);ctx.stroke();
   ctx.drawImage(img,-w/2,-h*.72,w,h);ctx.restore();
 }
 
@@ -900,9 +936,10 @@ function drawVidaRota(map, state) {
   const t = performance.now()/1000;
   for (let i=0; i<map.vidaRota.length; i++) {
     const item = map.vidaRota[i], p = posicaoVidaRota(item,i,t,reduced);
+    if (item.soSuperficie && state.player.nado?.submerso) continue;
     if (p.x < range.x0-2 || p.x > range.x1+2 || p.y < range.y0-2 || p.y > range.y1+2) continue;
-    const image = getSprite(`rota_mare_${item.tipo.replaceAll('-', '_')}`); if (!image) continue;
-    const w = (item.tipo === 'alga' ? 27 : 48) * item.tamanho, h = w*image.height/image.width;
+    const image = getSprite(`${item.origem === 'oceano-vivo' ? 'oceano_vivo' : item.origem === 'mare-animacao' ? 'mare_animacao' : 'rota_mare'}_${item.tipo.replaceAll('-', '_')}`); if (!image) continue;
+    const w = (item.tipo === 'alga' ? 27 : item.origem === 'mare-animacao' ? 68 : 48) * item.tamanho, h = w*image.height/image.width;
     const x=(p.x-p.y)*HW, y=(p.x+p.y)*HH;
     ctx.save();ctx.translate(x,y);ctx.rotate(p.inclinacao);
     ctx.globalAlpha = item.tipo === 'golfinho' || item.tipo === 'tartaruga' ? .53 : .29;
@@ -4675,7 +4712,7 @@ function drawWallProcedural(x, y, front) {
 // =====================================================================
 
 function getObjectSpriteConfig(spriteId) {
-  if (typeof spriteId === 'string' && spriteId.startsWith('freq666_')) return { SHEET_COLS: 1, SHEET_ROWS: 1, DEFAULT_SCALE: 1, FEET_ANCHOR_Y: 1 };
+  if (typeof spriteId === 'string' && (spriteId.startsWith('freq666_') || spriteId.startsWith('oceano_vivo_'))) return { SHEET_COLS: 1, SHEET_ROWS: 1, DEFAULT_SCALE: 1, FEET_ANCHOR_Y: 1 };
   if (typeof spriteId === 'string' && (spriteId.startsWith('bio_sala_') || spriteId.startsWith('dom_sala_') || spriteId.startsWith('mare_sala_') || spriteId.startsWith('nucleo_sala_') || spriteId.startsWith('viaduto_'))) return { SHEET_COLS: 1, SHEET_ROWS: 1, DEFAULT_SCALE: 1, FEET_ANCHOR_Y: 1 };
   if (['sala_bio_maquina', 'sala_bio_grade', 'sala_dominio_lacre', 'sala_mare_fluxo', 'sala_nucleo_malha', 'aero_painel_partidas', 'aero_carrinho_bagagem', 'aero_totem_holo', 'aero_planta_aliena'].includes(spriteId)) return { SHEET_COLS: 1, SHEET_ROWS: 1, DEFAULT_SCALE: 1, FEET_ANCHOR_Y: 1 };
   if (['bio_terminal', 'bio_reator', 'bio_ponte', 'bio_estufa', 'bio_floreira', 'bio_tubos', 'bio_caixa', 'bio_luminaria', 'bio_plataforma', 'bio_margem_canto', 'bio_margem_cano', 'bio_margem_ruina', 'bio_margem_mureta', 'bio_condutor_quebrado', 'bio_condutor_ativo', 'bio_regulador_quebrado', 'bio_regulador_ativo', 'bio_mato_cano', 'bio_mato_ventilacao', 'bio_mato_barris', 'bio_mato_fissura', 'bio_cabeceira', 'bio_distribuidor', 'bio_margem_baixa', 'bio_fundacao'].includes(spriteId)) return { SHEET_COLS: 1, SHEET_ROWS: 1, DEFAULT_SCALE: 1, FEET_ANCHOR_Y: 1 };

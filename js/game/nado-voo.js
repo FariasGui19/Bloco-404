@@ -28,3 +28,10 @@ export function controlarSolturaAposSubida(nado, subindo, espaco) {
   if (!espaco) nado.aguardaSoltarAposSubida = false;
   return !!nado.aguardaSoltarAposSubida;
 }
+
+// Freio de subida independente do frame rate; não altera profundidade nem ar.
+export function frearSubida(nado, dt) {
+  const tempo = Number.isFinite(dt) ? Math.max(0, Math.min(.1, dt)) : 0;
+  const fator = Math.exp(-2.5 * tempo);
+  nado.vx *= fator; nado.vy *= fator;
+}

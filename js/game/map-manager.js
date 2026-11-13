@@ -129,6 +129,8 @@ export async function loadMap(mapId, spawnId = 'inicio') {
     p.y = spawn.y;
     p.target = null;
     p.moving = false;
+    // O rastro está em coordenadas do mapa anterior; fôlego e nado ficam.
+    p._esteira = [];
 
     setMapZoomMin(mapData.meta?.minZoom);
     snapCameraTo(p.x, p.y, mapData);

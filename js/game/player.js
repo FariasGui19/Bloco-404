@@ -1,4 +1,4 @@
-import { iniciarVoo, atualizarVoo, controlarSolturaAposSubida } from './nado-voo.js';
+import { iniciarVoo, atualizarVoo, controlarSolturaAposSubida, frearSubida } from './nado-voo.js';
 // js/game/player.js
 // =====================================================================
 // PLAYER
@@ -295,6 +295,9 @@ export function updatePlayer(dt) {
       ? Math.hypot(player.target.x - player.x, player.target.y - player.y) : Infinity;
     const velocidade = devolvendo ? speed / DEGRAUS[nado.nivel ?? 4].velocidade * .8
       : speed * Math.min(1, Math.max(.18, distanciaAlvo / 1.4));
+    // Subir freia a inércia horizontal sem teletransportar nem interromper
+    // correnteza: permite emergir com precisão perto de uma entrada.
+    if (vooDir && keyHeld('s', 'arrowdown')) frearSubida(nado, dt);
     const passo = moverNaAgua(nado, dt, dir.x, dir.y, velocidade);
     const antesX = player.x, antesY = player.y;
     moved = moveWithCollision(map, player, passo.dx, passo.dy, radius, devolvendo ? podeNadar : agua, { submerso: submerso && !devolvendo });

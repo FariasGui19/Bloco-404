@@ -24,6 +24,19 @@ HTML/CSS existem com a caixa certa (import quebrado é a causa clássica de
 do `.js`). `tests/boot.mjs` importa `js/main.js` inteiro com um DOM falso para
 pegar export faltando antes de abrir o navegador.
 
+## Frequência 66.6 — Cidadela Retro-FPS
+
+Após registrar o sinal na Enseada, examine as três âncoras da Estação 66.6,
+estabilize o console com **R** e escolha atravessar no anel com **E**. Na
+Cidadela, **WASD** movimenta, **setas ou mouse** miram, **espaço ou clique**
+dispara, **T** recarrega, **E** interage, **Q** usa o módulo, **R** abre o
+radar e **F** usa a Ultimate quando desbloqueada. **Shift** dá um impulso, **P** pausa e **L** abre os registros encontrados.
+Clique na tela para capturar o mouse; Esc libera o cursor e pausa o combate. As setas dispensam
+mouse capturado. Três registros abrem as eclusas; a saída fica junto à chegada.
+Três arquivos opcionais, encontrados em terminais e consultáveis com **L**,
+contam mais da história e concedem XP uma vez ao completar a coleção.
+Veja [a documentação da Cidadela](docs/cidadela-404.md) para regras e limites.
+
 ## Organização
 
 | Pasta | Conteúdo |

@@ -76,6 +76,8 @@ export async function loadMap(mapId, spawnId = 'inicio') {
     state.interaction.faunaPronta = null;
     state.player.mareAcao = null;
 
+    state.world.fpsPaused = false;
+    state.world.fpsPauseRequested = false;
     state.world.currentMapId = mapData.id;
     state.world.currentDimension = mapData.meta?.dimensao ?? 'unknown';
     state.world.currentMap = mapData;

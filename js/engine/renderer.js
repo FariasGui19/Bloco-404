@@ -4095,7 +4095,7 @@ function drawFrequencyStationFloor(curState) {
 // Sobreposições discretas na arte existente: nenhum objeto ou interação extra.
 function drawFrequencyObjectLife(object, image) {
   const ids = ['terminal_frequencia_666', 'registro_estacao_666', 'baliza_666_receptor',
-    'baliza_666_entrada', 'reator_estacao_666', 'console_limiar_666'];
+    'baliza_666_entrada', 'reator_estacao_666', 'console_limiar_666', 'rack_estacao_666_c'];
   if (!ids.includes(object.id)) return;
   const frame = getFrame(image, 0, 0, 1, 1)?.crop;
   if (!frame) return;
@@ -4105,7 +4105,13 @@ function drawFrequencyObjectLife(object, image) {
   const reduced = typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
   const t = reduced ? 0 : performance.now() / 1000;
   ctx.save(); ctx.globalCompositeOperation = 'screen';
-  if (object.id === 'terminal_frequencia_666' || object.id === 'registro_estacao_666') {
+  if (object.id === 'rack_estacao_666_c') {
+    // Intrusão permanente e sem flashes: um rosto vazio no monitor CRT.
+    ctx.globalCompositeOperation='source-over'; ctx.fillStyle='#071315'; ctx.fillRect(x+w*.35,y+h*.19,w*.29,h*.28);
+    ctx.strokeStyle='#62b3ad'; ctx.lineWidth=1; ctx.strokeRect(x+w*.35,y+h*.19,w*.29,h*.28);
+    ctx.beginPath(); ctx.moveTo(x+w*.50,y+h*.30);ctx.lineTo(x+w*.41,y+h*.43);ctx.moveTo(x+w*.50,y+h*.30);ctx.lineTo(x+w*.58,y+h*.43);ctx.moveTo(x+w*.43,y+h*.37);ctx.lineTo(x+w*.56,y+h*.37);ctx.stroke();
+    ctx.fillStyle='#000'; ctx.fillRect(x+w*.46,y+h*.23,w*.08,h*.08);
+  } else if (object.id === 'terminal_frequencia_666' || object.id === 'registro_estacao_666') {
     const fx = getSprite('freq666_fx_sinal');
     if (fx) { ctx.globalAlpha = .25 + .12 * Math.sin(t * 2); ctx.drawImage(fx, x+w*.48, y+h*.40, w*.18, h*.035); }
   } else if (object.id.startsWith('baliza_666_')) {

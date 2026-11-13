@@ -278,12 +278,12 @@ function interactWithObject(object) {
   if (object.id?.startsWith('ancora_666_')) {
     const id = object.id.slice('ancora_666_'.length);
     const logs = {
-      origem: ['ÂNCORA DE ORIGEM: UM PEDIDO REPETIDO A PARTIR DE UM REATOR QUE ESTÁ SUPERAQUECENDO.',
-        'NEXO-04: A TRANSMISSÃO NÃO TRAZ UM NOME. ALGUÉM QUER QUE O REATOR CONTINUE FUNCIONANDO.'],
-      retorno: ['ÂNCORA DE RETORNO: UMA LINHA PARA A ENSEADA AINDA RESPIRA SOB A ESTÁTICA.',
-        'NEXO-04: NÃO POSSO GARANTIR O QUE HÁ DO OUTRO LADO. POSSO GARANTIR QUE NÃO VOU CORTAR SUA VOLTA.'],
-      memoria: ['ÂNCORA DE MEMÓRIA: A RESPOSTA FOI GRAVADA TRÊS SEGUNDOS ANTES DO PEDIDO.',
-        'NEXO-04: É O MESMO INTERVALO DO ARQUIVO 0 NO METRÔ. COINCIDÊNCIA NÃO É IDENTIDADE; VAMOS GUARDAR A PISTA.'],
+      origem: ['ÂNCORA DE ORIGEM: UM REATOR DE DADOS BLINDADO PULSA EM CALOR INDUSTRIAL BAIXO.',
+        'NEXO-04: É A FORJA PRIMÁRIA DA FENDA. ELA CONSOME A ESTABILIDADE DO ESPAÇO AO REDOR PARA SE MANTER VIVA.'],
+      retorno: ['ÂNCORA DE RETORNO: UM GIROSCÓPIO TRAVADO NAS COORDENADAS DO PONTO 0.',
+        'NEXO-04: O CABO DE ANCORAGEM ESTÁ FIRME. É PARA ESTE EIXO QUE O METRÔ PUXARÁ SEUS DADOS SE ALGO DER ERRADO.'],
+      memoria: ['ÂNCORA DE MEMÓRIA: A ESTÁTICA REPRODUZ SEUS PASSOS COM TRÊS SEGUNDOS DE ATRASO.',
+        'NEXO-04: A RESPOSTA CHEGOU ANTES DA PERGUNTA. ALGUÉM SABIA QUE VOCÊ ESTARIA AQUI. MAS UMA COINCIDÊNCIA NÃO É UMA IDENTIDADE.'],
     };
     if (!state.progress.flags?.frequencia666Registrada) {
       openDialogue({ speaker: 'NEXO-04', dialogue: ['O RECEPTOR AINDA NÃO TEM UMA ASSINATURA. INVESTIGUE O TERMINAL DA ENSEADA COM [R].'] }); return;
@@ -300,7 +300,7 @@ function interactWithObject(object) {
     const ready = state.progress.flags?.freq666_limiar_estavel;
     openDialogue({ speaker: 'CONSOLE CENTRAL', dialogue: [
       `ÂNCORAS SINCRONIZADAS: ${n}/3. ORIGEM, RETORNO E MEMÓRIA.`,
-      ready ? 'JANELA ESTÁVEL. O ANEL AGUARDA VOCÊ.' : n === 3 ? 'AS TRÊS ÂNCORAS RESPONDERAM. USE [R] PARA ESTABILIZAR O LIMIAR.' : 'EXAMINE AS ÂNCORAS COM [E], DEPOIS USE [R] AQUI PARA SINCRONIZAR O LIMIAR.',
+      state.progress.flags?.cidadela_estavel ? 'O REATOR DA CIDADELA ESTÁ ESTÁVEL. A ROTA PERMANECE ABERTA PARA REVISITA.' : ready ? 'JANELA ESTÁVEL. O ANEL AGUARDA VOCÊ.' : n === 3 ? 'AS TRÊS ÂNCORAS RESPONDERAM. USE [R] PARA ESTABILIZAR O LIMIAR.' : 'EXAMINE AS ÂNCORAS COM [E], DEPOIS USE [R] AQUI PARA SINCRONIZAR O LIMIAR.',
     ] }); return;
   }
   if (object.id === 'anel_limiar_666') {
@@ -308,16 +308,18 @@ function interactWithObject(object) {
       openDialogue({ speaker: 'NEXO-04', dialogue: ['O ANEL ESTÁ FRIO. HÁ ALGO DO OUTRO LADO, MAS AINDA NÃO TEMOS UMA JANELA SEGURA.', 'SINCRONIZE AS TRÊS ÂNCORAS E DIAGNOSTIQUE O CONSOLE CENTRAL COM [R].'] }); return;
     }
     const already = !!state.progress.flags.freq666_limiar_preparado;
-    openDialogue({ speaker: 'NEXO-04', dialogue: already ? [
-      'O LIMIAR ESTÁ PREPARADO E A LINHA DE RETORNO PERMANECE ANCORADA.',
-      'O DESTINO AINDA NÃO ESTÁ DISPONÍVEL. VOCÊ PODE REVER A JANELA OU VOLTAR À ENSEADA.',
-    ] : [
-      'A JANELA ESTÁ ESTÁVEL. VEJO UM CORREDOR, MAS NÃO O FIM DELE.',
-      'VOCÊ PODE PREPARAR A TRAVESSIA AGORA OU ESPERAR. A LINHA DE RETORNO FICARÁ ABERTA.',
+    openDialogue({ speaker: 'NEXO-04', dialogue: [
+      state.progress.flags?.cidadela_estavel ? 'O REATOR DA CIDADELA ESTÁ ESTÁVEL. A ROTA PERMANECE ABERTA; PODEMOS VOLTAR.' : 'A JANELA ESTÁ ESTÁVEL. A CIDADELA USA OUTRA PERSPECTIVA E OUTRAS REGRAS.',
+      'WASD MOVE; SETAS OU MOUSE MIRAM. ESPAÇO OU CLIQUE ATIRA; E INTERAGE. Q ADAPTA SEU MÓDULO, R É RADAR, T RECARREGA, F É ULTIMATE. A SAÍDA PERMANECE ABERTA.',
     ], choicesAfterDialogue: true, choices: [
-      { text: already ? 'REVER O LIMIAR' : 'PREPARAR TRAVESSIA', onSelect: () => {
-        if (prepareFrequencyCrossing(state.progress)) saveGame();
-        void playCutscene(THRESHOLD_SCENES);
+      { text: 'ATRAVESSAR PARA A CIDADELA', onSelect: () => {
+        void (async () => {
+          if (!already) {
+            if (prepareFrequencyCrossing(state.progress)) saveGame();
+            await playCutscene(THRESHOLD_SCENES);
+          }
+          await usePortal({ id: 'travessia_666', label: 'CIDADELA DO CÓDIGO QUEIMADO', destino: { mapId: 'cidadela_404', spawnId: 'inicio' } });
+        })();
       } },
       { text: 'AINDA NÃO', onSelect: () => {} },
     ] }); return;

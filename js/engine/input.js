@@ -12,6 +12,7 @@
 // =====================================================================
 
 import { CONFIG } from '../config.js';
+import { state } from '../game/state.js';
 import { camera, setZoom, screenToWorld } from './camera.js';
 
 export const input = {
@@ -24,6 +25,8 @@ export const input = {
   // Clique no chão em coordenadas de mundo.
   click: null,
   attackClick: null,
+  fpsFire: false,
+  mouseDeltaX: 0,
 };
 
 const drag = {
@@ -137,7 +140,15 @@ export function initInput(canvas) {
     input.pressed.clear();
     input.click = null;
     input.attackClick = null;
-    drag.left = false; drag.pan = false;
+    drag.left = false; drag.pan = false; input.fpsFire = false; input.mouseDeltaX = 0;
+    if (state.world.currentMap?.meta?.camera === 'retro-fps' && !state.world.fpsPaused) state.world.fpsPauseRequested = true;
+  });
+
+  // A saída do pointer lock pelo navegador também deve pausar o combate.
+  globalThis.document?.addEventListener?.('pointerlockchange', () => {
+    if (state.world.currentMap?.meta?.camera === 'retro-fps' && !document.pointerLockElement && !state.world.fpsPaused) {
+      state.world.fpsPauseRequested = true;
+    }
   });
 
   // -------------------------------------------------------------------
@@ -145,6 +156,7 @@ export function initInput(canvas) {
   // -------------------------------------------------------------------
   canvas.addEventListener('wheel', event => {
     event.preventDefault();
+    if (state.world.currentMap?.meta?.camera === 'retro-fps') return;
 
     setZoom(
       camera.targetZoom *
@@ -156,6 +168,10 @@ export function initInput(canvas) {
   // Mouse
   // -------------------------------------------------------------------
   canvas.addEventListener('mousedown', event => {
+    if (state.world.currentMap?.meta?.camera === 'retro-fps') {
+      if (event.button === 0 && !state.world.fpsPaused) { input.fpsFire = true; if (document.pointerLockElement !== canvas) { const request=canvas.requestPointerLock?.(); request?.catch?.(() => {}); } }
+      return;
+    }
     drag.startX = event.clientX;
     drag.startY = event.clientY;
 
@@ -179,6 +195,10 @@ export function initInput(canvas) {
   });
 
   window.addEventListener('mousemove', event => {
+    if (state.world.currentMap?.meta?.camera === 'retro-fps') {
+      if (document.pointerLockElement === canvas) input.mouseDeltaX += event.movementX || 0;
+      return;
+    }
     if (!drag.pan) return;
 
     camera.x =

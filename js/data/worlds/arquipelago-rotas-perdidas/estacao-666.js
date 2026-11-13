@@ -1,4 +1,4 @@
-// Estação de escuta: último ambiente jogável antes da futura dimensão FPS.
+// Estação de escuta e ponto de retorno da dimensão FPS.
 // Coordenadas de objetos são células; map-manager aplica o centro (+.5).
 const width = 15, height = 11;
 const layout = Array.from({ length: height }, (_, y) => Array.from({ length: width }, (_, x) =>
@@ -15,7 +15,7 @@ export const map = {
     estiloSala: 'frequencia_limiar', cargoKey: 'bio', corFundo: '#091116', corTema: '#63dfd2',
     useBackgroundWalls: true, ambiente: { poeira: 10, cor: '#a8dbd4' } },
   corChao: '#17232a', layout,
-  spawnPoints: { inicio: { x: 3.5, y: 8.5 }, vindo_da_enseada: { x: 3.5, y: 8.5 } },
+  spawnPoints: { inicio: { x: 3.5, y: 8.5 }, vindo_da_enseada: { x: 3.5, y: 8.5 }, vindo_da_cidadela: { x: 7.5, y: 4.2 } },
   actors: [],
   objects: [
     { id: 'saida_estacao_666_visual', tipo: 'decoracao', x: .5, y: 8, sprite: 'bio_sala_porta_eclusa', useCrop: true, larguraPx: 100, pivotX: .5, pivotY: 1, ajusteY: 9, camada: 'fundo', bloqueia: false },
@@ -37,6 +37,8 @@ export const map = {
     { id: 'rack_estacao_666_b', tipo: 'decoracao', x: 10, y: 1, sprite: 'freq666_rack', useCrop: true, larguraPx: 53, pivotX: .5, pivotY: .94, sombra: [18,7], bloqueia: false },
     { id: 'rack_estacao_666_c', tipo: 'painel', x: 12, y: 2, sprite: 'freq666_escuta', useCrop: true, larguraPx: 72, pivotX: .5, pivotY: .94, sombra: [18,7], bloqueia: false,
       interacao: { label: 'CONSULTAR BANCO DE ESCUTA', distancia: 1.25, speaker: 'BANCO DE ESCUTA', dialogue: [
+        'NO CRT, UMA FIGURA DE WIREFRAME SE MOVE ENTRE LINHAS DE CÓDIGO. NO LUGAR DO ROSTO HÁ UM RETÂNGULO NEGRO: 404.',
+        '[SYS_WARNING]: ROTA AUTORIZADA PELO NULO. BEM-VINDO AO SEU APAGAMENTO, OPERADOR.',
         'TRÊS PULSOS ENTRARAM NO ARQUIVO ANTES DE A ANTENA SER LIGADA.',
         'NEXO-04: NÃO É PROVA DE VIAGEM NO TEMPO. MAS É MOTIVO SUFICIENTE PARA NÃO APAGAR O REGISTRO.',
       ] } },

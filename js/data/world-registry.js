@@ -1,5 +1,6 @@
 // js/data/world-registry.js
 export const WORLD_REGISTRY = {
+  cidadela_404: { nome: 'Cidadela do Código Queimado', dimensao: 'cidadela_404', load: () => import('./worlds/cidadela-404/cidadela.js') },
   hub_saguao: {
     nome: 'Saguão Central',
     dimensao: 'hub_404',

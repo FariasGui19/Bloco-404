@@ -1,4 +1,4 @@
-// Prólogo de 66.6 MHz. A travessia permanece pendente até existir destino FPS.
+// Frequência 66.6: continuidade aditiva da missão legada.
 // Funções puras em relação à UI/save; mantêm missões de outros sistemas intactas.
 export const FREQUENCIA_ANCORAS = Object.freeze([
   { id: 'origem', flag: 'freq666_ancora_origem', nome: 'ORIGEM' },
@@ -20,7 +20,7 @@ export function syncFrequencyQuest(progress) {
   const n = countFrequencyAnchors(progress);
   if (progress.flags.freq666_limiar_preparado) {
     q.stage = 'limiar_preparado';
-    q.description = 'Limiar preparado. A travessia aguarda a abertura da rota à Cidadela; retorne ou explore enquanto isso.';
+    q.description = progress.flags.cidadela_estavel ? 'Cidadela estabilizada. A linha de retorno permanece aberta.' : 'O limiar está pronto. Atravesse o anel [E] e investigue a Cidadela.';
   } else if (progress.flags.freq666_limiar_estavel) {
     q.stage = 'limiar_estavel';
     q.description = 'A janela está estável. Aproxime-se do anel na Estação 66.6 e prepare a travessia [E].';

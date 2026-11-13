@@ -32,3 +32,34 @@ export const CITADEL_ARCHIVES = [
   {id:'retorno',flag:'cidadela_arquivo_retorno',x:13.5,y:10.2,label:'RETORNO',log:'ECHOVORE APRENDE COM IMPULSOS E RADAR.'},
   {id:'memoria',flag:'cidadela_arquivo_memoria',x:20.5,y:2.6,label:'MEMÓRIA',log:'FIGURA NOS CRTS. IDENTIDADE NÃO CONFIRMADA.'},
 ];
+
+// Pontos opcionais de exploração depois da vitória. Não bloqueiam caminhos.
+export const CITADEL_POSTGAME = Object.freeze({
+  sonda: {kind:'probe',x:24.5,y:6.5,scale:.55},
+  transmissor: {kind:'transmitter',x:26.5,y:10.2,scale:.75},
+  treino: {kind:'training',x:29.5,y:3.5,scale:.65},
+  reles: [
+    {kind:'relay',id:'entrada',x:4.5,y:4.4,scale:.65,label:'ENTRADA'},
+    {kind:'relay',id:'galeria',x:11.5,y:8.5,scale:.65,label:'GALERIA'},
+    {kind:'relay',id:'forja',x:19.5,y:6.5,scale:.65,label:'FORJA'},
+  ],
+  registros: [
+    {kind:'recording',id:'entrada',x:6.5,y:9.5,scale:.42,label:'ENTRADA',log:'A EQUIPE ISOLAVA O RUÍDO, NÃO UMA PESSOA.'},
+    {kind:'recording',id:'galeria',x:10.5,y:4.5,scale:.42,label:'GALERIA',log:'A RESPOSTA NÃO IDENTIFICA QUEM A ENVIOU.'},
+    {kind:'recording',id:'forja',x:21.35,y:9.5,scale:.42,label:'FORJA',log:'A RETIRADA FOI ORDENADA; O REATOR FICOU.'},
+  ],
+  decor: [
+    {type:'listening_beacon',x:2.6,y:8.15,scale:.55},
+    {type:'listening_beacon',x:16.5,y:4.4,scale:.55},
+    {type:'signal_fragment',x:27.5,y:10.25,scale:.4},
+  ],
+});
+
+// Desafios opcionais sem paredes móveis: sair ou morrer cancela a tentativa;
+// o selo e o cofre só persistem após a conclusão correspondente.
+export const CITADEL_BREACHES = Object.freeze([
+  {id:'entrada',label:'ENTRADA',bounds:[1,8],x:7.35,y:7.5,cache:{x:7.35,y:9.5},spawns:[[5.5,7.5],[7.2,9.5],[5.5,10.3]]},
+  {id:'galeria',label:'GALERIA',bounds:[9,15],x:14.3,y:5.5,cache:{x:14.4,y:8.5},spawns:[[11.5,5.5],[13.5,7.5],[10.5,9.5]]},
+  {id:'forja',label:'FORJA',bounds:[16,22],x:21.35,y:5.5,cache:{x:21.35,y:7.5},spawns:[[19.5,5.5],[20.5,7.5],[17.5,8.5]]},
+]);
+export const CITADEL_BREACH_CONSOLE = Object.freeze({kind:'breach_console',x:28.5,y:10.25});

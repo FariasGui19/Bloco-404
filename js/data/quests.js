@@ -10,6 +10,41 @@
 // =====================================================================
 
 export const QUESTS = Object.freeze({
+  cidadela_fendas_residuais: Object.freeze({
+    id:'cidadela_fendas_residuais', title:'FENDAS RESIDUAIS', giver:'NEXO-04', kind:'secundária',
+    description:'Após estabilizar o reator, vença as duas ondas em cada fenda e abra seu cofre. Uma tentativa pode ser cancelada na fenda ou abandonada pela saída.',
+    objectives:Object.freeze([
+      Object.freeze({type:'cidadela_fenda',target:'entrada',count:1,label:'Selar fenda da entrada'}),
+      Object.freeze({type:'cidadela_fenda',target:'galeria',count:1,label:'Selar fenda da galeria'}),
+      Object.freeze({type:'cidadela_fenda',target:'forja',count:1,label:'Selar fenda da forja'}),
+      Object.freeze({type:'cidadela_cofre',target:'entrada',count:1,label:'Abrir cofre da entrada'}),
+      Object.freeze({type:'cidadela_cofre',target:'galeria',count:1,label:'Abrir cofre da galeria'}),
+      Object.freeze({type:'cidadela_cofre',target:'forja',count:1,label:'Abrir cofre da forja'}),
+    ]),
+    rewards:Object.freeze({xp:90,flags:Object.freeze({cidadela_fendas_concluidas:true})}),
+  }),
+  cidadela_rede_escuta: Object.freeze({
+    id:'cidadela_rede_escuta', title:'REDE DE ESCUTA', giver:'NEXO-04', kind:'secundária',
+    description:'Depois de estabilizar o reator, converse com a sonda na arena e restaure três relés em qualquer ordem. Volte à sonda para confirmar a rede.',
+    objectives:Object.freeze([
+      Object.freeze({type:'cidadela_rele',target:'entrada',count:1,label:'Restaurar relé da entrada [E]'}),
+      Object.freeze({type:'cidadela_rele',target:'galeria',count:1,label:'Restaurar relé da galeria [E]'}),
+      Object.freeze({type:'cidadela_rele',target:'forja',count:1,label:'Restaurar relé da forja [E]'}),
+      Object.freeze({type:'cidadela_relato',target:'rede',count:1,label:'Confirmar a rede com a sonda [E]'}),
+    ]),
+    rewards:Object.freeze({xp:60,flags:Object.freeze({cidadela_rede_concluida:true})}),
+  }),
+  cidadela_vozes_estatica: Object.freeze({
+    id:'cidadela_vozes_estatica', title:'VOZES NA ESTÁTICA', giver:'NEXO-04', kind:'secundária',
+    description:'Com a rede restaurada, consulte o transmissor na arena, recupere três caixas de registro e volte ao transmissor. Nenhuma delas confirma a identidade de Nulo.',
+    objectives:Object.freeze([
+      Object.freeze({type:'cidadela_registro',target:'entrada',count:1,label:'Ouvir caixa da entrada [E]'}),
+      Object.freeze({type:'cidadela_registro',target:'galeria',count:1,label:'Ouvir caixa da galeria [E]'}),
+      Object.freeze({type:'cidadela_registro',target:'forja',count:1,label:'Ouvir caixa da forja [E]'}),
+      Object.freeze({type:'cidadela_relato',target:'vozes',count:1,label:'Transmitir os registros [E]'}),
+    ]),
+    rewards:Object.freeze({xp:70,flags:Object.freeze({cidadela_vozes_concluida:true})}),
+  }),
   jardim_de_retorno: Object.freeze({
     id:'jardim_de_retorno', title:'JARDIM DE RETORNO', giver:'O MAR', kind:'secundária',
     description:'Na Rota das Marés, retire a rede perdida, liberte a tartaruga e restaure o coral. Mergulhe até cada sinal e use [E]; volte à superfície sempre que precisar respirar.',

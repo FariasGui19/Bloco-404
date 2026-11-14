@@ -413,3 +413,24 @@ for name in ['fecho-imp-costas-dano','fecho-imp-lateral-queda','fecho-imp-costas
     image.thumbnail((192,192),Image.Resampling.LANCZOS)
     image.save(dst / f'{name}.png',optimize=True)
     print(name,image.size)
+
+# Colapsos direcionais e identidade visual dos arquivos opcionais.
+for name in ['memoria-imp-lateral-colapso','memoria-imp-costas-colapso',
+             'memoria-orbe-lateral-colapso','memoria-orbe-costas-colapso',
+             'memoria-echo-lateral-colapso','memoria-echo-costas-colapso',
+             'memoria-arquivo-origem','memoria-arquivo-retorno',
+             'memoria-arquivo-memoria','memoria-arquivo-lido']:
+    image=Image.open(src / f'{name}.png').convert('RGBA')
+    pixels=image.load()
+    for y in range(image.height):
+        for x in range(image.width):
+            r,g,b,a=pixels[x,y]
+            if r>140 and b>140 and g<160 and min(r,b)-g>60:
+                pixels[x,y]=(0,0,0,0)
+    box=image.getbbox()
+    if not box: raise ValueError(f'Sprite vazio: {name}')
+    image=image.crop(box)
+    size=128 if name=='memoria-arquivo-lido' else 192
+    image.thumbnail((size,size),Image.Resampling.LANCZOS)
+    image.save(dst / f'{name}.png',optimize=True)
+    print(name,image.size)

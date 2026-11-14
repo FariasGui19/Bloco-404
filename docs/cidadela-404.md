@@ -28,9 +28,9 @@ conteúdo jogável quanto os limites do trabalho visual em andamento.
 
 1. **Consistência das animações:** há vistas frontal, lateral aproximada e
    costas para os três tipos de inimigo comuns, com quadros de locomoção nessas
-   vistas, avisos laterais/de costas, dano lateral/de costas e início de
-   queda lateral/de costas. O colapso final continua frontal; as imagens
-   geradas são aproximações e podem ser refinadas.
+   vistas, avisos, dano, queda e colapso lateral/de costas. As imagens são
+   aproximações, com a outra lateral espelhada; ainda não há animação
+   completa em todas as direções e elas podem ser refinadas.
 2. **Resposta e legibilidade em combate:** melhorar transições entre poses,
    avisos e efeitos sem tornar a mira ou as mensagens menos legíveis; continuar
    verificando bloqueios, pausa e movimento reduzido.
@@ -69,7 +69,12 @@ itens acima são prioridades, não uma promessa de conteúdo futuro.
 - Três terminais opcionais contêm fragmentos de Origem, Retorno e Memória.
   Use E para registrá-los; eles aparecem em L e no radar até serem encontrados.
   Completar os três concede 30 XP base uma única vez, inclusive entre visitas e
-  saves. Esses arquivos não são as âncoras da estação nem abrem eclusas.
+  saves. Cada terminal tem um símbolo visual próprio; após a leitura o aviso
+  próximo mostra um ícone e **REVER**. Na primeira leitura, o Nexo pode
+  acrescentar contexto ao rádio sem afirmar quem enviou o sinal. Ao completar
+  o conjunto, o último fragmento aparece junto da recompensa, inclusive se a
+  fila de rádio estiver cheia. Esses arquivos não são as âncoras da estação
+  nem abrem eclusas.
 - Três CRTs opcionais, na entrada, galeria e forja, mostram uma silhueta em
   linhas com vazio retangular no rosto. E registra cada transmissão e permite
   revê-la. A primeira inicia **Entre Linhas**; os três CRTs concedem 45 XP base
@@ -300,13 +305,17 @@ têm prioridade sobre a locomoção; sem a imagem de ação, usa-se a pose front
 existente. O aviso persiste com movimento reduzido. Nesta rodada, mais dez
 artes acrescentam uma reação de dano de costas e duas quedas direcionais
 (lateral espelhável e costas) para cada um dos três inimigos, além de uma pose
-de preparação final do Vigilante. A queda direcional ocupa apenas a fase
-intermediária existente; o colapso final continua frontal. Em movimento
-reduzido, a queda intermediária é omitida, mas dano e aviso permanecem.
+de preparação final do Vigilante. Em movimento reduzido, a queda intermediária
+é omitida, mas dano e aviso permanecem.
 O Vigilante usa a nova pose entre 1,6 e 2 segundos de seu ciclo normal;
 em movimento reduzido mantém o aviso anterior estático. Se a imagem ainda
 não estiver disponível, usa-se o aviso anterior. Isso não muda blindagem,
-tempo de ataque, recompensas nem progressão.
+tempo de ataque, recompensas nem progressão. Outras dez artes fornecem os
+colapsos finais lateral e de costas para os três inimigos, três terminais de
+arquivo distintos e o ícone de leitura. Os colapsos permanecem visíveis por
+mais tempo antes de desaparecer, sem aumentar a duração da animação ou mudar
+a colisão; com movimento reduzido usa-se diretamente a pose final direcional.
+Se a nova arte não carregar, a pose frontal ou terminal anterior é mantido.
 CRTs alternam poses lentas e geradores e reatores têm
 pulsos suaves. As fendas não seladas respiram com uma oscilação suave. Projéteis têm pulsação,
 impactos desaparecem após pouco tempo e eclusas têm varredura lenta. As poses
@@ -339,6 +348,6 @@ Execute `node --experimental-default-type=module tests/cidadela-fps.mjs`,
 `tests/cidadela-audio.mjs`, `tests/cidadela-pos-vitoria.mjs`,
 `tests/cidadela-transicao.mjs`, `tests/cidadela-fendas.mjs`,
 `tests/cidadela-fendas-arquetipos.mjs`, `tests/cidadela-imersao.mjs`,
-`tests/cidadela-hud.mjs`, `tests/cidadela-passos.mjs`, `tests/cidadela-progressao.mjs`, `tests/cidadela-ecos.mjs`, `tests/cidadela-animacoes-sinal.mjs`, `tests/cidadela-vigilia.mjs`, `tests/cidadela-travessia.mjs`, `tests/cidadela-base-animacoes.mjs`, `tests/cidadela-refino-visual.mjs`, `tests/cidadela-acabamento.mjs`, `tests/cidadela-vida.mjs`, `tests/cidadela-passadas-direcionais.mjs`, `tests/cidadela-polimento-combate-sinal.mjs`, `tests/cidadela-combate-alerta.mjs` e `tests/cidadela-fecho-direcional.mjs` para verificar regras, rotas, pausa, registros,
+`tests/cidadela-hud.mjs`, `tests/cidadela-passos.mjs`, `tests/cidadela-progressao.mjs`, `tests/cidadela-ecos.mjs`, `tests/cidadela-animacoes-sinal.mjs`, `tests/cidadela-vigilia.mjs`, `tests/cidadela-travessia.mjs`, `tests/cidadela-base-animacoes.mjs`, `tests/cidadela-refino-visual.mjs`, `tests/cidadela-acabamento.mjs`, `tests/cidadela-vida.mjs`, `tests/cidadela-passadas-direcionais.mjs`, `tests/cidadela-polimento-combate-sinal.mjs`, `tests/cidadela-combate-alerta.mjs`, `tests/cidadela-fecho-direcional.mjs` e `tests/cidadela-memoria-visual.mjs` para verificar regras, rotas, pausa, registros,
 desfecho, saves e retorno. O teste de percurso percorre o mapa a pé e usa
 invulnerabilidade para isolar navegação e progressão do balanceamento. A suíte completa usa o comando documentado no README.

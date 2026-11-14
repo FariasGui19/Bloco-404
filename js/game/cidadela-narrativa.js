@@ -15,6 +15,13 @@ const SIGNAL_FRAGMENTS=Object.freeze({
   galeria:'SINAL SEM ORIGEM: A RESPOSTA CHEGOU ANTES DO PEDIDO.',
   forja:'SINAL SEM ORIGEM: NÃO DESLIGUE O REATOR.',
 });
+// Leituras complementares dos arquivos: observações, não provas de autoria.
+const ARCHIVE_CONTEXT=Object.freeze({
+  origem:'NEXO: A ORDEM DO PEDIDO E DA RESPOSTA NÃO É COMUM. A CAUSA SEGUE INCERTA.',
+  retorno:'NEXO: IMPULSOS E RADAR ELEVAM A RESSONÂNCIA. A ROTA DE VOLTA SEGUE ABERTA.',
+  memoria:'NEXO: A FIGURA FOI REGISTRADA, MAS O SINAL NÃO IDENTIFICA QUEM O ENVIOU.',
+});
+export function archiveContext(id) { return ARCHIVE_CONTEXT[id] ?? ''; }
 export function crtSignalFragment(id) { return SIGNAL_FRAGMENTS[id] ?? ''; }
 export function crtCount(progress) {return CITADEL_NULL_MONITORS.filter(m=>progress.flags?.[m.flag]).length;}
 export function inspectCitadelMonitor(progress,monitor) {

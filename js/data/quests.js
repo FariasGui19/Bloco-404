@@ -10,6 +10,16 @@
 // =====================================================================
 
 export const QUESTS = Object.freeze({
+  cidadela_forja_sobrevivencia: Object.freeze({
+    id:'cidadela_forja_sobrevivencia',title:'FORJA DO CÓDIGO QUEIMADO',giver:'NEXO-04',kind:'secundária',
+    description:'Recolha fragmentos de combate na Cidadela e utilize a Bancada de Síntese na Forja para fabricar suprimentos táticos ou relíquias dimensionais.',
+    objectives:Object.freeze([
+      Object.freeze({type:'cidadela_coleta_sucata',target:'sucata_codigo',count:2,label:'Recolher Sucata de Código de inimigos'}),
+      Object.freeze({type:'cidadela_coleta_nucleo',target:'nucleo_estatica',count:1,label:'Recolher Núcleo de Estática de inimigos'}),
+      Object.freeze({type:'cidadela_sintese_item',target:'craft',count:1,label:'Sintetizar um equipamento na Bancada [E]'}),
+    ]),
+    rewards:Object.freeze({xp:65,points:1,flags:Object.freeze({cidadela_forja_concluida:true})}),
+  }),
   cidadela_oficina_vigilia: Object.freeze({
     id:'cidadela_oficina_vigilia',title:'OFICINA DA VIGÍLIA',giver:'NEXO-04',kind:'secundária',
     description:'Depois de estabilizar o reator, explore a oficina ao sul. Desative três circuitos durante suas janelas seguras e confirme a manutenção no terminal.',

@@ -8,13 +8,14 @@ import { getActiveUltimate } from './ultimate.js';
 import { getUnlockState } from './unlocks.js';
 import { playCutscene, CITADEL_END_SCENES } from '../ui/cutscene.js';
 import { citadelAudioEnabled, toggleCitadelAudio, playCitadelSound } from './cidadela-audio.js';
-import { CITADEL_DECOR, CITADEL_ARCHIVES, CITADEL_POSTGAME, CITADEL_BREACHES, CITADEL_BREACH_CONSOLE, CITADEL_NULL_MONITORS, CITADEL_ECHOES, CITADEL_ECHO_TERMINAL, CITADEL_ECHO_DECOR, CITADEL_WORKSHOP } from '../data/worlds/cidadela-404/cidadela.js';
+import { CITADEL_DECOR, CITADEL_ARCHIVES, CITADEL_POSTGAME, CITADEL_BREACHES, CITADEL_BREACH_CONSOLE, CITADEL_NULL_MONITORS, CITADEL_ECHOES, CITADEL_ECHO_TERMINAL, CITADEL_ECHO_DECOR, CITADEL_WORKSHOP, CITADEL_ENERGY_CELLS, CITADEL_CRAFT_BENCH, CITADEL_PATROL_CONSOLE, CITADEL_DORMANT_GUARDIAN } from '../data/worlds/cidadela-404/cidadela.js';
 import { citadelMissions, missionObjective, interactCitadelMission } from './cidadela-missoes.js';
 import { sealedFlag, cacheFlag, breachSummary, beginBreach, cancelBreach, updateBreach, openBreachCache } from './cidadela-fendas.js';
 import { inspectCitadelMonitor, crtCount, ARCHETYPE_READINGS, crtSignalFragment, archiveContext, keyContext } from './cidadela-narrativa.js';
 import { getDimensionProgress, syncDimensionProgress } from './dimension-progress.js';
 import { memoryEchoCount,interactMemoryEcho,useEchoTerminal } from './cidadela-ecos.js';
 import { workshopPhase,workshopCount,interactWorkshop,workshopCircuitActive,toggleWorkshopTrial,interactWorkshopTrial } from './cidadela-vigilia.js';
+import { CITADEL_RECIPES, ensureCitadelMaterials, grantCitadelMaterial, hasRelic, canCraftRecipe, craftCitadelRecipe, startForgeQuestIfAvailable } from './cidadela-sintese.js';
 
 export const KEYS = [
   { id: 'azul', flag: 'cidadela_chave_azul', x: 5.5, y: 3.5, color: '#57e6f0', symbol: '◆', label: 'AZUL / LOSANGO', log: 'PEDIDO DE SOCORRO INICIADO.' },
@@ -28,8 +29,16 @@ export const MODULES = {
   motor_bio_forja: { name: 'BIO-FORJA', color: '#ffb166', q: 'FORJA: ESCUDO + IMPULSO', mode: 'bio' },
 };
 const ENEMY_SEEDS = [
-  ['imp', 5.5, 8.5], ['imp', 6.5, 4.5], ['orb', 11.5, 4.5],
-  ['imp', 13.5, 7.5], ['orb', 19.5, 8.5], ['imp', 18.5, 5.5],
+  ['imp', 5.5, 8.5], ['imp', 6.5, 4.5],
+  ['orb', 11.5, 4.5], ['imp', 13.5, 7.5],
+  ['orb', 19.5, 8.5], ['imp', 18.5, 5.5],
+  ['imp', 26.5, 4.2], ['orb', 26.5, 8.8],
+];
+const PATROL_SEEDS = [
+  ['imp', 5.5, 8.5], ['orb', 6.2, 4.5],
+  ['orb', 11.5, 4.5], ['imp', 13.5, 8.5],
+  ['orb', 19.5, 8.5], ['imp', 18.5, 4.5],
+  ['echo', 16.5, 17.5],
 ];
 const checkpoints = [{x: 2.5,y: 6.5}, {x: 9.7,y: 6.5}, {x: 16.7,y: 6.5}, {x: 23.7,y: 6.5}];
 let game = null;
@@ -89,11 +98,14 @@ export function nearestInteraction(map,flags,p) {
     ...CITADEL_NULL_MONITORS.map(m=>({...m,kind:'crt',radius:1.0})),
     ...CITADEL_ECHOES.map(o=>({...o,radius:1.0})),
     {...CITADEL_ECHO_TERMINAL,radius:1.0},
+    {...CITADEL_CRAFT_BENCH,radius:1.1},
     ...(flags.cidadela_estavel?[
       ...CITADEL_WORKSHOP.switches.map(o=>({...o,radius:1.05})),
       {...CITADEL_WORKSHOP.terminal,radius:1.1},
       {kind:'workshop_trial',x:18.3,y:20.2,radius:1},
       {kind:'reactor',x:30.4,y:6.5,radius:1.4},
+      {...CITADEL_PATROL_CONSOLE,radius:1.05},
+      {...CITADEL_DORMANT_GUARDIAN,radius:1.05},
       {...CITADEL_BREACH_CONSOLE,radius:1},
       ...CITADEL_BREACHES.flatMap(b=>[
         {...b,kind:'breach',radius:1},
@@ -107,11 +119,13 @@ export function nearestInteraction(map,flags,p) {
 }
 export function createCitadelRuntime(progress) {
   const flags = progress.flags ??= {};
-  return { angle: 0, enemies: flags.cidadela_estavel ? [] : ENEMY_SEEDS.map(([type,x,y],i) => ({type,x,y,hp:type === 'orb'?75:55, cooldown:1.6+i*.25, slow:0})),
-    boss: {type:'boss', x:28, y:6.5, hp:280, cycle:0, cooldown:1.5, dead:!!flags.cidadela_estavel},
+  return { angle: 0, enemies: flags.cidadela_estavel ? [] : ENEMY_SEEDS.map(([type,x,y],i) => ({type,x,y,hp:type === 'orb'?75:55, maxHp:type==='orb'?75:55, cooldown:1.6+i*.25, slow:0, strafeDir:i%2?1:-1, strafeTimer:1.2+i*.3})),
+    boss: {type:'boss', x:28, y:6.5, hp:280, maxHp:280, cycle:0, cooldown:1.5, dead:!!flags.cidadela_estavel, death:0, shieldFlash:0, phaseTwo:false},
     supplies: [{x:4.5,y:9.5},{x:13.5,y:3.5},{x:20.5,y:7.5},{x:24.5,y:9.5}],
+    energyCells: CITADEL_ENERGY_CELLS.map(c=>({...c,used:false})),
+    drops: [],
     shots: [], impacts: [], ammo: 12, reload: 0, jam: 0, fire: 0, q: 0, boost: 0, scan: 0, dash: 0, dashAngle:0, shield: 0, guard:0, ultBuff:null, echo: 0, echoLock: 0,
-    message: flags.cidadela_estavel ? 'NEXO-04: REATOR ESTÁVEL. A SONDA AGUARDA NA ARENA; A OFICINA ABRIU AO SUL.' : 'NEXO-04: A LINHA ESTÁ ABERTA. ENCONTRE OS TRÊS REGISTROS.', messageTime: 8, time: 0, damage: 0, hit: 0, fx: 0, signalTime:0, signalCooldown:0, signalMonitorId:null, weaponDeploy:0, fxKind: '', suppressed: 0, returning: false, training:false, breach:null, radioQueue:[],stepDistance:0,walkPhase:0,walkBlend:0, echoAnchor:0, echoTerminalCooldown:0, workshopHit:0, workshopTrial:null, localProgress:null, vectorCharge:0, perkIcon:null, panel: null };
+    message: flags.cidadela_estavel ? 'NEXO-04: REATOR ESTÁVEL. A SONDA AGUARDA NA ARENA; A OFICINA ABRIU AO SUL.' : 'NEXO-04: A LINHA ESTÁ ABERTA. ENCONTRE OS TRÊS REGISTROS.', messageTime: 8, time: 0, damage: 0, hit: 0, fx: 0, signalTime:0, signalCooldown:0, signalMonitorId:null, weaponDeploy:0, fxKind: '', suppressed: 0, returning: false, training:false, patrol:false, breach:null, radioQueue:[],stepDistance:0,walkPhase:0,walkBlend:0, echoAnchor:0, echoTerminalCooldown:0, workshopHit:0, workshopTrial:null, localProgress:null, vectorCharge:0, perkIcon:null, panel: null };
 }
 function notice(g, text, seconds=4) { g.message=text; g.messageTime=seconds; }
 function queueRadio(g,text) { if(text && g.radioQueue.length<6) g.radioQueue.push(text); }
@@ -178,12 +192,16 @@ export function enemyView(facing,x,y,viewerX,viewerY) {
   return {view:'side',flip:delta>0};
 }
 export function bossVisualFrame(boss,time,reduce=false) {
+  if((boss.hp !== undefined && boss.hp<=0) || boss.dead) {
+    return !reduce && (boss.death ?? 0)>.7 ? 'boss_fall' : 'boss_death';
+  }
   if(bossOpen(boss)) {
     if((boss.hurt ?? 0)>0) return 'boss_hurt';
     return reduce?'boss_open_a':`boss_open_${Math.floor(time*1.4)%2?'b':'a'}`;
   }
   if(boss.cycle>=2 && boss.cycle<4.2) return bossAttackSpriteFrame(time,reduce);
   if(boss.cycle>=1.2) return !reduce && boss.cycle>=1.6?'boss_warning_b':'boss_warning';
+  if((boss.shieldFlash ?? 0)>0) return 'boss_shield';
   return 'bossClosed';
 }
 export function weaponVisualFrame(fire,reduce=false,reload=0,jam=0) {
@@ -215,7 +233,7 @@ export function citadelPulseFrame(type,windup,scan,time,reduce=false) {
 }
 function resetAtCheckpoint(state, g) {
   const cp = checkpoints[checkpointIndex(state.progress.flags)];
-  g.workshopTrial=null; cancelBreach(g); if(g.training){g.training=false;g.enemies.length=0;}
+  g.workshopTrial=null; cancelBreach(g); if(g.training || g.patrol){g.training=false;g.patrol=false;g.enemies.length=0;}
   respawnPlayer(state.player, cp); g.angle=0; g.shots.length=0; g.impacts.length=0; g.jam=0; g.reload=0; g.ammo=12; g.dash=0; g.shield=0; g.guard=0; g.ultBuff=null; g.vectorCharge=0; g.echoAnchor=0; g.fx=0; g.damage=0; g.hit=0; g.signalTime=0; g.signalCooldown=0; g.signalMonitorId=null; g.weaponDeploy=0; g.walkPhase=0; g.walkBlend=0; g.stepDistance=0; g.moving=false;
   notice(g,'NEXO-04: SINAL RECUPERADO NO ÚLTIMO MARCO. A LINHA DE RETORNO CONTINUA ABERTA.',6);
 }
@@ -253,10 +271,17 @@ export function enemyVisualFrame(enemy) {
 }
 function hurtEnemy(g, enemy, damage) {
   if (enemy.type === 'boss' && !bossOpen(enemy)) {
+    enemy.shieldFlash=.28; playCitadelSound('shield_deflect');
     addImpact(g,enemy.x,enemy.y,'shield'); notice(g,'VIGILANTE: BLINDAGEM FECHADA. AGUARDE O NÚCLEO EXPOSTO.',2); return;
   }
   enemy.hp -= damage; enemy.hurt=.18;
-  if (enemy.hp<=0) enemy.death=.7;
+  if (enemy.hp<=0) {
+    enemy.death=.7;
+    if(!enemy.noLoot && enemy.type!=='boss' && !enemy.dropped) {
+      enemy.dropped=true;
+      g.drops.push({kind:enemy.type==='imp'?'sucata_codigo':'nucleo_estatica',x:enemy.x,y:enemy.y,life:90});
+    }
+  }
   addImpact(g,enemy.x,enemy.y,enemy.type==='echo'?'cyan':'red');
 }
 function beginReload(g) { g.reload=1.5; if(g.jam<=0) playCitadelSound('reload'); }
@@ -270,7 +295,7 @@ function fire(map, flags, p, g) {
   g.ammo--; g.fire=.23; const vectorDamage=g.vectorCharge>0?12:0;g.vectorCharge=0;playCitadelSound('shot');
   if (g.ammo===0) { beginReload(g); reloadNotice(g); }
   const target=targetInSight(map,flags,p,g);
-  if (target) { if(target.type!=='boss' || bossOpen(target)) g.hit=.25; hurtEnemy(g,target, Math.round((target.type==='boss'?35:28)*(1+(g.ultBuff?.basicDamagePct ?? 0)))+vectorDamage); }
+  if (target) { if(target.type!=='boss' || bossOpen(target)) g.hit=.25; hurtEnemy(g,target, Math.round((target.type==='boss'?35:28)*(1+(g.ultBuff?.basicDamagePct ?? 0)+(g.relicShotBonus ?? 0)))+vectorDamage); }
   else {
     // O disparo do jogador é instantâneo, mas deixa uma marca breve na
     // superfície visível, sem atravessar paredes nem criar física extra.
@@ -308,8 +333,9 @@ function startDash(g,input,duration) {
 }
 function ability(map, flags, p, g, progress, input) {
   if (g.q>0) return;
-  if ((p.energy ?? 0) < 18) { notice(g,'ENERGIA INSUFICIENTE PARA Q',2); return; }
-  p.energy-=18; playCitadelSound('ability');
+  const cost=g.relicReactor?14:18;
+  if ((p.energy ?? 0) < cost) { notice(g,'ENERGIA INSUFICIENTE PARA Q',2); return; }
+  p.energy-=cost; playCitadelSound('ability');
   const mod=MODULES[progress.archetype] ?? MODULES.motor_bio_forja;
   const rank=g.localProgress?.rank ?? 1;
   g.perkIcon=rank>=2 ? g.localProgress.skills[rank>=4 && mod.mode==='bio'?1:0].icon : null;
@@ -358,8 +384,8 @@ function ultimate(map, flags, p, g, progress, input) {
   addEcho(g,32,{player:p,progress,world:{currentMap:map}});
   notice(g,`SOBRECARGA • ${def.name}`,3);
 }
-function spawnShot(g, from, p, speed, damage, jam=false, counter=null) {
-  const a=Math.atan2(p.y-from.y,p.x-from.x);
+function spawnShot(g, from, p, speed, damage, jam=false, counter=null, angleOffset=0) {
+  const a=Math.atan2(p.y-from.y,p.x-from.x)+angleOffset;
   playCitadelSound(jam?'echo':'enemy');
   g.shots.push({x:from.x,y:from.y,dx:Math.cos(a)*speed,dy:Math.sin(a)*speed,damage,jam,counter,kind:from.type,breach:from.breach ?? null,life:5});
 }
@@ -376,6 +402,8 @@ export function updateCitadel(dt, state, input) {
     if (flags.cidadela_estavel) showEnding(state,game);
   }
   const g=game, step=clamp(dt,0,.033);
+  g.relicShotBonus=hasRelic(progress,'selo_codigo_queimado')?.25:0;
+  g.relicReactor=hasRelic(progress,'nucleo_vigilante_forjado');
   if(g.localArchetype!==progress.archetype) {
     const migrated=syncDimensionProgress(progress);g.localProgress=migrated.after;g.localArchetype=progress.archetype;g.vectorCharge=0;g.weaponDeploy=.45;
     if(migrated.changed) saveGame();
@@ -392,6 +420,22 @@ export function updateCitadel(dt, state, input) {
   if (!pauseRequested && pressed(input,'l','keyl')) g.panel=g.panel==='journal' ? null : 'journal';
   if (!pauseRequested && pressed(input,'j','keyj')) g.panel=g.panel==='missions' ? null : 'missions';
   if (!pauseRequested && pressed(input,'k','keyk')) g.panel=g.panel==='dimension' ? null : 'dimension';
+  if (g.panel==='craft') {
+    if (pressed(input,'e','keye')) {
+      g.panel=null; state.world.fpsPaused=false;
+      input.fpsFire=false; input.fpsFireHeld=false; input.attackClick=null; input.click=null; input.mouseDeltaX=0;
+      return;
+    }
+    const keys=[['1','digit1'],['2','digit2'],['3','digit3'],['4','digit4'],['5','digit5']];
+      for (let i=0;i<CITADEL_RECIPES.length && i<keys.length;i++) {
+        if (pressed(input,...keys[i])) {
+          const res=craftCitadelRecipe(progress,g,p,CITADEL_RECIPES[i].id);
+          if(res.ok) { playCitadelSound('craft'); saveCitadelProgress(progress,g); }
+          notice(g,res.message,5);
+          break;
+        }
+      }
+  }
   state.world.fpsPaused=!!g.panel;
   if (g.panel) {
     input.fpsFire=false; input.fpsFireHeld=false; input.attackClick=null; input.click=null; input.mouseDeltaX=0;
@@ -401,6 +445,8 @@ export function updateCitadel(dt, state, input) {
   g.time+=step;
   const jamBefore=g.jam;
   for (const k of ['fire','jam','q','boost','scan','dash','shield','guard','echoLock','messageTime','damage','hit','fx','suppressed','vectorCharge','echoAnchor','echoTerminalCooldown','workshopHit','signalTime','signalCooldown','weaponDeploy']) g[k]=Math.max(0,g[k]-step);
+  if(g.boss && g.boss.shieldFlash>0) g.boss.shieldFlash=Math.max(0,g.boss.shieldFlash-step);
+  if(g.boss && g.boss.dead && (g.boss.death ?? 0)>0) g.boss.death=Math.max(0,g.boss.death-step);
   if(g.messageTime===0 && g.radioQueue.length) notice(g,g.radioQueue.shift(),6);
   for (const impact of g.impacts) impact.life-=step;
   g.impacts=g.impacts.filter(impact=>impact.life>0);
@@ -417,7 +463,7 @@ export function updateCitadel(dt, state, input) {
     buff.timeLeft=Math.max(0,buff.timeLeft-step);
     if(!buff.timeLeft) g.ultBuff=null;
   }
-  p.energy=Math.min(p.maxEnergy ?? 100,(p.energy ?? 100)+5*step+(buff?.energyRegen ?? 0)*buffStep);
+  p.energy=Math.min(p.maxEnergy ?? 100,(p.energy ?? 100)+(5+(g.relicReactor?2:0))*step+(buff?.energyRegen ?? 0)*buffStep);
   if (p.ultimate?.cooldown>0) p.ultimate.cooldown=Math.max(0,p.ultimate.cooldown-step);
   const h=updateHealth(p,progress,step,{onRespawn:()=>checkpoints[checkpointIndex(flags)]});
   if (h?.respawned) { resetAtCheckpoint(state,g); }
@@ -480,7 +526,7 @@ export function updateCitadel(dt, state, input) {
       return;
     }
     if (target?.kind==='key') {
-      flags[target.flag]=true; playCitadelSound('pickup'); saveCitadelProgress(progress,g); notice(g,`${target.symbol} ${target.label}: ${target.log} ECLUSA ABERTA.`,7);
+      flags[target.flag]=true; playCitadelSound('key'); saveCitadelProgress(progress,g); notice(g,`${target.symbol} ${target.label}: ${target.log} ECLUSA ABERTA.`,7);
       const index=KEYS.findIndex(k=>k.id===target.id);
       queueRadio(g,(ARCHETYPE_READINGS[progress.archetype] ?? ARCHETYPE_READINGS.motor_bio_forja)[index]);
       queueRadio(g,keyContext(target.id));
@@ -507,6 +553,24 @@ export function updateCitadel(dt, state, input) {
       if(g.signalCooldown<=0) {g.signalMonitorId=target.id;g.signalTime=1.5;g.signalCooldown=6;}
       const fragment=crtSignalFragment(target.id);
       queueRadio(g,[result.followup,fragment].filter(Boolean).join(' '));
+    } else if (target?.kind==='crafting_bench') {
+      g.panel='craft';
+      notice(g,'BANCADA DE SÍNTESE: ESCOLHA UMA RECEITA [1–5] OU [E] PARA FECHAR.',5);
+    } else if (target?.kind==='patrol_console') {
+      if(g.workshopTrial) notice(g,'ENCERRE O ENSAIO DA OFICINA ANTES DA RONDA.',5);
+      else if(g.breach) notice(g,'CANCELE OU CONCLUA A FENDA ANTES DA RONDA.',5);
+      else if(g.training) notice(g,'ENCERRE A SIMULAÇÃO DA ARENA ANTES DA RONDA.',5);
+      else if(g.patrol) {
+        g.patrol=false; g.enemies.length=0; g.shots.length=0;
+        notice(g,'RONDA SETORIAL ENCERRADA.',5);
+      } else {
+        g.patrol=true;
+        g.enemies=PATROL_SEEDS.map(([type,x,y],i)=>({type,x,y,hp:type==='orb'?75:55,maxHp:type==='orb'?75:55,cooldown:1.6+i*.25,slow:0,strafeDir:i%2?1:-1,strafeTimer:1.2+i*.3}));
+        playCitadelSound('ability');
+        notice(g,'RONDA SETORIAL ATIVA: 7 HOSTIS NOS CORREDORES. COLETA DE SUCATA E NÚCLEOS LIBERADA.',7);
+      }
+    } else if (target?.kind==='dormant_guardian') {
+      notice(g,`${target.label}: ${target.log}`,8);
     } else if (target?.kind==='reactor') {
       notice(g,'REATOR ESTÁVEL • A ROTA DE RETORNO CONTINUA ABERTA.',5);
     } else if (target?.kind==='workshop_trial') {
@@ -538,13 +602,14 @@ export function updateCitadel(dt, state, input) {
     } else if (target?.kind==='training') {
       if(g.workshopTrial) {notice(g,'ENCERRE O ENSAIO DA OFICINA ANTES DA SIMULAÇÃO.',5);}
       else if(g.breach) {notice(g,'CANCELE OU CONCLUA A FENDA ANTES DA SIMULAÇÃO.',5);}
+      else if(g.patrol) {notice(g,'ENCERRE A RONDA SETORIAL ANTES DA SIMULAÇÃO.',5);}
       else if(g.training) {
         g.training=false;g.enemies.length=0;g.shots.length=0;notice(g,'SIMULAÇÃO ENCERRADA. A CIDADELA CONTINUA ESTÁVEL.',5);
       } else {
         g.training=true;
-        g.enemies=[{type:'imp',x:28.5,y:6.5,hp:55,cooldown:2,slow:0},
-          {type:'orb',x:27.5,y:5.5,hp:75,cooldown:2.5,slow:0},
-          {type:'imp',x:26.5,y:7.5,hp:55,cooldown:3,slow:0}];
+        g.enemies=[{type:'imp',x:28.5,y:6.5,hp:55,maxHp:55,cooldown:2,slow:0,noLoot:true},
+          {type:'orb',x:27.5,y:5.5,hp:75,maxHp:75,cooldown:2.5,slow:0,noLoot:true},
+          {type:'imp',x:26.5,y:7.5,hp:55,maxHp:55,cooldown:3,slow:0,noLoot:true}];
         notice(g,'SIMULAÇÃO OPCIONAL: 3 ECOS. USE [E] NO NÚCLEO PARA ENCERRAR.',6);
       }
     } else if(target) {
@@ -559,6 +624,29 @@ export function updateCitadel(dt, state, input) {
       if (healed>0) { supply.used=true; playCitadelSound('pickup'); notice(g,`SUPRIMENTO • +${Math.round(healed)} VIDA`,2.5); }
     }
   }
+  // Células de energia e munição de campo para sustentar combates mais longos.
+  for (const cell of g.energyCells ?? []) {
+    if (!cell.used && ((p.energy ?? 100)<(p.maxEnergy ?? 100) || g.ammo<12) && Math.hypot(p.x-cell.x,p.y-cell.y)<.7 && visible(map,flags,p.x,p.y,cell.x,cell.y)) {
+      cell.used=true;
+      p.energy=Math.min(p.maxEnergy ?? 100,(p.energy ?? 0)+25);
+      g.ammo=Math.min(12,g.ammo+6);
+      if(g.reload>0 && g.ammo>=12) g.reload=0;
+      playCitadelSound('pickup');
+      notice(g,'CÉLULA DE ENERGIA • +25 EN • +6 MUN',2.5);
+    }
+  }
+  // Coleta automática de materiais caídos por hostis abatidos.
+  for (const drop of g.drops ?? []) {
+    drop.life-=step;
+    if (drop.life>0 && Math.hypot(p.x-drop.x,p.y-drop.y)<.85 && visible(map,flags,p.x,p.y,drop.x,drop.y)) {
+      drop.life=0;
+      const res=grantCitadelMaterial(progress,drop.kind,1);
+      playCitadelSound('pickup');
+      saveCitadelProgress(progress,g);
+      notice(g,`COLETA • +1 ${res?.mat?.label ?? drop.kind.toUpperCase()}`,3);
+    }
+  }
+  if (g.drops?.length) g.drops=g.drops.filter(d=>d.life>0);
   if (g.echoLock<=0) {
     if (g.echo>=100) addEcho(g,0,state);
     else g.echo=Math.max(0,g.echo-step*.7);
@@ -588,6 +676,13 @@ export function updateCitadel(dt, state, input) {
       const x=e.x,y=e.y; move(map,flags,e,(p.x-e.x)/d*step*(e.slow?.35:.8),(p.y-e.y)/d*step*(e.slow?.35:.8));
       const moved=Math.hypot(e.x-x,e.y-y); e.moving=moved>0;
       if(e.moving) e.walkPhase=((e.walkPhase ?? 0)+moved*3)%2;
+    } else if (sees && d>2.05 && d<=3.7 && e.cooldown>.7) {
+      e.strafeTimer=(e.strafeTimer ?? 1.2)-step;
+      if(e.strafeTimer<=0){ e.strafeDir=-(e.strafeDir ?? 1); e.strafeTimer=1.3; }
+      const x=e.x,y=e.y, sideDir=e.strafeDir ?? 1;
+      move(map,flags,e,-(p.y-e.y)/d*sideDir*step*(e.slow?.25:.55),(p.x-e.x)/d*sideDir*step*(e.slow?.25:.55));
+      const moved=Math.hypot(e.x-x,e.y-y); e.moving=moved>0;
+      if(e.moving) e.walkPhase=((e.walkPhase ?? 0)+moved*3)%2;
     }
   }
   g.enemies=g.enemies.filter(e=>e.hp>0 || e.death>0);
@@ -597,6 +692,10 @@ export function updateCitadel(dt, state, input) {
     if(first) saveCitadelProgress(progress,g);
     notice(g,first?'SIMULAÇÃO CONCLUÍDA • MARCO LOCAL REGISTRADO.':'SIMULAÇÃO CONCLUÍDA • REPETÍVEL, SEM NOVO MARCO.',5);
   }
+  if(g.patrol && !g.enemies.some(e=>e.hp>0)) {
+    g.patrol=false;
+    notice(g,'RONDA SETORIAL CONCLUÍDA • CORREDORES LIMPOS. REATIVÁVEL NO CONSOLE DE RONDA.',6);
+  }
   const breachResult=updateBreach(g,progress,step,p,
     (x,y)=>canMove(map,flags,x,y,.25),
     b=>Math.hypot(b.x-p.x,b.y-p.y)>=1.4 && Math.hypot(b.x-p.x,b.y-p.y)<7 && visible(map,flags,b.x,b.y,p.x,p.y),
@@ -605,13 +704,26 @@ export function updateCitadel(dt, state, input) {
   const boss=g.boss;
   if(!boss.dead) boss.hurt=Math.max(0,(boss.hurt ?? 0)-step);
   if (!boss.dead && boss.hp>0 && flags.cidadela_chave_vermelha && p.x>22.7) {
-    boss.cycle=(boss.cycle+step)%7.2; boss.cooldown-=step;
-    if (boss.cycle>=2 && boss.cycle<4.2 && boss.cooldown<=0 && visible(map,flags,boss.x,boss.y,p.x,p.y)) { spawnShot(g,boss,p,3.7,13); boss.cooldown=.65; }
+    if (!boss.phaseTwo && boss.hp<=140) {
+      boss.phaseTwo=true; playCitadelSound('phase2');
+      notice(g,'VIGILANTE FASE 2: SOBRETENSÃO NO NÚCLEO. DISPAROS EM LEQUE ATIVOS.',5);
+    }
+    const cycleRate=boss.phaseTwo?1.25:1;
+    boss.cycle=(boss.cycle+step*cycleRate)%7.2; boss.cooldown-=step;
+    if (boss.cycle>=2 && boss.cycle<4.2 && boss.cooldown<=0 && visible(map,flags,boss.x,boss.y,p.x,p.y)) {
+      spawnShot(g,boss,p,boss.phaseTwo?4.0:3.7,13);
+      if (boss.phaseTwo) {
+        spawnShot(g,boss,p,3.8,11,false,null,.22);
+        spawnShot(g,boss,p,3.8,11,false,null,-.22);
+      }
+      boss.cooldown=boss.phaseTwo?.58:.65;
+    }
   }
   // Vitória é resolvida mesmo se o golpe final vier de fora da arena;
   // o último disparo não deve obrigar o jogador a atravessar a eclusa novamente.
   if (!boss.dead && boss.hp<=0) {
-    boss.dead=true; playCitadelSound('victory'); flags.cidadela_estavel=true; g.shots.length=0; g.enemies.length=0;
+    boss.dead=true; boss.death=1.4; playCitadelSound('victory'); flags.cidadela_estavel=true; g.shots.length=0; g.enemies.length=0;
+    g.drops.push({kind:'nucleo_estatica',x:boss.x-.4,y:boss.y-.3,life:180},{kind:'sucata_codigo',x:boss.x-.4,y:boss.y+.3,life:180});
     if (progress.activeQuest?.id==='embarque_dimensional' && progress.activeQuest.status !== 'completed') {
       progress.activeQuest.stage='cidadela_estavel'; progress.activeQuest.status='completed'; progress.activeQuest.description='Reator estabilizado. Volte à Estação 66.6 ou explore a Cidadela.';
       progress.completedQuests ??= []; if (!progress.completedQuests.includes('embarque_dimensional')) progress.completedQuests.push('embarque_dimensional');
@@ -680,10 +792,10 @@ function makeSprite(type) {
     x.fillStyle='#29444a'; x.fillRect(4,18,88,94); x.fillStyle='#091217'; x.fillRect(10,24,76,80);
     x.strokeStyle='#3c9ba4'; x.lineWidth=2; x.beginPath(); x.moveTo(48,39); x.lineTo(35,61); x.lineTo(27,88); x.moveTo(48,39); x.lineTo(60,62); x.lineTo(70,91); x.moveTo(35,61); x.lineTo(58,62); x.lineTo(53,90); x.moveTo(35,61); x.lineTo(40,90); x.stroke();
     x.fillStyle='#000'; x.fillRect(39,28,18,16); x.strokeStyle='#4ab3b2'; x.strokeRect(39,28,18,16); x.fillStyle='#97ffff'; x.fillRect(17,99,62,2);
-  } else if (['generator','crate','barrel','drone','column','reactor','terminal','antenna','vent','beacon','probe','relay_off','relay_on','transmitter','recording','training','listening_beacon','signal_fragment','breach_open','breach_sealed','cache_closed','cache_open','breach_console','memory_echo_pending','memory_echo_done','echo_terminal_off','echo_terminal_on','anchor_sleep','anchor_active','lost_recorder','signal_map','emergency_light','memory_relay','workshop_switch_off','workshop_switch_on','workshop_hazard_idle','workshop_hazard_active','workshop_terminal','workshop_core_off','workshop_core_on','workshop_pipes','workshop_bench','workshop_robot'].includes(type)) {
+  } else if (['generator','crate','barrel','drone','column','reactor','terminal','antenna','vent','beacon','probe','relay_off','relay_on','transmitter','recording','training','listening_beacon','signal_fragment','breach_open','breach_sealed','cache_closed','cache_open','breach_console','memory_echo_pending','memory_echo_done','echo_terminal_off','echo_terminal_on','anchor_sleep','anchor_active','lost_recorder','signal_map','emergency_light','memory_relay','workshop_switch_off','workshop_switch_on','workshop_hazard_idle','workshop_hazard_active','workshop_terminal','workshop_core_off','workshop_core_on','workshop_pipes','workshop_bench','workshop_robot','crafting_bench','patrol_console','energy_cell','drop_sucata','drop_nucleo'].includes(type)) {
     // Silhueta alternativa para partidas offline ou imagens indisponíveis.
     x.fillStyle='#1b3035';x.fillRect(20,34,56,80);x.fillStyle='#557479';x.fillRect(24,38,48,72);
-    x.fillStyle='#101b20';x.fillRect(29,45,38,45);x.fillStyle=type==='beacon'?'#ed5d58':'#68dedc';x.fillRect(38,57,20,12);
+    x.fillStyle='#101b20';x.fillRect(29,45,38,45);x.fillStyle=type==='beacon'?'#ed5d58':type==='drop_sucata'?'#f3b15c':type==='drop_nucleo'?'#d07aff':'#68dedc';x.fillRect(38,57,20,12);
   } else if (type==='impact_red' || type==='impact_cyan') {
     x.fillStyle=type==='impact_red'?'#ff6057':'#6be7ea';
     x.fillRect(43,34,10,52);x.fillRect(22,55,52,10);x.fillRect(31,44,34,31);
@@ -701,7 +813,7 @@ function setupBuffer() {
   buffer=document.createElement('canvas'); buffer.width=W; buffer.height=H; worldCtx=buffer.getContext('2d'); ctx=worldCtx;
   // Mundo em baixa resolução, letras desenhadas separadamente em 2x.
   uiBuffer=document.createElement('canvas'); uiBuffer.width=W*2; uiBuffer.height=H*2; uiCtx=uiBuffer.getContext('2d');
-  sprites=Object.fromEntries(['imp','echo','orb','boss','shot','shot_echo','shot_orb','key','nulo','exit','supply','impact_red','impact_cyan','generator','crate','barrel','drone','column','reactor','terminal','antenna','vent','beacon','probe','relay_off','relay_on','transmitter','recording','training','listening_beacon','signal_fragment','breach_open','breach_sealed','cache_closed','cache_open','breach_console','breach_shot','memory_echo_pending','memory_echo_done','echo_terminal_off','echo_terminal_on','anchor_sleep','anchor_active','lost_recorder','signal_map','emergency_light','memory_relay','workshop_switch_off','workshop_switch_on','workshop_hazard_idle','workshop_hazard_active','workshop_terminal','workshop_core_off','workshop_core_on','workshop_pipes','workshop_bench','workshop_robot'].map(k=>[k,makeSprite(k)]));
+  sprites=Object.fromEntries(['imp','echo','orb','boss','shot','shot_echo','shot_orb','key','nulo','exit','supply','impact_red','impact_cyan','generator','crate','barrel','drone','column','reactor','terminal','antenna','vent','beacon','probe','relay_off','relay_on','transmitter','recording','training','listening_beacon','signal_fragment','breach_open','breach_sealed','cache_closed','cache_open','breach_console','breach_shot','memory_echo_pending','memory_echo_done','echo_terminal_off','echo_terminal_on','anchor_sleep','anchor_active','lost_recorder','signal_map','emergency_light','memory_relay','workshop_switch_off','workshop_switch_on','workshop_hazard_idle','workshop_hazard_active','workshop_terminal','workshop_core_off','workshop_core_on','workshop_pipes','workshop_bench','workshop_robot','crafting_bench','patrol_console','energy_cell','drop_sucata','drop_nucleo'].map(k=>[k,makeSprite(k)]));
   // Fallbacks também cobrem impactos antes do carregamento ou sem imagens.
   sprites.impact_metal=sprites.impact_red; sprites.impact_shield=sprites.impact_cyan;
   // Carregamento tardio: outras dimensões não pagam pelas artes da Cidadela.
@@ -709,6 +821,9 @@ function setupBuffer() {
     ['imp','assets/sprites/cidadela-404/imp-glitch.png'],
     ['orb','assets/sprites/cidadela-404/cyber-orbe.png'],
     ['boss','assets/sprites/cidadela-404/vigilante.png'],
+    ['boss_fall','assets/sprites/cidadela-404/vigilante-queda.png'],
+    ['boss_death','assets/sprites/cidadela-404/vigilante-colapso.png'],
+    ['boss_shield','assets/sprites/cidadela-404/vigilante-escudo-impacto.png'],
     ['imp_attack','assets/sprites/cidadela-404/imp-ataque.png'],
     ['orb_attack','assets/sprites/cidadela-404/orbe-ataque.png'],
     ['echo_attack','assets/sprites/cidadela-404/echovore-ataque.png'],
@@ -724,6 +839,12 @@ function setupBuffer() {
     ['key','assets/sprites/cidadela-404/terminal-memoria.png'],
     ['exit','assets/sprites/cidadela-404/portal-retorno.png'],
     ['nulo','assets/sprites/cidadela-404/monitor-nulo.png'],
+    ['crafting_bench','assets/sprites/cidadela-404/bancada-sintese.png'],
+    ['patrol_console','assets/sprites/cidadela-404/terminal-estabilizacao.png'],
+    ['energy_cell','assets/sprites/cidadela-404/suprimento-energia.png'],
+    ['drop_sucata','assets/sprites/cidadela-404/drop-sucata-codigo.png'],
+    ['drop_nucleo','assets/sprites/cidadela-404/drop-nucleo-estatica.png'],
+    ['probe_b','assets/sprites/cidadela-404/sonda-nexo-pulso.png'],
     ['weapon_mare','assets/sprites/cidadela-404/canhao-mare.png'],
     ['weapon_nucleo','assets/sprites/cidadela-404/canhao-nucleo.png'],
     ['weapon_dominio','assets/sprites/cidadela-404/canhao-dominio.png'],
@@ -805,8 +926,8 @@ function setupBuffer() {
       ['echo_side_release','resposta-echo-lateral-disparo'],['echo_back_release','resposta-echo-costas-disparo'],
       ...['mare','nucleo','dominio','bio'].map(mode=>[`weapon_${mode}_blocked`,`resposta-recarga-${mode}`])]
       .map(([type,name])=>[type,`assets/sprites/cidadela-404/${name}.png`]),
-    ...[['key_amarela','rota-terminal-amarela'],['key_vermelha','rota-terminal-vermelha'],
-      ['route_azul','rota-icone-azul'],['route_amarela','rota-icone-amarela'],
+    ...[['key_azul','rota-terminal-azul'],['key_amarela','rota-terminal-amarela'],['key_vermelha','rota-terminal-vermelha'],
+      ['route_azul','rota-icone-azul'],['route_amarela','rota-icone-amarela'],['route_vermelha','rota-icone-vermelha'],
       ['route_reator','rota-icone-reator'],['route_saida','rota-icone-saida'],
       ['route_guide','rota-icone-guia'],['route_journal','rota-icone-diario']]
       .map(([type,name])=>[type,`assets/sprites/cidadela-404/${name}.png`]),
@@ -937,9 +1058,11 @@ function drawWorld(map, flags, p, g, progress) {
       return [{...o,type:active?'workshop_switch_off':'workshop_switch_on',scale:.52,ground:true},
         {...o.emitter,type:phase==='active'?'workshop_hazard_active':'workshop_hazard_idle',phase,scale:.36,ground:true}];
     }),
-    {...CITADEL_POSTGAME.sonda,type:'probe'},
+    {...CITADEL_POSTGAME.sonda,type:(!reducedMotion() && Math.floor(g.time*1.6)%2===1 && sprites.probe_b)?'probe_b':'probe'},
     {...CITADEL_POSTGAME.transmissor,type:'transmitter',ground:true},
     {...CITADEL_POSTGAME.treino,type:'training',ground:true},
+    {...CITADEL_PATROL_CONSOLE,type:'patrol_console',scale:.62,ground:true},
+    {...CITADEL_DORMANT_GUARDIAN,type:'boss_death',scale:1.65,ground:true},
     ...CITADEL_POSTGAME.reles.map((o,i)=>({...o,type:mission.rede.objectives[i].done?'relay_on':'relay_off',ground:true})),
     ...CITADEL_POSTGAME.registros.map(o=>({...o,type:'recording',ground:true})),
     ...CITADEL_POSTGAME.decor.map(o=>({...o,ground:true})),
@@ -955,13 +1078,16 @@ function drawWorld(map, flags, p, g, progress) {
     {...CITADEL_ECHO_TERMINAL,type:echoesReady?'echo_terminal_on':'echo_terminal_off',scale:.52,ground:true},
     ...CITADEL_ECHOES.map(e=>({...e,type:flags[e.flag]?'memory_echo_done':'memory_echo_pending',scale:.33})),
     ...CITADEL_DECOR.map(o=>({...o,ground:true})),
+    {...CITADEL_CRAFT_BENCH,type:'crafting_bench',scale:.74,ground:true},
     ...CITADEL_ARCHIVES.map(a=>({...a,type:'terminal',archiveId:a.id,scale:.72,ground:true})),
     {type:'exit',x:1.65,y:6.5,scale:1.2},
     ...CITADEL_NULL_MONITORS.map(m=>({...m,type:'nulo',scale:.56,signal:g.signalTime>0 && g.signalMonitorId===m.id})),
     ...KEYS.filter(k=>!flags[k.flag]).map(k=>({...k,type:'key',scale:.7})),
     ...g.supplies.filter(s=>!s.used).map(s=>({...s,type:'supply',scale:.45})),
+    ...(g.energyCells ?? []).filter(c=>!c.used).map(c=>({...c,type:'energy_cell',scale:.44,ground:true})),
+    ...(g.drops ?? []).map(d=>({...d,type:d.kind==='sucata_codigo'?'drop_sucata':'drop_nucleo',scale:.38,ground:true,alpha:d.life<6?clamp(d.life/6,0,1):1})),
     ...g.enemies.filter(e=>e.hp>0 || e.death>0).map(e=>({...e,scale:e.type==='orb'?.85:1})),
-    ...(!g.boss.dead?[{...g.boss,scale:2.2}]:[]),
+    ...(!g.boss.dead || (g.boss.death ?? 0)>0?[{...g.boss,scale:2.2}]:[]),
     ...g.shots.flatMap(s=>{
       const type=s.kind==='echo'?'shot_echo':s.kind==='orb'?'shot_orb':s.kind==='breach_shot'?'breach_shot':'shot';
       const main={...s,type,scale:.18*(reducedMotion()?1:1+.12*Math.sin(g.time*7))};
@@ -976,7 +1102,7 @@ function drawWorld(map, flags, p, g, progress) {
     const dx=o.x-p.x,dy=o.y-p.y, forward=dx*dirX+dy*dirY, lateral=-dx*dirY+dy*dirX;
     if(forward<.15) continue;
     const center=W/2+(lateral/forward)*(W/(2*plane));
-    const base=sprites[o.type];
+    const base=sprites[o.type] ?? sprites.bossClosed ?? sprites.boss;
     const frame=enemyVisualFrame(o);
     let visual=citadelSpriteFrame(o,g.time,reducedMotion()), flip=false, directionalBase=null;
     if(['idle','attack','hurt','death'].includes(frame) && ['imp','orb','echo'].includes(o.type)) {
@@ -1012,7 +1138,7 @@ function drawWorld(map, flags, p, g, progress) {
     if(o.archiveId && sprites[`archive_${o.archiveId}`]) visual=`archive_${o.archiveId}`;
     if(o.type==='boss') visual=bossVisualFrame(g.boss,g.time,reducedMotion());
     const chosen=sprites[visual];
-    const bossFallback=o.type==='boss' ? (visual==='boss_attack_b'?sprites.boss_attack : visual==='boss_warning_b'?sprites.boss_warning : bossOpen(g.boss)?sprites.boss_open_a : sprites.bossClosed) : null;
+    const bossFallback=o.type==='boss' ? (visual==='boss_attack_b'?sprites.boss_attack : visual==='boss_warning_b'?sprites.boss_warning : (visual==='boss_fall'||visual==='boss_death')?(sprites.boss_death ?? sprites.bossClosed) : visual==='boss_shield'?(sprites.boss_shield ?? sprites.bossClosed) : bossOpen(g.boss)?sprites.boss_open_a : sprites.bossClosed) : null;
     const sprite=chosen ?? (frame==='attack'?sprites[`${o.type}_attack`]:null) ?? bossFallback ?? base;
     const aspect=directionalBase ?? (visual.includes('_walk_') ? sprite : base);
     const h=Math.min(H*4,H/forward*o.scale), w=h*(aspect.width/aspect.height), left=center-w/2;
@@ -1021,11 +1147,11 @@ function drawWorld(map, flags, p, g, progress) {
     const pulse=sprites[citadelPulseFrame(o.type,o.windup,g.scan,g.time,reducedMotion())];
     const alpha=o.alpha ?? (o.death>0 ? enemyDeathAlpha(o.death,reducedMotion()) : 1);
     const bob=reducedMotion()?0:o.moving?Math.sin(g.time*8+o.x)*2:
-      (o.type==='memory_echo_pending'||o.type==='memory_relay'?Math.sin(g.time*1.5+o.x)*1.4:0);
+      (['memory_echo_pending','memory_relay','drop_sucata','drop_nucleo','energy_cell'].includes(o.type)?Math.sin(g.time*2.1+o.x)*1.5:0);
     // Os frames gerados são próximos entre si. Um pequeno deslocamento das
     // pernas realça a passada sem girar o cenário ou modificar colisões.
     const stride=!directionalBase && !reducedMotion() && o.moving && (o.type==='imp'||o.type==='echo') ? Math.round(Math.sin(g.time*8+o.x)*2) : 0;
-    const fall=!reducedMotion() && o.death>0 ? (1-o.death/.7)*12 : 0;
+    const fall=!reducedMotion() && o.death>0 && o.type!=='boss' ? (1-o.death/.7)*12 : 0;
     const top=(o.ground || ['key','supply','exit'].includes(o.type) ? H/2+H/(2*forward)-h : H/2-h*.50)+bob+fall;
     ctx.save();ctx.globalAlpha=alpha;
     for(let sx=Math.max(0,Math.floor(left));sx<Math.min(W,Math.ceil(left+w));sx+=2) {
@@ -1064,6 +1190,10 @@ function drawWorld(map, flags, p, g, progress) {
         ctx.fillStyle='#ffe2a6';ctx.fillText(o.phase==='safe'?'JANELA SEGURA':o.phase==='warning'?'! PULSO EM BREVE':'! PULSO ATIVO',center,top-3);
       } else if(o.windup>0 && forward<8) {
         ctx.fillStyle='#ffd89a';ctx.fillText(o.type==='breach_open'?'! PULSO: DESVIE':'! PREPARANDO DISPARO',center,top-3);
+      } else if(o.maxHp && o.hp>0 && o.hp<o.maxHp && o.type!=='boss' && forward<9) {
+        const bw=clamp(w*.6,18,34);
+        ctx.fillStyle='#10181c';ctx.fillRect(center-bw/2,top-6,bw,3);
+        ctx.fillStyle=o.type==='echo'?'#68e9e3':'#ff5e55';ctx.fillRect(center-bw/2,top-6,bw*clamp(o.hp/o.maxHp,0,1),3);
       }
     }
   }
@@ -1174,6 +1304,9 @@ function drawMap(map,flags,p,g,progress) {
   ctx.fillText(nav.reachable?`R: ${nav.target.label}`:'ROTA INDISPONÍVEL',x0+9,y0+60);
   for(const k of KEYS) if(!flags[k.flag]) {ctx.fillStyle=k.color;ctx.fillRect(x0+k.x*scale-1,y0+k.y*scale-1,3,3);}
   for(const s of g.supplies)if(!s.used){ctx.fillStyle='#a0ef9f';ctx.fillRect(x0+s.x*scale,y0+s.y*scale,2,2);}
+  for(const c of g.energyCells ?? [])if(!c.used){ctx.fillStyle='#72fff2';ctx.fillRect(x0+c.x*scale,y0+c.y*scale,2,2);}
+  for(const d of g.drops ?? []){ctx.fillStyle=d.kind==='sucata_codigo'?'#f3b15c':'#d07aff';ctx.fillRect(x0+d.x*scale,y0+d.y*scale,2,2);}
+  {ctx.fillStyle='#6ef5d2';ctx.fillRect(x0+CITADEL_CRAFT_BENCH.x*scale-1,y0+CITADEL_CRAFT_BENCH.y*scale-1,3,3);}
   for(const a of CITADEL_ARCHIVES)if(!flags[a.flag]){ctx.strokeStyle='#80d0ea';ctx.strokeRect(x0+a.x*scale-2,y0+a.y*scale-2,4,4);}
   for(const e of CITADEL_ECHOES)if(!flags[e.flag]){ctx.strokeStyle='#62ffd8';ctx.beginPath();ctx.arc(x0+e.x*scale,y0+e.y*scale,2,0,Math.PI*2);ctx.stroke();}
   for(const m of CITADEL_NULL_MONITORS)if(!flags[m.flag]){ctx.strokeStyle='#c6adff';ctx.strokeRect(x0+m.x*scale-2,y0+m.y*scale-2,4,4);}
@@ -1191,6 +1324,7 @@ function drawMap(map,flags,p,g,progress) {
       const x=x0+o.x*scale,y=y0+o.y*scale;
       ctx.strokeStyle='#ffb97c';ctx.beginPath();ctx.moveTo(x,y-3);ctx.lineTo(x-3,y+2);ctx.lineTo(x+3,y+2);ctx.closePath();ctx.stroke();
     }
+    ctx.fillStyle='#9ff0d9';ctx.fillRect(x0+CITADEL_PATROL_CONSOLE.x*scale-1,y0+CITADEL_PATROL_CONSOLE.y*scale-1,3,3);
     ctx.fillStyle='#d1d9cd';ctx.font='6px monospace';ctx.textAlign='left';ctx.fillText('FENDA □ / OFICINA △',x0,y0+50);
     for(const b of CITADEL_BREACHES) {
       if(!flags[sealedFlag(b.id)]) {ctx.strokeStyle='#ff8989';ctx.strokeRect(x0+b.x*scale-2,y0+b.y*scale-2,4,4);}
@@ -1244,11 +1378,11 @@ export function renderCitadel(canvas,state) {
   const ultStatus=!ultUnlocked?'NV3':p.ultimate?.cooldown>0?Math.ceil(p.ultimate.cooldown)+'s':'OK';
   if(sprites.hud_energy)ctx.drawImage(sprites.hud_energy,W-160,H-39,10,10);
   ctx.fillStyle='#c9f2ee';ctx.font='8px monospace';ctx.fillText('EN '+Math.floor(p.energy ?? 0)+'  Q '+(g.q?Math.ceil(g.q)+'s':'OK')+'  SH '+(g.boost?Math.ceil(g.boost)+'s':'OK')+'  F '+ultStatus,W-9,H-30);
-  if(g.guard>0 || g.shield>0 || g.vectorCharge>0 || g.echoAnchor>0) {ctx.textAlign='center';ctx.fillStyle=mod.color;
+  if(g.guard>0 || g.shield>0 || g.vectorCharge>0 || g.echoAnchor>0 || g.relicShotBonus>0 || g.relicReactor) {ctx.textAlign='center';ctx.fillStyle=mod.color;
     const guard=g.guard>0?'GUARDA '+Math.ceil(g.guard)+'s':'';
     const shield=g.shield>0?'ESCUDO '+Math.ceil(g.shield)+'s':'';
     const vector=g.vectorCharge>0?'VETOR +12 '+Math.ceil(g.vectorCharge)+'s':'';
-    const status=[guard,shield,vector,g.echoAnchor>0?'SINAL -30% ECO '+Math.ceil(g.echoAnchor)+'s':''].filter(Boolean).join(' • ');
+    const status=[guard,shield,vector,g.echoAnchor>0?'SINAL -30% ECO '+Math.ceil(g.echoAnchor)+'s':'',g.relicShotBonus>0?'SELO +25% DANO':'',g.relicReactor?'NÚCLEO -Q/+EN':''].filter(Boolean).join(' • ');
     if((guard || shield) && sprites.hud_shield) {
       const width=ctx.measureText(status)?.width ?? status.length*4.8;
       ctx.drawImage(sprites.hud_shield,Math.max(3,W/2-width/2-12),55,9,9);
@@ -1256,6 +1390,11 @@ export function renderCitadel(canvas,state) {
     ctx.fillText(status,W/2,65);}
   ctx.textAlign='left';ctx.fillStyle='#d9b9ae';ctx.fillText('REGISTROS '+KEYS.map(k=>flags[k.flag]?k.symbol:'□').join(' ')+'  '+(flags.cidadela_estavel?missionObjective(state.progress):KEYS.every(k=>flags[k.flag])?'ALCANCE O REATOR':'ENCONTRE OS REGISTROS'),9,24,W-105);
   ctx.textAlign='right';ctx.fillStyle='#9fbfca';ctx.fillText('ARQUIVOS '+CITADEL_ARCHIVES.filter(a=>flags[a.flag]).length+'/3',W-9,24);
+  const mats=state.progress?.citadelMaterials ?? {sucata_codigo:0,nucleo_estatica:0};
+  if((mats.sucata_codigo ?? 0)>0 || (mats.nucleo_estatica ?? 0)>0) {
+    ctx.fillStyle='#e8d49c';ctx.font='bold 7px monospace';
+    ctx.fillText(`SUC ${mats.sucata_codigo ?? 0} • NÚC ${mats.nucleo_estatica ?? 0}`,W-9,38);
+  }
   ctx.textAlign='center';ctx.fillStyle='#d4eeee';ctx.font='bold 9px monospace';
   ctx.fillText('WASD MOVE · MOUSE/SETAS MIRA · CLIQUE/ESPAÇO ATIRA · E USA',W/2,H-17);
   ctx.fillText('Q MÓD · R RADAR · T REC · SHIFT IMP · F ULT · P PAUSA · L/J/K · M SOM',W/2,H-5);
@@ -1265,6 +1404,9 @@ export function renderCitadel(canvas,state) {
   if(target?.kind==='exit') prompt='[E] RETORNAR À ESTAÇÃO 66.6';
   if(target?.kind==='key') prompt=`[E] REGISTRO ${target.symbol} ${target.label}`;
   if(target?.kind==='archive') prompt=`[E] ARQUIVO ${target.label}${flags[target.flag]?' • REVER':''}`;
+  if(target?.kind==='crafting_bench') prompt='[E] BANCADA DE SÍNTESE • CRIAR ITENS';
+  if(target?.kind==='patrol_console') prompt=g.patrol?'[E] ENCERRAR RONDA SETORIAL':'[E] INICIAR RONDA SETORIAL (7 HOSTIS)';
+  if(target?.kind==='dormant_guardian') prompt='[E] EXAMINAR CARCAÇA DO VIGILANTE';
   if(target?.kind==='workshop_switch') prompt=!workshopCircuitActive(state.progress,g,target)?'[E] CIRCUITO • REVER':workshopPhase(g.time,target.offset)==='safe'?'[E] REGULAR CIRCUITO • JANELA SEGURA':'CIRCUITO ENERGIZADO • AGUARDE';
   if(target?.kind==='workshop_terminal') prompt='[E] TERMINAL DA OFICINA';
   if(target?.kind==='workshop_trial') prompt=flags.cidadela_vigilia_concluida?(g.workshopTrial?'[E] SENTINELA • CANCELAR ENSAIO':'[E] SENTINELA • INICIAR ENSAIO'):'[E] SENTINELA EM ESPERA';
@@ -1303,10 +1445,14 @@ export function renderCitadel(canvas,state) {
     const remaining=g.enemies.filter(e=>e.breach===g.breach.id && e.hp>0).length;
     ctx.fillText(`FENDA • ONDA ${g.breach.wave}/2 • ${g.breach.prep>0?'PREPARANDO':`ECOS ${remaining}`}${g.breach.windup>0?' • PULSO: DESVIE':''}`,W/2,43);
   }
+  if(g.patrol) {
+    ctx.font='bold 9px monospace';ctx.fillStyle='#8ef2da';
+    ctx.fillText(`RONDA SETORIAL • HOSTIS ${g.enemies.filter(e=>e.hp>0).length}`,W/2,43);
+  }
   if(!g.boss.dead && p.x>22.7) {
-    const text=bossOpen(g.boss)?'NÚCLEO EXPOSTO — DISPARE':g.boss.cycle<2?'VIGILANTE — PREPARANDO RAJADA':'RAJADA — DESVIE!';
-    ctx.font='bold 9px monospace';ctx.fillStyle=bossOpen(g.boss)?'#abffff':'#ff9081';ctx.fillText(text,W/2,43);
-    ctx.fillStyle='#282f32';ctx.fillRect(W/2-70,48,140,4);ctx.fillStyle='#ff5c59';ctx.fillRect(W/2-70,48,140*clamp(g.boss.hp/280,0,1),4);
+    const text=bossOpen(g.boss)?'NÚCLEO EXPOSTO — DISPARE':g.boss.cycle<2?(g.boss.phaseTwo?'VIGILANTE FASE 2 — SOBRETENSÃO':'VIGILANTE — PREPARANDO RAJADA'):(g.boss.phaseTwo?'RAJADA TRIPLA — DESVIE!':'RAJADA — DESVIE!');
+    ctx.font='bold 9px monospace';ctx.fillStyle=bossOpen(g.boss)?'#abffff':g.boss.phaseTwo?'#ff7171':'#ff9081';ctx.fillText(text,W/2,43);
+    ctx.fillStyle='#282f32';ctx.fillRect(W/2-70,48,140,4);ctx.fillStyle=g.boss.phaseTwo?'#ff3e55':'#ff5c59';ctx.fillRect(W/2-70,48,140*clamp(g.boss.hp/280,0,1),4);
   }
   if(g.messageTime>0){
     const lines=wrapCitadelText(g.message), height=lines.length*12+6, top=H-42-height;
@@ -1317,7 +1463,7 @@ export function renderCitadel(canvas,state) {
     ctx.fillStyle='rgba(1,8,12,.94)';ctx.fillRect(45,35,W-90,H-70);
     ctx.strokeStyle=mod.color;ctx.lineWidth=1;ctx.strokeRect(45,35,W-90,H-70);
     ctx.textAlign='left';ctx.fillStyle=mod.color;ctx.font='bold 13px monospace';
-    ctx.fillText(g.panel==='journal'?'ARQUIVO DE MEMÓRIA':g.panel==='missions'?'MISSÕES DA CIDADELA':g.panel==='dimension'?'SINTONIA LOCAL // CIDADELA':'SINAL EM PAUSA',62,58);
+    ctx.fillText(g.panel==='journal'?'ARQUIVO DE MEMÓRIA':g.panel==='missions'?'MISSÕES DA CIDADELA':g.panel==='dimension'?'SINTONIA LOCAL // CIDADELA':g.panel==='craft'?'BANCADA DE SÍNTESE // FORJA':'SINAL EM PAUSA',62,58);
     if(g.panel==='journal' && sprites.route_journal)ctx.drawImage(sprites.route_journal,W-83,44,12,12);
     ctx.font='9px monospace';ctx.fillStyle='#d2eeee';
     if(g.panel==='journal') {
@@ -1332,15 +1478,30 @@ export function renderCitadel(canvas,state) {
       ctx.fillStyle=flags.cidadela_estavel?'#b4fff1':'#d9b9ae';
       ctx.fillText(`CRTs ${crtCount(state.progress)}/3 • ECOS ${memoryEchoCount(state.progress)}/3 • REVEJA NOS PONTOS.`,62,217,W-125);
     } else if(g.panel==='missions') {
-      if(!flags.cidadela_estavel) ctx.fillText('MISSÕES DE EXPLORAÇÃO DISPONÍVEIS APÓS A ESTABILIZAÇÃO.',62,83,W-125);
-      else {
+      if(!flags.cidadela_estavel) {
+        ctx.fillText(`FORJA DO CÓDIGO QUEIMADO • SUC ${mats.sucata_codigo} • NÚC ${mats.nucleo_estatica}`,62,80,W-125);
+        ctx.fillStyle='#9fbfca';ctx.fillText('MISSÕES DE EXPLORAÇÃO ADICIONAIS LIBERAM APÓS O REATOR.',62,98,W-125);
+      } else {
         const {rede,vozes}=citadelMissions(state.progress);
-        ctx.fillStyle=mod.color;ctx.fillText('REDE DE ESCUTA • '+(rede.status==='completed'?'CONCLUÍDA':rede.status==='active'?'EM ANDAMENTO':'FALE COM NEXO-04'),62,78,W-125);
-        ctx.fillStyle='#d2eeee';rede.objectives.forEach((o,i)=>ctx.fillText(`${o.done?'[X]':'[ ]'} ${o.label}`,62,92+i*12,W-125));
-        ctx.fillStyle=mod.color;ctx.fillText('VOZES NA ESTÁTICA • '+(vozes.status==='completed'?'CONCLUÍDA':vozes.status==='active'?'EM ANDAMENTO':'CONSULTE O TRANSMISSOR'),62,153,W-125);
-        ctx.fillStyle='#d2eeee';vozes.objectives.forEach((o,i)=>ctx.fillText(`${o.done?'[X]':'[ ]'} ${o.label}`,62,167+i*12,W-125));
+        ctx.fillStyle=mod.color;ctx.fillText('REDE DE ESCUTA • '+(rede.status==='completed'?'CONCLUÍDA':rede.status==='active'?'EM ANDAMENTO':'FALE COM NEXO-04'),62,76,W-125);
+        ctx.fillStyle='#d2eeee';rede.objectives.forEach((o,i)=>ctx.fillText(`${o.done?'[X]':'[ ]'} ${o.label}`,62,89+i*11,W-125));
+        ctx.fillStyle=mod.color;ctx.fillText('VOZES NA ESTÁTICA • '+(vozes.status==='completed'?'CONCLUÍDA':vozes.status==='active'?'EM ANDAMENTO':'CONSULTE O TRANSMISSOR'),62,138,W-125);
+        ctx.fillStyle='#d2eeee';vozes.objectives.forEach((o,i)=>ctx.fillText(`${o.done?'[X]':'[ ]'} ${o.label}`,62,151+i*11,W-125));
         const summary=breachSummary(state.progress);ctx.fillStyle=mod.color;
-        ctx.fillText(`FENDAS ${summary.sealed}/3 • COFRES ${summary.caches}/3 • ${g.workshopTrial?'ENSAIO '+g.workshopTrial.done.length+'/3':'OFICINA '+workshopCount(state.progress)+'/3'}`,62,216,W-125);
+        ctx.fillText(`FORJA ${flags.cidadela_forja_concluida?'CONCLUÍDA':`SUC ${mats.sucata_codigo}/2`} • FENDAS ${summary.sealed}/3 • COFRES ${summary.caches}/3 • ${g.workshopTrial?'ENSAIO '+g.workshopTrial.done.length+'/3':'OFICINA '+workshopCount(state.progress)+'/3'}`,62,216,W-125);
+      }
+    } else if(g.panel==='craft') {
+      const bag=state.progress?.citadelMaterials ?? {sucata_codigo:0,nucleo_estatica:0};
+      ctx.fillStyle='#ffe8a3';ctx.fillText(`SUCATA DE CÓDIGO: ${bag.sucata_codigo ?? 0}   •   NÚCLEO DE ESTÁTICA: ${bag.nucleo_estatica ?? 0}`,62,74,W-125);
+      for(const [i,recipe] of CITADEL_RECIPES.entries()) {
+        const y=91+i*25, owned=recipe.itemId && hasRelic(state.progress,recipe.itemId);
+        const can=canCraftRecipe(state.progress,recipe,g,p).ok && !owned;
+        const costText=Object.entries(recipe.cost).map(([k,v])=>`${k==='sucata_codigo'?'SUC':'NÚC'} ${v}`).join(' + ');
+        ctx.fillStyle=owned?'#7bd8b8':can?mod.color:'#8fa1a3';
+        ctx.fillText(`[${i+1}] ${recipe.name} (${costText})${owned?' • FORJADO':''}`,62,y,W-125);
+        ctx.fillStyle='#cfe8e6';ctx.font='8px monospace';
+        ctx.fillText(recipe.description,74,y+10,W-140);
+        ctx.font='9px monospace';
       }
     } else if(g.panel==='dimension') {
       const local=g.localProgress ?? getDimensionProgress(state.progress);
@@ -1373,7 +1534,7 @@ export function renderCitadel(canvas,state) {
       ctx.fillText('SAÍDA JUNTO À CHEGADA • K: SINTONIA LOCAL.',62,183);
       ctx.fillText(`M SOM ${citadelAudioEnabled()?'LIGADO':'DESLIGADO'} • EFEITOS OPCIONAIS`,62,201);
     }
-    ctx.fillStyle='#9cc9c7';ctx.fillText('P / ESC CONTINUA • L REGISTROS • J MISSÕES • K SINTONIA',62,g.panel==='journal'||g.panel==='missions'||g.panel==='dimension'?229:220);
+    ctx.fillStyle='#9cc9c7';ctx.fillText(g.panel==='craft'?'[1–5] SINTETIZAR • [E] / [P] / [ESC] FECHAR':'P / ESC CONTINUA • L REGISTROS • J MISSÕES • K SINTONIA',62,g.panel==='journal'||g.panel==='missions'||g.panel==='dimension'||g.panel==='craft'?229:220);
   }
   const out=canvas.getContext('2d');out.save();out.setTransform(1,0,0,1,0,0);out.imageSmoothingEnabled=false;out.drawImage(buffer,0,0,canvas.width,canvas.height);out.imageSmoothingEnabled=true;out.drawImage(uiBuffer,0,0,canvas.width,canvas.height);out.restore();
 }

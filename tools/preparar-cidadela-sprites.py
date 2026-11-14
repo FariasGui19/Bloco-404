@@ -493,3 +493,28 @@ for name in ['rota-terminal-amarela','rota-terminal-vermelha','rota-icone-azul',
     image.thumbnail((size,size),Image.Resampling.LANCZOS)
     image.save(dst / f'{name}.png',optimize=True)
     print(name,image.size)
+
+# Terminal azul e ícone vermelho pendentes, colapso/escudo do Vigilante,
+# célula de energia, drops de craft, bancada de síntese e pulso da sonda.
+for name in ['rota-terminal-azul','rota-icone-vermelha','vigilante-queda','vigilante-colapso',
+             'vigilante-escudo-impacto','suprimento-energia','drop-sucata-codigo',
+             'drop-nucleo-estatica','bancada-sintese','sonda-nexo-pulso']:
+    image=Image.open(src / f'{name}.png').convert('RGBA')
+    if name=='vigilante-colapso':
+        # Remove a faixa estreita de piso sob os joelhos antes do recorte.
+        image=image.crop((0,0,image.width,int(image.height*0.925)))
+    elif name=='vigilante-escudo-impacto':
+        image=image.crop((0,0,image.width,int(image.height*0.94)))
+    pixels=image.load()
+    for y in range(image.height):
+        for x in range(image.width):
+            r,g,b,a=pixels[x,y]
+            if r>120 and b>120 and g<150 and min(r,b)-g>60:
+                pixels[x,y]=(0,0,0,0)
+    box=image.getbbox()
+    if not box: raise ValueError(f'Sprite vazio: {name}')
+    image=image.crop(box)
+    size=96 if name=='rota-icone-vermelha' else 256 if name.startswith('vigilante-') else 192 if name in ('rota-terminal-azul','bancada-sintese') else 160
+    image.thumbnail((size,size),Image.Resampling.LANCZOS)
+    image.save(dst / f'{name}.png',optimize=True)
+    print(name,image.size)

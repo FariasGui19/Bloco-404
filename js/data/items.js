@@ -127,6 +127,18 @@ export const ITEMS = Object.freeze({
     icon: 'inventario',
     description: 'Cápsula de manutenção recolhida no Viaduto dos Vetores: a primeira prova de campo da Base dos Vetores fora do aeroporto.',
   }),
+  selo_codigo_queimado: Object.freeze({
+    name: 'SELO DO CÓDIGO QUEIMADO',
+    kind: 'relíquia',
+    icon: 'progressao',
+    description: 'Peça forjada na Bancada de Síntese da Cidadela 404. Amplifica os disparos dimensionais em +25% dentro da Cidadela.',
+  }),
+  nucleo_vigilante_forjado: Object.freeze({
+    name: 'NÚCLEO DO VIGILANTE FORJADO',
+    kind: 'relíquia',
+    icon: 'energia',
+    description: 'Reator portátil sintetizado com Núcleos de Estática após estabilizar a Cidadela. Reduz o custo de Q (-4 EN) e acelera regeneração (+2 EN/s) na dimensão.',
+  }),
 });
 
 export function getItem(id) {

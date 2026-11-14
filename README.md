@@ -47,6 +47,7 @@ estabilizar o reator, NEXO-04 oferece missões de exploração e uma simulação
 repetível na arena, além de três fendas opcionais com ondas e cofres. A nova Oficina da Vigília abre duas salas no pós-vitória, com circuitos temporizados, uma missão própria e um ensaio repetível sem XP adicional.
 A saída e a revisita continuam disponíveis.
 Novos **Ecos entre Tempos** convidam a usar **R** e depois **E** para sintonizar três memórias antes ou depois da vitória. Cada nova leitura ancora o sinal temporariamente, reduzindo o eco gerado; ao concluir, o terminal da entrada oferece recuperação limitada de energia e redução de eco.
+Os corredores agora contam com células de energia (+EN/+MUN), coleta de **Sucata de Código** e **Núcleo de Estática** ao abater hostis e a **Bancada de Síntese** (tecla **E**, receitas **1–5**) para criar recargas táticas e relíquias permanentes ligadas à missão secundária *Forja do Código Queimado*. O **Vigilante** exibe reação de blindagem fechada, **Fase 2** com rajada tripla abaixo de 50% de vida e colapso animado; no pós-vitória, um **Terminal de Varredura** ativa rondas setoriais repetíveis para exploração contínua.
 
 A base visual da Cidadela tem quadros de disparo e retorno para os quatro
 canhões, emblemas de habilidade, balanço ligado ao deslocamento real e resposta

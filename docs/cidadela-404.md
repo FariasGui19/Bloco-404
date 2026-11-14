@@ -343,12 +343,40 @@ progressão não mudam. A fila de recarga sob bloqueio é uma melhoria mecânica
 independente dessas imagens e não concede munição antes do tempo. Sem as
 novas imagens usam-se os quadros anteriores;
 em movimento reduzido permanecem os avisos estáticos e os textos.
-Nesta rodada foram geradas e integradas **oito das dez artes solicitadas**:
+Nesta rodada anterior foram geradas e integradas oito das dez artes solicitadas:
 terminais amarelo e vermelho, ícones de radar azul, amarelo, reator, saída e
-guia, e ícone do diário. As gerações do terminal azul e do ícone vermelho
-falharam; o terminal azul usa a arte anterior, e o marcador vermelho usa um
-contorno e texto, assim como os outros marcadores caso uma imagem não carregue.
-Os sprites seguem o pipeline reproduzível; não houve expansão do mapa.
+guia, e ícone do diário. Na rodada atual foram geradas e processadas **todas as dez artes**:
+`rota-terminal-azul` e `rota-icone-vermelha` (completando o conjunto dos três
+terminais e marcadores de rota), `vigilante-escudo-impacto` (reflexão visual na
+blindagem fechada), `vigilante-queda` e `vigilante-colapso` (animação de queda
+ao derrotar o Vigilante e inspeção pós-vitória), `suprimento-energia` (células
+táticas +25 EN / +6 MUN nos corredores), `drop-sucata-codigo` e
+`drop-nucleo-estatica` (fragmentos derrubados por hostis), `bancada-sintese`
+(Bancada de Síntese na Forja) e `sonda-nexo-pulso` (pulso animado da sonda NEXO-04).
+
+### Combate, Drops, Bancada de Síntese e Ronda Setorial
+
+- **Combate tático e Vigilante Fase 2**: hostis passam a ter barra de vida
+  discreta ao sofrer dano e manobras laterais curtas em média distância; o
+  Vigilante exibe impacto na blindagem quando atingido fechado, entra em
+  **Fase 2** abaixo de 50% de vida (ciclo acelerado e rajadas triplas em leque)
+  e executa queda/colapso ao ser estabilizado.
+- **Drops e Bancada de Síntese (`js/game/cidadela-sintese.js`)**: inimigos
+  comuns (exceto simulações de treino) derrubam **Sucata de Código** ou
+  **Núcleo de Estática**, armazenados em `progress.citadelMaterials` sem
+  poluir o inventário principal. A Bancada de Síntese (setor Forja, `[E]`)
+  oferece cinco receitas `[1–5]` (três consumíveis táticos de sessão e duas
+  relíquias permanentes integradas ao Códex: *Selo do Código Queimado* e
+  *Núcleo do Vigilante Forjado*) e a missão secundária `cidadela_forja_sobrevivencia`.
+- **Pós-vitória e Ronda Setorial**: após estabilizar o reator, o **Terminal de
+  Varredura** ativa uma ronda repetível de 7 hostis pelos corredores para
+  exploração livre e coleta de materiais, e a carcaça do Vigilante pode ser
+  examinada próximo ao reator.
+- **Áudio opcional (`js/game/cidadela-audio.js`)**: novos tons sintetizados
+  para coleta de chave (`key`), síntese (`craft`), deflexão na blindagem
+  (`shield_deflect`) e transição da Fase 2 (`phase2`).
+
+Os sprites seguem o pipeline reproduzível em `tools/preparar-cidadela-sprites.py`.
 CRTs alternam poses lentas e geradores e reatores têm
 pulsos suaves. As fendas não seladas respiram com uma oscilação suave. Projéteis têm pulsação,
 impactos desaparecem após pouco tempo e eclusas têm varredura lenta. As poses
@@ -381,6 +409,5 @@ Execute `node --experimental-default-type=module tests/cidadela-fps.mjs`,
 `tests/cidadela-audio.mjs`, `tests/cidadela-pos-vitoria.mjs`,
 `tests/cidadela-transicao.mjs`, `tests/cidadela-fendas.mjs`,
 `tests/cidadela-fendas-arquetipos.mjs`, `tests/cidadela-imersao.mjs`,
-`tests/cidadela-hud.mjs`, `tests/cidadela-passos.mjs`, `tests/cidadela-progressao.mjs`, `tests/cidadela-ecos.mjs`, `tests/cidadela-animacoes-sinal.mjs`, `tests/cidadela-vigilia.mjs`, `tests/cidadela-travessia.mjs`, `tests/cidadela-base-animacoes.mjs`, `tests/cidadela-refino-visual.mjs`, `tests/cidadela-acabamento.mjs`, `tests/cidadela-vida.mjs`, `tests/cidadela-passadas-direcionais.mjs`, `tests/cidadela-polimento-combate-sinal.mjs`, `tests/cidadela-combate-alerta.mjs`, `tests/cidadela-fecho-direcional.mjs`, `tests/cidadela-memoria-visual.mjs`, `tests/cidadela-ritmo-combate.mjs`, `tests/cidadela-resposta-combate.mjs` e `tests/cidadela-rota.mjs` para verificar regras, rotas, pausa, registros,
-desfecho, saves e retorno. O teste de percurso percorre o mapa a pé e usa
+`tests/cidadela-hud.mjs`, `tests/cidadela-passos.mjs`, `tests/cidadela-progressao.mjs`, `tests/cidadela-ecos.mjs`, `tests/cidadela-animacoes-sinal.mjs`, `tests/cidadela-vigilia.mjs`, `tests/cidadela-travessia.mjs`, `tests/cidadela-base-animacoes.mjs`, `tests/cidadela-refino-visual.mjs`, `tests/cidadela-acabamento.mjs`, `tests/cidadela-vida.mjs`, `tests/cidadela-passadas-direcionais.mjs`, `tests/cidadela-polimento-combate-sinal.mjs`, `tests/cidadela-combate-alerta.mjs`, `tests/cidadela-fecho-direcional.mjs`, `tests/cidadela-memoria-visual.mjs`, `tests/cidadela-ritmo-combate.mjs`, `tests/cidadela-resposta-combate.mjs`, `tests/cidadela-rota.mjs` e `tests/cidadela-sintese-combate.mjs` para verificar regras, rotas, pausa, registros, síntese, drops, Fase 2, ronda setorial, desfecho, saves e retorno. O teste de percurso percorre o mapa a pé e usa
 invulnerabilidade para isolar navegação e progressão do balanceamento. A suíte completa usa o comando documentado no README.

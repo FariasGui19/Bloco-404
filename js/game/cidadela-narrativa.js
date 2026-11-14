@@ -8,6 +8,14 @@ const RESPONSE=Object.freeze({
   lamina_dominio_anciao:'DOMÍNIO: NÃO HÁ ATAQUE. A FIGURA OBSERVA SEM ATRAVESSAR A TELA.',
   motor_bio_forja:'BIO-FORJA: NÃO HÁ LEITURA VITAL CONFIÁVEL. NÃO CHAME ISSO DE PROVA.',
 });
+// Fragmentos opcionais do sinal, sem atribuir a transmissão a uma pessoa.
+// A leitura é acrescentada ao rádio existente e não cria recompensa ou flag.
+const SIGNAL_FRAGMENTS=Object.freeze({
+  entrada:'SINAL SEM ORIGEM: A LINHA DE RETORNO PERMANECE.',
+  galeria:'SINAL SEM ORIGEM: A RESPOSTA CHEGOU ANTES DO PEDIDO.',
+  forja:'SINAL SEM ORIGEM: NÃO DESLIGUE O REATOR.',
+});
+export function crtSignalFragment(id) { return SIGNAL_FRAGMENTS[id] ?? ''; }
 export function crtCount(progress) {return CITADEL_NULL_MONITORS.filter(m=>progress.flags?.[m.flag]).length;}
 export function inspectCitadelMonitor(progress,monitor) {
   const flags=progress.flags ??= {};

@@ -335,3 +335,62 @@ for name in ['vida-imp-lateral','vida-imp-costas','vida-orbe-lateral','vida-orbe
     image.thumbnail((size,size),Image.Resampling.LANCZOS)
     image.save(dst / f'{name}.png',optimize=True)
     print(name,image.size)
+
+# Refino das passadas direcionais: um perfil aproximado do Imp, seis
+# laterais em movimento e três quadros de costas para alternar com o repouso.
+# O magenta gerado possui um gradiente claro nos cantos; o limiar também
+# remove esse fundo, evitando margens falsas na caixa do sprite.
+for name in ['passada-imp-lateral','passada-imp-lateral-a','passada-imp-lateral-b','passada-imp-costas',
+             'passada-echo-lateral-a','passada-echo-lateral-b','passada-echo-costas',
+             'passada-orbe-lateral-a','passada-orbe-lateral-b','passada-orbe-costas']:
+    image=Image.open(src / f'{name}.png').convert('RGBA')
+    pixels=image.load()
+    for y in range(image.height):
+        for x in range(image.width):
+            r,g,b,a=pixels[x,y]
+            if r>140 and b>140 and g<160 and min(r,b)-g>60:
+                pixels[x,y]=(0,0,0,0)
+    box=image.getbbox()
+    if not box: raise ValueError(f'Sprite vazio: {name}')
+    image=image.crop(box)
+    image.thumbnail((192,192),Image.Resampling.LANCZOS)
+    image.save(dst / f'{name}.png',optimize=True)
+    print(name,image.size)
+
+# Rastro final de disparo/habilidade e sinais confinados ao ecrã dos CRTs.
+for name in ['polimento-disparo-mare','polimento-disparo-nucleo','polimento-disparo-dominio','polimento-disparo-bio',
+             'polimento-habilidade-mare','polimento-habilidade-nucleo','polimento-habilidade-dominio','polimento-habilidade-bio',
+             'polimento-crt-escuta','polimento-crt-eco']:
+    image=Image.open(src / f'{name}.png').convert('RGBA')
+    pixels=image.load()
+    for y in range(image.height):
+        for x in range(image.width):
+            r,g,b,a=pixels[x,y]
+            if r>140 and b>140 and g<150 and min(r,b)-g>65:
+                pixels[x,y]=(0,0,0,0)
+    box=image.getbbox()
+    if not box: raise ValueError(f'Sprite vazio: {name}')
+    image=image.crop(box)
+    image.thumbnail((128,128),Image.Resampling.LANCZOS)
+    image.save(dst / f'{name}.png',optimize=True)
+    print(name,image.size)
+
+# Poses direcionais de aviso/dano e o sinal de ressonância elevada.
+for name in ['combate-imp-lateral-aviso','combate-imp-costas-aviso','combate-imp-lateral-dano',
+             'combate-orbe-lateral-aviso','combate-orbe-costas-aviso','combate-orbe-lateral-dano',
+             'combate-echo-lateral-aviso','combate-echo-costas-aviso','combate-echo-lateral-dano',
+             'combate-eco-alerta']:
+    image=Image.open(src / f'{name}.png').convert('RGBA')
+    pixels=image.load()
+    for y in range(image.height):
+        for x in range(image.width):
+            r,g,b,a=pixels[x,y]
+            if r>140 and b>140 and g<160 and min(r,b)-g>60:
+                pixels[x,y]=(0,0,0,0)
+    box=image.getbbox()
+    if not box: raise ValueError(f'Sprite vazio: {name}')
+    image=image.crop(box)
+    size=128 if name=='combate-eco-alerta' else 192
+    image.thumbnail((size,size),Image.Resampling.LANCZOS)
+    image.save(dst / f'{name}.png',optimize=True)
+    print(name,image.size)

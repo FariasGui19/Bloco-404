@@ -26,10 +26,11 @@ conteúdo jogável quanto os limites do trabalho visual em andamento.
 
 ### Em aprimoramento e próximos focos
 
-1. **Consistência das animações:** agora há vistas frontal, lateral aproximada
-   e costas para os três tipos de inimigo comuns, além dos quadros de ação;
-   faltam poses desenhadas por direção para cada passo, ataque, dano e queda.
-   O lateral do Imp é uma aproximação, não um perfil perfeito.
+1. **Consistência das animações:** há vistas frontal, lateral aproximada e
+   costas para os três tipos de inimigo comuns, com quadros de locomoção nessas
+   vistas. Ataques agora têm aviso lateral e de costas, e o dano tem pose
+   lateral; dano de costas e queda ainda usam quadros frontais. As imagens
+   geradas são aproximações e podem ser refinadas.
 2. **Resposta e legibilidade em combate:** melhorar transições entre poses,
    avisos e efeitos sem tornar a mira ou as mensagens menos legíveis; continuar
    verificando bloqueios, pausa e movimento reduzido.
@@ -73,9 +74,14 @@ itens acima são prioridades, não uma promessa de conteúdo futuro.
   linhas com vazio retangular no rosto. E registra cada transmissão e permite
   revê-la. A primeira inicia **Entre Linhas**; os três CRTs concedem 45 XP base
   uma vez. A leitura de cada arquétipo é diferente, mas não confirma a
-  identidade de Nulo, do emissor ou do Arquivo 0. O rádio enfileira leituras
-  após os registros das eclusas, sem pausar a ação. L informa quantos CRTs
-  foram examinados; R os marca com contorno violeta até serem registrados.
+  identidade de Nulo, do emissor ou do Arquivo 0. Ao examinar um CRT, uma
+  interferência discreta fica limitada à sua tela e uma frase adicional do sinal
+  acompanha a leitura no rádio. Os fragmentos evocam a rota, a resposta anterior
+  ao pedido e o reator; não comprovam quem os enviou. O efeito visual tem
+  intervalo de 6 s por visita, pausa junto com o jogo e não causa dano, eco ou
+  bloqueio. Reler continua possível e não paga novamente. O rádio enfileira
+  leituras após os registros das eclusas, sem pausar a ação. L informa quantos
+  CRTs foram examinados; R os marca com contorno violeta até serem registrados.
 - As salas possuem pilares de cobertura e suprimentos de vida que são
   recolhidos ao passar por eles quando há dano; cada um é usado uma vez por
   visita. Imps e orbes indicam visualmente a preparação dos disparos.
@@ -217,7 +223,11 @@ o diagnóstico Bio concede escudo curto e a postura de Domínio proteção maior
 Q, R, Shift e F acumulam ressonância; no limite o Echovore cria um predador com limite de
 entidades e intervalo entre sínteses. Seus pulsos bloqueiam recarga e, conforme
 o arquétipo, puxam o Maré, limitam a velocidade do Núcleo, rompem o escudo da
-Bio ou interferem no Q de Domínio. O sistema cessa após a estabilização.
+Bio ou interferem no Q de Domínio. A partir de 75%, o HUD mostra **ALTO**
+e um ícone, indicando carga elevada, não uma invocação imediata: o bloqueio
+entre sínteses, a disponibilidade de espaço e o limite de entidades continuam
+a valer. A carga pode também diminuir. O aviso desaparece quando baixa de 75%
+ou após a estabilização; o sistema cessa após a estabilização.
 
 ## Arquitetura e limites
 
@@ -252,7 +262,13 @@ o inimigo vê o jogador e é conservada quando ele perde a linha de visão. É u
 orientação **visual**: perseguição, colisão e direção dos disparos continuam
 calculadas pelas posições reais. Avisos de ataque, dano e queda têm prioridade
 sobre as vistas; em movimento reduzido as vistas continuam indicando orientação,
-mas sem balanço ou passada animada. Quatro artes do Vigilante distinguem o aviso
+mas sem balanço ou passada animada. O refinamento seguinte acrescenta um novo
+perfil aproximado do Imp, dois quadros laterais de locomoção para cada tipo e
+um quadro de movimento de costas para cada tipo, alternado com a pose existente.
+A fase de caminhada/voo acompanha a distância efetivamente percorrida pelo
+inimigo, fica parada ao não se mover e congela na pausa. As novas vistas usam a
+largura da pose base para evitar saltos de escala; se um quadro não estiver
+carregado, a pose estática anterior continua disponível. Quatro artes do Vigilante distinguem o aviso
 antes da rajada, dois quadros de núcleo exposto e a reação ao dano. A blindagem,
 as janelas reais de vulnerabilidade, o texto e a barra de vida não mudam; em
 movimento reduzido o núcleo exposto fica no primeiro quadro.
@@ -260,9 +276,13 @@ Os quatro canhões alternam repouso, disparo e um quadro ilustrado de retorno;
 o balanço da arma acompanha a distância realmente percorrida, assenta ao parar e
 não avança contra paredes ou durante a pausa. Há recuo e uma pose de recarga
 por arquétipo; o disparo tem prioridade, a pose não avança durante bloqueio e
-movimento reduzido usa a arma parada com o indicador textual. O som opcional
-inclui passos ligados ao deslocamento e sinais discretos de recarga. Q e Ultimate
-mostram emblemas próprios por arquétipo, e o dano recebido acrescenta sinais
+movimento reduzido usa a arma parada com o indicador textual. A etapa final de
+recarga usa a pose de retorno, e os disparos têm um segundo quadro curto de
+faíscas. Quando o arquétipo é alterado externamente durante a visita, a arma
+recebe uma entrada visual que não atrasa as ações; **não há seleção manual de
+armas na Cidadela**. O som opcional inclui passos ligados ao deslocamento e
+sinais discretos de recarga. Q e Ultimate mostram emblemas próprios por
+arquétipo, com um quadro final de dissipação, e o dano recebido acrescenta sinais
 nas bordas sem encobrir a mira. A travessia dimensional usa um anel ilustrado
 em entrada e retorno. As dez artes de base incluem quatro quadros de retorno,
 quatro emblemas, um sinal de dano e o anel; seus originais e versões processadas
@@ -271,7 +291,15 @@ adicionais fornecem quatro poses de recarga, um suprimento, três ícones de
 estado/interação e dois impactos distintos para metal e blindagem. Os impactos
 usam desenhos alternativos enquanto as imagens não estão disponíveis. Textos de
 interação são quebrados em linhas e proteção, vetor e sinal podem aparecer
-juntos. CRTs alternam poses lentas e geradores e reatores têm
+juntos. Mais dez artes acrescentam quatro finais de disparo, quatro finais de
+habilidade e dois estados de interferência nos CRTs. Sob movimento reduzido, os
+rastros não animam e a interferência fica estática; o texto continua disponível.
+Mais dez artes acrescentam, para cada inimigo comum, avisos laterais e de
+costas, reação lateral ao dano e um ícone de ressonância alta. Ataque e dano
+têm prioridade sobre a locomoção; sem a imagem de ação, usa-se a pose frontal
+existente. O aviso persiste com movimento reduzido; dano visto de costas e
+queda ainda usam poses frontais.
+CRTs alternam poses lentas e geradores e reatores têm
 pulsos suaves. As fendas não seladas respiram com uma oscilação suave. Projéteis têm pulsação,
 impactos desaparecem após pouco tempo e eclusas têm varredura lenta. As poses
 geradas são aproximações; as vistas direcionais ainda não cobrem todos os
@@ -303,6 +331,6 @@ Execute `node --experimental-default-type=module tests/cidadela-fps.mjs`,
 `tests/cidadela-audio.mjs`, `tests/cidadela-pos-vitoria.mjs`,
 `tests/cidadela-transicao.mjs`, `tests/cidadela-fendas.mjs`,
 `tests/cidadela-fendas-arquetipos.mjs`, `tests/cidadela-imersao.mjs`,
-`tests/cidadela-hud.mjs`, `tests/cidadela-passos.mjs`, `tests/cidadela-progressao.mjs`, `tests/cidadela-ecos.mjs`, `tests/cidadela-animacoes-sinal.mjs`, `tests/cidadela-vigilia.mjs`, `tests/cidadela-travessia.mjs`, `tests/cidadela-base-animacoes.mjs`, `tests/cidadela-refino-visual.mjs`, `tests/cidadela-acabamento.mjs` e `tests/cidadela-vida.mjs` para verificar regras, rotas, pausa, registros,
+`tests/cidadela-hud.mjs`, `tests/cidadela-passos.mjs`, `tests/cidadela-progressao.mjs`, `tests/cidadela-ecos.mjs`, `tests/cidadela-animacoes-sinal.mjs`, `tests/cidadela-vigilia.mjs`, `tests/cidadela-travessia.mjs`, `tests/cidadela-base-animacoes.mjs`, `tests/cidadela-refino-visual.mjs`, `tests/cidadela-acabamento.mjs`, `tests/cidadela-vida.mjs`, `tests/cidadela-passadas-direcionais.mjs`, `tests/cidadela-polimento-combate-sinal.mjs` e `tests/cidadela-combate-alerta.mjs` para verificar regras, rotas, pausa, registros,
 desfecho, saves e retorno. O teste de percurso percorre o mapa a pé e usa
 invulnerabilidade para isolar navegação e progressão do balanceamento. A suíte completa usa o comando documentado no README.

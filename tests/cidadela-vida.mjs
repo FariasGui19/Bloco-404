@@ -29,9 +29,9 @@ Object.assign(p,{x:9.5,y:5.5});const hp=enemy.hp;const old=enemy.facing;step(10)
 const render=()=>{draws.length=0;renderCitadel({width:960,height:540,getContext:()=>ctx},state);};
 const spriteDraw=n=>draws.filter(a=>a[0]?.src?.endsWith(n));
 for(const [type,stem] of [['imp','imp'],['orb','orbe'],['echo','echo']]) {
- Object.assign(enemy,{type,hp:100,windup:0,attack:0,hurt:0,death:0,moving:true,facing:Math.PI/2});render();
- let calls=spriteDraw(`vida-${stem}-lateral.png`);assert(calls.length);assert(calls[0][1]<64,'lateral normal');
- enemy.facing=-Math.PI/2;render();calls=spriteDraw(`vida-${stem}-lateral.png`);assert(calls.length);assert(calls[0][1]>63,'lateral espelhada');
+ Object.assign(enemy,{type,hp:100,windup:0,attack:0,hurt:0,death:0,moving:false,facing:Math.PI/2});render();
+ let calls=spriteDraw(type==='imp'?'passada-imp-lateral.png':`vida-${stem}-lateral.png`);assert(calls.length);assert(calls[0][1]<64,'lateral normal');
+ enemy.facing=-Math.PI/2;render();calls=spriteDraw(type==='imp'?'passada-imp-lateral.png':`vida-${stem}-lateral.png`);assert(calls.length);assert(calls[0][1]>63,'lateral espelhada');
  enemy.facing=0;render();assert(spriteDraw(`vida-${stem}-costas.png`).length);motion.matches=true;render();assert(spriteDraw(`vida-${stem}-costas.png`).length,'orientação também funciona com movimento reduzido');motion.matches=false;
  enemy.windup=.5;render();assert(!spriteDraw(`vida-${stem}-costas.png`).length,'aviso de ataque prevalece');enemy.windup=0;
 }

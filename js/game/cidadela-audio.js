@@ -4,6 +4,8 @@ const STORAGE_KEY='bloco404_cidadela_som';
 const TONES=Object.freeze({
   step: {from:95,to:65,duration:.055,type:'triangle',volume:.012},
   shot: {from:220,to:90,duration:.10,type:'square',volume:.025},
+  reload: {from:180,to:240,duration:.11,type:'triangle',volume:.016},
+  ready: {from:320,to:420,duration:.10,type:'sine',volume:.016},
   enemy: {from:320,to:160,duration:.13,type:'sawtooth',volume:.018},
   echo: {from:580,to:260,duration:.20,type:'triangle',volume:.028},
   ability: {from:260,to:540,duration:.22,type:'triangle',volume:.028},

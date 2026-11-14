@@ -7,6 +7,41 @@ save antes da transição continua na estação. O destino é um mapa registrado
 com adaptador de perspectiva, colisão e combate próprios; não altera o kit ou
 inventário do operador.
 
+## Visão geral e estado atual
+
+A Cidadela é uma missão compacta e revisitável em primeira pessoa, com anexos
+opcionais; não é uma dimensão aberta completa. Este documento reúne tanto o
+conteúdo jogável quanto os limites do trabalho visual em andamento.
+
+| Parte | O que já existe |
+| --- | --- |
+| Acesso e retorno | Preparação na Estação 66.6, confirmação de travessia, transição nos dois sentidos e saída livre junto à chegada. |
+| Missão principal | Três registros com eclusas e checkpoints, exploração com cobertura, inimigos, Vigilante, desfecho legendado, recompensa única e revisita. |
+| Arquivos e memória | Três arquivos, três CRTs, leituras por arquétipo, Ecos entre Tempos e terminal de escuta; registros podem ser revistos. |
+| Pós-vitória | Rede de Escuta, Vozes na Estática, três fendas com cofres, simulação repetível e Oficina da Vigília com ensaio sem XP adicional. |
+| Combate e progressão | Quatro módulos adaptados, radar, impulso, Ultimate, ressonância/Echovore, munição e recarga, proteção e quatro estágios de sintonia local por arquétipo. |
+| Apresentação | Raycaster 2.5D, cenários e sprites, HUD nítido, avisos textuais, rádio, diário, pausa, transições ilustradas e sons opcionais. |
+| Persistência | Marcos, missões e recompensas únicas são salvos; ameaças, suprimentos e bônus temporários seguem regras da visita. Saves anteriores são migrados sem repetir recompensas. |
+| Acessibilidade | Avisos não dependem apenas de cor ou áudio; movimento reduzido elimina oscilações decorativas e mantém sinais de combate. |
+
+### Em aprimoramento e próximos focos
+
+1. **Consistência das animações:** agora há vistas frontal, lateral aproximada
+   e costas para os três tipos de inimigo comuns, além dos quadros de ação;
+   faltam poses desenhadas por direção para cada passo, ataque, dano e queda.
+   O lateral do Imp é uma aproximação, não um perfil perfeito.
+2. **Resposta e legibilidade em combate:** melhorar transições entre poses,
+   avisos e efeitos sem tornar a mira ou as mensagens menos legíveis; continuar
+   verificando bloqueios, pausa e movimento reduzido.
+3. **Validação visual e desempenho:** testar em navegadores e dispositivos
+   reais, resoluções menores e cenas com mais entidades. Os testes automatizados
+   e capturas headless não substituem essa avaliação.
+4. **Expansão de conteúdo:** deixada para depois da consolidação da base; o
+   mapa atual e suas rotas permanecem os mesmos nesta etapa.
+
+As seções seguintes descrevem as regras e os limites já implementados. Os
+itens acima são prioridades, não uma promessa de conteúdo futuro.
+
 ## Controles e percurso
 
 - WASD desloca; setas horizontais ou mouse capturado giram. Clique na tela
@@ -23,7 +58,10 @@ inventário do operador.
   da ferramenta funcionam somente durante esta visita.
 - O canhão tem 12 disparos. O pulso de um predador Echovore interrompe a
   recarga temporariamente; uma recarga tática conserva as balas restantes e
-  pode ser cancelada disparando, inclusive sob bloqueio. A saída não é bloqueada.
+  pode ser cancelada disparando, inclusive sob bloqueio. O indicador mostra a
+  recarga e seu progresso; durante o bloqueio a barra fica congelada e o texto
+  informa que a **recarga**, não o disparo restante, está bloqueada. A saída
+  não é bloqueada.
 - Registros **◆ Azul**, **▲ Amarelo** e **■ Vermelho** abrem as eclusas
   correspondentes e são checkpoints persistidos. O radar indica caminho e
   ameaças; os símbolos e as mensagens funcionam sem depender da cor.
@@ -185,7 +223,10 @@ Bio ou interferem no Q de Domínio. O sistema cessa após a estabilização.
 
 `js/game/cidadela-fps.js` contém o runtime e raycaster 2.5D, projetado em um
 buffer fixo de 480×270, com sprites billboard, DDA, profundidade e colisão de
-círculo. O mapa é carregado sob demanda pelo registro; as texturas, canhões,
+círculo. A interface é composta em uma camada de 960×540 sobre o mundo para
+letras mais nítidas, preservando a pixelização do cenário. Ícones de vida,
+munição, energia e eco acompanham rótulos e valores, sem depender apenas de cor.
+O mapa é carregado sob demanda pelo registro; as texturas, canhões,
 terminais e inimigos são carregados apenas ao entrar, com desenhos procedurais
 de fallback. O teto e piso usam traços leves, sem floor casting. As artes de
 origem e o script de preparação estão em `assets/source-art/cidadela-404` e
@@ -199,13 +240,42 @@ de escuta ativo e o cristal lido com radar recebem brilhos discretos. Em
 movimento reduzido, os quadros adicionais e brilhos decorativos ficam imóveis
 ou desativados, mas o aviso da fenda e as legendas permanecem. As imagens são
 quadros aproximados, não uma animação direcional completa; Imps, orbes e predadores
-também têm pose de colapso e dois quadros aproximados de locomoção; a passada
-recebe deslocamento discreto das pernas, enquanto orbes alternam quadros de voo.
-A arma acompanha o deslocamento e tem recuo e movimento de recarga; o som
-opcional inclui passos. CRTs alternam poses lentas e geradores e reatores têm
+também têm poses de dano, início de queda e colapso, além de dois quadros
+aproximados de locomoção. O aviso de ataque tem prioridade sobre a reação de
+dano; em movimento reduzido a queda intermediária é omitida, mas a reação de
+dano e o aviso permanecem. A passada recebe deslocamento discreto das pernas,
+enquanto orbes alternam quadros de voo. As dez artes deste refinamento são as
+seis poses de dano/queda e os quatro pictogramas da interface. Na etapa seguinte,
+seis artes acrescentam vistas laterais aproximadas e de costas a Imps, orbes e
+predadores; a outra lateral é espelhada. A orientação gira gradualmente enquanto
+o inimigo vê o jogador e é conservada quando ele perde a linha de visão. É uma
+orientação **visual**: perseguição, colisão e direção dos disparos continuam
+calculadas pelas posições reais. Avisos de ataque, dano e queda têm prioridade
+sobre as vistas; em movimento reduzido as vistas continuam indicando orientação,
+mas sem balanço ou passada animada. Quatro artes do Vigilante distinguem o aviso
+antes da rajada, dois quadros de núcleo exposto e a reação ao dano. A blindagem,
+as janelas reais de vulnerabilidade, o texto e a barra de vida não mudam; em
+movimento reduzido o núcleo exposto fica no primeiro quadro.
+Os quatro canhões alternam repouso, disparo e um quadro ilustrado de retorno;
+o balanço da arma acompanha a distância realmente percorrida, assenta ao parar e
+não avança contra paredes ou durante a pausa. Há recuo e uma pose de recarga
+por arquétipo; o disparo tem prioridade, a pose não avança durante bloqueio e
+movimento reduzido usa a arma parada com o indicador textual. O som opcional
+inclui passos ligados ao deslocamento e sinais discretos de recarga. Q e Ultimate
+mostram emblemas próprios por arquétipo, e o dano recebido acrescenta sinais
+nas bordas sem encobrir a mira. A travessia dimensional usa um anel ilustrado
+em entrada e retorno. As dez artes de base incluem quatro quadros de retorno,
+quatro emblemas, um sinal de dano e o anel; seus originais e versões processadas
+seguem o mesmo pipeline dos demais sprites. No acabamento seguinte, dez artes
+adicionais fornecem quatro poses de recarga, um suprimento, três ícones de
+estado/interação e dois impactos distintos para metal e blindagem. Os impactos
+usam desenhos alternativos enquanto as imagens não estão disponíveis. Textos de
+interação são quebrados em linhas e proteção, vetor e sinal podem aparecer
+juntos. CRTs alternam poses lentas e geradores e reatores têm
 pulsos suaves. As fendas não seladas respiram com uma oscilação suave. Projéteis têm pulsação,
 impactos desaparecem após pouco tempo e eclusas têm varredura lenta. As poses
-geradas são aproximações e não sprites direcionais quadro a quadro. A preferência
+geradas são aproximações; as vistas direcionais ainda não cobrem todos os
+quadros de ação. A preferência
 do sistema por movimento reduzido desativa recuo, oscilação, pulsação e
 varredura, balanço da arma, passos visuais, pulsos dos equipamentos,
 alternância dos CRTs e oscilação de fenda (mantendo os avisos de combate). Os inimigos sinalizam ataques sem depender de áudio; arcos e traços de
@@ -221,7 +291,7 @@ A tela de pausa continua oferecendo os controles completos.
 
 Esta é uma primeira missão de escopo compacto, não uma reprodução de DOOM 1993:
 não há verticalidade livre, suporte a controle/tela sensível ao toque,
-animações de inimigos por direção ou mundo aberto extenso. A cena final usa
+um conjunto direcional completo de animações de inimigos ou mundo aberto extenso. A cena final usa
 quadros narrativos em vez de uma animação cinematográfica. A Ultimate é uma adaptação 2.5D,
 sem reproduzir todos os efeitos de cenário de outras perspectivas.
 A tela é desenhada em Canvas e o teste headless não substitui testes visuais e
@@ -233,6 +303,6 @@ Execute `node --experimental-default-type=module tests/cidadela-fps.mjs`,
 `tests/cidadela-audio.mjs`, `tests/cidadela-pos-vitoria.mjs`,
 `tests/cidadela-transicao.mjs`, `tests/cidadela-fendas.mjs`,
 `tests/cidadela-fendas-arquetipos.mjs`, `tests/cidadela-imersao.mjs`,
-`tests/cidadela-hud.mjs`, `tests/cidadela-passos.mjs`, `tests/cidadela-progressao.mjs`, `tests/cidadela-ecos.mjs`, `tests/cidadela-animacoes-sinal.mjs`, `tests/cidadela-vigilia.mjs` e `tests/cidadela-travessia.mjs` para verificar regras, rotas, pausa, registros,
+`tests/cidadela-hud.mjs`, `tests/cidadela-passos.mjs`, `tests/cidadela-progressao.mjs`, `tests/cidadela-ecos.mjs`, `tests/cidadela-animacoes-sinal.mjs`, `tests/cidadela-vigilia.mjs`, `tests/cidadela-travessia.mjs`, `tests/cidadela-base-animacoes.mjs`, `tests/cidadela-refino-visual.mjs`, `tests/cidadela-acabamento.mjs` e `tests/cidadela-vida.mjs` para verificar regras, rotas, pausa, registros,
 desfecho, saves e retorno. O teste de percurso percorre o mapa a pé e usa
 invulnerabilidade para isolar navegação e progressão do balanceamento. A suíte completa usa o comando documentado no README.

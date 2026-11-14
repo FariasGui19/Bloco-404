@@ -66,7 +66,10 @@ for(const archetype of Object.keys(MODULES)) {
   assert(getCitadelRuntime().boss.dead);assert.equal(getCitadelRuntime().enemies.length,0);
   assert.equal(JSON.stringify(state.progress.archetypeProgress),xp);assert.deepEqual(state.progress.inventory,['objeto_teste']);
   assert.equal(state.player.x,23.7,'checkpoint posterior à terceira eclusa');
-  // Exercita o renderer procedural e o framebuffer em contexto falso.
+  // Exercita inclusive impactos sem Image, como antes do carregamento ou offline.
+  const runtime=getCitadelRuntime();runtime.angle=0;
+  runtime.impacts=[{x:state.player.x+1,y:state.player.y,color:'metal',life:.2},
+    {x:state.player.x+1.2,y:state.player.y,color:'shield',life:.2}];
   renderCitadel({width:1280,height:720,getContext:()=>context},state);
   await loadMap('estacao_limiar_666','vindo_da_cidadela');
   assert.equal(state.player.x,7.5);assert.equal(state.progress.archetype,archetype);

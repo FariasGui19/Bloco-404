@@ -29,8 +29,9 @@ conteúdo jogável quanto os limites do trabalho visual em andamento.
 1. **Consistência das animações:** há vistas frontal, lateral aproximada e
    costas para os três tipos de inimigo comuns, com quadros de locomoção nessas
    vistas, avisos, dano, queda e colapso lateral/de costas. As imagens são
-   aproximações, com a outra lateral espelhada; ainda não há animação
-   completa em todas as direções e elas podem ser refinadas.
+   aproximações, com a outra lateral espelhada. A frente diferencia
+   preparação e disparo; laterais e costas também distinguem disparo do aviso.
+   São poses aproximadas, não uma animação completa em todas as direções.
 2. **Resposta e legibilidade em combate:** melhorar transições entre poses,
    avisos e efeitos sem tornar a mira ou as mensagens menos legíveis; continuar
    verificando bloqueios, pausa e movimento reduzido.
@@ -61,11 +62,25 @@ itens acima são prioridades, não uma promessa de conteúdo futuro.
   recarga temporariamente; uma recarga tática conserva as balas restantes e
   pode ser cancelada disparando, inclusive sob bloqueio. O indicador mostra a
   recarga e seu progresso; durante o bloqueio a barra fica congelada e o texto
-  informa que a **recarga**, não o disparo restante, está bloqueada. A saída
+  informa que a **recarga**, não o disparo restante, está bloqueada. Apertar T
+  durante o bloqueio coloca uma recarga em espera; tentar disparar sem munição
+  também a coloca na fila. Ela começa a progredir quando o bloqueio acaba e
+  só completa após 1,5 s livres; disparar balas restantes cancela a fila.
+  Pausa congela ambos os tempos, a morte limpa a recarga pendente e a saída
   não é bloqueada.
 - Registros **◆ Azul**, **▲ Amarelo** e **■ Vermelho** abrem as eclusas
-  correspondentes e são checkpoints persistidos. O radar indica caminho e
-  ameaças; os símbolos e as mensagens funcionam sem depender da cor.
+  correspondentes e são checkpoints persistidos. Durante os quatro segundos
+  do radar, uma linha segue as células transitáveis e eclusas abertas até o
+  primeiro registro pendente; depois dos três, aponta ao Vigilante no reator.
+  Após estabilizar, indica a saída **opcional**, enquanto missões, fendas e
+  oficina mantêm suas próprias marcas. Não é navegação automática, não evita
+  inimigos e não altera o custo ou as habilidades do radar. Se a geometria ou
+  um save parcial não permitir chegar ao alvo, informa rota indisponível em
+  vez de desenhar uma linha através da parede. Texto e símbolos não dependem
+  apenas de cores ou imagens.
+  Ao recolher cada registro, NEXO pode acrescentar um comentário na fila de
+  rádio, sem criar marcos ou confirmar o emissor. A fila tem capacidade
+  limitada; se estiver cheia, o registro principal continua no aviso e no diário.
 - Três terminais opcionais contêm fragmentos de Origem, Retorno e Memória.
   Use E para registrá-los; eles aparecem em L e no radar até serem encontrados.
   Completar os três concede 30 XP base uma única vez, inclusive entre visitas e
@@ -248,9 +263,9 @@ origem e o script de preparação estão em `assets/source-art/cidadela-404` e
 `tools/preparar-cidadela-sprites.py`; os sprites de jogo são carregados sob demanda.
 Os elementos cenográficos são visuais, não bloqueiam movimento nem protegem
 contra tiros; somente os pilares da geometria fornecem cobertura.
-Os quatro canhões têm pose de disparo; Imps, orbes, predadores e Vigilante
-exibem poses de ataque vinculadas aos ciclos reais e um segundo quadro na
-preparação; a fenda destaca visualmente o aviso de pulso. A saída, o terminal
+Os quatro canhões têm pose de disparo; Imps, orbes e predadores exibem
+preparação antes de disparar e quadros de ação, enquanto o Vigilante tem
+preparação e ataque próprios. A fenda destaca visualmente o aviso de pulso. A saída, o terminal
 de escuta ativo e o cristal lido com radar recebem brilhos discretos. Em
 movimento reduzido, os quadros adicionais e brilhos decorativos ficam imóveis
 ou desativados, mas o aviso da fenda e as legendas permanecem. As imagens são
@@ -280,8 +295,9 @@ movimento reduzido o núcleo exposto fica no primeiro quadro.
 Os quatro canhões alternam repouso, disparo e um quadro ilustrado de retorno;
 o balanço da arma acompanha a distância realmente percorrida, assenta ao parar e
 não avança contra paredes ou durante a pausa. Há recuo e uma pose de recarga
-por arquétipo; o disparo tem prioridade, a pose não avança durante bloqueio e
-movimento reduzido usa a arma parada com o indicador textual. A etapa final de
+por arquétipo; o disparo tem prioridade. Uma pose específica indica recarga
+bloqueada sem avançar a barra; movimento reduzido usa a arma parada com o
+indicador textual. A etapa final de
 recarga usa a pose de retorno, e os disparos têm um segundo quadro curto de
 faíscas. Quando o arquétipo é alterado externamente durante a visita, a arma
 recebe uma entrada visual que não atrasa as ações; **não há seleção manual de
@@ -316,6 +332,23 @@ arquivo distintos e o ícone de leitura. Os colapsos permanecem visíveis por
 mais tempo antes de desaparecer, sem aumentar a duração da animação ou mudar
 a colisão; com movimento reduzido usa-se diretamente a pose final direcional.
 Se a nova arte não carregar, a pose frontal ou terminal anterior é mantido.
+Nesta etapa, seis artes distinguem, na vista frontal de cada inimigo comum,
+a preparação de 0,75 s da reação após um disparo efetivamente emitido.
+A perda de visão continua cancelando o disparo. Uma rodada seguinte acrescenta
+seis poses de disparo lateral e de costas, preservando os avisos anteriores
+durante a preparação, e quatro poses estáticas para recargas bloqueadas.
+Outras quatro artes da rodada anterior acrescentam um estágio intermediário
+aos emblemas de Q e Ultimate. São efeitos visuais: dano, tempos, energia e
+progressão não mudam. A fila de recarga sob bloqueio é uma melhoria mecânica
+independente dessas imagens e não concede munição antes do tempo. Sem as
+novas imagens usam-se os quadros anteriores;
+em movimento reduzido permanecem os avisos estáticos e os textos.
+Nesta rodada foram geradas e integradas **oito das dez artes solicitadas**:
+terminais amarelo e vermelho, ícones de radar azul, amarelo, reator, saída e
+guia, e ícone do diário. As gerações do terminal azul e do ícone vermelho
+falharam; o terminal azul usa a arte anterior, e o marcador vermelho usa um
+contorno e texto, assim como os outros marcadores caso uma imagem não carregue.
+Os sprites seguem o pipeline reproduzível; não houve expansão do mapa.
 CRTs alternam poses lentas e geradores e reatores têm
 pulsos suaves. As fendas não seladas respiram com uma oscilação suave. Projéteis têm pulsação,
 impactos desaparecem após pouco tempo e eclusas têm varredura lenta. As poses
@@ -348,6 +381,6 @@ Execute `node --experimental-default-type=module tests/cidadela-fps.mjs`,
 `tests/cidadela-audio.mjs`, `tests/cidadela-pos-vitoria.mjs`,
 `tests/cidadela-transicao.mjs`, `tests/cidadela-fendas.mjs`,
 `tests/cidadela-fendas-arquetipos.mjs`, `tests/cidadela-imersao.mjs`,
-`tests/cidadela-hud.mjs`, `tests/cidadela-passos.mjs`, `tests/cidadela-progressao.mjs`, `tests/cidadela-ecos.mjs`, `tests/cidadela-animacoes-sinal.mjs`, `tests/cidadela-vigilia.mjs`, `tests/cidadela-travessia.mjs`, `tests/cidadela-base-animacoes.mjs`, `tests/cidadela-refino-visual.mjs`, `tests/cidadela-acabamento.mjs`, `tests/cidadela-vida.mjs`, `tests/cidadela-passadas-direcionais.mjs`, `tests/cidadela-polimento-combate-sinal.mjs`, `tests/cidadela-combate-alerta.mjs`, `tests/cidadela-fecho-direcional.mjs` e `tests/cidadela-memoria-visual.mjs` para verificar regras, rotas, pausa, registros,
+`tests/cidadela-hud.mjs`, `tests/cidadela-passos.mjs`, `tests/cidadela-progressao.mjs`, `tests/cidadela-ecos.mjs`, `tests/cidadela-animacoes-sinal.mjs`, `tests/cidadela-vigilia.mjs`, `tests/cidadela-travessia.mjs`, `tests/cidadela-base-animacoes.mjs`, `tests/cidadela-refino-visual.mjs`, `tests/cidadela-acabamento.mjs`, `tests/cidadela-vida.mjs`, `tests/cidadela-passadas-direcionais.mjs`, `tests/cidadela-polimento-combate-sinal.mjs`, `tests/cidadela-combate-alerta.mjs`, `tests/cidadela-fecho-direcional.mjs`, `tests/cidadela-memoria-visual.mjs`, `tests/cidadela-ritmo-combate.mjs`, `tests/cidadela-resposta-combate.mjs` e `tests/cidadela-rota.mjs` para verificar regras, rotas, pausa, registros,
 desfecho, saves e retorno. O teste de percurso percorre o mapa a pé e usa
 invulnerabilidade para isolar navegação e progressão do balanceamento. A suíte completa usa o comando documentado no README.

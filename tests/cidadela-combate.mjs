@@ -42,7 +42,7 @@ for(const id of ['mare_astral','nucleo_dez_forma','lamina_dominio_anciao','motor
   const g=start('mare_astral');g.ammo=7;press('t');assert(g.reload>0);assert.equal(g.ammo,7,'recarga tática preserva munição');
   g.jam=2;g.fire=0;press('space');assert.equal(g.ammo,6);assert.equal(g.reload,0,'disparo cancela recarga mesmo bloqueada');
   g.jam=0;g.fire=0;press('t');step(50);assert.equal(g.ammo,12);assert.equal(g.reload,0);
-  g.ammo=0;g.reload=0;g.jam=1;g.fire=0;press('space');assert.equal(g.ammo,0);assert.equal(g.reload,0,'bloqueio não cria munição');
+  g.ammo=0;g.reload=0;g.jam=1;g.fire=0;press('space');assert.equal(g.ammo,0);assert.equal(g.reload,1.5,'recarga vazia fica na fila sem criar munição');
 }
 {
   const g=start('lamina_dominio_anciao','espada_de_dominio');

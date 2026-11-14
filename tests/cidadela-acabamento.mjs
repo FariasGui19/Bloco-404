@@ -6,7 +6,7 @@ import {updateCitadel,renderCitadel,clearCitadelRuntime,getCitadelRuntime,weapon
 const names=['acabamento-recarga-mare','acabamento-recarga-nucleo','acabamento-recarga-dominio','acabamento-recarga-bio','acabamento-suprimento','acabamento-escudo','acabamento-bloqueio','acabamento-interacao','acabamento-impacto-metal','acabamento-impacto-escudo'];
 for(const n of names){const path=`assets/sprites/cidadela-404/${n}.png`;assert(existsSync(path));assert.equal(readFileSync(path)[25],6,`${n}: RGBA`);}
 assert.equal(weaponVisualFrame(.2,false,1,0),'fire','disparo tem prioridade');
-assert.equal(weaponVisualFrame(0,false,1,0),'reload');assert.equal(weaponVisualFrame(0,false,1,1),'idle');
+assert.equal(weaponVisualFrame(0,false,1,0),'reload');assert.equal(weaponVisualFrame(0,false,1,1),'blocked');
 assert.equal(weaponVisualFrame(0,true,1,0),'idle','redução de movimento');
 assert.equal(weaponVisualFrame(0,false,1.5,0),'idle');assert.equal(weaponVisualFrame(0,false,.2,0),'return');
 const draws=[],texts=[],rects=[];const noop=()=>{};

@@ -11,7 +11,7 @@ import { citadelAudioEnabled, toggleCitadelAudio, playCitadelSound } from './cid
 import { CITADEL_DECOR, CITADEL_ARCHIVES, CITADEL_POSTGAME, CITADEL_BREACHES, CITADEL_BREACH_CONSOLE, CITADEL_NULL_MONITORS, CITADEL_ECHOES, CITADEL_ECHO_TERMINAL, CITADEL_ECHO_DECOR, CITADEL_WORKSHOP } from '../data/worlds/cidadela-404/cidadela.js';
 import { citadelMissions, missionObjective, interactCitadelMission } from './cidadela-missoes.js';
 import { sealedFlag, cacheFlag, breachSummary, beginBreach, cancelBreach, updateBreach, openBreachCache } from './cidadela-fendas.js';
-import { inspectCitadelMonitor, crtCount, ARCHETYPE_READINGS } from './cidadela-narrativa.js';
+import { inspectCitadelMonitor, crtCount, ARCHETYPE_READINGS, crtSignalFragment } from './cidadela-narrativa.js';
 import { getDimensionProgress, syncDimensionProgress } from './dimension-progress.js';
 import { memoryEchoCount,interactMemoryEcho,useEchoTerminal } from './cidadela-ecos.js';
 import { workshopPhase,workshopCount,interactWorkshop,workshopCircuitActive,toggleWorkshopTrial,interactWorkshopTrial } from './cidadela-vigilia.js';
@@ -86,7 +86,7 @@ export function createCitadelRuntime(progress) {
     boss: {type:'boss', x:28, y:6.5, hp:280, cycle:0, cooldown:1.5, dead:!!flags.cidadela_estavel},
     supplies: [{x:4.5,y:9.5},{x:13.5,y:3.5},{x:20.5,y:7.5},{x:24.5,y:9.5}],
     shots: [], impacts: [], ammo: 12, reload: 0, jam: 0, fire: 0, q: 0, boost: 0, scan: 0, dash: 0, dashAngle:0, shield: 0, guard:0, ultBuff:null, echo: 0, echoLock: 0,
-    message: flags.cidadela_estavel ? 'NEXO-04: REATOR ESTÁVEL. A SONDA AGUARDA NA ARENA; A OFICINA ABRIU AO SUL.' : 'NEXO-04: A LINHA ESTÁ ABERTA. ENCONTRE OS TRÊS REGISTROS.', messageTime: 8, time: 0, damage: 0, hit: 0, fx: 0, fxKind: '', suppressed: 0, returning: false, training:false, breach:null, radioQueue:[],stepDistance:0,walkPhase:0,walkBlend:0, echoAnchor:0, echoTerminalCooldown:0, workshopHit:0, workshopTrial:null, localProgress:null, vectorCharge:0, perkIcon:null, panel: null };
+    message: flags.cidadela_estavel ? 'NEXO-04: REATOR ESTÁVEL. A SONDA AGUARDA NA ARENA; A OFICINA ABRIU AO SUL.' : 'NEXO-04: A LINHA ESTÁ ABERTA. ENCONTRE OS TRÊS REGISTROS.', messageTime: 8, time: 0, damage: 0, hit: 0, fx: 0, signalTime:0, signalCooldown:0, signalMonitorId:null, weaponDeploy:0, fxKind: '', suppressed: 0, returning: false, training:false, breach:null, radioQueue:[],stepDistance:0,walkPhase:0,walkBlend:0, echoAnchor:0, echoTerminalCooldown:0, workshopHit:0, workshopTrial:null, localProgress:null, vectorCharge:0, perkIcon:null, panel: null };
 }
 function notice(g, text, seconds=4) { g.message=text; g.messageTime=seconds; }
 function queueRadio(g,text) { if(text && g.radioQueue.length<6) g.radioQueue.push(text); }
@@ -109,6 +109,12 @@ export function wrapCitadelText(text,limit=66) {
   if(line) lines.push(line);
   return lines;
 }
+// A fase acompanha deslocamento real. O relógio é fallback para entidades
+// antigas ou chamadas de teste que ainda não tenham uma fase de passada.
+export function enemyWalkFrame(o,time) {
+  const phase=Number.isFinite(o.walkPhase)?o.walkPhase:time*2.4;
+  return Math.floor(phase)%2?'b':'a';
+}
 // Quadros de ação têm prioridade sobre a locomoção; em movimento reduzido a
 // silhueta permanece parada sem remover as poses de aviso de ataque.
 export function citadelSpriteFrame(o,time,reduce=false) {
@@ -116,7 +122,7 @@ export function citadelSpriteFrame(o,time,reduce=false) {
   if(frame==='death') return !reduce && (o.death ?? 0)>.38 ? `${o.type}_fall` : `${o.type}_death`;
   if(frame==='attack') return `${o.type}_attack${!reduce && Math.floor(time*2.5)%2?'_b':''}`;
   if(frame==='hurt') return ['imp','orb','echo'].includes(o.type) ? `${o.type}_hurt` : o.type;
-  if(!reduce && o.moving && ['imp','echo','orb'].includes(o.type)) return `${o.type}_walk_${Math.floor(time*2.4)%2?'b':'a'}`;
+  if(!reduce && o.moving && ['imp','echo','orb'].includes(o.type)) return `${o.type}_walk_${enemyWalkFrame(o,time)}`;
   if(o.type==='nulo') return reduce?'nulo_a':`nulo_${Math.floor(time/3.5)%2?'b':'a'}`;
   return o.type;
 }
@@ -141,9 +147,16 @@ export function bossVisualFrame(boss,time,reduce=false) {
 export function weaponVisualFrame(fire,reduce=false,reload=0,jam=0) {
   if(reduce) return 'idle';
   if(fire>0) return fire>.14?'fire':'return';
+  if(jam<=0 && reload>0 && reload<=.3) return 'return';
   if(reload>.3 && reload<1.3 && jam<=0) return 'reload';
   return 'idle';
 }
+export function muzzleVisualFrame(fire,reduce=false) {
+  if(reduce || fire<=.06) return null;
+  return fire>.14?'burst':'tail';
+}
+// O aviso é informativo: não altera os limiares ou as regras de síntese.
+export function citadelEchoAlert(echo,flags={}) { return !flags.cidadela_estavel && echo>=75; }
 export function bossAttackSpriteFrame(time,reduce=false) { return !reduce && Math.floor(time*2.5)%2?'boss_attack_b':'boss_attack'; }
 // Só o aviso da fenda é essencial; nenhum efeito decorativo deve animar
 // quando o operador pede movimento reduzido.
@@ -160,7 +173,7 @@ export function citadelPulseFrame(type,windup,scan,time,reduce=false) {
 function resetAtCheckpoint(state, g) {
   const cp = checkpoints[checkpointIndex(state.progress.flags)];
   g.workshopTrial=null; cancelBreach(g); if(g.training){g.training=false;g.enemies.length=0;}
-  respawnPlayer(state.player, cp); g.angle=0; g.shots.length=0; g.impacts.length=0; g.jam=0; g.reload=0; g.ammo=12; g.dash=0; g.shield=0; g.guard=0; g.ultBuff=null; g.vectorCharge=0; g.echoAnchor=0; g.fx=0; g.damage=0; g.hit=0; g.walkPhase=0; g.walkBlend=0; g.stepDistance=0; g.moving=false;
+  respawnPlayer(state.player, cp); g.angle=0; g.shots.length=0; g.impacts.length=0; g.jam=0; g.reload=0; g.ammo=12; g.dash=0; g.shield=0; g.guard=0; g.ultBuff=null; g.vectorCharge=0; g.echoAnchor=0; g.fx=0; g.damage=0; g.hit=0; g.signalTime=0; g.signalCooldown=0; g.signalMonitorId=null; g.weaponDeploy=0; g.walkPhase=0; g.walkBlend=0; g.stepDistance=0; g.moving=false;
   notice(g,'NEXO-04: SINAL RECUPERADO NO ÚLTIMO MARCO. A LINHA DE RETORNO CONTINUA ABERTA.',6);
 }
 function showEnding(state, g) {
@@ -320,7 +333,7 @@ export function updateCitadel(dt, state, input) {
   }
   const g=game, step=clamp(dt,0,.033);
   if(g.localArchetype!==progress.archetype) {
-    const migrated=syncDimensionProgress(progress);g.localProgress=migrated.after;g.localArchetype=progress.archetype;g.vectorCharge=0;
+    const migrated=syncDimensionProgress(progress);g.localProgress=migrated.after;g.localArchetype=progress.archetype;g.vectorCharge=0;g.weaponDeploy=.45;
     if(migrated.changed) saveGame();
   }
   if (pressed(input,'m','keym')) {
@@ -342,7 +355,7 @@ export function updateCitadel(dt, state, input) {
     return;
   }
   g.time+=step;
-  for (const k of ['fire','jam','q','boost','scan','dash','shield','guard','echoLock','messageTime','damage','hit','fx','suppressed','vectorCharge','echoAnchor','echoTerminalCooldown','workshopHit']) g[k]=Math.max(0,g[k]-step);
+  for (const k of ['fire','jam','q','boost','scan','dash','shield','guard','echoLock','messageTime','damage','hit','fx','suppressed','vectorCharge','echoAnchor','echoTerminalCooldown','workshopHit','signalTime','signalCooldown','weaponDeploy']) g[k]=Math.max(0,g[k]-step);
   if(g.messageTime===0 && g.radioQueue.length) notice(g,g.radioQueue.shift(),6);
   for (const impact of g.impacts) impact.life-=step;
   g.impacts=g.impacts.filter(impact=>impact.life>0);
@@ -435,7 +448,12 @@ export function updateCitadel(dt, state, input) {
     } else if (target?.kind==='crt') {
       const result=inspectCitadelMonitor(progress,target);
       if(result.changed){playCitadelSound('pickup');saveCitadelProgress(progress,g);}
-      notice(g,result.message,7);queueRadio(g,result.followup);
+      notice(g,result.message,7);
+      // A leitura continua opcional e sem confirmar a origem do sinal. O efeito
+      // local tem intervalo para não piscar repetidamente ao apertar E.
+      if(g.signalCooldown<=0) {g.signalMonitorId=target.id;g.signalTime=1.5;g.signalCooldown=6;}
+      const fragment=crtSignalFragment(target.id);
+      queueRadio(g,[result.followup,fragment].filter(Boolean).join(' '));
     } else if (target?.kind==='reactor') {
       notice(g,'REATOR ESTÁVEL • A ROTA DE RETORNO CONTINUA ABERTA.',5);
     } else if (target?.kind==='workshop_trial') {
@@ -513,7 +531,11 @@ export function updateCitadel(dt, state, input) {
         e.cooldown=e.type==='echo'?2.4:3;
       }
     } else if (sees && e.cooldown<=0) e.windup=.75;
-    else if (sees && d>2.4) { const x=e.x,y=e.y; move(map,flags,e,(p.x-e.x)/d*step*(e.slow?.35:.8),(p.y-e.y)/d*step*(e.slow?.35:.8)); e.moving=e.x!==x || e.y!==y; }
+    else if (sees && d>2.4) {
+      const x=e.x,y=e.y; move(map,flags,e,(p.x-e.x)/d*step*(e.slow?.35:.8),(p.y-e.y)/d*step*(e.slow?.35:.8));
+      const moved=Math.hypot(e.x-x,e.y-y); e.moving=moved>0;
+      if(e.moving) e.walkPhase=((e.walkPhase ?? 0)+moved*3)%2;
+    }
   }
   g.enemies=g.enemies.filter(e=>e.hp>0 || e.death>0);
   if(g.training && !g.enemies.some(e=>e.hp>0)) {
@@ -695,8 +717,23 @@ function setupBuffer() {
       [`weapon_${mode}_return`,`assets/sprites/cidadela-404/base-canhao-${mode}-retorno.png`],
       [`ability_${mode}`,`assets/sprites/cidadela-404/base-habilidade-${mode}.png`],
     ]),
+    ...[['imp_side','passada-imp-lateral'],
+      ['imp_side_walk_a','passada-imp-lateral-a'],['imp_side_walk_b','passada-imp-lateral-b'],['imp_back_walk','passada-imp-costas'],
+      ['orb_side_walk_a','passada-orbe-lateral-a'],['orb_side_walk_b','passada-orbe-lateral-b'],['orb_back_walk','passada-orbe-costas'],
+      ['echo_side_walk_a','passada-echo-lateral-a'],['echo_side_walk_b','passada-echo-lateral-b'],['echo_back_walk','passada-echo-costas']]
+      .map(([type,name])=>[type,`assets/sprites/cidadela-404/${name}.png`]),
+    ...['mare','nucleo','dominio','bio'].flatMap(mode=>[
+      [`muzzle_${mode}_tail`,`assets/sprites/cidadela-404/polimento-disparo-${mode}.png`],
+      [`ability_${mode}_tail`,`assets/sprites/cidadela-404/polimento-habilidade-${mode}.png`],
+    ]),
+    ['crt_signal_a','assets/sprites/cidadela-404/polimento-crt-escuta.png'],
+    ['crt_signal_b','assets/sprites/cidadela-404/polimento-crt-eco.png'],
+    ...[['imp_side_attack','combate-imp-lateral-aviso'],['imp_back_attack','combate-imp-costas-aviso'],['imp_side_hurt','combate-imp-lateral-dano'],
+      ['orb_side_attack','combate-orbe-lateral-aviso'],['orb_back_attack','combate-orbe-costas-aviso'],['orb_side_hurt','combate-orbe-lateral-dano'],
+      ['echo_side_attack','combate-echo-lateral-aviso'],['echo_back_attack','combate-echo-costas-aviso'],['echo_side_hurt','combate-echo-lateral-dano'],
+      ['hud_echo_alert','combate-eco-alerta']].map(([type,name])=>[type,`assets/sprites/cidadela-404/${name}.png`]),
     ['damage_visor','assets/sprites/cidadela-404/base-dano-visor.png'],
-    ...[['imp_side','vida-imp-lateral'],['imp_back','vida-imp-costas'],
+    ...[['imp_side_legacy','vida-imp-lateral'],['imp_back','vida-imp-costas'],
       ['orb_side','vida-orbe-lateral'],['orb_back','vida-orbe-costas'],
       ['echo_side','vida-echo-lateral'],['echo_back','vida-echo-costas'],
       ['boss_warning','vida-vigilante-aviso'],['boss_open_a','vida-vigilante-aberto-a'],
@@ -842,7 +879,7 @@ function drawWorld(map, flags, p, g, progress) {
     ...CITADEL_DECOR.map(o=>({...o,ground:true})),
     ...CITADEL_ARCHIVES.map(a=>({...a,type:'terminal',scale:.72,ground:true})),
     {type:'exit',x:1.65,y:6.5,scale:1.2},
-    ...CITADEL_NULL_MONITORS.map(m=>({...m,type:'nulo',scale:.56})),
+    ...CITADEL_NULL_MONITORS.map(m=>({...m,type:'nulo',scale:.56,signal:g.signalTime>0 && g.signalMonitorId===m.id})),
     ...KEYS.filter(k=>!flags[k.flag]).map(k=>({...k,type:'key',scale:.7})),
     ...g.supplies.filter(s=>!s.used).map(s=>({...s,type:'supply',scale:.45})),
     ...g.enemies.filter(e=>e.hp>0 || e.death>0).map(e=>({...e,scale:e.type==='orb'?.85:1})),
@@ -863,16 +900,32 @@ function drawWorld(map, flags, p, g, progress) {
     const center=W/2+(lateral/forward)*(W/(2*plane));
     const base=sprites[o.type];
     const frame=enemyVisualFrame(o);
-    let visual=citadelSpriteFrame(o,g.time,reducedMotion()), flip=false;
-    if(frame==='idle' && ['imp','orb','echo'].includes(o.type)) {
+    let visual=citadelSpriteFrame(o,g.time,reducedMotion()), flip=false, directionalBase=null;
+    if(['idle','attack','hurt'].includes(frame) && ['imp','orb','echo'].includes(o.type)) {
       const view=enemyView(o.facing,o.x,o.y,p.x,p.y);
-      if(view.view!=='front' && sprites[`${o.type}_${view.view}`]) {visual=`${o.type}_${view.view}`;flip=view.flip;}
+      if(view.view!=='front') {
+        let idle=`${o.type}_${view.view}`;
+        if(!sprites[idle] && idle==='imp_side' && sprites.imp_side_legacy) idle='imp_side_legacy';
+        if(frame==='idle' && sprites[idle]) {
+          directionalBase=sprites[idle]; visual=idle; flip=view.flip;
+          if(o.moving && !reducedMotion()) {
+            const phase=enemyWalkFrame(o,g.time);
+            const walking=view.view==='side'?`${o.type}_side_walk_${phase}`:phase==='b'?`${o.type}_back_walk`:idle;
+            if(sprites[walking]) visual=walking;
+          }
+        } else if(frame==='attack' || (frame==='hurt' && view.view==='side')) {
+          // Ataque e dano continuam prioritários sobre locomoção; se o novo
+          // quadro não carregou, mantém-se o aviso frontal já existente.
+          const action=`${o.type}_${view.view}_${frame}`;
+          if(sprites[action]) {visual=action;flip=view.flip;directionalBase=sprites[idle] ?? sprites[action];}
+        }
+      }
     }
     if(o.type==='boss') visual=bossVisualFrame(g.boss,g.time,reducedMotion());
     const chosen=sprites[visual];
     const bossFallback=o.type==='boss' ? (visual==='boss_attack_b'?sprites.boss_attack : bossOpen(g.boss)?sprites.boss_open_a : sprites.bossClosed) : null;
     const sprite=chosen ?? (frame==='attack'?sprites[`${o.type}_attack`]:null) ?? bossFallback ?? base;
-    const aspect=visual.includes('_walk_') || visual.endsWith('_side') || visual.endsWith('_back') ? sprite : base;
+    const aspect=directionalBase ?? (visual.includes('_walk_') ? sprite : base);
     const h=Math.min(H*4,H/forward*o.scale), w=h*(aspect.width/aspect.height), left=center-w/2;
     // Aviso da fenda também existe em movimento reduzido; os demais brilhos
     // são decorativos e não substituem as legendas de combate.
@@ -882,7 +935,7 @@ function drawWorld(map, flags, p, g, progress) {
       (o.type==='memory_echo_pending'||o.type==='memory_relay'?Math.sin(g.time*1.5+o.x)*1.4:0);
     // Os frames gerados são próximos entre si. Um pequeno deslocamento das
     // pernas realça a passada sem girar o cenário ou modificar colisões.
-    const stride=!reducedMotion() && o.moving && (o.type==='imp'||o.type==='echo') ? Math.round(Math.sin(g.time*8+o.x)*2) : 0;
+    const stride=!directionalBase && !reducedMotion() && o.moving && (o.type==='imp'||o.type==='echo') ? Math.round(Math.sin(g.time*8+o.x)*2) : 0;
     const fall=!reducedMotion() && o.death>0 ? (1-o.death/.7)*12 : 0;
     const top=(o.ground || ['key','supply','exit'].includes(o.type) ? H/2+H/(2*forward)-h : H/2-h*.50)+bob+fall;
     ctx.save();ctx.globalAlpha=alpha;
@@ -900,6 +953,17 @@ function drawWorld(map, flags, p, g, progress) {
         ctx.globalAlpha=alpha*(o.type==='breach_open'?(reducedMotion()?.55:.48+.12*(.5+.5*Math.sin(g.time*2))):.14+.22*(.5+.5*Math.sin(g.time*.8)));
         const ux=clamp(Math.floor((sx-left)/w*pulse.width),0,pulse.width-1);
         ctx.drawImage(pulse,ux,0,1,pulse.height,sx,top,2,h);ctx.globalAlpha=alpha;
+      }
+      // Interferência cabe apenas na tela do CRT, respeita a profundidade e
+      // não cobre a mira ou os avisos. Movimento reduzido usa quadro estático.
+      if(o.signal) {
+        const signal=sprites[reducedMotion() || g.signalTime>.75?'crt_signal_a':'crt_signal_b'];
+        const u=(sx-left)/w;
+        if(signal && u>=.20 && u<=.80) {
+          const ux=clamp(Math.floor((u-.20)/.60*signal.width),0,signal.width-1);
+          ctx.globalAlpha=alpha*(reducedMotion()?.16:.20);
+          ctx.drawImage(signal,ux,0,1,signal.height,sx,top+h*.22,2,h*.57);ctx.globalAlpha=alpha;
+        }
       }
     }
     ctx.restore();
@@ -919,7 +983,8 @@ function drawWeapon(g, mod) {
   const animated=!reducedMotion(), recoil=g.fire>0 && animated?7*Math.sin(Math.PI*(.23-g.fire)/.23):0;
   const reloadDip=g.reload>0 && animated && g.jam<=0?14*Math.sin(Math.PI*(1.5-g.reload)/1.5):0;
   const bob=animated ? Math.sin(g.walkPhase)*g.walkBlend : 0;
-  const x=W/2+bob*2, y=H-26+recoil+reloadDip+Math.abs(bob)*2;
+  const deployDip=animated && g.fire<=0 && g.reload<=0 ? 16*clamp(g.weaponDeploy/.45,0,1) : 0;
+  const x=W/2+bob*2, y=H-26+recoil+reloadDip+deployDip+Math.abs(bob)*2;
   const weapon=sprites[`weapon_${mod.mode}`];
   if(weapon) {
     const stage=weaponVisualFrame(g.fire,!animated,g.reload,g.jam);
@@ -928,10 +993,12 @@ function drawWeapon(g, mod) {
     const sizing=stage==='reload'?frame:weapon;
     const scale=Math.min(172/sizing.width,96/sizing.height);
     const w=sizing.width*scale,h=sizing.height*scale;
-    ctx.drawImage(frame,x-w/2,H-20-h+recoil+reloadDip+Math.abs(bob)*2,w,h);
-    if(g.fire>.14 && !reducedMotion()) {
-      const flare=sprites[`muzzle_${mod.mode}`];
-      if(flare) { ctx.save();ctx.globalAlpha=.72;ctx.drawImage(flare,x-14,H-20-h+recoil+reloadDip+Math.abs(bob)*2-12,28,28);ctx.restore(); }
+    ctx.drawImage(frame,x-w/2,H-20-h+recoil+reloadDip+deployDip+Math.abs(bob)*2,w,h);
+    const flash=muzzleVisualFrame(g.fire,!animated);
+    if(flash) {
+      const flare=flash==='tail'?(sprites[`muzzle_${mod.mode}_tail`] ?? sprites[`muzzle_${mod.mode}`]):sprites[`muzzle_${mod.mode}`];
+      const size=flash==='tail'?22:28;
+      if(flare) { ctx.save();ctx.globalAlpha=flash==='tail'?.45:.72;ctx.drawImage(flare,x-size/2,H-20-h+recoil+reloadDip+Math.abs(bob)*2-12,size,size);ctx.restore(); }
     }
     return;
   }
@@ -970,7 +1037,7 @@ function drawResonance(g,mod) {
     ctx.stroke();
   }
   if(g.fx>0 && ['q','ultimate'].includes(g.fxKind)) {
-    const effect=sprites[`ability_${mod.mode}`];
+    const effect=!reducedMotion() && g.fx<.4 ? (sprites[`ability_${mod.mode}_tail`] ?? sprites[`ability_${mod.mode}`]) : sprites[`ability_${mod.mode}`];
     if(effect) {
       const size=reducedMotion()?30:30+3*(1-clamp(g.fx,0,1));
       ctx.globalAlpha=reducedMotion()?.55:Math.min(.65,.2+g.fx*.5);
@@ -1064,8 +1131,11 @@ export function renderCitadel(canvas,state) {
     ctx.fillStyle='#213438';ctx.fillRect(139,H-26,80,2);
     ctx.fillStyle=g.jam>0?'#ff997a':'#83e4d7';ctx.fillRect(139,H-26,80*clamp(1-g.reload/1.5,0,1),2);
   }
-  if(sprites.hud_echo)ctx.drawImage(sprites.hud_echo,W-91,3,10,10);
-  ctx.textAlign='right';ctx.fillStyle='#ff9a9e';ctx.fillText('ECHOVORE '+Math.floor(g.echo)+'%',W-9,12);
+  const echoHigh=citadelEchoAlert(g.echo,flags), echoText='ECHOVORE '+Math.floor(g.echo)+'%'+(echoHigh?' • ALTO':'');
+  const echoIcon=echoHigh?(sprites.hud_echo_alert ?? sprites.hud_echo):sprites.hud_echo;
+  const echoWidth=ctx.measureText(echoText)?.width ?? echoText.length*5.4;
+  if(echoIcon)ctx.drawImage(echoIcon,W-9-echoWidth-13,3,10,10);
+  ctx.textAlign='right';ctx.fillStyle=echoHigh?'#ffcfad':'#ff9a9e';ctx.fillText(echoText,W-9,12);
   const ultUnlocked=getUnlockState(state.progress).features.ultimate;
   const ultStatus=!ultUnlocked?'NV3':p.ultimate?.cooldown>0?Math.ceil(p.ultimate.cooldown)+'s':'OK';
   if(sprites.hud_energy)ctx.drawImage(sprites.hud_energy,W-160,H-39,10,10);

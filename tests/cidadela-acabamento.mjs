@@ -8,7 +8,7 @@ for(const n of names){const path=`assets/sprites/cidadela-404/${n}.png`;assert(e
 assert.equal(weaponVisualFrame(.2,false,1,0),'fire','disparo tem prioridade');
 assert.equal(weaponVisualFrame(0,false,1,0),'reload');assert.equal(weaponVisualFrame(0,false,1,1),'idle');
 assert.equal(weaponVisualFrame(0,true,1,0),'idle','redução de movimento');
-assert.equal(weaponVisualFrame(0,false,1.5,0),'idle');assert.equal(weaponVisualFrame(0,false,.2,0),'idle');
+assert.equal(weaponVisualFrame(0,false,1.5,0),'idle');assert.equal(weaponVisualFrame(0,false,.2,0),'return');
 const draws=[],texts=[],rects=[];const noop=()=>{};
 const ctx=new Proxy({}, {get(_t,k){if(k==='drawImage')return (...a)=>draws.push(a[0]?.src);if(k==='fillText')return (...a)=>texts.push(a[0]);if(k==='fillRect')return (...a)=>rects.push(a);return noop;},set(){return true;}});
 globalThis.document={createElement:()=>({width:128,height:128,getContext:()=>ctx})};const motion={matches:false};globalThis.window={matchMedia:()=>motion};

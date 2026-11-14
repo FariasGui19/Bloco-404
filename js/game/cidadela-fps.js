@@ -11,7 +11,7 @@ import { citadelAudioEnabled, toggleCitadelAudio, playCitadelSound } from './cid
 import { CITADEL_DECOR, CITADEL_ARCHIVES, CITADEL_POSTGAME, CITADEL_BREACHES, CITADEL_BREACH_CONSOLE, CITADEL_NULL_MONITORS, CITADEL_ECHOES, CITADEL_ECHO_TERMINAL, CITADEL_ECHO_DECOR, CITADEL_WORKSHOP } from '../data/worlds/cidadela-404/cidadela.js';
 import { citadelMissions, missionObjective, interactCitadelMission } from './cidadela-missoes.js';
 import { sealedFlag, cacheFlag, breachSummary, beginBreach, cancelBreach, updateBreach, openBreachCache } from './cidadela-fendas.js';
-import { inspectCitadelMonitor, crtCount, ARCHETYPE_READINGS, crtSignalFragment } from './cidadela-narrativa.js';
+import { inspectCitadelMonitor, crtCount, ARCHETYPE_READINGS, crtSignalFragment, archiveContext } from './cidadela-narrativa.js';
 import { getDimensionProgress, syncDimensionProgress } from './dimension-progress.js';
 import { memoryEchoCount,interactMemoryEcho,useEchoTerminal } from './cidadela-ecos.js';
 import { workshopPhase,workshopCount,interactWorkshop,workshopCircuitActive,toggleWorkshopTrial,interactWorkshopTrial } from './cidadela-vigilia.js';
@@ -126,6 +126,8 @@ export function citadelSpriteFrame(o,time,reduce=false) {
   if(o.type==='nulo') return reduce?'nulo_a':`nulo_${Math.floor(time/3.5)%2?'b':'a'}`;
   return o.type;
 }
+// Mantém a pose final legível antes do desaparecimento; não muda a duração.
+export function enemyDeathAlpha(death,reduce=false) { return reduce?1:clamp(death/.32,0,1); }
 // Orientação é apenas visual: perseguição, linha de visão e mira continuam
 // usando as posições reais. Sem orientação conhecida, mantenha a vista frontal.
 export function enemyView(facing,x,y,viewerX,viewerY) {
@@ -443,8 +445,11 @@ export function updateCitadel(dt, state, input) {
       if (grant) {
         flags.cidadela_arquivo_recompensa=true;
         const reward=grantArchetypeXp(progress,30);
-        notice(g,`ARQUIVO COMPLETO • +${reward.gained} XP. CONSULTE L.`,7);
+        notice(g,`ARQUIVO COMPLETO • +${reward.gained} XP. ${target.label}: ${target.log}`,7);
       } else notice(g,`${target.label}: ${target.log}`,7);
+      // Contexto opcional não altera marcos ou recompensas. O último log
+      // aparece no aviso principal mesmo se a fila de rádio estiver cheia.
+      if (fresh) queueRadio(g,archiveContext(target.id));
       if (fresh || grant) saveCitadelProgress(progress,g);
     } else if (target?.kind==='crt') {
       const result=inspectCitadelMonitor(progress,target);
@@ -737,6 +742,12 @@ function setupBuffer() {
       ['orb_back_hurt','fecho-orbe-costas-dano'],['orb_side_fall','fecho-orbe-lateral-queda'],['orb_back_fall','fecho-orbe-costas-queda'],
       ['echo_back_hurt','fecho-echo-costas-dano'],['echo_side_fall','fecho-echo-lateral-queda'],['echo_back_fall','fecho-echo-costas-queda'],
       ['boss_warning_b','fecho-vigilante-aviso']].map(([type,name])=>[type,`assets/sprites/cidadela-404/${name}.png`]),
+    ...[['imp_side_death','memoria-imp-lateral-colapso'],['imp_back_death','memoria-imp-costas-colapso'],
+      ['orb_side_death','memoria-orbe-lateral-colapso'],['orb_back_death','memoria-orbe-costas-colapso'],
+      ['echo_side_death','memoria-echo-lateral-colapso'],['echo_back_death','memoria-echo-costas-colapso'],
+      ['archive_origem','memoria-arquivo-origem'],['archive_retorno','memoria-arquivo-retorno'],
+      ['archive_memoria','memoria-arquivo-memoria'],['archive_read','memoria-arquivo-lido']]
+      .map(([type,name])=>[type,`assets/sprites/cidadela-404/${name}.png`]),
     ['damage_visor','assets/sprites/cidadela-404/base-dano-visor.png'],
     ...[['imp_side_legacy','vida-imp-lateral'],['imp_back','vida-imp-costas'],
       ['orb_side','vida-orbe-lateral'],['orb_back','vida-orbe-costas'],
@@ -882,7 +893,7 @@ function drawWorld(map, flags, p, g, progress) {
     {...CITADEL_ECHO_TERMINAL,type:echoesReady?'echo_terminal_on':'echo_terminal_off',scale:.52,ground:true},
     ...CITADEL_ECHOES.map(e=>({...e,type:flags[e.flag]?'memory_echo_done':'memory_echo_pending',scale:.33})),
     ...CITADEL_DECOR.map(o=>({...o,ground:true})),
-    ...CITADEL_ARCHIVES.map(a=>({...a,type:'terminal',scale:.72,ground:true})),
+    ...CITADEL_ARCHIVES.map(a=>({...a,type:'terminal',archiveId:a.id,scale:.72,ground:true})),
     {type:'exit',x:1.65,y:6.5,scale:1.2},
     ...CITADEL_NULL_MONITORS.map(m=>({...m,type:'nulo',scale:.56,signal:g.signalTime>0 && g.signalMonitorId===m.id})),
     ...KEYS.filter(k=>!flags[k.flag]).map(k=>({...k,type:'key',scale:.7})),
@@ -918,15 +929,16 @@ function drawWorld(map, flags, p, g, progress) {
             const walking=view.view==='side'?`${o.type}_side_walk_${phase}`:phase==='b'?`${o.type}_back_walk`:idle;
             if(sprites[walking]) visual=walking;
           }
-        } else if(frame==='attack' || frame==='hurt' || (frame==='death' && !reducedMotion() && (o.death ?? 0)>.38)) {
-          // Só a queda intermediária é direcional: o colapso final e a
-          // preferência por movimento reduzido mantêm a pose existente.
-          // Quadros indisponíveis retornam à pose frontal da mesma ação.
-          const action=`${o.type}_${view.view}_${frame==='death'?'fall':frame}`;
+        } else if(frame==='attack' || frame==='hurt' || frame==='death') {
+          // Com movimento reduzido, a queda intermediária é omitida, mas o
+          // colapso final conserva a direção. Fallback: a mesma ação frontal.
+          const actionFrame=frame==='death' ? (!reducedMotion() && (o.death ?? 0)>.38?'fall':'death') : frame;
+          const action=`${o.type}_${view.view}_${actionFrame}`;
           if(sprites[action]) {visual=action;flip=view.flip;directionalBase=sprites[idle] ?? sprites[action];}
         }
       }
     }
+    if(o.archiveId && sprites[`archive_${o.archiveId}`]) visual=`archive_${o.archiveId}`;
     if(o.type==='boss') visual=bossVisualFrame(g.boss,g.time,reducedMotion());
     const chosen=sprites[visual];
     const bossFallback=o.type==='boss' ? (visual==='boss_attack_b'?sprites.boss_attack : visual==='boss_warning_b'?sprites.boss_warning : bossOpen(g.boss)?sprites.boss_open_a : sprites.bossClosed) : null;
@@ -936,7 +948,7 @@ function drawWorld(map, flags, p, g, progress) {
     // Aviso da fenda também existe em movimento reduzido; os demais brilhos
     // são decorativos e não substituem as legendas de combate.
     const pulse=sprites[citadelPulseFrame(o.type,o.windup,g.scan,g.time,reducedMotion())];
-    const alpha=o.alpha ?? (o.death>0 && !reducedMotion() ? clamp(o.death/.7,0,1) : 1);
+    const alpha=o.alpha ?? (o.death>0 ? enemyDeathAlpha(o.death,reducedMotion()) : 1);
     const bob=reducedMotion()?0:o.moving?Math.sin(g.time*8+o.x)*2:
       (o.type==='memory_echo_pending'||o.type==='memory_relay'?Math.sin(g.time*1.5+o.x)*1.4:0);
     // Os frames gerados são próximos entre si. Um pequeno deslocamento das
@@ -1187,7 +1199,8 @@ export function renderCitadel(canvas,state) {
   if(prompt){
     const lines=wrapCitadelText(prompt,46), actionable=/^\[(E|R)\]/.test(prompt);
     ctx.fillStyle='rgba(0,0,0,.86)';ctx.fillRect(W/2-145,H/2+34,290,lines.length*12+4);
-    if(actionable && sprites.hud_interact)ctx.drawImage(sprites.hud_interact,W/2-139,H/2+36,10,10);
+    const promptIcon=target?.kind==='archive' && flags[target.flag] ? (sprites.archive_read ?? sprites.hud_interact) : sprites.hud_interact;
+    if(actionable && promptIcon)ctx.drawImage(promptIcon,W/2-139,H/2+36,10,10);
     ctx.fillStyle='#e6ffff';ctx.font='bold 9px monospace';
     lines.forEach((line,i)=>ctx.fillText(line,W/2+(actionable?6:0),H/2+45+i*12));
   }

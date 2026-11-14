@@ -25,8 +25,8 @@ for(const [type,stem,death] of [['imp','imp','imp-colapso.png'],['orb','orbe','o
  assert(drawn(`fecho-${stem}-lateral-queda.png`).length,'queda lateral tem prioridade mesmo durante aviso');
  enemy.facing=-Math.PI/2;render();assert(drawn(`fecho-${stem}-lateral-queda.png`)[0][1]>63,'lateral espelhada');
  enemy.facing=0;render();assert(drawn(`fecho-${stem}-costas-queda.png`).length,'queda de costas');
- motion.matches=true;render();assert(drawn(death).length,'movimento reduzido mantém colapso final estático');motion.matches=false;
- enemy.death=.38;render();assert(drawn(death).length,'colapso final permanece na mesma janela');
+ motion.matches=true;render();assert(drawn(`memoria-${stem}-costas-colapso.png`).length,'movimento reduzido mantém colapso direcional estático');motion.matches=false;
+ enemy.death=.38;render();assert(drawn(`memoria-${stem}-costas-colapso.png`).length,'colapso final permanece na mesma janela');
 }
 // As novas imagens também respeitam o z-buffer das paredes.
 Object.assign(p,{x:9.5,y:5.5});g.angle=Math.PI;Object.assign(enemy,{type:'imp',x:6.5,y:5.5,hp:0,death:.6,facing:0,windup:0});render();assert(!drawn('fecho-imp-costas-queda.png').length,'parede encobre queda');

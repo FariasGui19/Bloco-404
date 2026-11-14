@@ -49,8 +49,10 @@ canhões, emblemas de habilidade, balanço ligado ao deslocamento real e respost
 de dano nas bordas. Imps, orbes e predadores têm poses de dano e início de
 queda, além de vistas laterais aproximadas e de costas com quadros de
 locomoção ligados ao deslocamento real; avisos, dano e início de queda têm
-poses laterais e de costas, com prioridade sobre a locomoção. O HUD destaca ressonância alta a partir
-de 75%, sem prometer uma invocação imediata.
+poses laterais e de costas, com prioridade sobre a locomoção; o colapso
+final também acompanha a direção. O HUD destaca ressonância alta a partir
+de 75%, sem prometer uma invocação imediata. Os três arquivos têm telas
+próprias e contexto narrativo opcional, sem confirmar a origem do sinal.
 O Vigilante distingue preparação em duas poses, núcleo exposto e dano. A interface é desenhada em resolução maior que o cenário, com pictogramas e rótulos textuais para os
 recursos. A recarga tem poses por arquétipo, indicador de progresso e aviso
 específico quando bloqueada; ainda é possível interrompê-la com as balas

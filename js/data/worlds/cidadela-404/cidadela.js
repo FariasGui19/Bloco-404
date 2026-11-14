@@ -108,3 +108,19 @@ export const CITADEL_WORKSHOP = Object.freeze({
     {type:'workshop_bench',x:9.4,y:20.2,scale:.68},
     {type:'workshop_robot',x:18.3,y:20.2,scale:.5}],
 });
+
+// Células táticas de energia/munição (sessão), bancada de síntese (forja),
+// console de patrulha pós-vitória e o chassi dormente do Vigilante.
+export const CITADEL_ENERGY_CELLS = Object.freeze([
+  {x:2.5,y:9.5},{x:11.5,y:2.5},{x:18.5,y:3.2},{x:28.5,y:2.5},
+]);
+export const CITADEL_CRAFT_BENCH = Object.freeze({
+  kind:'crafting_bench',x:16.5,y:9.5,label:'BANCADA DE SÍNTESE',
+});
+export const CITADEL_PATROL_CONSOLE = Object.freeze({
+  kind:'patrol_console',x:23.5,y:4.5,label:'TERMINAL DE VARREDURA',
+});
+export const CITADEL_DORMANT_GUARDIAN = Object.freeze({
+  kind:'dormant_guardian',x:29.2,y:5.2,label:'VIGILANTE INERTE',
+  log:'ACORRENTADO AO REATOR PARA MANTER A LINHA ABERTA. SEM SINAL DE HOSTILIDADE RESTANTE.',
+});

@@ -297,10 +297,16 @@ function interactWithObject(object) {
   }
   if (object.id === 'console_limiar_666') {
     const n = countFrequencyAnchors(state.progress);
-    const ready = state.progress.flags?.freq666_limiar_estavel;
+    const flags = state.progress.flags ?? {};
+    const ready = flags.freq666_limiar_estavel;
+    const relics = ['selo_codigo_queimado', 'nucleo_vigilante_forjado'].filter(id => state.progress.inventory?.includes(id)).length;
+    const mats = state.progress.citadelMaterials ?? { sucata_codigo: 0, nucleo_estatica: 0 };
+    const statusLine = flags.cidadela_estavel
+      ? `CIDADELA 404 ESTÁVEL • RELÍQUIAS ${relics}/2 • SUCATA ${mats.sucata_codigo ?? 0} • NÚCLEOS ${mats.nucleo_estatica ?? 0}. RONDA SETORIAL, FENDAS E OFICINA DISPONÍVEIS.`
+      : ready ? 'JANELA ESTÁVEL. O ANEL AGUARDA VOCÊ.' : n === 3 ? 'AS TRÊS ÂNCORAS RESPONDERAM. USE [R] PARA ESTABILIZAR O LIMIAR.' : 'EXAMINE AS ÂNCORAS COM [E], DEPOIS USE [R] AQUI PARA SINCRONIZAR O LIMIAR.';
     openDialogue({ speaker: 'CONSOLE CENTRAL', dialogue: [
       `ÂNCORAS SINCRONIZADAS: ${n}/3. ORIGEM, RETORNO E MEMÓRIA.`,
-      state.progress.flags?.cidadela_estavel ? 'O REATOR DA CIDADELA ESTÁ ESTÁVEL. A ROTA PERMANECE ABERTA PARA REVISITA.' : ready ? 'JANELA ESTÁVEL. O ANEL AGUARDA VOCÊ.' : n === 3 ? 'AS TRÊS ÂNCORAS RESPONDERAM. USE [R] PARA ESTABILIZAR O LIMIAR.' : 'EXAMINE AS ÂNCORAS COM [E], DEPOIS USE [R] AQUI PARA SINCRONIZAR O LIMIAR.',
+      statusLine,
     ] }); return;
   }
   if (object.id === 'anel_limiar_666') {
@@ -309,8 +315,8 @@ function interactWithObject(object) {
     }
     const already = !!state.progress.flags.freq666_limiar_preparado;
     openDialogue({ speaker: 'NEXO-04', dialogue: [
-      state.progress.flags?.cidadela_estavel ? 'O REATOR DA CIDADELA ESTÁ ESTÁVEL. A ROTA PERMANECE ABERTA; PODEMOS VOLTAR.' : 'A JANELA ESTÁ ESTÁVEL. A CIDADELA USA OUTRA PERSPECTIVA E OUTRAS REGRAS.',
-      'WASD MOVE; SETAS OU MOUSE MIRAM. ESPAÇO OU CLIQUE ATIRA; E INTERAGE. Q ADAPTA SEU MÓDULO, R É RADAR, T RECARREGA, F É ULTIMATE. A SAÍDA PERMANECE ABERTA.',
+      state.progress.flags?.cidadela_estavel ? 'O REATOR DA CIDADELA ESTÁ ESTÁVEL. RONDA SETORIAL, BANCADA DE SÍNTESE E OFICINA CONTINUAM ACESSÍVEIS.' : 'A JANELA ESTÁ ESTÁVEL. A CIDADELA USA OUTRA PERSPECTIVA E OUTRAS REGRAS.',
+      'WASD MOVE; SETAS OU MOUSE MIRAM. ESPAÇO/CLIQUE ATIRA, V GOLPE CINÉTICO, E USA BANCADA/TERMINAIS. Q MÓDULO, R RADAR, T RECARREGA, F ULTIMATE.',
     ], choicesAfterDialogue: true, choices: [
       { text: 'ATRAVESSAR PARA A CIDADELA', onSelect: () => {
         void (async () => {

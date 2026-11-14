@@ -17,6 +17,9 @@ const TONES=Object.freeze({
   phase2: {from:140,to:360,duration:.36,type:'sawtooth',volume:.024},
   damage: {from:150,to:75,duration:.16,type:'triangle',volume:.028},
   victory: {from:280,to:680,duration:.34,type:'sine',volume:.03},
+  explosion: {from:115,to:38,duration:.32,type:'sawtooth',volume:.036},
+  melee: {from:280,to:110,duration:.09,type:'triangle',volume:.024},
+  shield: {from:420,to:660,duration:.18,type:'sine',volume:.022},
 });
 let context=null, enabled, active=0;
 function readEnabled() {

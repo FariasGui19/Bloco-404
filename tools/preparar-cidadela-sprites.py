@@ -518,3 +518,31 @@ for name in ['rota-terminal-azul','rota-icone-vermelha','vigilante-queda','vigil
     image.thumbnail((size,size),Image.Resampling.LANCZOS)
     image.save(dst / f'{name}.png',optimize=True)
     print(name,image.size)
+
+# Barril de estática e explosão, escudo de campo, Vigilante Fase 2, terminal
+# de ronda, sentinela ativa, reator estável, Imp de elite e quadro de entrada.
+for name in ['barril-estatica','barril-explosao','escudo-campo','vigilante-sobretensao',
+             'terminal-ronda','vigilia-sentinela-ativo','prop-reator-estavel',
+             'imp-elite','imp-elite-ataque']:
+    image=Image.open(src / f'{name}.png').convert('RGBA')
+    pixels=image.load()
+    for y in range(image.height):
+        for x in range(image.width):
+            r,g,b,a=pixels[x,y]
+            if r>120 and b>120 and g<150 and min(r,b)-g>60:
+                pixels[x,y]=(0,0,0,0)
+    box=image.getbbox()
+    if not box: raise ValueError(f'Sprite vazio: {name}')
+    image=image.crop(box)
+    size=256 if name=='vigilante-sobretensao' else 224 if name in ('prop-reator-estavel','imp-elite','imp-elite-ataque') else 192 if name in ('terminal-ronda','barril-explosao') else 160
+    image.thumbnail((size,size),Image.Resampling.LANCZOS)
+    image.save(dst / f'{name}.png',optimize=True)
+    print(name,image.size)
+
+cutscenes = Path('assets/cutscenes')
+cutscenes.mkdir(parents=True, exist_ok=True)
+entry_art = Image.open(src / 'cidadela-entrada-corredor.jpg').convert('RGB')
+entry_art.thumbnail((1280, 720), Image.Resampling.LANCZOS)
+entry_art.save(cutscenes / 'cidadela-entrada-corredor.jpg', quality=88, optimize=True)
+print('cidadela-entrada-corredor.jpg', entry_art.size)
+

@@ -32,8 +32,8 @@ for(const [type,stem] of [['imp','imp'],['orb','orbe'],['echo','echo']]) {
  motion.matches=true;render();assert(drawn(`combate-${stem}-costas-aviso.png`).length,'aviso permanece em movimento reduzido');motion.matches=false;
  enemy.facing=-Math.PI/2;render();assert(drawn(`combate-${stem}-lateral-aviso.png`)[0][1]>63,'aviso lateral espelhado');
  enemy.facing=Math.PI/2;enemy.windup=0;enemy.hurt=.1;render();assert(drawn(`combate-${stem}-lateral-dano.png`).length,'dano prevalece');
- enemy.facing=0;render();assert(drawn(`refino-${stem}-dano.png`).length,'dano de costas usa fallback frontal');
- enemy.hurt=0;enemy.hp=0;enemy.death=.6;render();assert(drawn(`refino-${stem==='orbe'?'orbe':stem}-queda.png`).length,'queda prevalece');
+ enemy.facing=0;render();assert(drawn(`fecho-${stem}-costas-dano.png`).length,'dano visto de costas');
+ enemy.hurt=0;enemy.hp=0;enemy.death=.6;render();assert(drawn(`fecho-${stem}-costas-queda.png`).length,'queda prevalece');
 }
 // A fase muda apenas quando a IA realmente caminha, e não durante pausas,
 // ataques ou ausência de linha de visão; não afeta vida, munição ou posição.

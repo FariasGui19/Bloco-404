@@ -394,3 +394,22 @@ for name in ['combate-imp-lateral-aviso','combate-imp-costas-aviso','combate-imp
     image.thumbnail((size,size),Image.Resampling.LANCZOS)
     image.save(dst / f'{name}.png',optimize=True)
     print(name,image.size)
+
+# Queda direcional, reação vista de costas e preparação final do Vigilante.
+for name in ['fecho-imp-costas-dano','fecho-imp-lateral-queda','fecho-imp-costas-queda',
+             'fecho-orbe-costas-dano','fecho-orbe-lateral-queda','fecho-orbe-costas-queda',
+             'fecho-echo-costas-dano','fecho-echo-lateral-queda','fecho-echo-costas-queda',
+             'fecho-vigilante-aviso']:
+    image=Image.open(src / f'{name}.png').convert('RGBA')
+    pixels=image.load()
+    for y in range(image.height):
+        for x in range(image.width):
+            r,g,b,a=pixels[x,y]
+            if r>140 and b>140 and g<160 and min(r,b)-g>60:
+                pixels[x,y]=(0,0,0,0)
+    box=image.getbbox()
+    if not box: raise ValueError(f'Sprite vazio: {name}')
+    image=image.crop(box)
+    image.thumbnail((192,192),Image.Resampling.LANCZOS)
+    image.save(dst / f'{name}.png',optimize=True)
+    print(name,image.size)

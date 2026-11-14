@@ -48,11 +48,10 @@ A base visual da Cidadela tem quadros de disparo e retorno para os quatro
 canhões, emblemas de habilidade, balanço ligado ao deslocamento real e resposta
 de dano nas bordas. Imps, orbes e predadores têm poses de dano e início de
 queda, além de vistas laterais aproximadas e de costas com quadros de
-locomoção ligados ao deslocamento real; avisos laterais e de costas e dano
-lateral prevalecem sobre a locomoção. O HUD destaca ressonância alta a partir
+locomoção ligados ao deslocamento real; avisos, dano e início de queda têm
+poses laterais e de costas, com prioridade sobre a locomoção. O HUD destaca ressonância alta a partir
 de 75%, sem prometer uma invocação imediata.
-O Vigilante distingue preparação, núcleo exposto e
-dano. A interface é desenhada em resolução maior que o cenário, com pictogramas e rótulos textuais para os
+O Vigilante distingue preparação em duas poses, núcleo exposto e dano. A interface é desenhada em resolução maior que o cenário, com pictogramas e rótulos textuais para os
 recursos. A recarga tem poses por arquétipo, indicador de progresso e aviso
 específico quando bloqueada; ainda é possível interrompê-la com as balas
 restantes. Disparos e habilidades têm quadros finais de dissipação; os CRTs

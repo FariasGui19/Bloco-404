@@ -28,8 +28,8 @@ conteúdo jogável quanto os limites do trabalho visual em andamento.
 
 1. **Consistência das animações:** há vistas frontal, lateral aproximada e
    costas para os três tipos de inimigo comuns, com quadros de locomoção nessas
-   vistas. Ataques agora têm aviso lateral e de costas, e o dano tem pose
-   lateral; dano de costas e queda ainda usam quadros frontais. As imagens
+   vistas, avisos laterais/de costas, dano lateral/de costas e início de
+   queda lateral/de costas. O colapso final continua frontal; as imagens
    geradas são aproximações e podem ser refinadas.
 2. **Resposta e legibilidade em combate:** melhorar transições entre poses,
    avisos e efeitos sem tornar a mira ou as mensagens menos legíveis; continuar
@@ -297,8 +297,16 @@ rastros não animam e a interferência fica estática; o texto continua disponí
 Mais dez artes acrescentam, para cada inimigo comum, avisos laterais e de
 costas, reação lateral ao dano e um ícone de ressonância alta. Ataque e dano
 têm prioridade sobre a locomoção; sem a imagem de ação, usa-se a pose frontal
-existente. O aviso persiste com movimento reduzido; dano visto de costas e
-queda ainda usam poses frontais.
+existente. O aviso persiste com movimento reduzido. Nesta rodada, mais dez
+artes acrescentam uma reação de dano de costas e duas quedas direcionais
+(lateral espelhável e costas) para cada um dos três inimigos, além de uma pose
+de preparação final do Vigilante. A queda direcional ocupa apenas a fase
+intermediária existente; o colapso final continua frontal. Em movimento
+reduzido, a queda intermediária é omitida, mas dano e aviso permanecem.
+O Vigilante usa a nova pose entre 1,6 e 2 segundos de seu ciclo normal;
+em movimento reduzido mantém o aviso anterior estático. Se a imagem ainda
+não estiver disponível, usa-se o aviso anterior. Isso não muda blindagem,
+tempo de ataque, recompensas nem progressão.
 CRTs alternam poses lentas e geradores e reatores têm
 pulsos suaves. As fendas não seladas respiram com uma oscilação suave. Projéteis têm pulsação,
 impactos desaparecem após pouco tempo e eclusas têm varredura lenta. As poses
@@ -331,6 +339,6 @@ Execute `node --experimental-default-type=module tests/cidadela-fps.mjs`,
 `tests/cidadela-audio.mjs`, `tests/cidadela-pos-vitoria.mjs`,
 `tests/cidadela-transicao.mjs`, `tests/cidadela-fendas.mjs`,
 `tests/cidadela-fendas-arquetipos.mjs`, `tests/cidadela-imersao.mjs`,
-`tests/cidadela-hud.mjs`, `tests/cidadela-passos.mjs`, `tests/cidadela-progressao.mjs`, `tests/cidadela-ecos.mjs`, `tests/cidadela-animacoes-sinal.mjs`, `tests/cidadela-vigilia.mjs`, `tests/cidadela-travessia.mjs`, `tests/cidadela-base-animacoes.mjs`, `tests/cidadela-refino-visual.mjs`, `tests/cidadela-acabamento.mjs`, `tests/cidadela-vida.mjs`, `tests/cidadela-passadas-direcionais.mjs`, `tests/cidadela-polimento-combate-sinal.mjs` e `tests/cidadela-combate-alerta.mjs` para verificar regras, rotas, pausa, registros,
+`tests/cidadela-hud.mjs`, `tests/cidadela-passos.mjs`, `tests/cidadela-progressao.mjs`, `tests/cidadela-ecos.mjs`, `tests/cidadela-animacoes-sinal.mjs`, `tests/cidadela-vigilia.mjs`, `tests/cidadela-travessia.mjs`, `tests/cidadela-base-animacoes.mjs`, `tests/cidadela-refino-visual.mjs`, `tests/cidadela-acabamento.mjs`, `tests/cidadela-vida.mjs`, `tests/cidadela-passadas-direcionais.mjs`, `tests/cidadela-polimento-combate-sinal.mjs`, `tests/cidadela-combate-alerta.mjs` e `tests/cidadela-fecho-direcional.mjs` para verificar regras, rotas, pausa, registros,
 desfecho, saves e retorno. O teste de percurso percorre o mapa a pé e usa
 invulnerabilidade para isolar navegação e progressão do balanceamento. A suíte completa usa o comando documentado no README.

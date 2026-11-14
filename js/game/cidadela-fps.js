@@ -142,7 +142,8 @@ export function bossVisualFrame(boss,time,reduce=false) {
     return reduce?'boss_open_a':`boss_open_${Math.floor(time*1.4)%2?'b':'a'}`;
   }
   if(boss.cycle>=2 && boss.cycle<4.2) return bossAttackSpriteFrame(time,reduce);
-  return boss.cycle>=1.2?'boss_warning':'bossClosed';
+  if(boss.cycle>=1.2) return !reduce && boss.cycle>=1.6?'boss_warning_b':'boss_warning';
+  return 'bossClosed';
 }
 export function weaponVisualFrame(fire,reduce=false,reload=0,jam=0) {
   if(reduce) return 'idle';
@@ -732,6 +733,10 @@ function setupBuffer() {
       ['orb_side_attack','combate-orbe-lateral-aviso'],['orb_back_attack','combate-orbe-costas-aviso'],['orb_side_hurt','combate-orbe-lateral-dano'],
       ['echo_side_attack','combate-echo-lateral-aviso'],['echo_back_attack','combate-echo-costas-aviso'],['echo_side_hurt','combate-echo-lateral-dano'],
       ['hud_echo_alert','combate-eco-alerta']].map(([type,name])=>[type,`assets/sprites/cidadela-404/${name}.png`]),
+    ...[['imp_back_hurt','fecho-imp-costas-dano'],['imp_side_fall','fecho-imp-lateral-queda'],['imp_back_fall','fecho-imp-costas-queda'],
+      ['orb_back_hurt','fecho-orbe-costas-dano'],['orb_side_fall','fecho-orbe-lateral-queda'],['orb_back_fall','fecho-orbe-costas-queda'],
+      ['echo_back_hurt','fecho-echo-costas-dano'],['echo_side_fall','fecho-echo-lateral-queda'],['echo_back_fall','fecho-echo-costas-queda'],
+      ['boss_warning_b','fecho-vigilante-aviso']].map(([type,name])=>[type,`assets/sprites/cidadela-404/${name}.png`]),
     ['damage_visor','assets/sprites/cidadela-404/base-dano-visor.png'],
     ...[['imp_side_legacy','vida-imp-lateral'],['imp_back','vida-imp-costas'],
       ['orb_side','vida-orbe-lateral'],['orb_back','vida-orbe-costas'],
@@ -901,7 +906,7 @@ function drawWorld(map, flags, p, g, progress) {
     const base=sprites[o.type];
     const frame=enemyVisualFrame(o);
     let visual=citadelSpriteFrame(o,g.time,reducedMotion()), flip=false, directionalBase=null;
-    if(['idle','attack','hurt'].includes(frame) && ['imp','orb','echo'].includes(o.type)) {
+    if(['idle','attack','hurt','death'].includes(frame) && ['imp','orb','echo'].includes(o.type)) {
       const view=enemyView(o.facing,o.x,o.y,p.x,p.y);
       if(view.view!=='front') {
         let idle=`${o.type}_${view.view}`;
@@ -913,17 +918,18 @@ function drawWorld(map, flags, p, g, progress) {
             const walking=view.view==='side'?`${o.type}_side_walk_${phase}`:phase==='b'?`${o.type}_back_walk`:idle;
             if(sprites[walking]) visual=walking;
           }
-        } else if(frame==='attack' || (frame==='hurt' && view.view==='side')) {
-          // Ataque e dano continuam prioritários sobre locomoção; se o novo
-          // quadro não carregou, mantém-se o aviso frontal já existente.
-          const action=`${o.type}_${view.view}_${frame}`;
+        } else if(frame==='attack' || frame==='hurt' || (frame==='death' && !reducedMotion() && (o.death ?? 0)>.38)) {
+          // Só a queda intermediária é direcional: o colapso final e a
+          // preferência por movimento reduzido mantêm a pose existente.
+          // Quadros indisponíveis retornam à pose frontal da mesma ação.
+          const action=`${o.type}_${view.view}_${frame==='death'?'fall':frame}`;
           if(sprites[action]) {visual=action;flip=view.flip;directionalBase=sprites[idle] ?? sprites[action];}
         }
       }
     }
     if(o.type==='boss') visual=bossVisualFrame(g.boss,g.time,reducedMotion());
     const chosen=sprites[visual];
-    const bossFallback=o.type==='boss' ? (visual==='boss_attack_b'?sprites.boss_attack : bossOpen(g.boss)?sprites.boss_open_a : sprites.bossClosed) : null;
+    const bossFallback=o.type==='boss' ? (visual==='boss_attack_b'?sprites.boss_attack : visual==='boss_warning_b'?sprites.boss_warning : bossOpen(g.boss)?sprites.boss_open_a : sprites.bossClosed) : null;
     const sprite=chosen ?? (frame==='attack'?sprites[`${o.type}_attack`]:null) ?? bossFallback ?? base;
     const aspect=directionalBase ?? (visual.includes('_walk_') ? sprite : base);
     const h=Math.min(H*4,H/forward*o.scale), w=h*(aspect.width/aspect.height), left=center-w/2;

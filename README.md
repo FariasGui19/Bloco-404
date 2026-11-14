@@ -35,6 +35,10 @@ direção de movimento, **P** pausa, **L** abre os registros encontrados e
 **J** consulta missões, **K** mostra a sintonia local por arquétipo e **M** liga ou desliga os efeitos sonoros opcionais. Marcos únicos desbloqueiam adaptações exclusivas desta dimensão, sem alterar o XP ou o kit global.
 Clique na tela para capturar o mouse; Esc libera o cursor e pausa o combate. As setas dispensam
 mouse capturado. Três registros abrem as eclusas; a saída fica junto à chegada.
+Durante o radar, uma linha indica uma rota pelas eclusas abertas ao próximo
+registro e, depois dos três, ao Vigilante no reator. Após a vitória, ela aponta
+para a saída **opcional**; os outros objetivos continuam marcados no mapa.
+A rota é uma orientação, não impede explorar nem garante segurança.
 Três arquivos opcionais, encontrados em terminais e consultáveis com **L**,
 contam mais da história e concedem XP uma vez ao completar a coleção. Três
 CRTs também registram uma figura misteriosa, sem confirmar sua identidade;
@@ -50,14 +54,16 @@ de dano nas bordas. Imps, orbes e predadores têm poses de dano e início de
 queda, além de vistas laterais aproximadas e de costas com quadros de
 locomoção ligados ao deslocamento real; avisos, dano e início de queda têm
 poses laterais e de costas, com prioridade sobre a locomoção; o colapso
-final também acompanha a direção. O HUD destaca ressonância alta a partir
-de 75%, sem prometer uma invocação imediata. Os três arquivos têm telas
+final também acompanha a direção. Preparação e disparo usam poses distintas
+sincronizadas com a IA, inclusive nas vistas laterais e de costas. O HUD
+destaca ressonância alta a partir de 75%, sem prometer uma invocação imediata. Os três arquivos têm telas
 próprias e contexto narrativo opcional, sem confirmar a origem do sinal.
 O Vigilante distingue preparação em duas poses, núcleo exposto e dano. A interface é desenhada em resolução maior que o cenário, com pictogramas e rótulos textuais para os
 recursos. A recarga tem poses por arquétipo, indicador de progresso e aviso
-específico quando bloqueada; ainda é possível interrompê-la com as balas
-restantes. Disparos e habilidades têm quadros finais de dissipação; os CRTs
-respondem com interferência discreta e novos fragmentos, sem confirmar a origem
+específico quando bloqueada; T ou uma tentativa de disparo sem munição pode
+agendar a recarga até o bloqueio terminar. Ela ainda pode ser cancelada
+disparando as balas restantes. Disparos têm dissipação e habilidades têm
+quadros intermediários e finais; os CRTs respondem com interferência discreta e novos fragmentos, sem confirmar a origem
 do sinal. Impactos em metal e blindagem, suprimentos e interações também
 recebem respostas visuais. A travessia dimensional ganha um anel ilustrado;
 a opção do sistema de movimento reduzido mantém os sinais importantes sem

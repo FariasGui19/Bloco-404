@@ -54,7 +54,7 @@ step();assert.equal(g.enemies.length,9);assert.equal(g.echo,100);assert(g.echoLo
 g.enemies=[];g.echoLock=0;step();assert.equal(g.enemies.length,1);assert.equal(g.enemies[0].type,'echo');assert.equal(g.echo,0);g.enemies=[];
 // Echovore bloqueia a recarga, não o uso das balas restantes.
 g.ammo=4;g.reload=0;g.fire=0;g.jam=2;input.keys.space=true;step();input.keys.space=false;assert.equal(g.ammo,3);
-input.pressed.add('t');step();assert.equal(g.ammo,3);assert.equal(g.reload,0);g.jam=0;
+input.pressed.add('t');step();assert.equal(g.ammo,3);assert.equal(g.reload,1.5,'recarga fica na fila durante bloqueio');g.jam=0;
 // Medkit só é consumido quando cura, uma vez por sessão.
 Object.assign(state.player,{x:4.5,y:9.5});g.shots=[];
 step();assert(!g.supplies[0].used);state.player.health-=30;step();assert(g.supplies[0].used);assert(state.player.health>hp-30);

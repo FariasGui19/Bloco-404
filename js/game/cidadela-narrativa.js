@@ -21,6 +21,13 @@ const ARCHIVE_CONTEXT=Object.freeze({
   retorno:'NEXO: IMPULSOS E RADAR ELEVAM A RESSONÂNCIA. A ROTA DE VOLTA SEGUE ABERTA.',
   memoria:'NEXO: A FIGURA FOI REGISTRADA, MAS O SINAL NÃO IDENTIFICA QUEM O ENVIOU.',
 });
+// Comentários de leitura, não identificação do emissor nem novos marcos.
+const KEY_CONTEXT=Object.freeze({
+  azul:'NEXO: O REGISTRO MARCA O INÍCIO DO PEDIDO. A ORIGEM DA RESPOSTA SEGUE INCERTA.',
+  amarela:'NEXO: OS TRÊS SEGUNDOS SÃO UM REGISTRO, NÃO PROVA SOBRE O EMISSOR.',
+  vermelha:'NEXO: O GUARDIÃO MANTEVE O REATOR. O MOTIVO DA ORDEM CONTINUA EM ABERTO.',
+});
+export function keyContext(id) { return KEY_CONTEXT[id] ?? ''; }
 export function archiveContext(id) { return ARCHIVE_CONTEXT[id] ?? ''; }
 export function crtSignalFragment(id) { return SIGNAL_FRAGMENTS[id] ?? ''; }
 export function crtCount(progress) {return CITADEL_NULL_MONITORS.filter(m=>progress.flags?.[m.flag]).length;}

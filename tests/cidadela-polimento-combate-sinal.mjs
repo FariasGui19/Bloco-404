@@ -7,7 +7,7 @@ import {updateCitadel,renderCitadel,clearCitadelRuntime,getCitadelRuntime,weapon
 const names=['polimento-disparo-mare','polimento-disparo-nucleo','polimento-disparo-dominio','polimento-disparo-bio','polimento-habilidade-mare','polimento-habilidade-nucleo','polimento-habilidade-dominio','polimento-habilidade-bio','polimento-crt-escuta','polimento-crt-eco'];
 for(const n of names){const p=`assets/sprites/cidadela-404/${n}.png`;assert(existsSync(p));assert.equal(readFileSync(p)[25],6,`${n}: alfa`);}
 assert.equal(muzzleVisualFrame(.23),'burst');assert.equal(muzzleVisualFrame(.14),'tail');assert.equal(muzzleVisualFrame(.06),null);assert.equal(muzzleVisualFrame(.2,true),null);
-assert.equal(weaponVisualFrame(.2,false,.2),'fire');assert.equal(weaponVisualFrame(0,false,.2),'return');assert.equal(weaponVisualFrame(0,false,.2,1),'idle');assert.equal(weaponVisualFrame(0,true,.2),'idle');
+assert.equal(weaponVisualFrame(.2,false,.2),'fire');assert.equal(weaponVisualFrame(0,false,.2),'return');assert.equal(weaponVisualFrame(0,false,.2,1),'blocked');assert.equal(weaponVisualFrame(0,true,.2),'idle');
 for(const m of CITADEL_NULL_MONITORS)assert.match(crtSignalFragment(m.id),/^SINAL SEM ORIGEM:/);assert.equal(crtSignalFragment('inexistente'),'');
 const draws=[];const noop=()=>{};const ctx=new Proxy({}, {get(_t,k){if(k==='drawImage')return (...a)=>draws.push(a);return noop;},set(){return true;}});
 globalThis.document={createElement:()=>({width:128,height:128,getContext:()=>ctx})};const motion={matches:false};globalThis.window={matchMedia:()=>motion};

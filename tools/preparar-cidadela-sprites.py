@@ -434,3 +434,62 @@ for name in ['memoria-imp-lateral-colapso','memoria-imp-costas-colapso',
     image.thumbnail((size,size),Image.Resampling.LANCZOS)
     image.save(dst / f'{name}.png',optimize=True)
     print(name,image.size)
+
+# Preparação/disparo de inimigos e quadros intermediários dos módulos.
+for name in ['ritmo-imp-carga','ritmo-imp-disparo','ritmo-orbe-carga','ritmo-orbe-disparo',
+             'ritmo-echo-carga','ritmo-echo-disparo','ritmo-habilidade-mare',
+             'ritmo-habilidade-nucleo','ritmo-habilidade-dominio','ritmo-habilidade-bio']:
+    image=Image.open(src / f'{name}.png').convert('RGBA')
+    pixels=image.load()
+    for y in range(image.height):
+        for x in range(image.width):
+            r,g,b,a=pixels[x,y]
+            # Preserva os violetas do efeito de Domínio.
+            if r>185 and b>185 and g<100 and abs(r-b)<55:
+                pixels[x,y]=(0,0,0,0)
+    box=image.getbbox()
+    if not box: raise ValueError(f'Sprite vazio: {name}')
+    image=image.crop(box)
+    size=128 if name.startswith('ritmo-habilidade-') else 192
+    image.thumbnail((size,size),Image.Resampling.LANCZOS)
+    image.save(dst / f'{name}.png',optimize=True)
+    print(name,image.size)
+
+# Reações de disparo em perfil/costas e armas durante recarga interrompida.
+for name in ['resposta-imp-lateral-disparo','resposta-imp-costas-disparo',
+             'resposta-orbe-lateral-disparo','resposta-orbe-costas-disparo',
+             'resposta-echo-lateral-disparo','resposta-echo-costas-disparo',
+             'resposta-recarga-mare','resposta-recarga-nucleo',
+             'resposta-recarga-dominio','resposta-recarga-bio']:
+    image=Image.open(src / f'{name}.png').convert('RGBA')
+    pixels=image.load()
+    for y in range(image.height):
+        for x in range(image.width):
+            r,g,b,a=pixels[x,y]
+            if r>185 and b>185 and g<100 and abs(r-b)<55:
+                pixels[x,y]=(0,0,0,0)
+    box=image.getbbox()
+    if not box: raise ValueError(f'Sprite vazio: {name}')
+    image=image.crop(box)
+    image.thumbnail((192,192),Image.Resampling.LANCZOS)
+    image.save(dst / f'{name}.png',optimize=True)
+    print(name,image.size)
+
+# Marcos do radar e terminais de registro disponíveis nesta rodada.
+for name in ['rota-terminal-amarela','rota-terminal-vermelha','rota-icone-azul',
+             'rota-icone-amarela','rota-icone-reator','rota-icone-saida',
+             'rota-icone-guia','rota-icone-diario']:
+    image=Image.open(src / f'{name}.png').convert('RGBA')
+    pixels=image.load()
+    for y in range(image.height):
+        for x in range(image.width):
+            r,g,b,a=pixels[x,y]
+            if r>95 and b>95 and g<145 and min(r,b)-g>55:
+                pixels[x,y]=(0,0,0,0)
+    box=image.getbbox()
+    if not box: raise ValueError(f'Sprite vazio: {name}')
+    image=image.crop(box)
+    size=192 if name.startswith('rota-terminal-') else 96
+    image.thumbnail((size,size),Image.Resampling.LANCZOS)
+    image.save(dst / f'{name}.png',optimize=True)
+    print(name,image.size)

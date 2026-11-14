@@ -546,3 +546,36 @@ entry_art.thumbnail((1280, 720), Image.Resampling.LANCZOS)
 entry_art.save(cutscenes / 'cidadela-entrada-corredor.jpg', quality=88, optimize=True)
 print('cidadela-entrada-corredor.jpg', entry_art.size)
 
+# Lote 3: parede da Oficina, Vigilante acorrentado, treino e transmissor ativos,
+# projétil e colapso do elite, pulso cinético, ícones de relíquias e retorno pós-vitória.
+wall_workshop = Image.open(src / 'parede-oficina.png').convert('RGB')
+side = min(wall_workshop.size)
+left = (wall_workshop.width - side) // 2
+top = (wall_workshop.height - side) // 2
+wall_workshop = wall_workshop.crop((left, top, left + side, top + side)).resize((128, 128), Image.Resampling.LANCZOS)
+wall_workshop.save(dst / 'parede-oficina.png', optimize=True)
+print('parede-oficina', wall_workshop.size)
+
+for name in ['vigilante-inerte-acorrentado','nucleo-treino-ativo','painel-transmissor-ativo',
+             'projetil-elite','imp-elite-colapso','golpe-cinetico-pulso',
+             'reliquia-selo-codigo','reliquia-nucleo-vigilante']:
+    image=Image.open(src / f'{name}.png').convert('RGBA')
+    pixels=image.load()
+    for y in range(image.height):
+        for x in range(image.width):
+            r,g,b,a=pixels[x,y]
+            if r>160 and b>160 and g<110 and min(r,b)-g>90:
+                pixels[x,y]=(0,0,0,0)
+    box=image.getbbox()
+    if not box: raise ValueError(f'Sprite vazio: {name}')
+    image=image.crop(box)
+    size=256 if name=='vigilante-inerte-acorrentado' else 192 if name in ('nucleo-treino-ativo','painel-transmissor-ativo','imp-elite-colapso','golpe-cinetico-pulso') else 128
+    image.thumbnail((size,size),Image.Resampling.LANCZOS)
+    image.save(dst / f'{name}.png',optimize=True)
+    print(name,image.size)
+
+return_art = Image.open(src / 'cidadela-retorno-estavel.jpg').convert('RGB')
+return_art.thumbnail((1280, 720), Image.Resampling.LANCZOS)
+return_art.save(cutscenes / 'cidadela-retorno-estavel.jpg', quality=88, optimize=True)
+print('cidadela-retorno-estavel.jpg', return_art.size)
+

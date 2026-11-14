@@ -28,6 +28,10 @@ export const CITADEL_END_SCENES = [
   { image:'assets/cutscenes/cidadela-estavel.png', eyebrow:'NEXO-04 // LINHA DE RETORNO', title:'A ROTA SOBREVIVEU', text:'“O reator respira de novo. Podemos voltar — e alguém, ou alguma coisa, ainda pode nos responder.”', note:'Uma sonda do NEXO aguarda na arena. A linha de retorno está aberta.' },
 ];
 
+export const CITADEL_RETURN_SCENES = [
+  { image:'assets/cutscenes/cidadela-retorno-estavel.jpg', eyebrow:'ESTAÇÃO 66.6 // RETORNO ESTÁVEL', title:'A MARÉ DO OUTRO LADO', text:'Ao cruzar de volta pelo anel, a neblina sobre a plataforma abriu caminho para a maré noturna. A frequência de 66.6 MHz não treme mais — a linha sobreviveu ao apagamento.', note:'A Cidadela 404, a Oficina da Vigília e a Ronda Setorial continuam acessíveis pelo anel.' },
+];
+
 let open = false;
 export function isCutsceneOpen() { return open; }
 

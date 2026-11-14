@@ -51,6 +51,9 @@ let context = { progress: null, map: null, player: null };
 
 const icon = (name, className = 'codex-icon') =>
   `<img class="${className}" src="${ICONS}${name}.png" alt="" aria-hidden="true" draggable="false">`;
+const itemIcon = (item, className = 'codex-icon') => item?.spritePath
+  ? `<img class="${className}" src="${escapeHtml(item.spritePath)}" alt="" aria-hidden="true" draggable="false">`
+  : icon(item?.icon ?? 'inventario', className);
 
 const pct = value => `${Math.round(Math.max(0, Math.min(1, value)) * 100)}%`;
 
@@ -394,27 +397,32 @@ function renderInventory(progress) {
   if (currentSelection && !ids.includes(currentSelection)) currentSelection = null;
   const selected = currentSelection ?? ids[0] ?? null;
   currentSelection = selected;
-  const slots = Array.from({ length: 8 }, (_, index) => {
+  const slots = Array.from({ length: Math.max(8, ids.length) }, (_, index) => {
     const id = ids[index];
     if (!id) return '<div class="codex-slot empty" aria-hidden="true"></div>';
     const item = getItem(id);
     return `<button type="button" class="codex-slot${id === selected ? ' selected' : ''}" data-item="${escapeHtml(id)}" aria-label="${escapeHtml(item.name)}">
-      ${icon(item.icon, 'codex-slot-icon')}
+      ${itemIcon(item, 'codex-slot-icon')}
       <span>${escapeHtml(item.name)}</span>
     </button>`;
   }).join('');
   const item = selected ? getItem(selected) : null;
   const detail = item
     ? `<article class="codex-item-detail">
-        ${icon(item.icon, 'codex-item-icon')}
+        ${itemIcon(item, 'codex-item-icon')}
         <div><span class="codex-tag">${escapeHtml(item.kind)}</span><strong>${escapeHtml(item.name)}</strong><p>${escapeHtml(item.description)}</p></div>
       </article>`
     : `<article class="codex-item-detail empty"><p>Inventário vazio. Recolha vestígios e registros pelo arquipélago.</p></article>`;
+  const mats = progress?.citadelMaterials;
+  const citadelMats = mats && ((mats.sucata_codigo ?? 0) > 0 || (mats.nucleo_estatica ?? 0) > 0)
+    ? `<p class="codex-note">Forja Cidadela 404: ${mats.sucata_codigo ?? 0} Sucata de Código · ${mats.nucleo_estatica ?? 0} Núcleo de Estática</p>`
+    : '';
   return `<section class="codex-section" aria-label="Inventário">
     <div class="codex-columns">
       <div class="codex-column">
         <div class="codex-inventory">${slots}</div>
         ${detail}
+        ${citadelMats}
       </div>
       ${companionBlock(progress)}
     </div>

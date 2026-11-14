@@ -302,7 +302,7 @@ function interactWithObject(object) {
     const relics = ['selo_codigo_queimado', 'nucleo_vigilante_forjado'].filter(id => state.progress.inventory?.includes(id)).length;
     const mats = state.progress.citadelMaterials ?? { sucata_codigo: 0, nucleo_estatica: 0 };
     const statusLine = flags.cidadela_estavel
-      ? `CIDADELA 404 ESTÁVEL • RELÍQUIAS ${relics}/2 • SUCATA ${mats.sucata_codigo ?? 0} • NÚCLEOS ${mats.nucleo_estatica ?? 0}. RONDA SETORIAL, FENDAS E OFICINA DISPONÍVEIS.`
+      ? `CIDADELA 404 ESTÁVEL • RELÍQUIAS ${relics}/2 • RONDAS ${flags.cidadela_rondas_concluidas ?? 0} • SUCATA ${mats.sucata_codigo ?? 0} • NÚCLEOS ${mats.nucleo_estatica ?? 0}. RONDA SETORIAL, FENDAS E OFICINA DISPONÍVEIS.`
       : ready ? 'JANELA ESTÁVEL. O ANEL AGUARDA VOCÊ.' : n === 3 ? 'AS TRÊS ÂNCORAS RESPONDERAM. USE [R] PARA ESTABILIZAR O LIMIAR.' : 'EXAMINE AS ÂNCORAS COM [E], DEPOIS USE [R] AQUI PARA SINCRONIZAR O LIMIAR.';
     openDialogue({ speaker: 'CONSOLE CENTRAL', dialogue: [
       `ÂNCORAS SINCRONIZADAS: ${n}/3. ORIGEM, RETORNO E MEMÓRIA.`,

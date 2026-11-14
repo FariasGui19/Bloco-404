@@ -131,12 +131,14 @@ export const ITEMS = Object.freeze({
     name: 'SELO DO CÓDIGO QUEIMADO',
     kind: 'relíquia',
     icon: 'progressao',
+    spritePath: 'assets/sprites/cidadela-404/reliquia-selo-codigo.png',
     description: 'Peça forjada na Bancada de Síntese da Cidadela 404. Amplifica os disparos dimensionais em +25% dentro da Cidadela.',
   }),
   nucleo_vigilante_forjado: Object.freeze({
     name: 'NÚCLEO DO VIGILANTE FORJADO',
     kind: 'relíquia',
     icon: 'energia',
+    spritePath: 'assets/sprites/cidadela-404/reliquia-nucleo-vigilante.png',
     description: 'Reator portátil sintetizado com Núcleos de Estática após estabilizar a Cidadela. Reduz o custo de Q (-4 EN) e acelera regeneração (+2 EN/s) na dimensão.',
   }),
 });

@@ -8,9 +8,13 @@ import { getActiveUltimate } from './ultimate.js';
 import { getUnlockState } from './unlocks.js';
 import { playCutscene, CITADEL_END_SCENES } from '../ui/cutscene.js';
 import { citadelAudioEnabled, toggleCitadelAudio, playCitadelSound } from './cidadela-audio.js';
-import { CITADEL_DECOR, CITADEL_ARCHIVES, CITADEL_POSTGAME, CITADEL_BREACHES, CITADEL_BREACH_CONSOLE } from '../data/worlds/cidadela-404/cidadela.js';
+import { CITADEL_DECOR, CITADEL_ARCHIVES, CITADEL_POSTGAME, CITADEL_BREACHES, CITADEL_BREACH_CONSOLE, CITADEL_NULL_MONITORS, CITADEL_ECHOES, CITADEL_ECHO_TERMINAL, CITADEL_ECHO_DECOR, CITADEL_WORKSHOP } from '../data/worlds/cidadela-404/cidadela.js';
 import { citadelMissions, missionObjective, interactCitadelMission } from './cidadela-missoes.js';
 import { sealedFlag, cacheFlag, breachSummary, beginBreach, cancelBreach, updateBreach, openBreachCache } from './cidadela-fendas.js';
+import { inspectCitadelMonitor, crtCount, ARCHETYPE_READINGS } from './cidadela-narrativa.js';
+import { getDimensionProgress, syncDimensionProgress } from './dimension-progress.js';
+import { memoryEchoCount,interactMemoryEcho,useEchoTerminal } from './cidadela-ecos.js';
+import { workshopPhase,workshopCount,interactWorkshop,workshopCircuitActive,toggleWorkshopTrial,interactWorkshopTrial } from './cidadela-vigilia.js';
 
 export const KEYS = [
   { id: 'azul', flag: 'cidadela_chave_azul', x: 5.5, y: 3.5, color: '#57e6f0', symbol: '◆', label: 'AZUL / LOSANGO', log: 'PEDIDO DE SOCORRO INICIADO.' },
@@ -38,7 +42,8 @@ export function wallAt(map, flags, x, y) {
   const ix = Math.floor(x), iy = Math.floor(y);
   if (!map.layout[iy] || map.layout[iy][ix] === undefined || map.layout[iy][ix] === 1) return 1;
   const gates = { 8: 'cidadela_chave_azul', 15: 'cidadela_chave_amarela', 22: 'cidadela_chave_vermelha' };
-  if (gates[ix] && !flags[gates[ix]]) return 2;
+  if (iy<=10 && gates[ix] && !flags[gates[ix]]) return 2;
+  if (iy===11 && [4,5,19,20].includes(ix) && !flags.cidadela_estavel) return 2;
   return 0;
 }
 export function canMove(map, flags, x, y, radius = .2) {
@@ -56,7 +61,13 @@ export function nearestInteraction(map,flags,p) {
   const candidates=[{kind:'exit',x:2.5,y:6.5,radius:1.3},
     ...KEYS.filter(k=>!flags[k.flag]).map(k=>({...k,kind:'key',radius:1.35})),
     ...CITADEL_ARCHIVES.map(a=>({...a,kind:'archive',radius:1.2})),
+    ...CITADEL_NULL_MONITORS.map(m=>({...m,kind:'crt',radius:1.0})),
+    ...CITADEL_ECHOES.map(o=>({...o,radius:1.0})),
+    {...CITADEL_ECHO_TERMINAL,radius:1.0},
     ...(flags.cidadela_estavel?[
+      ...CITADEL_WORKSHOP.switches.map(o=>({...o,radius:1.05})),
+      {...CITADEL_WORKSHOP.terminal,radius:1.1},
+      {kind:'workshop_trial',x:18.3,y:20.2,radius:1},
       {kind:'reactor',x:30.4,y:6.5,radius:1.4},
       {...CITADEL_BREACH_CONSOLE,radius:1},
       ...CITADEL_BREACHES.flatMap(b=>[
@@ -75,13 +86,57 @@ export function createCitadelRuntime(progress) {
     boss: {type:'boss', x:28, y:6.5, hp:280, cycle:0, cooldown:1.5, dead:!!flags.cidadela_estavel},
     supplies: [{x:4.5,y:9.5},{x:13.5,y:3.5},{x:20.5,y:7.5},{x:24.5,y:9.5}],
     shots: [], impacts: [], ammo: 12, reload: 0, jam: 0, fire: 0, q: 0, boost: 0, scan: 0, dash: 0, dashAngle:0, shield: 0, guard:0, ultBuff:null, echo: 0, echoLock: 0,
-    message: flags.cidadela_estavel ? 'NEXO-04: REATOR ESTÁVEL. ENCONTRE A SONDA NA ARENA.' : 'NEXO-04: A LINHA ESTÁ ABERTA. ENCONTRE OS TRÊS REGISTROS.', messageTime: 8, time: 0, damage: 0, hit: 0, fx: 0, fxKind: '', suppressed: 0, returning: false, training:false, breach:null, panel: null };
+    message: flags.cidadela_estavel ? 'NEXO-04: REATOR ESTÁVEL. A SONDA AGUARDA NA ARENA; A OFICINA ABRIU AO SUL.' : 'NEXO-04: A LINHA ESTÁ ABERTA. ENCONTRE OS TRÊS REGISTROS.', messageTime: 8, time: 0, damage: 0, hit: 0, fx: 0, fxKind: '', suppressed: 0, returning: false, training:false, breach:null, radioQueue:[],stepDistance:0, echoAnchor:0, echoTerminalCooldown:0, workshopHit:0, workshopTrial:null, localProgress:null, vectorCharge:0, perkIcon:null, panel: null };
 }
 function notice(g, text, seconds=4) { g.message=text; g.messageTime=seconds; }
+function queueRadio(g,text) { if(text && g.radioQueue.length<6) g.radioQueue.push(text); }
+function saveCitadelProgress(progress,g) {
+  const result=syncDimensionProgress(progress);
+  g.localProgress=result.after;
+  if(result.after && result.before && result.after.rank>result.before.rank)
+    queueRadio(g,`NEXO: SINTONIA LOCAL ${result.after.rank}/4. CONSULTE [K] PARA VER A ADAPTAÇÃO.`);
+  saveGame();
+}
+// Uma linha legível em monospace em vez de comprimir avisos longos.
+export function wrapCitadelText(text,limit=66) {
+  const lines=[];let line='';
+  limit=Math.max(1,Math.floor(limit));
+  for(let word of String(text ?? '').split(/\s+/).filter(Boolean)) {
+    if(line && (line.length+word.length+1)>limit) {lines.push(line);line='';}
+    while(word.length>limit) {lines.push(word.slice(0,limit));word=word.slice(limit);}
+    if(word) line+=(line?' ':'')+word;
+  }
+  if(line) lines.push(line);
+  return lines;
+}
+// Quadros de ação têm prioridade sobre a locomoção; em movimento reduzido a
+// silhueta permanece parada sem remover as poses de aviso de ataque.
+export function citadelSpriteFrame(o,time,reduce=false) {
+  const frame=enemyVisualFrame(o);
+  if(frame==='death') return `${o.type}_death`;
+  if(frame==='attack') return `${o.type}_attack${!reduce && Math.floor(time*2.5)%2?'_b':''}`;
+  if(frame==='hurt') return o.type;
+  if(!reduce && o.moving && ['imp','echo','orb'].includes(o.type)) return `${o.type}_walk_${Math.floor(time*2.4)%2?'b':'a'}`;
+  if(o.type==='nulo') return reduce?'nulo_a':`nulo_${Math.floor(time/3.5)%2?'b':'a'}`;
+  return o.type;
+}
+export function bossAttackSpriteFrame(time,reduce=false) { return !reduce && Math.floor(time*2.5)%2?'boss_attack_b':'boss_attack'; }
+// Só o aviso da fenda é essencial; nenhum efeito decorativo deve animar
+// quando o operador pede movimento reduzido.
+export function citadelPulseFrame(type,windup,scan,time,reduce=false) {
+  if(type==='breach_open' && windup>0) return 'breach_warning';
+  if(reduce) return null;
+  const phase=Math.floor(time*.9)%2?'b':'a';
+  if(type==='generator'||type==='reactor') return `${type}_pulse`;
+  if(type==='echo_terminal_on') return `echo_terminal_pulse_${phase}`;
+  if(type==='exit') return `exit_pulse_${phase}`;
+  if(type==='memory_echo_pending' && scan>0) return 'memory_pulse';
+  return null;
+}
 function resetAtCheckpoint(state, g) {
   const cp = checkpoints[checkpointIndex(state.progress.flags)];
-  cancelBreach(g); if(g.training){g.training=false;g.enemies.length=0;}
-  respawnPlayer(state.player, cp); g.angle=0; g.shots.length=0; g.impacts.length=0; g.jam=0; g.reload=0; g.ammo=12; g.dash=0; g.shield=0; g.guard=0; g.ultBuff=null; g.fx=0;
+  g.workshopTrial=null; cancelBreach(g); if(g.training){g.training=false;g.enemies.length=0;}
+  respawnPlayer(state.player, cp); g.angle=0; g.shots.length=0; g.impacts.length=0; g.jam=0; g.reload=0; g.ammo=12; g.dash=0; g.shield=0; g.guard=0; g.ultBuff=null; g.vectorCharge=0; g.echoAnchor=0; g.fx=0;
   notice(g,'NEXO-04: SINAL RECUPERADO NO ÚLTIMO MARCO. A LINHA DE RETORNO CONTINUA ABERTA.',6);
 }
 function showEnding(state, g) {
@@ -130,10 +185,10 @@ function fire(map, flags, p, g) {
   // inclusive enquanto o Echovore bloqueia o progresso da recarga.
   if (g.reload>0) { if(g.ammo<=0) return; g.reload=0; }
   if (g.ammo<=0) { if(g.jam<=0) { g.reload=1.5; notice(g,'RECARREGANDO...',1.5); } return; }
-  g.ammo--; g.fire=.23; playCitadelSound('shot');
+  g.ammo--; g.fire=.23; const vectorDamage=g.vectorCharge>0?12:0;g.vectorCharge=0;playCitadelSound('shot');
   if (g.ammo===0) { g.reload=1.5; notice(g,'RECARREGANDO...',1.5); }
   const target=targetInSight(map,flags,p,g);
-  if (target) { if(target.type!=='boss' || bossOpen(target)) g.hit=.25; hurtEnemy(g,target, Math.round((target.type==='boss'?35:28)*(1+(g.ultBuff?.basicDamagePct ?? 0)))); }
+  if (target) { if(target.type!=='boss' || bossOpen(target)) g.hit=.25; hurtEnemy(g,target, Math.round((target.type==='boss'?35:28)*(1+(g.ultBuff?.basicDamagePct ?? 0)))+vectorDamage); }
   else {
     // O disparo do jogador é instantâneo, mas deixa uma marca breve na
     // superfície visível, sem atravessar paredes nem criar física extra.
@@ -143,7 +198,7 @@ function fire(map, flags, p, g) {
 }
 function addEcho(g, amount, state) {
   if (state.progress.flags.cidadela_estavel) return;
-  g.echo=clamp(g.echo+amount,0,100);
+  g.echo=clamp(g.echo+amount*(g.echoAnchor>0?.7:1),0,100);
   if (g.echo>=100 && g.echoLock<=0) {
     // O predador não nasce através de paredes, nem além do limite de
     // entidades. Se não houver espaço, mantém a carga e tenta novamente.
@@ -174,16 +229,20 @@ function ability(map, flags, p, g, progress, input) {
   if ((p.energy ?? 0) < 18) { notice(g,'ENERGIA INSUFICIENTE PARA Q',2); return; }
   p.energy-=18; playCitadelSound('ability');
   const mod=MODULES[progress.archetype] ?? MODULES.motor_bio_forja;
+  const rank=g.localProgress?.rank ?? 1;
+  g.perkIcon=rank>=2 ? g.localProgress.skills[rank>=4 && mod.mode==='bio'?1:0].icon : null;
   g.q=6; g.fx=.8; g.fxKind='q'; addEcho(g,24,{player:p,progress,world:{currentMap:map}});
   if (mod.mode==='dominio') {
     for (const e of [...g.enemies,...(g.boss.dead?[]:[g.boss])]) {
       const d=Math.hypot(e.x-p.x,e.y-p.y), a=Math.abs(angleDiff(Math.atan2(e.y-p.y,e.x-p.x)-g.angle));
-      if (e.hp>0 && d<3 && a<(e.type==='boss'?.10:.65) && visible(map,flags,p.x,p.y,e.x,e.y)) hurtEnemy(g,e,55);
+      if (e.hp>0 && d<(rank>=2?3.6:3) && a<(e.type==='boss'?.10:.65) && visible(map,flags,p.x,p.y,e.x,e.y)) hurtEnemy(g,e,rank>=2?70:55);
     }
     notice(g,'RUPTURA • CORTE FRONTAL',1.5);
   } else {
-    startDash(g,input,mod.mode==='nucleo'?.34:.22);
-    if (mod.mode==='bio') g.shield=2.5;
+    startDash(g,input,mod.mode==='nucleo'?(rank>=2?.44:.34):.22);
+    if (mod.mode==='nucleo' && rank>=2) g.shield=Math.max(g.shield,1);
+    if (mod.mode==='mare' && rank>=2) g.shield=Math.max(g.shield,1.2);
+    if (mod.mode==='bio') {g.shield=rank>=2?3.5:2.5;if(rank>=4) healPlayer(p,progress,8);}
     if (mod.mode==='mare') for (const e of g.enemies) if (Math.hypot(e.x-p.x,e.y-p.y)<4 && visible(map,flags,p.x,p.y,e.x,e.y)) e.slow=3;
     notice(g,mod.q,1.5);
   }
@@ -226,12 +285,19 @@ export function updateCitadel(dt, state, input) {
   const map=state.world.currentMap, p=state.player, progress=state.progress, flags=progress.flags ??= {};
   if (!game || game.map !== map || game.progress !== progress) {
     game=createCitadelRuntime(progress); game.map=map; game.progress=progress;
+    // Migra marcos de saves anteriores sem refazer missões ou pagar XP.
+    const migrated=syncDimensionProgress(progress);game.localProgress=migrated.after;game.localArchetype=progress.archetype;
+    if(migrated.changed) saveGame();
     Object.assign(p,checkpoints[checkpointIndex(flags)]); p.target=null; p.moving=false;
     ensureHealth(p,progress);
     if (p.health<=0) resetAtCheckpoint(state,game);
     if (flags.cidadela_estavel) showEnding(state,game);
   }
   const g=game, step=clamp(dt,0,.033);
+  if(g.localArchetype!==progress.archetype) {
+    const migrated=syncDimensionProgress(progress);g.localProgress=migrated.after;g.localArchetype=progress.archetype;g.vectorCharge=0;
+    if(migrated.changed) saveGame();
+  }
   if (pressed(input,'m','keym')) {
     const on=toggleCitadelAudio();
     notice(g,on?'EFEITOS SONOROS LIGADOS':'EFEITOS SONOROS DESLIGADOS OU INDISPONÍVEIS',2.5);
@@ -243,6 +309,7 @@ export function updateCitadel(dt, state, input) {
   if (!pauseRequested && pressed(input,'p','keyp','escape')) g.panel=g.panel ? null : 'pause';
   if (!pauseRequested && pressed(input,'l','keyl')) g.panel=g.panel==='journal' ? null : 'journal';
   if (!pauseRequested && pressed(input,'j','keyj')) g.panel=g.panel==='missions' ? null : 'missions';
+  if (!pauseRequested && pressed(input,'k','keyk')) g.panel=g.panel==='dimension' ? null : 'dimension';
   state.world.fpsPaused=!!g.panel;
   if (g.panel) {
     input.fpsFire=false; input.fpsFireHeld=false; input.attackClick=null; input.click=null; input.mouseDeltaX=0;
@@ -250,7 +317,8 @@ export function updateCitadel(dt, state, input) {
     return;
   }
   g.time+=step;
-  for (const k of ['fire','jam','q','boost','scan','dash','shield','guard','echoLock','messageTime','damage','hit','fx','suppressed']) g[k]=Math.max(0,g[k]-step);
+  for (const k of ['fire','jam','q','boost','scan','dash','shield','guard','echoLock','messageTime','damage','hit','fx','suppressed','vectorCharge','echoAnchor','echoTerminalCooldown','workshopHit']) g[k]=Math.max(0,g[k]-step);
+  if(g.messageTime===0 && g.radioQueue.length) notice(g,g.radioQueue.shift(),6);
   for (const impact of g.impacts) impact.life-=step;
   g.impacts=g.impacts.filter(impact=>impact.life>0);
   const wasReloading=g.reload>0;
@@ -278,20 +346,36 @@ export function updateCitadel(dt, state, input) {
   const dy=g.dash>0?Math.sin(g.dashAngle):Math.sin(g.angle)*f+Math.cos(g.angle)*s;
   const beforeX=p.x,beforeY=p.y;
   move(map,flags,p,dx*speed,dy*speed);
-  g.moving=Math.hypot(p.x-beforeX,p.y-beforeY)>.0001;
+  const moved=Math.hypot(p.x-beforeX,p.y-beforeY);
+  g.moving=moved>.0001;
+  if(g.moving) {g.stepDistance+=moved;if(g.stepDistance>=.9){g.stepDistance%=.9;playCitadelSound('step');}}
+  // O pulso tem um segundo de aviso e respeita cobertura, invulnerabilidade,
+  // guarda e escudo; não empurra nem bloqueia nenhuma saída.
+  if(flags.cidadela_estavel && g.workshopHit<=0 && g.guard<=0) for(const control of CITADEL_WORKSHOP.switches) {
+    const e=control.emitter;
+    if(workshopCircuitActive(progress,g,control) && workshopPhase(g.time,control.offset)==='active' && Math.hypot(p.x-e.x,p.y-e.y)<1.4 && visible(map,flags,p.x,p.y,e.x,e.y)) {
+      const hit=damagePlayer(p,progress,g.shield>0?4:10,'pulso_oficina');
+      if(hit.dealt) {g.workshopHit=1.2;g.damage=.35;playCitadelSound('damage');notice(g,'PULSO DA OFICINA • AFASTE-SE E AGUARDE A JANELA SEGURA.',3);}
+      break;
+    }
+  }
+  if(p.health<=0) return;
   if (pressed(input,'q','keyq')) ability(map,flags,p,g,progress,input);
   if (pressed(input,'f','keyf')) ultimate(map,flags,p,g,progress,input);
   if (pressed(input,'r','keyr') && g.scan<=0) {
-    g.scan=4; g.fx=.55; g.fxKind='scan'; addEcho(g,18,state);
+    const rank=g.localProgress?.rank ?? 1;
+    g.scan=4; g.fx=.55; g.fxKind='scan';
+    addEcho(g,progress.archetype==='mare_astral' && rank>=4?12:18,state);
     const id=progress.archetype;
-    if (id==='mare_astral') for(const e of g.enemies) if(Math.hypot(e.x-p.x,e.y-p.y)<4 && visible(map,flags,p.x,p.y,e.x,e.y)) e.slow=Math.max(e.slow,2);
-    if (id==='nucleo_dez_forma') g.suppressed=0;
+    g.perkIcon=rank>=4 && id!=='motor_bio_forja' ? g.localProgress.skills[1].icon : null;
+    if (id==='mare_astral') for(const e of g.enemies) if(Math.hypot(e.x-p.x,e.y-p.y)<4 && visible(map,flags,p.x,p.y,e.x,e.y)) e.slow=Math.max(e.slow,rank>=4?3.5:2);
+    if (id==='nucleo_dez_forma') {g.suppressed=0;if(rank>=4) g.vectorCharge=5;}
     if (id==='motor_bio_forja') g.shield=Math.max(g.shield,1.2);
-    if (id==='lamina_dominio_anciao') g.shield=Math.max(g.shield,1.8);
+    if (id==='lamina_dominio_anciao') {g.shield=Math.max(g.shield,1.8);if(rank>=4) g.guard=Math.max(g.guard,.8);}
     const label={mare_astral:'SONAR DE CORRENTE',nucleo_dez_forma:'LEITURA DE VETORES',motor_bio_forja:'DIAGNÓSTICO VIVO',lamina_dominio_anciao:'POSTURA DE DOMÍNIO'}[id] ?? 'RADAR';
-    notice(g,`${label} • REGISTROS E AMEAÇAS NO MAPA`,4);
+    notice(g,`${label} • MAPA: AMEAÇAS, REGISTROS E ECOS (CÍRCULO).`,4);
   }
-  if (pressed(input,'shift','shiftleft','shiftright') && g.boost<=0 && g.dash<=0) { startDash(g,input,.18); g.boost=3; g.fx=.4; g.fxKind='dash'; addEcho(g,15,state); }
+  if (pressed(input,'shift','shiftleft','shiftright') && g.boost<=0 && g.dash<=0) { startDash(g,input,.18); g.boost=(g.localProgress?.rank ?? 1)>=3?2.4:3; g.fx=.4; g.fxKind='dash'; addEcho(g,15,state); }
   if (pressed(input,'t','keyt') && g.reload<=0 && g.jam<=0 && g.ammo<12) { g.reload=1.5; }
   if (held(input,' ','space') || pressed(input,' ','space') || input.fpsFire || input.fpsFireHeld || input.attackClick) fire(map,flags,p,g);
   input.fpsFire=false; input.attackClick=null; input.click=null;
@@ -303,7 +387,9 @@ export function updateCitadel(dt, state, input) {
       return;
     }
     if (target?.kind==='key') {
-      flags[target.flag]=true; playCitadelSound('pickup'); saveGame(); notice(g,`${target.symbol} ${target.label}: ${target.log} ECLUSA ABERTA.`,7);
+      flags[target.flag]=true; playCitadelSound('pickup'); saveCitadelProgress(progress,g); notice(g,`${target.symbol} ${target.label}: ${target.log} ECLUSA ABERTA.`,7);
+      const index=KEYS.findIndex(k=>k.id===target.id);
+      queueRadio(g,(ARCHETYPE_READINGS[progress.archetype] ?? ARCHETYPE_READINGS.motor_bio_forja)[index]);
     } else if (target?.kind==='archive') {
       const fresh=!flags[target.flag]; flags[target.flag]=true;
       if(fresh) playCitadelSound('pickup');
@@ -314,20 +400,42 @@ export function updateCitadel(dt, state, input) {
         const reward=grantArchetypeXp(progress,30);
         notice(g,`ARQUIVO COMPLETO • +${reward.gained} XP. CONSULTE L.`,7);
       } else notice(g,`${target.label}: ${target.log}`,7);
-      if (fresh || grant) saveGame();
+      if (fresh || grant) saveCitadelProgress(progress,g);
+    } else if (target?.kind==='crt') {
+      const result=inspectCitadelMonitor(progress,target);
+      if(result.changed){playCitadelSound('pickup');saveCitadelProgress(progress,g);}
+      notice(g,result.message,7);queueRadio(g,result.followup);
     } else if (target?.kind==='reactor') {
       notice(g,'REATOR ESTÁVEL • A ROTA DE RETORNO CONTINUA ABERTA.',5);
+    } else if (target?.kind==='workshop_trial') {
+      const result=toggleWorkshopTrial(progress,g);notice(g,result.message,7);
+    } else if (target?.kind==='workshop_switch' || target?.kind==='workshop_terminal') {
+      const result=target.kind==='workshop_switch' && g.workshopTrial ? interactWorkshopTrial(g,target,g.time) : interactWorkshop(progress,target,g.time);
+      if(result?.changed){playCitadelSound('pickup');saveCitadelProgress(progress,g);}
+      if(result){notice(g,result.message,7);queueRadio(g,result.followup);}
+    } else if (target?.kind==='memory_echo') {
+      const result=interactMemoryEcho(progress,target,g.scan>0);
+      if(result.changed) {
+        g.echoAnchor=12;p.energy=Math.min(p.maxEnergy ?? 100,(p.energy ?? 0)+8);
+        playCitadelSound('pickup');saveCitadelProgress(progress,g);
+      }
+      notice(g,result.message,7);
+      if(result.changed) queueRadio(g,'NEXO: SINAL ANCORADO 12s • ATÉ +8 ENERGIA E 30% MENOS ECO GERADO.');
+      queueRadio(g,result.followup);queueRadio(g,result.reading);
+    } else if (target?.kind==='echo_terminal') {
+      const result=useEchoTerminal(progress,g,p);notice(g,result.message,6);
     } else if (target?.kind==='breach') {
-      const result=beginBreach(g,progress,target);
-      if(result.changed) saveGame(); notice(g,result.message,6);
+      const result=g.workshopTrial?{message:'ENCERRE O ENSAIO DA OFICINA ANTES DA FENDA.'}:beginBreach(g,progress,target);
+      if(result.changed) saveCitadelProgress(progress,g); notice(g,result.message,6);
     } else if (target?.kind==='breach_cache') {
       const result=openBreachCache(progress,target);
-      if(result.changed) {playCitadelSound('pickup');saveGame();} notice(g,result.message,7);
+      if(result.changed) {playCitadelSound('pickup');saveCitadelProgress(progress,g);} notice(g,result.message,7);
     } else if (target?.kind==='breach_console') {
       const summary=breachSummary(progress);
       notice(g,`FENDAS SELADAS ${summary.sealed}/3 • COFRES ${summary.caches}/3. RADAR [R]; FENDA [E].`,7);
     } else if (target?.kind==='training') {
-      if(g.breach) {notice(g,'CANCELE OU CONCLUA A FENDA ANTES DA SIMULAÇÃO.',5);}
+      if(g.workshopTrial) {notice(g,'ENCERRE O ENSAIO DA OFICINA ANTES DA SIMULAÇÃO.',5);}
+      else if(g.breach) {notice(g,'CANCELE OU CONCLUA A FENDA ANTES DA SIMULAÇÃO.',5);}
       else if(g.training) {
         g.training=false;g.enemies.length=0;g.shots.length=0;notice(g,'SIMULAÇÃO ENCERRADA. A CIDADELA CONTINUA ESTÁVEL.',5);
       } else {
@@ -339,7 +447,7 @@ export function updateCitadel(dt, state, input) {
       }
     } else if(target) {
       const result=interactCitadelMission(progress,target);
-      if(result) {if(result.changed){playCitadelSound('pickup');saveGame();} notice(g,result.message,7);}
+      if(result) {if(result.changed){playCitadelSound('pickup');saveCitadelProgress(progress,g);} notice(g,result.message,7);}
     }
   }
   // Suprimentos de sessão: não são inventário e não alteram saves antigos.
@@ -373,12 +481,17 @@ export function updateCitadel(dt, state, input) {
     else if (sees && d>2.4) { const x=e.x,y=e.y; move(map,flags,e,(p.x-e.x)/d*step*(e.slow?.35:.8),(p.y-e.y)/d*step*(e.slow?.35:.8)); e.moving=e.x!==x || e.y!==y; }
   }
   g.enemies=g.enemies.filter(e=>e.hp>0 || e.death>0);
-  if(g.training && !g.enemies.some(e=>e.hp>0)) {g.training=false;notice(g,'SIMULAÇÃO CONCLUÍDA • PODE SER REPETIDA, SEM RECOMPENSA.',5);}
+  if(g.training && !g.enemies.some(e=>e.hp>0)) {
+    g.training=false;
+    const first=!flags.cidadela_treino_concluido;flags.cidadela_treino_concluido=true;
+    if(first) saveCitadelProgress(progress,g);
+    notice(g,first?'SIMULAÇÃO CONCLUÍDA • MARCO LOCAL REGISTRADO.':'SIMULAÇÃO CONCLUÍDA • REPETÍVEL, SEM NOVO MARCO.',5);
+  }
   const breachResult=updateBreach(g,progress,step,p,
     (x,y)=>canMove(map,flags,x,y,.25),
     b=>Math.hypot(b.x-p.x,b.y-p.y)>=1.4 && Math.hypot(b.x-p.x,b.y-p.y)<7 && visible(map,flags,b.x,b.y,p.x,p.y),
     b=>spawnShot(g,{type:'breach_shot',x:b.x,y:b.y,breach:b.id},p,3,10));
-  if(breachResult) {if(breachResult.changed){playCitadelSound('victory');saveGame();}notice(g,breachResult.message,6);}
+  if(breachResult) {if(breachResult.changed){playCitadelSound('victory');saveCitadelProgress(progress,g);}notice(g,breachResult.message,6);}
   const boss=g.boss;
   if (!boss.dead && boss.hp>0 && flags.cidadela_chave_vermelha && p.x>22.7) {
     boss.cycle=(boss.cycle+step)%7.2; boss.cooldown-=step;
@@ -393,7 +506,8 @@ export function updateCitadel(dt, state, input) {
       progress.completedQuests ??= []; if (!progress.completedQuests.includes('embarque_dimensional')) progress.completedQuests.push('embarque_dimensional');
     }
     if (!flags.cidadela_recompensa) { flags.cidadela_recompensa=true; grantArchetypeXp(progress,100); }
-    saveGame(); notice(g,'NEXO-04: O REATOR RESPIRA. A ROTA SOBREVIVEU; AINDA HÁ ALGUÉM PARA RESPONDER.',10);
+    saveCitadelProgress(progress,g); notice(g,'NEXO-04: O REATOR RESPIRA. A ROTA SOBREVIVEU; AINDA HÁ ALGUÉM PARA RESPONDER.',10);
+    queueRadio(g,'NEXO: AS COMPORTAS DA OFICINA AO SUL ABRIRAM. NÃO HÁ PRESSA PARA PARTIR.');
     showEnding(state,g);
   }
   for (const shot of g.shots) {
@@ -455,7 +569,7 @@ function makeSprite(type) {
     x.fillStyle='#29444a'; x.fillRect(4,18,88,94); x.fillStyle='#091217'; x.fillRect(10,24,76,80);
     x.strokeStyle='#3c9ba4'; x.lineWidth=2; x.beginPath(); x.moveTo(48,39); x.lineTo(35,61); x.lineTo(27,88); x.moveTo(48,39); x.lineTo(60,62); x.lineTo(70,91); x.moveTo(35,61); x.lineTo(58,62); x.lineTo(53,90); x.moveTo(35,61); x.lineTo(40,90); x.stroke();
     x.fillStyle='#000'; x.fillRect(39,28,18,16); x.strokeStyle='#4ab3b2'; x.strokeRect(39,28,18,16); x.fillStyle='#97ffff'; x.fillRect(17,99,62,2);
-  } else if (['generator','crate','barrel','drone','column','reactor','terminal','antenna','vent','beacon','probe','relay_off','relay_on','transmitter','recording','training','listening_beacon','signal_fragment','breach_open','breach_sealed','cache_closed','cache_open','breach_console'].includes(type)) {
+  } else if (['generator','crate','barrel','drone','column','reactor','terminal','antenna','vent','beacon','probe','relay_off','relay_on','transmitter','recording','training','listening_beacon','signal_fragment','breach_open','breach_sealed','cache_closed','cache_open','breach_console','memory_echo_pending','memory_echo_done','echo_terminal_off','echo_terminal_on','anchor_sleep','anchor_active','lost_recorder','signal_map','emergency_light','memory_relay','workshop_switch_off','workshop_switch_on','workshop_hazard_idle','workshop_hazard_active','workshop_terminal','workshop_core_off','workshop_core_on','workshop_pipes','workshop_bench','workshop_robot'].includes(type)) {
     // Silhueta alternativa para partidas offline ou imagens indisponíveis.
     x.fillStyle='#1b3035';x.fillRect(20,34,56,80);x.fillStyle='#557479';x.fillRect(24,38,48,72);
     x.fillStyle='#101b20';x.fillRect(29,45,38,45);x.fillStyle=type==='beacon'?'#ed5d58':'#68dedc';x.fillRect(38,57,20,12);
@@ -474,7 +588,7 @@ function makeSprite(type) {
 function setupBuffer() {
   if (buffer) return;
   buffer=document.createElement('canvas'); buffer.width=W; buffer.height=H; ctx=buffer.getContext('2d');
-  sprites=Object.fromEntries(['imp','echo','orb','boss','shot','shot_echo','shot_orb','key','nulo','exit','supply','impact_red','impact_cyan','generator','crate','barrel','drone','column','reactor','terminal','antenna','vent','beacon','probe','relay_off','relay_on','transmitter','recording','training','listening_beacon','signal_fragment','breach_open','breach_sealed','cache_closed','cache_open','breach_console','breach_shot'].map(k=>[k,makeSprite(k)]));
+  sprites=Object.fromEntries(['imp','echo','orb','boss','shot','shot_echo','shot_orb','key','nulo','exit','supply','impact_red','impact_cyan','generator','crate','barrel','drone','column','reactor','terminal','antenna','vent','beacon','probe','relay_off','relay_on','transmitter','recording','training','listening_beacon','signal_fragment','breach_open','breach_sealed','cache_closed','cache_open','breach_console','breach_shot','memory_echo_pending','memory_echo_done','echo_terminal_off','echo_terminal_on','anchor_sleep','anchor_active','lost_recorder','signal_map','emergency_light','memory_relay','workshop_switch_off','workshop_switch_on','workshop_hazard_idle','workshop_hazard_active','workshop_terminal','workshop_core_off','workshop_core_on','workshop_pipes','workshop_bench','workshop_robot'].map(k=>[k,makeSprite(k)]));
   // Carregamento tardio: outras dimensões não pagam pelas artes da Cidadela.
   if (typeof Image !== 'undefined') for (const [type,path] of [
     ['imp','assets/sprites/cidadela-404/imp-glitch.png'],
@@ -513,6 +627,30 @@ function setupBuffer() {
     ...[['breach_open','fenda-instavel'],['breach_sealed','fenda-selada'],['cache_closed','cofre-fechado'],['cache_open','cofre-aberto'],
       ['breach_console','terminal-estabilizacao'],['imp_death','imp-colapso'],['orb_death','orbe-colapso'],['echo_death','echovore-colapso'],
       ['impact_red','impacto-disparo'],['breach_shot','onda-fenda']].map(([type,name])=>[type,`assets/sprites/cidadela-404/${name}.png`]),
+    ...[['imp_walk_a','imp-passo-a'],['imp_walk_b','imp-passo-b'],
+      ['echo_walk_a','echovore-passo-a'],['echo_walk_b','echovore-passo-b'],
+      ['orb_walk_a','orbe-movimento-a'],['orb_walk_b','orbe-movimento-b'],
+      ['nulo_a','nulo-transmissao-a'],['nulo_b','nulo-transmissao-b'],
+      ['reactor_pulse','reator-pulso'],['generator_pulse','gerador-pulso']]
+      .map(([type,name])=>[type,`assets/sprites/cidadela-404/${name}.png`]),
+    ...['mare-corrente','mare-sonar','nucleo-vetor','nucleo-carga','dominio-corte','dominio-guarda','bio-blindagem','bio-reparo','emblema','nexo']
+      .map(name=>[`perk_${name}`,`assets/sprites/cidadela-404/progressao-${name}.png`]),
+    ...[['memory_echo_pending','eco-ressonante'],['memory_echo_done','eco-liberado'],
+      ['anchor_sleep','ancora-silencio'],['anchor_active','ancora-ativa'],['lost_recorder','gravador-perdido'],
+      ['signal_map','mapa-sinal'],['echo_terminal_off','terminal-ecos'],['echo_terminal_on','terminal-ecos-ativo'],
+      ['emergency_light','luz-emergencia'],['memory_relay','rele-memoria']]
+      .map(([type,name])=>[type,`assets/sprites/cidadela-404/${name}.png`]),
+    ...[['imp_attack_b','imp-ataque-b'],['orb_attack_b','orbe-ataque-b'],
+      ['echo_attack_b','echovore-ataque-b'],['boss_attack_b','vigilante-ataque-b'],
+      ['breach_warning','fenda-aviso'],['echo_terminal_pulse_a','terminal-escuta-pulso-a'],
+      ['echo_terminal_pulse_b','terminal-escuta-pulso-b'],['exit_pulse_a','portal-pulso-a'],
+      ['exit_pulse_b','portal-pulso-b'],['memory_pulse','eco-ressonante-pulso']]
+      .map(([type,name])=>[type,`assets/sprites/cidadela-404/${name}.png`]),
+    ...[['workshop_switch_off','vigilia-controle-off'],['workshop_switch_on','vigilia-controle-on'],
+      ['workshop_hazard_idle','vigilia-pulso-aviso'],['workshop_hazard_active','vigilia-pulso-ativo'],
+      ['workshop_terminal','vigilia-terminal'],['workshop_core_off','vigilia-nucleo-apagado'],['workshop_core_on','vigilia-nucleo-vivo'],
+      ['workshop_pipes','vigilia-tubos'],['workshop_bench','vigilia-bancada'],['workshop_robot','vigilia-sentinela']]
+      .map(([type,name])=>[type,`assets/sprites/cidadela-404/${name}.png`]),
     ['wall_gate','assets/sprites/cidadela-404/parede-eclusa.png'],
     ['wall_metal','assets/sprites/cidadela-404/parede-metal.png'],
     ['wall_brick','assets/sprites/cidadela-404/parede-tijolo.png'],
@@ -526,6 +664,24 @@ function setupBuffer() {
         c.fillStyle='#000';c.fillRect(image.width*.474,image.height*.245,image.width*.052,image.height*.10);
         c.strokeStyle='#4ab3b2';c.lineWidth=1;c.strokeRect(image.width*.474,image.height*.245,image.width*.052,image.height*.10);
         sprites.nulo=monitor;
+      }
+      if(type==='nulo_a' || type==='nulo_b') {
+        // As linhas são desenhadas sobre a figura no CRT, nunca no espaço
+        // da sala. Mantemos o vazio retangular e não imprimimos identidade.
+        const monitor=document.createElement('canvas');monitor.width=image.width;monitor.height=image.height;
+        const c=monitor.getContext('2d');c.drawImage(image,0,0);
+        const w=image.width,h=image.height;
+        c.fillStyle='#02090b';c.fillRect(w*.47,h*.254,w*.06,h*.065);
+        c.strokeStyle='rgba(71,162,167,.65)';c.lineWidth=Math.max(.65,w/300);
+        c.beginPath();
+        for(const [x1,y1,x2,y2] of [
+          [.47,.34,.53,.34],[.47,.34,.45,.51],[.53,.34,.55,.51],
+          [.47,.34,.50,.51],[.53,.34,.50,.51],[.45,.51,.55,.51],
+          [.45,.51,.48,.76],[.55,.51,.52,.76],[.50,.51,.48,.76],[.50,.51,.52,.76],
+          [.47,.35,.43,.58],[.53,.35,.57,.58]]) {
+          c.moveTo(x1*w,y1*h);c.lineTo(x2*w,y2*h);
+        }
+        c.stroke();sprites[type]=monitor;
       }
       if(type==='boss') {
         const closed=document.createElement('canvas'); closed.width=image.width; closed.height=image.height;
@@ -596,6 +752,15 @@ function drawWorld(map, flags, p, g, progress) {
   }
   const mission=flags.cidadela_estavel ? citadelMissions(progress) : null;
   const post=mission ? [
+    ...CITADEL_WORKSHOP.decor.map(o=>({...o,ground:true})),
+    {...CITADEL_WORKSHOP.terminal,type:'workshop_terminal',scale:.63,ground:true},
+    {...CITADEL_WORKSHOP.core,type:flags.cidadela_vigilia_concluida?'workshop_core_on':'workshop_core_off',scale:.7,ground:true},
+    ...CITADEL_WORKSHOP.switches.flatMap(o=>{
+      const active=workshopCircuitActive(progress,g,o);
+      const phase=active?workshopPhase(g.time,o.offset):'disabled';
+      return [{...o,type:active?'workshop_switch_off':'workshop_switch_on',scale:.52,ground:true},
+        {...o.emitter,type:phase==='active'?'workshop_hazard_active':'workshop_hazard_idle',phase,scale:.36,ground:true}];
+    }),
     {...CITADEL_POSTGAME.sonda,type:'probe'},
     {...CITADEL_POSTGAME.transmissor,type:'transmitter',ground:true},
     {...CITADEL_POSTGAME.treino,type:'training',ground:true},
@@ -608,9 +773,15 @@ function drawWorld(map, flags, p, g, progress) {
       {...b.cache,type:flags[cacheFlag(b.id)]?'cache_open':'cache_closed',scale:.4,ground:true},
     ]),
   ] : [];
-  const objects=[...post,...CITADEL_DECOR.map(o=>({...o,ground:true})),
+  const echoesReady=memoryEchoCount(progress)===CITADEL_ECHOES.length;
+  const objects=[...post,
+    ...CITADEL_ECHO_DECOR.map(o=>({...o,type:o.type==='anchor_sleep' && echoesReady?'anchor_active':o.type})),
+    {...CITADEL_ECHO_TERMINAL,type:echoesReady?'echo_terminal_on':'echo_terminal_off',scale:.52,ground:true},
+    ...CITADEL_ECHOES.map(e=>({...e,type:flags[e.flag]?'memory_echo_done':'memory_echo_pending',scale:.33})),
+    ...CITADEL_DECOR.map(o=>({...o,ground:true})),
     ...CITADEL_ARCHIVES.map(a=>({...a,type:'terminal',scale:.72,ground:true})),
-    {type:'exit',x:1.65,y:6.5,scale:1.2},{type:'nulo',x:6.5,y:2.3,scale:.75},
+    {type:'exit',x:1.65,y:6.5,scale:1.2},
+    ...CITADEL_NULL_MONITORS.map(m=>({...m,type:'nulo',scale:.56})),
     ...KEYS.filter(k=>!flags[k.flag]).map(k=>({...k,type:'key',scale:.7})),
     ...g.supplies.filter(s=>!s.used).map(s=>({...s,type:'supply',scale:.45})),
     ...g.enemies.filter(e=>e.hp>0 || e.death>0).map(e=>({...e,scale:e.type==='orb'?.85:1})),
@@ -631,25 +802,46 @@ function drawWorld(map, flags, p, g, progress) {
     const center=W/2+(lateral/forward)*(W/(2*plane));
     const base=sprites[o.type];
     const frame=enemyVisualFrame(o);
-    const attack=o.type==='boss' && !bossOpen(g.boss) ?
-      (g.boss.cycle>=2 && g.boss.cycle<4.2 ? (sprites.boss_attack ?? sprites.bossClosed) : sprites.bossClosed) :
-      (frame==='death' ? sprites[`${o.type}_death`] : frame==='attack' ? sprites[`${o.type}_attack`] : null);
-    const sprite=attack ?? base;
-    const h=Math.min(H*4,H/forward*o.scale), w=h*(base.width/base.height), left=center-w/2;
-    const bob=!reducedMotion() && o.moving ? Math.sin(g.time*8+o.x)*2 : 0;
+    const visual=citadelSpriteFrame(o,g.time,reducedMotion());
+    const chosen=o.type==='boss' && !bossOpen(g.boss) ?
+      (g.boss.cycle>=2 && g.boss.cycle<4.2 ? (sprites[bossAttackSpriteFrame(g.time,reducedMotion())] ?? sprites.boss_attack ?? sprites.bossClosed) : sprites.bossClosed) : sprites[visual];
+    const sprite=chosen ?? (frame==='attack'?sprites[`${o.type}_attack`]:null) ?? base;
+    const aspect=visual.includes('_walk_') ? sprite : base;
+    const h=Math.min(H*4,H/forward*o.scale), w=h*(aspect.width/aspect.height), left=center-w/2;
+    // Aviso da fenda também existe em movimento reduzido; os demais brilhos
+    // são decorativos e não substituem as legendas de combate.
+    const pulse=sprites[citadelPulseFrame(o.type,o.windup,g.scan,g.time,reducedMotion())];
+    const alpha=o.alpha ?? (o.death>0 && !reducedMotion() ? clamp(o.death/.7,0,1) : (frame==='hurt' && !reducedMotion() ? .7 : 1));
+    const bob=reducedMotion()?0:o.moving?Math.sin(g.time*8+o.x)*2:
+      (o.type==='memory_echo_pending'||o.type==='memory_relay'?Math.sin(g.time*1.5+o.x)*1.4:0);
+    // Os frames gerados são próximos entre si. Um pequeno deslocamento das
+    // pernas realça a passada sem girar o cenário ou modificar colisões.
+    const stride=!reducedMotion() && o.moving && (o.type==='imp'||o.type==='echo') ? Math.round(Math.sin(g.time*8+o.x)*2) : 0;
     const fall=!reducedMotion() && o.death>0 ? (1-o.death/.7)*12 : 0;
     const top=(o.ground || ['key','supply','exit'].includes(o.type) ? H/2+H/(2*forward)-h : H/2-h*.50)+bob+fall;
-    ctx.save();ctx.globalAlpha=o.alpha ?? (o.death>0 && !reducedMotion() ? clamp(o.death/.7,0,1) : (frame==='hurt' && !reducedMotion() ? .7 : 1));
+    ctx.save();ctx.globalAlpha=alpha;
     for(let sx=Math.max(0,Math.floor(left));sx<Math.min(W,Math.ceil(left+w));sx+=2) {
       if(forward>=zbuffer[sx]) continue;
       const tx=clamp(Math.floor((sx-left)/w*sprite.width),0,sprite.width-1);
-      ctx.drawImage(sprite,tx,0,1,sprite.height,sx,top,2,h);
+      if(stride) {
+        const cut=sprite.height*.62;
+        ctx.drawImage(sprite,tx,0,1,cut,sx,top,2,h*.62);
+        const legX=sx+stride;
+        if(legX>=0 && legX<W && forward<zbuffer[legX]) ctx.drawImage(sprite,tx,cut,1,sprite.height-cut,legX,top+h*.62,2,h*.38);
+      } else ctx.drawImage(sprite,tx,0,1,sprite.height,sx,top,2,h);
+      if(pulse) {
+        ctx.globalAlpha=alpha*(o.type==='breach_open'?(reducedMotion()?.55:.48+.12*(.5+.5*Math.sin(g.time*2))):.14+.22*(.5+.5*Math.sin(g.time*.8)));
+        const ux=clamp(Math.floor((sx-left)/w*pulse.width),0,pulse.width-1);
+        ctx.drawImage(pulse,ux,0,1,pulse.height,sx,top,2,h);ctx.globalAlpha=alpha;
+      }
     }
     ctx.restore();
     if(center>0 && center<W && forward<zbuffer[Math.floor(center)]) {
       ctx.font='bold 9px monospace';ctx.textAlign='center';
       if(o.type==='key' && forward<7) {
         ctx.fillStyle=o.color;ctx.fillText(`${o.symbol} ${o.label}`,center,top-3);
+      } else if(o.phase && o.phase!=='disabled' && forward<8) {
+        ctx.fillStyle='#ffe2a6';ctx.fillText(o.phase==='safe'?'JANELA SEGURA':o.phase==='warning'?'! PULSO EM BREVE':'! PULSO ATIVO',center,top-3);
       } else if(o.windup>0 && forward<8) {
         ctx.fillStyle='#ffd89a';ctx.fillText(o.type==='breach_open'?'! PULSO: DESVIE':'! PREPARANDO DISPARO',center,top-3);
       }
@@ -657,18 +849,19 @@ function drawWorld(map, flags, p, g, progress) {
   }
 }
 function drawWeapon(g, mod) {
-  const animated=!reducedMotion(), recoil=g.fire>0 && animated?7:0;
+  const animated=!reducedMotion(), recoil=g.fire>0 && animated?7*Math.sin(Math.PI*(.23-g.fire)/.23):0;
+  const reloadDip=g.reload>0 && animated?14*Math.sin(Math.PI*(1.5-g.reload)/1.5):0;
   const bob=g.moving && animated ? Math.sin(g.time*8) : 0;
-  const x=W/2+bob*2, y=H-26+recoil+Math.abs(bob)*2;
+  const x=W/2+bob*2, y=H-26+recoil+reloadDip+Math.abs(bob)*2;
   const weapon=sprites[`weapon_${mod.mode}`];
   if(weapon) {
     const scale=Math.min(172/weapon.width,96/weapon.height);
     const w=weapon.width*scale,h=weapon.height*scale;
     const frame=g.fire>.10 && !reducedMotion() ? (sprites[`weapon_${mod.mode}_fire`] ?? weapon) : weapon;
-    ctx.drawImage(frame,x-w/2,H-20-h+recoil+Math.abs(bob)*2,w,h);
+    ctx.drawImage(frame,x-w/2,H-20-h+recoil+reloadDip+Math.abs(bob)*2,w,h);
     if(g.fire>.14 && !reducedMotion()) {
       const flare=sprites[`muzzle_${mod.mode}`];
-      if(flare) { ctx.save();ctx.globalAlpha=.72;ctx.drawImage(flare,x-14,H-20-h+recoil+Math.abs(bob)*2-12,28,28);ctx.restore(); }
+      if(flare) { ctx.save();ctx.globalAlpha=.72;ctx.drawImage(flare,x-14,H-20-h+recoil+reloadDip+Math.abs(bob)*2-12,28,28);ctx.restore(); }
     }
     return;
   }
@@ -711,6 +904,10 @@ function drawResonance(g,mod) {
     if(seal) { ctx.globalAlpha=.75; ctx.drawImage(seal,14,H-105,30,30); }
     else {ctx.globalAlpha=.6;ctx.strokeRect(18,H-101,22,22);}
   }
+  if(g.fx>0 && g.perkIcon && (g.fxKind==='q'||g.fxKind==='scan')) {
+    const icon=sprites[`perk_${g.perkIcon}`];
+    if(icon) {ctx.globalAlpha=.85;ctx.drawImage(icon,W-47,H-105,30,30);}
+  }
   if(g.fire>.06 && !reducedMotion()) {
     // Traço de visor, curto e fora da mira; não é um projétil físico.
     const phase=(.23-g.fire)/.17;
@@ -723,14 +920,16 @@ function drawResonance(g,mod) {
 }
 function drawMap(map,flags,p,g,progress) {
   ctx.save();
-  const scale=3, x0=8,y0=40;
-  ctx.fillStyle='rgba(0,12,17,.88)';ctx.fillRect(x0-3,y0-3,102,46);
+  const scale=2, x0=8,y0=40;
+  ctx.fillStyle='rgba(0,12,17,.88)';ctx.fillRect(x0-3,y0-3,70,55);
   for(let y=0;y<map.layout.length;y++)for(let x=0;x<map.layout[y].length;x++) {
     ctx.fillStyle=wallAt(map,flags,x+.5,y+.5)?'#495a5e':'#152b30';ctx.fillRect(x0+x*scale,y0+y*scale,2,2);
   }
   for(const k of KEYS) if(!flags[k.flag]) {ctx.fillStyle=k.color;ctx.fillRect(x0+k.x*scale-1,y0+k.y*scale-1,3,3);}
   for(const s of g.supplies)if(!s.used){ctx.fillStyle='#a0ef9f';ctx.fillRect(x0+s.x*scale,y0+s.y*scale,2,2);}
   for(const a of CITADEL_ARCHIVES)if(!flags[a.flag]){ctx.strokeStyle='#80d0ea';ctx.strokeRect(x0+a.x*scale-2,y0+a.y*scale-2,4,4);}
+  for(const e of CITADEL_ECHOES)if(!flags[e.flag]){ctx.strokeStyle='#62ffd8';ctx.beginPath();ctx.arc(x0+e.x*scale,y0+e.y*scale,2,0,Math.PI*2);ctx.stroke();}
+  for(const m of CITADEL_NULL_MONITORS)if(!flags[m.flag]){ctx.strokeStyle='#c6adff';ctx.strokeRect(x0+m.x*scale-2,y0+m.y*scale-2,4,4);}
   if(flags.cidadela_estavel) {
     const {rede,vozes}=citadelMissions(progress);
     let marks=[];
@@ -739,7 +938,13 @@ function drawMap(map,flags,p,g,progress) {
     else if(vozes.status==='available' || (vozes.status==='active' && vozes.objectives.slice(0,3).every(o=>o.done))) marks=[CITADEL_POSTGAME.transmissor];
     else if(vozes.status==='active') marks=CITADEL_POSTGAME.registros.filter((_,i)=>!vozes.objectives[i].done);
     for(const o of marks) {ctx.fillStyle='#ffe68c';ctx.fillRect(x0+o.x*scale-1,y0+o.y*scale-1,3,3);}
-    ctx.fillStyle='#d1d9cd';ctx.font='6px monospace';ctx.textAlign='left';ctx.fillText('FENDA / COFRE: CONTORNO',x0,y0+44);
+    const work=workshopCount(progress);
+    const workMarks=g.workshopTrial?CITADEL_WORKSHOP.switches.filter(o=>workshopCircuitActive(progress,g,o)):work<3?CITADEL_WORKSHOP.switches.filter(o=>!flags[o.flag]):flags.cidadela_vigilia_concluida?[]:[CITADEL_WORKSHOP.terminal];
+    for(const o of workMarks){
+      const x=x0+o.x*scale,y=y0+o.y*scale;
+      ctx.strokeStyle='#ffb97c';ctx.beginPath();ctx.moveTo(x,y-3);ctx.lineTo(x-3,y+2);ctx.lineTo(x+3,y+2);ctx.closePath();ctx.stroke();
+    }
+    ctx.fillStyle='#d1d9cd';ctx.font='6px monospace';ctx.textAlign='left';ctx.fillText('FENDA □ / OFICINA △',x0,y0+50);
     for(const b of CITADEL_BREACHES) {
       if(!flags[sealedFlag(b.id)]) {ctx.strokeStyle='#ff8989';ctx.strokeRect(x0+b.x*scale-2,y0+b.y*scale-2,4,4);}
       else if(!flags[cacheFlag(b.id)]) {ctx.strokeStyle='#8bffff';ctx.strokeRect(x0+b.cache.x*scale-2,y0+b.cache.y*scale-2,4,4);}
@@ -757,23 +962,33 @@ export function renderCitadel(canvas,state) {
   ctx.imageSmoothingEnabled=false;drawWorld(map,flags,p,g,state.progress);drawWeapon(g,mod);drawResonance(g,mod);
   ctx.fillStyle='#d8ffff';ctx.fillRect(W/2-4,H/2,9,1);ctx.fillRect(W/2,H/2-4,1,9);
   if(g.damage>0){ctx.strokeStyle='rgba(255,55,65,.5)';ctx.lineWidth=7;ctx.strokeRect(3,3,W-6,H-6);}
-  ctx.fillStyle='rgba(3,12,16,.88)';ctx.fillRect(0,0,W,29);ctx.fillRect(0,H-29,W,29);
-  ctx.font='bold 9px monospace';ctx.textAlign='left';ctx.fillStyle=mod.color;ctx.fillText('CIDADELA 404  //  '+mod.name,9,12);
-  ctx.fillStyle='#c6d8d7';ctx.fillText('VIDA '+Math.ceil(p.health||0)+'/'+(p.maxHealth||0)+'   MUNIÇÃO '+g.ammo+'/12'+(g.jam?'  RECARGA BLOQUEADA':g.reload?'  RECARREGANDO':''),9,H-16);
+  ctx.fillStyle='rgba(3,12,16,.94)';ctx.fillRect(0,0,W,29);ctx.fillRect(0,H-42,W,42);
+  ctx.font='bold 9px monospace';ctx.textAlign='left';ctx.fillStyle=mod.color;ctx.fillText('CIDADELA 404  //  '+mod.name+'  //  S'+(g.localProgress?.rank ?? 1),9,12);
+  ctx.fillStyle='#c6d8d7';ctx.fillText('VIDA '+Math.ceil(p.health||0)+'/'+(p.maxHealth||0)+'   MUNIÇÃO '+g.ammo+'/12'+(g.jam?'  RECARGA BLOQUEADA':g.reload?'  RECARREGANDO':''),9,H-30);
   ctx.textAlign='right';ctx.fillStyle='#ff777c';ctx.fillText('ECHOVORE '+Math.floor(g.echo)+'%',W-9,12);
   const ultUnlocked=getUnlockState(state.progress).features.ultimate;
   const ultStatus=!ultUnlocked?'NV3':p.ultimate?.cooldown>0?Math.ceil(p.ultimate.cooldown)+'s':'OK';
-  ctx.fillStyle='#bce9e7';ctx.font='8px monospace';ctx.fillText('EN '+Math.floor(p.energy ?? 0)+'  Q '+(g.q?Math.ceil(g.q)+'s':'OK')+'  SH '+(g.boost?Math.ceil(g.boost)+'s':'OK')+'  F '+ultStatus,W-9,H-16);
-  if(g.guard>0 || g.shield>0) {ctx.textAlign='center';ctx.fillStyle=mod.color;ctx.fillText((g.guard>0?'GUARDA ':'ESCUDO ')+Math.ceil(Math.max(g.guard,g.shield))+'s',W/2,65);}
+  ctx.fillStyle='#bce9e7';ctx.font='8px monospace';ctx.fillText('EN '+Math.floor(p.energy ?? 0)+'  Q '+(g.q?Math.ceil(g.q)+'s':'OK')+'  SH '+(g.boost?Math.ceil(g.boost)+'s':'OK')+'  F '+ultStatus,W-9,H-30);
+  if(g.guard>0 || g.shield>0 || g.vectorCharge>0 || g.echoAnchor>0) {ctx.textAlign='center';ctx.fillStyle=mod.color;
+    const status=g.vectorCharge>0?'VETOR +12 • '+Math.ceil(g.vectorCharge)+'s':(g.guard>0||g.shield>0)?(g.guard>0?'GUARDA ':'ESCUDO ')+Math.ceil(Math.max(g.guard,g.shield))+'s':'';
+    ctx.fillText([status,g.echoAnchor>0?'SINAL -30% ECO '+Math.ceil(g.echoAnchor)+'s':''].filter(Boolean).join(' • '),W/2,65);}
   ctx.textAlign='left';ctx.fillStyle='#d9b9ae';ctx.fillText('REGISTROS '+KEYS.map(k=>flags[k.flag]?k.symbol:'□').join(' ')+'  '+(flags.cidadela_estavel?missionObjective(state.progress):flags.cidadela_chave_vermelha?'ALCANCE O REATOR':'ENCONTRE OS REGISTROS'),9,24,W-105);
   ctx.textAlign='right';ctx.fillStyle='#9fbfca';ctx.fillText('ARQUIVOS '+CITADEL_ARCHIVES.filter(a=>flags[a.flag]).length+'/3',W-9,24);
-  ctx.textAlign='center';ctx.fillStyle='#b7d1d0';ctx.fillText('WASD MOVE · MOUSE/SETAS MIRA · CLIQUE/ESPAÇO ATIRA · E USA · Q · R RADAR · T RECARGA · SHIFT · P PAUSA · L REGISTROS · J MISSÕES · M SOM',W/2,H-4,W-12);
+  ctx.textAlign='center';ctx.fillStyle='#d4eeee';ctx.font='bold 9px monospace';
+  ctx.fillText('WASD MOVE · MOUSE/SETAS MIRA · CLIQUE/ESPAÇO ATIRA · E USA',W/2,H-17);
+  ctx.fillText('Q MÓD · R RADAR · T REC · SHIFT IMP · F ULT · P PAUSA · L/J/K · M SOM',W/2,H-5);
   if(g.scan>0) { ctx.strokeStyle=mod.color;ctx.globalAlpha=.35;ctx.lineWidth=1;ctx.beginPath();ctx.arc(W/2,H/2,18,0,Math.PI*2);ctx.stroke();ctx.globalAlpha=1;drawMap(map,flags,p,g,state.progress); }
   let prompt='';
   const target=nearestInteraction(map,flags,p);
   if(target?.kind==='exit') prompt='[E] RETORNAR À ESTAÇÃO 66.6';
   if(target?.kind==='key') prompt=`[E] REGISTRO ${target.symbol} ${target.label}`;
   if(target?.kind==='archive') prompt=`[E] ARQUIVO ${target.label}${flags[target.flag]?' • REVER':''}`;
+  if(target?.kind==='workshop_switch') prompt=!workshopCircuitActive(state.progress,g,target)?'[E] CIRCUITO • REVER':workshopPhase(g.time,target.offset)==='safe'?'[E] REGULAR CIRCUITO • JANELA SEGURA':'CIRCUITO ENERGIZADO • AGUARDE';
+  if(target?.kind==='workshop_terminal') prompt='[E] TERMINAL DA OFICINA';
+  if(target?.kind==='workshop_trial') prompt=flags.cidadela_vigilia_concluida?(g.workshopTrial?'[E] SENTINELA • CANCELAR ENSAIO':'[E] SENTINELA • INICIAR ENSAIO'):'[E] SENTINELA EM ESPERA';
+  if(target?.kind==='memory_echo') prompt=flags[target.flag]?'[E] ECO • REVER':g.scan>0?'[E] ECO • SINTONIZAR':'[R] RADAR → [E] SINTONIZAR ECO';
+  if(target?.kind==='echo_terminal') prompt='[E] TERMINAL DE ESCUTA';
+  if(target?.kind==='crt') prompt=`[E] CRT ${target.label}${flags[target.flag]?' • REVER':' • EXAMINAR'}`;
   if(target?.kind==='reactor') prompt='[E] EXAMINAR REATOR';
   if(target?.kind==='probe') prompt='[E] CONVERSAR COM NEXO-04';
   if(target?.kind==='relay') prompt=`[E] RELÉ ${target.label}`;
@@ -783,8 +998,17 @@ export function renderCitadel(canvas,state) {
   if(target?.kind==='breach') prompt=flags[sealedFlag(target.id)]?'[E] FENDA SELADA':g.breach?.id===target.id?'[E] CANCELAR FENDA':'[E] DESAFIAR FENDA • 2 ONDAS';
   if(target?.kind==='breach_cache') prompt=flags[cacheFlag(target.id)]?'[E] COFRE ABERTO':'[E] EXAMINAR COFRE';
   if(target?.kind==='breach_console') prompt='[E] STATUS DAS FENDAS';
+  if(!prompt && p.y>9.8 && p.y<12 && ((p.x>3.5&&p.x<6.5)||(p.x>18.5&&p.x<21.5))) prompt=flags.cidadela_estavel?'OFICINA DA VIGÍLIA • ACESSO LIVRE':'OFICINA • AGUARDA REATOR ESTÁVEL';
   for (const [x,k] of [[8,KEYS[0]],[15,KEYS[1]],[22,KEYS[2]]]) if (!prompt && !flags[k.flag] && Math.abs(p.x-x)<1.4 && p.y>4.2 && p.y<8.8) prompt=`ECLUSA ${k.symbol} ${k.label} • BUSQUE O REGISTRO`;
   if(prompt){ctx.fillStyle='rgba(0,0,0,.8)';ctx.fillRect(W/2-130,H/2+34,260,15);ctx.fillStyle='#e6ffff';ctx.font='bold 9px monospace';ctx.fillText(prompt,W/2,H/2+45);}
+  if(flags.cidadela_estavel) {
+    const nearby=CITADEL_WORKSHOP.switches.filter(o=>workshopCircuitActive(state.progress,g,o) && Math.hypot(p.x-o.emitter.x,p.y-o.emitter.y)<2.8 && visible(map,flags,p.x,p.y,o.emitter.x,o.emitter.y)).sort((a,b)=>Math.hypot(p.x-a.emitter.x,p.y-a.emitter.y)-Math.hypot(p.x-b.emitter.x,p.y-b.emitter.y))[0];
+    if(nearby) {
+      const phase=workshopPhase(g.time,nearby.offset);
+      ctx.font='bold 9px monospace';ctx.fillStyle=phase==='safe'?'#c9f1df':'#ffbe94';
+      ctx.fillText(phase==='safe'?'OFICINA • JANELA SEGURA':phase==='warning'?'OFICINA • PULSO EM BREVE':'OFICINA • PULSO ATIVO: AFASTE-SE',W/2,g.breach?58:43);
+    }
+  }
   if(g.breach) {
     ctx.font='bold 9px monospace';ctx.fillStyle='#ffb5a0';
     const remaining=g.enemies.filter(e=>e.breach===g.breach.id && e.hp>0).length;
@@ -795,12 +1019,16 @@ export function renderCitadel(canvas,state) {
     ctx.font='bold 9px monospace';ctx.fillStyle=bossOpen(g.boss)?'#abffff':'#ff9081';ctx.fillText(text,W/2,43);
     ctx.fillStyle='#282f32';ctx.fillRect(W/2-70,48,140,4);ctx.fillStyle='#ff5c59';ctx.fillRect(W/2-70,48,140*clamp(g.boss.hp/280,0,1),4);
   }
-  if(g.messageTime>0){ctx.font='bold 8px monospace';ctx.fillStyle='rgba(0,8,12,.86)';ctx.fillRect(0,H-55,W,18);ctx.fillStyle='#d1fbf6';ctx.fillText(g.message,W/2,H-43, W-12);}
+  if(g.messageTime>0){
+    const lines=wrapCitadelText(g.message), height=lines.length*12+6, top=H-42-height;
+    ctx.font='bold 10px monospace';ctx.fillStyle='rgba(0,8,12,.94)';ctx.fillRect(0,top,W,height);
+    ctx.fillStyle='#e0fffa';lines.forEach((line,i)=>ctx.fillText(line,W/2,top+12+i*12));
+  }
   if(g.panel) {
     ctx.fillStyle='rgba(1,8,12,.94)';ctx.fillRect(45,35,W-90,H-70);
     ctx.strokeStyle=mod.color;ctx.lineWidth=1;ctx.strokeRect(45,35,W-90,H-70);
     ctx.textAlign='left';ctx.fillStyle=mod.color;ctx.font='bold 13px monospace';
-    ctx.fillText(g.panel==='journal'?'ARQUIVO DE MEMÓRIA':g.panel==='missions'?'MISSÕES DA CIDADELA':'SINAL EM PAUSA',62,58);
+    ctx.fillText(g.panel==='journal'?'ARQUIVO DE MEMÓRIA':g.panel==='missions'?'MISSÕES DA CIDADELA':g.panel==='dimension'?'SINTONIA LOCAL // CIDADELA':'SINAL EM PAUSA',62,58);
     ctx.font='9px monospace';ctx.fillStyle='#d2eeee';
     if(g.panel==='journal') {
       let y=77;
@@ -812,7 +1040,7 @@ export function renderCitadel(canvas,state) {
       ctx.fillStyle='#d2eeee';ctx.font='8px monospace';
       for(const [i,a] of CITADEL_ARCHIVES.entries()) ctx.fillText(`${a.label}: ${flags[a.flag]?a.log:'NÃO ENCONTRADO.'}`,62,180+i*12,W-125);
       ctx.fillStyle=flags.cidadela_estavel?'#b4fff1':'#d9b9ae';
-      ctx.fillText(flags.cidadela_estavel?'REATOR ESTÁVEL • ROTA ABERTA.':'ENCONTRE OS TRÊS REGISTROS E ALCANCE O REATOR.',62,217,W-125);
+      ctx.fillText(`CRTs ${crtCount(state.progress)}/3 • ECOS ${memoryEchoCount(state.progress)}/3 • REVEJA NOS PONTOS.`,62,217,W-125);
     } else if(g.panel==='missions') {
       if(!flags.cidadela_estavel) ctx.fillText('MISSÕES DE EXPLORAÇÃO DISPONÍVEIS APÓS A ESTABILIZAÇÃO.',62,83,W-125);
       else {
@@ -822,7 +1050,29 @@ export function renderCitadel(canvas,state) {
         ctx.fillStyle=mod.color;ctx.fillText('VOZES NA ESTÁTICA • '+(vozes.status==='completed'?'CONCLUÍDA':vozes.status==='active'?'EM ANDAMENTO':'CONSULTE O TRANSMISSOR'),62,153,W-125);
         ctx.fillStyle='#d2eeee';vozes.objectives.forEach((o,i)=>ctx.fillText(`${o.done?'[X]':'[ ]'} ${o.label}`,62,167+i*12,W-125));
         const summary=breachSummary(state.progress);ctx.fillStyle=mod.color;
-        ctx.fillText(`FENDAS ${summary.sealed}/3 • COFRES ${summary.caches}/3 • RADAR [R]`,62,216,W-125);
+        ctx.fillText(`FENDAS ${summary.sealed}/3 • COFRES ${summary.caches}/3 • ${g.workshopTrial?'ENSAIO '+g.workshopTrial.done.length+'/3':'OFICINA '+workshopCount(state.progress)+'/3'}`,62,216,W-125);
+      }
+    } else if(g.panel==='dimension') {
+      const local=g.localProgress ?? getDimensionProgress(state.progress);
+      if(!local) ctx.fillText('SINTONIA LOCAL INDISPONÍVEL PARA ESTE OPERADOR.',62,83,W-125);
+      else {
+        const badge=sprites.perk_emblema, drone=sprites.perk_nexo;
+        if(badge) ctx.drawImage(badge,W-96,44,22,22);
+        if(drone) ctx.drawImage(drone,W-70,44,24,18);
+        ctx.fillStyle='#e4fffa';ctx.fillText(`SINTONIA ${local.rank}/4 • MARCOS ${local.score}/${local.max}`+(local.next===null?' • MÁXIMO':` • PRÓXIMO ${local.next}`),62,76,W-125);
+        for(const [i,skill] of local.skills.entries()) {
+          const y=89+i*38, icon=sprites[`perk_${skill.icon}`], unlocked=local.rank>=skill.rank;
+          ctx.save();ctx.globalAlpha=unlocked?1:.35;
+          if(icon) ctx.drawImage(icon,62,y,29,29);else {ctx.strokeStyle=mod.color;ctx.strokeRect(62,y,29,29);}
+          ctx.restore();ctx.fillStyle=unlocked?mod.color:'#9da8a7';
+          ctx.fillText(`S${skill.rank} ${skill.name} • ${unlocked?'ATIVO':'BLOQUEADO'}`,101,y+10,W-165);
+          ctx.fillStyle='#d2eeee';ctx.fillText(skill.description,101,y+23,W-165);
+        }
+        ctx.fillStyle=local.rank>=3?mod.color:'#9da8a7';ctx.fillText(`S3 IMPULSO RÁPIDO • ${local.rank>=3?'ATIVO':'BLOQUEADO'}`,62,175);
+        ctx.fillStyle='#d2eeee';ctx.fillText('SHIFT: RECARGA DE 3s PARA 2,4s.',62,187);
+        ctx.fillStyle='#a7c8c6';ctx.font='8px monospace';
+        ctx.fillText('MARCOS ÚNICOS: REGISTROS, ARQUIVOS, CRTs, REATOR,',62,204,W-125);
+        ctx.fillText('ECOS, OFICINA, MISSÕES, FENDAS, COFRES E TREINO.',62,216,W-125);
       }
     } else {
       ctx.fillText('WASD MOVE • SETAS OU MOUSE MIRAM',62,83);
@@ -830,10 +1080,10 @@ export function renderCitadel(canvas,state) {
       ctx.fillText('Q MÓDULO • R RADAR • F ULTIMATE • SHIFT DIRECIONAL',62,119,W-125);
       ctx.fillText('CUIDADO: ECHOVORE RESPONDE À RESSONÂNCIA.',62,147);
       ctx.fillText('VIGILANTE: DESVIE DA RAJADA E ATINJA O NÚCLEO EXPOSTO.',62,165,W-125);
-      ctx.fillText('A SAÍDA PERMANECE JUNTO AO PONTO DE CHEGADA.',62,183);
+      ctx.fillText('SAÍDA JUNTO À CHEGADA • K: SINTONIA LOCAL.',62,183);
       ctx.fillText(`M SOM ${citadelAudioEnabled()?'LIGADO':'DESLIGADO'} • EFEITOS OPCIONAIS`,62,201);
     }
-    ctx.fillStyle='#9cc9c7';ctx.fillText('P / ESC CONTINUA • L REGISTROS • J MISSÕES',62,g.panel==='journal'||g.panel==='missions'?229:220);
+    ctx.fillStyle='#9cc9c7';ctx.fillText('P / ESC CONTINUA • L REGISTROS • J MISSÕES • K SINTONIA',62,g.panel==='journal'||g.panel==='missions'||g.panel==='dimension'?229:220);
   }
   const out=canvas.getContext('2d');out.save();out.setTransform(1,0,0,1,0,0);out.imageSmoothingEnabled=false;out.drawImage(buffer,0,0,canvas.width,canvas.height);out.restore();
 }

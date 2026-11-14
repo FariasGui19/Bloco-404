@@ -4264,6 +4264,20 @@ body.retro-fps #ui, body.retro-fps #controls, body.retro-fps #elevatorPrompt { d
   transform:translate(-50%,-50%) scale(.7); opacity:0; pointer-events:none;
 }
 #mapTransitionOverlay.dimensional.active::before { animation: passagem-666 .85s ease-out both; }
+/* Uma segunda órbita identifica a passagem entre perspectivas sem flashes. */
+#mapTransitionOverlay.dimensional::after {
+  content:''; position:absolute; left:50%; top:50%; width:min(58vh,58vw); aspect-ratio:1;
+  border:1px solid rgba(105,226,226,.32); border-left-color:transparent; border-right-color:transparent;
+  border-radius:50%; transform:translate(-50%,-50%) rotate(-25deg); opacity:0; pointer-events:none;
+}
+#mapTransitionOverlay.dimensional.active::after { animation: passagem-orbita .85s ease-out both; }
+#mapTransitionOverlay.dimensional-retorno.active::before,
+#mapTransitionOverlay.dimensional-retorno.active::after { animation-direction:reverse; }
+@keyframes passagem-orbita {
+  from { transform:translate(-50%,-50%) scale(.5) rotate(-25deg); opacity:0; }
+  45% { opacity:.55; }
+  to { transform:translate(-50%,-50%) scale(1.25) rotate(45deg); opacity:.18; }
+}
 #mapTransitionOverlay.dimensional .hangar-terminal-hud { margin-top:min(65vh,430px); background:rgba(5,14,19,.88); }
 @keyframes passagem-666 {
   0% {transform:translate(-50%,-50%) scale(.35);opacity:0;}
@@ -4272,6 +4286,7 @@ body.retro-fps #ui, body.retro-fps #controls, body.retro-fps #elevatorPrompt { d
 }
 @media (prefers-reduced-motion: reduce) {
   #mapTransitionOverlay.dimensional.active::before { animation:none; opacity:.3; transform:translate(-50%,-50%) scale(1); }
+  #mapTransitionOverlay.dimensional.active::after { animation:none; opacity:.2; transform:translate(-50%,-50%) rotate(-25deg); }
   #mapTransitionOverlay.dimensional,
   #mapTransitionOverlay.dimensional .hangar-progress-fill { transition:none; }
 }

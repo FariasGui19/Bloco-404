@@ -2,6 +2,7 @@
 // contexto de áudio é carregado até o jogador habilitar o som com M.
 const STORAGE_KEY='bloco404_cidadela_som';
 const TONES=Object.freeze({
+  step: {from:95,to:65,duration:.055,type:'triangle',volume:.012},
   shot: {from:220,to:90,duration:.10,type:'square',volume:.025},
   enemy: {from:320,to:160,duration:.13,type:'sawtooth',volume:.018},
   echo: {from:580,to:260,duration:.20,type:'triangle',volume:.028},

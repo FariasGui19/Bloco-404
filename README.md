@@ -32,14 +32,18 @@ Cidadela, **WASD** movimenta, **setas ou mouse** miram, **espaço ou clique**
 dispara, **T** recarrega, **E** interage, **Q** usa o módulo, **R** abre o
 radar e **F** usa a Ultimate quando desbloqueada. **Shift** dá impulso na
 direção de movimento, **P** pausa, **L** abre os registros encontrados e
-**J** consulta missões da Cidadela e **M** liga ou desliga os efeitos sonoros opcionais.
+**J** consulta missões, **K** mostra a sintonia local por arquétipo e **M** liga ou desliga os efeitos sonoros opcionais. Marcos únicos desbloqueiam adaptações exclusivas desta dimensão, sem alterar o XP ou o kit global.
 Clique na tela para capturar o mouse; Esc libera o cursor e pausa o combate. As setas dispensam
 mouse capturado. Três registros abrem as eclusas; a saída fica junto à chegada.
 Três arquivos opcionais, encontrados em terminais e consultáveis com **L**,
-contam mais da história e concedem XP uma vez ao completar a coleção. Após
+contam mais da história e concedem XP uma vez ao completar a coleção. Três
+CRTs também registram uma figura misteriosa, sem confirmar sua identidade;
+**E** examina e permite rever as transmissões. Após
 estabilizar o reator, NEXO-04 oferece missões de exploração e uma simulação
-repetível na arena, além de três fendas opcionais com ondas e cofres.
+repetível na arena, além de três fendas opcionais com ondas e cofres. A nova Oficina da Vigília abre duas salas no pós-vitória, com circuitos temporizados, uma missão própria e um ensaio repetível sem XP adicional.
 A saída e a revisita continuam disponíveis.
+Novos **Ecos entre Tempos** convidam a usar **R** e depois **E** para sintonizar três memórias antes ou depois da vitória. Cada nova leitura ancora o sinal temporariamente, reduzindo o eco gerado; ao concluir, o terminal da entrada oferece recuperação limitada de energia e redução de eco.
+
 Veja [a documentação da Cidadela](docs/cidadela-404.md) para regras e limites.
 
 ## Organização

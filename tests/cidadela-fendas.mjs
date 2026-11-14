@@ -87,10 +87,10 @@ while(g.breach && guard++<2200){
  const living=g.enemies.filter(e=>e.hp>0);if(living.length){const e=living[0];g.angle=Math.atan2(e.y-state.player.y,e.x-state.player.x);input.keys.space=true;}else input.keys.space=false;
  step();
 }
-input.keys.space=false;assert(guard<2200,'ondas precisam ser vencíveis com arma normal');assert(state.progress.flags[sealedFlag(first.id)]);
+input.keys.space=false;assert(guard<2200,'ondas precisam ser vencíveis com arma normal');assert(state.progress.flags[sealedFlag(first.id)]);assert(g.localProgress.achieved.includes(sealedFlag(first.id)));
 assert(loadSaveIntoState(1));assert(state.progress.flags[sealedFlag(first.id)]);assert(!state.progress.flags[cacheFlag(first.id)]);
 await loadMap('cidadela_404');clearCitadelRuntime();step();getCitadelRuntime().angle=0;
-const xpBefore=JSON.stringify(state.progress.archetypeProgress);go(first.cache,'breach_cache');assert(state.progress.flags[cacheFlag(first.id)]);assert.notEqual(JSON.stringify(state.progress.archetypeProgress),xpBefore);
+const xpBefore=JSON.stringify(state.progress.archetypeProgress);go(first.cache,'breach_cache');assert(state.progress.flags[cacheFlag(first.id)]);assert(getCitadelRuntime().localProgress.achieved.includes(cacheFlag(first.id)));assert.notEqual(JSON.stringify(state.progress.archetypeProgress),xpBefore);
 let xpAfter=JSON.stringify(state.progress.archetypeProgress);interact();assert.equal(JSON.stringify(state.progress.archetypeProgress),xpAfter);
 // Abandonar uma fenda pela saída não a sela; selos anteriores sobrevivem.
 go(second,'breach');step(65);assert(getCitadelRuntime().breach);walkTo(2.5,6.5);state.world.portalLockUntil=0;interact();

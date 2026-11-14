@@ -1,10 +1,16 @@
 // Geometria ortogonal compartilhada pelo raycaster, colisão e minimapa.
 // Três eclusas sucessivas garantem uma rota legível sem depender de cor.
-const layout = Array.from({ length: 13 }, () => Array(32).fill(1));
+const layout = Array.from({ length: 22 }, () => Array(32).fill(1));
 for (const [a, b] of [[1, 7], [9, 14], [16, 21], [23, 30]]) {
   for (let y = 2; y <= 10; y++) for (let x = a; x <= b; x++) layout[y][x] = 0;
 }
 for (const x of [8, 15, 22]) for (let y = 5; y <= 7; y++) layout[y][x] = 0;
+// A Oficina da Vigília forma duas salas ligadas e duas rotas de volta; as
+// comportas em y=11 são verificadas por wallAt após a vitória no reator.
+for (const [a,b] of [[1,14],[17,30]]) for(let y=14;y<=20;y++) for(let x=a;x<=b;x++) layout[y][x]=0;
+for(let y=17;y<=18;y++) for(let x=15;x<=16;x++) layout[y][x]=0;
+for(let y=11;y<=13;y++) for(const x of [4,5,19,20]) layout[y][x]=0;
+for(const [x,y] of [[3,16],[8,16],[11,19],[19,15],[23,18],[28,15]]) layout[y][x]=1;
 // Pilares deixam as salas menos vazias e oferecem cobertura; corredores,
 // registros, pontos de chegada e centro da arena permanecem transitáveis.
 for (const [x,y] of [[3,3],[3,9],[6,6], [10,3],[12,6],[14,3],
@@ -63,3 +69,42 @@ export const CITADEL_BREACHES = Object.freeze([
   {id:'forja',label:'FORJA',bounds:[16,22],x:21.35,y:5.5,cache:{x:21.35,y:7.5},spawns:[[19.5,5.5],[20.5,7.5],[17.5,8.5]]},
 ]);
 export const CITADEL_BREACH_CONSOLE = Object.freeze({kind:'breach_console',x:28.5,y:10.25});
+
+// Transmissões são exibidas somente nos CRTs e não constituem combate nem
+// confirmação da origem da figura. Os pontos permanecem opcionais e relíveis.
+export const CITADEL_NULL_MONITORS = Object.freeze([
+  {id:'entrada',label:'ENTRADA',x:6.5,y:2.3,flag:'cidadela_crt_entrada',log:'UMA FIGURA EM LINHAS. NO ROSTO, UM VAZIO RETANGULAR.'},
+  {id:'galeria',label:'GALERIA',x:13.5,y:2.3,flag:'cidadela_crt_galeria',log:'O CRT REPETE UM GESTO. NENHUMA VOZ FOI IDENTIFICADA.'},
+  {id:'forja',label:'FORJA',x:21.35,y:2.3,flag:'cidadela_crt_forja',log:'A FIGURA SE VOLTA AO REATOR. A ORIGEM DO SINAL É INCERTA.'},
+]);
+
+// Os ecos podem ser sintonizados antes ou depois do reator. O radar expõe
+// uma janela de leitura; nenhum deles bloqueia portas ou o caminho principal.
+export const CITADEL_ECHOES = Object.freeze([
+  {kind:'memory_echo',id:'entrada',label:'ENTRADA',flag:'cidadela_eco_entrada',x:5.05,y:8.15,log:'ANTES DO PEDIDO, ALGUÉM TESTOU UMA LINHA DE RETORNO.'},
+  {kind:'memory_echo',id:'galeria',label:'GALERIA',flag:'cidadela_eco_galeria',x:10.15,y:7.25,log:'DURANTE A FALHA, A EQUIPE PROTEGEU UM CANAL, NÃO UM NOME.'},
+  {kind:'memory_echo',id:'forja',label:'FORJA',flag:'cidadela_eco_forja',x:17.15,y:5.5,log:'DEPOIS DA RETIRADA, O REATOR AINDA ENVIAVA UMA RESPOSTA.'},
+]);
+export const CITADEL_ECHO_TERMINAL = Object.freeze({kind:'echo_terminal',x:2.5,y:4.6});
+export const CITADEL_ECHO_DECOR = Object.freeze([
+  {type:'anchor_sleep',x:2.1,y:3.0,scale:.48,ground:true},
+  {type:'lost_recorder',x:9.5,y:10.25,scale:.30,ground:true},
+  {type:'signal_map',x:14.25,y:2.4,scale:.36},
+  {type:'emergency_light',x:16.5,y:10.25,scale:.32,ground:true},
+  {type:'memory_relay',x:23.8,y:3.2,scale:.35},
+]);
+
+// Oficina opcional pós-vitória. Os emissores não bloqueiam passagem e seus
+// ciclos só aplicam dano no raio visível; a saída está sempre aberta.
+export const CITADEL_WORKSHOP = Object.freeze({
+  switches: [
+    {kind:'workshop_switch',id:'bancada',label:'BANCADA',flag:'cidadela_vigilia_bancada',x:5.5,y:16.5,emitter:{x:6.65,y:16.5},offset:0,log:'UM DIÁRIO DE MANUTENÇÃO FALA EM MANTER A ROTA ABERTA, NÃO EM VENCER UMA GUERRA.'},
+    {kind:'workshop_switch',id:'ponte',label:'PONTE',flag:'cidadela_vigilia_ponte',x:12.5,y:18.5,emitter:{x:13.65,y:18.5},offset:1.4,log:'A EQUIPE DEIXOU DOIS CAMINHOS DE SAÍDA PARA QUEM VIESSE DEPOIS.'},
+    {kind:'workshop_switch',id:'reserva',label:'RESERVA',flag:'cidadela_vigilia_reserva',x:25.5,y:16.5,emitter:{x:26.65,y:16.5},offset:2.8,log:'O ÚLTIMO REPARO NÃO TEM ASSINATURA. A LINHA FOI MANTIDA MANUALMENTE OU POR ROTINA.'},
+  ],
+  terminal:{kind:'workshop_terminal',x:28.4,y:19.5},
+  core:{x:24.5,y:19.5},
+  decor:[{type:'workshop_pipes',x:2.4,y:14.4,scale:.72},
+    {type:'workshop_bench',x:9.4,y:20.2,scale:.68},
+    {type:'workshop_robot',x:18.3,y:20.2,scale:.5}],
+});

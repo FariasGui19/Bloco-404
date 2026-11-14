@@ -10,6 +10,37 @@
 // =====================================================================
 
 export const QUESTS = Object.freeze({
+  cidadela_oficina_vigilia: Object.freeze({
+    id:'cidadela_oficina_vigilia',title:'OFICINA DA VIGÍLIA',giver:'NEXO-04',kind:'secundária',
+    description:'Depois de estabilizar o reator, explore a oficina ao sul. Desative três circuitos durante suas janelas seguras e confirme a manutenção no terminal.',
+    objectives:Object.freeze([
+      Object.freeze({type:'cidadela_vigilia_controle',target:'bancada',count:1,label:'Regular circuito da bancada [E]'}),
+      Object.freeze({type:'cidadela_vigilia_controle',target:'ponte',count:1,label:'Regular circuito da ponte [E]'}),
+      Object.freeze({type:'cidadela_vigilia_controle',target:'reserva',count:1,label:'Regular circuito da reserva [E]'}),
+      Object.freeze({type:'cidadela_vigilia_relato',target:'terminal',count:1,label:'Confirmar no terminal da oficina [E]'}),
+    ]),
+    rewards:Object.freeze({xp:80,flags:Object.freeze({cidadela_vigilia_concluida:true})}),
+  }),
+  cidadela_ecos_entre_tempos: Object.freeze({
+    id:'cidadela_ecos_entre_tempos', title:'ECOS ENTRE TEMPOS', giver:'NEXO-04', kind:'secundária',
+    description:'Use o radar [R] perto de cada eco da Cidadela e sintonize-o [E] enquanto a leitura estiver ativa. As três memórias podem ser encontradas antes ou depois do reator.',
+    objectives:Object.freeze([
+      Object.freeze({type:'cidadela_eco_memoria',target:'entrada',count:1,label:'Sintonizar eco da entrada [R + E]'}),
+      Object.freeze({type:'cidadela_eco_memoria',target:'galeria',count:1,label:'Sintonizar eco da galeria [R + E]'}),
+      Object.freeze({type:'cidadela_eco_memoria',target:'forja',count:1,label:'Sintonizar eco da forja [R + E]'}),
+    ]),
+    rewards:Object.freeze({xp:50,flags:Object.freeze({cidadela_ecos_concluidos:true})}),
+  }),
+  cidadela_transmissoes_crt: Object.freeze({
+    id:'cidadela_transmissoes_crt', title:'ENTRE LINHAS', giver:'NEXO-04', kind:'secundária',
+    description:'Examine os três CRTs da Cidadela. O sinal contém uma figura em linhas; a origem e a identidade permanecem desconhecidas.',
+    objectives:Object.freeze([
+      Object.freeze({type:'cidadela_crt',target:'entrada',count:1,label:'Examinar CRT da entrada [E]'}),
+      Object.freeze({type:'cidadela_crt',target:'galeria',count:1,label:'Examinar CRT da galeria [E]'}),
+      Object.freeze({type:'cidadela_crt',target:'forja',count:1,label:'Examinar CRT da forja [E]'}),
+    ]),
+    rewards:Object.freeze({xp:45,flags:Object.freeze({cidadela_crts_completos:true})}),
+  }),
   cidadela_fendas_residuais: Object.freeze({
     id:'cidadela_fendas_residuais', title:'FENDAS RESIDUAIS', giver:'NEXO-04', kind:'secundária',
     description:'Após estabilizar o reator, vença as duas ondas em cada fenda e abra seu cofre. Uma tentativa pode ser cancelada na fenda ou abandonada pela saída.',

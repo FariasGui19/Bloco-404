@@ -149,3 +149,106 @@ for name in ['fenda-instavel','fenda-selada','cofre-fechado','cofre-aberto',
     image.thumbnail((160,160),Image.Resampling.LANCZOS)
     image.save(dst / f'{name}.png',optimize=True)
     print(name,image.size)
+
+# Poses de caminhada/hover, dois quadros CRT e pulsos de equipamentos.
+for name in ['imp-passo-a','imp-passo-b','echovore-passo-a','echovore-passo-b',
+             'orbe-movimento-a','orbe-movimento-b','nulo-transmissao-a','nulo-transmissao-b',
+             'reator-pulso','gerador-pulso']:
+    image=Image.open(src / f'{name}.png').convert('RGBA')
+    pixels=image.load()
+    for y in range(image.height):
+        for x in range(image.width):
+            r,g,b,a=pixels[x,y]
+            if r>110 and b>110 and g<85 and min(r,b)-g>85:
+                pixels[x,y]=(0,0,0,0)
+    box=image.getbbox()
+    if not box: raise ValueError(f'Sprite vazio: {name}')
+    image=image.crop(box)
+    image.thumbnail((192,192),Image.Resampling.LANCZOS)
+    image.save(dst / f'{name}.png',optimize=True)
+    print(name,image.size)
+
+# Ícones da progressão local. Alguns originais vieram com múltiplas peças
+# ou um quadro quadriculado falso; isola-se somente a figura central.
+for name in ['progressao-mare-corrente','progressao-mare-sonar',
+             'progressao-nucleo-vetor','progressao-nucleo-carga',
+             'progressao-dominio-corte','progressao-dominio-guarda',
+             'progressao-bio-blindagem','progressao-bio-reparo',
+             'progressao-emblema','progressao-nexo']:
+    image=Image.open(src / f'{name}.png').convert('RGBA')
+    if name=='progressao-dominio-corte': image=image.crop((400,70,1000,675))
+    if name=='progressao-bio-blindagem': image=image.crop((440,0,970,768))
+    pixels=image.load()
+    for y in range(image.height):
+        for x in range(image.width):
+            r,g,b,a=pixels[x,y]
+            if r>185 and b>185 and g<85 and abs(r-b)<55:
+                pixels[x,y]=(0,0,0,0)
+    box=image.getbbox()
+    if not box: raise ValueError(f'Ícone vazio: {name}')
+    image=image.crop(box)
+    image.thumbnail((96,96),Image.Resampling.LANCZOS)
+    image.save(dst / f'{name}.png',optimize=True)
+    print(name,image.size)
+
+# Ecos, estação de escuta e detalhes ambientais desta visita. A arte do
+# terminal ativo contém três gabinetes; conserva apenas o gabinete central.
+for name in ['eco-ressonante','eco-liberado','ancora-silencio','ancora-ativa',
+             'gravador-perdido','mapa-sinal','terminal-ecos','terminal-ecos-ativo',
+             'luz-emergencia','rele-memoria']:
+    image=Image.open(src / f'{name}.png').convert('RGBA')
+    if name=='terminal-ecos-ativo': image=image.crop((510,0,900,768))
+    pixels=image.load()
+    for y in range(image.height):
+        for x in range(image.width):
+            r,g,b,a=pixels[x,y]
+            if r>100 and b>100 and g<90 and min(r,b)-g>70:
+                pixels[x,y]=(0,0,0,0)
+    box=image.getbbox()
+    if not box: raise ValueError(f'Sprite vazio: {name}')
+    image=image.crop(box)
+    image.thumbnail((160,160),Image.Resampling.LANCZOS)
+    image.save(dst / f'{name}.png',optimize=True)
+    print(name,image.size)
+
+# Quadros adicionais priorizam avisos de ataque e estados interativos. No
+# original da fenda, só o anel interior está completo; o restante veio cortado.
+for name in ['imp-ataque-b','orbe-ataque-b','echovore-ataque-b','vigilante-ataque-b',
+             'fenda-aviso','terminal-escuta-pulso-a','terminal-escuta-pulso-b',
+             'portal-pulso-a','portal-pulso-b','eco-ressonante-pulso']:
+    image=Image.open(src / f'{name}.png').convert('RGBA')
+    if name=='fenda-aviso':
+        image=image.crop((355,5,1050,735))
+        mask=Image.new('L',image.size,0)
+        ImageDraw.Draw(mask).ellipse((1,1,image.width-2,image.height-2),fill=255)
+        image.putalpha(ImageChops.multiply(image.getchannel('A'),mask))
+    pixels=image.load()
+    for y in range(image.height):
+        for x in range(image.width):
+            r,g,b,a=pixels[x,y]
+            if r>110 and b>110 and g<85 and min(r,b)-g>85:
+                pixels[x,y]=(0,0,0,0)
+    box=image.getbbox()
+    if not box: raise ValueError(f'Quadro vazio: {name}')
+    image=image.crop(box)
+    image.thumbnail((192,192),Image.Resampling.LANCZOS)
+    image.save(dst / f'{name}.png',optimize=True)
+    print(name,image.size)
+
+# Novos elementos da oficina: controles, emissores, núcleo e vestígios.
+for name in ['vigilia-controle-off','vigilia-controle-on','vigilia-pulso-aviso',
+             'vigilia-pulso-ativo','vigilia-terminal','vigilia-nucleo-apagado',
+             'vigilia-nucleo-vivo','vigilia-tubos','vigilia-bancada','vigilia-sentinela']:
+    image=Image.open(src / f'{name}.png').convert('RGBA')
+    pixels=image.load()
+    for y in range(image.height):
+        for x in range(image.width):
+            r,g,b,a=pixels[x,y]
+            if r>100 and b>100 and g<90 and min(r,b)-g>70:
+                pixels[x,y]=(0,0,0,0)
+    box=image.getbbox()
+    if not box: raise ValueError(f'Sprite vazio: {name}')
+    image=image.crop(box)
+    image.thumbnail((160,160),Image.Resampling.LANCZOS)
+    image.save(dst / f'{name}.png',optimize=True)
+    print(name,image.size)

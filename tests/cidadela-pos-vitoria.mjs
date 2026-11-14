@@ -64,14 +64,14 @@ visit(post.sonda);assert.equal(citadelMissions(state.progress).rede.status,'acti
 for(const i of [2,0,1]) visit(post.reles[i]);
 assert.equal(citadelMissions(state.progress).reles,3);
 const before=JSON.stringify(state.progress.archetypeProgress);visit(post.sonda);
-assert(state.progress.flags.cidadela_rede_concluida);assert.notEqual(JSON.stringify(state.progress.archetypeProgress),before);
+assert(state.progress.flags.cidadela_rede_concluida);assert(getCitadelRuntime().localProgress.achieved.includes('cidadela_rede_concluida'));assert.notEqual(JSON.stringify(state.progress.archetypeProgress),before);
 const after=JSON.stringify(state.progress.archetypeProgress);visit(post.sonda);assert.equal(JSON.stringify(state.progress.archetypeProgress),after);
 visit(post.transmissor);assert.equal(citadelMissions(state.progress).vozes.status,'active');
 visit(post.registros[1]);assert.equal(citadelMissions(state.progress).registros,1);
 assert(loadSaveIntoState(1));assert.equal(citadelMissions(state.progress).registros,1,'missão parcial persistida');
 await loadMap('cidadela_404');clearCitadelRuntime();step();
 for(const i of [0,2]) visit(post.registros[i]);
-visit(post.transmissor);assert(state.progress.flags.cidadela_vozes_concluida);
+visit(post.transmissor);assert(state.progress.flags.cidadela_vozes_concluida);assert(getCitadelRuntime().localProgress.achieved.includes('cidadela_vozes_concluida'));
 const xp=JSON.stringify(state.progress.archetypeProgress);visit(post.transmissor);visit(post.registros[0]);assert.equal(JSON.stringify(state.progress.archetypeProgress),xp);
 visit(post.treino);let runtime=getCitadelRuntime();assert(runtime.training);assert.equal(runtime.enemies.length,3);
 visit(post.treino);assert(!runtime.training);assert.equal(runtime.enemies.length,0);

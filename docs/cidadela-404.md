@@ -418,10 +418,27 @@ táticas +25 EN / +6 MUN nos corredores), `drop-sucata-codigo` e
     retorno estável à Estação 66.6 aciona `CITADEL_RETURN_SCENES`
     (`cidadela-retorno-estavel.jpg`), e os diagnósticos `[R]` do Terminal da
     Enseada e do Console 66.6 reagem às relíquias e rondas concluídas.
+- **Lote #4 — Polimento Final & Profundidade (`cidadela-lote4-polimento.mjs`)**:
+  - **Elite direcional, investida e parede da Arena**: `imp-elite` ganha vistas
+    `lateral`/`costas` (`imp-elite-lateral.png`, `imp-elite-costas.png`), pose
+    própria de dano (`imp-elite-dano.png`) e **investida de choque**
+    telegrafada em curta distância (`< 2,2 tiles`). A Arena do Reator passa a
+    usar textura própria (`parede-arena.png`).
+  - **Vigilante, gravações, ícones e áudio**: contagem regressiva de abertura
+    do núcleo no HUD do chefe com retículo (`vigilante-nucleo-aviso.png`),
+    fala adicional na Fase 2 abaixo de 25% PV, caixas de gravação distintas
+    (`registro-entrada.png`, `registro-forja.png`) com convergência narrativa
+    dos 3 segundos ao reunir as 3 vozes, ícones de materiais (`drop-sucata-hud`,
+    `drop-nucleo-hud`) no HUD/Bancada/Códex, prompts contextuais para barris e
+    escudos, 4ºs tons no áudio (`step_reactor`, `elite_shot`, `rare_drop`,
+    `core_open`) e ilustração exclusiva para o 3º quadro de `THRESHOLD_SCENES`
+    (`cidadela-travessia-anel.jpg`).
 - **Áudio opcional (`js/game/cidadela-audio.js`)**: tons sintetizados para
-  coleta de chave (`key`), síntese (`craft`), deflexão na blindagem
-  (`shield_deflect`), transição da Fase 2 (`phase2`), explosão de barril
-  (`explosion`), golpe cinético (`melee`) e blindagem (`shield`).
+  passos (`step` e `step_reactor`), disparo de elite (`elite_shot`), coleta rara
+  (`rare_drop`), abertura do núcleo (`core_open`), coleta de chave (`key`),
+  síntese (`craft`), deflexão na blindagem (`shield_deflect`), transição da
+  Fase 2 (`phase2`), explosão de barril (`explosion`), golpe cinético
+  (`melee`) e blindagem (`shield`).
 
 O roadmap vivo completo com todas as pendências restantes até o entregável final
 está em [`docs/cidadela-roadmap.md`](cidadela-roadmap.md).
@@ -459,5 +476,5 @@ Execute `node --experimental-default-type=module tests/cidadela-fps.mjs`,
 `tests/cidadela-audio.mjs`, `tests/cidadela-pos-vitoria.mjs`,
 `tests/cidadela-transicao.mjs`, `tests/cidadela-fendas.mjs`,
 `tests/cidadela-fendas-arquetipos.mjs`, `tests/cidadela-imersao.mjs`,
-`tests/cidadela-hud.mjs`, `tests/cidadela-passos.mjs`, `tests/cidadela-progressao.mjs`, `tests/cidadela-ecos.mjs`, `tests/cidadela-animacoes-sinal.mjs`, `tests/cidadela-vigilia.mjs`, `tests/cidadela-travessia.mjs`, `tests/cidadela-base-animacoes.mjs`, `tests/cidadela-refino-visual.mjs`, `tests/cidadela-acabamento.mjs`, `tests/cidadela-vida.mjs`, `tests/cidadela-passadas-direcionais.mjs`, `tests/cidadela-polimento-combate-sinal.mjs`, `tests/cidadela-combate-alerta.mjs`, `tests/cidadela-fecho-direcional.mjs`, `tests/cidadela-memoria-visual.mjs`, `tests/cidadela-ritmo-combate.mjs`, `tests/cidadela-resposta-combate.mjs`, `tests/cidadela-rota.mjs`, `tests/cidadela-sintese-combate.mjs`, `tests/cidadela-lote2-combate.mjs` e `tests/cidadela-lote3-fechamento.mjs` para verificar regras, rotas, pausa, registros, síntese, drops, Fase 2, barris sobrecarregados, escudo de campo, golpe/parry `[V]`, sentinela de elite, ronda setorial, setores, Códex, desfecho, saves e retorno. O teste de percurso percorre o mapa a pé e usa
+`tests/cidadela-hud.mjs`, `tests/cidadela-passos.mjs`, `tests/cidadela-progressao.mjs`, `tests/cidadela-ecos.mjs`, `tests/cidadela-animacoes-sinal.mjs`, `tests/cidadela-vigilia.mjs`, `tests/cidadela-travessia.mjs`, `tests/cidadela-base-animacoes.mjs`, `tests/cidadela-refino-visual.mjs`, `tests/cidadela-acabamento.mjs`, `tests/cidadela-vida.mjs`, `tests/cidadela-passadas-direcionais.mjs`, `tests/cidadela-polimento-combate-sinal.mjs`, `tests/cidadela-combate-alerta.mjs`, `tests/cidadela-fecho-direcional.mjs`, `tests/cidadela-memoria-visual.mjs`, `tests/cidadela-ritmo-combate.mjs`, `tests/cidadela-resposta-combate.mjs`, `tests/cidadela-rota.mjs`, `tests/cidadela-sintese-combate.mjs`, `tests/cidadela-lote2-combate.mjs`, `tests/cidadela-lote3-fechamento.mjs` e `tests/cidadela-lote4-polimento.mjs` para verificar regras, rotas, pausa, registros, síntese, drops, Fase 2, barris sobrecarregados, escudo de campo, golpe/parry `[V]`, sentinela de elite direcional e investida, ronda setorial, setores, Códex, áudio, desfecho, saves e retorno. O teste de percurso percorre o mapa a pé e usa
 invulnerabilidade para isolar navegação e progressão do balanceamento. A suíte completa usa o comando documentado no README.

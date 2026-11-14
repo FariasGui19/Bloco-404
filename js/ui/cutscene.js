@@ -19,7 +19,7 @@ export const SIGNAL_SCENES = [
 export const THRESHOLD_SCENES = [
   { image: 'assets/cutscenes/cidadela-transicao-entrada.jpg', eyebrow: 'ESTAÇÃO 66.6 // JANELA ESTÁVEL', title: 'DO OUTRO LADO', text: 'A água na plataforma treme. No anel, um corredor de metal substitui o reflexo da enseada. Seu módulo terá de se adaptar à nova perspectiva.', note: 'A âncora de retorno continua acesa atrás de você.' },
   { image: 'assets/cutscenes/cidadela-entrada-corredor.jpg', eyebrow: 'NEXO-04 // CANAL ABERTO', title: 'A RESPOSTA', text: '“A pessoa que pediu ajuda não necessariamente está do outro lado. Mas alguém manteve esta linha viva. Descubra por quê.”', note: 'Três pulsos. Uma resposta antes da pergunta.' },
-  { kind: 'error', image: 'assets/cutscenes/frequencia-ruptura.png', eyebrow: 'PASSAGEM // 66.6 MHz', title: 'TRAVESSIA PREPARADA', text: 'Você dá o primeiro passo através do anel. A imagem se fecha sobre o corredor; a linha de retorno permanece ancorada.', note: 'O espaço à frente tem outras regras; a estação permanece acessível.' },
+  { kind: 'error', image: 'assets/cutscenes/cidadela-travessia-anel.jpg', eyebrow: 'PASSAGEM // 66.6 MHz', title: 'TRAVESSIA PREPARADA', text: 'Você dá o primeiro passo através do anel. A imagem se fecha sobre o corredor; a linha de retorno permanece ancorada.', note: 'O espaço à frente tem outras regras; a estação permanece acessível.' },
 ];
 
 // Desfecho: os quadros existentes agora acompanham um evento jogável real.

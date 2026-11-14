@@ -579,3 +579,80 @@ return_art.thumbnail((1280, 720), Image.Resampling.LANCZOS)
 return_art.save(cutscenes / 'cidadela-retorno-estavel.jpg', quality=88, optimize=True)
 print('cidadela-retorno-estavel.jpg', return_art.size)
 
+# Lote 4: direcionais e dano do elite, parede da Arena do Reator, registros distintos,
+# ícones de materiais para HUD/Códex, aviso do núcleo do Vigilante e travessia do anel.
+from collections import deque
+
+def remove_border_magenta(img):
+    pixels = img.load()
+    w, h = img.size
+    visited = bytearray(w * h)
+    q = deque()
+    def is_bg(r, g, b):
+        return r > 155 and b > 155 and g < 120 and min(r, b) - g > 75
+    for x in range(w):
+        for y in (0, h - 1):
+            r, g, b, _ = pixels[x, y]
+            if is_bg(r, g, b):
+                idx = y * w + x
+                if not visited[idx]:
+                    visited[idx] = 1
+                    q.append((x, y))
+    for y in range(h):
+        for x in (0, w - 1):
+            r, g, b, _ = pixels[x, y]
+            if is_bg(r, g, b):
+                idx = y * w + x
+                if not visited[idx]:
+                    visited[idx] = 1
+                    q.append((x, y))
+    while q:
+        cx, cy = q.popleft()
+        pixels[cx, cy] = (0, 0, 0, 0)
+        for nx, ny in ((cx - 1, cy), (cx + 1, cy), (cx, cy - 1), (cx, cy + 1)):
+            if 0 <= nx < w and 0 <= ny < h:
+                idx = ny * w + nx
+                if not visited[idx]:
+                    r, g, b, _ = pixels[nx, ny]
+                    if is_bg(r, g, b):
+                        visited[idx] = 1
+                        q.append((nx, ny))
+
+wall_arena = Image.open(src / 'parede-arena.png').convert('RGB')
+side_a = min(wall_arena.size)
+left_a = (wall_arena.width - side_a) // 2
+top_a = (wall_arena.height - side_a) // 2
+wall_arena = wall_arena.crop((left_a, top_a, left_a + side_a, top_a + side_a)).resize((128, 128), Image.Resampling.LANCZOS)
+wall_arena.save(dst / 'parede-arena.png', optimize=True)
+print('parede-arena', wall_arena.size)
+
+for name in ['imp-elite-lateral','imp-elite-costas','imp-elite-dano',
+             'registro-entrada','registro-forja',
+             'drop-sucata-hud','drop-nucleo-hud','vigilante-nucleo-aviso']:
+    image = Image.open(src / f'{name}.png').convert('RGBA')
+    remove_border_magenta(image)
+    px = image.load()
+    for yy in range(image.height):
+        for xx in range(image.width):
+            r, g, b, a = px[xx, yy]
+            if a == 0:
+                continue
+            if name == 'drop-nucleo-hud':
+                if r > 155 and b > 155 and g < 110 and abs(r - b) < 38:
+                    px[xx, yy] = (0, 0, 0, 0)
+            elif r > 155 and b > 155 and g < 115 and min(r, b) - g > 75:
+                px[xx, yy] = (0, 0, 0, 0)
+    box = image.getbbox()
+    if not box: raise ValueError(f'Sprite vazio: {name}')
+    image = image.crop(box)
+    size = 224 if name.startswith('imp-elite') else 160 if name.startswith('registro-') or name == 'vigilante-nucleo-aviso' else 96
+    image.thumbnail((size, size), Image.Resampling.LANCZOS)
+    image.save(dst / f'{name}.png', optimize=True)
+    print(name, image.size)
+
+crossing_art = Image.open(src / 'cidadela-travessia-anel.jpg').convert('RGB')
+crossing_art.thumbnail((1280, 720), Image.Resampling.LANCZOS)
+crossing_art.save(cutscenes / 'cidadela-travessia-anel.jpg', quality=88, optimize=True)
+print('cidadela-travessia-anel.jpg', crossing_art.size)
+
+

@@ -3,7 +3,9 @@
 const STORAGE_KEY='bloco404_cidadela_som';
 const TONES=Object.freeze({
   step: {from:95,to:65,duration:.055,type:'triangle',volume:.012},
+  step_reactor: {from:74,to:48,duration:.07,type:'sine',volume:.015},
   shot: {from:220,to:90,duration:.10,type:'square',volume:.025},
+  elite_shot: {from:175,to:72,duration:.15,type:'sawtooth',volume:.026},
   reload: {from:180,to:240,duration:.11,type:'triangle',volume:.016},
   ready: {from:320,to:420,duration:.10,type:'sine',volume:.016},
   enemy: {from:320,to:160,duration:.13,type:'sawtooth',volume:.018},
@@ -11,9 +13,11 @@ const TONES=Object.freeze({
   ability: {from:260,to:540,duration:.22,type:'triangle',volume:.028},
   ultimate: {from:120,to:440,duration:.32,type:'sawtooth',volume:.022},
   pickup: {from:520,to:780,duration:.16,type:'sine',volume:.025},
+  rare_drop: {from:660,to:1040,duration:.22,type:'triangle',volume:.026},
   key: {from:440,to:880,duration:.24,type:'triangle',volume:.026},
   craft: {from:360,to:720,duration:.22,type:'triangle',volume:.024},
   shield_deflect: {from:480,to:240,duration:.09,type:'square',volume:.018},
+  core_open: {from:340,to:680,duration:.16,type:'sine',volume:.02},
   phase2: {from:140,to:360,duration:.36,type:'sawtooth',volume:.024},
   damage: {from:150,to:75,duration:.16,type:'triangle',volume:.028},
   victory: {from:280,to:680,duration:.34,type:'sine',volume:.03},

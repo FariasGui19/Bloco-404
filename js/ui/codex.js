@@ -415,7 +415,7 @@ function renderInventory(progress) {
     : `<article class="codex-item-detail empty"><p>Inventário vazio. Recolha vestígios e registros pelo arquipélago.</p></article>`;
   const mats = progress?.citadelMaterials;
   const citadelMats = mats && ((mats.sucata_codigo ?? 0) > 0 || (mats.nucleo_estatica ?? 0) > 0)
-    ? `<p class="codex-note">Forja Cidadela 404: ${mats.sucata_codigo ?? 0} Sucata de Código · ${mats.nucleo_estatica ?? 0} Núcleo de Estática</p>`
+    ? `<p class="codex-note">Forja Cidadela 404: <img class="codex-mat-icon" src="assets/sprites/cidadela-404/drop-sucata-hud.png" alt="" aria-hidden="true" style="width:14px;height:14px;vertical-align:middle"> ${mats.sucata_codigo ?? 0} Sucata de Código · <img class="codex-mat-icon" src="assets/sprites/cidadela-404/drop-nucleo-hud.png" alt="" aria-hidden="true" style="width:14px;height:14px;vertical-align:middle"> ${mats.nucleo_estatica ?? 0} Núcleo de Estática</p>`
     : '';
   return `<section class="codex-section" aria-label="Inventário">
     <div class="codex-columns">

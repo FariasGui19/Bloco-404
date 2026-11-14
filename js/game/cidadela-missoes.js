@@ -6,6 +6,21 @@ import { breachSummary } from './cidadela-fendas.js';
 export const CITADEL_REDE = 'cidadela_rede_escuta';
 export const CITADEL_VOZES = 'cidadela_vozes_estatica';
 const ids=['entrada','galeria','forja'];
+export function isCitadelComplete(progress) {
+  const f = progress?.flags ?? {};
+  return Boolean(
+    f.cidadela_estavel
+    && f.cidadela_arquivo_origem && f.cidadela_arquivo_retorno && f.cidadela_arquivo_memoria
+    && f.cidadela_crt_entrada && f.cidadela_crt_galeria && f.cidadela_crt_forja
+    && f.cidadela_eco_entrada && f.cidadela_eco_galeria && f.cidadela_eco_forja
+    && f.cidadela_forja_concluida
+    && f.cidadela_rede_concluida
+    && f.cidadela_vozes_concluida
+    && f.cidadela_fendas_concluidas
+    && f.cidadela_vigilia_concluida
+    && (f.cidadela_rondas_concluidas ?? 0) >= 1
+  );
+}
 export function citadelMissions(progress) {
   const rede=getQuestState(progress,CITADEL_REDE), vozes=getQuestState(progress,CITADEL_VOZES);
   const count=q=>q.objectives.slice(0,3).filter(o=>o.done).length;
@@ -33,7 +48,9 @@ export function interactCitadelMission(progress,target) {
       return {changed:true,message:`REDE RESTAURADA • +${done?.rewards?.xp ?? 0} XP. EXAMINE O TRANSMISSOR.`};
     }
     if(rede.status==='active') return {message:`NEXO: RELÉS RESTAURADOS ${reles}/3. A LINHA DE RETORNO ESTÁ SEGURA.`};
-    return {message:'NEXO: A REDE RESPIRA. O TRANSMISSOR PODE REUNIR AS VOZES.'};
+    return {message:progress?.flags?.cidadela_100_porcento
+      ? 'NEXO: CIDADELA 404 100% ESTABILIZADA. ATÉ OS ECOS DO SETOR E1M1 SILENCIARAM.'
+      : 'NEXO: A REDE RESPIRA. O TRANSMISSOR PODE REUNIR AS VOZES.'};
   }
   if(target.kind==='relay') {
     if(rede.status==='available') return {message:'RELÉ INATIVO. A SONDA NA ARENA PODE ORIENTAR O REPARO.'};

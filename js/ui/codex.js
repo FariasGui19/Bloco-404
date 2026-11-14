@@ -27,6 +27,7 @@ import { getQuest } from '../data/quests.js';
 import { DEGRAUS, PROVAS, resumoDaArvore } from '../game/nado-arvore.js';
 import { ARQUIPELAGO_REGIONS } from '../data/arquipelago-regioes.js';
 import { getItem, listInventory } from '../data/items.js';
+import { isCitadelComplete } from '../game/cidadela-missoes.js';
 
 const ICONS = 'assets/sprites/ui/codex/icone-';
 const ULTIMATE_ICONS = 'assets/sprites/ui/codex/ultimate-';
@@ -170,9 +171,12 @@ function renderMissions(progress, map) {
       ${flags.companheiro_lumeo ? '<p class="codex-note">LÚMEO ACOMPANHA VOCÊ.</p>' : ''}
     </article>`;
 
+  const citadelBadge = (flags.cidadela_100_porcento || isCitadelComplete(progress))
+    ? `<article class="codex-quest codex-quest-complete"><header><img src="assets/sprites/cidadela-404/trofeu-cidadela-404.png" alt="" aria-hidden="true" style="width:22px;height:22px;vertical-align:middle;margin-right:6px"><strong>CIDADELA 404 · 100% ESTABILIZADA</strong></header><p>Reator, Arquivos, CRTs, Ecos, Forja, Rede, Fendas, Vigília e Ronda Setorial concluídos.</p></article>`
+    : '';
   return `<section class="codex-section" aria-label="Missões">
     <div class="codex-columns">
-      <div class="codex-column">${main}${cards}</div>
+      <div class="codex-column">${main}${citadelBadge}${cards}</div>
       <aside class="codex-column codex-column-side">${nadoTree(progress)}${exploration}${mareRoutes(progress, map)}</aside>
     </div>
   </section>`;

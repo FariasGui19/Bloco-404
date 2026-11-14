@@ -130,6 +130,15 @@ export const CITADEL_BARRELS = Object.freeze([
 export const CITADEL_SHIELD_CELLS = Object.freeze([
   {x:10.5,y:9.2},{x:17.5,y:9.2},{x:24.8,y:3.5},
 ]);
+export const CITADEL_SECRET_E1M1 = Object.freeze({
+  kind:'secret_plaque',x:9.5,y:9.5,label:'PLACA SETOR E1M1',
+});
+export const CITADEL_OVERDRIVE_CELL = Object.freeze({
+  x:17.5,y:5.5,
+});
+export const CITADEL_REACTOR_CONSOLE = Object.freeze({
+  kind:'reactor_console',x:29.5,y:8.2,label:'CONSOLE DO REATOR',
+});
 export function sectorNameAt(x, y) {
   if (y >= 12) return 'OFICINA DA VIGÍLIA';
   if (x >= 22) return 'ARENA DO REATOR';

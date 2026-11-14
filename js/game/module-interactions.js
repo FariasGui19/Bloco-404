@@ -309,7 +309,9 @@ function diagnoseFrequencyConsole() {
   }
   if (flags.freq666_limiar_estavel) {
     const relics = ['selo_codigo_queimado', 'nucleo_vigilante_forjado'].filter(id => state.progress.inventory?.includes(id)).length;
-    const msg = flags.cidadela_estavel
+    const msg = flags.cidadela_100_porcento
+      ? `CIDADELA 404 100% ESTABILIZADA • RELÍQUIAS ${relics}/2 • RONDAS: ${flags.cidadela_rondas_concluidas ?? 0}. O PORTAL SEGUE PRONTO PARA A PRÓXIMA DIMENSÃO.`
+      : flags.cidadela_estavel
       ? `REATOR DA CIDADELA ESTÁVEL • RELÍQUIAS ${relics}/2 • RONDAS CONCLUÍDAS: ${flags.cidadela_rondas_concluidas ?? 0}. O ANEL SEGUE ABERTO.`
       : 'A JANELA SEGUE ESTÁVEL. O ANEL AGUARDA VOCÊ; APROXIME-SE E USE [E].';
     showDiagnosis({ speaker: 'NEXO-04', dialogue: [msg] }); return;

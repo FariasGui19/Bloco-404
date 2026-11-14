@@ -31,7 +31,7 @@ for (const file of BATCH3_ASSETS) assert(existsSync(file), `asset do lote 3 ause
 
 assert.equal(ITEMS.selo_codigo_queimado.spritePath, 'assets/sprites/cidadela-404/reliquia-selo-codigo.png');
 assert.equal(ITEMS.nucleo_vigilante_forjado.spritePath, 'assets/sprites/cidadela-404/reliquia-nucleo-vigilante.png');
-assert.equal(CITADEL_RETURN_SCENES.length, 1);
+assert(CITADEL_RETURN_SCENES.length >= 1);
 assert.equal(CITADEL_RETURN_SCENES[0].image, 'assets/cutscenes/cidadela-retorno-estavel.jpg');
 assert.equal(citadelSpriteFrame({ type: 'elite', hp: 0, death: .35 }, 0), 'elite_death');
 

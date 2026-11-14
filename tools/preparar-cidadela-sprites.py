@@ -655,4 +655,38 @@ crossing_art.thumbnail((1280, 720), Image.Resampling.LANCZOS)
 crossing_art.save(cutscenes / 'cidadela-travessia-anel.jpg', quality=88, optimize=True)
 print('cidadela-travessia-anel.jpg', crossing_art.size)
 
+# Lote 5: golpes [V] por arquétipo, sobrecarga E1M1, placa secreta, console do reator,
+# piso da arena, troféu 100% da Cidadela e aurora da Estação 66.6 no retorno.
+floor_arena = Image.open(src / 'piso-arena.png').convert('RGB')
+side_f = min(floor_arena.size)
+left_f = (floor_arena.width - side_f) // 2
+top_f = (floor_arena.height - side_f) // 2
+floor_arena = floor_arena.crop((left_f, top_f, left_f + side_f, top_f + side_f)).resize((128, 128), Image.Resampling.LANCZOS)
+floor_arena.save(dst / 'piso-arena.png', optimize=True)
+print('piso-arena', floor_arena.size)
+
+for name in ['melee-mare','melee-nucleo','melee-dominio','melee-bio',
+             'celula-sobrecarga-doom','placa-secreta-404','prop-console-reator','trofeu-cidadela-404']:
+    image = Image.open(src / f'{name}.png').convert('RGBA')
+    remove_border_magenta(image)
+    px = image.load()
+    for yy in range(image.height):
+        for xx in range(image.width):
+            r, g, b, a = px[xx, yy]
+            if a > 0 and r > 155 and b > 155 and g < 115 and min(r, b) - g > 75:
+                px[xx, yy] = (0, 0, 0, 0)
+    box = image.getbbox()
+    if not box: raise ValueError(f'Sprite vazio: {name}')
+    image = image.crop(box)
+    size = 192 if name.startswith('melee-') or name == 'prop-console-reator' else 160 if name == 'placa-secreta-404' else 128
+    image.thumbnail((size, size), Image.Resampling.LANCZOS)
+    image.save(dst / f'{name}.png', optimize=True)
+    print(name, image.size)
+
+aurora_art = Image.open(src / 'cidadela-aurora-limiar.jpg').convert('RGB')
+aurora_art.thumbnail((1280, 720), Image.Resampling.LANCZOS)
+aurora_art.save(cutscenes / 'cidadela-aurora-limiar.jpg', quality=88, optimize=True)
+print('cidadela-aurora-limiar.jpg', aurora_art.size)
+
+
 

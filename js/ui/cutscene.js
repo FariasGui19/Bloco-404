@@ -30,6 +30,7 @@ export const CITADEL_END_SCENES = [
 
 export const CITADEL_RETURN_SCENES = [
   { image:'assets/cutscenes/cidadela-retorno-estavel.jpg', eyebrow:'ESTAÇÃO 66.6 // RETORNO ESTÁVEL', title:'A MARÉ DO OUTRO LADO', text:'Ao cruzar de volta pelo anel, a neblina sobre a plataforma abriu caminho para a maré noturna. A frequência de 66.6 MHz não treme mais — a linha sobreviveu ao apagamento.', note:'A Cidadela 404, a Oficina da Vigília e a Ronda Setorial continuam acessíveis pelo anel.' },
+  { image:'assets/cutscenes/cidadela-aurora-limiar.jpg', eyebrow:'PRÓXIMO HORIZONTE // PORTAL ABERTO', title:'ALÉM DO CÓDIGO QUEIMADO', text:'NEXO-04: “Às margens da estática, o farol da Estação 66.6 aponta agora para rotas que ainda não mapeamos. O Vigilante segurou a porta; você garantiu a travessia.”', note:'A passagem para a próxima dimensão aguarda no console central.' },
 ];
 
 let open = false;

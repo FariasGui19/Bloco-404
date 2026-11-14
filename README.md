@@ -44,6 +44,19 @@ repetível na arena, além de três fendas opcionais com ondas e cofres. A nova 
 A saída e a revisita continuam disponíveis.
 Novos **Ecos entre Tempos** convidam a usar **R** e depois **E** para sintonizar três memórias antes ou depois da vitória. Cada nova leitura ancora o sinal temporariamente, reduzindo o eco gerado; ao concluir, o terminal da entrada oferece recuperação limitada de energia e redução de eco.
 
+A base visual da Cidadela tem quadros de disparo e retorno para os quatro
+canhões, emblemas de habilidade, balanço ligado ao deslocamento real e resposta
+de dano nas bordas. Imps, orbes e predadores têm poses de dano e início de
+queda, além de vistas laterais aproximadas e de costas; avisos de ataque
+continuam prioritários. O Vigilante distingue preparação, núcleo exposto e
+dano. A interface é desenhada em resolução maior que o cenário, com pictogramas e rótulos textuais para os
+recursos. A recarga tem poses por arquétipo, indicador de progresso e aviso
+específico quando bloqueada; ainda é possível interrompê-la com as balas
+restantes. Impactos em metal e blindagem, suprimentos e interações também
+recebem respostas visuais. A travessia dimensional ganha um anel ilustrado;
+a opção do sistema de movimento reduzido mantém os sinais importantes sem
+animação decorativa.
+
 Veja [a documentação da Cidadela](docs/cidadela-404.md) para regras e limites.
 
 ## Organização

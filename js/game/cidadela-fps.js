@@ -86,7 +86,7 @@ export function createCitadelRuntime(progress) {
     boss: {type:'boss', x:28, y:6.5, hp:280, cycle:0, cooldown:1.5, dead:!!flags.cidadela_estavel},
     supplies: [{x:4.5,y:9.5},{x:13.5,y:3.5},{x:20.5,y:7.5},{x:24.5,y:9.5}],
     shots: [], impacts: [], ammo: 12, reload: 0, jam: 0, fire: 0, q: 0, boost: 0, scan: 0, dash: 0, dashAngle:0, shield: 0, guard:0, ultBuff:null, echo: 0, echoLock: 0,
-    message: flags.cidadela_estavel ? 'NEXO-04: REATOR ESTÁVEL. A SONDA AGUARDA NA ARENA; A OFICINA ABRIU AO SUL.' : 'NEXO-04: A LINHA ESTÁ ABERTA. ENCONTRE OS TRÊS REGISTROS.', messageTime: 8, time: 0, damage: 0, hit: 0, fx: 0, fxKind: '', suppressed: 0, returning: false, training:false, breach:null, radioQueue:[],stepDistance:0, echoAnchor:0, echoTerminalCooldown:0, workshopHit:0, workshopTrial:null, localProgress:null, vectorCharge:0, perkIcon:null, panel: null };
+    message: flags.cidadela_estavel ? 'NEXO-04: REATOR ESTÁVEL. A SONDA AGUARDA NA ARENA; A OFICINA ABRIU AO SUL.' : 'NEXO-04: A LINHA ESTÁ ABERTA. ENCONTRE OS TRÊS REGISTROS.', messageTime: 8, time: 0, damage: 0, hit: 0, fx: 0, fxKind: '', suppressed: 0, returning: false, training:false, breach:null, radioQueue:[],stepDistance:0,walkPhase:0,walkBlend:0, echoAnchor:0, echoTerminalCooldown:0, workshopHit:0, workshopTrial:null, localProgress:null, vectorCharge:0, perkIcon:null, panel: null };
 }
 function notice(g, text, seconds=4) { g.message=text; g.messageTime=seconds; }
 function queueRadio(g,text) { if(text && g.radioQueue.length<6) g.radioQueue.push(text); }
@@ -113,12 +113,36 @@ export function wrapCitadelText(text,limit=66) {
 // silhueta permanece parada sem remover as poses de aviso de ataque.
 export function citadelSpriteFrame(o,time,reduce=false) {
   const frame=enemyVisualFrame(o);
-  if(frame==='death') return `${o.type}_death`;
+  if(frame==='death') return !reduce && (o.death ?? 0)>.38 ? `${o.type}_fall` : `${o.type}_death`;
   if(frame==='attack') return `${o.type}_attack${!reduce && Math.floor(time*2.5)%2?'_b':''}`;
-  if(frame==='hurt') return o.type;
+  if(frame==='hurt') return ['imp','orb','echo'].includes(o.type) ? `${o.type}_hurt` : o.type;
   if(!reduce && o.moving && ['imp','echo','orb'].includes(o.type)) return `${o.type}_walk_${Math.floor(time*2.4)%2?'b':'a'}`;
   if(o.type==='nulo') return reduce?'nulo_a':`nulo_${Math.floor(time/3.5)%2?'b':'a'}`;
   return o.type;
+}
+// Orientação é apenas visual: perseguição, linha de visão e mira continuam
+// usando as posições reais. Sem orientação conhecida, mantenha a vista frontal.
+export function enemyView(facing,x,y,viewerX,viewerY) {
+  if(![facing,x,y,viewerX,viewerY].every(Number.isFinite)) return {view:'front',flip:false};
+  const delta=angleDiff(facing-Math.atan2(viewerY-y,viewerX-x));
+  if(Math.abs(delta)<Math.PI/4) return {view:'front',flip:false};
+  if(Math.abs(delta)>=3*Math.PI/4) return {view:'back',flip:false};
+  // A arte lateral olha para a direita; a outra lateral usa o mesmo quadro espelhado.
+  return {view:'side',flip:delta>0};
+}
+export function bossVisualFrame(boss,time,reduce=false) {
+  if(bossOpen(boss)) {
+    if((boss.hurt ?? 0)>0) return 'boss_hurt';
+    return reduce?'boss_open_a':`boss_open_${Math.floor(time*1.4)%2?'b':'a'}`;
+  }
+  if(boss.cycle>=2 && boss.cycle<4.2) return bossAttackSpriteFrame(time,reduce);
+  return boss.cycle>=1.2?'boss_warning':'bossClosed';
+}
+export function weaponVisualFrame(fire,reduce=false,reload=0,jam=0) {
+  if(reduce) return 'idle';
+  if(fire>0) return fire>.14?'fire':'return';
+  if(reload>.3 && reload<1.3 && jam<=0) return 'reload';
+  return 'idle';
 }
 export function bossAttackSpriteFrame(time,reduce=false) { return !reduce && Math.floor(time*2.5)%2?'boss_attack_b':'boss_attack'; }
 // Só o aviso da fenda é essencial; nenhum efeito decorativo deve animar
@@ -136,7 +160,7 @@ export function citadelPulseFrame(type,windup,scan,time,reduce=false) {
 function resetAtCheckpoint(state, g) {
   const cp = checkpoints[checkpointIndex(state.progress.flags)];
   g.workshopTrial=null; cancelBreach(g); if(g.training){g.training=false;g.enemies.length=0;}
-  respawnPlayer(state.player, cp); g.angle=0; g.shots.length=0; g.impacts.length=0; g.jam=0; g.reload=0; g.ammo=12; g.dash=0; g.shield=0; g.guard=0; g.ultBuff=null; g.vectorCharge=0; g.echoAnchor=0; g.fx=0;
+  respawnPlayer(state.player, cp); g.angle=0; g.shots.length=0; g.impacts.length=0; g.jam=0; g.reload=0; g.ammo=12; g.dash=0; g.shield=0; g.guard=0; g.ultBuff=null; g.vectorCharge=0; g.echoAnchor=0; g.fx=0; g.damage=0; g.hit=0; g.walkPhase=0; g.walkBlend=0; g.stepDistance=0; g.moving=false;
   notice(g,'NEXO-04: SINAL RECUPERADO NO ÚLTIMO MARCO. A LINHA DE RETORNO CONTINUA ABERTA.',6);
 }
 function showEnding(state, g) {
@@ -173,27 +197,28 @@ export function enemyVisualFrame(enemy) {
 }
 function hurtEnemy(g, enemy, damage) {
   if (enemy.type === 'boss' && !bossOpen(enemy)) {
-    addImpact(g,enemy.x,enemy.y,'cyan'); notice(g,'VIGILANTE: BLINDAGEM FECHADA. AGUARDE O NÚCLEO EXPOSTO.',2); return;
+    addImpact(g,enemy.x,enemy.y,'shield'); notice(g,'VIGILANTE: BLINDAGEM FECHADA. AGUARDE O NÚCLEO EXPOSTO.',2); return;
   }
   enemy.hp -= damage; enemy.hurt=.18;
   if (enemy.hp<=0) enemy.death=.7;
   addImpact(g,enemy.x,enemy.y,enemy.type==='echo'?'cyan':'red');
 }
+function beginReload(g) { g.reload=1.5; playCitadelSound('reload'); }
 function fire(map, flags, p, g) {
   if (g.fire>0) return;
   // Uma recarga tática pode ser cancelada para usar os projéteis restantes,
   // inclusive enquanto o Echovore bloqueia o progresso da recarga.
   if (g.reload>0) { if(g.ammo<=0) return; g.reload=0; }
-  if (g.ammo<=0) { if(g.jam<=0) { g.reload=1.5; notice(g,'RECARREGANDO...',1.5); } return; }
+  if (g.ammo<=0) { if(g.jam<=0) { beginReload(g); notice(g,'RECARREGANDO...',1.5); } return; }
   g.ammo--; g.fire=.23; const vectorDamage=g.vectorCharge>0?12:0;g.vectorCharge=0;playCitadelSound('shot');
-  if (g.ammo===0) { g.reload=1.5; notice(g,'RECARREGANDO...',1.5); }
+  if (g.ammo===0) { beginReload(g); notice(g,'RECARREGANDO...',1.5); }
   const target=targetInSight(map,flags,p,g);
   if (target) { if(target.type!=='boss' || bossOpen(target)) g.hit=.25; hurtEnemy(g,target, Math.round((target.type==='boss'?35:28)*(1+(g.ultBuff?.basicDamagePct ?? 0)))+vectorDamage); }
   else {
     // O disparo do jogador é instantâneo, mas deixa uma marca breve na
     // superfície visível, sem atravessar paredes nem criar física extra.
     const dx=Math.cos(g.angle),dy=Math.sin(g.angle), ray=cast(map,flags,p.x,p.y,dx,dy);
-    if (ray.dist<14 && ray.dist>.2) addImpact(g,p.x+dx*(ray.dist-.08),p.y+dy*(ray.dist-.08));
+    if (ray.dist<14 && ray.dist>.2) addImpact(g,p.x+dx*(ray.dist-.08),p.y+dy*(ray.dist-.08),'metal');
   }
 }
 function addEcho(g, amount, state) {
@@ -323,7 +348,7 @@ export function updateCitadel(dt, state, input) {
   g.impacts=g.impacts.filter(impact=>impact.life>0);
   const wasReloading=g.reload>0;
   if (g.jam<=0) g.reload=Math.max(0,g.reload-step);
-  if (wasReloading && g.reload===0) g.ammo=12;
+  if (wasReloading && g.reload===0) {g.ammo=12;if(p.health>0 && !g.returning && !state.world.isLoading) playCitadelSound('ready');}
   const buff=g.ultBuff, buffStep=buff?Math.min(step,buff.timeLeft):0;
   if(buff) {
     if(buff.healPerSecond>0 && p.health>0) healPlayer(p,progress,buff.healPerSecond*buffStep);
@@ -348,7 +373,13 @@ export function updateCitadel(dt, state, input) {
   move(map,flags,p,dx*speed,dy*speed);
   const moved=Math.hypot(p.x-beforeX,p.y-beforeY);
   g.moving=moved>.0001;
-  if(g.moving) {g.stepDistance+=moved;if(g.stepDistance>=.9){g.stepDistance%=.9;playCitadelSound('step');}}
+  // Movimento visual acompanha deslocamento real, não o tempo de tecla;
+  // a arma assenta suavemente ao parar ou encostar numa parede.
+  if(g.moving) {
+    g.walkPhase=(g.walkPhase+moved*(Math.PI*2/1.8))%(Math.PI*2);
+    g.stepDistance+=moved;if(g.stepDistance>=.9){g.stepDistance%=.9;playCitadelSound('step');}
+  }
+  g.walkBlend=clamp(g.walkBlend+(g.moving?1:-1)*step*7,0,1);
   // O pulso tem um segundo de aviso e respeita cobertura, invulnerabilidade,
   // guarda e escudo; não empurra nem bloqueia nenhuma saída.
   if(flags.cidadela_estavel && g.workshopHit<=0 && g.guard<=0) for(const control of CITADEL_WORKSHOP.switches) {
@@ -376,7 +407,7 @@ export function updateCitadel(dt, state, input) {
     notice(g,`${label} • MAPA: AMEAÇAS, REGISTROS E ECOS (CÍRCULO).`,4);
   }
   if (pressed(input,'shift','shiftleft','shiftright') && g.boost<=0 && g.dash<=0) { startDash(g,input,.18); g.boost=(g.localProgress?.rank ?? 1)>=3?2.4:3; g.fx=.4; g.fxKind='dash'; addEcho(g,15,state); }
-  if (pressed(input,'t','keyt') && g.reload<=0 && g.jam<=0 && g.ammo<12) { g.reload=1.5; }
+  if (pressed(input,'t','keyt') && g.reload<=0 && g.jam<=0 && g.ammo<12) { beginReload(g); }
   if (held(input,' ','space') || pressed(input,' ','space') || input.fpsFire || input.fpsFireHeld || input.attackClick) fire(map,flags,p,g);
   input.fpsFire=false; input.attackClick=null; input.click=null;
   if (pressed(input,'e','keye')) {
@@ -466,6 +497,10 @@ export function updateCitadel(dt, state, input) {
     e.hurt=Math.max(0,(e.hurt ?? 0)-step); e.attack=Math.max(0,(e.attack ?? 0)-step); e.moving=false;
     e.cooldown-=step; e.slow=Math.max(0,e.slow-step);
     const d=Math.hypot(e.x-p.x,e.y-p.y), sees=d<8 && visible(map,flags,e.x,e.y,p.x,p.y);
+    if(sees) {
+      const targetAngle=Math.atan2(p.y-e.y,p.x-e.x);
+      e.facing=Number.isFinite(e.facing) ? angleDiff(e.facing+clamp(angleDiff(targetAngle-e.facing),-2.6*step,2.6*step)) : targetAngle;
+    }
     // O ataque sempre tem preparação visível; ao perder a linha de visão o
     // disparo é cancelado, sem projétil que atravesse uma parede.
     if ((e.windup ?? 0)>0) {
@@ -493,6 +528,7 @@ export function updateCitadel(dt, state, input) {
     b=>spawnShot(g,{type:'breach_shot',x:b.x,y:b.y,breach:b.id},p,3,10));
   if(breachResult) {if(breachResult.changed){playCitadelSound('victory');saveCitadelProgress(progress,g);}notice(g,breachResult.message,6);}
   const boss=g.boss;
+  if(!boss.dead) boss.hurt=Math.max(0,(boss.hurt ?? 0)-step);
   if (!boss.dead && boss.hp>0 && flags.cidadela_chave_vermelha && p.x>22.7) {
     boss.cycle=(boss.cycle+step)%7.2; boss.cooldown-=step;
     if (boss.cycle>=2 && boss.cycle<4.2 && boss.cooldown<=0 && visible(map,flags,boss.x,boss.y,p.x,p.y)) { spawnShot(g,boss,p,3.7,13); boss.cooldown=.65; }
@@ -513,7 +549,7 @@ export function updateCitadel(dt, state, input) {
   for (const shot of g.shots) {
     const oldX=shot.x,oldY=shot.y;
     shot.x+=shot.dx*step; shot.y+=shot.dy*step; shot.life-=step;
-    if (wallAt(map,flags,shot.x,shot.y)) { shot.life=0; addImpact(g,oldX,oldY,shot.jam?'cyan':'red'); }
+    if (wallAt(map,flags,shot.x,shot.y)) { shot.life=0; addImpact(g,oldX,oldY,'metal'); }
     else if (Math.hypot(shot.x-p.x,shot.y-p.y)<.33) {
       const hit=g.guard>0 ? {dealt:0} : damagePlayer(p,progress,g.shield>0?shot.damage*.4:shot.damage,'cidadela');
       if (hit.dealt) {
@@ -535,7 +571,7 @@ export function updateCitadel(dt, state, input) {
 
 // Framebuffer fixo: custo independente do tamanho da janela e sem alocação de
 // texturas por quadro. As silhuetas são arte procedural original da dimensão.
-let buffer, ctx, sprites;
+let buffer, worldCtx, uiBuffer, uiCtx, ctx, sprites;
 const W=480, H=270, FOV=Math.PI/3, zbuffer=new Float32Array(W);
 let motionPreference;
 function reducedMotion() {
@@ -587,8 +623,12 @@ function makeSprite(type) {
 }
 function setupBuffer() {
   if (buffer) return;
-  buffer=document.createElement('canvas'); buffer.width=W; buffer.height=H; ctx=buffer.getContext('2d');
+  buffer=document.createElement('canvas'); buffer.width=W; buffer.height=H; worldCtx=buffer.getContext('2d'); ctx=worldCtx;
+  // Mundo em baixa resolução, letras desenhadas separadamente em 2x.
+  uiBuffer=document.createElement('canvas'); uiBuffer.width=W*2; uiBuffer.height=H*2; uiCtx=uiBuffer.getContext('2d');
   sprites=Object.fromEntries(['imp','echo','orb','boss','shot','shot_echo','shot_orb','key','nulo','exit','supply','impact_red','impact_cyan','generator','crate','barrel','drone','column','reactor','terminal','antenna','vent','beacon','probe','relay_off','relay_on','transmitter','recording','training','listening_beacon','signal_fragment','breach_open','breach_sealed','cache_closed','cache_open','breach_console','breach_shot','memory_echo_pending','memory_echo_done','echo_terminal_off','echo_terminal_on','anchor_sleep','anchor_active','lost_recorder','signal_map','emergency_light','memory_relay','workshop_switch_off','workshop_switch_on','workshop_hazard_idle','workshop_hazard_active','workshop_terminal','workshop_core_off','workshop_core_on','workshop_pipes','workshop_bench','workshop_robot'].map(k=>[k,makeSprite(k)]));
+  // Fallbacks também cobrem impactos antes do carregamento ou sem imagens.
+  sprites.impact_metal=sprites.impact_red; sprites.impact_shield=sprites.impact_cyan;
   // Carregamento tardio: outras dimensões não pagam pelas artes da Cidadela.
   if (typeof Image !== 'undefined') for (const [type,path] of [
     ['imp','assets/sprites/cidadela-404/imp-glitch.png'],
@@ -650,6 +690,27 @@ function setupBuffer() {
       ['workshop_hazard_idle','vigilia-pulso-aviso'],['workshop_hazard_active','vigilia-pulso-ativo'],
       ['workshop_terminal','vigilia-terminal'],['workshop_core_off','vigilia-nucleo-apagado'],['workshop_core_on','vigilia-nucleo-vivo'],
       ['workshop_pipes','vigilia-tubos'],['workshop_bench','vigilia-bancada'],['workshop_robot','vigilia-sentinela']]
+      .map(([type,name])=>[type,`assets/sprites/cidadela-404/${name}.png`]),
+    ...['mare','nucleo','dominio','bio'].flatMap(mode=>[
+      [`weapon_${mode}_return`,`assets/sprites/cidadela-404/base-canhao-${mode}-retorno.png`],
+      [`ability_${mode}`,`assets/sprites/cidadela-404/base-habilidade-${mode}.png`],
+    ]),
+    ['damage_visor','assets/sprites/cidadela-404/base-dano-visor.png'],
+    ...[['imp_side','vida-imp-lateral'],['imp_back','vida-imp-costas'],
+      ['orb_side','vida-orbe-lateral'],['orb_back','vida-orbe-costas'],
+      ['echo_side','vida-echo-lateral'],['echo_back','vida-echo-costas'],
+      ['boss_warning','vida-vigilante-aviso'],['boss_open_a','vida-vigilante-aberto-a'],
+      ['boss_open_b','vida-vigilante-aberto-b'],['boss_hurt','vida-vigilante-dano']]
+      .map(([type,name])=>[type,`assets/sprites/cidadela-404/${name}.png`]),
+    ...['mare','nucleo','dominio','bio'].map(mode=>[`weapon_${mode}_reload`,`assets/sprites/cidadela-404/acabamento-recarga-${mode}.png`]),
+    ...[['supply','acabamento-suprimento'],['hud_shield','acabamento-escudo'],
+      ['hud_jam','acabamento-bloqueio'],['hud_interact','acabamento-interacao'],
+      ['impact_metal','acabamento-impacto-metal'],['impact_shield','acabamento-impacto-escudo']]
+      .map(([type,name])=>[type,`assets/sprites/cidadela-404/${name}.png`]),
+    ...[['imp_hurt','refino-imp-dano'],['orb_hurt','refino-orbe-dano'],['echo_hurt','refino-echo-dano'],
+      ['imp_fall','refino-imp-queda'],['orb_fall','refino-orbe-queda'],['echo_fall','refino-echo-queda'],
+      ['hud_health','refino-hud-vida'],['hud_ammo','refino-hud-municao'],
+      ['hud_energy','refino-hud-energia'],['hud_echo','refino-hud-eco']]
       .map(([type,name])=>[type,`assets/sprites/cidadela-404/${name}.png`]),
     ['wall_gate','assets/sprites/cidadela-404/parede-eclusa.png'],
     ['wall_metal','assets/sprites/cidadela-404/parede-metal.png'],
@@ -802,16 +863,21 @@ function drawWorld(map, flags, p, g, progress) {
     const center=W/2+(lateral/forward)*(W/(2*plane));
     const base=sprites[o.type];
     const frame=enemyVisualFrame(o);
-    const visual=citadelSpriteFrame(o,g.time,reducedMotion());
-    const chosen=o.type==='boss' && !bossOpen(g.boss) ?
-      (g.boss.cycle>=2 && g.boss.cycle<4.2 ? (sprites[bossAttackSpriteFrame(g.time,reducedMotion())] ?? sprites.boss_attack ?? sprites.bossClosed) : sprites.bossClosed) : sprites[visual];
-    const sprite=chosen ?? (frame==='attack'?sprites[`${o.type}_attack`]:null) ?? base;
-    const aspect=visual.includes('_walk_') ? sprite : base;
+    let visual=citadelSpriteFrame(o,g.time,reducedMotion()), flip=false;
+    if(frame==='idle' && ['imp','orb','echo'].includes(o.type)) {
+      const view=enemyView(o.facing,o.x,o.y,p.x,p.y);
+      if(view.view!=='front' && sprites[`${o.type}_${view.view}`]) {visual=`${o.type}_${view.view}`;flip=view.flip;}
+    }
+    if(o.type==='boss') visual=bossVisualFrame(g.boss,g.time,reducedMotion());
+    const chosen=sprites[visual];
+    const bossFallback=o.type==='boss' ? (visual==='boss_attack_b'?sprites.boss_attack : bossOpen(g.boss)?sprites.boss_open_a : sprites.bossClosed) : null;
+    const sprite=chosen ?? (frame==='attack'?sprites[`${o.type}_attack`]:null) ?? bossFallback ?? base;
+    const aspect=visual.includes('_walk_') || visual.endsWith('_side') || visual.endsWith('_back') ? sprite : base;
     const h=Math.min(H*4,H/forward*o.scale), w=h*(aspect.width/aspect.height), left=center-w/2;
     // Aviso da fenda também existe em movimento reduzido; os demais brilhos
     // são decorativos e não substituem as legendas de combate.
     const pulse=sprites[citadelPulseFrame(o.type,o.windup,g.scan,g.time,reducedMotion())];
-    const alpha=o.alpha ?? (o.death>0 && !reducedMotion() ? clamp(o.death/.7,0,1) : (frame==='hurt' && !reducedMotion() ? .7 : 1));
+    const alpha=o.alpha ?? (o.death>0 && !reducedMotion() ? clamp(o.death/.7,0,1) : 1);
     const bob=reducedMotion()?0:o.moving?Math.sin(g.time*8+o.x)*2:
       (o.type==='memory_echo_pending'||o.type==='memory_relay'?Math.sin(g.time*1.5+o.x)*1.4:0);
     // Os frames gerados são próximos entre si. Um pequeno deslocamento das
@@ -822,7 +888,8 @@ function drawWorld(map, flags, p, g, progress) {
     ctx.save();ctx.globalAlpha=alpha;
     for(let sx=Math.max(0,Math.floor(left));sx<Math.min(W,Math.ceil(left+w));sx+=2) {
       if(forward>=zbuffer[sx]) continue;
-      const tx=clamp(Math.floor((sx-left)/w*sprite.width),0,sprite.width-1);
+      const sourceX=clamp(Math.floor((sx-left)/w*sprite.width),0,sprite.width-1);
+      const tx=flip?sprite.width-1-sourceX:sourceX;
       if(stride) {
         const cut=sprite.height*.62;
         ctx.drawImage(sprite,tx,0,1,cut,sx,top,2,h*.62);
@@ -850,14 +917,17 @@ function drawWorld(map, flags, p, g, progress) {
 }
 function drawWeapon(g, mod) {
   const animated=!reducedMotion(), recoil=g.fire>0 && animated?7*Math.sin(Math.PI*(.23-g.fire)/.23):0;
-  const reloadDip=g.reload>0 && animated?14*Math.sin(Math.PI*(1.5-g.reload)/1.5):0;
-  const bob=g.moving && animated ? Math.sin(g.time*8) : 0;
+  const reloadDip=g.reload>0 && animated && g.jam<=0?14*Math.sin(Math.PI*(1.5-g.reload)/1.5):0;
+  const bob=animated ? Math.sin(g.walkPhase)*g.walkBlend : 0;
   const x=W/2+bob*2, y=H-26+recoil+reloadDip+Math.abs(bob)*2;
   const weapon=sprites[`weapon_${mod.mode}`];
   if(weapon) {
-    const scale=Math.min(172/weapon.width,96/weapon.height);
-    const w=weapon.width*scale,h=weapon.height*scale;
-    const frame=g.fire>.10 && !reducedMotion() ? (sprites[`weapon_${mod.mode}_fire`] ?? weapon) : weapon;
+    const stage=weaponVisualFrame(g.fire,!animated,g.reload,g.jam);
+    const frame=stage==='idle'?weapon:(sprites[`weapon_${mod.mode}_${stage}`] ?? weapon);
+    // A pose de recarga pode ter outra silhueta: preserve sua proporção.
+    const sizing=stage==='reload'?frame:weapon;
+    const scale=Math.min(172/sizing.width,96/sizing.height);
+    const w=sizing.width*scale,h=sizing.height*scale;
     ctx.drawImage(frame,x-w/2,H-20-h+recoil+reloadDip+Math.abs(bob)*2,w,h);
     if(g.fire>.14 && !reducedMotion()) {
       const flare=sprites[`muzzle_${mod.mode}`];
@@ -900,6 +970,12 @@ function drawResonance(g,mod) {
     ctx.stroke();
   }
   if(g.fx>0 && ['q','ultimate'].includes(g.fxKind)) {
+    const effect=sprites[`ability_${mod.mode}`];
+    if(effect) {
+      const size=reducedMotion()?30:30+3*(1-clamp(g.fx,0,1));
+      ctx.globalAlpha=reducedMotion()?.55:Math.min(.65,.2+g.fx*.5);
+      ctx.drawImage(effect,10,H-146,size,size);
+    }
     const seal=sprites[`seal_${mod.mode}`];
     if(seal) { ctx.globalAlpha=.75; ctx.drawImage(seal,14,H-105,30,30); }
     else {ctx.globalAlpha=.6;ctx.strokeRect(18,H-101,22,22);}
@@ -959,19 +1035,51 @@ export function renderCitadel(canvas,state) {
   if (!game) return;
   setupBuffer();
   const g=game,p=state.player,flags=state.progress.flags,map=state.world.currentMap,mod=MODULES[state.progress.archetype] ?? MODULES.motor_bio_forja;
-  ctx.imageSmoothingEnabled=false;drawWorld(map,flags,p,g,state.progress);drawWeapon(g,mod);drawResonance(g,mod);
+  ctx=worldCtx;ctx.imageSmoothingEnabled=false;drawWorld(map,flags,p,g,state.progress);drawWeapon(g,mod);drawResonance(g,mod);
+  // UI independente evita ampliar pixels serrilhados do framebuffer do mundo.
+  ctx=uiCtx;ctx.setTransform(1,0,0,1,0,0);ctx.clearRect(0,0,W*2,H*2);ctx.setTransform(2,0,0,2,0,0);ctx.imageSmoothingEnabled=true;
   ctx.fillStyle='#d8ffff';ctx.fillRect(W/2-4,H/2,9,1);ctx.fillRect(W/2,H/2-4,1,9);
-  if(g.damage>0){ctx.strokeStyle='rgba(255,55,65,.5)';ctx.lineWidth=7;ctx.strokeRect(3,3,W-6,H-6);}
+  if(g.damage>0){
+    // Bordas e sinais pequenos deixam a mira e os avisos livres. A borda
+    // continua visível sem depender da imagem ou de movimento.
+    ctx.save();ctx.strokeStyle='rgba(255,55,65,.5)';ctx.lineWidth=7;ctx.strokeRect(3,3,W-6,H-6);
+    const damage=sprites.damage_visor;
+    if(damage) {
+      ctx.globalAlpha=reducedMotion()?.5:.5*clamp(g.damage/.35,0,1);
+      ctx.drawImage(damage,8,37,35,35);
+      ctx.translate(W,0);ctx.scale(-1,1);ctx.drawImage(damage,8,37,35,35);
+    }
+    ctx.restore();
+  }
   ctx.fillStyle='rgba(3,12,16,.94)';ctx.fillRect(0,0,W,29);ctx.fillRect(0,H-42,W,42);
   ctx.font='bold 9px monospace';ctx.textAlign='left';ctx.fillStyle=mod.color;ctx.fillText('CIDADELA 404  //  '+mod.name+'  //  S'+(g.localProgress?.rank ?? 1),9,12);
-  ctx.fillStyle='#c6d8d7';ctx.fillText('VIDA '+Math.ceil(p.health||0)+'/'+(p.maxHealth||0)+'   MUNIÇÃO '+g.ammo+'/12'+(g.jam?'  RECARGA BLOQUEADA':g.reload?'  RECARREGANDO':''),9,H-30);
-  ctx.textAlign='right';ctx.fillStyle='#ff777c';ctx.fillText('ECHOVORE '+Math.floor(g.echo)+'%',W-9,12);
+  // Ícones acompanham rótulos em texto: nenhuma informação depende de cor ou arte.
+  if(sprites.hud_health)ctx.drawImage(sprites.hud_health,9,H-39,10,10);
+  ctx.fillStyle='#e2f4f0';ctx.fillText('VIDA '+Math.ceil(p.health||0)+'/'+(p.maxHealth||0),22,H-30);
+  const ammoIcon=g.jam>0?(sprites.hud_jam ?? sprites.hud_ammo):sprites.hud_ammo;
+  if(ammoIcon)ctx.drawImage(ammoIcon,126,H-39,10,10);
+  ctx.fillStyle=g.jam>0?'#ffb4a0':'#e2f4f0';
+  ctx.fillText('MUN '+g.ammo+'/12'+(g.jam?' REC BLOQUEADA':g.reload?' RECARGA':''),139,H-30);
+  if(g.reload>0) {
+    ctx.fillStyle='#213438';ctx.fillRect(139,H-26,80,2);
+    ctx.fillStyle=g.jam>0?'#ff997a':'#83e4d7';ctx.fillRect(139,H-26,80*clamp(1-g.reload/1.5,0,1),2);
+  }
+  if(sprites.hud_echo)ctx.drawImage(sprites.hud_echo,W-91,3,10,10);
+  ctx.textAlign='right';ctx.fillStyle='#ff9a9e';ctx.fillText('ECHOVORE '+Math.floor(g.echo)+'%',W-9,12);
   const ultUnlocked=getUnlockState(state.progress).features.ultimate;
   const ultStatus=!ultUnlocked?'NV3':p.ultimate?.cooldown>0?Math.ceil(p.ultimate.cooldown)+'s':'OK';
-  ctx.fillStyle='#bce9e7';ctx.font='8px monospace';ctx.fillText('EN '+Math.floor(p.energy ?? 0)+'  Q '+(g.q?Math.ceil(g.q)+'s':'OK')+'  SH '+(g.boost?Math.ceil(g.boost)+'s':'OK')+'  F '+ultStatus,W-9,H-30);
+  if(sprites.hud_energy)ctx.drawImage(sprites.hud_energy,W-160,H-39,10,10);
+  ctx.fillStyle='#c9f2ee';ctx.font='8px monospace';ctx.fillText('EN '+Math.floor(p.energy ?? 0)+'  Q '+(g.q?Math.ceil(g.q)+'s':'OK')+'  SH '+(g.boost?Math.ceil(g.boost)+'s':'OK')+'  F '+ultStatus,W-9,H-30);
   if(g.guard>0 || g.shield>0 || g.vectorCharge>0 || g.echoAnchor>0) {ctx.textAlign='center';ctx.fillStyle=mod.color;
-    const status=g.vectorCharge>0?'VETOR +12 • '+Math.ceil(g.vectorCharge)+'s':(g.guard>0||g.shield>0)?(g.guard>0?'GUARDA ':'ESCUDO ')+Math.ceil(Math.max(g.guard,g.shield))+'s':'';
-    ctx.fillText([status,g.echoAnchor>0?'SINAL -30% ECO '+Math.ceil(g.echoAnchor)+'s':''].filter(Boolean).join(' • '),W/2,65);}
+    const guard=g.guard>0?'GUARDA '+Math.ceil(g.guard)+'s':'';
+    const shield=g.shield>0?'ESCUDO '+Math.ceil(g.shield)+'s':'';
+    const vector=g.vectorCharge>0?'VETOR +12 '+Math.ceil(g.vectorCharge)+'s':'';
+    const status=[guard,shield,vector,g.echoAnchor>0?'SINAL -30% ECO '+Math.ceil(g.echoAnchor)+'s':''].filter(Boolean).join(' • ');
+    if((guard || shield) && sprites.hud_shield) {
+      const width=ctx.measureText(status)?.width ?? status.length*4.8;
+      ctx.drawImage(sprites.hud_shield,Math.max(3,W/2-width/2-12),55,9,9);
+    }
+    ctx.fillText(status,W/2,65);}
   ctx.textAlign='left';ctx.fillStyle='#d9b9ae';ctx.fillText('REGISTROS '+KEYS.map(k=>flags[k.flag]?k.symbol:'□').join(' ')+'  '+(flags.cidadela_estavel?missionObjective(state.progress):flags.cidadela_chave_vermelha?'ALCANCE O REATOR':'ENCONTRE OS REGISTROS'),9,24,W-105);
   ctx.textAlign='right';ctx.fillStyle='#9fbfca';ctx.fillText('ARQUIVOS '+CITADEL_ARCHIVES.filter(a=>flags[a.flag]).length+'/3',W-9,24);
   ctx.textAlign='center';ctx.fillStyle='#d4eeee';ctx.font='bold 9px monospace';
@@ -1000,7 +1108,13 @@ export function renderCitadel(canvas,state) {
   if(target?.kind==='breach_console') prompt='[E] STATUS DAS FENDAS';
   if(!prompt && p.y>9.8 && p.y<12 && ((p.x>3.5&&p.x<6.5)||(p.x>18.5&&p.x<21.5))) prompt=flags.cidadela_estavel?'OFICINA DA VIGÍLIA • ACESSO LIVRE':'OFICINA • AGUARDA REATOR ESTÁVEL';
   for (const [x,k] of [[8,KEYS[0]],[15,KEYS[1]],[22,KEYS[2]]]) if (!prompt && !flags[k.flag] && Math.abs(p.x-x)<1.4 && p.y>4.2 && p.y<8.8) prompt=`ECLUSA ${k.symbol} ${k.label} • BUSQUE O REGISTRO`;
-  if(prompt){ctx.fillStyle='rgba(0,0,0,.8)';ctx.fillRect(W/2-130,H/2+34,260,15);ctx.fillStyle='#e6ffff';ctx.font='bold 9px monospace';ctx.fillText(prompt,W/2,H/2+45);}
+  if(prompt){
+    const lines=wrapCitadelText(prompt,46), actionable=/^\[(E|R)\]/.test(prompt);
+    ctx.fillStyle='rgba(0,0,0,.86)';ctx.fillRect(W/2-145,H/2+34,290,lines.length*12+4);
+    if(actionable && sprites.hud_interact)ctx.drawImage(sprites.hud_interact,W/2-139,H/2+36,10,10);
+    ctx.fillStyle='#e6ffff';ctx.font='bold 9px monospace';
+    lines.forEach((line,i)=>ctx.fillText(line,W/2+(actionable?6:0),H/2+45+i*12));
+  }
   if(flags.cidadela_estavel) {
     const nearby=CITADEL_WORKSHOP.switches.filter(o=>workshopCircuitActive(state.progress,g,o) && Math.hypot(p.x-o.emitter.x,p.y-o.emitter.y)<2.8 && visible(map,flags,p.x,p.y,o.emitter.x,o.emitter.y)).sort((a,b)=>Math.hypot(p.x-a.emitter.x,p.y-a.emitter.y)-Math.hypot(p.x-b.emitter.x,p.y-b.emitter.y))[0];
     if(nearby) {
@@ -1085,7 +1199,7 @@ export function renderCitadel(canvas,state) {
     }
     ctx.fillStyle='#9cc9c7';ctx.fillText('P / ESC CONTINUA • L REGISTROS • J MISSÕES • K SINTONIA',62,g.panel==='journal'||g.panel==='missions'||g.panel==='dimension'?229:220);
   }
-  const out=canvas.getContext('2d');out.save();out.setTransform(1,0,0,1,0,0);out.imageSmoothingEnabled=false;out.drawImage(buffer,0,0,canvas.width,canvas.height);out.restore();
+  const out=canvas.getContext('2d');out.save();out.setTransform(1,0,0,1,0,0);out.imageSmoothingEnabled=false;out.drawImage(buffer,0,0,canvas.width,canvas.height);out.imageSmoothingEnabled=true;out.drawImage(uiBuffer,0,0,canvas.width,canvas.height);out.restore();
 }
 export function getCitadelRuntime() { return game; }
 export function clearCitadelRuntime() { game=null; }

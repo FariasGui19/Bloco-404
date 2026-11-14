@@ -20,6 +20,7 @@ export function initTransition() {
   const overlay = document.createElement('div');
   overlay.id = 'mapTransitionOverlay';
   overlay.innerHTML = `
+    <div class="dimensional-ring" aria-hidden="true"></div>
     <div class="hangar-shutter hangar-shutter-top">
       <div class="hangar-hazard-strip"></div>
     </div>

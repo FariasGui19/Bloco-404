@@ -13,5 +13,7 @@ assert(!citadelAudioEnabled());playCitadelSound('shot');assert.equal(contexts,0,
 assert(toggleCitadelAudio());assert.equal(contexts,1);assert.equal(store.get('bloco404_cidadela_som'),'1');
 for(let i=0;i<12;i++)playCitadelSound('shot');assert.equal(oscillators.length,8,'limite de vozes simultâneas');
 oscillators[0].onended();playCitadelSound('echo');assert.equal(oscillators.length,9,'voz encerrada libera limite');
-assert(!toggleCitadelAudio());assert.equal(store.get('bloco404_cidadela_som'),'0');playCitadelSound('victory');assert.equal(oscillators.length,9);
+oscillators[1].onended();playCitadelSound('reload');assert.equal(oscillators.length,10,'recarga tem som opcional');
+oscillators[2].onended();playCitadelSound('ready');assert.equal(oscillators.length,11,'conclusão tem som opcional');
+assert(!toggleCitadelAudio());assert.equal(store.get('bloco404_cidadela_som'),'0');playCitadelSound('victory');playCitadelSound('reload');playCitadelSound('ready');assert.equal(oscillators.length,11);
 console.log('Cidadela: áudio opcional, preferência e limite de vozes OK.');

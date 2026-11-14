@@ -4257,6 +4257,21 @@ body.retro-fps #ui, body.retro-fps #controls, body.retro-fps #elevatorPrompt { d
   background: linear-gradient(rgba(2,10,14,.4),rgba(2,10,14,.72)), url('../assets/cutscenes/cidadela-transicao-retorno.jpg') center / cover no-repeat;
 }
 #mapTransitionOverlay.dimensional .hangar-shutter { display:none; }
+/* O anel ilustrado fica atrás do texto e aparece apenas na travessia 66.6. */
+.dimensional-ring { display:none; }
+#mapTransitionOverlay.dimensional .dimensional-ring {
+  display:block; position:absolute; left:50%; top:50%; width:min(55vh,55vw); aspect-ratio:1;
+  background:url('../assets/sprites/cidadela-404/base-travessia-anel.png') center / contain no-repeat;
+  opacity:0; pointer-events:none; transform:translate(-50%,-50%) scale(.8);
+}
+#mapTransitionOverlay.dimensional.active .dimensional-ring { animation: passagem-anel .85s ease-out both; }
+#mapTransitionOverlay.dimensional-retorno.active .dimensional-ring { animation-direction:reverse; }
+@keyframes passagem-anel {
+  from { transform:translate(-50%,-50%) scale(.72) rotate(-8deg); opacity:0; }
+  40% { opacity:.36; }
+  to { transform:translate(-50%,-50%) scale(1.15) rotate(8deg); opacity:.15; }
+}
+
 #mapTransitionOverlay.dimensional::before {
   content:''; position:absolute; left:50%; top:50%; width:min(70vh,70vw); aspect-ratio:1;
   border:2px solid rgba(112,240,229,.8); border-radius:50%;
@@ -4287,6 +4302,7 @@ body.retro-fps #ui, body.retro-fps #controls, body.retro-fps #elevatorPrompt { d
 @media (prefers-reduced-motion: reduce) {
   #mapTransitionOverlay.dimensional.active::before { animation:none; opacity:.3; transform:translate(-50%,-50%) scale(1); }
   #mapTransitionOverlay.dimensional.active::after { animation:none; opacity:.2; transform:translate(-50%,-50%) rotate(-25deg); }
+  #mapTransitionOverlay.dimensional.active .dimensional-ring { animation:none; opacity:.28; transform:translate(-50%,-50%); }
   #mapTransitionOverlay.dimensional,
   #mapTransitionOverlay.dimensional .hangar-progress-fill { transition:none; }
 }

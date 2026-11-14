@@ -252,3 +252,86 @@ for name in ['vigilia-controle-off','vigilia-controle-on','vigilia-pulso-aviso',
     image.thumbnail((160,160),Image.Resampling.LANCZOS)
     image.save(dst / f'{name}.png',optimize=True)
     print(name,image.size)
+
+# Quadros de retorno da arma, emblemas de habilidade, dano e passagem.
+for name in ['base-canhao-mare-retorno','base-canhao-nucleo-retorno',
+             'base-canhao-dominio-retorno','base-canhao-bio-retorno',
+             'base-habilidade-mare','base-habilidade-nucleo',
+             'base-habilidade-dominio','base-habilidade-bio',
+             'base-dano-visor','base-travessia-anel']:
+    image=Image.open(src / f'{name}.png').convert('RGBA')
+    pixels=image.load()
+    for y in range(image.height):
+        for x in range(image.width):
+            r,g,b,a=pixels[x,y]
+            if r>110 and b>110 and g<85 and min(r,b)-g>85:
+                pixels[x,y]=(0,0,0,0)
+    box=image.getbbox()
+    if not box: raise ValueError(f'Sprite vazio: {name}')
+    image=image.crop(box)
+    size=512 if name=='base-travessia-anel' else 256 if 'canhao' in name else 128
+    image.thumbnail((size,size),Image.Resampling.LANCZOS)
+    image.save(dst / f'{name}.png',optimize=True)
+    print(name,image.size)
+
+# Resposta de dano/queda e pictogramas da interface. A cruz veio cercada por
+# margens brancas externas; recorte antes de remover o fundo magenta.
+for name in ['refino-imp-dano','refino-orbe-dano','refino-echo-dano',
+             'refino-imp-queda','refino-orbe-queda','refino-echo-queda',
+             'refino-hud-vida','refino-hud-municao','refino-hud-energia','refino-hud-eco']:
+    image=Image.open(src / f'{name}.png').convert('RGBA')
+    if name=='refino-hud-vida':
+        image=image.crop((int(image.width*.26),0,int(image.width*.74),image.height))
+    pixels=image.load()
+    for y in range(image.height):
+        for x in range(image.width):
+            r,g,b,a=pixels[x,y]
+            if r>110 and b>110 and g<85 and min(r,b)-g>85:
+                pixels[x,y]=(0,0,0,0)
+    box=image.getbbox()
+    if not box: raise ValueError(f'Sprite vazio: {name}')
+    image=image.crop(box)
+    image.thumbnail((128,128) if 'hud' in name else (192,192),Image.Resampling.LANCZOS)
+    image.save(dst / f'{name}.png',optimize=True)
+    print(name,image.size)
+
+# Recarga, assistência visual e respostas de impacto. Todos os originais usam
+# um fundo magenta; os PNGs finais têm transparência e carregamento tardio.
+for name in ['acabamento-recarga-mare','acabamento-recarga-nucleo',
+             'acabamento-recarga-dominio','acabamento-recarga-bio',
+             'acabamento-suprimento','acabamento-escudo','acabamento-bloqueio',
+             'acabamento-interacao','acabamento-impacto-metal','acabamento-impacto-escudo']:
+    image=Image.open(src / f'{name}.png').convert('RGBA')
+    pixels=image.load()
+    for y in range(image.height):
+        for x in range(image.width):
+            r,g,b,a=pixels[x,y]
+            if r>110 and b>110 and g<85 and min(r,b)-g>85:
+                pixels[x,y]=(0,0,0,0)
+    box=image.getbbox()
+    if not box: raise ValueError(f'Sprite vazio: {name}')
+    image=image.crop(box)
+    size=256 if 'recarga' in name else 160 if 'suprimento' in name else 128
+    image.thumbnail((size,size),Image.Resampling.LANCZOS)
+    image.save(dst / f'{name}.png',optimize=True)
+    print(name,image.size)
+
+# Vistas direcionais aproximadas e estados do Vigilante. Os originais usam
+# fundo magenta; a projeção continua billboard e espelha a vista lateral.
+for name in ['vida-imp-lateral','vida-imp-costas','vida-orbe-lateral','vida-orbe-costas',
+             'vida-echo-lateral','vida-echo-costas','vida-vigilante-aviso',
+             'vida-vigilante-aberto-a','vida-vigilante-aberto-b','vida-vigilante-dano']:
+    image=Image.open(src / f'{name}.png').convert('RGBA')
+    pixels=image.load()
+    for y in range(image.height):
+        for x in range(image.width):
+            r,g,b,a=pixels[x,y]
+            if r>110 and b>110 and g<85 and min(r,b)-g>85:
+                pixels[x,y]=(0,0,0,0)
+    box=image.getbbox()
+    if not box: raise ValueError(f'Sprite vazio: {name}')
+    image=image.crop(box)
+    size=256 if 'vigilante' in name else 192
+    image.thumbnail((size,size),Image.Resampling.LANCZOS)
+    image.save(dst / f'{name}.png',optimize=True)
+    print(name,image.size)

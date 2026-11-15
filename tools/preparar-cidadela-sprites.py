@@ -688,5 +688,38 @@ aurora_art.thumbnail((1280, 720), Image.Resampling.LANCZOS)
 aurora_art.save(cutscenes / 'cidadela-aurora-limiar.jpg', quality=88, optimize=True)
 print('cidadela-aurora-limiar.jpg', aurora_art.size)
 
+# Lote 6: passadas/queda/ataque lateral do elite, ataque Fase 2 do Vigilante,
+# piso da Oficina da Vigília e 4 explosões visuais exclusivas de Ultimate [F].
+floor_office = Image.open(src / 'piso-oficina.png').convert('RGB')
+side_o = min(floor_office.size)
+left_o = (floor_office.width - side_o) // 2
+top_o = (floor_office.height - side_o) // 2
+floor_office = floor_office.crop((left_o, top_o, left_o + side_o, top_o + side_o)).resize((128, 128), Image.Resampling.LANCZOS)
+floor_office.save(dst / 'piso-oficina.png', optimize=True)
+print('piso-oficina', floor_office.size)
+
+for name in ['imp-elite-passo-a','imp-elite-passo-b','imp-elite-lateral-ataque','imp-elite-queda',
+             'vigilante-fase2-ataque','ultimate-mare','ultimate-nucleo','ultimate-dominio','ultimate-bio']:
+    image = Image.open(src / f'{name}.png').convert('RGBA')
+    remove_border_magenta(image)
+    px = image.load()
+    for yy in range(image.height):
+        for xx in range(image.width):
+            r, g, b, a = px[xx, yy]
+            if a == 0:
+                continue
+            if name == 'ultimate-dominio':
+                if r > 175 and b > 175 and g < 95 and abs(r - b) < 34:
+                    px[xx, yy] = (0, 0, 0, 0)
+            elif r > 155 and b > 155 and g < 115 and min(r, b) - g > 75:
+                px[xx, yy] = (0, 0, 0, 0)
+    box = image.getbbox()
+    if not box: raise ValueError(f'Sprite vazio: {name}')
+    image = image.crop(box)
+    size = 256 if name == 'vigilante-fase2-ataque' else 224 if name.startswith('imp-elite') else 256
+    image.thumbnail((size, size), Image.Resampling.LANCZOS)
+    image.save(dst / f'{name}.png', optimize=True)
+    print(name, image.size)
+
 
 

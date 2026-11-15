@@ -48,9 +48,15 @@ export function interactCitadelMission(progress,target) {
       return {changed:true,message:`REDE RESTAURADA • +${done?.rewards?.xp ?? 0} XP. EXAMINE O TRANSMISSOR.`};
     }
     if(rede.status==='active') return {message:`NEXO: RELÉS RESTAURADOS ${reles}/3. A LINHA DE RETORNO ESTÁ SEGURA.`};
+    const archTip = {
+      mare_astral: 'MARÉ ASTRAL ESTÁ EM HARMONIA COM A CIDADELA.',
+      nucleo_dez_forma: 'VETORES DO NÚCLEO X10 SEM DESVIO TEMPORAL.',
+      lamina_dominio_anciao: 'SELO DO DOMÍNIO ANCIÃO EM SINCRONIA COM O REATOR.',
+      motor_bio_forja: 'CHASSI BIO-FORJA INTEGRADO À OFICINA DA VIGÍLIA.',
+    }[progress?.archetype] ?? 'SISTEMA ESTABILIZADO.';
     return {message:progress?.flags?.cidadela_100_porcento
-      ? 'NEXO: CIDADELA 404 100% ESTABILIZADA. ATÉ OS ECOS DO SETOR E1M1 SILENCIARAM.'
-      : 'NEXO: A REDE RESPIRA. O TRANSMISSOR PODE REUNIR AS VOZES.'};
+      ? `NEXO: CIDADELA 404 100% ESTABILIZADA. ATÉ OS ECOS DO SETOR E1M1 SILENCIARAM. ${archTip}`
+      : `NEXO: A REDE RESPIRA. O TRANSMISSOR PODE REUNIR AS VOZES. ${archTip}`};
   }
   if(target.kind==='relay') {
     if(rede.status==='available') return {message:'RELÉ INATIVO. A SONDA NA ARENA PODE ORIENTAR O REPARO.'};
@@ -70,7 +76,9 @@ export function interactCitadelMission(progress,target) {
       return {changed:true,message:`TRANSMISSÃO COMPLETA • +${done?.rewards?.xp ?? 0} XP. IDENTIDADE AINDA INCERTA.`};
     }
     if(vozes.status==='active') return {message:`TRANSMISSOR: CAIXAS RECUPERADAS ${registros}/3. VEJA O RADAR [R].`};
-    return {message:'TRANSMISSOR: A MENSAGEM FOI ENVIADA. A RESPOSTA AINDA NÃO TEM NOME.'};
+    return {message:progress?.flags?.cidadela_segredo_e1m1
+      ? 'TRANSMISSOR: A MENSAGEM FOI ENVIADA. O SINAL DE E1M1 FICOU APENAS NA MEMÓRIA DA ESTAÇÃO.'
+      : 'TRANSMISSOR: A MENSAGEM FOI ENVIADA. A RESPOSTA AINDA NÃO TEM NOME.'};
   }
   if(target.kind==='recording') {
     if(vozes.status==='available') return {message:'CAIXA EM SILÊNCIO. O TRANSMISSOR DA ARENA PODE DECODIFICÁ-LA.'};

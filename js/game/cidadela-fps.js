@@ -172,12 +172,12 @@ export function citadelSpriteFrame(o,time,reduce=false) {
   const frame=enemyVisualFrame(o);
   const base=o.type==='elite'?'imp':o.type;
   if(frame==='death') {
-    if(o.type==='elite' && (reduce || (o.death ?? 0)<=.38)) return 'elite_death';
+    if(o.type==='elite') return !reduce && (o.death ?? 0)>.38 ? 'elite_fall' : 'elite_death';
     return !reduce && (o.death ?? 0)>.38 ? `${base}_fall` : `${base}_death`;
   }
   if(frame==='attack') return o.type==='elite' ? 'elite_attack' : `${o.type}_attack${!reduce && Math.floor(time*2.5)%2?'_b':''}`;
   if(frame==='hurt') return o.type==='elite' ? 'elite_hurt' : ['imp','orb','echo'].includes(o.type) ? `${base}_hurt` : o.type;
-  if(!reduce && o.moving && ['imp','echo','orb'].includes(o.type)) return `${o.type}_walk_${enemyWalkFrame(o,time)}`;
+  if(!reduce && o.moving && ['imp','echo','orb','elite'].includes(o.type)) return `${o.type}_walk_${enemyWalkFrame(o,time)}`;
   if(o.type==='nulo') return reduce?'nulo_a':`nulo_${Math.floor(time/3.5)%2?'b':'a'}`;
   return o.type;
 }
@@ -216,7 +216,7 @@ export function bossVisualFrame(boss,time,reduce=false) {
     if((boss.hurt ?? 0)>0) return 'boss_hurt';
     return reduce?'boss_open_a':`boss_open_${Math.floor(time*1.4)%2?'b':'a'}`;
   }
-  if(boss.cycle>=2 && boss.cycle<4.2) return bossAttackSpriteFrame(time,reduce);
+  if(boss.cycle>=2 && boss.cycle<4.2) return boss.phaseTwo && !reduce ? 'boss_phase2_attack' : bossAttackSpriteFrame(time,reduce);
   if(boss.cycle>=1.2) return !reduce && boss.cycle>=1.6?'boss_warning_b':'boss_warning';
   if((boss.shieldFlash ?? 0)>0) return 'boss_shield';
   if(boss.phaseTwo) return 'boss_phase2';
@@ -337,19 +337,23 @@ function hurtEnemy(g, enemy, damage) {
   }
   addImpact(g,enemy.x,enemy.y,enemy.type==='echo'?'cyan':'red');
 }
-function beginReload(g) { g.reload=1.5; if(g.jam<=0) playCitadelSound('reload'); }
+function beginReload(g, progress) { g.reload = progress?.archetype === 'nucleo_dez_forma' ? 1.25 : 1.5; if(g.jam<=0) playCitadelSound('reload'); }
 function reloadNotice(g) { notice(g,g.jam>0?'RECARGA NA FILA • AGUARDE O BLOQUEIO.':'RECARREGANDO...',1.5); }
 function fire(map, flags, p, progress, g) {
   if (g.fire>0) return;
   // Uma recarga tática pode ser cancelada para usar os projéteis restantes,
   // inclusive enquanto o Echovore bloqueia o progresso da recarga.
   if (g.reload>0) { if(g.ammo<=0) return; g.reload=0; }
-  if (g.ammo<=0) { beginReload(g); reloadNotice(g); return; }
+  if (g.ammo<=0) { beginReload(g, progress); reloadNotice(g); return; }
   g.ammo--; g.fire=g.overdrive>0 ? .16 : .23; const vectorDamage=g.vectorCharge>0?12:0;g.vectorCharge=0;playCitadelSound('shot');
-  if (g.ammo===0) { beginReload(g); reloadNotice(g); }
+  if (g.ammo===0) { beginReload(g, progress); reloadNotice(g); }
   const target=targetInSight(map,flags,p,g);
   if (target?.type === 'barrel') { g.hit=.2; detonateBarrel(map,flags,p,progress,g,target); }
-  else if (target) { if(target.type!=='boss' || bossOpen(target)) g.hit=.25; hurtEnemy(g,target, Math.round((target.type==='boss'?35:28)*(1+(g.ultBuff?.basicDamagePct ?? 0)+(g.relicShotBonus ?? 0)+(g.overdrive>0?.35:0)))+vectorDamage); }
+  else if (target) {
+    if(target.type!=='boss' || bossOpen(target)) g.hit=.25;
+    const bossPrecision = (target.type === 'boss' && progress.archetype === 'lamina_dominio_anciao') ? 8 : 0;
+    hurtEnemy(g,target, Math.round((target.type==='boss'?35:28)*(1+(g.ultBuff?.basicDamagePct ?? 0)+(g.relicShotBonus ?? 0)+(g.overdrive>0?.35:0)))+vectorDamage+bossPrecision);
+  }
   else {
     // O disparo do jogador é instantâneo, mas deixa uma marca breve na
     // superfície visível, sem atravessar paredes nem criar física extra.
@@ -588,7 +592,7 @@ export function updateCitadel(dt, state, input) {
   const forward=(held(input,'w','keyw','arrowup')?1:0)-(held(input,'s','keys','arrowdown')?1:0);
   const side=(held(input,'d','keyd')?1:0)-(held(input,'a','keya')?1:0);
   const norm=Math.hypot(forward,side)||1;
-  const speed=(g.dash>0?6.5:2.8)*(1+(g.ultBuff?.moveSpeedPct ?? 0))*(g.suppressed>0?.65:1)*step;
+  const speed=(g.dash>0?6.5:2.8*(progress.archetype==='mare_astral'?1.1:1))*(1+(g.ultBuff?.moveSpeedPct ?? 0))*(g.suppressed>0?.65:1)*step;
   const f=forward/norm, s=side/norm;
   const dx=g.dash>0?Math.cos(g.dashAngle):Math.cos(g.angle)*f-Math.sin(g.angle)*s;
   const dy=g.dash>0?Math.sin(g.dashAngle):Math.sin(g.angle)*f+Math.cos(g.angle)*s;
@@ -629,8 +633,8 @@ export function updateCitadel(dt, state, input) {
     const label={mare_astral:'SONAR DE CORRENTE',nucleo_dez_forma:'LEITURA DE VETORES',motor_bio_forja:'DIAGNÓSTICO VIVO',lamina_dominio_anciao:'POSTURA DE DOMÍNIO'}[id] ?? 'RADAR';
     notice(g,`${label} • MAPA: AMEAÇAS, REGISTROS, ECOS E ${flags.cidadela_estavel?'ROTA À SAÍDA OPCIONAL':'ROTA PRINCIPAL'}.`,4);
   }
-  if (pressed(input,'shift','shiftleft','shiftright') && g.boost<=0 && g.dash<=0) { startDash(g,input,.18); g.boost=(g.localProgress?.rank ?? 1)>=3?2.4:3; g.fx=.4; g.fxKind='dash'; addEcho(g,15,state); }
-  if (pressed(input,'t','keyt') && g.reload<=0 && g.ammo<12) { beginReload(g); if(g.jam>0) reloadNotice(g); }
+  if (pressed(input,'shift','shiftleft','shiftright') && g.boost<=0 && g.dash<=0) { startDash(g,input,progress.archetype==='nucleo_dez_forma'?.22:.18); g.boost=(g.localProgress?.rank ?? 1)>=3?2.4:3; g.fx=.4; g.fxKind='dash'; addEcho(g,15,state); }
+  if (pressed(input,'t','keyt') && g.reload<=0 && g.ammo<12) { beginReload(g, progress); if(g.jam>0) reloadNotice(g); }
   if (pressed(input,'v','keyv','c','keyc')) meleeBash(map,flags,p,progress,g);
   if (held(input,' ','space') || pressed(input,' ','space') || input.fpsFire || input.fpsFireHeld || input.attackClick) fire(map,flags,p,progress,g);
   input.fpsFire=false; input.attackClick=null; input.click=null;
@@ -661,14 +665,21 @@ export function updateCitadel(dt, state, input) {
     } else if (target?.kind==='secret_plaque') {
       const fresh=!flags.cidadela_segredo_e1m1;
       flags.cidadela_segredo_e1m1=true;
+      const archE1 = {
+        mare_astral: 'MARÉ: “A ÁGUA NÃO PEDE CÓDIGO SECRETO — ELA CONTORNA O FOGO.”',
+        nucleo_dez_forma: 'NÚCLEO X10: “UM ATALHO DE 1993 NÃO COMPRIME ESTES VETORES.”',
+        lamina_dominio_anciao: 'DOMÍNIO: “SÓ OS QUE SUSTENTAM O CORTE ATRAVESSAM O SETOR E1M1.”',
+        motor_bio_forja: 'BIO-FORJA: “ARMADURA FORJADA À MÃO VALE MAIS QUE IMUNIDADE DE CONSOLE.”',
+      }[progress.archetype] ?? '';
       if (fresh) {
         p.energy=Math.min(p.maxEnergy ?? 100,(p.energy ?? 0)+15);
         const reward=grantArchetypeXp(progress,15);
         playCitadelSound('secret');
         saveCitadelProgress(progress,g);
         notice(g,`SETOR E1M1 // NULO-666: "IDDQD" REJEITADO PELO NÚCLEO — AQUI SÓ A SINTONIA SALVA. +15 EN • +${reward.gained} XP.`,8);
+        if (archE1) queueRadio(g, archE1);
       } else {
-        notice(g,'PLACA E1M1 // NULO-666: "ATRAVÉS DA ESTÁTICA, NENHUM FOGO QUEIMA QUEM SEGURA A MARÉ."',7);
+        notice(g,`PLACA E1M1 // NULO-666: "ATRAVÉS DA ESTÁTICA, NENHUM FOGO QUEIMA QUEM SEGURA A MARÉ." ${archE1}`,7);
       }
     } else if (target?.kind==='reactor_console') {
       const s=breachSummary(progress);
@@ -716,7 +727,13 @@ export function updateCitadel(dt, state, input) {
         notice(g,'RONDA SETORIAL ATIVA: 7 HOSTIS NOS CORREDORES. COLETA DE SUCATA E NÚCLEOS LIBERADA.',7);
       }
     } else if (target?.kind==='dormant_guardian') {
-      notice(g,`${target.label}: ${target.log}`,8);
+      const archRead = {
+        mare_astral: 'MARÉ: A CORRENTE DE RESFRIAMENTO DENTRO DO PEITO AINDA CORRE EM SILÊNCIO.',
+        nucleo_dez_forma: 'NÚCLEO: O RELÓGIO INTERNO PAROU EXATAMENTE 3 SEGUNDOS ANTES DA RUPTURA.',
+        lamina_dominio_anciao: 'DOMÍNIO: HÁ UM JURAMENTO ANTIGO RISCADO NA LÂMINA DA BLINDAGEM.',
+        motor_bio_forja: 'BIO-FORJA: OS REBITES SÃO DA SÉRIE 404 — CONSTRUÍDOS PARA SEGURAR UM REATOR SOZINHOS.',
+      }[progress.archetype] ?? '';
+      notice(g,`${target.label}: ${target.log} ${archRead}`,9);
     } else if (target?.kind==='reactor') {
       if (!g.reactorBoosted && (p.energy ?? 100) < (p.maxEnergy ?? 100)) {
         g.reactorBoosted=true; p.energy=Math.min(p.maxEnergy ?? 100,(p.energy ?? 0)+15);
@@ -827,7 +844,7 @@ export function updateCitadel(dt, state, input) {
   if (g.drops?.length) g.drops=g.drops.filter(d=>d.life>0);
   if (g.echoLock<=0) {
     if (g.echo>=100) addEcho(g,0,state);
-    else g.echo=Math.max(0,g.echo-step*.7);
+    else g.echo=Math.max(0,g.echo-step*(progress.archetype==='mare_astral'?.84:.7));
   }
   for (const e of g.enemies) {
     if (e.hp<=0) { e.death=Math.max(0,(e.death ?? 0)-step); continue; }
@@ -965,7 +982,8 @@ export function updateCitadel(dt, state, input) {
     shot.x+=shot.dx*step; shot.y+=shot.dy*step; shot.life-=step;
     if (wallAt(map,flags,shot.x,shot.y)) { shot.life=0; addImpact(g,oldX,oldY,'metal'); }
     else if (Math.hypot(shot.x-p.x,shot.y-p.y)<.33) {
-      const hit=g.guard>0 ? {dealt:0} : damagePlayer(p,progress,g.shield>0?shot.damage*.4:shot.damage,'cidadela');
+      const bioArmor = (progress.archetype==='motor_bio_forja' && p.health > p.maxHealth*.5) ? .85 : 1;
+      const hit=g.guard>0 ? {dealt:0} : damagePlayer(p,progress,(g.shield>0?shot.damage*.4:shot.damage)*bioArmor,'cidadela');
       if (hit.dealt) {
         g.damage=.35; playCitadelSound('damage');
         if(shot.jam) {
@@ -1080,7 +1098,16 @@ function setupBuffer() {
     ['shot_orb','assets/sprites/cidadela-404/projetil-orbe.png'],
     ['shot_elite','assets/sprites/cidadela-404/projetil-elite.png'],
     ['melee_wave','assets/sprites/cidadela-404/golpe-cinetico-pulso.png'],
-    ...['mare','nucleo','dominio','bio'].map(mode=>[`melee_${mode}`,`assets/sprites/cidadela-404/melee-${mode}.png`]),
+    ...['mare','nucleo','dominio','bio'].flatMap(mode=>[
+      [`melee_${mode}`,`assets/sprites/cidadela-404/melee-${mode}.png`],
+      [`ultimate_${mode}`,`assets/sprites/cidadela-404/ultimate-${mode}.png`],
+    ]),
+    ['elite_walk_a','assets/sprites/cidadela-404/imp-elite-passo-a.png'],
+    ['elite_walk_b','assets/sprites/cidadela-404/imp-elite-passo-b.png'],
+    ['elite_side_attack','assets/sprites/cidadela-404/imp-elite-lateral-ataque.png'],
+    ['elite_fall','assets/sprites/cidadela-404/imp-elite-queda.png'],
+    ['boss_phase2_attack','assets/sprites/cidadela-404/vigilante-fase2-ataque.png'],
+    ['floor_office','assets/sprites/cidadela-404/piso-oficina.png'],
     ['overdrive_cell','assets/sprites/cidadela-404/celula-sobrecarga-doom.png'],
     ['secret_plaque','assets/sprites/cidadela-404/placa-secreta-404.png'],
     ['reactor_console','assets/sprites/cidadela-404/prop-console-reator.png'],
@@ -1278,6 +1305,8 @@ function drawWorld(map, flags, p, g, progress) {
   ctx.fillStyle=inArena?'#191315':inWorkshop?'#141c1a':'#111b1d';ctx.fillRect(0,H/2,W,H/2);
   if (inArena && sprites.floor_arena) {
     ctx.save();ctx.globalAlpha=.22;ctx.drawImage(sprites.floor_arena,0,H/2+14,W,H/2-14);ctx.restore();
+  } else if (inWorkshop && sprites.floor_office) {
+    ctx.save();ctx.globalAlpha=.24;ctx.drawImage(sprites.floor_office,0,H/2+14,W,H/2-14);ctx.restore();
   }
   // Placas convergentes de teto e piso são baratas (sem floor casting).
   // A cor dos trilhos diferencia o espaço industrial sem flashes.
@@ -1397,6 +1426,8 @@ function drawWorld(map, flags, p, g, progress) {
             const walking=view.view==='side'?`${o.type}_side_walk_${phase}`:phase==='b'?`${o.type}_back_walk`:idle;
             if(sprites[walking]) visual=walking;
           }
+        } else if(frame==='attack' && o.type==='elite' && view.view==='side' && sprites.elite_side_attack) {
+          visual='elite_side_attack';flip=view.flip;directionalBase=sprites.elite_side_attack;
         } else if(o.type!=='elite' && (frame==='attack' || frame==='hurt' || frame==='death')) {
           // Com movimento reduzido, a queda intermediária é omitida, mas o
           // colapso final conserva a direção. Fallback: a mesma ação frontal.
@@ -1418,7 +1449,7 @@ function drawWorld(map, flags, p, g, progress) {
     if(o.archiveId && sprites[`archive_${o.archiveId}`]) visual=`archive_${o.archiveId}`;
     if(o.type==='boss') visual=bossVisualFrame(g.boss,g.time,reducedMotion());
     const chosen=sprites[visual];
-    const bossFallback=o.type==='boss' ? (visual==='boss_attack_b'?sprites.boss_attack : visual==='boss_warning_b'?sprites.boss_warning : (visual==='boss_fall'||visual==='boss_death')?(sprites.boss_death ?? sprites.bossClosed) : visual==='boss_shield'?(sprites.boss_shield ?? sprites.bossClosed) : visual==='boss_phase2'?(sprites.boss_phase2 ?? sprites.bossClosed) : bossOpen(g.boss)?sprites.boss_open_a : sprites.bossClosed) : null;
+    const bossFallback=o.type==='boss' ? (visual==='boss_phase2_attack'?(sprites.boss_attack_b ?? sprites.boss_attack) : visual==='boss_attack_b'?sprites.boss_attack : visual==='boss_warning_b'?sprites.boss_warning : (visual==='boss_fall'||visual==='boss_death')?(sprites.boss_death ?? sprites.bossClosed) : visual==='boss_shield'?(sprites.boss_shield ?? sprites.bossClosed) : visual==='boss_phase2'?(sprites.boss_phase2 ?? sprites.bossClosed) : bossOpen(g.boss)?sprites.boss_open_a : sprites.bossClosed) : null;
     const sprite=chosen ?? (frame==='attack'?sprites[`${o.type}_attack`]:null) ?? bossFallback ?? base;
     const aspect=directionalBase ?? (visual.includes('_walk_') ? sprite : base);
     const h=Math.min(H*4,H/forward*o.scale), w=h*(aspect.width/aspect.height), left=center-w/2;
@@ -1539,6 +1570,20 @@ function drawResonance(g,mod) {
       for(let i=0;i<4;i++){ctx.moveTo(15+i*15,73+i*8);ctx.lineTo(40+i*15,82+i*8);ctx.moveTo(W-15-i*15,73+i*8);ctx.lineTo(W-40-i*15,82+i*8);}
     }
     ctx.stroke();
+  }
+  if(g.overdrive>0) {
+    ctx.save();
+    ctx.strokeStyle='#ff4c3b';ctx.lineWidth=2;
+    ctx.globalAlpha=reducedMotion()?.28:.24+.14*Math.sin(g.time*6);
+    ctx.strokeRect(4,31,W-8,H-75);
+    ctx.restore();
+  }
+  if(g.fx>0 && g.fxKind==='ultimate' && sprites[`ultimate_${mod.mode}`]) {
+    const ult=sprites[`ultimate_${mod.mode}`];
+    const p=reducedMotion()?.5:clamp(1-g.fx,0,1);
+    const uw=210+p*70, uh=124+p*40;
+    ctx.globalAlpha=reducedMotion()?.48:Math.min(.72,g.fx*.75);
+    ctx.drawImage(ult,W/2-uw/2,H/2-uh/2-6,uw,uh);
   }
   if(g.fx>0 && g.fxKind==='melee') {
     const meleeSprite=sprites[`melee_${mod.mode}`] ?? sprites.melee_wave;

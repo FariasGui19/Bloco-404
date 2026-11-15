@@ -530,7 +530,7 @@ export const map = {
       bloqueia: false, brilho: { cor: '#5cf7eb', raio: 1.5, forca: 0.34 },
     },
     {
-      id: 'cais_madeira_pesca_enseada', nome: 'CAIS DA ENSEADA', tipo: 'decoracao', x: 50.5, y: 41.5,
+      id: 'cais_madeira_pesca_enseada', espelhar: true, nome: 'CAIS DA ENSEADA', tipo: 'decoracao', x: 50.5, y: 41.0,
       sprite: 'enseada3_cais_barco', spriteB: 'enseada3_cais_barco', animPeriodo: 0.68,
       useCrop: true, larguraPx: 420, pivotX: 0.5, pivotY: 0.97,
       bloqueia: false, brilho: { cor: '#ffd980', raio: 1.0, forca: 0.16 },
@@ -667,7 +667,7 @@ export const map = {
       pivotX: 0.5, pivotY: 0.96, depthOffset: -0.3, bloqueia: false,
     },
     {
-      id: 'barco_expedicao_enseada', nome: 'BARCO DE EXPEDIÇÃO', tipo: 'decoracao', x: 53.5, y: 41.0,
+      id: 'barco_expedicao_enseada', nome: 'BARCO DE EXPEDIÇÃO', tipo: 'decoracao', x: 54.5, y: 41.0,
       sprite: 'enseada_barco_expedicao', spriteB: 'enseada_barco_expedicao_b', animPeriodo: 0.72,
       useCrop: true, larguraPx: 126, pivotX: 0.5, pivotY: 0.88,
       bloqueia: false, flutuacaoSuave: true, renderizar: false,

@@ -205,6 +205,7 @@ await loadSprites([
   { id: 'freq666_rack', src: 'assets/sprites/frequencia-666/rack-estacao.png' },
   { id: 'freq666_mesa', src: 'assets/sprites/frequencia-666/mesa-arquivo.png' },
   { id: 'freq666_reator', src: 'assets/sprites/frequencia-666/reator-estacao.png' },
+  { id: 'freq666_selo_convergencia', src: 'assets/sprites/cidadela-404/estacao-666-selo-convergencia.png' },
   { id: 'mare_animacao_mar_calmo', src: 'assets/sprites/mare-animacao/mar-calmo.png' },
   { id: 'mare_animacao_vento_leve', src: 'assets/sprites/mare-animacao/vento-leve.png' },
   { id: 'mare_animacao_onda_ressaca', src: 'assets/sprites/mare-animacao/onda-ressaca.png' },

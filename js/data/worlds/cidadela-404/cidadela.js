@@ -139,6 +139,9 @@ export const CITADEL_OVERDRIVE_CELL = Object.freeze({
 export const CITADEL_REACTOR_CONSOLE = Object.freeze({
   kind:'reactor_console',x:29.5,y:8.2,label:'CONSOLE DO REATOR',
 });
+export const CITADEL_PROTOCOL_BEACON = Object.freeze({
+  kind:'protocol_beacon',x:26.2,y:2.5,label:'BALIZA DO PROTOCOLO',
+});
 export function sectorNameAt(x, y) {
   if (y >= 12) return 'OFICINA DA VIGÍLIA';
   if (x >= 22) return 'ARENA DO REATOR';

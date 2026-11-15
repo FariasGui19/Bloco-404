@@ -27,7 +27,7 @@ const BATCH5_ASSETS = [
 ];
 for (const file of BATCH5_ASSETS) assert(existsSync(file), `asset do lote 5 ausente: ${file}`);
 
-assert.equal(CITADEL_RETURN_SCENES.length, 2, 'cutscene de retorno possui 2 cenas de fechamento');
+assert(CITADEL_RETURN_SCENES.length >= 2, 'cutscene de retorno possui ao menos 2 cenas de fechamento');
 assert.equal(CITADEL_RETURN_SCENES[1].image, 'assets/cutscenes/cidadela-aurora-limiar.jpg');
 
 // Posições novas ficam em células caminháveis

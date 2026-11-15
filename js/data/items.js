@@ -141,6 +141,13 @@ export const ITEMS = Object.freeze({
     spritePath: 'assets/sprites/cidadela-404/reliquia-nucleo-vigilante.png',
     description: 'Reator portátil sintetizado com Núcleos de Estática após estabilizar a Cidadela. Reduz o custo de Q (-4 EN) e acelera regeneração (+2 EN/s) na dimensão.',
   }),
+  insignia_vigilia_404: Object.freeze({
+    name: 'INSÍGNIA DA VIGÍLIA // 404',
+    kind: 'relíquia',
+    icon: 'progressao',
+    spritePath: 'assets/sprites/cidadela-404/reliquia-insignia-vigilia.png',
+    description: 'Selo supremo obtido ao concluir o Protocolo da Vigília // 66.6. Concede +1 EN/s extra e +10% de dano em Golpe Cinético [V] e Ultimate [F] dentro da Cidadela.',
+  }),
 });
 
 export function getItem(id) {

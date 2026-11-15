@@ -751,5 +751,68 @@ for name in ['imp-elite-lateral-passo-a','imp-elite-lateral-passo-b',
     image.save(dst / f'{name}.png', optimize=True)
     print(name, image.size)
 
+# Lote 8: acabamento supremo — teto Arena/Oficina, parede corredor entrada,
+# Sonda 100%, Elite costas dano/colapso, projétil Vigilante Fase 2, impacto Elite,
+# núcleo em colapso do Vigilante e ícone HUD de sobrecarga.
+def remove_border_bg(img, mode='dark'):
+    pixels = img.load()
+    w, h = img.size
+    visited = bytearray(w * h)
+    q = deque()
+    def is_bg(r, g, b):
+        if mode == 'white':
+            return min(r, g, b) > 228 and max(r, g, b) - min(r, g, b) < 22
+        return max(r, g, b) < 20
+    for x in range(w):
+        for y in (0, h - 1):
+            r, g, b, _ = pixels[x, y]
+            if is_bg(r, g, b):
+                idx = y * w + x
+                if not visited[idx]:
+                    visited[idx] = 1
+                    q.append((x, y))
+    for y in range(h):
+        for x in (0, w - 1):
+            r, g, b, _ = pixels[x, y]
+            if is_bg(r, g, b):
+                idx = y * w + x
+                if not visited[idx]:
+                    visited[idx] = 1
+                    q.append((x, y))
+    while q:
+        cx, cy = q.popleft()
+        pixels[cx, cy] = (0, 0, 0, 0)
+        for nx, ny in ((cx - 1, cy), (cx + 1, cy), (cx, cy - 1), (cx, cy + 1)):
+            if 0 <= nx < w and 0 <= ny < h:
+                idx = ny * w + nx
+                if not visited[idx]:
+                    r, g, b, _ = pixels[nx, ny]
+                    if is_bg(r, g, b):
+                        visited[idx] = 1
+                        q.append((nx, ny))
+
+for tex in ['teto-arena', 'teto-oficina', 'parede-corredor-entrada']:
+    tile = Image.open(src / f'{tex}.png').convert('RGB')
+    side_t = min(tile.size)
+    left_t = (tile.width - side_t) // 2
+    top_t = (tile.height - side_t) // 2
+    tile = tile.crop((left_t, top_t, left_t + side_t, top_t + side_t)).resize((128, 128), Image.Resampling.LANCZOS)
+    tile.save(dst / f'{tex}.png', optimize=True)
+    print(tex, tile.size)
+
+for name in ['sonda-nexo-100', 'imp-elite-costas-dano', 'imp-elite-costas-colapso',
+             'projetil-vigilante-fase2', 'impacto-elite', 'vigilante-morte-nucleo',
+             'hud-sobrecarga-icone']:
+    image = Image.open(src / f'{name}.png').convert('RGBA')
+    remove_border_bg(image, 'white' if name == 'vigilante-morte-nucleo' else 'dark')
+    box = image.getbbox()
+    if not box: raise ValueError(f'Sprite vazio: {name}')
+    image = image.crop(box)
+    size = 256 if name == 'vigilante-morte-nucleo' else 224 if name.startswith('imp-elite') else 160 if name == 'sonda-nexo-100' else 128 if name in ('projetil-vigilante-fase2', 'impacto-elite') else 96
+    image.thumbnail((size, size), Image.Resampling.LANCZOS)
+    image.save(dst / f'{name}.png', optimize=True)
+    print(name, image.size)
+
+
 
 

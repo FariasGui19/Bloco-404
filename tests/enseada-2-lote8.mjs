@@ -78,6 +78,7 @@ for (const cardume of enseada.objects.filter(o => o.id.startsWith('cardume_orla_
 
 // Todos os 36 marcos principais têm folga mínima >= 2.35 tiles
 const marcos = enseada.objects.filter(o =>
+  o.renderizar !== false &&
   !o.id.startsWith('trilha_pedras_') &&
   !o.id.startsWith('enseada_folhas_') &&
   !o.id.startsWith('enseada_flora_') &&

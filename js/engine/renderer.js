@@ -5104,8 +5104,17 @@ function drawMapObject(object, state) {
   }
   // ...
 
-  const sheet = getObjectSpriteConfig(object.sprite);
-  const image = getSprite(object.sprite ?? sheet.ID);
+  const reducedMotion = typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+  let spriteId = object.sprite;
+  if (object.spriteB && !reducedMotion) {
+    const periodo = object.animPeriodo ?? 0.55;
+    const fase = (performance.now() / 1000) / periodo + (object.x + object.y) * 0.27;
+    if (Math.floor(fase) % 2 === 1 && getSprite(object.spriteB)) {
+      spriteId = object.spriteB;
+    }
+  }
+  const sheet = getObjectSpriteConfig(spriteId);
+  const image = getSprite(spriteId ?? sheet.ID);
   if (!image || !sheet) return;
 
   // Estado ligado a uma flag de progresso (ex.: válvula da estufa aberta).
@@ -5272,8 +5281,10 @@ function drawCroppedObject(object, image, sheet) {
 
   const agora = performance.now() / 1000;
   const boiaY = object.flutuacaoSuave ? Math.sin(agora * 2.1 + object.x * 1.7 + object.y) * 2.4 : 0;
-  const ix = (object.x - object.y) * HW + (object.ajusteX ?? 0);
-  const iy = (object.x + object.y) * HH + (object.ajusteY ?? 0) + boiaY;
+  const cardumeX = object.nadoCardume ? Math.cos(agora * 1.35 + object.x) * 4.5 : 0;
+  const cardumeY = object.nadoCardume ? Math.sin(agora * 2.0 + object.y) * 2.2 : 0;
+  const ix = (object.x - object.y) * HW + (object.ajusteX ?? 0) + cardumeX;
+  const iy = (object.x + object.y) * HH + (object.ajusteY ?? 0) + boiaY + cardumeY;
 
   // skewY: inclina o eixo longo (y' = y + skewY * x) sem esticar a altura.
   // Positivo = a ponta direita desce. Aplicado em espaço de TELA,

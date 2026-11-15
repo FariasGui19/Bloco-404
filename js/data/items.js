@@ -81,6 +81,13 @@ export const ITEMS = Object.freeze({
     spritePath: 'assets/sprites/enseada-2/banco-areia-conchas.png',
     description: 'Relíquia da Enseada dos Ecos 2.0. Guarda a ressonância dos quatro arquétipos sobre a maré, o vento e a fauna costeira.',
   }),
+  bussola_mar_ecos: Object.freeze({
+    name: 'BÚSSOLA DE MARÉ DA ENSEADA',
+    kind: 'relíquia costeira',
+    icon: 'progressao',
+    spritePath: 'assets/sprites/enseada-2/barco-expedicao-enseada.png',
+    description: 'Instrumento náutico calibrado na Enseada dos Ecos. Aponta sempre para as correntes seguras mesmo sob ressaca.',
+  }),
   bio_estacao_estufa: Object.freeze({
     name: 'ASSINATURA DA ESTUFA',
     kind: 'registro',

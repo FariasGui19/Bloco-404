@@ -32,7 +32,10 @@ export function updateHazards(hazards, player, progress, dt) {
     hazard.cooldown = Math.max(0, hazard.cooldown - dt);
     if (hazard.cooldown > 0 || !isInsideHazard(player, hazard)) continue;
     if (player.ability?.dash && hazard.ignoredDuringDash !== false) continue;
-    const result = damagePlayer(player, progress, hazard.damage, hazard.id ?? 'eco_instavel');
+    let damage = hazard.damage;
+    if (progress?.archetype === 'lamina_dominio_anciao') damage = Math.max(1, Math.round(damage * 0.65));
+    if (player.enseadaBuff === 'escudo_bio') damage = Math.max(1, Math.round(damage * 0.5));
+    const result = damagePlayer(player, progress, damage, hazard.id ?? 'eco_instavel');
     if (result.dealt > 0) {
       hazard.cooldown = hazard.interval;
       hit = { hazard, ...result };

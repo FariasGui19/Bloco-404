@@ -191,6 +191,11 @@ export async function loadMap(mapId, spawnId = 'inicio') {
       if (!state.progress.questLog?.ecos_da_enseada_viva) {
         startQuest(state.progress, 'ecos_da_enseada_viva');
       }
+      if (!state.progress.questLog?.expedicao_da_baia_enseada) {
+        startQuest(state.progress, 'expedicao_da_baia_enseada');
+      }
+    } else if (state.player) {
+      state.player.enseadaBuff = null;
     }
     reachFirstRoute(state.progress, mapData.id);
     // Salva a última localização somente se um perfil estiver ativo.

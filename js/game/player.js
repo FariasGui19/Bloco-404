@@ -55,6 +55,8 @@ export function getPlayerMoveSpeed(progress, player) {
     if (progress?.archetype === 'mare_astral' && (tile === 'M' || player?.nado?.ativo)) enseadaBonus = 1.1;
     else if (progress?.archetype === 'nucleo_dez_forma' && tile === 'S') enseadaBonus = 1.08;
     else if (progress?.archetype === 'motor_bio_forja') enseadaBonus = 1.04;
+    if (player?.enseadaBuff === 'pulso_salino' && (tile === 'M' || player?.nado?.ativo)) enseadaBonus += 0.1;
+    if (player?.enseadaBuff === 'vetor_leve' && tile === 'S') enseadaBonus += 0.1;
   }
   return CONFIG.PLAYER_SPEED * formMultiplier * mastery * enseadaBonus;
 }

@@ -492,6 +492,17 @@ await loadSprites([
   { id: 'enseada_fonte_termal', src: 'assets/sprites/enseada-2/fonte-termal-enseada.png' },
   { id: 'enseada_banco_ostras', src: 'assets/sprites/enseada-2/banco-ostras-perola.png' },
   { id: 'enseada_carrilhao_vento', src: 'assets/sprites/enseada-2/carrilhao-vento-bambu.png' },
+  // ---- ENSEADA DOS ECOS 2.0 — Lote #5 (tools/preparar-enseada-2.py) ----
+  { id: 'enseada_portal_correntes', src: 'assets/sprites/enseada-2/portal-caminho-correntes.png' },
+  { id: 'enseada_portico_praia', src: 'assets/sprites/enseada-2/portico-trilha-praia.png' },
+  { id: 'enseada_barco_expedicao', src: 'assets/sprites/enseada-2/barco-expedicao-enseada.png' },
+  { id: 'enseada_santuario_lumeo', src: 'assets/sprites/enseada-2/santuario-lumeo-pedra.png' },
+  { id: 'enseada_acampamento_vigilia', src: 'assets/sprites/enseada-2/acampamento-vigilia-fogueira.png' },
+  { id: 'enseada_torre_antena', src: 'assets/sprites/enseada-2/torre-antena-escuta.png' },
+  { id: 'enseada_farolete_baia', src: 'assets/sprites/enseada-2/farolete-baia-enseada.png' },
+  { id: 'enseada_bancada_campo', src: 'assets/sprites/enseada-2/bancada-campo-arquetipos.png' },
+  { id: 'enseada_baliza_boia', src: 'assets/sprites/enseada-2/baliza-mare-boia.png' },
+  { id: 'enseada_totem_eco', src: 'assets/sprites/enseada-2/totem-eco-instavel.png' },
   {
     id: 'metro_rail_kit',
     src: 'assets/sprites/tiles/metro-rail-kit.png',

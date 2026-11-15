@@ -579,6 +579,7 @@ await loadSprites([
   { id: 'enseada4_gruta', src: 'assets/sprites/enseada-4/shell-grotto.png' },
   { id: 'enseada4_rede', src: 'assets/sprites/enseada-4/beach-training-net.png' },
   { id: 'enseada4_cairn', src: 'assets/sprites/enseada-4/zen-stone-cairn.png' },
+  { id: 'enseada4_travessia_pedras', src: 'assets/sprites/enseada-4/stepping-stone-path-water.png' },
   {
     id: 'metro_rail_kit',
     src: 'assets/sprites/tiles/metro-rail-kit.png',

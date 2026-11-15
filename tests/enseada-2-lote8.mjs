@@ -112,6 +112,7 @@ const agua = new Set([
   'barco_expedicao_enseada', 'baliza_mare_boia_1', 'baliza_mare_boia_2',
   'lanterna_marinha_norte', 'lanterna_marinha_sul', 'arco_conduto_retorno_mare',
   'porta_estacao_666_visual', 'terminal_frequencia_666', 'portico_trilha_praia',
+  'travessia_pedras_agua',
 ]);
 for (const o of marcos) {
   if (agua.has(o.id)) continue;

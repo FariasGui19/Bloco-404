@@ -528,6 +528,11 @@ export const map = {
       interacao: { label: 'OBSERVAR A BAÍA DO CAIS', distancia: 1.75 },
     },
     {
+      id: 'travessia_pedras_agua', tipo: 'decoracao', x: 49.5, y: 44.5,
+      sprite: 'enseada4_travessia_pedras', larguraPx: 130,
+      pivotX: 0.5, pivotY: 0.8, depthOffset: -0.2, bloqueia: false,
+    },
+    {
       id: 'barco_expedicao_enseada', nome: 'BARCO DE EXPEDIÇÃO', tipo: 'decoracao', x: 55.5, y: 36.5,
       sprite: 'enseada_barco_expedicao', spriteB: 'enseada_barco_expedicao_b', animPeriodo: 0.72,
       useCrop: true, larguraPx: 126, pivotX: 0.5, pivotY: 0.88,

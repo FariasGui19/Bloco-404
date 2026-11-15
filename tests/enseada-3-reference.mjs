@@ -46,7 +46,7 @@ const object = id => {
   assert(found, `marco visual ausente: ${id}`);
   return found;
 };
-assert.equal(object('porta_estacao_666_visual').sprite, 'enseada3_estacao_666');
+assert.equal(object('porta_estacao_666_visual').sprite, 'enseada8_entrada_666');
 assert(object('porta_estacao_666_visual').larguraPx >= 350);
 assert.equal(object('enseada_macico_leste').sprite, 'enseada3_platao_cascata');
 assert(object('enseada_macico_leste').larguraPx >= 700);

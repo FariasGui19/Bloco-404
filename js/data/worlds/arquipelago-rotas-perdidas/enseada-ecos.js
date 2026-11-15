@@ -105,6 +105,10 @@ for (let y = 0; y < ROWS; y++) {
 for (const [cx, cy] of [[54, 35], [55, 35], [54, 36], [55, 36], [56, 36], [55, 37], [56, 37]]) {
   if (grid[cy]?.[cx] !== undefined && grid[cy][cx] !== 'S') grid[cy][cx] = 'S';
 }
+// Píer de madeira da referência: a margem é estendida em areia para o cais sair da praia.
+for (let cy = 40; cy <= 42; cy++) for (let cx = 49; cx <= 53; cx++) {
+  if (grid[cy]?.[cx] !== undefined && grid[cy][cx] !== 'S') grid[cy][cx] = 'S';
+}
 const rows = grid.map(l => l.join(''));
 const ground = buildGround({
   sheet: 'BEACH_FLOOR_SPRITE',
@@ -526,14 +530,14 @@ export const map = {
       bloqueia: false, brilho: { cor: '#5cf7eb', raio: 1.5, forca: 0.34 },
     },
     {
-      id: 'cais_madeira_pesca_enseada', nome: 'CAIS DA ENSEADA', tipo: 'decoracao', x: 48.8, y: 38.4,
+      id: 'cais_madeira_pesca_enseada', nome: 'CAIS DA ENSEADA', tipo: 'decoracao', x: 50.5, y: 41.5,
       sprite: 'enseada3_cais_barco', spriteB: 'enseada3_cais_barco', animPeriodo: 0.68,
       useCrop: true, larguraPx: 420, pivotX: 0.5, pivotY: 0.97,
       bloqueia: false, brilho: { cor: '#ffd980', raio: 1.0, forca: 0.16 },
       interacao: { label: 'OBSERVAR A BAÍA DO CAIS', distancia: 1.75 },
     },
     {
-      id: 'travessia_pedras_agua', tipo: 'decoracao', x: 49.5, y: 44.5,
+      id: 'travessia_pedras_agua', tipo: 'decoracao', x: 51.5, y: 47.5,
       sprite: 'enseada4_travessia_pedras', larguraPx: 130,
       pivotX: 0.5, pivotY: 0.8, depthOffset: -0.2, bloqueia: false,
     },
@@ -593,7 +597,7 @@ export const map = {
       pivotX: 0.5, pivotY: 0.96, depthOffset: -0.3, bloqueia: false,
     },
     {
-      id: 'coral_rosa', tipo: 'decoracao', x: 53.5, y: 47.5,
+      id: 'coral_rosa', tipo: 'decoracao', x: 54.5, y: 48.5,
       sprite: 'enseada6_coral_rosa', larguraPx: 80,
       pivotX: 0.5, pivotY: 0.96, depthOffset: -0.3, bloqueia: false,
     },
@@ -663,7 +667,7 @@ export const map = {
       pivotX: 0.5, pivotY: 0.96, depthOffset: -0.3, bloqueia: false,
     },
     {
-      id: 'barco_expedicao_enseada', nome: 'BARCO DE EXPEDIÇÃO', tipo: 'decoracao', x: 55.5, y: 36.5,
+      id: 'barco_expedicao_enseada', nome: 'BARCO DE EXPEDIÇÃO', tipo: 'decoracao', x: 53.5, y: 41.0,
       sprite: 'enseada_barco_expedicao', spriteB: 'enseada_barco_expedicao_b', animPeriodo: 0.72,
       useCrop: true, larguraPx: 126, pivotX: 0.5, pivotY: 0.88,
       bloqueia: false, flutuacaoSuave: true, renderizar: false,

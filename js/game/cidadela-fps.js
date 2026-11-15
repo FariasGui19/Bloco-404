@@ -802,7 +802,10 @@ export function updateCitadel(dt, state, input) {
     } else if(target) {
       const result=interactCitadelMission(progress,target);
       if(result) {
-        if(result.changed){playCitadelSound('pickup');saveCitadelProgress(progress,g);}
+        if(result.changed){
+          playCitadelSound(result.missionDone?'mission_complete':result.kind==='relay'?'relay_sync':result.kind==='recording'?'recording_play':'pickup');
+          saveCitadelProgress(progress,g);
+        }
         notice(g,result.message,7);
         if(target.kind==='recording' && result.changed && citadelMissions(progress).registros===3) {
           queueRadio(g,'NEXO-04: AS TRÊS CAIXAS CONVERGEM — O SINAL DE 3s ANTES VEIO DA RETIRADA NO REATOR E ABRIU A VIGÍLIA.');
@@ -946,7 +949,7 @@ export function updateCitadel(dt, state, input) {
       if(g.sectorSeen?.has(s) && !g.clearedSectors?.has(s) && !g.enemies.some(e=>e.hp>0 && (e.x<8?0:e.x<15?1:e.x<22?2:3)===s)) {
         g.clearedSectors.add(s);
         p.energy=Math.min(p.maxEnergy ?? 100,(p.energy ?? 0)+10);
-        playCitadelSound('ready');
+        playCitadelSound('sector_clear');
         queueRadio(g,`NEXO-04: SETOR 0${s+1} ESTABILIZADO • +10 ENERGIA.`);
       }
     }
@@ -1052,6 +1055,8 @@ function makeSprite(type) {
     x.fillStyle=type==='shot_echo'?'#68e9e3':type==='shot_orb'?'#cb8fff':type==='shot_elite'?'#ff8b3d':type==='shot_boss_p2'?'#d645ff':'#ff5e55'; x.fillRect(35,49,26,26); x.fillStyle='#fff4dc'; x.fillRect(42,55,12,14);
   } else if (type==='impact_elite') {
     x.fillStyle='#ff8a33'; x.fillRect(32,48,32,32); x.fillStyle='#ffe89c'; x.fillRect(40,56,16,16);
+  } else if (type==='impact_cyan') {
+    x.fillStyle='#52f0f5'; x.fillRect(32,48,32,32); x.fillStyle='#e4ffff'; x.fillRect(40,56,16,16);
   } else if (type==='key') {
     x.fillStyle='#1f3039'; x.fillRect(25,60,46,53); x.fillStyle='#637780'; x.fillRect(29,57,38,8); x.fillStyle='#aefeff'; x.fillRect(32,70,32,25); x.fillStyle='#10272a'; x.fillRect(38,75,20,15); x.fillStyle='#dcffff'; x.fillRect(45,78,6,9);
   } else if (type==='nulo') {
@@ -1138,10 +1143,15 @@ function setupBuffer() {
     ['boss_phase2_open','assets/sprites/cidadela-404/vigilante-fase2-aberto.png'],
     ['boss_phase2_hurt','assets/sprites/cidadela-404/vigilante-fase2-dano.png'],
     ['boss_meltdown','assets/sprites/cidadela-404/vigilante-morte-nucleo.png'],
+    ['boss_shield_p2','assets/sprites/cidadela-404/vigilante-escudo-fase2.png'],
     ['shot_boss_p2','assets/sprites/cidadela-404/projetil-vigilante-fase2.png'],
     ['impact_elite','assets/sprites/cidadela-404/impacto-elite.png'],
+    ['impact_cyan','assets/sprites/cidadela-404/impacto-eco.png'],
     ['probe_100','assets/sprites/cidadela-404/sonda-nexo-100.png'],
     ['hud_overdrive','assets/sprites/cidadela-404/hud-sobrecarga-icone.png'],
+    ...['mare','nucleo','dominio','bio'].map(mode=>[`hud_weapon_${mode}`,`assets/sprites/cidadela-404/hud-arma-${mode}.png`]),
+    ['recording_galeria','assets/sprites/cidadela-404/registro-galeria.png'],
+    ['wall_gallery','assets/sprites/cidadela-404/parede-galeria.png'],
     ['floor_office','assets/sprites/cidadela-404/piso-oficina.png'],
     ['floor_corridor','assets/sprites/cidadela-404/piso-corredor.png'],
     ['ceiling_citadel','assets/sprites/cidadela-404/teto-cidadela.png'],
@@ -1378,7 +1388,7 @@ function drawWorld(map, flags, p, g, progress) {
     const fog=clamp(1-ray.dist/17,.12,1)*(ray.side?.72:1);
     const seam=ray.frac<.035 || ray.frac>.965;
     const base=ray.tile===2?[35,105,104]:[72,67,65];
-    const wall=ray.tile===2 ? sprites.wall_gate : (ray.y>=11 ? (sprites.wall_workshop ?? sprites.wall_metal) : (ray.x>=23 ? (sprites.wall_arena ?? sprites.wall_brick) : (ray.x>=9 && ray.x<16 ? sprites.wall_brick : (sprites.wall_corridor ?? sprites.wall_metal))));
+    const wall=ray.tile===2 ? sprites.wall_gate : (ray.y>=11 ? (sprites.wall_workshop ?? sprites.wall_metal) : (ray.x>=23 ? (sprites.wall_arena ?? sprites.wall_brick) : (ray.x>=9 && ray.x<16 ? (sprites.wall_gallery ?? sprites.wall_brick) : (sprites.wall_corridor ?? sprites.wall_metal))));
     if(wall) {
       const u=clamp(Math.floor(ray.frac*wall.width),0,wall.width-1);
       ctx.drawImage(wall,u,0,1,wall.height,x,top,2,height);
@@ -1415,7 +1425,7 @@ function drawWorld(map, flags, p, g, progress) {
     {...CITADEL_REACTOR_CONSOLE,type:'reactor_console',scale:.64,ground:true},
     {...CITADEL_DORMANT_GUARDIAN,type:'dormant_guardian',scale:1.65,ground:true},
     ...CITADEL_POSTGAME.reles.map((o,i)=>({...o,type:mission.rede.objectives[i].done?'relay_on':'relay_off',ground:true})),
-    ...CITADEL_POSTGAME.registros.map(o=>({...o,type:o.id==='entrada'?'recording_entrada':o.id==='forja'?'recording_forja':'recording',ground:true})),
+    ...CITADEL_POSTGAME.registros.map(o=>({...o,type:o.id==='entrada'?'recording_entrada':o.id==='galeria'?'recording_galeria':o.id==='forja'?'recording_forja':'recording',ground:true})),
     ...CITADEL_POSTGAME.decor.map(o=>({...o,ground:true})),
     {...CITADEL_BREACH_CONSOLE,type:'breach_console',scale:.62,ground:true},
     ...CITADEL_BREACHES.flatMap(b=>[
@@ -1495,12 +1505,13 @@ function drawWorld(map, flags, p, g, progress) {
       visual=bossVisualFrame(g.boss,g.time,reducedMotion());
       if(!reducedMotion() && g.boss.dead && (g.boss.death ?? 0)>.85 && sprites.boss_meltdown) visual='boss_meltdown';
       else if(!reducedMotion() && g.boss.phaseTwo) {
-        if((visual==='boss_open_a' || visual==='boss_open_b') && sprites.boss_phase2_open) visual='boss_phase2_open';
+        if(visual==='boss_shield' && sprites.boss_shield_p2) visual='boss_shield_p2';
+        else if((visual==='boss_open_a' || visual==='boss_open_b') && sprites.boss_phase2_open) visual='boss_phase2_open';
         else if(visual==='boss_hurt' && sprites.boss_phase2_hurt) visual='boss_phase2_hurt';
       }
     }
     const chosen=sprites[visual];
-    const bossFallback=o.type==='boss' ? (visual==='boss_meltdown'?(sprites.boss_fall ?? sprites.boss_death ?? sprites.bossClosed) : visual==='boss_phase2_open'?(sprites.boss_open_a ?? sprites.bossClosed) : visual==='boss_phase2_hurt'?(sprites.boss_hurt ?? sprites.bossClosed) : visual==='boss_phase2_attack'?(sprites.boss_attack_b ?? sprites.boss_attack) : visual==='boss_attack_b'?sprites.boss_attack : visual==='boss_warning_b'?sprites.boss_warning : (visual==='boss_fall'||visual==='boss_death')?(sprites.boss_death ?? sprites.bossClosed) : visual==='boss_shield'?(sprites.boss_shield ?? sprites.bossClosed) : visual==='boss_phase2'?(sprites.boss_phase2 ?? sprites.bossClosed) : bossOpen(g.boss)?sprites.boss_open_a : sprites.bossClosed) : null;
+    const bossFallback=o.type==='boss' ? (visual==='boss_meltdown'?(sprites.boss_fall ?? sprites.boss_death ?? sprites.bossClosed) : visual==='boss_shield_p2'?(sprites.boss_shield ?? sprites.bossClosed) : visual==='boss_phase2_open'?(sprites.boss_open_a ?? sprites.bossClosed) : visual==='boss_phase2_hurt'?(sprites.boss_hurt ?? sprites.bossClosed) : visual==='boss_phase2_attack'?(sprites.boss_attack_b ?? sprites.boss_attack) : visual==='boss_attack_b'?sprites.boss_attack : visual==='boss_warning_b'?sprites.boss_warning : (visual==='boss_fall'||visual==='boss_death')?(sprites.boss_death ?? sprites.bossClosed) : visual==='boss_shield'?(sprites.boss_shield ?? sprites.bossClosed) : visual==='boss_phase2'?(sprites.boss_phase2 ?? sprites.bossClosed) : bossOpen(g.boss)?sprites.boss_open_a : sprites.bossClosed) : null;
     const sprite=chosen ?? (frame==='attack'?sprites[`${o.type}_attack`]:null) ?? bossFallback ?? base;
     const aspect=directionalBase ?? (visual.includes('_walk_') ? sprite : base);
     const h=Math.min(H*4,H/forward*o.scale), w=h*(aspect.width/aspect.height), left=center-w/2;
@@ -1760,6 +1771,8 @@ export function renderCitadel(canvas,state) {
   // Ícones acompanham rótulos em texto: nenhuma informação depende de cor ou arte.
   if(sprites.hud_health)ctx.drawImage(sprites.hud_health,9,H-39,10,10);
   ctx.fillStyle='#e2f4f0';ctx.fillText('VIDA '+Math.ceil(p.health||0)+'/'+(p.maxHealth||0),22,H-30);
+  const hudWeapon=sprites[`hud_weapon_${mod.mode}`];
+  if(hudWeapon)ctx.drawImage(hudWeapon,104,H-39,18,10);
   const ammoIcon=g.jam>0?(sprites.hud_jam ?? sprites.hud_ammo):sprites.hud_ammo;
   if(ammoIcon)ctx.drawImage(ammoIcon,126,H-39,10,10);
   ctx.fillStyle=g.jam>0?'#ffb4a0':'#e2f4f0';
@@ -1898,7 +1911,7 @@ export function renderCitadel(canvas,state) {
       for(const [i,a] of CITADEL_ARCHIVES.entries()) ctx.fillText(`${a.label}: ${flags[a.flag]?a.log:'NÃO ENCONTRADO.'}`,62,180+i*12,W-125);
       ctx.fillStyle=flags.cidadela_estavel?'#b4fff1':'#d9b9ae';
       ctx.fillText(`CRTs ${crtCount(state.progress)}/3 • ECOS ${memoryEchoCount(state.progress)}/3 • RELÍQUIAS ${['selo_codigo_queimado','nucleo_vigilante_forjado'].filter(id=>state.progress.inventory?.includes(id)).length}/2`,62,213,W-125);
-      if(flags.cidadela_estavel) ctx.fillText(`GRAVAÇÕES ${citadelMissions(state.progress).registros}/3 • FENDAS ${breachSummary(state.progress).sealed}/3 • OFICINA ${workshopCount(state.progress)}/3 • RONDAS ${flags.cidadela_rondas_concluidas ?? 0}`,62,223,W-125);
+      if(flags.cidadela_estavel) ctx.fillText(`GRAVAÇÕES ${citadelMissions(state.progress).registros}/3 • FENDAS ${breachSummary(state.progress).sealed}/3 • OFICINA ${workshopCount(state.progress)}/3 • RONDAS ${flags.cidadela_rondas_concluidas ?? 0}${flags.cidadela_100_porcento?' ★ 100%':''}`,62,223,W-125);
     } else if(g.panel==='missions') {
       if(!flags.cidadela_estavel) {
         ctx.fillText(`FORJA DO CÓDIGO QUEIMADO • SUC ${mats.sucata_codigo} • NÚC ${mats.nucleo_estatica}`,62,80,W-125);

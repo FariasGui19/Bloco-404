@@ -26,11 +26,13 @@ export const THRESHOLD_SCENES = [
 export const CITADEL_END_SCENES = [
   { image:'assets/cutscenes/vigilante-reator.png', eyebrow:'CIDADELA // REFRIGERAÇÃO', title:'O GUARDIÃO', text:'O Vigilante silencia. Atrás da blindagem, o núcleo ainda pulsa: ele estava mantendo o reator vivo.', note:'A origem do pedido de socorro continua desconhecida.' },
   { image:'assets/cutscenes/cidadela-estavel.png', eyebrow:'NEXO-04 // LINHA DE RETORNO', title:'A ROTA SOBREVIVEU', text:'“O reator respira de novo. Podemos voltar — e alguém, ou alguma coisa, ainda pode nos responder.”', note:'Uma sonda do NEXO aguarda na arena. A linha de retorno está aberta.' },
+  { image:'assets/cutscenes/cidadela-desfecho-vigilante.jpg', eyebrow:'OFICINA DA VIGÍLIA // PORTA ABERTA', title:'O PACTO DA VIGÍLIA', text:'Ao sul, as comportas da Oficina da Vigília cedem à luz da superfície. O chassi do Vigilante repousa em vigília silenciosa ao lado do núcleo estabilizado.', note:'Explore a Rede de Escuta, as Fendas, a Oficina e a Ronda Setorial antes de retornar.' },
 ];
 
 export const CITADEL_RETURN_SCENES = [
   { image:'assets/cutscenes/cidadela-retorno-estavel.jpg', eyebrow:'ESTAÇÃO 66.6 // RETORNO ESTÁVEL', title:'A MARÉ DO OUTRO LADO', text:'Ao cruzar de volta pelo anel, a neblina sobre a plataforma abriu caminho para a maré noturna. A frequência de 66.6 MHz não treme mais — a linha sobreviveu ao apagamento.', note:'A Cidadela 404, a Oficina da Vigília e a Ronda Setorial continuam acessíveis pelo anel.' },
   { image:'assets/cutscenes/cidadela-aurora-limiar.jpg', eyebrow:'PRÓXIMO HORIZONTE // PORTAL ABERTO', title:'ALÉM DO CÓDIGO QUEIMADO', text:'NEXO-04: “Às margens da estática, o farol da Estação 66.6 aponta agora para rotas que ainda não mapeamos. O Vigilante segurou a porta; você garantiu a travessia.”', note:'A passagem para a próxima dimensão aguarda no console central.' },
+  { image:'assets/cutscenes/cidadela-epilogo-nulo.jpg', eyebrow:'EPÍLOGO // FREQUÊNCIA 66.6', title:'ECOS NA MARÉ', text:'Por um segundo, o anel reflete uma silhueta de linhas sem rosto antes da aurora apagar o ruído. “O Bloco 404 respondeu ao primeiro chamado. As próximas dimensões aguardam.”', note:'Registro arquivado na Estação 66.6. Todo o progresso da Cidadela foi preservado.' },
 ];
 
 let open = false;

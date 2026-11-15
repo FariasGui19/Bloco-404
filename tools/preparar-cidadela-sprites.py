@@ -813,6 +813,35 @@ for name in ['sonda-nexo-100', 'imp-elite-costas-dano', 'imp-elite-costas-colaps
     image.save(dst / f'{name}.png', optimize=True)
     print(name, image.size)
 
+# Lote 9: fechamento narrativo, HUD de armas, parede da galeria, escudo Fase 2,
+# impacto do Echovore e 3ª caixa de registro distinta.
+for jpg in ['cidadela-desfecho-vigilante.jpg', 'cidadela-epilogo-nulo.jpg']:
+    art = Image.open(src / jpg).convert('RGB')
+    art.thumbnail((1280, 720), Image.Resampling.LANCZOS)
+    art.save(cutscenes / jpg, quality=88, optimize=True)
+    print(jpg, art.size)
+
+gal_wall = Image.open(src / 'parede-galeria.png').convert('RGB')
+side_g = min(gal_wall.size)
+left_g = (gal_wall.width - side_g) // 2
+top_g = (gal_wall.height - side_g) // 2
+gal_wall = gal_wall.crop((left_g, top_g, left_g + side_g, top_g + side_g)).resize((128, 128), Image.Resampling.LANCZOS)
+gal_wall.save(dst / 'parede-galeria.png', optimize=True)
+print('parede-galeria', gal_wall.size)
+
+for name in ['hud-arma-mare', 'hud-arma-nucleo', 'hud-arma-dominio', 'hud-arma-bio',
+             'registro-galeria', 'vigilante-escudo-fase2', 'impacto-eco']:
+    image = Image.open(src / f'{name}.png').convert('RGBA')
+    remove_border_bg(image, 'dark')
+    box = image.getbbox()
+    if not box: raise ValueError(f'Sprite vazio: {name}')
+    image = image.crop(box)
+    size = 256 if name == 'vigilante-escudo-fase2' else 160 if name == 'registro-galeria' else 128 if name == 'impacto-eco' else 96
+    image.thumbnail((size, size), Image.Resampling.LANCZOS)
+    image.save(dst / f'{name}.png', optimize=True)
+    print(name, image.size)
+
+
 
 
 

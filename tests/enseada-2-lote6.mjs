@@ -156,7 +156,9 @@ const lote6Ids = [
 for (const id of lote6Ids) {
   const obj = state.objects.find(o => o.id === id);
   assert(obj, `Objeto ${id} ausente`);
-  assert.equal(obj.bloqueia, false, `${id} não deve bloquear passagem`);
+  const marcoSolido = ['gruta_concha_enseada', 'jardim_pedras_enseada', 'maleta_expedicao_enseada'].includes(id);
+  assert.equal(obj.bloqueia, marcoSolido, `${id} deve respeitar colisão do marco visual`);
+  if (marcoSolido) assert(obj.hitbox || obj.hitboxes, `${id} precisa de hitbox precisa`);
   let reached = false;
   for (const key of walkVisited) {
     const [wx, wy] = key.split(',').map(Number);
@@ -178,7 +180,8 @@ async function interactAt(x, y, expectedId) {
 }
 
 // 3. Barco oferece Rota da Maré Astral quando conduto_enseada_mare está liberado
-await interactAt(27.5, 20.5, 'barco_expedicao_enseada');
+const barco = state.objects.find(o => o.id === 'barco_expedicao_enseada');
+await interactAt(barco.x, barco.y, 'barco_expedicao_enseada');
 assert.equal(domIds.dialogueChoices.children.length, 3, 'Barco com Conduto aberto oferece Correntes, Maré Astral e Ficar');
 closeDialogue();
 

@@ -1,13 +1,12 @@
-// Enseada dos Ecos 2.0 — ilha costeira ampliada, alinhada e encaixada (52x46)
-// Preserva todas as conexões principais (Praia Inicial, Estação 66.6,
-// Caminho das Correntes e Conduto da Maré Astral) com 6 núcleos temáticos,
-// trilhas contínuas, relevos ancorados na costa, proporções harmônicas e animações A/B.
+// Enseada dos Ecos 3.1 — reconstrução em escala de referência (72x64)
+// Mantém os acessos antigos enquanto amplia a ilha e introduz áreas próprias
+// para o acampamento, o santuário central e a extensa praia sul/leste.
 import { buildGround } from '../../ground.js';
 import { relevo } from '../../relevo-praia.js';
 import { flora } from '../../flora-praia.js';
 
-const COLS = 52;
-const ROWS = 46;
+const COLS = 72;
+const ROWS = 64;
 
 function hash(x, y, seed = 0) {
   let h = Math.imul(x + seed * 131, 374761393) + Math.imul(y, 668265263);
@@ -18,30 +17,27 @@ function hash(x, y, seed = 0) {
 const ehTerra = c => c !== undefined && 'SMT'.includes(c);
 
 const landShape = (x, y) => {
-  // Ilha ampla em ferradura/meia-lua com costa norte contínua para encaixar as falésias
-  const dNorteOeste = ((x - 14.8) / 10.6) ** 2 + ((y - 14.2) / 8.8) ** 2;
-  const dSudoeste = ((x - 14.4) / 10.0) ** 2 + ((y - 26.2) / 8.2) ** 2;
-  const dSudeste = ((x - 27.6) / 8.8) ** 2 + ((y - 25.4) / 6.2) ** 2;
-  const noise = (hash(x, y, 7) - 0.5) * 0.16;
-  let inside = Math.min(dNorteOeste, dSudoeste, dSudeste) + noise < 1.0;
+  // Silhueta em ferradura, distribuída por quase toda a tela: platô norte,
+  // ombro oeste, praia central, cabo leste e faixa de areia sul.
+  const dNorteOeste = ((x - 17.0) / 15.0) ** 2 + ((y - 13.0) / 11.0) ** 2;
+  const dSudoeste = ((x - 15.5) / 14.0) ** 2 + ((y - 27.0) / 14.0) ** 2;
+  const dCentro = ((x - 31.0) / 17.0) ** 2 + ((y - 25.0) / 13.0) ** 2;
+  const dPontaLeste = ((x - 48.0) / 13.0) ** 2 + ((y - 25.0) / 11.0) ** 2;
+  const dPraiaSul = ((x - 30.0) / 23.0) ** 2 + ((y - 41.0) / 12.0) ** 2;
+  const noise = (hash(x, y, 7) - 0.5) * 0.08;
+  let inside = Math.min(dNorteOeste, dSudoeste, dCentro, dPontaLeste, dPraiaSul) + noise < 1.0;
 
-  // Baía leste côncava para o Porto, Barco e Conduto Abissal (x >= 26, y = 9..19)
-  if (x >= 26 && y >= 9 && y <= 19) {
-    if (!(x === 25 && y === 15)) inside = false;
-  }
-  // Língua oeste da chegada da Praia Inicial (4..7, 13..17) para apoiar o pórtico e bosquete
+  // Baía leste côncava para o porto; corredor oeste e ponta de embarque
+  // preservam os acessos narrativos existentes sem retângulos de terra artificiais.
+  if (x >= 26 && x <= 33 && y >= 9 && y <= 19) inside = false;
   if (x >= 4 && x <= 7 && y >= 13 && y <= 17) inside = true;
-  // Ponta firme de embarque para Caminho das Correntes (23..25, 15)
   if (x >= 23 && x <= 25 && y === 15) inside = true;
-  // Terra firme ao redor da Estação 66.6, Terminal e falésias norte
-  if (x >= 9 && x <= 24 && y >= 7 && y <= 15) inside = true;
-  // Cabo sudoeste e ponta sudeste garantidos
-  if (x >= 8 && x <= 21 && y >= 22 && y <= 33) inside = true;
-  if (x >= 22 && x <= 33 && y >= 21 && y <= 29) inside = true;
 
-  // Manter águas livres nas laterais oeste e leste para navegação e fauna marinha
+  // Oceano aberto além da enseada; os cardumes existentes permanecem livres.
   if (x <= 2 && y >= 10 && y <= 26) inside = false;
-  if (x >= 37) inside = false;
+  // A raia/cardume leste segue em água profunda diante da ponta ampliada.
+  if (x >= 38 && x <= 43 && y <= 18) inside = false;
+  if (x >= 68) inside = false;
 
   return inside;
 };
@@ -156,6 +152,8 @@ export const map = {
     tipo: 'exterior',
     dimensao: 'arquipelago',
     corFundo: '#025074',
+    minZoom: 0.32,
+    initialZoom: 0.34,
     estiloPiso: 'livre',
     useBackgroundWalls: true,
     sandSprite: 'beach_novas_artes',
@@ -179,28 +177,28 @@ export const map = {
     {
       id: 'poca_cascata_enseada',
       nome: 'LAGOA DA ORLA SUDESTE',
-      x: 23.8, y: 29.0, rx: 1.15, ry: 0.85,
+      x: 33.0, y: 35.0, rx: 1.15, ry: 0.85,
       profundidade: 0.45,
       treino: true,
     },
   ],
 
   ondasMar: [
-    [2, 11, 1], [7, 5, 0], [16, 4, 1], [27, 6, 0], [34, 10, 1],
-    [35, 17, 0], [38, 24, 1], [33, 33, 0], [23, 37, 1], [11, 36, 0], [3, 27, 1], [2, 19, 0],
+    [2, 11, 1], [7, 5, 0], [68, 5, 1], [68, 10, 0], [34, 10, 1],
+    [68, 17, 0], [68, 24, 1], [68, 33, 0], [68, 39, 1], [4, 39, 0], [0, 27, 1], [2, 19, 0],
   ].map(([x, y, tipo]) => ({ x, y, tipo })),
 
   detalhesOceano: [
-    [3, 10, 1], [9, 5, 2], [18, 4, 3], [29, 7, 4], [34, 12, 5],
-    [35, 19, 6], [39, 26, 7], [31, 34, 8], [20, 38, 9], [9, 34, 10], [3, 22, 11],
+    [0, 10, 1], [0, 5, 2], [68, 5, 3], [68, 7, 4], [68, 12, 5],
+    [68, 18, 6], [68, 26, 7], [68, 42, 8], [4, 43, 9], [0, 34, 10], [0, 22, 11],
   ].map(([x, y, fase]) => ({ x, y, fase })),
 
   fundoMar: [
     { x: 1.8, y: 13.4, tipo: 'coral-profundo', origem: 'oceano-vivo', tamanho: 1.0 },
     { x: 32.0, y: 11.0, tipo: 'alga-longa', origem: 'oceano-vivo', tamanho: 1.0 },
-    { x: 35.6, y: 16.5, tipo: 'coral-leque', origem: 'mar-vivo', tamanho: 1.0 },
-    { x: 36.2, y: 27.2, tipo: 'alga-vermelha', origem: 'oceano-vivo', tamanho: 1.0 },
-    { x: 4.5, y: 24.5, tipo: 'ruina-submersa', origem: 'mar-vivo', tamanho: 1.1 },
+    { x: 68.0, y: 16.5, tipo: 'coral-leque', origem: 'mar-vivo', tamanho: 1.0 },
+    { x: 68.0, y: 27.2, tipo: 'alga-vermelha', origem: 'oceano-vivo', tamanho: 1.0 },
+    { x: 2.5, y: 24.5, tipo: 'ruina-submersa', origem: 'mar-vivo', tamanho: 1.1 },
   ],
 
   trainingTargets: [{ id: 'eco_treino_enseada', x: 15.0, y: 16.2, maxHealth: 60 }],
@@ -226,8 +224,8 @@ export const map = {
     { id: 'enseada_gaivota', species: 'gaivota', x: 19.4, y: 32.0 },
     { id: 'enseada_trinta_reis', species: 'trinta_reis', x: 28.8, y: 28.4 },
     { id: 'enseada_peixes', species: 'peixes', x: 1.8, y: 14.5 },
-    { id: 'enseada_tartaruga_1', species: 'tartaruga', x: 39.0, y: 25.0 },
-    { id: 'enseada_golfinho_1', species: 'golfinho', x: 36.6, y: 14.8 },
+    { id: 'enseada_tartaruga_1', species: 'tartaruga', x: 4.5, y: 38.0 },
+    { id: 'enseada_golfinho_1', species: 'golfinho', x: 40.5, y: 16.0 },
     {
       id: 'enseada_capivara', species: 'capivara', x: 16.8, y: 27.2, calma: true,
       interacao: {
@@ -258,8 +256,10 @@ export const map = {
       moduleSystem: { id: 'frequencia_666_terminal', label: 'RASTREAR SINAL ANALÓGICO', distance: 1.6, speaker: 'TERMINAL DA ENSEADA' },
     },
     {
-      id: 'porta_estacao_666_visual', tipo: 'decoracao', x: 18, y: 10, sprite: 'freq666_entrada',
-      useCrop: true, larguraPx: 350, pivotX: 0.76, pivotY: 0.93, depthOffset: -2, bloqueia: true,
+      id: 'porta_estacao_666_visual', tipo: 'decoracao', x: 18, y: 10, sprite: 'enseada3_estacao_666',
+      // Entrada inspirada na referência: porta pequena dentro de um bloco de pedra
+      // alto e gramado. A caixa de fundação antiga é mantida para preservar o acesso.
+      useCrop: true, larguraPx: 380, pivotX: 0.5, pivotY: 0.96, depthOffset: -2, bloqueia: true,
       hitbox: { offsetX: -4.65, offsetY: -1.4, width: 3.8, height: 2.95 },
     },
     { id: 'baliza_666_receptor', tipo: 'decoracao', x: 12, y: 13, sprite: 'freq666_baliza', useCrop: true, larguraPx: 24, pivotX: 0.5, pivotY: 0.98, bloqueia: false },
@@ -296,9 +296,9 @@ export const map = {
     // ---- NÚCLEO 1 (Oeste): Pórtico da Trilha & Acampamento dos Exploradores ----
     {
       id: 'portico_trilha_praia', nome: 'PÓRTICO DA TRILHA', tipo: 'decoracao', x: 5.0, y: 15.0,
-      sprite: 'enseada_portico_praia', spriteB: 'enseada_portico_praia_b', animPeriodo: 0.54,
-      useCrop: true, larguraPx: 112, pivotX: 0.5, pivotY: 0.94,
-      bloqueia: false, brilho: { cor: '#ffb86b', raio: 1.0, forca: 0.22 },
+      sprite: 'enseada3_portico_oeste', spriteB: 'enseada3_portico_oeste', animPeriodo: 0.54,
+      useCrop: true, larguraPx: 190, pivotX: 0.5, pivotY: 0.98,
+      bloqueia: false, oscilaBrisa: true, brilho: { cor: '#ffb86b', raio: 1.0, forca: 0.16 },
     },
     {
       id: 'bandeirola_vento_enseada', nome: 'BIRUTA DA EXPEDIÇÃO', tipo: 'decoracao', x: 7.4, y: 13.6,
@@ -315,16 +315,26 @@ export const map = {
     },
     {
       id: 'acampamento_vigilia_enseada', nome: 'ACAMPAMENTO DE VIGÍLIA', tipo: 'decoracao', x: 9.6, y: 19.0,
-      sprite: 'enseada_acampamento_vigilia', spriteB: 'enseada_acampamento_vigilia_b', animPeriodo: 0.42,
-      useCrop: true, larguraPx: 108, pivotX: 0.5, pivotY: 0.88,
-      bloqueia: false, fogueiraViva: true, brilho: { cor: '#ffae52', raio: 1.25, forca: 0.28 },
+      sprite: 'enseada4_fogueira', spriteB: 'enseada4_fogueira', animPeriodo: 0.42,
+      useCrop: true, larguraPx: 116, pivotX: 0.5, pivotY: 0.98,
+      bloqueia: true, hitbox: { offsetX: -0.30, offsetY: -0.24, width: 0.60, height: 0.48 },
+      fogueiraViva: true, brilho: { cor: '#ffae52', raio: 1.25, forca: 0.28 },
       interacao: { label: 'DESCANSAR NA FOGUEIRA', distancia: 1.6 },
     },
     {
+      id: 'tenda_expedicao_enseada', nome: 'TENDA DA EXPEDIÇÃO', tipo: 'decoracao', x: 14.5, y: 12.0,
+      sprite: 'enseada4_tenda', useCrop: true, larguraPx: 154,
+      pivotX: 0.5, pivotY: 0.98, depthOffset: -0.2,
+      bloqueia: true, hitbox: { offsetX: -0.48, offsetY: -0.34, width: 0.96, height: 0.68 },
+      interacao: { label: 'INSPECIONAR TENDA DA EXPEDIÇÃO', distancia: 1.6, speaker: 'TENDA DA EXPEDIÇÃO',
+        dialogue: ['A LONA GUARDA MAPAS, ROLOS DE CORDA E UM COBERTOR DOBRADO. A EXPEDIÇÃO ESTÁ EM PLENA ATIVIDADE.'] },
+    },
+    {
       id: 'maleta_expedicao_enseada', nome: 'MALETA DA EXPEDIÇÃO', tipo: 'dispositivo', x: 11.4, y: 17.2,
-      sprite: 'enseada_caixa_suprimentos', spriteB: 'enseada_caixa_suprimentos_b', animPeriodo: 0.56,
-      useCrop: true, larguraPx: 66, pivotX: 0.5, pivotY: 0.9,
-      bloqueia: false, pulsoAntena: true, brilho: { cor: '#ff9a5c', raio: 1.0, forca: 0.22 },
+      sprite: 'enseada4_caixas', spriteB: 'enseada4_caixas', animPeriodo: 0.56,
+      useCrop: true, larguraPx: 108, pivotX: 0.5, pivotY: 0.98,
+      bloqueia: true, hitbox: { offsetX: -0.38, offsetY: -0.32, width: 0.76, height: 0.64 },
+      pulsoAntena: true, brilho: { cor: '#ff9a5c', raio: 1.0, forca: 0.22 },
       interacao: { label: 'ABRIR MALETA DA EXPEDIÇÃO', distancia: 1.55 },
     },
     {
@@ -334,40 +344,51 @@ export const map = {
       bloqueia: false, oscilaBrisa: true, pulsoBiolum: '#ffd86b', brilho: { cor: '#ffd86b', raio: 1.0, forca: 0.24 },
       interacao: { label: 'COLHER ESSÊNCIA DE ALGAS DOURADAS', distancia: 1.55 },
     },
+    {
+      id: 'placa_trilha_enseada', nome: 'PLACA DAS TRILHAS', tipo: 'decoracao', x: 15.4, y: 20.0,
+      sprite: 'enseada4_placa', useCrop: true, larguraPx: 74,
+      pivotX: 0.5, pivotY: 0.98, depthOffset: 0.1,
+      bloqueia: true, hitbox: { offsetX: -0.20, offsetY: -0.20, width: 0.40, height: 0.40 },
+      interacao: { label: 'LER A PLACA DAS TRILHAS', distancia: 1.5, speaker: 'PLACA DAS TRILHAS',
+        dialogue: ['O CAMINHO DO OESTE LEVA À PRAIA. AO NORTE FICA A ESTAÇÃO; AO SUL, A PISCINA E A GRUTA.'] },
+    },
 
     // ---- NÚCLEO 2 (Norte): Complexo Científico da Estação 66.6 ----
     {
       id: 'relogio_mare_enseada', nome: 'RELÓGIO DE MARÉ SOLAR', tipo: 'dispositivo', x: 8.2, y: 10.8,
-      sprite: 'enseada_relogio_mare', spriteB: 'enseada_relogio_mare_b', animPeriodo: 0.6,
-      useCrop: true, larguraPx: 76, pivotX: 0.5, pivotY: 0.94,
-      bloqueia: false, brilho: { cor: '#ffd980', raio: 1.15, forca: 0.25 },
+      sprite: 'enseada4_relogio', spriteB: 'enseada4_relogio', animPeriodo: 0.6,
+      useCrop: true, larguraPx: 88, pivotX: 0.5, pivotY: 0.98,
+      bloqueia: true, hitbox: { offsetX: -0.22, offsetY: -0.22, width: 0.44, height: 0.44 },
+      brilho: { cor: '#ffd980', raio: 1.15, forca: 0.25 },
       interacao: { label: 'SINTONIZAR CLIMA E MARÉ', distancia: 1.55 },
     },
     {
       id: 'torre_antena_enseada', nome: 'TORRE-ANTENA DE ESCUTA', tipo: 'dispositivo', x: 11.4, y: 10.2,
-      sprite: 'enseada_torre_antena', spriteB: 'enseada_torre_antena_b', animPeriodo: 0.5,
-      useCrop: true, larguraPx: 82, pivotX: 0.5, pivotY: 0.96,
-      bloqueia: false, pulsoAntena: true, brilho: { cor: '#ff7e71', raio: 0.9, forca: 0.2 },
+      sprite: 'enseada4_torre_vigilia', spriteB: 'enseada4_torre_vigilia', animPeriodo: 0.5,
+      useCrop: true, larguraPx: 116, pivotX: 0.5, pivotY: 0.98,
+      bloqueia: true, hitbox: { offsetX: -0.30, offsetY: -0.28, width: 0.6, height: 0.56 },
+      pulsoAntena: true, brilho: { cor: '#ff7e71', raio: 0.9, forca: 0.2 },
       interacao: { label: 'SINTONIZAR TORRE-ANTENA', distancia: 1.55 },
     },
     {
       id: 'bancada_campo_enseada', nome: 'BANCADA DE CAMPO', tipo: 'dispositivo', x: 10.0, y: 12.6,
-      sprite: 'enseada_bancada_campo', spriteB: 'enseada_bancada_campo_b', animPeriodo: 0.58,
-      useCrop: true, larguraPx: 92, pivotX: 0.5, pivotY: 0.92,
-      bloqueia: false, brilho: { cor: '#74ff8a', raio: 1.2, forca: 0.26 },
+      sprite: 'enseada4_mesa_campo', spriteB: 'enseada4_mesa_campo', animPeriodo: 0.58,
+      useCrop: true, larguraPx: 134, pivotX: 0.5, pivotY: 0.98,
+      bloqueia: true, hitbox: { offsetX: -0.58, offsetY: -0.38, width: 1.16, height: 0.76 },
+      brilho: { cor: '#74ff8a', raio: 1.2, forca: 0.26 },
       interacao: { label: 'CALIBRAR MÓDULO NA BANCADA', distancia: 1.55 },
     },
 
     // ---- NÚCLEO 3 (Centro): Praça Livre de Treino & Marcos Antigos ----
     {
-      id: 'totem_eco_enseada', nome: 'MONÓLITO DE ECO', tipo: 'decoracao', x: 18.6, y: 14.8,
-      sprite: 'enseada_totem_eco', spriteB: 'enseada_totem_eco_b', animPeriodo: 0.52,
-      useCrop: true, larguraPx: 72, pivotX: 0.5, pivotY: 0.94,
-      bloqueia: false, pulsoTotem: true, brilho: { cor: '#ffd980', raio: 1.15, forca: 0.25 },
+      id: 'totem_eco_enseada', nome: 'MONÓLITO DE ECO', tipo: 'decoracao', x: 31.0, y: 24.5,
+      sprite: 'enseada3_monolito', spriteB: 'enseada3_monolito', animPeriodo: 0.52,
+      useCrop: true, larguraPx: 180, pivotX: 0.5, pivotY: 0.98,
+      bloqueia: false, pulsoTotem: true, brilho: { cor: '#52f6ff', raio: 1.4, forca: 0.32 },
       interacao: { label: 'EXAMINAR MONÓLITO DE ECO', distancia: 1.5 },
     },
     {
-      id: 'estela_navegadores_enseada', nome: 'ESTELA DOS NAVEGADORES', tipo: 'decoracao', x: 18.8, y: 18.2,
+      id: 'estela_navegadores_enseada', nome: 'ESTELA DOS NAVEGADORES', tipo: 'decoracao', x: 34.2, y: 28.0,
       sprite: 'enseada_estela_navegadores', spriteB: 'enseada_estela_navegadores_b', animPeriodo: 0.62,
       useCrop: true, larguraPx: 92, pivotX: 0.5, pivotY: 0.92,
       bloqueia: false, pulsoBiolum: '#6cf7ff', brilho: { cor: '#6cf7ff', raio: 1.35, forca: 0.3 },
@@ -376,105 +397,120 @@ export const map = {
 
     // ---- NÚCLEO 4 (Sudoeste / Sul): Santuário dos Arquétipos & Refúgio Termal ----
     {
-      id: 'espelho_arquetipos_enseada', nome: 'ESPELHO DE RESSONÂNCIA', tipo: 'dispositivo', x: 11.8, y: 22.8,
+      id: 'espelho_arquetipos_enseada', nome: 'ESPELHO DE RESSONÂNCIA', tipo: 'dispositivo', x: 23.0, y: 32.0,
       sprite: 'enseada_espelho_arquetipo', spriteB: 'enseada_espelho_arquetipo_b', animPeriodo: 0.56,
       useCrop: true, larguraPx: 90, pivotX: 0.5, pivotY: 0.95,
       bloqueia: false, brilho: { cor: '#6ff7ff', raio: 1.5, forca: 0.34 },
       interacao: { label: 'SINTONIZAR ARQUÉTIPO', distancia: 1.65 },
     },
     {
-      id: 'jardim_pedras_enseada', nome: 'PEDRAS DO EQUILÍBRIO', tipo: 'decoracao', x: 14.2, y: 23.8,
-      sprite: 'enseada_jardim_pedras', spriteB: 'enseada_jardim_pedras_b', animPeriodo: 0.64,
-      useCrop: true, larguraPx: 72, pivotX: 0.5, pivotY: 0.94,
-      bloqueia: false, oscilaBrisa: true,
+      id: 'jardim_pedras_enseada', nome: 'PEDRAS DO EQUILÍBRIO', tipo: 'decoracao', x: 35.0, y: 25.5,
+      sprite: 'enseada4_cairn', spriteB: 'enseada4_cairn', animPeriodo: 0.64,
+      useCrop: true, larguraPx: 98, pivotX: 0.5, pivotY: 0.98,
+      bloqueia: true, hitbox: { offsetX: -0.30, offsetY: -0.24, width: 0.60, height: 0.48 },
+      oscilaBrisa: true,
       interacao: { label: 'MEDITAR NAS PEDRAS DO EQUILÍBRIO', distancia: 1.55 },
     },
     {
-      id: 'piscina_mare_viva_enseada', nome: 'PISCINA DE MARÉ VIVA', tipo: 'decoracao', x: 10.2, y: 26.8,
-      sprite: 'enseada_piscina_mare', spriteB: 'enseada_piscina_mare_b', animPeriodo: 0.64,
-      useCrop: true, larguraPx: 106, pivotX: 0.5, pivotY: 0.88,
+      id: 'piscina_mare_viva_enseada', nome: 'PISCINA DE MARÉ VIVA', tipo: 'decoracao', x: 14.5, y: 37.0,
+      sprite: 'enseada3_piscina', spriteB: 'enseada3_piscina', animPeriodo: 0.64,
+      useCrop: true, larguraPx: 188, pivotX: 0.5, pivotY: 0.92,
       bloqueia: false, pulsoBiolum: '#5cf7eb', brilho: { cor: '#5cf7eb', raio: 1.25, forca: 0.26 },
       interacao: { label: 'MERGULHAR AS MÃOS NA MARÉ VIVA', distancia: 1.65 },
     },
     {
-      id: 'fonte_termal_enseada', nome: 'FONTE TERMAL DA ENSEADA', tipo: 'decoracao', x: 14.8, y: 26.8,
+      id: 'fonte_termal_enseada', nome: 'FONTE TERMAL DA ENSEADA', tipo: 'decoracao', x: 20.0, y: 38.5,
       sprite: 'enseada_fonte_termal', spriteB: 'enseada_fonte_termal_b', animPeriodo: 0.58,
       useCrop: true, larguraPx: 112, pivotX: 0.5, pivotY: 0.9,
       bloqueia: false, vaporTermal: true, brilho: { cor: '#7efce0', raio: 1.4, forca: 0.28 },
       interacao: { label: 'DESCANSAR NA FONTE TERMAL', distancia: 1.7 },
     },
     {
-      id: 'borboletas_fonte_enseada', nome: 'BORBOLETAS DA FONTE', tipo: 'decoracao', x: 14.8, y: 25.6,
+      id: 'borboletas_fonte_enseada', nome: 'BORBOLETAS DA FONTE', tipo: 'decoracao', x: 20.0, y: 37.4,
       sprite: 'enseada_borboletas_vivas', spriteB: 'enseada_borboletas_vivas_b', animPeriodo: 0.34,
       useCrop: true, larguraPx: 54, pivotX: 0.5, pivotY: 0.5,
       bloqueia: false, flutuacaoSuave: true, nadoCardume: true,
     },
     {
-      id: 'banco_conchas_enseada', nome: 'BANCO DE CONCHAS', tipo: 'decoracao', x: 9.0, y: 29.8,
+      id: 'banco_conchas_enseada', nome: 'BANCO DE CONCHAS', tipo: 'decoracao', x: 15.5, y: 42.0,
       sprite: 'enseada_banco_conchas', spriteB: 'enseada_banco_conchas_b', animPeriodo: 0.68,
       useCrop: true, larguraPx: 78, pivotX: 0.5, pivotY: 0.88,
       bloqueia: false,
       interacao: { label: 'EXAMINAR CONCHAS & ESTRELAS', distancia: 1.5 },
     },
     {
-      id: 'gruta_concha_enseada', nome: 'FENDA DA MARÉ', tipo: 'decoracao', x: 13.6, y: 30.8,
-      sprite: 'enseada_gruta_concha', spriteB: 'enseada_gruta_concha_b', animPeriodo: 0.66,
-      useCrop: true, larguraPx: 114, pivotX: 0.5, pivotY: 0.88,
-      bloqueia: false, pulsoBiolum: '#54ccff', brilho: { cor: '#54ccff', raio: 1.3, forca: 0.28 },
+      id: 'gruta_concha_enseada', nome: 'FENDA DA MARÉ', tipo: 'decoracao', x: 24.0, y: 44.0,
+      sprite: 'enseada4_gruta', spriteB: 'enseada4_gruta', animPeriodo: 0.66,
+      useCrop: true, larguraPx: 148, pivotX: 0.5, pivotY: 0.98,
+      bloqueia: true, hitboxes: [
+        { offsetX: -0.82, offsetY: -0.28, width: 0.62, height: 0.62 },
+        { offsetX: 0.20, offsetY: -0.28, width: 0.62, height: 0.62 },
+      ], pulsoBiolum: '#54ccff', brilho: { cor: '#54ccff', raio: 1.3, forca: 0.28 },
       interacao: { label: 'ABRIGAR-SE NA FENDA DA MARÉ', distancia: 1.7 },
     },
     {
-      id: 'poleiro_aves_enseada', nome: 'POLEIRO DAS AVES', tipo: 'decoracao', x: 17.8, y: 31.8,
+      id: 'poleiro_aves_enseada', nome: 'POLEIRO DAS AVES', tipo: 'decoracao', x: 29.0, y: 42.0,
       sprite: 'enseada_poleiro_aves', spriteB: 'enseada_poleiro_aves_b', animPeriodo: 0.56,
       useCrop: true, larguraPx: 80, pivotX: 0.5, pivotY: 0.94,
       bloqueia: false,
       interacao: { label: 'OBSERVAR O POLEIRO', distancia: 1.5 },
     },
+    {
+      id: 'rede_treino_praia_enseada', nome: 'REDE DE TREINO DA PRAIA', tipo: 'decoracao', x: 37.0, y: 45.0,
+      sprite: 'enseada4_rede', useCrop: true, larguraPx: 186,
+      pivotX: 0.5, pivotY: 0.98, depthOffset: 0.2,
+      bloqueia: true, hitboxes: [
+        { offsetX: -1.28, offsetY: -0.24, width: 0.30, height: 0.48 },
+        { offsetX: 0.98, offsetY: -0.24, width: 0.30, height: 0.48 },
+      ],
+      interacao: { label: 'PRATICAR NA REDE DA PRAIA', distancia: 1.8, speaker: 'REDE DE TREINO',
+        dialogue: ['A REDE MARCA UM ESPAÇO LIVRE PARA TREINAR. A AREIA AO REDOR ESTÁ FIRME E SEM OBSTÁCULOS.'] },
+    },
 
     // ---- NÚCLEO 5 (Península Sudeste): Lúmeo, Deriva, Ostras, Recife & Ninho ----
     {
-      id: 'captador_ecos_enseada', nome: 'CAPTADOR DE ECOS', tipo: 'dispositivo', x: 20.4, y: 21.8,
+      id: 'captador_ecos_enseada', nome: 'CAPTADOR DE ECOS', tipo: 'dispositivo', x: 42.0, y: 24.0,
       sprite: 'enseada_rede_cristal', spriteB: 'enseada_rede_cristal_b', animPeriodo: 0.6,
       useCrop: true, larguraPx: 96, pivotX: 0.5, pivotY: 0.92,
       bloqueia: false, pulsoAntena: true, brilho: { cor: '#5cf7eb', raio: 1.3, forca: 0.28 },
       interacao: { label: 'SINTONIZAR CAPTADOR DE ECOS', distancia: 1.65 },
     },
     {
-      id: 'santuario_lumeo_enseada', nome: 'SANTUÁRIO DE LÚMEO', tipo: 'decoracao', x: 23.2, y: 23.8,
+      id: 'santuario_lumeo_enseada', nome: 'SANTUÁRIO DE LÚMEO', tipo: 'decoracao', x: 47.0, y: 26.5,
       sprite: 'enseada_santuario_lumeo', spriteB: 'enseada_santuario_lumeo_b', animPeriodo: 0.58,
       useCrop: true, larguraPx: 90, pivotX: 0.5, pivotY: 0.92,
       bloqueia: false, pulsoBiolum: '#70f3ff', brilho: { cor: '#70f3ff', raio: 1.35, forca: 0.32 },
       interacao: { label: 'EXAMINAR SANTUÁRIO DE LÚMEO', distancia: 1.55 },
     },
     {
-      id: 'borboletas_jardim_enseada', nome: 'BORBOLETAS DO SANTUÁRIO', tipo: 'decoracao', x: 23.0, y: 22.8,
+      id: 'borboletas_jardim_enseada', nome: 'BORBOLETAS DO SANTUÁRIO', tipo: 'decoracao', x: 47.0, y: 25.5,
       sprite: 'enseada_borboletas_vivas', spriteB: 'enseada_borboletas_vivas_b', animPeriodo: 0.36,
       useCrop: true, larguraPx: 50, pivotX: 0.5, pivotY: 0.5,
       bloqueia: false, flutuacaoSuave: true, nadoCardume: true,
     },
     {
-      id: 'bau_deriva_enseada', nome: 'ARCAZ À DERIVA', tipo: 'decoracao', x: 26.6, y: 24.4,
+      id: 'bau_deriva_enseada', nome: 'ARCAZ À DERIVA', tipo: 'decoracao', x: 53.0, y: 30.0,
       sprite: 'enseada_bau_deriva', spriteB: 'enseada_bau_deriva_b', animPeriodo: 0.56,
       useCrop: true, larguraPx: 74, pivotX: 0.5, pivotY: 0.9,
       bloqueia: false, pulsoBiolum: '#5cf7eb', brilho: { cor: '#5cf7eb', raio: 1.15, forca: 0.26 },
       interacao: { label: 'ABRIR O ARCAZ À DERIVA', distancia: 1.55 },
     },
     {
-      id: 'banco_ostras_enseada', nome: 'BANCO DE OSTRAS PÉROLA', tipo: 'decoracao', x: 29.8, y: 23.2,
+      id: 'banco_ostras_enseada', nome: 'BANCO DE OSTRAS PÉROLA', tipo: 'decoracao', x: 50.0, y: 33.0,
       sprite: 'enseada_banco_ostras', spriteB: 'enseada_banco_ostras_b', animPeriodo: 0.64,
       useCrop: true, larguraPx: 78, pivotX: 0.5, pivotY: 0.9,
       bloqueia: false, brilho: { cor: '#70f3ff', raio: 1.0, forca: 0.24 },
       interacao: { label: 'COLHER PÉROLA DA ENSEADA', distancia: 1.65 },
     },
     {
-      id: 'coral_luminescente_enseada', nome: 'RECIFE LUMINESCENTE', tipo: 'decoracao', x: 31.0, y: 26.0,
+      id: 'coral_luminescente_enseada', nome: 'RECIFE LUMINESCENTE', tipo: 'decoracao', x: 49.0, y: 36.0,
       sprite: 'enseada_coral_azul', spriteB: 'enseada_coral_azul_b', animPeriodo: 0.62,
       useCrop: true, larguraPx: 86, pivotX: 0.5, pivotY: 0.92,
       bloqueia: false, pulsoBiolum: '#44e8ff', brilho: { cor: '#44e8ff', raio: 1.35, forca: 0.34 },
       interacao: { label: 'COLHER AMOSTRA DE CORAL', distancia: 1.6 },
     },
     {
-      id: 'ninho_tartarugas_enseada', nome: 'NINHO DE TARTARUGAS', tipo: 'decoracao', x: 27.4, y: 28.2,
+      id: 'ninho_tartarugas_enseada', nome: 'NINHO DE TARTARUGAS', tipo: 'decoracao', x: 52.0, y: 39.0,
       sprite: 'enseada_ninho_tartarugas', spriteB: 'enseada_ninho_tartarugas_b', animPeriodo: 0.68,
       useCrop: true, larguraPx: 86, pivotX: 0.5, pivotY: 0.9,
       bloqueia: false,
@@ -503,29 +539,29 @@ export const map = {
       bloqueia: false, brilho: { cor: '#5cf7eb', raio: 1.5, forca: 0.34 },
     },
     {
-      id: 'cais_madeira_pesca_enseada', nome: 'CAIS DA ENSEADA', tipo: 'decoracao', x: 24.0, y: 20.6,
-      sprite: 'enseada_cais_pesca', spriteB: 'enseada_cais_pesca_b', animPeriodo: 0.68,
-      useCrop: true, larguraPx: 112, pivotX: 0.5, pivotY: 0.88,
-      bloqueia: false, brilho: { cor: '#ffd980', raio: 1.0, forca: 0.22 },
+      id: 'cais_madeira_pesca_enseada', nome: 'CAIS DA ENSEADA', tipo: 'decoracao', x: 40.0, y: 37.0,
+      sprite: 'enseada3_cais_barco', spriteB: 'enseada3_cais_barco', animPeriodo: 0.68,
+      useCrop: true, larguraPx: 420, pivotX: 0.5, pivotY: 0.97,
+      bloqueia: false, brilho: { cor: '#ffd980', raio: 1.0, forca: 0.16 },
       interacao: { label: 'OBSERVAR A BAÍA DO CAIS', distancia: 1.75 },
     },
     {
-      id: 'barco_expedicao_enseada', nome: 'BARCO DE EXPEDIÇÃO', tipo: 'decoracao', x: 27.2, y: 18.6,
+      id: 'barco_expedicao_enseada', nome: 'BARCO DE EXPEDIÇÃO', tipo: 'decoracao', x: 43.0, y: 35.5,
       sprite: 'enseada_barco_expedicao', spriteB: 'enseada_barco_expedicao_b', animPeriodo: 0.72,
-      useCrop: true, larguraPx: 136, pivotX: 0.5, pivotY: 0.88,
-      bloqueia: false, flutuacaoSuave: true, brilho: { cor: '#6ff7ff', raio: 1.1, forca: 0.2 },
+      useCrop: true, larguraPx: 126, pivotX: 0.5, pivotY: 0.88,
+      bloqueia: false, flutuacaoSuave: true,
       interacao: { label: 'INSPECIONAR BARCO DE EXPEDIÇÃO', distancia: 2.15 },
     },
 
     // ---- Cardumes em Água Profunda & Sinalização Marítima do Conduto ----
     {
-      id: 'cardume_orla_norte', nome: 'CARDUME OESTE', tipo: 'decoracao', x: 1.4, y: 20.5,
+      id: 'cardume_orla_norte', nome: 'CARDUME OESTE', tipo: 'decoracao', x: 0.8, y: 20.5,
       sprite: 'enseada_cardume_vivo', spriteB: 'enseada_cardume_vivo_b', animPeriodo: 0.46,
       useCrop: true, larguraPx: 58, pivotX: 0.5, pivotY: 0.65,
       depthOffset: -1, bloqueia: false, flutuacaoSuave: true, nadoCardume: true,
     },
     {
-      id: 'cardume_orla_sul', nome: 'CARDUME LESTE', tipo: 'decoracao', x: 40.5, y: 16.0,
+      id: 'cardume_orla_sul', nome: 'CARDUME LESTE', tipo: 'decoracao', x: 63.5, y: 17.0,
       sprite: 'enseada_cardume_vivo', spriteB: 'enseada_cardume_vivo_b', animPeriodo: 0.48,
       useCrop: true, larguraPx: 60, pivotX: 0.5, pivotY: 0.65,
       depthOffset: -1, bloqueia: false, flutuacaoSuave: true, nadoCardume: true,
@@ -556,9 +592,14 @@ export const map = {
     },
 
     // ---- Relevo Costeiro Encaixado na Borda Norte & Ancoragem do Conduto ----
-    relevo('enseada_falesia_norte', 'falesia-alta', 11.4, 7.6, 200, { espelhar: true }),
-    relevo('enseada_macico_leste', 'macico-cascata', 22.8, 7.6, 205),
-    relevo('enseada_pilar_noroeste', 'pilar-palmeiras-a', 6.4, 10.6, 104),
+    relevo('enseada_falesia_norte', 'falesia-selva', 11.4, 7.6, 260, { espelhar: true }),
+    {
+      id: 'enseada_macico_leste', tipo: 'decoracao', x: 18.2, y: 7.4,
+      sprite: 'enseada3_platao_cascata', spriteB: 'enseada3_platao_cascata_b', animPeriodo: 0.7,
+      useCrop: true, larguraPx: 760, pivotX: 0.5, pivotY: 0.98, depthOffset: -2,
+      bloqueia: false, brilho: { cor: '#45f4f4', raio: 2.2, forca: 0.16 },
+    },
+    relevo('enseada_pilar_noroeste', 'pilar-palmeiras-a', 6.4, 10.6, 130),
     relevo('enseada_rochas_mar_1', 'rochas-mar', 2.6, 18.2, 54, { espuma: 26, espumaY: -3 }),
     relevo('enseada_rochas_mar_2', 'rochas-mar', 34.4, 19.8, 54, { espelhar: true, espuma: 26, espumaY: -3 }),
     relevo('enseada_rochas_mar_3', 'rochas-mar', 21.8, 35.0, 56, { espuma: 28, espumaY: -3 }),
@@ -567,8 +608,8 @@ export const map = {
     floraDecor('costa', 'rochas_espuma', 'enseada_recife_conduto_b', 28.4, 12.6, 0.95, { depthOffset: -2 }),
 
     // ---- Bosquetes & Flora Ancorando Cada Núcleo (sem cobrir objetos nem caminhos) ----
-    { id: 'enseada_pedra_leste', tipo: 'decoracao', x: 25, y: 7, sprite: 'costa_rochosa', frame: { col: 1, row: 0 }, useCrop: true, larguraPx: 98, pivotY: 1, bloqueia: false },
-    { id: 'enseada_pedra_sul', tipo: 'decoracao', x: 4, y: 11, sprite: 'costa_rochosa', frame: { col: 2, row: 0 }, useCrop: true, larguraPx: 72, pivotY: 1, bloqueia: false },
+    { id: 'enseada_pedra_leste', tipo: 'decoracao', x: 30, y: 7, sprite: 'costa_rochosa', frame: { col: 1, row: 0 }, useCrop: true, larguraPx: 98, pivotY: 1, bloqueia: false },
+    { id: 'enseada_pedra_sul', tipo: 'decoracao', x: 2, y: 10, sprite: 'costa_rochosa', frame: { col: 2, row: 0 }, useCrop: true, larguraPx: 72, pivotY: 1, bloqueia: false },
 
     // Bosquete apoiando o Pórtico da Praia (atrás/ao lado de 5.0, 15.0)
     tropical('enseada_vegetacao_1', 4.6, 13.4, 3, 94, true),
@@ -598,15 +639,57 @@ export const map = {
     floraDecor('costa', 'ilhota_musgo', 'enseada_ilhota_1', 2.8, 11.8, 0.85),
     floraDecor('costa', 'rochas_espuma', 'enseada_ilhota_2', 33.4, 8.4, 0.85),
 
+    // Elementos de escala e silhueta fiéis ao mapa master (lote de arte 3.0).
+    {
+      id: 'enseada3_praca_monolito', tipo: 'decoracao', x: 30.0, y: 27.0,
+      sprite: 'enseada3_calcada', useCrop: true, larguraPx: 310,
+      pivotX: 0.5, pivotY: 0.92, depthOffset: -1, bloqueia: false,
+    },
+    {
+      id: 'enseada3_mata_oeste_a', tipo: 'decoracao', x: 6.6, y: 21.8,
+      sprite: 'enseada3_palmeiral', useCrop: true, larguraPx: 330,
+      pivotX: 0.5, pivotY: 0.96, depthOffset: -0.6, bloqueia: false,
+    },
+    {
+      id: 'enseada3_mata_oeste_b', tipo: 'decoracao', x: 7.4, y: 29.4,
+      sprite: 'enseada3_palmeiral', useCrop: true, larguraPx: 350,
+      pivotX: 0.5, pivotY: 0.96, depthOffset: -0.4, bloqueia: false,
+    },
+    {
+      id: 'enseada3_mata_sul', tipo: 'decoracao', x: 34.0, y: 47.0,
+      sprite: 'enseada3_palmeiral', useCrop: true, larguraPx: 330,
+      pivotX: 0.5, pivotY: 0.96, depthOffset: -0.4, bloqueia: false,
+    },
+    {
+      id: 'enseada3_mata_leste', tipo: 'decoracao', x: 40.5, y: 25.0,
+      sprite: 'enseada3_palmeiral', useCrop: true, larguraPx: 300,
+      pivotX: 0.5, pivotY: 0.96, depthOffset: -0.4, bloqueia: false,
+    },
+
+    // Dossel tropical e afloramentos do lado leste: a referência tem uma
+    // faixa verde contínua, que enquadra o santuário e termina no recife.
+    ...[
+      ['enseada3_mata_centro_oeste', 18.0, 29.0, 252],
+      ['enseada3_mata_centro_leste', 38.0, 30.0, 276],
+      ['enseada3_mata_sudoeste', 16.0, 40.0, 258],
+      ['enseada3_mata_recife', 49.0, 30.0, 238],
+    ].map(([id, x, y, larguraPx]) => ({
+      id, tipo: 'decoracao', x, y, sprite: 'enseada3_palmeiral',
+      useCrop: true, larguraPx, pivotX: 0.5, pivotY: 0.96,
+      depthOffset: -0.35, bloqueia: false,
+    })),
+    floraDecor('costa', 'rochedo_grande', 'enseada_rochedo_recife_1', 52.0, 25.0, 1.0),
+    floraDecor('costa', 'rochedo_palmeira', 'enseada_rochedo_recife_2', 55.0, 27.0, 0.95),
+    floraDecor('costa', 'rochedo_bloco', 'enseada_rochedo_recife_3', 56.0, 24.0, 0.9),
     tropical('enseada_ruinas', 19.6, 12.0, 6, 58),
     tropical('enseada_rochas', 12.4, 31.6, 7, 52),
     prop('enseada_arbusto_1', 11.4, 31.8, 3, 0, 44),
     prop('enseada_concha', 13.0, 8.6, 1, 3, 36),
 
     {
-      id: 'arco_conduto_retorno_mare', tipo: 'decoracao', x: 28.9, y: 12.1,
-      sprite: 'mare_sala_arco_enseada', spriteB: 'enseada_arco_conduto_b', animPeriodo: 0.5,
-      useCrop: true, larguraPx: 124, anchorY: 0.92,
+      id: 'arco_conduto_retorno_mare', tipo: 'decoracao', x: 56.0, y: 17.0,
+      sprite: 'enseada3_portal_recife', spriteB: 'enseada3_portal_recife', animPeriodo: 0.7,
+      useCrop: true, larguraPx: 190, pivotX: 0.5, pivotY: 0.98,
       bloqueia: false, brilho: { cor: '#5cf7eb', raio: 2.2, forca: 0.44 },
     },
   ],

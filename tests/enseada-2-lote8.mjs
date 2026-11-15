@@ -37,16 +37,16 @@ for (const spriteId of [
   assert(mainJs.includes(`id: '${spriteId}'`), `sprite ${spriteId} precisa estar registrado em js/main.js`);
 }
 
-// Expansão da ilha (52x46, >= 600 tiles de terra caminháveis)
-assert.equal(enseada.layout.length, 46);
-assert.equal(enseada.layout[0].length, 52);
+// Expansão da ilha 3.1 (72x64, >= 2,000 tiles de terra caminháveis)
+assert.equal(enseada.layout.length, 64);
+assert.equal(enseada.layout[0].length, 72);
 let terra = 0;
 for (const row of enseada.walkMask) for (const c of row) if (c === '.') terra++;
-assert(terra >= 600, `esperava >= 600 tiles caminháveis na ilha ampliada, veio ${terra}`);
+assert(terra >= 2000, `esperava >= 2.000 tiles caminháveis na ilha ampliada, veio ${terra}`);
 
 // Novos pares animados A/B do Lote #8
 const paresB = [
-  ['piscina_mare_viva_enseada', 'enseada_piscina_mare_b'],
+  ['piscina_mare_viva_enseada', 'enseada3_piscina'],
   ['fonte_termal_enseada', 'enseada_fonte_termal_b'],
   ['espelho_arquetipos_enseada', 'enseada_espelho_arquetipo_b'],
   ['coral_luminescente_enseada', 'enseada_coral_azul_b'],
@@ -55,7 +55,7 @@ const paresB = [
   ['lanterna_marinha_sul', 'enseada_lanterna_marinha_b'],
   ['baliza_mare_boia_1', 'enseada_baliza_boia_b'],
   ['baliza_mare_boia_2', 'enseada_baliza_boia_b'],
-  ['cais_madeira_pesca_enseada', 'enseada_cais_pesca_b'],
+  ['cais_madeira_pesca_enseada', 'enseada3_cais_barco'],
 ];
 for (const [objId, spriteB] of paresB) {
   const obj = enseada.objects.find(o => o.id === objId);
@@ -85,6 +85,7 @@ const marcos = enseada.objects.filter(o =>
   !o.id.startsWith('enseada_recife_') &&
   !o.id.startsWith('enseada_rochas') &&
   !o.id.startsWith('enseada_palmeira') &&
+  !o.id.startsWith('enseada3_') &&
   !o.id.startsWith('enseada_arbusto') &&
   !o.id.startsWith('enseada_concha') &&
   !o.id.startsWith('enseada_pedra_') &&
@@ -116,4 +117,4 @@ for (const o of marcos) {
   assert(canStandAt(enseada, o.x, o.y, 0.2, {}), `marco ${o.id} precisa estar em terra caminhável`);
 }
 
-console.log(`Lote #8 Enseada 2.0 (ilha 52x46 com ${terra} tiles, 10 animações/vida e folga >= 2.35 tiles) OK!`);
+console.log(`Lote #8 + expansão 3.1 (ilha 72x64 com ${terra} tiles, vida e marcos espaçados) OK!`);

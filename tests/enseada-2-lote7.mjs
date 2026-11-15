@@ -43,10 +43,10 @@ assert(rendererJs.includes('object.nadoCardume'), 'renderer deve suportar nadoCa
 
 // 7 objetos com quadro B de animação ativo
 const animatedPairs = [
-  ['acampamento_vigilia_enseada', 'enseada_acampamento_vigilia_b'],
+  ['acampamento_vigilia_enseada', 'enseada4_fogueira'],
   ['portal_caminho_correntes', 'enseada_portal_correntes_b'],
   ['farolete_baia_enseada', 'enseada_farolete_baia_b'],
-  ['totem_eco_enseada', 'enseada_totem_eco_b'],
+  ['totem_eco_enseada', 'enseada3_monolito'],
   ['carrilhao_vento_enseada', 'enseada_carrilhao_vento_b'],
   ['algas_douradas_enseada', 'enseada_algas_douradas_b'],
   ['barco_expedicao_enseada', 'enseada_barco_expedicao_b'],
@@ -89,6 +89,7 @@ const marcos = enseada.objects.filter(o =>
   !o.id.startsWith('enseada_recife_') &&
   !o.id.startsWith('enseada_rochas') &&
   !o.id.startsWith('enseada_palmeira') &&
+  !o.id.startsWith('enseada3_') &&
   !o.id.startsWith('enseada_arbusto') &&
   !o.id.startsWith('enseada_concha') &&
   !o.id.startsWith('enseada_pedra_') &&

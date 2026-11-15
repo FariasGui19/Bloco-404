@@ -38,7 +38,7 @@ for (const spriteId of [
 
 for (const [objId, spriteB] of [
   ['bandeirola_vento_enseada', 'enseada_bandeirola_vento_b'],
-  ['jardim_pedras_enseada', 'enseada_jardim_pedras_b'],
+  ['jardim_pedras_enseada', 'enseada4_cairn'],
   ['borboletas_fonte_enseada', 'enseada_borboletas_vivas_b'],
   ['borboletas_jardim_enseada', 'enseada_borboletas_vivas_b'],
   ['banco_conchas_enseada', 'enseada_banco_conchas_b'],
@@ -47,7 +47,7 @@ for (const [objId, spriteB] of [
   ['embarcadouro_mare_astral', 'enseada_embarcadouro_mare_b'],
   ['cardume_orla_norte', 'enseada_cardume_vivo_b'],
   ['cardume_orla_sul', 'enseada_cardume_vivo_b'],
-  ['arco_conduto_retorno_mare', 'enseada_arco_conduto_b'],
+  ['arco_conduto_retorno_mare', 'enseada3_portal_recife'],
 ]) {
   const obj = enseada.objects.find(o => o.id === objId);
   assert(obj, `${objId} ausente`);

@@ -525,6 +525,17 @@ await loadSprites([
   { id: 'enseada_trilha_pedras', src: 'assets/sprites/enseada-2/trilha-pedras-costa.png' },
   { id: 'enseada_cardume_vivo', src: 'assets/sprites/enseada-2/cardume-orla-vivo.png' },
   { id: 'enseada_bandeirola_vento', src: 'assets/sprites/enseada-2/bandeirola-vento-expedicao.png' },
+  // ---- ENSEADA DOS ECOS 2.0 — Lote #8 (Animações de água/estruturas + vida marinha/aérea) ----
+  { id: 'enseada_piscina_mare_b', src: 'assets/sprites/enseada-2/piscina-mare-viva-b.png' },
+  { id: 'enseada_fonte_termal_b', src: 'assets/sprites/enseada-2/fonte-termal-enseada-b.png' },
+  { id: 'enseada_espelho_arquetipo_b', src: 'assets/sprites/enseada-2/espelho-eco-arquetipo-b.png' },
+  { id: 'enseada_coral_azul_b', src: 'assets/sprites/enseada-2/coral-luminescente-azul-b.png' },
+  { id: 'enseada_rede_cristal_b', src: 'assets/sprites/enseada-2/rede-cristal-ecos-b.png' },
+  { id: 'enseada_lanterna_marinha_b', src: 'assets/sprites/enseada-2/lanterna-marinha-flutuante-b.png' },
+  { id: 'enseada_baliza_boia_b', src: 'assets/sprites/enseada-2/baliza-mare-boia-b.png' },
+  { id: 'enseada_cais_pesca_b', src: 'assets/sprites/enseada-2/cais-madeira-pesca-b.png' },
+  { id: 'enseada_ondulacao_mar', src: 'assets/sprites/enseada-2/ondulacao-mar-crista.png' },
+  { id: 'enseada_borboletas_vivas', src: 'assets/sprites/enseada-2/borboletas-costa-vivas.png' },
   {
     id: 'metro_rail_kit',
     src: 'assets/sprites/tiles/metro-rail-kit.png',

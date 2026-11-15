@@ -74,9 +74,9 @@ for (const file of spritesLote4) {
   assert(mainSrc.includes(path), `Sprite não registrado em js/main.js: ${path}`);
 }
 
-// 2. Estrutura do mapa 36x34, poça, detalhes do oceano e fundo do mar
-assert.equal(enseada.layout.length, 34);
-assert.equal(enseada.layout[0].length, 36);
+// 2. Estrutura ampliada do mapa (>= 50x44), poça, detalhes do oceano e fundo do mar
+assert(enseada.layout.length >= 44);
+assert(enseada.layout[0].length >= 50);
 assert(enseada.pocas?.length >= 1, 'Enseada deve ter poça costeira');
 assert(enseada.detalhesOceano?.length >= 8, 'Enseada deve ter detalhes de oceano');
 assert(enseada.fundoMar?.length >= 4, 'Enseada deve ter elementos de fundo do mar');

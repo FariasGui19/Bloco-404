@@ -53,7 +53,7 @@ assert(object('enseada_macico_leste').larguraPx >= 700);
 assert.equal(object('portico_trilha_praia').sprite, 'enseada3_portico_oeste');
 assert.equal(object('totem_eco_enseada').sprite, 'enseada3_monolito');
 assert.equal(object('piscina_mare_viva_enseada').sprite, 'enseada3_piscina');
-assert.equal(object('cais_madeira_pesca_enseada').sprite, 'enseada3_cais_barco');
+assert.equal(object('cais_madeira_pesca_enseada').sprite, 'enseada8_cais_barco_ref');
 assert.equal(object('arco_conduto_retorno_mare').sprite, 'enseada3_portal_recife');
 assert(['enseada3_mata_oeste_a', 'enseada3_mata_oeste_b', 'enseada3_mata_sul', 'enseada3_mata_leste']
   .every(id => object(id).sprite === 'enseada3_palmeiral'));

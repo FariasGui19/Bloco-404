@@ -55,7 +55,7 @@ const paresB = [
   ['lanterna_marinha_sul', 'enseada_lanterna_marinha_b'],
   ['baliza_mare_boia_1', 'enseada_baliza_boia_b'],
   ['baliza_mare_boia_2', 'enseada_baliza_boia_b'],
-  ['cais_madeira_pesca_enseada', 'enseada3_cais_barco'],
+  ['cais_madeira_pesca_enseada', 'enseada8_cais_barco_ref'],
 ];
 for (const [objId, spriteB] of paresB) {
   const obj = enseada.objects.find(o => o.id === objId);

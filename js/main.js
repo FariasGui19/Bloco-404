@@ -568,6 +568,7 @@ await loadSprites([
   { id: 'enseada3_piscina', src: 'assets/sprites/enseada-3/rock-pool-oasis.png' },
   { id: 'enseada3_cais_barco', src: 'assets/sprites/enseada-3/wooden-pier-sailboat.png' },
   { id: 'enseada3_calcada', src: 'assets/sprites/enseada-3/stone-path-cobble.png' },
+  { id: 'enseada8_cais_barco_ref', src: 'assets/sprites/enseada-8/cais-barco-sem-areia-recortado.png' },
   // ---- ENSEADA DOS ECOS 3.1 — lote visual 2 (acampamento, gruta e praia sul) ----
   { id: 'enseada4_torre_vigilia', src: 'assets/sprites/enseada-4/signal-watchtower.png' },
   { id: 'enseada4_tenda', src: 'assets/sprites/enseada-4/expedition-tent.png' },

@@ -86,6 +86,25 @@ def remove_enclosed_white_pockets(image, min_area=40):
                                 pixels[nx, ny] = (0, 0, 0, 0)
 
 
+def defringe_white_halo(image, passes=2):
+    pixels = image.load()
+    w, h = image.size
+    for _ in range(passes):
+        to_clear = []
+        for y in range(h):
+            for x in range(w):
+                r, g, b, a = pixels[x, y]
+                if a == 0:
+                    continue
+                if min(r, g, b) > 195 and (max(r, g, b) - min(r, g, b)) < 38:
+                    for nx, ny in ((x - 1, y), (x + 1, y), (x, y - 1), (x, y + 1)):
+                        if 0 <= nx < w and 0 <= ny < h and pixels[nx, ny][3] == 0:
+                            to_clear.append((x, y))
+                            break
+        for x, y in to_clear:
+            pixels[x, y] = (0, 0, 0, 0)
+
+
 SPECS = {
     'embarcadouro-mare-astral': 210,
     'espelho-eco-arquetipo': 200,
@@ -108,6 +127,17 @@ SPECS = {
     'bancada-campo-arquetipos': 195,
     'baliza-mare-boia': 155,
     'totem-eco-instavel': 190,
+    # Lote #6
+    'piscina-mare-viva': 200,
+    'cais-madeira-pesca': 215,
+    'coral-luminescente-azul': 185,
+    'estela-navegadores': 205,
+    'banco-algas-douradas': 180,
+    'rede-cristal-ecos': 200,
+    'gruta-concha-mar': 205,
+    'jardim-pedras-equilibrio': 185,
+    'bau-deriva-naufragio': 175,
+    'caixa-suprimentos-mar': 175,
 }
 
 only = set(sys.argv[1:])
@@ -120,8 +150,10 @@ for name, max_dim in SPECS.items():
     image = Image.open(path).convert('RGBA')
     remove_border_bg(image, 'dark')
     remove_border_bg(image, 'white')
-    if name in ('carrilhao-vento-bambu', 'santuario-lumeo-pedra'):
-        remove_enclosed_white_pockets(image)
+    if name in ('carrilhao-vento-bambu', 'santuario-lumeo-pedra', 'banco-algas-douradas', 'rede-cristal-ecos', 'gruta-concha-mar'):
+        remove_enclosed_white_pockets(image, min_area=18)
+    if name in ('coral-luminescente-azul', 'rede-cristal-ecos', 'banco-algas-douradas'):
+        defringe_white_halo(image, passes=3)
     box = image.getbbox()
     if not box:
         raise ValueError(f'Sprite vazio: {name}')

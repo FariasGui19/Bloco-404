@@ -347,6 +347,24 @@ export const QUESTS = Object.freeze({
       flags: Object.freeze({ expedicao_enseada_concluida: true }),
     }),
   }),
+  ecos_profundos_enseada: Object.freeze({
+    id: 'ecos_profundos_enseada',
+    title: 'ECOS PROFUNDOS DA ENSEADA',
+    giver: 'ENSEADA DOS ECOS',
+    kind: 'secundária',
+    description: 'Descubra os segredos mais antigos da costa: decifre a Estela dos Navegadores, sintonize o Captador de Ecos e abra o Arcaz à Deriva na baía.',
+    objectives: Object.freeze([
+      Object.freeze({ type: 'interact_enseada', target: 'estela_navegadores_enseada', count: 1, label: 'Decifrar a Estela dos Navegadores [E]' }),
+      Object.freeze({ type: 'interact_enseada', target: 'captador_ecos_enseada', count: 1, label: 'Sintonizar o Captador de Ecos [E]' }),
+      Object.freeze({ type: 'interact_enseada', target: 'bau_deriva_enseada', count: 1, label: 'Abrir o Arcaz à Deriva [E]' }),
+    ]),
+    rewards: Object.freeze({
+      xp: 145,
+      points: 1,
+      items: Object.freeze(['carta_navegadores_enseada']),
+      flags: Object.freeze({ enseada_ecos_profundos_concluida: true }),
+    }),
+  }),
 });
 
 export function getQuest(id) {

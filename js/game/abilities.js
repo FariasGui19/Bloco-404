@@ -395,8 +395,11 @@ export function updateAbilities(dt) {
     );
   }
 
-  // Regeneração de energia (a árvore do arquétipo pode somar aqui).
-  const energyRegen = CONFIG.ABILITIES.ENERGY_REGEN + (getDerivedStats(state.progress)?.energyRegen ?? 0);
+  // Regeneração de energia (a árvore do arquétipo e buffs da Enseada podem somar aqui).
+  const buffRegen = state.world?.currentMapId === 'ilha_enseada_ecos'
+    ? (player?.enseadaBuff === 'foco_equilibrio' ? 2 : player?.enseadaBuff === 'pulso_salino' && player?.nado?.ativo ? 1.5 : 0)
+    : 0;
+  const energyRegen = CONFIG.ABILITIES.ENERGY_REGEN + (getDerivedStats(state.progress)?.energyRegen ?? 0) + buffRegen;
   player.energy = Math.min(
     player.maxEnergy,
     player.energy + energyRegen * dt

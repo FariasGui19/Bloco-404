@@ -503,6 +503,17 @@ await loadSprites([
   { id: 'enseada_bancada_campo', src: 'assets/sprites/enseada-2/bancada-campo-arquetipos.png' },
   { id: 'enseada_baliza_boia', src: 'assets/sprites/enseada-2/baliza-mare-boia.png' },
   { id: 'enseada_totem_eco', src: 'assets/sprites/enseada-2/totem-eco-instavel.png' },
+  // ---- ENSEADA DOS ECOS 2.0 — Lote #6 (tools/preparar-enseada-2.py) ----
+  { id: 'enseada_piscina_mare', src: 'assets/sprites/enseada-2/piscina-mare-viva.png' },
+  { id: 'enseada_cais_pesca', src: 'assets/sprites/enseada-2/cais-madeira-pesca.png' },
+  { id: 'enseada_coral_azul', src: 'assets/sprites/enseada-2/coral-luminescente-azul.png' },
+  { id: 'enseada_estela_navegadores', src: 'assets/sprites/enseada-2/estela-navegadores.png' },
+  { id: 'enseada_algas_douradas', src: 'assets/sprites/enseada-2/banco-algas-douradas.png' },
+  { id: 'enseada_rede_cristal', src: 'assets/sprites/enseada-2/rede-cristal-ecos.png' },
+  { id: 'enseada_gruta_concha', src: 'assets/sprites/enseada-2/gruta-concha-mar.png' },
+  { id: 'enseada_jardim_pedras', src: 'assets/sprites/enseada-2/jardim-pedras-equilibrio.png' },
+  { id: 'enseada_bau_deriva', src: 'assets/sprites/enseada-2/bau-deriva-naufragio.png' },
+  { id: 'enseada_caixa_suprimentos', src: 'assets/sprites/enseada-2/caixa-suprimentos-mar.png' },
   {
     id: 'metro_rail_kit',
     src: 'assets/sprites/tiles/metro-rail-kit.png',

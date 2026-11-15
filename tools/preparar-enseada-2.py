@@ -149,6 +149,17 @@ SPECS = {
     'trilha-pedras-costa': 130,
     'cardume-orla-vivo': 140,
     'bandeirola-vento-expedicao': 185,
+    # Lote #8 — Quadros B de estruturas/água + vida marinha/aérea
+    'piscina-mare-viva-b': 200,
+    'fonte-termal-enseada-b': 200,
+    'espelho-eco-arquetipo-b': 200,
+    'coral-luminescente-azul-b': 185,
+    'rede-cristal-ecos-b': 200,
+    'lanterna-marinha-flutuante-b': 130,
+    'baliza-mare-boia-b': 155,
+    'cais-madeira-pesca-b': 215,
+    'ondulacao-mar-crista': 155,
+    'borboletas-costa-vivas': 140,
 }
 
 only = set(sys.argv[1:])
@@ -166,15 +177,57 @@ for name, max_dim in SPECS.items():
         'santuario-lumeo-pedra',
         'banco-algas-douradas', 'banco-algas-douradas-b',
         'barco-expedicao-enseada-b', 'bandeirola-vento-expedicao',
-        'rede-cristal-ecos', 'gruta-concha-mar',
+        'rede-cristal-ecos', 'rede-cristal-ecos-b', 'gruta-concha-mar',
     ):
         remove_enclosed_white_pockets(image, min_area=18)
-    if name in ('coral-luminescente-azul', 'rede-cristal-ecos', 'banco-algas-douradas', 'banco-algas-douradas-b', 'cardume-orla-vivo'):
+    if name in (
+        'coral-luminescente-azul', 'coral-luminescente-azul-b',
+        'rede-cristal-ecos', 'rede-cristal-ecos-b',
+        'banco-algas-douradas', 'banco-algas-douradas-b',
+        'cardume-orla-vivo', 'ondulacao-mar-crista',
+    ):
         defringe_white_halo(image, passes=3)
+    if name == 'borboletas-costa-vivas':
+        remove_enclosed_white_pockets(image, min_area=12)
+        for _ in range(14):
+            w_b, h_b = image.size
+            px_b = image.load()
+            to_del = []
+            for yy in range(h_b):
+                for xx in range(w_b):
+                    r, g, b, a = px_b[xx, yy]
+                    if a == 0:
+                        continue
+                    if min(r, g, b) > 196 and (max(r, g, b) - min(r, g, b)) < 58:
+                        for nx, ny in ((xx - 1, yy), (xx + 1, yy), (xx, yy - 1), (xx, yy + 1)):
+                            if 0 <= nx < w_b and 0 <= ny < h_b and px_b[nx, ny][3] == 0:
+                                to_del.append((xx, yy))
+                                break
+            if not to_del:
+                break
+            for xx, yy in to_del:
+                px_b[xx, yy] = (0, 0, 0, 0)
     box = image.getbbox()
     if not box:
         raise ValueError(f'Sprite vazio: {name}')
     image = image.crop(box)
+    if name == 'ondulacao-mar-crista':
+        # Dissolve cantos retos da placa inferior em transição orgânica na água.
+        w_i, h_i = image.size
+        px_i = image.load()
+        for yy in range(int(h_i * 0.52), h_i):
+            fy = (yy - h_i * 0.52) / max(1, h_i * 0.48)
+            for xx in range(w_i):
+                r, g, b, a = px_i[xx, yy]
+                if a == 0:
+                    continue
+                if yy >= int(h_i * 0.88):
+                    px_i[xx, yy] = (0, 0, 0, 0)
+                    continue
+                fx = abs(xx - w_i * 0.5) / (w_i * 0.5)
+                fade = max(0.0, 1.0 - (fy * 1.25 + fx * 0.72 - 0.30))
+                if fade < 1.0:
+                    px_i[xx, yy] = (r, g, b, int(a * max(0.0, fade)))
     image.thumbnail((max_dim, max_dim), Image.Resampling.LANCZOS)
     image.save(dst / f'{name}.png', optimize=True)
     print(name, image.size)

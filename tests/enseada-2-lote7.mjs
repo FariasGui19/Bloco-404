@@ -97,6 +97,8 @@ const marcos = enseada.objects.filter(o =>
   !o.id.startsWith('enseada_vegetacao') &&
   !o.id.startsWith('baliza_666') &&
   !o.id.startsWith('cardume_') &&
+  !o.id.startsWith('ondulacao_') &&
+  !o.id.startsWith('borboletas_') &&
   o.id !== 'enseada_ruinas'
 );
 

@@ -4104,7 +4104,10 @@ function drawFrequencyStationFloor(curState) {
 }
 
 function drawEnseadaObjectAnimations(object, state) {
-  if (!object.fogueiraViva && !object.feixeFarolete && !object.pulsoAntena && !object.pulsoTotem && !object.pulsoBiolum) return;
+  const interactionFx = object.id === 'bancada_campo_enseada' || object.id === 'fonte_termal_enseada' ||
+    object.id === 'piscina_mare_viva_enseada' || object.id === 'algas_douradas_enseada' ||
+    object.id === 'gruta_concha_enseada';
+  if (!object.fogueiraViva && !object.feixeFarolete && !object.pulsoAntena && !object.pulsoTotem && !object.pulsoBiolum && !interactionFx) return;
   const reduced = typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
   const t = reduced ? 0 : performance.now() / 1000;
   const ix = (object.x - object.y) * HW + (object.ajusteX ?? 0);
@@ -4175,7 +4178,8 @@ function drawEnseadaObjectAnimations(object, state) {
 
   if (object.pulsoBiolum) {
     const cor = object.pulsoBiolum === '#ffd86b' ? '255, 216, 107' : '92, 247, 235';
-    const resp = 0.65 + Math.sin(t * 2.2 + object.x * 0.9) * 0.35;
+    const colhida = object.id === 'algas_douradas_enseada' && !!state.progress?.flags?.enseada_algas_colhidas;
+    const resp = (0.65 + Math.sin(t * 2.2 + object.x * 0.9) * 0.35) * (colhida ? 0.42 : 1);
     const g = ctx.createRadialGradient(ix, iy - 20, 2, ix, iy - 20, 32);
     g.addColorStop(0, `rgba(${cor}, ${(0.22 * resp).toFixed(2)})`);
     g.addColorStop(1, `rgba(${cor}, 0)`);
@@ -4188,6 +4192,79 @@ function drawEnseadaObjectAnimations(object, state) {
       ctx.fillStyle = `rgba(${cor}, ${(Math.sin(f * Math.PI) * 0.65).toFixed(2)})`;
       ctx.beginPath(); ctx.arc(px, py, 1.5, 0, Math.PI * 2); ctx.fill();
     }
+  }
+
+  // A bancada responde à calibração com um pequeno holograma de três nós;
+  // o efeito usa a flag real da interação e não simula uma recompensa.
+  if (object.id === 'bancada_campo_enseada') {
+    const ativa = !!state.progress?.flags?.enseada_bancada_calibrada;
+    const pulso = ativa ? 0.68 + Math.sin(t * 3.8) * 0.22 : 0.28 + Math.sin(t * 2) * 0.08;
+    ctx.globalAlpha = pulso;
+    ctx.strokeStyle = ativa ? '#9dffe0' : '#62d9c5';
+    ctx.fillStyle = ativa ? 'rgba(90,255,207,.14)' : 'rgba(50,160,150,.08)';
+    ctx.lineWidth = 1.3;
+    ctx.beginPath(); ctx.ellipse(ix, iy - 24, 24, 8, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+    for (let i = 0; i < 3; i++) {
+      const a = t * (ativa ? 1.4 : .6) + i * Math.PI * 2 / 3;
+      const px = ix + Math.cos(a) * 18, py = iy - 25 + Math.sin(a) * 5;
+      ctx.beginPath(); ctx.moveTo(ix, iy - 24); ctx.lineTo(px, py); ctx.stroke();
+      ctx.fillStyle = ativa ? '#d4fff1' : '#84cfc0';
+      ctx.beginPath(); ctx.arc(px, py, ativa ? 2.2 : 1.4, 0, Math.PI * 2); ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+  }
+
+  // Ondas concêntricas e bolhas na piscina: movimento leve, sem deslocar
+  // a colisão nem o hotspot de mergulho.
+  if (object.id === 'piscina_mare_viva_enseada') {
+    const visita = !!state.progress?.flags?.enseada_piscina_visitada;
+    for (let i = 0; i < 2; i++) {
+      const f = (t * (visita ? .24 : .15) + i * .5) % 1;
+      ctx.globalAlpha = (1 - f) * (visita ? .38 : .2);
+      ctx.strokeStyle = visita ? '#a0fff4' : '#63e8e2';
+      ctx.lineWidth = 1.2;
+      ctx.beginPath(); ctx.ellipse(ix, iy - 10, 16 + f * 30, 6 + f * 10, 0, 0, Math.PI * 2); ctx.stroke();
+    }
+    for (let i = 0; i < 3; i++) {
+      const f = (t * .28 + i / 3) % 1;
+      ctx.globalAlpha = Math.sin(f * Math.PI) * .6;
+      ctx.fillStyle = '#b4fff6';
+      ctx.beginPath(); ctx.arc(ix + Math.sin(t + i * 2) * 10, iy - 7 - f * 18, 1.2 + (1 - f), 0, Math.PI * 2); ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+  }
+
+  // A fenda ganha luz de abrigo quando visitada; as partículas permanecem
+  // confinadas à boca da gruta para não parecerem outro objeto no piso.
+  if (object.id === 'gruta_concha_enseada') {
+    const visitada = !!state.progress?.flags?.enseada_gruta_visitada;
+    const f = .65 + Math.sin(t * (visitada ? 2.5 : 1.3)) * .22;
+    ctx.globalAlpha = f;
+    ctx.strokeStyle = visitada ? '#b7f9ff' : '#62d9ff';
+    ctx.lineWidth = visitada ? 1.8 : 1.1;
+    ctx.beginPath(); ctx.ellipse(ix, iy - 18, visitada ? 22 : 16, 7, 0, Math.PI * .08, Math.PI * .92); ctx.stroke();
+    for (let i = 0; i < 2; i++) {
+      const q = (t * .22 + i * .5) % 1;
+      ctx.fillStyle = visitada ? '#d7ffff' : '#6cecff';
+      ctx.beginPath(); ctx.arc(ix + (i ? 1 : -1) * (6 + q * 5), iy - 14 - q * 16, 1.2, 0, Math.PI * 2); ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+  }
+
+  // Essência dourada anima folhas e orvalho; após a coleta, o brilho baixa
+  // em vez de deixar a fonte de recurso visualmente inesgotável.
+  if (object.id === 'algas_douradas_enseada') {
+    const colhida = !!state.progress?.flags?.enseada_algas_colhidas;
+    ctx.globalAlpha = colhida ? .32 : .78;
+    ctx.fillStyle = colhida ? '#c2a85a' : '#ffe68a';
+    for (let i = 0; i < 4; i++) {
+      const f = (t * (colhida ? .12 : .3) + i * .25) % 1;
+      const a = i * Math.PI * .5 + t * .35;
+      const px = ix + Math.cos(a) * (8 + f * 12);
+      const py = iy - 8 - f * 20;
+      ctx.beginPath(); ctx.arc(px, py, 1.1 + Math.sin(f * Math.PI) * .6, 0, Math.PI * 2); ctx.fill();
+    }
+    ctx.globalAlpha = 1;
   }
 
   ctx.restore();
@@ -5129,18 +5206,24 @@ function drawMapObject(object, state) {
     if (object.vaporTermal) {
       const ix = (object.x - object.y) * HW, iy = (object.x + object.y) * HH;
       const t = performance.now() / 1000;
+      const visitada = !!state.progress?.flags?.enseada_fonte_termal_visitada;
       ctx.save();
-      ctx.strokeStyle = 'rgba(218, 255, 248, 0.34)';
-      ctx.lineWidth = 1.6;
-      for (let i = 0; i < 3; i++) {
-        const fase = (t * 0.48 + i * 0.33) % 1;
-        const vx = ix + (i - 1) * 14 + Math.sin(t * 2 + i * 2) * 3;
-        const vy = iy - 18 - fase * 24;
-        ctx.globalAlpha = Math.sin(fase * Math.PI) * 0.45;
+      ctx.strokeStyle = visitada ? 'rgba(185, 255, 240, 0.52)' : 'rgba(218, 255, 248, 0.34)';
+      ctx.lineWidth = visitada ? 2 : 1.6;
+      for (let i = 0; i < 4; i++) {
+        const fase = (t * (visitada ? 0.58 : 0.48) + i * 0.25) % 1;
+        const vx = ix + (i - 1.5) * 11 + Math.sin(t * 2 + i * 2) * (visitada ? 5 : 3);
+        const vy = iy - 18 - fase * (visitada ? 31 : 24);
+        ctx.globalAlpha = Math.sin(fase * Math.PI) * (visitada ? 0.58 : 0.45);
         ctx.beginPath();
         ctx.moveTo(vx, vy + 7);
         ctx.quadraticCurveTo(vx + Math.sin(t * 3 + i) * 4, vy + 3, vx, vy - 5);
         ctx.stroke();
+      }
+      if (visitada) {
+        ctx.globalAlpha = 0.22 + Math.sin(t * 2.4) * 0.08;
+        ctx.strokeStyle = '#9affeb';
+        ctx.beginPath(); ctx.ellipse(ix, iy - 6, 28, 10, 0, 0, Math.PI * 2); ctx.stroke();
       }
       ctx.restore();
     }

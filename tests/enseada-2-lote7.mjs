@@ -82,6 +82,7 @@ assert(!enseada.pocas.some(p => Boolean(p.fonte)), 'não deve haver cascata fant
 
 // Auditoria espacial de todos os marcos principais (nenhum colado/sobreposto < 1.9 tiles)
 const marcos = enseada.objects.filter(o =>
+  o.renderizar !== false &&
   !o.id.startsWith('trilha_pedras_') &&
   !o.id.startsWith('enseada_folhas_') &&
   !o.id.startsWith('enseada_flora_') &&

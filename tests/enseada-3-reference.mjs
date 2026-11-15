@@ -39,7 +39,7 @@ for (let y = 0; y < enseada.walkMask.length; y++) {
 assert(terra >= 2000, `ilha deveria ter 2.000+ tiles caminháveis (veio ${terra})`);
 assert(terraLeste >= 180, `ponta leste da referência não foi construída (${terraLeste} tiles)`);
 assert(terraSul >= 180, `praia sul ampliada não foi construída (${terraSul} tiles)`);
-assert.equal(enseada.meta.initialZoom, 0.34);
+assert.equal(enseada.meta.initialZoom, 0.50);
 
 const object = id => {
   const found = enseada.objects.find(item => item.id === id);

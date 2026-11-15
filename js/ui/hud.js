@@ -28,6 +28,7 @@ import { getUltimateStatus } from '../game/ultimate.js';
 import { NUCLEO_FORMS } from '../data/nucleo-forms.js';
 import { TOOL_LABELS } from '../data/archetype-tools.js';
 import { describeNextUnlock, getUnlockState } from '../game/unlocks.js';
+import { getEnseadaBuffMeta, getEnseadaCompassReport } from '../game/bussola-enseada.js';
 
 const el = {};
 const cache = {};
@@ -52,6 +53,9 @@ export function initHud() {
     'moduleHud',
     'moduleHudName',
     'moduleHudSubtitle',
+    'enseadaBuffHud',
+    'enseadaBuffName',
+    'enseadaBuffEffect',
     'abilityHud',
     'nucleoTimer',
     'nucleoClock',
@@ -113,6 +117,18 @@ function updateModuleHud(state) {
       '--module-color',
       archetype.cor
     );
+  }
+
+  const buffMeta = state.world?.currentMapId === 'ilha_enseada_ecos'
+    ? getEnseadaBuffMeta(state.player?.enseadaBuff)
+    : null;
+  if (el.enseadaBuffHud) {
+    el.enseadaBuffHud.classList.toggle('visible', Boolean(buffMeta));
+    if (buffMeta) {
+      el.enseadaBuffHud.style.setProperty('--buff-color', buffMeta.cor);
+      setText('enseadaBuffName', buffMeta.label);
+      setText('enseadaBuffEffect', buffMeta.short);
+    }
   }
 
   if (moduleVisible !== shouldShow) {
@@ -301,9 +317,19 @@ function updateQuestHud(state, map) {
   if (map.id === 'ilha_enseada_ecos') {
     const flags = state.progress?.flags ?? {};
     const count = ['mar', 'pedra', 'mata'].filter(id => flags[`collected_enseada_rastro_${id}`]).length;
+    const temBussola = Array.isArray(state.progress?.inventory) && state.progress.inventory.includes('bussola_mar_ecos');
     el.questHud?.classList.toggle('visible', true);
-    setText('questHudTitle', 'EXPLORAÇÃO • ENSEADA DOS ECOS');
-    setText('questHudDescription', count === 3 ? 'Três vestígios registrados. Enseada mapeada.' : `Investigue os vestígios da enseada: ${count}/3. Use E perto de cada eco.`);
+    if (count < 3) {
+      setText('questHudTitle', 'EXPLORAÇÃO • ENSEADA DOS ECOS');
+      setText('questHudDescription', `Investigue os vestígios da enseada: ${count}/3. Use E perto de cada eco.`);
+    } else if (temBussola) {
+      const report = getEnseadaCompassReport(state.progress);
+      setText('questHudTitle', `BÚSSOLA • ENSEADA (${report.done}/${report.total})`);
+      setText('questHudDescription', report.next ? `Próximo alvo: ${report.next.label} (${report.next.coords}).` : 'Todos os marcos da Enseada mapeados!');
+    } else {
+      setText('questHudTitle', 'EXPLORAÇÃO • ENSEADA DOS ECOS');
+      setText('questHudDescription', 'Três vestígios registrados. Veja missões da Enseada em [J].');
+    }
     return;
   }
   const quest = state.progress?.activeQuest;

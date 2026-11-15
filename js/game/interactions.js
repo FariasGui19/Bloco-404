@@ -25,6 +25,7 @@ import { getArchetypeAbilities } from './abilities.js';
 import { ARCHETYPE_KITS } from '../data/archetype-kits.js';
 import { applyUnlocks } from './unlocks.js';
 import { ensureArchetypeProgress } from './progression.js';
+import { getEnseadaCompassReport } from './bussola-enseada.js';
 
 const DEFAULT_INTERACTION_DISTANCE = 1.35;
 
@@ -1141,26 +1142,42 @@ function interactWithObject(object) {
       lamina_dominio_anciao: 'DOMÍNIO ANCIÃO: PROA REFORÇADA CONTRA REBENTAÇÃO DE RECIFE.',
       nucleo_dez_forma: 'NÚCLEO 10X: VELA ENROLADA PRONTA PARA VENTOS DE TRAVÉS.',
     }[state.progress?.archetype] ?? 'VELEIRO LEVE DA EXPEDIÇÃO ANCORADO NA BAÍA.';
+    const choices = [
+      {
+        text: 'NAVEGAR: CAMINHO DAS CORRENTES',
+        onSelect: () => {
+          void usePortal({
+            id: 'barco_para_correntes',
+            label: 'CAMINHO DAS CORRENTES',
+            destino: { mapId: 'mar_caminho_das_correntes', spawnId: 'vindo_da_enseada' },
+            transition: 'fade',
+          });
+        },
+      },
+    ];
+    if (flags.conduto_enseada_mare) {
+      choices.push({
+        text: 'NAVEGAR: ROTA DA MARÉ ASTRAL',
+        onSelect: () => {
+          void usePortal({
+            id: 'barco_para_mare',
+            label: 'ROTA DA MARÉ ASTRAL',
+            destino: { mapId: 'mar_rota_mare_astral', spawnId: 'vindo_da_enseada' },
+            transition: 'fade',
+          });
+        },
+      });
+    }
+    choices.push({ text: 'PERMANECER NA ENSEADA', onSelect: () => {} });
     openDialogue({
       speaker: 'BARCO DE EXPEDIÇÃO',
       dialogue: [
         archNota,
-        'ESTE BARCO COBRE A ROTA ATÉ O CAMINHO DAS CORRENTES. DESEJA ZARPAR AGORA?',
+        flags.conduto_enseada_mare
+          ? 'COM O CONDUTO ABERTO, ESTE BARCO ALCANÇA O CAMINHO DAS CORRENTES E A ROTA DA MARÉ ASTRAL.'
+          : 'ESTE BARCO COBRE A ROTA ATÉ O CAMINHO DAS CORRENTES. DESEJA ZARPAR AGORA?',
       ],
-      choices: [
-        {
-          text: 'NAVEGAR: CAMINHO DAS CORRENTES',
-          onSelect: () => {
-            void usePortal({
-              id: 'barco_para_correntes',
-              label: 'CAMINHO DAS CORRENTES',
-              destino: { mapId: 'mar_caminho_das_correntes', spawnId: 'vindo_da_enseada' },
-              transition: 'fade',
-            });
-          },
-        },
-        { text: 'PERMANECER NA ENSEADA', onSelect: () => {} },
-      ],
+      choices,
       cancelable: true,
     });
     return;
@@ -1172,12 +1189,17 @@ function interactWithObject(object) {
     recordQuestEvent(state.progress, { type: 'enseada_navegacao_lida', target: 'baia' });
     saveGame();
     const climaAtual = nomeDoClima(state.clima);
+    const temBussola = Array.isArray(state.progress.inventory) && state.progress.inventory.includes('bussola_mar_ecos');
+    const linhas = [
+      `FEIXE TURQUESA ACESO SOB ${climaAtual}. A LUZ DO FAROLETE DISSIPA ATÉ 55% DA NEBLINA NA BAÍA NORTE.`,
+      'AO SUL FICA O PORTAL DO CAMINHO DAS CORRENTES; LOGO ABAIXO DO CAIS, O CONDUTO ABISSAL DA DÁRSENA.',
+    ];
+    if (temBussola) {
+      linhas.push(`BÚSSOLA DE MARÉ: ${getEnseadaCompassReport(state.progress).summary.toUpperCase()}`);
+    }
     openDialogue({
       speaker: 'FAROLETE DA BAÍA',
-      dialogue: [
-        `FEIXE TURQUESA ACESO SOB ${climaAtual}. AS BOIAS MARCAM A ENTRADA PROFUNDA DA ENSEADA.`,
-        'AO SUL FICA O PORTAL DO CAMINHO DAS CORRENTES; LOGO ABAIXO DO CAIS, O CONDUTO ABISSAL DA DÁRSENA.',
-      ],
+      dialogue: linhas,
     });
     return;
   }
@@ -1238,6 +1260,251 @@ function interactWithObject(object) {
           ? `O TEMPO (${climaAtual}) INTENSIFICA O ECO DE TREINO AO LADO! DISPERSÁ-LO AGORA CONCEDE BÔNUS DE TEMPESTADE.`
           : `TEMPO ATUAL (${climaAtual}). SINTONIZE CHUVA OU RESSACA NO RELÓGIO DE MARÉ PARA DESAFIAR O ECO CARREGADO.`,
         'DICA TÁTICA: O ARQUÉTIPO DOMÍNIO ANCIÃO E O ESCUDO DA BANCADA REDUZEM O DANO DAS ZONAS DE ECO INSTÁVEL.',
+      ],
+    });
+    return;
+  }
+
+  // ---- ENSEADA DOS ECOS 2.0 — Lote #6 ----
+  if (object.id === 'piscina_mare_viva_enseada') {
+    const flags = state.progress.flags ??= {};
+    const primeira = !flags.enseada_piscina_visitada;
+    flags.enseada_piscina_visitada = true;
+    const arch = state.progress?.archetype;
+    if (state.player) {
+      const maxEn = state.player.maxEnergy ?? 100;
+      const bonus = arch === 'mare_astral' ? maxEn : Math.round(maxEn * 0.4);
+      state.player.energy = Math.min(maxEn, (state.player.energy ?? maxEn) + bonus);
+      if (state.player.nado) state.player.nado.folego = state.player.nado.folegoMax ?? 100;
+    }
+    if (primeira && arch) grantArchetypeXp(state.progress, 12);
+    saveGame();
+    openDialogue({
+      speaker: 'PISCINA DE MARÉ VIVA',
+      dialogue: [
+        arch === 'mare_astral'
+          ? 'ANÊMONAS E ESTRELAS RESPONDEM À MARÉ ASTRAL, RESTAURANDO TODA A SUA ENERGIA E FÔLEGO.'
+          : 'ÁGUA CRISTALINA E CORAIS RASOS REFRESCAM SEUS SISTEMAS (+40% ENERGIA E FÔLEGO).',
+        primeira ? 'MICRO-ECO DA POÇA REGISTRADO (+12 XP).' : 'A POÇA CONTINUA PULSANDO COM A MARÉ.',
+      ],
+    });
+    return;
+  }
+
+  if (object.id === 'cais_madeira_pesca_enseada') {
+    const flags = state.progress.flags ??= {};
+    const primeira = !flags.enseada_cais_pesca_lido;
+    flags.enseada_cais_pesca_lido = true;
+    if (primeira && state.progress.archetype) grantArchetypeXp(state.progress, 10);
+    saveGame();
+    const mare = mareDoClima(state.clima);
+    const mareLabel = mare.altura >= 0.65 ? 'ALTA' : mare.altura >= 0.35 ? 'MÉDIA' : 'BAIXA';
+    openDialogue({
+      speaker: 'CAIS DA ENSEADA',
+      dialogue: [
+        `MARÉ ATUAL: ${mareLabel} (${Math.round(mare.altura * 100)}%). CARDUMES COSTUMAM PASSAR LOGO ABAIXO DAS ESTACAS DE MADEIRA.`,
+        state.progress?.archetype === 'mare_astral'
+          ? 'MARÉ ASTRAL RECONHECE AS CORRENTES DA BAÍA: O CONDUTO LESTE ESTÁ ALINHADO COM A DÁRSENA.'
+          : 'DAQUI VOCÊ AVISTA O EMBARCADOURO, O FAROLETE E O BARCO DE EXPEDIÇÃO.',
+      ],
+    });
+    return;
+  }
+
+  if (object.id === 'coral_luminescente_enseada') {
+    const flags = state.progress.flags ??= {};
+    state.progress.inventory ??= [];
+    const primeira = !flags.enseada_coral_colhido;
+    flags.enseada_coral_colhido = true;
+    if (!state.progress.inventory.includes('amostra_coral_enseada')) {
+      state.progress.inventory.push('amostra_coral_enseada');
+    }
+    if (state.player) {
+      const maxEn = state.player.maxEnergy ?? 100;
+      state.player.energy = Math.min(maxEn, (state.player.energy ?? maxEn) + 25);
+    }
+    if (primeira && state.progress.archetype) grantArchetypeXp(state.progress, 15);
+    saveGame();
+    openDialogue({
+      speaker: 'RECIFE LUMINESCENTE',
+      dialogue: [
+        primeira
+          ? 'VOCÊ RECOLHEU UM FRAGMENTO DE CORAL BIOLUMINESCENTE (+15 XP, +25 ENERGIA).'
+          : 'A LUZ AZUL DO RECIFE RECARREGA +25 DE ENERGIA AO TOQUE.',
+        state.progress?.archetype === 'motor_bio_forja'
+          ? 'BIO-FORJA REGISTRA A SIMBIOSE DO RECIFE COM EXTREMA CLAREZA.'
+          : 'O FRAGMENTO ESTÁ GUARDADO NO INVENTÁRIO DO CÓDEX [J].',
+      ],
+    });
+    return;
+  }
+
+  if (object.id === 'estela_navegadores_enseada') {
+    const flags = state.progress.flags ??= {};
+    const primeira = !flags.enseada_estela_decifrada;
+    flags.enseada_estela_decifrada = true;
+    if (primeira && state.progress.archetype) grantArchetypeXp(state.progress, 20);
+    recordQuestEvent(state.progress, { type: 'interact_enseada', target: 'estela_navegadores_enseada' });
+    saveGame();
+    const archTexto = {
+      mare_astral: 'AS RUNAS ESTELARES SE ALINHAM COM A MARÉ ASTRAL, APONTANDO O TRIÂNGULO PRAIA–ENSEADA–CORRENTES.',
+      lamina_dominio_anciao: 'A GRAVAÇÃO DA ESTELA TRAZ TRAÇOS DA ERA DO DOMÍNIO ANCIÃO ANTES DA RUPTURA.',
+      motor_bio_forja: 'CRACAS E ALGAS PRESERVARAM OS ENTALHES SEM CORROER O NÚCLEO DA PEDRA.',
+      nucleo_dez_forma: 'AS CONSTELAÇÕES MUDAM DE ÂNGULO CONFORME VOCÊ ALTERA SUA FORMA NO NÚCLEO.',
+    }[state.progress?.archetype] ?? 'UM MAPA DE NAVEGAÇÃO ANTIGO LIGA A ENSEADA À ESTAÇÃO 66.6 E ÀS CORRENTES.';
+    openDialogue({
+      speaker: 'ESTELA DOS NAVEGADORES',
+      dialogue: [
+        archTexto,
+        primeira ? 'INSCRIÇÃO REGISTRADA NO CÓDEX (+20 XP).' : 'AS RUNAS CONTINUAM BRILHANDO EM TURQUESA.',
+      ],
+    });
+    return;
+  }
+
+  if (object.id === 'algas_douradas_enseada') {
+    const flags = state.progress.flags ??= {};
+    const primeira = !flags.enseada_algas_colhidas;
+    flags.enseada_algas_colhidas = true;
+    const arch = state.progress?.archetype;
+    if (state.player) {
+      const maxHp = state.player.maxHealth ?? 100;
+      const pct = arch === 'motor_bio_forja' ? 0.4 : 0.25;
+      state.player.health = Math.min(maxHp, (state.player.health ?? maxHp) + Math.round(maxHp * pct));
+    }
+    if (primeira && arch) grantArchetypeXp(state.progress, 12);
+    saveGame();
+    openDialogue({
+      speaker: 'BANCO DE ALGAS DOURADAS',
+      dialogue: [
+        arch === 'motor_bio_forja'
+          ? 'BIO-FORJA EXTRAI NUTRIENTES MARINHOS CONCENTRADOS (+40% VIDA).'
+          : 'ESSÊNCIA SUAVE DAS ALGAS DOURADAS RESTAURA +25% DE VIDA.',
+        primeira ? 'PROPRIEDADE COSTEIRA REGISTRADA (+12 XP).' : 'AS FOLHAS DOURADAS ONDULAM NA MARÉ.',
+      ],
+    });
+    return;
+  }
+
+  if (object.id === 'captador_ecos_enseada') {
+    const flags = state.progress.flags ??= {};
+    const primeira = !flags.enseada_captador_sintonizado;
+    flags.enseada_captador_sintonizado = true;
+    if (primeira && state.progress.archetype) grantArchetypeXp(state.progress, 20);
+    recordQuestEvent(state.progress, { type: 'interact_enseada', target: 'captador_ecos_enseada' });
+    saveGame();
+    const report = getEnseadaCompassReport(state.progress);
+    openDialogue({
+      speaker: 'CAPTADOR DE ECOS',
+      dialogue: [
+        'OS CRISTAIS DE QUARTZO E FIOS DE COBRE AMPLIFICAM A RESSONÂNCIA DE TODA A COSTA.',
+        `VARREDURA DA ILHA (${report.done}/${report.total}): ${report.summary.toUpperCase()}`,
+      ],
+    });
+    return;
+  }
+
+  if (object.id === 'gruta_concha_enseada') {
+    const flags = state.progress.flags ??= {};
+    const primeira = !flags.enseada_gruta_visitada;
+    flags.enseada_gruta_visitada = true;
+    if (state.player) {
+      const maxHp = state.player.maxHealth ?? 100;
+      state.player.health = Math.min(maxHp, (state.player.health ?? maxHp) + Math.round(maxHp * 0.3));
+    }
+    if (primeira && state.progress.archetype) grantArchetypeXp(state.progress, 15);
+    saveGame();
+    const tempestade = state.clima?.atual === 'chuva' || state.clima?.atual === 'ressaca';
+    openDialogue({
+      speaker: 'FENDA DA MARÉ',
+      dialogue: [
+        tempestade
+          ? 'ABRIGO PERFEITO CONTRA A TEMPESTADE! AS PAREDES DE PEDRA ISOLAM O VENTO E RECUPERAM +30% DE VIDA.'
+          : 'O INTERIOR FRESCO DA GRUTA GUARDA REFLEXOS DA LAGOA E RESTAURA +30% DE VIDA.',
+        primeira ? 'ABRIGO DA ENSEADA MAPEADO (+15 XP).' : 'UM PONTO SEGURO PARA PAUSAR EM MEIO À EXPLORAÇÃO.',
+      ],
+    });
+    return;
+  }
+
+  if (object.id === 'jardim_pedras_enseada') {
+    const flags = state.progress.flags ??= {};
+    const primeira = !flags.enseada_pedras_meditado;
+    flags.enseada_pedras_meditado = true;
+    if (primeira && state.progress.archetype) grantArchetypeXp(state.progress, 12);
+    const atual = state.player?.enseadaBuff;
+    const aplicarFoco = () => {
+      if (state.player) state.player.enseadaBuff = 'foco_equilibrio';
+    };
+    if (!atual || atual === 'foco_equilibrio') {
+      aplicarFoco();
+      saveGame();
+      openDialogue({
+        speaker: 'PEDRAS DO EQUILÍBRIO',
+        dialogue: [
+          'VOCÊ ALINHA A RESPIRAÇÃO COM A BRISA COSTEIRA. BUFF ATIVO: FOCO DE EQUILÍBRIO (+2 ENERGIA/s NA ENSEADA).',
+          primeira ? 'SERENIDADE REGISTRADA (+12 XP).' : 'O EQUILÍBRIO PERMANECE ESTÁVEL.',
+        ],
+      });
+      return;
+    }
+    saveGame();
+    openDialogue({
+      speaker: 'PEDRAS DO EQUILÍBRIO',
+      dialogue: [
+        `VOCÊ JÁ POSSUI UM BUFF DA BANCADA ATIVO (${atual.toUpperCase()}). DESEJA TROCAR PARA FOCO DE EQUILÍBRIO (+2 EN/s)?`,
+      ],
+      choices: [
+        { text: 'ATIVAR FOCO DE EQUILÍBRIO (+2 EN/s)', onSelect: () => { aplicarFoco(); saveGame(); } },
+        { text: 'MANTER BUFF DA BANCADA', onSelect: () => {} },
+      ],
+      cancelable: true,
+    });
+    return;
+  }
+
+  if (object.id === 'bau_deriva_enseada') {
+    const flags = state.progress.flags ??= {};
+    state.progress.inventory ??= [];
+    const primeira = !flags.enseada_bau_aberto;
+    flags.enseada_bau_aberto = true;
+    if (primeira) {
+      if (!state.progress.inventory.includes('perola_luminescente_enseada')) {
+        state.progress.inventory.push('perola_luminescente_enseada');
+      }
+      if (state.progress.archetype) grantArchetypeXp(state.progress, 25);
+    }
+    recordQuestEvent(state.progress, { type: 'interact_enseada', target: 'bau_deriva_enseada' });
+    saveGame();
+    openDialogue({
+      speaker: 'ARCAZ À DERIVA',
+      dialogue: primeira
+        ? [
+            'DENTRO DO ARCAZ ENCRUSTADO DE CRACAS HÁ UM DIÁRIO DE BORDO SELADO E UMA PÉROLA LUMINESCENTE.',
+            'ESPÓLIO DA BAÍA COLETADO (+25 XP).',
+          ]
+        : ['O ARCAZ JÁ FOI EXPLORADO. RESTAM APENAS AS FERRAGENS ANTIGAS SALGADAS PELO MAR.'],
+    });
+    return;
+  }
+
+  if (object.id === 'maleta_expedicao_enseada') {
+    const flags = state.progress.flags ??= {};
+    const primeira = !flags.enseada_maleta_aberta;
+    flags.enseada_maleta_aberta = true;
+    if (state.player) {
+      const maxHp = state.player.maxHealth ?? 100;
+      const maxEn = state.player.maxEnergy ?? 100;
+      state.player.health = Math.min(maxHp, (state.player.health ?? maxHp) + Math.round(maxHp * 0.3));
+      state.player.energy = Math.min(maxEn, (state.player.energy ?? maxEn) + Math.round(maxEn * 0.5));
+    }
+    if (primeira && state.progress.archetype) grantArchetypeXp(state.progress, 15);
+    saveGame();
+    openDialogue({
+      speaker: 'MALETA DA EXPEDIÇÃO',
+      dialogue: [
+        'CÉLULAS DE EMERGÊNCIA DA ESTAÇÃO 66.6 INTACTAS: +30% VIDA E +50% ENERGIA REABASTECIDAS.',
+        primeira ? 'SUPRIMENTOS TÁTICOS REGISTRADOS (+15 XP).' : 'A MALETA SEGUE PRONTA PARA RECARGA EM CAMPO.',
       ],
     });
     return;

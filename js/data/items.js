@@ -86,7 +86,21 @@ export const ITEMS = Object.freeze({
     kind: 'relíquia costeira',
     icon: 'progressao',
     spritePath: 'assets/sprites/enseada-2/barco-expedicao-enseada.png',
-    description: 'Instrumento náutico calibrado na Enseada dos Ecos. Aponta sempre para as correntes seguras mesmo sob ressaca.',
+    description: 'Instrumento náutico calibrado na Enseada dos Ecos. Aponta sempre para os vestígios pendentes, o farolete e as correntes seguras.',
+  }),
+  amostra_coral_enseada: Object.freeze({
+    name: 'FRAGMENTO DE CORAL BIOLUMINESCENTE',
+    kind: 'relíquia costeira',
+    icon: 'energia',
+    spritePath: 'assets/sprites/enseada-2/coral-luminescente-azul.png',
+    description: 'Amostra viva do recife da Enseada dos Ecos. Mantém a frequência azul estável mesmo fora da água.',
+  }),
+  carta_navegadores_enseada: Object.freeze({
+    name: 'CARTA ESTELAR DOS NAVEGADORES',
+    kind: 'relíquia costeira',
+    icon: 'missoes',
+    spritePath: 'assets/sprites/enseada-2/estela-navegadores.png',
+    description: 'Carta gravada com base na Estela dos Navegadores e no Arcaz à Deriva. Registra todas as rotas entre Praia, Enseada e Correntes.',
   }),
   bio_estacao_estufa: Object.freeze({
     name: 'ASSINATURA DA ESTUFA',

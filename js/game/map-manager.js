@@ -194,6 +194,9 @@ export async function loadMap(mapId, spawnId = 'inicio') {
       if (!state.progress.questLog?.expedicao_da_baia_enseada) {
         startQuest(state.progress, 'expedicao_da_baia_enseada');
       }
+      if (!state.progress.questLog?.ecos_profundos_enseada) {
+        startQuest(state.progress, 'ecos_profundos_enseada');
+      }
     } else if (state.player) {
       state.player.enseadaBuff = null;
     }

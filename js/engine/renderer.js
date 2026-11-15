@@ -786,7 +786,18 @@ function drawClima(ctx, state, view) {
 
   // Névoa translúcida sem partículas: entra e sai junto ao clima e não
   // encobre a HUD. Mais densa no horizonte, sem bloquear visão da costa.
-  const neblina = neblinaDoClima(clima);
+  // Perto do Farolete da Baía na Enseada, o feixe dissipa até 55% da neblina.
+  let neblina = neblinaDoClima(clima);
+  if (neblina > .01 && state.world?.currentMapId === 'ilha_enseada_ecos') {
+    const farolete = state.objects?.find(o => o.id === 'farolete_baia_enseada');
+    if (farolete && state.player) {
+      const dist = Math.hypot(state.player.x - farolete.x, state.player.y - farolete.y);
+      if (dist < 8.5) {
+        const alivio = (1 - dist / 8.5) * 0.55;
+        neblina *= (1 - alivio);
+      }
+    }
+  }
   if (neblina > .01) {
     const g = ctx.createLinearGradient(0, 0, 0, view.h);
     g.addColorStop(0, `rgba(196,222,224,${(.24*neblina).toFixed(3)})`);
@@ -4092,6 +4103,96 @@ function drawFrequencyStationFloor(curState) {
   ctx.restore();
 }
 
+function drawEnseadaObjectAnimations(object, state) {
+  if (!object.fogueiraViva && !object.feixeFarolete && !object.pulsoAntena && !object.pulsoTotem && !object.pulsoBiolum) return;
+  const reduced = typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+  const t = reduced ? 0 : performance.now() / 1000;
+  const ix = (object.x - object.y) * HW + (object.ajusteX ?? 0);
+  const iy = (object.x + object.y) * HH + (object.ajusteY ?? 0);
+  ctx.save();
+  ctx.globalCompositeOperation = 'lighter';
+
+  if (object.fogueiraViva) {
+    const pulso = 0.8 + Math.sin(t * 7.5 + object.x) * 0.18;
+    const g = ctx.createRadialGradient(ix - 8, iy - 14, 2, ix - 8, iy - 14, 34 * pulso);
+    g.addColorStop(0, 'rgba(255, 198, 102, 0.34)');
+    g.addColorStop(0.55, 'rgba(255, 122, 48, 0.14)');
+    g.addColorStop(1, 'rgba(255, 100, 30, 0)');
+    ctx.fillStyle = g;
+    ctx.beginPath(); ctx.arc(ix - 8, iy - 14, 34 * pulso, 0, Math.PI * 2); ctx.fill();
+    for (let i = 0; i < 5; i++) {
+      const f = (t * 0.72 + i * 0.21) % 1;
+      const sx = ix - 8 + Math.sin(t * 4.5 + i * 2.1) * 7 + (state.clima?.vento ?? 0.2) * f * 8;
+      const sy = iy - 16 - f * 26;
+      ctx.fillStyle = `rgba(255, ${185 - Math.round(f * 75)}, 82, ${(Math.sin(f * Math.PI) * 0.75).toFixed(2)})`;
+      ctx.beginPath(); ctx.arc(sx, sy, 1.5 - f * 0.7, 0, Math.PI * 2); ctx.fill();
+    }
+  }
+
+  if (object.feixeFarolete) {
+    const climaForca = Math.min(1, (state.clima?.chuva ?? 0) * 0.7 + (state.clima?.forca ?? 0.2) * 0.6 + 0.25);
+    const topoY = iy - 62;
+    const ang = t * 1.15;
+    for (const dir of [0, Math.PI]) {
+      const a = ang + dir;
+      const dx = Math.cos(a) * 92;
+      const dy = Math.sin(a) * 44;
+      const grad = ctx.createLinearGradient(ix, topoY, ix + dx, topoY + dy);
+      grad.addColorStop(0, `rgba(145, 255, 240, ${(0.36 * climaForca).toFixed(2)})`);
+      grad.addColorStop(1, 'rgba(145, 255, 240, 0)');
+      ctx.fillStyle = grad;
+      ctx.beginPath();
+      ctx.moveTo(ix, topoY);
+      ctx.lineTo(ix + dx - Math.sin(a) * 18, topoY + dy + Math.cos(a) * 10);
+      ctx.lineTo(ix + dx + Math.sin(a) * 18, topoY + dy - Math.cos(a) * 10);
+      ctx.closePath();
+      ctx.fill();
+    }
+    ctx.fillStyle = `rgba(220, 255, 248, ${(0.55 + Math.sin(t * 3.2) * 0.2).toFixed(2)})`;
+    ctx.beginPath(); ctx.arc(ix, topoY, 3.6, 0, Math.PI * 2); ctx.fill();
+  }
+
+  if (object.pulsoAntena) {
+    const topoY = iy - (object.id === 'torre_antena_enseada' ? 76 : 42);
+    for (let i = 0; i < 2; i++) {
+      const f = (t * 0.55 + i * 0.5) % 1;
+      ctx.strokeStyle = `rgba(110, 247, 255, ${((1 - f) * 0.42).toFixed(2)})`;
+      ctx.lineWidth = 1.2;
+      ctx.beginPath();
+      ctx.ellipse(ix, topoY - f * 6, 4 + f * 18, 2 + f * 8, 0, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+  }
+
+  if (object.pulsoTotem) {
+    const pulso = 0.78 + Math.sin(t * 2.8) * 0.22;
+    ctx.strokeStyle = `rgba(255, 217, 128, ${(0.34 * pulso).toFixed(2)})`;
+    ctx.lineWidth = 1.4;
+    ctx.beginPath(); ctx.ellipse(ix, iy - 34, 18 * pulso, 7 * pulso, 0, 0, Math.PI * 2); ctx.stroke();
+    ctx.strokeStyle = `rgba(110, 247, 255, ${(0.32 * pulso).toFixed(2)})`;
+    ctx.beginPath(); ctx.ellipse(ix, iy - 22, 22, 8, Math.sin(t * 1.6) * 0.25, 0, Math.PI); ctx.stroke();
+  }
+
+  if (object.pulsoBiolum) {
+    const cor = object.pulsoBiolum === '#ffd86b' ? '255, 216, 107' : '92, 247, 235';
+    const resp = 0.65 + Math.sin(t * 2.2 + object.x * 0.9) * 0.35;
+    const g = ctx.createRadialGradient(ix, iy - 20, 2, ix, iy - 20, 32);
+    g.addColorStop(0, `rgba(${cor}, ${(0.22 * resp).toFixed(2)})`);
+    g.addColorStop(1, `rgba(${cor}, 0)`);
+    ctx.fillStyle = g;
+    ctx.beginPath(); ctx.arc(ix, iy - 20, 32, 0, Math.PI * 2); ctx.fill();
+    for (let i = 0; i < 3; i++) {
+      const f = (t * 0.42 + i * 0.33 + object.x * 0.1) % 1;
+      const px = ix + Math.sin(t * 2 + i * 2.4) * 12;
+      const py = iy - 12 - f * 24;
+      ctx.fillStyle = `rgba(${cor}, ${(Math.sin(f * Math.PI) * 0.65).toFixed(2)})`;
+      ctx.beginPath(); ctx.arc(px, py, 1.5, 0, Math.PI * 2); ctx.fill();
+    }
+  }
+
+  ctx.restore();
+}
+
 // Sobreposições discretas na arte existente: nenhum objeto ou interação extra.
 function drawFrequencyObjectLife(object, image) {
   const ids = ['terminal_frequencia_666', 'registro_estacao_666', 'baliza_666_receptor',
@@ -5012,6 +5113,7 @@ function drawMapObject(object, state) {
 
   if (object.useCrop && drawCroppedObject(object, image, sheet)) {
     drawFrequencyObjectLife(object, image);
+    drawEnseadaObjectAnimations(object, state);
     if (object.vaporTermal) {
       const ix = (object.x - object.y) * HW, iy = (object.x + object.y) * HH;
       const t = performance.now() / 1000;
@@ -5178,6 +5280,9 @@ function drawCroppedObject(object, image, sheet) {
   // depois do espelhamento, então vale igual para objetos espelhados.
   const skewY = object.skewY ?? 0;
   const escalaY = object.escalaY ?? 1;
+  const brisaSkewX = object.oscilaBrisa
+    ? Math.sin(agora * 2.1 + object.x * 1.3 + object.y) * 0.032 * (0.65 + (state.clima?.vento ?? 0.3))
+    : 0;
 
   const banda = fatiaObjeto(object, c.h);
   // Tira vertical de um paredão (ver `drawWorld`). Um pixel de sobra de cada
@@ -5202,7 +5307,7 @@ function drawCroppedObject(object, image, sheet) {
   const filtro = filtroObjeto(object);
   // Cópia 1:1 do sprite já reduzido (ver "SPRITES JÁ NA ESCALA DA TELA").
   const kTela = scale * escaladosZoom;
-  const pronto = escaladosAtivo && !filtro && skewY === 0 && escalaY === 1 && kTela <= ESCALADOS_MAX_K
+  const pronto = escaladosAtivo && !filtro && skewY === 0 && brisaSkewX === 0 && escalaY === 1 && kTela <= ESCALADOS_MAX_K
     ? spriteEscalado(c.canvas, kTela, Boolean(object.espelhar))
     : null;
   if (pronto) {
@@ -5229,7 +5334,7 @@ function drawCroppedObject(object, image, sheet) {
     ctx.imageSmoothingEnabled = true;
     ctx.imageSmoothingQuality = 'high';
     ctx.translate(ix, iy);
-    if (skewY !== 0 || escalaY !== 1) ctx.transform(1, skewY, 0, escalaY, 0, 0);
+    if (skewY !== 0 || brisaSkewX !== 0 || escalaY !== 1) ctx.transform(1, skewY, brisaSkewX, escalaY, 0, 0);
     if (object.espelhar) ctx.scale(-1, 1);
     ctx.drawImage(c.canvas, sx, banda.sy, sw, banda.sh,
       -w * px + sx * scale, -h * py + banda.sy * scale, sw * scale, banda.sh * scale);

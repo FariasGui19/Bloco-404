@@ -284,25 +284,25 @@ export const map = {
     {
       id: 'santuario_lumeo_enseada', nome: 'SANTUÁRIO DE LÚMEO', tipo: 'decoracao', x: 19.6, y: 18.6,
       sprite: 'enseada_santuario_lumeo', useCrop: true, larguraPx: 102, pivotX: 0.5, pivotY: 0.92,
-      bloqueia: false, brilho: { cor: '#70f3ff', raio: 1.35, forca: 0.32 },
+      bloqueia: false, pulsoBiolum: '#70f3ff', brilho: { cor: '#70f3ff', raio: 1.35, forca: 0.32 },
       interacao: { label: 'EXAMINAR SANTUÁRIO DE LÚMEO', distancia: 1.55 },
     },
     {
       id: 'acampamento_vigilia_enseada', nome: 'ACAMPAMENTO DE VIGÍLIA', tipo: 'decoracao', x: 8.6, y: 17.2,
       sprite: 'enseada_acampamento_vigilia', useCrop: true, larguraPx: 122, pivotX: 0.5, pivotY: 0.88,
-      bloqueia: false, brilho: { cor: '#ffae52', raio: 1.25, forca: 0.28 },
+      bloqueia: false, fogueiraViva: true, brilho: { cor: '#ffae52', raio: 1.25, forca: 0.28 },
       interacao: { label: 'DESCANSAR NA FOGUEIRA', distancia: 1.6 },
     },
     {
       id: 'torre_antena_enseada', nome: 'TORRE-ANTENA DE ESCUTA', tipo: 'dispositivo', x: 13.4, y: 12.6,
       sprite: 'enseada_torre_antena', useCrop: true, larguraPx: 88, pivotX: 0.5, pivotY: 0.96,
-      bloqueia: false, brilho: { cor: '#ff7e71', raio: 0.9, forca: 0.2 },
+      bloqueia: false, pulsoAntena: true, brilho: { cor: '#ff7e71', raio: 0.9, forca: 0.2 },
       interacao: { label: 'SINTONIZAR TORRE-ANTENA', distancia: 1.55 },
     },
     {
       id: 'farolete_baia_enseada', nome: 'FAROLETE DA BAÍA', tipo: 'decoracao', x: 25.2, y: 10.2,
       sprite: 'enseada_farolete_baia', useCrop: true, larguraPx: 92, pivotX: 0.5, pivotY: 0.96,
-      bloqueia: false, brilho: { cor: '#5cf7eb', raio: 1.8, forca: 0.4 },
+      bloqueia: false, feixeFarolete: true, brilho: { cor: '#5cf7eb', raio: 1.8, forca: 0.4 },
       interacao: { label: 'OBSERVAR DO FAROLETE', distancia: 1.65 },
     },
     {
@@ -314,7 +314,7 @@ export const map = {
     {
       id: 'totem_eco_enseada', nome: 'MONÓLITO DE ECO', tipo: 'decoracao', x: 15.4, y: 15.4,
       sprite: 'enseada_totem_eco', useCrop: true, larguraPx: 76, pivotX: 0.5, pivotY: 0.94,
-      bloqueia: false, brilho: { cor: '#ffd980', raio: 1.15, forca: 0.25 },
+      bloqueia: false, pulsoTotem: true, brilho: { cor: '#ffd980', raio: 1.15, forca: 0.25 },
       interacao: { label: 'EXAMINAR MONÓLITO DE ECO', distancia: 1.5 },
     },
     {
@@ -344,8 +344,69 @@ export const map = {
     {
       id: 'carrilhao_vento_enseada', nome: 'CARRILHÃO DE VENTO', tipo: 'decoracao', x: 7.5, y: 11.5,
       sprite: 'enseada_carrilhao_vento', useCrop: true, larguraPx: 88, pivotX: 0.5, pivotY: 0.96,
-      bloqueia: false,
+      bloqueia: false, oscilaBrisa: true,
       interacao: { label: 'OUVIR O CARRILHÃO', distancia: 1.55 },
+    },
+    // ---- Novos Marcos Vivos da Enseada 2.0 (Lote #6) ----
+    {
+      id: 'piscina_mare_viva_enseada', nome: 'PISCINA DE MARÉ VIVA', tipo: 'decoracao', x: 12.0, y: 17.0,
+      sprite: 'enseada_piscina_mare', useCrop: true, larguraPx: 124, pivotX: 0.5, pivotY: 0.88,
+      bloqueia: false, pulsoBiolum: '#5cf7eb', brilho: { cor: '#5cf7eb', raio: 1.25, forca: 0.26 },
+      interacao: { label: 'MERGULHAR AS MÃOS NA MARÉ VIVA', distancia: 1.65 },
+    },
+    {
+      id: 'cais_madeira_pesca_enseada', nome: 'CAIS DA ENSEADA', tipo: 'decoracao', x: 22.0, y: 13.0,
+      sprite: 'enseada_cais_pesca', useCrop: true, larguraPx: 132, pivotX: 0.5, pivotY: 0.88,
+      bloqueia: false, brilho: { cor: '#ffd980', raio: 1.0, forca: 0.22 },
+      interacao: { label: 'OBSERVAR A BAÍA DO CAIS', distancia: 1.75 },
+    },
+    {
+      id: 'coral_luminescente_enseada', nome: 'RECIFE LUMINESCENTE', tipo: 'decoracao', x: 23.0, y: 19.0,
+      sprite: 'enseada_coral_azul', useCrop: true, larguraPx: 96, pivotX: 0.5, pivotY: 0.92,
+      bloqueia: false, pulsoBiolum: '#44e8ff', brilho: { cor: '#44e8ff', raio: 1.35, forca: 0.34 },
+      interacao: { label: 'COLHER AMOSTRA DE CORAL', distancia: 1.6 },
+    },
+    {
+      id: 'estela_navegadores_enseada', nome: 'ESTELA DOS NAVEGADORES', tipo: 'decoracao', x: 17.0, y: 16.0,
+      sprite: 'enseada_estela_navegadores', useCrop: true, larguraPx: 112, pivotX: 0.5, pivotY: 0.92,
+      bloqueia: false, pulsoBiolum: '#6cf7ff', brilho: { cor: '#6cf7ff', raio: 1.35, forca: 0.3 },
+      interacao: { label: 'DECIFRAR A ESTELA DOS NAVEGADORES', distancia: 1.6 },
+    },
+    {
+      id: 'algas_douradas_enseada', nome: 'BANCO DE ALGAS DOURADAS', tipo: 'decoracao', x: 8.0, y: 14.0,
+      sprite: 'enseada_algas_douradas', useCrop: true, larguraPx: 88, pivotX: 0.5, pivotY: 0.92,
+      bloqueia: false, oscilaBrisa: true, pulsoBiolum: '#ffd86b', brilho: { cor: '#ffd86b', raio: 1.0, forca: 0.24 },
+      interacao: { label: 'COLHER ESSÊNCIA DE ALGAS DOURADAS', distancia: 1.55 },
+    },
+    {
+      id: 'captador_ecos_enseada', nome: 'CAPTADOR DE ECOS', tipo: 'dispositivo', x: 19.0, y: 15.0,
+      sprite: 'enseada_rede_cristal', useCrop: true, larguraPx: 120, pivotX: 0.5, pivotY: 0.92,
+      bloqueia: false, pulsoAntena: true, brilho: { cor: '#5cf7eb', raio: 1.3, forca: 0.28 },
+      interacao: { label: 'SINTONIZAR CAPTADOR DE ECOS', distancia: 1.65 },
+    },
+    {
+      id: 'gruta_concha_enseada', nome: 'FENDA DA MARÉ', tipo: 'decoracao', x: 13.0, y: 19.0,
+      sprite: 'enseada_gruta_concha', useCrop: true, larguraPx: 136, pivotX: 0.5, pivotY: 0.88,
+      bloqueia: false, pulsoBiolum: '#54ccff', brilho: { cor: '#54ccff', raio: 1.3, forca: 0.28 },
+      interacao: { label: 'ABRIGAR-SE NA FENDA DA MARÉ', distancia: 1.7 },
+    },
+    {
+      id: 'jardim_pedras_enseada', nome: 'PEDRAS DO EQUILÍBRIO', tipo: 'decoracao', x: 16.0, y: 20.0,
+      sprite: 'enseada_jardim_pedras', useCrop: true, larguraPx: 82, pivotX: 0.5, pivotY: 0.94,
+      bloqueia: false, oscilaBrisa: true,
+      interacao: { label: 'MEDITAR NAS PEDRAS DO EQUILÍBRIO', distancia: 1.55 },
+    },
+    {
+      id: 'bau_deriva_enseada', nome: 'ARCAZ À DERIVA', tipo: 'decoracao', x: 22.0, y: 18.0,
+      sprite: 'enseada_bau_deriva', useCrop: true, larguraPx: 86, pivotX: 0.5, pivotY: 0.9,
+      bloqueia: false, pulsoBiolum: '#5cf7eb', brilho: { cor: '#5cf7eb', raio: 1.15, forca: 0.26 },
+      interacao: { label: 'ABRIR O ARCAZ À DERIVA', distancia: 1.55 },
+    },
+    {
+      id: 'maleta_expedicao_enseada', nome: 'MALETA DA EXPEDIÇÃO', tipo: 'dispositivo', x: 21.0, y: 16.0,
+      sprite: 'enseada_caixa_suprimentos', useCrop: true, larguraPx: 82, pivotX: 0.5, pivotY: 0.9,
+      bloqueia: false, pulsoAntena: true, brilho: { cor: '#ff9a5c', raio: 1.0, forca: 0.22 },
+      interacao: { label: 'ABRIR MALETA DA EXPEDIÇÃO', distancia: 1.55 },
     },
     {
       id: 'fonte_termal_enseada', nome: 'FONTE TERMAL DA ENSEADA', tipo: 'decoracao', x: 11.2, y: 20.2,

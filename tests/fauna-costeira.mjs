@@ -30,7 +30,7 @@ for (const map of [praia, enseada]) {
 state.save.loaded = false; state.save.activeSlot = null;
 state.progress.flags = {};
 assert(await loadMap(enseada.id, 'vindo_da_praia'));
-const visited = new Set(), queue = [[6,15]];
+const visited = new Set(), queue = [[Math.floor(enseada.spawnPoints.inicio.x), Math.floor(enseada.spawnPoints.inicio.y)]];
 while (queue.length) {
   const [x,y] = queue.shift(), key = `${x},${y}`;
   if (visited.has(key) || !canStandAt(enseada, x + .5, y + .5, .18, state.player)) continue;
@@ -38,7 +38,8 @@ while (queue.length) {
   queue.push([x+1,y], [x-1,y], [x,y+1], [x,y-1]);
 }
 for (const item of enseada.collectibles) assert(visited.has(`${item.x},${item.y}`), `${item.id} bloqueado por cenário`);
-assert(visited.has('5,15'), 'retorno bloqueado por cenário');
+const retornoEnseada = enseada.portals.find(p => p.id === 'enseada_retorno');
+assert(visited.has(`${retornoEnseada.x},${retornoEnseada.y}`), 'retorno bloqueado por cenário');
 assert(await loadMap('hub_saguao'));
 assert.equal(state.fauna.length, 0, 'fauna não vaza para outro mapa');
 console.log('Fauna: habitat, fuga, troca de mapa e caminhos da enseada OK.');

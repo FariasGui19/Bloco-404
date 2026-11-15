@@ -98,7 +98,7 @@ assert(await loadMap(enseada.id, 'vindo_da_praia'));
 assert(state.progress.questLog.ecos_da_enseada_viva, 'Missão ecos_da_enseada_viva inicia na Enseada');
 
 const walkVisited = new Set();
-const q = [[6, 15]];
+const q = [[Math.floor(enseada.spawnPoints.inicio.x), Math.floor(enseada.spawnPoints.inicio.y)]];
 while (q.length) {
   const [x, y] = q.shift();
   const key = `${x},${y}`;
@@ -185,7 +185,7 @@ assert.equal(state.progress.flags.enseada_viva_concluida, true);
 assert(state.progress.inventory.includes('concha_eco_enseada'));
 
 // Velocidade diferenciada na Enseada (Maré Astral na areia molhada x Núcleo 10X na areia seca)
-Object.assign(state.player, { x: 3.5, y: 15.5 }); // tile 'M' at the widened west shoreline
+Object.assign(state.player, { x: 16.5, y: 54.5 }); // tile 'M' na orla oeste da nova silhueta
 const speedMareOrla = getPlayerMoveSpeed(state.progress, state.player);
 state.progress.archetype = 'lamina_dominio_anciao';
 const speedDominioOrla = getPlayerMoveSpeed(state.progress, state.player);

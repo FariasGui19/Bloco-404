@@ -90,7 +90,7 @@ assert(await loadMap(enseada.id, 'vindo_da_praia'));
 assert(state.progress.questLog.expedicao_da_baia_enseada, 'Missão expedicao_da_baia_enseada inicia na Enseada');
 
 const walkVisited = new Set();
-const q = [[6, 15]];
+const q = [[Math.floor(enseada.spawnPoints.inicio.x), Math.floor(enseada.spawnPoints.inicio.y)]];
 while (q.length) {
   const [x, y] = q.shift();
   const key = `${x},${y}`;
@@ -164,7 +164,7 @@ state.progress.archetype = 'mare_astral';
 await interactAt(bancada.x, bancada.y, 'bancada_campo_enseada');
 assert.equal(state.player.enseadaBuff, 'pulso_salino');
 closeDialogue();
-Object.assign(state.player, { x: 3.5, y: 15.5 }); // tile 'M' at the widened west shoreline
+Object.assign(state.player, { x: 16.5, y: 54.5 }); // tile 'M' na orla oeste da nova silhueta
 const speedComBuff = getPlayerMoveSpeed(state.progress, state.player);
 state.player.enseadaBuff = null;
 const speedSemBuff = getPlayerMoveSpeed(state.progress, state.player);

@@ -302,7 +302,8 @@ export const map = {
     },
     {
       id: 'bandeirola_vento_enseada', nome: 'BIRUTA DA EXPEDIÇÃO', tipo: 'decoracao', x: 7.4, y: 13.6,
-      sprite: 'enseada_bandeirola_vento', useCrop: true, larguraPx: 62, pivotX: 0.5, pivotY: 0.94,
+      sprite: 'enseada_bandeirola_vento', spriteB: 'enseada_bandeirola_vento_b', animPeriodo: 0.48,
+      useCrop: true, larguraPx: 62, pivotX: 0.5, pivotY: 0.94,
       bloqueia: false, oscilaBrisa: true,
     },
     {
@@ -383,7 +384,8 @@ export const map = {
     },
     {
       id: 'jardim_pedras_enseada', nome: 'PEDRAS DO EQUILÍBRIO', tipo: 'decoracao', x: 14.2, y: 23.8,
-      sprite: 'enseada_jardim_pedras', useCrop: true, larguraPx: 72, pivotX: 0.5, pivotY: 0.94,
+      sprite: 'enseada_jardim_pedras', spriteB: 'enseada_jardim_pedras_b', animPeriodo: 0.64,
+      useCrop: true, larguraPx: 72, pivotX: 0.5, pivotY: 0.94,
       bloqueia: false, oscilaBrisa: true,
       interacao: { label: 'MEDITAR NAS PEDRAS DO EQUILÍBRIO', distancia: 1.55 },
     },
@@ -403,12 +405,14 @@ export const map = {
     },
     {
       id: 'borboletas_fonte_enseada', nome: 'BORBOLETAS DA FONTE', tipo: 'decoracao', x: 14.8, y: 25.6,
-      sprite: 'enseada_borboletas_vivas', useCrop: true, larguraPx: 54, pivotX: 0.5, pivotY: 0.5,
+      sprite: 'enseada_borboletas_vivas', spriteB: 'enseada_borboletas_vivas_b', animPeriodo: 0.34,
+      useCrop: true, larguraPx: 54, pivotX: 0.5, pivotY: 0.5,
       bloqueia: false, flutuacaoSuave: true, nadoCardume: true,
     },
     {
       id: 'banco_conchas_enseada', nome: 'BANCO DE CONCHAS', tipo: 'decoracao', x: 9.0, y: 29.8,
-      sprite: 'enseada_banco_conchas', useCrop: true, larguraPx: 78, pivotX: 0.5, pivotY: 0.88,
+      sprite: 'enseada_banco_conchas', spriteB: 'enseada_banco_conchas_b', animPeriodo: 0.68,
+      useCrop: true, larguraPx: 78, pivotX: 0.5, pivotY: 0.88,
       bloqueia: false,
       interacao: { label: 'EXAMINAR CONCHAS & ESTRELAS', distancia: 1.5 },
     },
@@ -421,7 +425,8 @@ export const map = {
     },
     {
       id: 'poleiro_aves_enseada', nome: 'POLEIRO DAS AVES', tipo: 'decoracao', x: 17.8, y: 31.8,
-      sprite: 'enseada_poleiro_aves', useCrop: true, larguraPx: 80, pivotX: 0.5, pivotY: 0.94,
+      sprite: 'enseada_poleiro_aves', spriteB: 'enseada_poleiro_aves_b', animPeriodo: 0.56,
+      useCrop: true, larguraPx: 80, pivotX: 0.5, pivotY: 0.94,
       bloqueia: false,
       interacao: { label: 'OBSERVAR O POLEIRO', distancia: 1.5 },
     },
@@ -443,7 +448,8 @@ export const map = {
     },
     {
       id: 'borboletas_jardim_enseada', nome: 'BORBOLETAS DO SANTUÁRIO', tipo: 'decoracao', x: 23.0, y: 22.8,
-      sprite: 'enseada_borboletas_vivas', useCrop: true, larguraPx: 50, pivotX: 0.5, pivotY: 0.5,
+      sprite: 'enseada_borboletas_vivas', spriteB: 'enseada_borboletas_vivas_b', animPeriodo: 0.36,
+      useCrop: true, larguraPx: 50, pivotX: 0.5, pivotY: 0.5,
       bloqueia: false, flutuacaoSuave: true, nadoCardume: true,
     },
     {
@@ -469,7 +475,8 @@ export const map = {
     },
     {
       id: 'ninho_tartarugas_enseada', nome: 'NINHO DE TARTARUGAS', tipo: 'decoracao', x: 27.4, y: 28.2,
-      sprite: 'enseada_ninho_tartarugas', useCrop: true, larguraPx: 86, pivotX: 0.5, pivotY: 0.9,
+      sprite: 'enseada_ninho_tartarugas', spriteB: 'enseada_ninho_tartarugas_b', animPeriodo: 0.68,
+      useCrop: true, larguraPx: 86, pivotX: 0.5, pivotY: 0.9,
       bloqueia: false,
       interacao: { label: 'PROTEGER O NINHO', distancia: 1.6 },
     },
@@ -484,7 +491,8 @@ export const map = {
     },
     {
       id: 'embarcadouro_mare_astral', nome: 'EMBARCADOURO DA MARÉ', tipo: 'decoracao', x: 24.4, y: 11.8,
-      sprite: 'enseada_embarcadouro_mare', useCrop: true, larguraPx: 124, pivotX: 0.5, pivotY: 0.88,
+      sprite: 'enseada_embarcadouro_mare', spriteB: 'enseada_embarcadouro_mare_b', animPeriodo: 0.62,
+      useCrop: true, larguraPx: 124, pivotX: 0.5, pivotY: 0.88,
       bloqueia: false, brilho: { cor: '#5cf7eb', raio: 1.35, forca: 0.3 },
       interacao: { label: 'EXAMINAR O CAIS DA MARÉ', distancia: 1.75 },
     },
@@ -512,12 +520,14 @@ export const map = {
     // ---- Cardumes em Água Profunda & Sinalização Marítima do Conduto ----
     {
       id: 'cardume_orla_norte', nome: 'CARDUME OESTE', tipo: 'decoracao', x: 1.4, y: 20.5,
-      sprite: 'enseada_cardume_vivo', useCrop: true, larguraPx: 58, pivotX: 0.5, pivotY: 0.65,
+      sprite: 'enseada_cardume_vivo', spriteB: 'enseada_cardume_vivo_b', animPeriodo: 0.46,
+      useCrop: true, larguraPx: 58, pivotX: 0.5, pivotY: 0.65,
       depthOffset: -1, bloqueia: false, flutuacaoSuave: true, nadoCardume: true,
     },
     {
       id: 'cardume_orla_sul', nome: 'CARDUME LESTE', tipo: 'decoracao', x: 40.5, y: 16.0,
-      sprite: 'enseada_cardume_vivo', useCrop: true, larguraPx: 60, pivotX: 0.5, pivotY: 0.65,
+      sprite: 'enseada_cardume_vivo', spriteB: 'enseada_cardume_vivo_b', animPeriodo: 0.48,
+      useCrop: true, larguraPx: 60, pivotX: 0.5, pivotY: 0.65,
       depthOffset: -1, bloqueia: false, flutuacaoSuave: true, nadoCardume: true,
     },
     {
@@ -595,7 +605,8 @@ export const map = {
 
     {
       id: 'arco_conduto_retorno_mare', tipo: 'decoracao', x: 28.9, y: 12.1,
-      sprite: 'mare_sala_arco_enseada', useCrop: true, larguraPx: 124, anchorY: 0.92,
+      sprite: 'mare_sala_arco_enseada', spriteB: 'enseada_arco_conduto_b', animPeriodo: 0.5,
+      useCrop: true, larguraPx: 124, anchorY: 0.92,
       bloqueia: false, brilho: { cor: '#5cf7eb', raio: 2.2, forca: 0.44 },
     },
   ],

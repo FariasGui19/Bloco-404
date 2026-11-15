@@ -19,6 +19,12 @@ import { grantArchetypeXp, getArchetypeLevel } from './rpg.js';
 import { lerArvore, DEGRAUS } from './nado-arvore.js';
 import { recordFrequencyAnchor, countFrequencyAnchors, prepareFrequencyCrossing } from './frequencia-quest.js';
 import { playCutscene, THRESHOLD_SCENES, CITADEL_MARE_EPILOGUE_SCENES } from '../ui/cutscene.js';
+import { sintonizarClima, nomeDoClima, mareDoClima } from './clima.js';
+import { ARCHETYPES } from '../data/onboarding.js';
+import { getArchetypeAbilities } from './abilities.js';
+import { ARCHETYPE_KITS } from '../data/archetype-kits.js';
+import { applyUnlocks } from './unlocks.js';
+import { ensureArchetypeProgress } from './progression.js';
 
 const DEFAULT_INTERACTION_DISTANCE = 1.35;
 
@@ -107,6 +113,11 @@ export function findNearestInteraction() {
     if (object.interacao.somenteSubmerso && (!player.nado?.ativo || !player.nado.submerso || player.nado.profundidade <= 1.25)) continue;
     if (isGateOpen(object)) continue;
     consider('object', object, 4);
+  }
+
+  for (const animal of state.fauna ?? []) {
+    if (!animal.interacao) continue;
+    consider('fauna', animal, 4);
   }
 
   return best;
@@ -272,6 +283,35 @@ function interactWithActor(actor) {
     dialogue,
     onFinish: () => stopActorTalking(actor),
   });
+}
+
+function interactWithFauna(animal) {
+  const interacao = animal.interacao;
+  if (!interacao) return;
+  const arch = state.progress?.archetype;
+  const extra = interacao.porArquetipo?.[arch];
+  openDialogue({
+    speaker: interacao.speaker ?? animal.nome ?? 'FAUNA DA ENSEADA',
+    dialogue: extra ? [...interacao.dialogue, extra] : interacao.dialogue,
+  });
+}
+
+function sintonizarArquetipoEnseada(archetypeId) {
+  const arq = ARCHETYPES[archetypeId];
+  if (!arq || !state.progress) return false;
+  state.progress.archetype = archetypeId;
+  state.progress.abilities = getArchetypeAbilities(archetypeId);
+  ensureArchetypeProgress(state.progress);
+  applyUnlocks(state.progress, ARCHETYPE_KITS[archetypeId]);
+  if (state.player) {
+    state.player.equippedSuit = null;
+    state.player.nucleoForm = null;
+  }
+  state.progress.flags ??= {};
+  state.progress.flags.enseada_espelho_sintonizado = true;
+  recordQuestEvent(state.progress, { type: 'enseada_espelho_arquetipo', target: 'espelho' });
+  saveGame();
+  return true;
 }
 
 function interactWithObject(object) {
@@ -805,6 +845,237 @@ function interactWithObject(object) {
     return;
   }
 
+  if (object.id === 'espelho_arquetipos_enseada') {
+    const atualId = state.progress?.archetype;
+    const atualNome = ARCHETYPES[atualId]?.nome ?? 'NENHUM MÓDULO';
+    const descricoes = {
+      mare_astral: 'MARÉ ASTRAL ATIVO: +10% DE AGILIDADE NA ORLA MOLHADA E NO MAR, ACESSO AO CONDUTO DA DÁRSENA E SINTONIA COM OSTRAS E TARTARUGAS.',
+      nucleo_dez_forma: 'NÚCLEO 10X ATIVO: +8% DE VELOCIDADE NA AREIA SECA, MAPEAMENTO TÁTICO DO NINHO E LEITURA DE VETORES NO CARRILHÃO.',
+      lamina_dominio_anciao: 'DOMÍNIO ANCIÃO ATIVO: POSTURA DE VIGÍLIA NO NINHO DAS TARTARUGAS E RESILIÊNCIA DE FREQUÊNCIA CONTRA OS ECOS INSTÁVEIS.',
+      motor_bio_forja: 'MOTOR BIO-FORJA ATIVO: +4% DE RITMO DE MARCHA, REFORÇO ESTRUTURAL DO NINHO E LEITURA MECÂNICA NO RELÓGIO DE MARÉ.',
+    };
+    const opcoes = Object.values(ARCHETYPES).map(arq => ({
+      text: `${arq.id === atualId ? '[ATIVO] ' : ''}${arq.nome}`,
+      onSelect: () => {
+        sintonizarArquetipoEnseada(arq.id);
+        openDialogue({
+          speaker: 'ESPELHO DE RESSONÂNCIA',
+          dialogue: [
+            `RESSONÂNCIA AJUSTADA PARA ${arq.nome}.`,
+            descricoes[arq.id] ?? arq.descricao,
+          ],
+        });
+      },
+    }));
+    openDialogue({
+      speaker: 'ESPELHO DE RESSONÂNCIA',
+      dialogue: [
+        `MÓDULO EM SINTONIA: ${atualNome}.`,
+        'ESTE ANEL DE BASALTO REFLETE OS QUATRO CAMINHOS DA EXPEDIÇÃO. SINTONIZE UM ARQUÉTIPO PARA EXPERIMENTAR SEUS EFEITOS NA ENSEADA:',
+      ],
+      choices: opcoes,
+      cancelable: true,
+    });
+    return;
+  }
+
+  if (object.id === 'relogio_mare_enseada') {
+    const flags = state.progress.flags ??= {};
+    const climaAtual = nomeDoClima(state.clima);
+    const mare = mareDoClima(state.clima);
+    const arch = state.progress?.archetype;
+    const notaArch = arch === 'mare_astral'
+      ? 'MARÉ ASTRAL: VOCÊ SENTE A PULSAÇÃO DA CORRENTE ANTES MESMO DAS ONDAS CHEGAREM.'
+      : arch === 'motor_bio_forja'
+      ? 'BIO-FORJA: O GNÔMON DE BRONZE OPERA POR EXPANSÃO TÉRMICA SALINA.'
+      : 'AS FASES LUNARES ALINHAM O TEMPO E A ALTURA DA MARÉ NA ENSEADA.';
+    const aplicarClima = (alvoId, rotulo) => {
+      if (state.clima) sintonizarClima(state.clima, alvoId);
+      flags.enseada_clima_sintonizado = true;
+      recordQuestEvent(state.progress, { type: 'enseada_clima_lido', target: 'clima' });
+      saveGame();
+      openDialogue({
+        speaker: 'RELÓGIO DE MARÉ SOLAR',
+        dialogue: [
+          `MARÉ E ATMOSFERA SINTONIZADAS PARA: ${rotulo}.`,
+          'OBSERVE A LUMINOSIDADE, O VENTO NO CARRILHÃO, AS ONDAS E AS LANTERNAS FLUTUANTES NA BAÍA.',
+        ],
+      });
+    };
+    openDialogue({
+      speaker: 'RELÓGIO DE MARÉ SOLAR',
+      dialogue: [
+        `ESTADO ATUAL: ${climaAtual} • MARÉ ${(mare.altura * 100).toFixed(0)}%.`,
+        notaArch,
+      ],
+      choices: [
+        { text: 'CÉU LIMPO (MARÉ CALMA)', onSelect: () => aplicarClima('limpo', 'CÉU LIMPO') },
+        { text: 'BRISA DE LESTE (ONDA LEVE)', onSelect: () => aplicarClima('brisa', 'BRISA DE LESTE') },
+        { text: 'GAROA COSTEIRA (NÉVOA & CHUVA)', onSelect: () => aplicarClima('garoa', 'GAROA COSTEIRA') },
+        { text: 'RESSACA (MAR FORTE & VENTO)', onSelect: () => aplicarClima('ressaca', 'RESSACA') },
+      ],
+      cancelable: true,
+    });
+    return;
+  }
+
+  if (object.id === 'fonte_termal_enseada') {
+    const flags = state.progress.flags ??= {};
+    if (state.player) {
+      state.player.health = state.player.maxHealth ?? state.player.health ?? 100;
+      state.player.energy = state.player.maxEnergy ?? state.player.energy ?? 100;
+    }
+    if (state.progress.energiaMax != null) state.progress.energia = state.progress.energiaMax;
+    const primeira = !flags.enseada_fonte_termal_visitada;
+    flags.enseada_fonte_termal_visitada = true;
+    if (primeira && state.progress.archetype) grantArchetypeXp(state.progress, 15);
+    recordQuestEvent(state.progress, { type: 'enseada_fonte_termal', target: 'fonte' });
+    saveGame();
+    const falaArch = {
+      mare_astral: 'A ÁGUA MINERAL QUENTE REALINHA SEU FÔLEGO E A PRESSÃO DO MÓDULO.',
+      motor_bio_forja: 'O VAPOR SALINO DISSOLVE OS RESÍDUOS DE FERRO E ESTABILIZA A BATERIA DO TRAJE.',
+      lamina_dominio_anciao: 'O CALOR DA ROCHA RELAXA A POSTURA E RETEMPERA A FREQUÊNCIA DA LÂMINA.',
+      nucleo_dez_forma: 'A OSCILAÇÃO DE ENERGIA SE ACALMA; TODAS AS FORMAS ESTÃO PRONTAS PARA ADAPTACÃO.',
+    }[state.progress?.archetype] ?? 'AS ÁGUAS TERMAIS RESTAURAM COMPLETAMENTE SUA ENERGIA E VITALIDADE.';
+    openDialogue({
+      speaker: 'FONTE TERMAL DA ENSEADA',
+      dialogue: [
+        'VAPOR MORNO E CHEIRO DE ALGAS E BASALTO SUBINDO DA LAGOA.',
+        falaArch,
+        primeira ? 'VIDA E ENERGIA RESTAURADAS (+15 XP).' : 'VIDA E ENERGIA TOTALMENTE RESTAURADAS.',
+      ],
+    });
+    return;
+  }
+
+  if (object.id === 'ninho_tartarugas_enseada') {
+    const flags = state.progress.flags ??= {};
+    const primeira = !flags.enseada_ninho_inspecionado;
+    flags.enseada_ninho_inspecionado = true;
+    if (primeira && state.progress.archetype) grantArchetypeXp(state.progress, 15);
+    recordQuestEvent(state.progress, { type: 'enseada_vida_costeira', target: 'costa' });
+    saveGame();
+    const falaArch = {
+      mare_astral: 'MARÉ ASTRAL: VOCÊ OUVE AS BATIDAS CALMAS DENTRO DOS OVOS — ELAS ESPERAM A PRÓXIMA MARÉ ALTA PARA CORRER AO MAR.',
+      motor_bio_forja: 'BIO-FORJA: VOCÊ REAPERTA OS NÓS DE CORDA NA CERCA DE BAMBU PARA PROTEGER A NINHADA DA RESSACA.',
+      lamina_dominio_anciao: 'DOMÍNIO ANCIÃO: SUA VIGÍLIA GARANTE QUE NENHUM ECO INSTÁVEL SE APROXIME DESTA ÁREA DE DESOVA.',
+      nucleo_dez_forma: 'NÚCLEO 10X: OS SENSORES TRAÇAM UM CORREDOR LIVRE ENTRE O NINHO E A MARGEM LESTE PARA OS FILHOTES.',
+    }[state.progress?.archetype] ?? 'CINCO OVOS AQUECIDOS PELA AREIA. A CERCA DE BAMBU MANTÉM O NINHO SEGURO.';
+    openDialogue({
+      speaker: 'NINHO DE TARTARUGAS',
+      dialogue: [
+        falaArch,
+        primeira ? 'OBSERVAÇÃO COSTEIRA REGISTRADA (+15 XP).' : 'A NINHADA PERMANECE PROTEGIDA.',
+      ],
+    });
+    return;
+  }
+
+  if (object.id === 'banco_ostras_enseada') {
+    const flags = state.progress.flags ??= {};
+    const primeira = !flags.enseada_perola_colhida;
+    if (primeira) {
+      flags.enseada_perola_colhida = true;
+      state.progress.inventory ??= [];
+      if (!state.progress.inventory.includes('perola_luminescente_enseada')) {
+        state.progress.inventory.push('perola_luminescente_enseada');
+      }
+      if (state.progress.archetype) grantArchetypeXp(state.progress, 20);
+    }
+    recordQuestEvent(state.progress, { type: 'enseada_vida_costeira', target: 'costa' });
+    saveGame();
+    const archNota = state.progress?.archetype === 'mare_astral'
+      ? 'MARÉ ASTRAL: A PÉROLA VIBRA EM FASE COM O CONDUTO ABISSAL LOGO AO NORTE.'
+      : 'A OSTRA ABRE DE LEVE AO SENTIR A CORRENTEZA LIMPA DA BAÍA.';
+    openDialogue({
+      speaker: 'BANCO DE OSTRAS PÉROLA',
+      dialogue: [
+        primeira
+          ? 'ENTRE AS CONCHAS DE PEDRA, UMA OSTRA REVELA UMA PÉROLA LUMINESCENTE INTACTA.'
+          : 'O BANCO DE OSTRAS BRILHA SUAVEMENTE SOB A MARÉ DA ENSEADA.',
+        archNota,
+        primeira ? 'ITEM OBTIDO: PÉROLA LUMINESCENTE DA ENSEADA (+20 XP).' : 'REGISTRADO NO CÓDEX [J].',
+      ],
+    });
+    return;
+  }
+
+  if (object.id === 'carrilhao_vento_enseada') {
+    const flags = state.progress.flags ??= {};
+    flags.enseada_carrilhao_ouvido = true;
+    const climaAtual = nomeDoClima(state.clima);
+    const vento = state.clima?.vento ?? 0.35;
+    recordQuestEvent(state.progress, { type: 'enseada_clima_lido', target: 'clima' });
+    saveGame();
+    const ritmo = vento > 0.7 ? 'TOCANDO COM FORÇA NA VENTANIA' : vento > 0.4 ? 'TILINTANDO NUM COMPASSO CONSTANTE' : 'BALANÇANDO DEVAGAR NA BRISA';
+    const notaArch = {
+      mare_astral: 'OS SINOS DE BRONZE RESPONDEM À PRESSÃO DO AR ANTES DA VIRADA DA MARÉ.',
+      nucleo_dez_forma: 'A FREQUÊNCIA DAS CONCHAS FORMA UMA ESCALA DE QUATRO VETORES ACÚSTICOS.',
+      lamina_dominio_anciao: 'UM SOM LIMPO E METÁLICO — QUASE COMO O TOQUE DE UMA LÂMINA ANTIGA.',
+      motor_bio_forja: 'CONCHAS FURADAS, CORDA AZUL E BAMBU CURADO: ENGENHARIA COSTEIRA SIMPLES E DURÁVEL.',
+    }[state.progress?.archetype] ?? 'CONCHAS E SINOS MARCAM A CHEGADA DE QUEM CRUZA A TRILHA DA PRAIA.';
+    openDialogue({
+      speaker: 'CARRILHÃO DE VENTO',
+      dialogue: [
+        `TEMPO ATUAL: ${climaAtual} — O CARRILHÃO ESTÁ ${ritmo}.`,
+        notaArch,
+      ],
+    });
+    return;
+  }
+
+  if (object.id === 'embarcadouro_mare_astral') {
+    const flags = state.progress.flags ??= {};
+    const primeira = !flags.enseada_embarcadouro_lido;
+    flags.enseada_embarcadouro_lido = true;
+    if (primeira && state.progress.archetype) grantArchetypeXp(state.progress, 15);
+    saveGame();
+    const arch = state.progress?.archetype;
+    const msg = arch === 'mare_astral'
+      ? (flags.rota_livre_enseada_aberta
+          ? 'AS RUNAS DO CAIS PULSAM EM AZUL VIVO: O CONDUTO PARA A DÁRSENA DA MARÉ ASTRAL ESTÁ ABERTO LOGO À FRENTE.'
+          : 'AS RUNAS DO CAIS RECONHECEM SEU MÓDULO MARÉ ASTRAL. QUANDO A COMPORTA NA DÁRSENA ABRIR, ESTE CAIS LIGARÁ OS DOIS LADOS.')
+      : 'CAIS DE PEDRA COM RUNAS HIDRODIMENSIONAIS. OPERADORES COM MARÉ ASTRAL PODEM USAR O CONDUTO ABISSAL AO LESTE.';
+    openDialogue({
+      speaker: 'EMBARCADOURO DA MARÉ',
+      dialogue: [
+        msg,
+        primeira ? 'ROTA COSTEIRA MAPEADA (+15 XP).' : 'O BRONZE E AS RUNAS MARCAM A MARÉ DA BAÍA.',
+      ],
+    });
+    return;
+  }
+
+  if (object.id === 'banco_conchas_enseada') {
+    const flags = state.progress.flags ??= {};
+    const primeira = !flags.enseada_conchas_examinadas;
+    flags.enseada_conchas_examinadas = true;
+    if (primeira && state.progress.archetype) grantArchetypeXp(state.progress, 15);
+    saveGame();
+    openDialogue({
+      speaker: 'BANCO DE CONCHAS & ESTRELAS',
+      dialogue: [
+        'BÚZIOS ROSADOS, VIDROS POLIDOS PELO MAR E ESTRELAS-DO-MAR REPOUSAM NA AREIA ÚMIDA.',
+        primeira ? 'DESCOBERTA DA ORLA REGISTRADA (+15 XP).' : 'A MARÉ SEMPRE DEVOLVE NOVOS FRAGMENTOS A ESTE TRECHO DA PRAIA.',
+      ],
+    });
+    return;
+  }
+
+  if (object.id === 'poleiro_aves_enseada') {
+    const flags = state.progress.flags ??= {};
+    flags.enseada_poleiro_observado = true;
+    saveGame();
+    openDialogue({
+      speaker: 'POLEIRO DAS AVES',
+      dialogue: [
+        'PENAS LUMINOSAS E UM NINHO ALTO VIGIAM O SUL DA ENSEADA.',
+        'DAQUI SE AVISTAM OS TRÊS RASTROS DA ILHA, A FONTE TERMAL A OESTE E AS ÁGUAS CLARAS DA BAÍA LESTE.',
+      ],
+    });
+    return;
+  }
+
   if (object.gate) {
     if (!checkGate(object.gate)) {
       openDialogue({
@@ -859,5 +1130,6 @@ export async function checkInteractions(pressedE) {
   if (nearest.kind === 'portal') { await interactWithPortal(nearest.data); return; }
   if (nearest.kind === 'collectible') { collectItem(nearest.data); return; }
   if (nearest.kind === 'actor') { interactWithActor(nearest.data); return; }
+  if (nearest.kind === 'fauna') { interactWithFauna(nearest.data); return; }
   if (nearest.kind === 'object') { interactWithObject(nearest.data); }
 } 

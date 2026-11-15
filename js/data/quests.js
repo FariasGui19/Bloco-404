@@ -306,6 +306,28 @@ export const QUESTS = Object.freeze({
       flags: Object.freeze({ missao_nucleo_concluida: true }),
     }),
   }),
+  // -------------------------------------------------------------------
+  // ENSEADA DOS ECOS 2.0 — ECOS DA ENSEADA VIVA
+  // -------------------------------------------------------------------
+  ecos_da_enseada_viva: Object.freeze({
+    id: 'ecos_da_enseada_viva',
+    title: 'ECOS DA ENSEADA VIVA',
+    giver: 'ENSEADA DOS ECOS',
+    kind: 'secundária',
+    description: 'Explore os novos marcos da Enseada dos Ecos: leia o clima no Relógio ou Carrilhão, revitalize-se na Fonte Termal, observe o Ninho ou Banco de Ostras e sintonize o Espelho dos Arquétipos.',
+    objectives: Object.freeze([
+      Object.freeze({ type: 'enseada_clima_lido', target: 'clima', count: 1, label: 'Consultar o Relógio de Maré ou o Carrilhão de Vento [E]' }),
+      Object.freeze({ type: 'enseada_fonte_termal', target: 'fonte', count: 1, label: 'Revitalizar-se na Fonte Termal da Enseada [E]' }),
+      Object.freeze({ type: 'enseada_vida_costeira', target: 'costa', count: 1, label: 'Inspecionar o Ninho de Tartarugas ou o Banco de Ostras [E]' }),
+      Object.freeze({ type: 'enseada_espelho_arquetipo', target: 'espelho', count: 1, label: 'Ressoar no Espelho dos Arquétipos [E]' }),
+    ]),
+    rewards: Object.freeze({
+      xp: 120,
+      points: 1,
+      items: Object.freeze(['concha_eco_enseada']),
+      flags: Object.freeze({ enseada_viva_concluida: true }),
+    }),
+  }),
 });
 
 export function getQuest(id) {

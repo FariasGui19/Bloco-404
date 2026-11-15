@@ -4718,7 +4718,7 @@ function drawWallProcedural(x, y, front) {
 // =====================================================================
 
 function getObjectSpriteConfig(spriteId) {
-  if (typeof spriteId === 'string' && (spriteId.startsWith('freq666_') || spriteId.startsWith('oceano_vivo_'))) return { SHEET_COLS: 1, SHEET_ROWS: 1, DEFAULT_SCALE: 1, FEET_ANCHOR_Y: 1 };
+  if (typeof spriteId === 'string' && (spriteId.startsWith('freq666_') || spriteId.startsWith('oceano_vivo_') || spriteId.startsWith('enseada_'))) return { SHEET_COLS: 1, SHEET_ROWS: 1, DEFAULT_SCALE: 1, FEET_ANCHOR_Y: 1 };
   if (typeof spriteId === 'string' && (spriteId.startsWith('bio_sala_') || spriteId.startsWith('dom_sala_') || spriteId.startsWith('mare_sala_') || spriteId.startsWith('nucleo_sala_') || spriteId.startsWith('viaduto_'))) return { SHEET_COLS: 1, SHEET_ROWS: 1, DEFAULT_SCALE: 1, FEET_ANCHOR_Y: 1 };
   if (['sala_bio_maquina', 'sala_bio_grade', 'sala_dominio_lacre', 'sala_mare_fluxo', 'sala_nucleo_malha', 'aero_painel_partidas', 'aero_carrinho_bagagem', 'aero_totem_holo', 'aero_planta_aliena'].includes(spriteId)) return { SHEET_COLS: 1, SHEET_ROWS: 1, DEFAULT_SCALE: 1, FEET_ANCHOR_Y: 1 };
   if (['bio_terminal', 'bio_reator', 'bio_ponte', 'bio_estufa', 'bio_floreira', 'bio_tubos', 'bio_caixa', 'bio_luminaria', 'bio_plataforma', 'bio_margem_canto', 'bio_margem_cano', 'bio_margem_ruina', 'bio_margem_mureta', 'bio_condutor_quebrado', 'bio_condutor_ativo', 'bio_regulador_quebrado', 'bio_regulador_ativo', 'bio_mato_cano', 'bio_mato_ventilacao', 'bio_mato_barris', 'bio_mato_fissura', 'bio_cabeceira', 'bio_distribuidor', 'bio_margem_baixa', 'bio_fundacao'].includes(spriteId)) return { SHEET_COLS: 1, SHEET_ROWS: 1, DEFAULT_SCALE: 1, FEET_ANCHOR_Y: 1 };
@@ -5012,6 +5012,24 @@ function drawMapObject(object, state) {
 
   if (object.useCrop && drawCroppedObject(object, image, sheet)) {
     drawFrequencyObjectLife(object, image);
+    if (object.vaporTermal) {
+      const ix = (object.x - object.y) * HW, iy = (object.x + object.y) * HH;
+      const t = performance.now() / 1000;
+      ctx.save();
+      ctx.strokeStyle = 'rgba(218, 255, 248, 0.34)';
+      ctx.lineWidth = 1.6;
+      for (let i = 0; i < 3; i++) {
+        const fase = (t * 0.48 + i * 0.33) % 1;
+        const vx = ix + (i - 1) * 14 + Math.sin(t * 2 + i * 2) * 3;
+        const vy = iy - 18 - fase * 24;
+        ctx.globalAlpha = Math.sin(fase * Math.PI) * 0.45;
+        ctx.beginPath();
+        ctx.moveTo(vx, vy + 7);
+        ctx.quadraticCurveTo(vx + Math.sin(t * 3 + i) * 4, vy + 3, vx, vy - 5);
+        ctx.stroke();
+      }
+      ctx.restore();
+    }
     if (object.id === 'grade_impeto_vivo' && (!object.__coluna || object.__coluna.index === object.__coluna.count - 1)) {
       drawBioGateResonance(object, state);
     }
@@ -5150,8 +5168,10 @@ function drawCroppedObject(object, image, sheet) {
   const px = object.pivotX ?? 0.5;
   const py = object.pivotY ?? 1;
 
+  const agora = performance.now() / 1000;
+  const boiaY = object.flutuacaoSuave ? Math.sin(agora * 2.1 + object.x * 1.7 + object.y) * 2.4 : 0;
   const ix = (object.x - object.y) * HW + (object.ajusteX ?? 0);
-  const iy = (object.x + object.y) * HH + (object.ajusteY ?? 0);
+  const iy = (object.x + object.y) * HH + (object.ajusteY ?? 0) + boiaY;
 
   // skewY: inclina o eixo longo (y' = y + skewY * x) sem esticar a altura.
   // Positivo = a ponta direita desce. Aplicado em espaço de TELA,
@@ -5169,7 +5189,6 @@ function drawCroppedObject(object, image, sheet) {
     sw = Math.min(c.w, Math.ceil(c.w * (tira.index + 1) / tira.count) + 1) - sx;
   }
   const inteiro = !object.__slice && (!tira || tira.index === 0);
-  const agora = performance.now() / 1000;
   // Pedra no mar: a espuma nasce ANTES da pedra (fica por baixo do sprite).
   if (object.espuma && inteiro) {
     desenharAnelEspuma(ctx, ix + (object.espumaX ?? 0), iy + (object.espumaY ?? 0), object.espuma, agora, (object.x * 7 + object.y * 13) | 0);

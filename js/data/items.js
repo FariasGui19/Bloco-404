@@ -67,6 +67,20 @@ export const ITEMS = Object.freeze({
     icon: 'missoes',
     description: 'Presente do mar para quem soltou o que estava preso. Encostada no ouvido, devolve o som dos bichos salvos.',
   }),
+  perola_luminescente_enseada: Object.freeze({
+    name: 'PÉROLA LUMINESCENTE DA ENSEADA',
+    kind: 'relíquia costeira',
+    icon: 'energia',
+    spritePath: 'assets/sprites/enseada-2/banco-ostras-perola.png',
+    description: 'Pérola cultivada nas ostras da baía leste da Enseada dos Ecos. Pulsa suavemente quando a maré sobe.',
+  }),
+  concha_eco_enseada: Object.freeze({
+    name: 'CONCHA DOS QUATRO VENTOS',
+    kind: 'lembrança',
+    icon: 'missoes',
+    spritePath: 'assets/sprites/enseada-2/banco-areia-conchas.png',
+    description: 'Relíquia da Enseada dos Ecos 2.0. Guarda a ressonância dos quatro arquétipos sobre a maré, o vento e a fauna costeira.',
+  }),
   bio_estacao_estufa: Object.freeze({
     name: 'ASSINATURA DA ESTUFA',
     kind: 'registro',

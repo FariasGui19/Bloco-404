@@ -265,3 +265,24 @@ export function resumoClima(clima) {
     mudancas: clima.mudancas,
   };
 }
+
+/**
+ * Sintoniza o clima da faixa atual para um estado escolhido (ex.: Relógio de Maré Solar).
+ * Mantém a corrente coerente e recalcula luz/vento/chuva/mar imediatamente.
+ */
+export function sintonizarClima(clima, alvoId) {
+  if (!clima || !CLIMAS[alvoId]) return false;
+  const idx = CORRENTE.indexOf(alvoId);
+  clima.indice = idx >= 0 ? idx : 0;
+  clima.atual = alvoId;
+  clima.proximo = CORRENTE[(clima.indice + 1) % CORRENTE.length];
+  clima.fracao = 0;
+  const c = CLIMAS[alvoId];
+  clima.forca = c.forca;
+  clima.luz = c.luz;
+  clima.chuva = c.chuva;
+  clima.mar = c.mar;
+  clima.vento = c.vento;
+  clima.mudancas = (clima.mudancas ?? 0) + 1;
+  return true;
+}

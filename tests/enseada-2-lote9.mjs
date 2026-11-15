@@ -39,16 +39,16 @@ for (const spriteId of [
 
 // Todos os 10 marcos do Lote #9 estão animados com quadro B
 for (const [objId, spriteB] of [
-  ['portico_trilha_praia', 'enseada_portico_praia_b'],
-  ['relogio_mare_enseada', 'enseada_relogio_mare_b'],
-  ['torre_antena_enseada', 'enseada_torre_antena_b'],
-  ['bancada_campo_enseada', 'enseada_bancada_campo_b'],
+  ['portico_trilha_praia', 'enseada3_portico_oeste'],
+  ['relogio_mare_enseada', 'enseada4_relogio'],
+  ['torre_antena_enseada', 'enseada4_torre_vigilia'],
+  ['bancada_campo_enseada', 'enseada4_mesa_campo'],
   ['santuario_lumeo_enseada', 'enseada_santuario_lumeo_b'],
   ['estela_navegadores_enseada', 'enseada_estela_navegadores_b'],
-  ['gruta_concha_enseada', 'enseada_gruta_concha_b'],
+  ['gruta_concha_enseada', 'enseada4_gruta'],
   ['banco_ostras_enseada', 'enseada_banco_ostras_b'],
   ['bau_deriva_enseada', 'enseada_bau_deriva_b'],
-  ['maleta_expedicao_enseada', 'enseada_caixa_suprimentos_b'],
+  ['maleta_expedicao_enseada', 'enseada4_caixas'],
 ]) {
   const obj = enseada.objects.find(o => o.id === objId);
   assert(obj, `${objId} ausente`);

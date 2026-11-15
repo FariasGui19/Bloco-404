@@ -6,7 +6,7 @@
 
 import { WORLD_REGISTRY } from '../data/world-registry.js';
 import { state } from './state.js';
-import { snapCameraTo, setMapZoomMin } from '../engine/camera.js';
+import { snapCameraTo, setMapZoomMin, setZoom } from '../engine/camera.js';
 import { createActorRuntime } from './actors.js';
 import { createCoastalFauna } from './fauna-costeira.js';
 import { createTrainingTargets } from './combat.js';
@@ -135,6 +135,7 @@ export async function loadMap(mapId, spawnId = 'inicio') {
     p._esteira = [];
 
     setMapZoomMin(mapData.meta?.minZoom);
+    if (Number.isFinite(mapData.meta?.initialZoom)) setZoom(mapData.meta.initialZoom);
     snapCameraTo(p.x, p.y, mapData);
     if (mapData.id === 'ilha_praia_inicial' && state.progress) {
       state.progress.flags ??= {};

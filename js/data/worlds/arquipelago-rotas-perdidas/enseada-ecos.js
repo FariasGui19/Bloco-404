@@ -259,8 +259,10 @@ export const map = {
     },
     {
       id: 'porta_estacao_666_visual', tipo: 'decoracao', x: 18, y: 10, sprite: 'freq666_entrada',
-      useCrop: true, larguraPx: 350, pivotX: 0.76, pivotY: 0.93, depthOffset: -2, bloqueia: true,
-      hitbox: { offsetX: -4.65, offsetY: -1.4, width: 3.8, height: 2.95 },
+      // A Estação 66.6 é uma porta embutida no paredão, não um edifício que
+      // domine a enseada: escala reduzida para respeitar a proporção da referência.
+      useCrop: true, larguraPx: 230, pivotX: 0.76, pivotY: 0.93, depthOffset: -2, bloqueia: true,
+      hitbox: { offsetX: -3.9, offsetY: -1.1, width: 2.6, height: 2.4 },
     },
     { id: 'baliza_666_receptor', tipo: 'decoracao', x: 12, y: 13, sprite: 'freq666_baliza', useCrop: true, larguraPx: 24, pivotX: 0.5, pivotY: 0.98, bloqueia: false },
     { id: 'baliza_666_entrada', tipo: 'decoracao', x: 19, y: 11, sprite: 'freq666_baliza', useCrop: true, larguraPx: 24, pivotX: 0.5, pivotY: 0.98, bloqueia: false },
@@ -556,9 +558,12 @@ export const map = {
     },
 
     // ---- Relevo Costeiro Encaixado na Borda Norte & Ancoragem do Conduto ----
-    relevo('enseada_falesia_norte', 'falesia-alta', 11.4, 7.6, 200, { espelhar: true }),
-    relevo('enseada_macico_leste', 'macico-cascata', 22.8, 7.6, 205),
-    relevo('enseada_pilar_noroeste', 'pilar-palmeiras-a', 6.4, 10.6, 104),
+    relevo('enseada_falesia_norte', 'falesia-alta', 11.4, 7.6, 260, { espelhar: true }),
+    // O maciço e a falésia de selva ampliam o platô alto com cascata, palmeiras
+    // e vegetação sobre as rochas — a silhueta dominante da imagem de referência.
+    relevo('enseada_falesia_selva_norte', 'falesia-selva', 16.8, 6.7, 300, { espelhar: true }),
+    relevo('enseada_macico_leste', 'macico-cascata', 22.8, 7.6, 350),
+    relevo('enseada_pilar_noroeste', 'pilar-palmeiras-a', 6.4, 10.6, 124),
     relevo('enseada_rochas_mar_1', 'rochas-mar', 2.6, 18.2, 54, { espuma: 26, espumaY: -3 }),
     relevo('enseada_rochas_mar_2', 'rochas-mar', 34.4, 19.8, 54, { espelhar: true, espuma: 26, espumaY: -3 }),
     relevo('enseada_rochas_mar_3', 'rochas-mar', 21.8, 35.0, 56, { espuma: 28, espumaY: -3 }),
@@ -597,6 +602,29 @@ export const map = {
     floraDecor('costa', 'bromelia_gigante', 'enseada_flora_6', 31.6, 28.4, 0.85),
     floraDecor('costa', 'ilhota_musgo', 'enseada_ilhota_1', 2.8, 11.8, 0.85),
     floraDecor('costa', 'rochas_espuma', 'enseada_ilhota_2', 33.4, 8.4, 0.85),
+
+    // ---- Massa vegetal da referência: mata oeste, borda sul e recife leste ----
+    // Os conjuntos grandes constroem a silhueta de palmeiral sem ocupar as
+    // trilhas principais nem alterar a navegação/colisões já existentes.
+    floraDecor('costa', 'palmeiral_grande', 'enseada_palmeiral_noroeste', 4.8, 11.5, 0.78),
+    floraDecor('costa', 'palmeira_samambaias', 'enseada_palmeiral_estacao_oeste', 13.1, 9.1, 0.82),
+    floraDecor('costa', 'arvore_samambaias', 'enseada_palmeiral_estacao_leste', 29.0, 7.8, 0.84),
+    floraDecor('costa', 'palmeiral', 'enseada_palmeiral_acampamento', 4.7, 19.2, 0.82),
+    floraDecor('costa', 'palmeiral_grande', 'enseada_palmeiral_mata_oeste', 5.8, 27.2, 0.78),
+    floraDecor('costa', 'palmeira_samambaias', 'enseada_palmeiral_mata_centro', 6.0, 30.8, 0.88),
+    floraDecor('costa', 'arvore_samambaias', 'enseada_palmeiral_mata_sul', 20.4, 28.4, 0.88),
+    floraDecor('costa', 'palmeira_alta', 'enseada_palmeiral_mata_leste', 18.2, 25.2, 0.92),
+    floraDecor('costa', 'palmeiral', 'enseada_palmeiral_ponta_sul', 22.4, 30.5, 0.78),
+    floraDecor('costa', 'palmeira_samambaias', 'enseada_palmeiral_ponta_leste', 34.0, 25.5, 0.88),
+    floraDecor('costa', 'arvore_samambaias', 'enseada_palmeiral_recife', 32.2, 22.0, 0.78),
+    floraDecor('veg', 'monstera_b', 'enseada_monstera_sudoeste', 6.2, 26.7, 1.05),
+    floraDecor('veg', 'bromelia_grande', 'enseada_bromelias_mata', 10.2, 19.7, 0.92),
+    floraDecor('veg', 'flores_roxas_b', 'enseada_flores_mata', 4.5, 29.0, 1.0),
+    floraDecor('veg', 'flores_vermelhas', 'enseada_flores_sul', 18.7, 29.0, 0.95),
+    floraDecor('veg', 'samambaia_alta', 'enseada_samambaias_sul', 19.5, 32.0, 0.95),
+    floraDecor('costa', 'rochedo_palmeira', 'enseada_rochedo_ponta_oeste', 4.8, 22.4, 0.82),
+    floraDecor('costa', 'rochedo_musgo', 'enseada_rochedo_ponta_sul', 26.5, 31.0, 0.92),
+    floraDecor('costa', 'rochas', 'enseada_rochas_jardim', 17.0, 20.8, 0.9),
 
     tropical('enseada_ruinas', 19.6, 12.0, 6, 58),
     tropical('enseada_rochas', 12.4, 31.6, 7, 52),

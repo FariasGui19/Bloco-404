@@ -628,7 +628,7 @@ export const map = {
       pivotX: 0.5, pivotY: 0.92, depthOffset: -1, bloqueia: false,
     },
     {
-      id: 'enseada3_mata_oeste_a', tipo: 'decoracao', x: 17.0, y: 45.2,
+      id: 'enseada3_mata_oeste_a', tipo: 'decoracao', x: 17.5, y: 45.5,
       sprite: 'enseada3_palmeiral', useCrop: true, larguraPx: 430,
       pivotX: 0.5, pivotY: 0.96, depthOffset: -0.6, bloqueia: false,
     },
@@ -643,7 +643,7 @@ export const map = {
       pivotX: 0.5, pivotY: 0.96, depthOffset: -0.4, bloqueia: false,
     },
     {
-      id: 'enseada3_mata_leste', tipo: 'decoracao', x: 42.4, y: 21.0,
+      id: 'enseada3_mata_leste', tipo: 'decoracao', x: 41.5, y: 22.5,
       sprite: 'enseada3_palmeiral', useCrop: true, larguraPx: 410,
       pivotX: 0.5, pivotY: 0.96, depthOffset: -0.4, bloqueia: false,
     },
@@ -651,7 +651,7 @@ export const map = {
     // Dossel tropical e afloramentos do lado leste: a referência tem uma
     // faixa verde contínua, que enquadra o santuário e termina no recife.
     ...[
-      ['enseada3_mata_centro_oeste', 27.4, 31.7, 380],
+      ['enseada3_mata_centro_oeste', 27.5, 32.5, 380],
       ['enseada3_mata_centro_leste', 39.2, 23.7, 410],
       ['enseada3_mata_sudoeste', 29.0, 56.3, 390],
       ['enseada3_mata_recife', 47.1, 23.2, 390],

@@ -605,6 +605,13 @@ await loadSprites([
   { id: 'enseada6_arbusto', src: 'assets/sprites/enseada-6/arbusto-flores-roxas.png' },
   { id: 'enseada6_palmeira', src: 'assets/sprites/enseada-6/palmeira-jovem.png' },
   { id: 'enseada6_concha', src: 'assets/sprites/enseada-6/concha-gigante.png' },
+  { id: 'enseada7_toras', src: 'assets/sprites/enseada-7/pilha-toras-madeira.png' },
+  { id: 'enseada7_cerca', src: 'assets/sprites/enseada-7/cerca-madeira-baixa.png' },
+  { id: 'enseada7_lanterna', src: 'assets/sprites/enseada-7/lanterna-pedra-chao.png' },
+  { id: 'enseada7_vaso', src: 'assets/sprites/enseada-7/vaso-planta-pedra.png' },
+  { id: 'enseada7_arco_pedra', src: 'assets/sprites/enseada-7/arco-pedra-degraus.png' },
+  { id: 'enseada7_banco_madeira', src: 'assets/sprites/enseada-7/banco-madeira.png' },
+  { id: 'enseada7_rede_pesca', src: 'assets/sprites/enseada-7/rede-pesca-areia.png' },
   {
     id: 'metro_rail_kit',
     src: 'assets/sprites/tiles/metro-rail-kit.png',

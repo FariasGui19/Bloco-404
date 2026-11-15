@@ -271,9 +271,15 @@ function diagnoseFrequencyTerminal() {
     return;
   }
   if (!recordFrequencySignal(state.progress)) {
+    const flags = state.progress.flags ?? {};
+    const inv = state.progress.inventory ?? [];
+    const extra = [];
+    if (flags.cidadela_estavel) extra.push('NEXO-04: O REATOR DA CIDADELA ESTÁ ESTÁVEL. A PORTADORA DE 66.6 MHz NÃO SOFRE MAIS INTERFERÊNCIA.');
+    if (inv.includes('selo_codigo_queimado')) extra.push('SELO DO CÓDIGO QUEIMADO DETECTADO NO MÓDULO: +25% RESSONÂNCIA OFENSIVA NA CIDADELA.');
+    if (inv.includes('nucleo_vigilante_forjado')) extra.push('NÚCLEO DO VIGILANTE FORJADO ATIVO: SINTONIA DE ENERGIA ESTABILIZADA.');
     showDiagnosis({ speaker: 'TERMINAL DA ENSEADA', dialogue: [
       '66.6 MHz // SINAL REGISTRADO.',
-      'A PORTA DE MANUTENÇÃO PRÓXIMA LEVA À ESTAÇÃO 66.6. NEXO-04 MANTÉM O CANAL EM ESCUTA.',
+      ...(extra.length ? extra : ['A PORTA DE MANUTENÇÃO PRÓXIMA LEVA À ESTAÇÃO 66.6. NEXO-04 MANTÉM O CANAL EM ESCUTA.']),
     ], choicesAfterDialogue: true, choices: [
       { text: 'REVER REGISTRO', onSelect: () => { state.player.ability.scanning = 0; void playCutscene(SIGNAL_SCENES); } },
       { text: 'ENCERRAR', onSelect: () => { state.player.ability.scanning = 0; } },
@@ -302,7 +308,13 @@ function diagnoseFrequencyConsole() {
     ] }); return;
   }
   if (flags.freq666_limiar_estavel) {
-    showDiagnosis({ speaker: 'NEXO-04', dialogue: ['A JANELA SEGUE ESTÁVEL. O ANEL AGUARDA VOCÊ; APROXIME-SE E USE [E].'] }); return;
+    const relics = ['selo_codigo_queimado', 'nucleo_vigilante_forjado'].filter(id => state.progress.inventory?.includes(id)).length;
+    const msg = flags.cidadela_100_porcento
+      ? `CIDADELA 404 100% ESTABILIZADA • RELÍQUIAS ${relics}/2 • RONDAS: ${flags.cidadela_rondas_concluidas ?? 0}. O PORTAL SEGUE PRONTO PARA A PRÓXIMA DIMENSÃO.`
+      : flags.cidadela_estavel
+      ? `REATOR DA CIDADELA ESTÁVEL • RELÍQUIAS ${relics}/2 • RONDAS CONCLUÍDAS: ${flags.cidadela_rondas_concluidas ?? 0}. O ANEL SEGUE ABERTO.`
+      : 'A JANELA SEGUE ESTÁVEL. O ANEL AGUARDA VOCÊ; APROXIME-SE E USE [E].';
+    showDiagnosis({ speaker: 'NEXO-04', dialogue: [msg] }); return;
   }
   stabilizeFrequencyThreshold(state.progress); saveGame();
   showDiagnosis({ speaker: 'NEXO-04', dialogue: [

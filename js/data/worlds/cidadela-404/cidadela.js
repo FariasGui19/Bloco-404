@@ -124,3 +124,25 @@ export const CITADEL_DORMANT_GUARDIAN = Object.freeze({
   kind:'dormant_guardian',x:29.2,y:5.2,label:'VIGILANTE INERTE',
   log:'ACORRENTADO AO REATOR PARA MANTER A LINHA ABERTA. SEM SINAL DE HOSTILIDADE RESTANTE.',
 });
+export const CITADEL_BARRELS = Object.freeze([
+  {x:2.3,y:3.5},{x:11.8,y:8.8},{x:19.2,y:3.5},{x:26.2,y:3.5},{x:26.2,y:9.5},
+]);
+export const CITADEL_SHIELD_CELLS = Object.freeze([
+  {x:10.5,y:9.2},{x:17.5,y:9.2},{x:24.8,y:3.5},
+]);
+export const CITADEL_SECRET_E1M1 = Object.freeze({
+  kind:'secret_plaque',x:9.5,y:9.5,label:'PLACA SETOR E1M1',
+});
+export const CITADEL_OVERDRIVE_CELL = Object.freeze({
+  x:17.5,y:5.5,
+});
+export const CITADEL_REACTOR_CONSOLE = Object.freeze({
+  kind:'reactor_console',x:29.5,y:8.2,label:'CONSOLE DO REATOR',
+});
+export function sectorNameAt(x, y) {
+  if (y >= 12) return 'OFICINA DA VIGÍLIA';
+  if (x >= 22) return 'ARENA DO REATOR';
+  if (x >= 15) return 'SETOR 03 // FORJA';
+  if (x >= 8) return 'SETOR 02 // GALERIA';
+  return 'SETOR 01 // ENTRADA';
+}

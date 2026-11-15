@@ -369,12 +369,79 @@ táticas +25 EN / +6 MUN nos corredores), `drop-sucata-codigo` e
   relíquias permanentes integradas ao Códex: *Selo do Código Queimado* e
   *Núcleo do Vigilante Forjado*) e a missão secundária `cidadela_forja_sobrevivencia`.
 - **Pós-vitória e Ronda Setorial**: após estabilizar o reator, o **Terminal de
-  Varredura** ativa uma ronda repetível de 7 hostis pelos corredores para
-  exploração livre e coleta de materiais, e a carcaça do Vigilante pode ser
-  examinada próximo ao reator.
-- **Áudio opcional (`js/game/cidadela-audio.js`)**: novos tons sintetizados
-  para coleta de chave (`key`), síntese (`craft`), deflexão na blindagem
-  (`shield_deflect`) e transição da Fase 2 (`phase2`).
+  Varredura** (`terminal-ronda.png`) ativa uma ronda repetível de 7 hostis
+  (incluindo Sentinelas de Elite) pelos corredores para exploração livre e
+  coleta de materiais, e a carcaça do Vigilante pode ser examinada próximo ao
+  reator. O reator estabilizado (`prop-reator-estavel.png`) também fornece um
+  pulso restaurador único de +15 energia por visita, enquanto a sentinela da
+  oficina exibe estado ativo (`vigilia-sentinela-ativo.png`) durante o ensaio.
+- **Lote 2 — Táticas de Combate, Interação e Transições**:
+  - **Barris de Estática** (`barril-estatica.png` / `barril-explosao.png`):
+    5 barris posicionados nos setores detonam em área (62 de dano, lentidão e
+    reação em cadeia) quando atingidos por tiros, `[V]`, `Q` ou `F`.
+  - **Escudos de Campo** (`escudo-campo.png`): 3 módulos de blindagem no mapa
+    concedem 4 s de escudo protetor e +10 EN ao serem coletados.
+  - **Golpe Cinético (`[V]` / `[C]`)**: ataque corpo a corpo rápido sem custo de
+    munição ou energia (recarga 1,15 s), causando 26 de dano com empurrão e
+    detonação de barris próximos.
+  - **Sentinela de Elite (`imp-elite.png` / `imp-elite-ataque.png`)**: inimigo
+    blindado com 95 PV, rajada dupla, recompensa de +10 EN e drop garantido de
+    `nucleo_estatica`.
+  - **Vigilante Fase 2 & Eclusas**: o chefe exibe o sprite
+    `vigilante-sobretensao.png` abaixo de 50% PV e anuncia sobrecarga no rádio;
+    as três eclusas exibem faixas de cor por chave (ciano, âmbar e carmesim) e
+    o HUD exibe o nome do setor atual (`SETOR 01` a `ARENA DO REATOR` /
+    `OFICINA DA VIGÍLIA`).
+  - **Travessia e Estação 66.6**: a cena `A RESPOSTA` de `THRESHOLD_SCENES`
+    recebe ilustração exclusiva (`cidadela-entrada-corredor.jpg`), e o console
+    e o anel da Estação 66.6 exibem telemetria de relíquias, materiais, rondas
+    e atividades pós-vitória após estabilizar o reator.
+- **Lote #3 — Fechamento da Cidadela (`cidadela-lote3-fechamento.mjs`)**:
+  - **Parry cinético `[V]` e barris sobrecarregados**: o golpe cinético anula
+    projéteis próximos (`+5 EN` e redução de recarga) com pulso visual
+    (`golpe-cinetico-pulso.png`); barris detonados por `Q` (Domínio) ou `F`
+    (Ultimate) aplicam explosão sobrecarregada (maior raio, 80 de dano base e
+    3,5 s de lentidão).
+  - **Ambientação única e visuais completos**: parede própria para a Oficina
+    da Vigília (`parede-oficina.png`), estados ativos para o painel transmissor
+    (`painel-transmissor-ativo.png`) e núcleo de treino
+    (`nucleo-treino-ativo.png`), carcaça inerte acorrentada do Vigilante
+    (`vigilante-inerte-acorrentado.png`) e projétil/colapso dedicados ao
+    `imp-elite` (`projetil-elite.png`, `imp-elite-colapso.png`).
+  - **Rondas, setores, Códex e retorno estável**: concluir a Ronda Setorial
+    concede `+25 XP` na primeira conclusão e libera `nucleo_estatica` no
+    console (com contador persistido em `cidadela_rondas_concluidas`); limpar
+    todos os inimigos de um setor visitado restaura `+10 EN`. As duas relíquias
+    recebem ícones dedicados (`reliquia-selo-codigo.png`,
+    `reliquia-nucleo-vigilante.png`) na Bancada e no Códex (com slots
+    dinâmicos e resumo de materiais estritamente somente leitura). O primeiro
+    retorno estável à Estação 66.6 aciona `CITADEL_RETURN_SCENES`
+    (`cidadela-retorno-estavel.jpg`), e os diagnósticos `[R]` do Terminal da
+    Enseada e do Console 66.6 reagem às relíquias e rondas concluídas.
+- **Lote #4 — Polimento Final & Profundidade (`cidadela-lote4-polimento.mjs`)**:
+  - **Elite direcional, investida e parede da Arena**: `imp-elite` ganha vistas
+    `lateral`/`costas` (`imp-elite-lateral.png`, `imp-elite-costas.png`), pose
+    própria de dano (`imp-elite-dano.png`) e **investida de choque**
+    telegrafada em curta distância (`< 2,2 tiles`). A Arena do Reator passa a
+    usar textura própria (`parede-arena.png`).
+  - **Vigilante, gravações, ícones e áudio**: contagem regressiva de abertura
+    do núcleo no HUD do chefe com retículo (`vigilante-nucleo-aviso.png`),
+    fala adicional na Fase 2 abaixo de 25% PV, caixas de gravação distintas
+    (`registro-entrada.png`, `registro-forja.png`) com convergência narrativa
+    dos 3 segundos ao reunir as 3 vozes, ícones de materiais (`drop-sucata-hud`,
+    `drop-nucleo-hud`) no HUD/Bancada/Códex, prompts contextuais para barris e
+    escudos, 4ºs tons no áudio (`step_reactor`, `elite_shot`, `rare_drop`,
+    `core_open`) e ilustração exclusiva para o 3º quadro de `THRESHOLD_SCENES`
+    (`cidadela-travessia-anel.jpg`).
+- **Áudio opcional (`js/game/cidadela-audio.js`)**: tons sintetizados para
+  passos (`step` e `step_reactor`), disparo de elite (`elite_shot`), coleta rara
+  (`rare_drop`), abertura do núcleo (`core_open`), coleta de chave (`key`),
+  síntese (`craft`), deflexão na blindagem (`shield_deflect`), transição da
+  Fase 2 (`phase2`), explosão de barril (`explosion`), golpe cinético
+  (`melee`) e blindagem (`shield`).
+
+O roadmap vivo completo com todas as pendências restantes até o entregável final
+está em [`docs/cidadela-roadmap.md`](cidadela-roadmap.md).
 
 Os sprites seguem o pipeline reproduzível em `tools/preparar-cidadela-sprites.py`.
 CRTs alternam poses lentas e geradores e reatores têm
@@ -409,5 +476,5 @@ Execute `node --experimental-default-type=module tests/cidadela-fps.mjs`,
 `tests/cidadela-audio.mjs`, `tests/cidadela-pos-vitoria.mjs`,
 `tests/cidadela-transicao.mjs`, `tests/cidadela-fendas.mjs`,
 `tests/cidadela-fendas-arquetipos.mjs`, `tests/cidadela-imersao.mjs`,
-`tests/cidadela-hud.mjs`, `tests/cidadela-passos.mjs`, `tests/cidadela-progressao.mjs`, `tests/cidadela-ecos.mjs`, `tests/cidadela-animacoes-sinal.mjs`, `tests/cidadela-vigilia.mjs`, `tests/cidadela-travessia.mjs`, `tests/cidadela-base-animacoes.mjs`, `tests/cidadela-refino-visual.mjs`, `tests/cidadela-acabamento.mjs`, `tests/cidadela-vida.mjs`, `tests/cidadela-passadas-direcionais.mjs`, `tests/cidadela-polimento-combate-sinal.mjs`, `tests/cidadela-combate-alerta.mjs`, `tests/cidadela-fecho-direcional.mjs`, `tests/cidadela-memoria-visual.mjs`, `tests/cidadela-ritmo-combate.mjs`, `tests/cidadela-resposta-combate.mjs`, `tests/cidadela-rota.mjs` e `tests/cidadela-sintese-combate.mjs` para verificar regras, rotas, pausa, registros, síntese, drops, Fase 2, ronda setorial, desfecho, saves e retorno. O teste de percurso percorre o mapa a pé e usa
+`tests/cidadela-hud.mjs`, `tests/cidadela-passos.mjs`, `tests/cidadela-progressao.mjs`, `tests/cidadela-ecos.mjs`, `tests/cidadela-animacoes-sinal.mjs`, `tests/cidadela-vigilia.mjs`, `tests/cidadela-travessia.mjs`, `tests/cidadela-base-animacoes.mjs`, `tests/cidadela-refino-visual.mjs`, `tests/cidadela-acabamento.mjs`, `tests/cidadela-vida.mjs`, `tests/cidadela-passadas-direcionais.mjs`, `tests/cidadela-polimento-combate-sinal.mjs`, `tests/cidadela-combate-alerta.mjs`, `tests/cidadela-fecho-direcional.mjs`, `tests/cidadela-memoria-visual.mjs`, `tests/cidadela-ritmo-combate.mjs`, `tests/cidadela-resposta-combate.mjs`, `tests/cidadela-rota.mjs`, `tests/cidadela-sintese-combate.mjs`, `tests/cidadela-lote2-combate.mjs`, `tests/cidadela-lote3-fechamento.mjs`, `tests/cidadela-lote4-polimento.mjs`, `tests/cidadela-lote5-fecho-final.mjs`, `tests/cidadela-lote6-arquetipos-animacoes.mjs` e `tests/cidadela-lote7-conclusao.mjs` para verificar regras, rotas, pausa, registros, síntese, drops, Fase 2 (com ataque, núcleo aberto e dano dedicados), barris sobrecarregados, escudo de campo, golpe/parry `[V]` e Ultimate `[F]` por arquétipo, passivas e sinergias exclusivas de cada arquétipo (`[Q]` parry do Domínio, `[V]`/`[Q]` cura Bio-Forja, `[R]` combo do Núcleo X10 e `[Q]` overdrive/arquivo do Maré), parry duplo, célula de sobrecarga E1M1, placa secreta E1M1, console do reator, sequência de abates, sentinela de elite (passos frontais/laterais, dano/colapso lateral, ataque de costas/lateral e investida), teto e piso dos corredores/Oficina/Arena, ronda setorial, setores, maestria 100%, Códex, áudio, desfecho em 2 cenas, saves e retorno. O teste de percurso percorre o mapa a pé e usa
 invulnerabilidade para isolar navegação e progressão do balanceamento. A suíte completa usa o comando documentado no README.

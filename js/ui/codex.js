@@ -27,6 +27,7 @@ import { getQuest } from '../data/quests.js';
 import { DEGRAUS, PROVAS, resumoDaArvore } from '../game/nado-arvore.js';
 import { ARQUIPELAGO_REGIONS } from '../data/arquipelago-regioes.js';
 import { getItem, listInventory } from '../data/items.js';
+import { isCitadelComplete } from '../game/cidadela-missoes.js';
 
 const ICONS = 'assets/sprites/ui/codex/icone-';
 const ULTIMATE_ICONS = 'assets/sprites/ui/codex/ultimate-';
@@ -51,6 +52,9 @@ let context = { progress: null, map: null, player: null };
 
 const icon = (name, className = 'codex-icon') =>
   `<img class="${className}" src="${ICONS}${name}.png" alt="" aria-hidden="true" draggable="false">`;
+const itemIcon = (item, className = 'codex-icon') => item?.spritePath
+  ? `<img class="${className}" src="${escapeHtml(item.spritePath)}" alt="" aria-hidden="true" draggable="false">`
+  : icon(item?.icon ?? 'inventario', className);
 
 const pct = value => `${Math.round(Math.max(0, Math.min(1, value)) * 100)}%`;
 
@@ -167,9 +171,12 @@ function renderMissions(progress, map) {
       ${flags.companheiro_lumeo ? '<p class="codex-note">LÚMEO ACOMPANHA VOCÊ.</p>' : ''}
     </article>`;
 
+  const citadelBadge = (flags.cidadela_100_porcento || isCitadelComplete(progress))
+    ? `<article class="codex-quest codex-quest-complete"><header><img src="assets/sprites/cidadela-404/trofeu-cidadela-404.png" alt="" aria-hidden="true" style="width:22px;height:22px;vertical-align:middle;margin-right:6px"><strong>CIDADELA 404 · 100% ESTABILIZADA</strong></header><p>Reator, Arquivos, CRTs, Ecos, Forja, Rede, Fendas, Vigília e Ronda Setorial concluídos.</p></article>`
+    : '';
   return `<section class="codex-section" aria-label="Missões">
     <div class="codex-columns">
-      <div class="codex-column">${main}${cards}</div>
+      <div class="codex-column">${main}${citadelBadge}${cards}</div>
       <aside class="codex-column codex-column-side">${nadoTree(progress)}${exploration}${mareRoutes(progress, map)}</aside>
     </div>
   </section>`;
@@ -394,27 +401,32 @@ function renderInventory(progress) {
   if (currentSelection && !ids.includes(currentSelection)) currentSelection = null;
   const selected = currentSelection ?? ids[0] ?? null;
   currentSelection = selected;
-  const slots = Array.from({ length: 8 }, (_, index) => {
+  const slots = Array.from({ length: Math.max(8, ids.length) }, (_, index) => {
     const id = ids[index];
     if (!id) return '<div class="codex-slot empty" aria-hidden="true"></div>';
     const item = getItem(id);
     return `<button type="button" class="codex-slot${id === selected ? ' selected' : ''}" data-item="${escapeHtml(id)}" aria-label="${escapeHtml(item.name)}">
-      ${icon(item.icon, 'codex-slot-icon')}
+      ${itemIcon(item, 'codex-slot-icon')}
       <span>${escapeHtml(item.name)}</span>
     </button>`;
   }).join('');
   const item = selected ? getItem(selected) : null;
   const detail = item
     ? `<article class="codex-item-detail">
-        ${icon(item.icon, 'codex-item-icon')}
+        ${itemIcon(item, 'codex-item-icon')}
         <div><span class="codex-tag">${escapeHtml(item.kind)}</span><strong>${escapeHtml(item.name)}</strong><p>${escapeHtml(item.description)}</p></div>
       </article>`
     : `<article class="codex-item-detail empty"><p>Inventário vazio. Recolha vestígios e registros pelo arquipélago.</p></article>`;
+  const mats = progress?.citadelMaterials;
+  const citadelMats = mats && ((mats.sucata_codigo ?? 0) > 0 || (mats.nucleo_estatica ?? 0) > 0)
+    ? `<p class="codex-note">Forja Cidadela 404: <img class="codex-mat-icon" src="assets/sprites/cidadela-404/drop-sucata-hud.png" alt="" aria-hidden="true" style="width:14px;height:14px;vertical-align:middle"> ${mats.sucata_codigo ?? 0} Sucata de Código · <img class="codex-mat-icon" src="assets/sprites/cidadela-404/drop-nucleo-hud.png" alt="" aria-hidden="true" style="width:14px;height:14px;vertical-align:middle"> ${mats.nucleo_estatica ?? 0} Núcleo de Estática</p>`
+    : '';
   return `<section class="codex-section" aria-label="Inventário">
     <div class="codex-columns">
       <div class="codex-column">
         <div class="codex-inventory">${slots}</div>
         ${detail}
+        ${citadelMats}
       </div>
       ${companionBlock(progress)}
     </div>

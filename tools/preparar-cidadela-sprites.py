@@ -518,3 +518,238 @@ for name in ['rota-terminal-azul','rota-icone-vermelha','vigilante-queda','vigil
     image.thumbnail((size,size),Image.Resampling.LANCZOS)
     image.save(dst / f'{name}.png',optimize=True)
     print(name,image.size)
+
+# Barril de estática e explosão, escudo de campo, Vigilante Fase 2, terminal
+# de ronda, sentinela ativa, reator estável, Imp de elite e quadro de entrada.
+for name in ['barril-estatica','barril-explosao','escudo-campo','vigilante-sobretensao',
+             'terminal-ronda','vigilia-sentinela-ativo','prop-reator-estavel',
+             'imp-elite','imp-elite-ataque']:
+    image=Image.open(src / f'{name}.png').convert('RGBA')
+    pixels=image.load()
+    for y in range(image.height):
+        for x in range(image.width):
+            r,g,b,a=pixels[x,y]
+            if r>120 and b>120 and g<150 and min(r,b)-g>60:
+                pixels[x,y]=(0,0,0,0)
+    box=image.getbbox()
+    if not box: raise ValueError(f'Sprite vazio: {name}')
+    image=image.crop(box)
+    size=256 if name=='vigilante-sobretensao' else 224 if name in ('prop-reator-estavel','imp-elite','imp-elite-ataque') else 192 if name in ('terminal-ronda','barril-explosao') else 160
+    image.thumbnail((size,size),Image.Resampling.LANCZOS)
+    image.save(dst / f'{name}.png',optimize=True)
+    print(name,image.size)
+
+cutscenes = Path('assets/cutscenes')
+cutscenes.mkdir(parents=True, exist_ok=True)
+entry_art = Image.open(src / 'cidadela-entrada-corredor.jpg').convert('RGB')
+entry_art.thumbnail((1280, 720), Image.Resampling.LANCZOS)
+entry_art.save(cutscenes / 'cidadela-entrada-corredor.jpg', quality=88, optimize=True)
+print('cidadela-entrada-corredor.jpg', entry_art.size)
+
+# Lote 3: parede da Oficina, Vigilante acorrentado, treino e transmissor ativos,
+# projétil e colapso do elite, pulso cinético, ícones de relíquias e retorno pós-vitória.
+wall_workshop = Image.open(src / 'parede-oficina.png').convert('RGB')
+side = min(wall_workshop.size)
+left = (wall_workshop.width - side) // 2
+top = (wall_workshop.height - side) // 2
+wall_workshop = wall_workshop.crop((left, top, left + side, top + side)).resize((128, 128), Image.Resampling.LANCZOS)
+wall_workshop.save(dst / 'parede-oficina.png', optimize=True)
+print('parede-oficina', wall_workshop.size)
+
+for name in ['vigilante-inerte-acorrentado','nucleo-treino-ativo','painel-transmissor-ativo',
+             'projetil-elite','imp-elite-colapso','golpe-cinetico-pulso',
+             'reliquia-selo-codigo','reliquia-nucleo-vigilante']:
+    image=Image.open(src / f'{name}.png').convert('RGBA')
+    pixels=image.load()
+    for y in range(image.height):
+        for x in range(image.width):
+            r,g,b,a=pixels[x,y]
+            if r>160 and b>160 and g<110 and min(r,b)-g>90:
+                pixels[x,y]=(0,0,0,0)
+    box=image.getbbox()
+    if not box: raise ValueError(f'Sprite vazio: {name}')
+    image=image.crop(box)
+    size=256 if name=='vigilante-inerte-acorrentado' else 192 if name in ('nucleo-treino-ativo','painel-transmissor-ativo','imp-elite-colapso','golpe-cinetico-pulso') else 128
+    image.thumbnail((size,size),Image.Resampling.LANCZOS)
+    image.save(dst / f'{name}.png',optimize=True)
+    print(name,image.size)
+
+return_art = Image.open(src / 'cidadela-retorno-estavel.jpg').convert('RGB')
+return_art.thumbnail((1280, 720), Image.Resampling.LANCZOS)
+return_art.save(cutscenes / 'cidadela-retorno-estavel.jpg', quality=88, optimize=True)
+print('cidadela-retorno-estavel.jpg', return_art.size)
+
+# Lote 4: direcionais e dano do elite, parede da Arena do Reator, registros distintos,
+# ícones de materiais para HUD/Códex, aviso do núcleo do Vigilante e travessia do anel.
+from collections import deque
+
+def remove_border_magenta(img):
+    pixels = img.load()
+    w, h = img.size
+    visited = bytearray(w * h)
+    q = deque()
+    def is_bg(r, g, b):
+        return r > 155 and b > 155 and g < 120 and min(r, b) - g > 75
+    for x in range(w):
+        for y in (0, h - 1):
+            r, g, b, _ = pixels[x, y]
+            if is_bg(r, g, b):
+                idx = y * w + x
+                if not visited[idx]:
+                    visited[idx] = 1
+                    q.append((x, y))
+    for y in range(h):
+        for x in (0, w - 1):
+            r, g, b, _ = pixels[x, y]
+            if is_bg(r, g, b):
+                idx = y * w + x
+                if not visited[idx]:
+                    visited[idx] = 1
+                    q.append((x, y))
+    while q:
+        cx, cy = q.popleft()
+        pixels[cx, cy] = (0, 0, 0, 0)
+        for nx, ny in ((cx - 1, cy), (cx + 1, cy), (cx, cy - 1), (cx, cy + 1)):
+            if 0 <= nx < w and 0 <= ny < h:
+                idx = ny * w + nx
+                if not visited[idx]:
+                    r, g, b, _ = pixels[nx, ny]
+                    if is_bg(r, g, b):
+                        visited[idx] = 1
+                        q.append((nx, ny))
+
+wall_arena = Image.open(src / 'parede-arena.png').convert('RGB')
+side_a = min(wall_arena.size)
+left_a = (wall_arena.width - side_a) // 2
+top_a = (wall_arena.height - side_a) // 2
+wall_arena = wall_arena.crop((left_a, top_a, left_a + side_a, top_a + side_a)).resize((128, 128), Image.Resampling.LANCZOS)
+wall_arena.save(dst / 'parede-arena.png', optimize=True)
+print('parede-arena', wall_arena.size)
+
+for name in ['imp-elite-lateral','imp-elite-costas','imp-elite-dano',
+             'registro-entrada','registro-forja',
+             'drop-sucata-hud','drop-nucleo-hud','vigilante-nucleo-aviso']:
+    image = Image.open(src / f'{name}.png').convert('RGBA')
+    remove_border_magenta(image)
+    px = image.load()
+    for yy in range(image.height):
+        for xx in range(image.width):
+            r, g, b, a = px[xx, yy]
+            if a == 0:
+                continue
+            if name == 'drop-nucleo-hud':
+                if r > 155 and b > 155 and g < 110 and abs(r - b) < 38:
+                    px[xx, yy] = (0, 0, 0, 0)
+            elif r > 155 and b > 155 and g < 115 and min(r, b) - g > 75:
+                px[xx, yy] = (0, 0, 0, 0)
+    box = image.getbbox()
+    if not box: raise ValueError(f'Sprite vazio: {name}')
+    image = image.crop(box)
+    size = 224 if name.startswith('imp-elite') else 160 if name.startswith('registro-') or name == 'vigilante-nucleo-aviso' else 96
+    image.thumbnail((size, size), Image.Resampling.LANCZOS)
+    image.save(dst / f'{name}.png', optimize=True)
+    print(name, image.size)
+
+crossing_art = Image.open(src / 'cidadela-travessia-anel.jpg').convert('RGB')
+crossing_art.thumbnail((1280, 720), Image.Resampling.LANCZOS)
+crossing_art.save(cutscenes / 'cidadela-travessia-anel.jpg', quality=88, optimize=True)
+print('cidadela-travessia-anel.jpg', crossing_art.size)
+
+# Lote 5: golpes [V] por arquétipo, sobrecarga E1M1, placa secreta, console do reator,
+# piso da arena, troféu 100% da Cidadela e aurora da Estação 66.6 no retorno.
+floor_arena = Image.open(src / 'piso-arena.png').convert('RGB')
+side_f = min(floor_arena.size)
+left_f = (floor_arena.width - side_f) // 2
+top_f = (floor_arena.height - side_f) // 2
+floor_arena = floor_arena.crop((left_f, top_f, left_f + side_f, top_f + side_f)).resize((128, 128), Image.Resampling.LANCZOS)
+floor_arena.save(dst / 'piso-arena.png', optimize=True)
+print('piso-arena', floor_arena.size)
+
+for name in ['melee-mare','melee-nucleo','melee-dominio','melee-bio',
+             'celula-sobrecarga-doom','placa-secreta-404','prop-console-reator','trofeu-cidadela-404']:
+    image = Image.open(src / f'{name}.png').convert('RGBA')
+    remove_border_magenta(image)
+    px = image.load()
+    for yy in range(image.height):
+        for xx in range(image.width):
+            r, g, b, a = px[xx, yy]
+            if a > 0 and r > 155 and b > 155 and g < 115 and min(r, b) - g > 75:
+                px[xx, yy] = (0, 0, 0, 0)
+    box = image.getbbox()
+    if not box: raise ValueError(f'Sprite vazio: {name}')
+    image = image.crop(box)
+    size = 192 if name.startswith('melee-') or name == 'prop-console-reator' else 160 if name == 'placa-secreta-404' else 128
+    image.thumbnail((size, size), Image.Resampling.LANCZOS)
+    image.save(dst / f'{name}.png', optimize=True)
+    print(name, image.size)
+
+aurora_art = Image.open(src / 'cidadela-aurora-limiar.jpg').convert('RGB')
+aurora_art.thumbnail((1280, 720), Image.Resampling.LANCZOS)
+aurora_art.save(cutscenes / 'cidadela-aurora-limiar.jpg', quality=88, optimize=True)
+print('cidadela-aurora-limiar.jpg', aurora_art.size)
+
+# Lote 6: passadas/queda/ataque lateral do elite, ataque Fase 2 do Vigilante,
+# piso da Oficina da Vigília e 4 explosões visuais exclusivas de Ultimate [F].
+floor_office = Image.open(src / 'piso-oficina.png').convert('RGB')
+side_o = min(floor_office.size)
+left_o = (floor_office.width - side_o) // 2
+top_o = (floor_office.height - side_o) // 2
+floor_office = floor_office.crop((left_o, top_o, left_o + side_o, top_o + side_o)).resize((128, 128), Image.Resampling.LANCZOS)
+floor_office.save(dst / 'piso-oficina.png', optimize=True)
+print('piso-oficina', floor_office.size)
+
+for name in ['imp-elite-passo-a','imp-elite-passo-b','imp-elite-lateral-ataque','imp-elite-queda',
+             'vigilante-fase2-ataque','ultimate-mare','ultimate-nucleo','ultimate-dominio','ultimate-bio']:
+    image = Image.open(src / f'{name}.png').convert('RGBA')
+    remove_border_magenta(image)
+    px = image.load()
+    for yy in range(image.height):
+        for xx in range(image.width):
+            r, g, b, a = px[xx, yy]
+            if a == 0:
+                continue
+            if name == 'ultimate-dominio':
+                if r > 175 and b > 175 and g < 95 and abs(r - b) < 34:
+                    px[xx, yy] = (0, 0, 0, 0)
+            elif r > 155 and b > 155 and g < 115 and min(r, b) - g > 75:
+                px[xx, yy] = (0, 0, 0, 0)
+    box = image.getbbox()
+    if not box: raise ValueError(f'Sprite vazio: {name}')
+    image = image.crop(box)
+    size = 256 if name == 'vigilante-fase2-ataque' else 224 if name.startswith('imp-elite') else 256
+    image.thumbnail((size, size), Image.Resampling.LANCZOS)
+    image.save(dst / f'{name}.png', optimize=True)
+    print(name, image.size)
+
+# Lote 7: piso de corredor, teto da cidadela, cobertura direcional completa do elite
+# e núcleo aberto/dano dedicados da Fase 2 do Vigilante.
+for tex in ['piso-corredor', 'teto-cidadela']:
+    tile = Image.open(src / f'{tex}.png').convert('RGB')
+    side_t = min(tile.size)
+    left_t = (tile.width - side_t) // 2
+    top_t = (tile.height - side_t) // 2
+    tile = tile.crop((left_t, top_t, left_t + side_t, top_t + side_t)).resize((128, 128), Image.Resampling.LANCZOS)
+    tile.save(dst / f'{tex}.png', optimize=True)
+    print(tex, tile.size)
+
+for name in ['imp-elite-lateral-passo-a','imp-elite-lateral-passo-b',
+             'imp-elite-lateral-dano','imp-elite-lateral-colapso',
+             'imp-elite-costas-ataque','vigilante-fase2-aberto','vigilante-fase2-dano']:
+    image = Image.open(src / f'{name}.png').convert('RGBA')
+    remove_border_magenta(image)
+    px = image.load()
+    for yy in range(image.height):
+        for xx in range(image.width):
+            r, g, b, a = px[xx, yy]
+            if a > 0 and r > 155 and b > 155 and g < 115 and min(r, b) - g > 75:
+                px[xx, yy] = (0, 0, 0, 0)
+    box = image.getbbox()
+    if not box: raise ValueError(f'Sprite vazio: {name}')
+    image = image.crop(box)
+    size = 256 if name.startswith('vigilante-') else 224
+    image.thumbnail((size, size), Image.Resampling.LANCZOS)
+    image.save(dst / f'{name}.png', optimize=True)
+    print(name, image.size)
+
+
+

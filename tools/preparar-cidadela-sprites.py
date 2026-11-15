@@ -890,6 +890,32 @@ for name in ['ultimate-mare-b', 'ultimate-mare-c', 'ultimate-nucleo-b', 'ultimat
     image.save(dst / f'{name}.png', optimize=True)
     print(name, image.size)
 
+# Lote 12: Paridade de pulso nos 4 canhões e ícones HUD ativos, escudo no
+# visor, aura de lentidão, impacto crítico e linhas cinéticas de dash.
+for name in ['canhao-nucleo-pulso', 'canhao-dominio-pulso', 'canhao-bio-pulso',
+             'hud-arma-nucleo-ativa', 'hud-arma-dominio-ativa', 'hud-arma-bio-ativa',
+             'visor-escudo-ativo', 'aura-lentidao', 'impacto-critico',
+             'efeito-dash-velocidade']:
+    image = Image.open(src / f'{name}.png').convert('RGBA')
+    corners = [image.getpixel((0, 0)), image.getpixel((image.width - 1, 0))]
+    mode_bg = 'white' if any(min(r, g, b) > 220 for r, g, b, _ in corners) else 'dark'
+    remove_border_bg(image, mode_bg)
+    if name in ('canhao-dominio-pulso', 'hud-arma-bio-ativa'):
+        px = image.load()
+        for yy in range(image.height):
+            for xx in range(image.width):
+                r, g, b, a = px[xx, yy]
+                if a > 0 and min(r, g, b) > 235 and max(r, g, b) - min(r, g, b) < 18:
+                    if name == 'hud-arma-bio-ativa' or yy > image.height * 0.72:
+                        px[xx, yy] = (0, 0, 0, 0)
+    box = image.getbbox()
+    if not box: raise ValueError(f'Sprite vazio: {name}')
+    image = image.crop(box)
+    size = 256 if name.startswith(('canhao-', 'efeito-')) else 160 if name in ('aura-lentidao', 'impacto-critico', 'visor-escudo-ativo') else 96
+    image.thumbnail((size, size), Image.Resampling.LANCZOS)
+    image.save(dst / f'{name}.png', optimize=True)
+    print(name, image.size)
+
 
 
 

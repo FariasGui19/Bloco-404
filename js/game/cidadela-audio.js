@@ -43,6 +43,8 @@ const TONES=Object.freeze({
   explosion: {from:115,to:38,duration:.32,type:'sawtooth',volume:.036},
   melee: {from:280,to:110,duration:.09,type:'triangle',volume:.024},
   shield: {from:420,to:660,duration:.18,type:'sine',volume:.022},
+  crit_hit: {from:580,to:1160,duration:.13,type:'triangle',volume:.022},
+  dash: {from:190,to:420,duration:.11,type:'sine',volume:.018},
 });
 let context=null, enabled, active=0;
 function readEnabled() {

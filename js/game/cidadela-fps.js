@@ -136,7 +136,7 @@ export function createCitadelRuntime(progress) {
       ? 'NEXO-04: CIDADELA 404 100% ESTABILIZADA. TODO O SETOR RESPONDE AO SEU MÓDULO.'
       : flags.cidadela_estavel
         ? 'NEXO-04: REATOR ESTÁVEL. A SONDA AGUARDA NA ARENA; A OFICINA ABRIU AO SUL.'
-        : 'NEXO-04: A LINHA ESTÁ ABERTA. ENCONTRE OS TRÊS REGISTROS.', messageTime: 8, time: 0, damage: 0, shieldHit: 0, hit: 0, fx: 0, shake: 0, ultFlash: 0, signalTime:0, signalCooldown:0, signalMonitorId:null, weaponDeploy:0, fxKind: '', suppressed: 0, returning: false, training:false, patrol:false, breach:null, radioQueue:[],stepDistance:0,walkPhase:0,walkBlend:0, echoAnchor:0, echoTerminalCooldown:0, workshopHit:0, workshopTrial:null, localProgress:null, vectorCharge:0, perkIcon:null, panel: null };
+        : 'NEXO-04: A LINHA ESTÁ ABERTA. ENCONTRE OS TRÊS REGISTROS.', messageTime: 8, time: 0, damage: 0, shieldHit: 0, hit: 0, hitCrit: 0, hitDmg: 0, shotTracer: 0, fx: 0, shake: 0, ultFlash: 0, signalTime:0, signalCooldown:0, signalMonitorId:null, weaponDeploy:0, fxKind: '', suppressed: 0, returning: false, training:false, patrol:false, breach:null, radioQueue:[],stepDistance:0,walkPhase:0,walkBlend:0, echoAnchor:0, echoTerminalCooldown:0, workshopHit:0, workshopTrial:null, localProgress:null, vectorCharge:0, perkIcon:null, panel: null };
 }
 function notice(g, text, seconds=4) { g.message=text; g.messageTime=seconds; }
 function queueRadio(g,text) { if(text && g.radioQueue.length<6) g.radioQueue.push(text); }
@@ -333,12 +333,14 @@ function detonateBarrel(map, flags, p, progress, g, barrel, overcharged=false) {
     damagePlayer(p, progress, 8); g.damage = .32;
   }
 }
-function hurtEnemy(g, enemy, damage) {
+function hurtEnemy(g, enemy, damage, crit = false) {
   if (enemy.type === 'boss' && !bossOpen(enemy)) {
     enemy.shieldFlash=.28; playCitadelSound('shield_deflect');
     addImpact(g,enemy.x,enemy.y,'shield'); notice(g,'VIGILANTE: BLINDAGEM FECHADA. AGUARDE O NÚCLEO EXPOSTO.',2); return;
   }
   enemy.hp -= damage; enemy.hurt=.18;
+  g.hitDmg = damage;
+  if (crit) { g.hitCrit = .28; playCitadelSound('crit_hit'); }
   if (enemy.type==='elite') playCitadelSound('elite_hurt');
   if (enemy.hp<=0) {
     enemy.death=.7;
@@ -356,7 +358,7 @@ function hurtEnemy(g, enemy, damage) {
       g.drops.push({kind:enemy.type==='imp'?'sucata_codigo':'nucleo_estatica',x:enemy.x,y:enemy.y,life:90});
     }
   }
-  addImpact(g,enemy.x,enemy.y,enemy.type==='echo'?'cyan':enemy.type==='elite'?'elite':'red');
+  addImpact(g,enemy.x,enemy.y,crit?'crit':enemy.type==='echo'?'cyan':enemy.type==='elite'?'elite':'red');
 }
 function beginReload(g, progress) { g.reload = progress?.archetype === 'nucleo_dez_forma' ? 1.25 : 1.5; if(g.jam<=0) playCitadelSound('reload'); }
 function reloadNotice(g) { notice(g,g.jam>0?'RECARGA NA FILA • AGUARDE O BLOQUEIO.':'RECARREGANDO...',1.5); }
@@ -366,14 +368,16 @@ function fire(map, flags, p, progress, g) {
   // inclusive enquanto o Echovore bloqueia o progresso da recarga.
   if (g.reload>0) { if(g.ammo<=0) return; g.reload=0; }
   if (g.ammo<=0) { beginReload(g, progress); reloadNotice(g); return; }
-  g.ammo--; g.fire=g.overdrive>0 ? .16 : .23; const vectorDamage=g.vectorCharge>0?12:0;g.vectorCharge=0;playCitadelSound('shot');
+  g.ammo--; g.fire=g.overdrive>0 ? .16 : .23; g.shotTracer=.12; const vectorDamage=g.vectorCharge>0?12:0;g.vectorCharge=0;playCitadelSound('shot');
   if (g.ammo===0) { beginReload(g, progress); reloadNotice(g); }
   const target=targetInSight(map,flags,p,g);
-  if (target?.type === 'barrel') { g.hit=.2; detonateBarrel(map,flags,p,progress,g,target); }
+  if (target?.type === 'barrel') { g.hit=.2; g.hitDmg=0; detonateBarrel(map,flags,p,progress,g,target); }
   else if (target) {
-    if(target.type!=='boss' || bossOpen(target)) g.hit=.25;
-    const bossPrecision = (target.type === 'boss' && progress.archetype === 'lamina_dominio_anciao') ? 8 : 0;
-    hurtEnemy(g,target, Math.round((target.type==='boss'?35:28)*(1+(g.ultBuff?.basicDamagePct ?? 0)+(g.relicShotBonus ?? 0)+(g.overdrive>0?.35:0)))+vectorDamage+bossPrecision);
+    const isBossOpen = target.type === 'boss' && bossOpen(target);
+    if(target.type!=='boss' || isBossOpen) g.hit=.25;
+    const bossPrecision = isBossOpen && progress.archetype === 'lamina_dominio_anciao' ? 8 : 0;
+    const isCrit = isBossOpen || g.overdrive > 0 || vectorDamage > 0 || (g.relicShotBonus > 0 && !!g.ultBuff);
+    hurtEnemy(g,target, Math.round((target.type==='boss'?35:28)*(1+(g.ultBuff?.basicDamagePct ?? 0)+(g.relicShotBonus ?? 0)+(g.overdrive>0?.35:0)))+vectorDamage+bossPrecision, isCrit);
   }
   else {
     // O disparo do jogador é instantâneo, mas deixa uma marca breve na
@@ -609,7 +613,7 @@ export function updateCitadel(dt, state, input) {
   }
   g.time+=step;
   const jamBefore=g.jam;
-  for (const k of ['fire','melee','jam','q','boost','scan','dash','shield','guard','overdrive','comboTimer','echoLock','messageTime','damage','shieldHit','hit','fx','shake','ultFlash','suppressed','vectorCharge','echoAnchor','echoTerminalCooldown','workshopHit','signalTime','signalCooldown','weaponDeploy']) g[k]=Math.max(0,(g[k] ?? 0)-step);
+  for (const k of ['fire','melee','jam','q','boost','scan','dash','shield','guard','overdrive','comboTimer','echoLock','messageTime','damage','shieldHit','hit','hitCrit','shotTracer','fx','shake','ultFlash','suppressed','vectorCharge','echoAnchor','echoTerminalCooldown','workshopHit','signalTime','signalCooldown','weaponDeploy']) g[k]=Math.max(0,(g[k] ?? 0)-step);
   if(g.comboTimer===0 && g.combo>0) g.combo=0;
   if(g.pendingEnergy>0) { p.energy=Math.min(p.maxEnergy ?? 100,(p.energy ?? 0)+g.pendingEnergy); g.pendingEnergy=0; }
   if(g.boss && g.boss.shieldFlash>0) g.boss.shieldFlash=Math.max(0,g.boss.shieldFlash-step);
@@ -681,7 +685,7 @@ export function updateCitadel(dt, state, input) {
     const label={mare_astral:'SONAR DE CORRENTE',nucleo_dez_forma:'LEITURA DE VETORES',motor_bio_forja:'DIAGNÓSTICO VIVO',lamina_dominio_anciao:'POSTURA DE DOMÍNIO'}[id] ?? 'RADAR';
     notice(g,`${label} • MAPA: AMEAÇAS, REGISTROS, ECOS E ${flags.cidadela_estavel?'ROTA À SAÍDA OPCIONAL':'ROTA PRINCIPAL'}.`,4);
   }
-  if (pressed(input,'shift','shiftleft','shiftright') && g.boost<=0 && g.dash<=0) { startDash(g,input,progress.archetype==='nucleo_dez_forma'?.22:.18); g.boost=(g.localProgress?.rank ?? 1)>=3?2.4:3; g.fx=.4; g.fxKind='dash'; addEcho(g,15,state); }
+  if (pressed(input,'shift','shiftleft','shiftright') && g.boost<=0 && g.dash<=0) { startDash(g,input,progress.archetype==='nucleo_dez_forma'?.22:.18); g.boost=(g.localProgress?.rank ?? 1)>=3?2.4:3; g.fx=.4; g.fxKind='dash'; playCitadelSound('dash'); addEcho(g,15,state); }
   if (pressed(input,'t','keyt') && g.reload<=0 && g.ammo<12) { beginReload(g, progress); if(g.jam>0) reloadNotice(g); }
   if (pressed(input,'v','keyv','c','keyc')) meleeBash(map,flags,p,progress,g);
   if (held(input,' ','space') || pressed(input,' ','space') || input.fpsFire || input.fpsFireHeld || input.attackClick) fire(map,flags,p,progress,g);
@@ -1156,7 +1160,7 @@ function setupBuffer() {
   uiBuffer=document.createElement('canvas'); uiBuffer.width=W*2; uiBuffer.height=H*2; uiCtx=uiBuffer.getContext('2d');
   sprites=Object.fromEntries(['imp','echo','orb','elite','boss','shot','shot_echo','shot_orb','shot_elite','key','nulo','exit','supply','shield_cell','impact_red','impact_cyan','impact_explosion','generator','crate','barrel','drone','column','reactor','reactor_stable','terminal','antenna','vent','beacon','probe','relay_off','relay_on','transmitter','transmitter_active','recording','recording_entrada','recording_forja','training','training_active','listening_beacon','signal_fragment','breach_open','breach_sealed','cache_closed','cache_open','breach_console','breach_shot','memory_echo_pending','memory_echo_done','echo_terminal_off','echo_terminal_on','anchor_sleep','anchor_active','lost_recorder','signal_map','emergency_light','memory_relay','workshop_switch_off','workshop_switch_on','workshop_hazard_idle','workshop_hazard_active','workshop_terminal','workshop_core_off','workshop_core_on','workshop_pipes','workshop_bench','workshop_robot','workshop_robot_active','crafting_bench','patrol_console','dormant_guardian','energy_cell','drop_sucata','drop_nucleo','secret_plaque','overdrive_cell','reactor_console'].map(k=>[k,makeSprite(k)]));
   // Fallbacks também cobrem impactos antes do carregamento ou sem imagens.
-  sprites.impact_metal=sprites.impact_red; sprites.impact_shield=sprites.impact_cyan;
+  sprites.impact_metal=sprites.impact_red; sprites.impact_shield=sprites.impact_cyan; sprites.impact_crit=sprites.impact_cyan;
   // Carregamento tardio: outras dimensões não pagam pelas artes da Cidadela.
   if (typeof Image !== 'undefined') for (const [type,path] of [
     ['imp','assets/sprites/cidadela-404/imp-glitch.png'],
@@ -1191,7 +1195,17 @@ function setupBuffer() {
     ['ultimate_mare_c','assets/sprites/cidadela-404/ultimate-mare-c.png'],
     ['melee_mare_b','assets/sprites/cidadela-404/melee-mare-b.png'],
     ['weapon_mare_pulse','assets/sprites/cidadela-404/canhao-mare-pulso.png'],
+    ['weapon_nucleo_pulse','assets/sprites/cidadela-404/canhao-nucleo-pulso.png'],
+    ['weapon_dominio_pulse','assets/sprites/cidadela-404/canhao-dominio-pulso.png'],
+    ['weapon_bio_pulse','assets/sprites/cidadela-404/canhao-bio-pulso.png'],
     ['hud_weapon_mare_active','assets/sprites/cidadela-404/hud-arma-mare-ativa.png'],
+    ['hud_weapon_nucleo_active','assets/sprites/cidadela-404/hud-arma-nucleo-ativa.png'],
+    ['hud_weapon_dominio_active','assets/sprites/cidadela-404/hud-arma-dominio-ativa.png'],
+    ['hud_weapon_bio_active','assets/sprites/cidadela-404/hud-arma-bio-ativa.png'],
+    ['shield_visor','assets/sprites/cidadela-404/visor-escudo-ativo.png'],
+    ['slow_aura','assets/sprites/cidadela-404/aura-lentidao.png'],
+    ['impact_crit','assets/sprites/cidadela-404/impacto-critico.png'],
+    ['dash_lines','assets/sprites/cidadela-404/efeito-dash-velocidade.png'],
     ['elite_walk_a','assets/sprites/cidadela-404/imp-elite-passo-a.png'],
     ['elite_walk_b','assets/sprites/cidadela-404/imp-elite-passo-b.png'],
     ['elite_side_walk_a','assets/sprites/cidadela-404/imp-elite-lateral-passo-a.png'],
@@ -1590,10 +1604,11 @@ function drawWorld(map, flags, p, g, progress) {
     const bossFallback=o.type==='boss' ? (visual==='boss_meltdown'?(sprites.boss_fall ?? sprites.boss_death ?? sprites.bossClosed) : visual==='boss_shield_p2'?(sprites.boss_shield ?? sprites.bossClosed) : visual==='boss_phase2_warning'?(sprites.boss_warning ?? sprites.bossClosed) : visual==='boss_phase2_attack_b'?(sprites.boss_phase2_attack ?? sprites.boss_attack_b ?? sprites.boss_attack) : visual==='boss_phase2_open'?(sprites.boss_open_a ?? sprites.bossClosed) : visual==='boss_phase2_hurt'?(sprites.boss_hurt ?? sprites.bossClosed) : visual==='boss_phase2_attack'?(sprites.boss_attack_b ?? sprites.boss_attack) : visual==='boss_attack_b'?sprites.boss_attack : visual==='boss_warning_b'?sprites.boss_warning : (visual==='boss_fall'||visual==='boss_death')?(sprites.boss_death ?? sprites.bossClosed) : visual==='boss_shield'?(sprites.boss_shield ?? sprites.bossClosed) : visual==='boss_phase2'?(sprites.boss_phase2 ?? sprites.bossClosed) : bossOpen(g.boss)?sprites.boss_open_a : sprites.bossClosed) : null;
     const sprite=chosen ?? (frame==='attack'?sprites[`${o.type}_attack`]:null) ?? bossFallback ?? base;
     const aspect=directionalBase ?? (visual.includes('_walk_') ? sprite : base);
-    const h=Math.min(H*4,H/forward*o.scale), w=h*(aspect.width/aspect.height), left=center-w/2;
+    const h=Math.min(H*4,H/forward*o.scale), w=h*(aspect.width/aspect.height), hurtJitter=!reducedMotion() && (o.hurt ?? 0)>0 && o.type!=='boss' ? Math.sin(g.time*60)*1.6 : 0, left=center-w/2+hurtJitter;
     // Aviso da fenda também existe em movimento reduzido; os demais brilhos
     // são decorativos e não substituem as legendas de combate.
     const pulse=sprites[citadelPulseFrame(o.type,o.windup,g.scan,g.time,reducedMotion())];
+    const slowAura=o.hp>0 && (o.slow ?? 0)>0 ? sprites.slow_aura : null;
     const alpha=o.alpha ?? (o.death>0 ? enemyDeathAlpha(o.death,reducedMotion()) : 1);
     const bob=reducedMotion()?0:o.moving?Math.sin(g.time*8+o.x)*2:
       (['memory_echo_pending','memory_relay','drop_sucata','drop_nucleo','energy_cell','shield_cell','probe','probe_b','probe_100','protocol_beacon_on'].includes(o.type)?Math.sin(g.time*2.1+o.x)*1.5:0);
@@ -1617,6 +1632,11 @@ function drawWorld(map, flags, p, g, progress) {
         ctx.globalAlpha=alpha*(o.type==='breach_open'?(reducedMotion()?.55:.48+.12*(.5+.5*Math.sin(g.time*2))):.14+.22*(.5+.5*Math.sin(g.time*.8)));
         const ux=clamp(Math.floor((sx-left)/w*pulse.width),0,pulse.width-1);
         ctx.drawImage(pulse,ux,0,1,pulse.height,sx,top,2,h);ctx.globalAlpha=alpha;
+      }
+      if(slowAura) {
+        ctx.globalAlpha=alpha*(reducedMotion()?.34:.28+.14*Math.sin(g.time*5));
+        const ax=clamp(Math.floor((sx-left)/w*slowAura.width),0,slowAura.width-1);
+        ctx.drawImage(slowAura,ax,0,1,slowAura.height,sx,top+h*.15,2,h*.75);ctx.globalAlpha=alpha;
       }
       // Interferência cabe apenas na tela do CRT, respeita a profundidade e
       // não cobre a mira ou os avisos. Movimento reduzido usa quadro estático.
@@ -1664,8 +1684,8 @@ function drawWeapon(g, mod) {
   const weapon=sprites[`weapon_${mod.mode}`];
   if(weapon) {
     const stage=weaponVisualFrame(g.fire,!animated,g.reload,g.jam);
-    const marePulse=animated && mod.mode==='mare' && stage==='idle' && (g.ultBuff || g.overdrive>0 || g.q>5 || (g.fx>0 && ['q','ultimate'].includes(g.fxKind))) && sprites.weapon_mare_pulse;
-    const frame=stage==='idle'?(marePulse ? sprites.weapon_mare_pulse : weapon):(sprites[`weapon_${mod.mode}_${stage}`] ?? weapon);
+    const activePulse=animated && stage==='idle' && (g.ultBuff || g.overdrive>0 || g.q>5 || (g.fx>0 && ['q','ultimate'].includes(g.fxKind))) ? sprites[`weapon_${mod.mode}_pulse`] : null;
+    const frame=stage==='idle'?(activePulse ?? weapon):(sprites[`weapon_${mod.mode}_${stage}`] ?? weapon);
     // A pose de recarga pode ter outra silhueta: preserve sua proporção.
     const sizing=stage==='reload' || stage==='blocked'?frame:weapon;
     const scale=Math.min(172/sizing.width,96/sizing.height);
@@ -1735,23 +1755,57 @@ function drawResonance(g,mod) {
     if(ult) {
       const p=reducedMotion()?.5:clamp(1-g.fx,0,1);
       const waveSweep=!reducedMotion() && mod.mode==='mare' ? (p<.34 ? (1-p/.34)*34 : p<.68 ? ((p-.34)/.34-.5)*28 : 0) : 0;
-      const liftY=!reducedMotion() && mod.mode==='mare' ? (p<.34 ? (1-p/.34)*22 : p>=.68 ? -((p-.68)/.32)*10 : -4) : 0;
-      const zoom=reducedMotion()?1:(mod.mode==='mare' && p>=.68 ? 1.15+(p-.68)*.55 : .92+p*.36);
+      const liftY=!reducedMotion() && mod.mode==='mare' ? (p<.34 ? (1-p/.34)*22 : p>=.68 ? -((p-.68)/.32)*10 : -4) : (!reducedMotion() ? Math.sin(p*Math.PI)*-8 : 0);
+      const zoom=reducedMotion()?1:(mod.mode==='mare' && p>=.68 ? 1.15+(p-.68)*.55 : .92+p*.38);
       const uw=(216*zoom)*(ult.width/Math.max(1,ult.height)*0.58), uh=126*zoom;
       const drawW=clamp(uw,190,340), drawH=clamp(uh,108,198);
       if(!reducedMotion() && (g.ultFlash ?? 0)>0) {
         const grad=ctx.createRadialGradient(W/2,H/2,12,W/2,H/2,W*.6);
-        grad.addColorStop(0,mod.mode==='mare'?'rgba(120,248,255,.22)':'rgba(255,240,180,.18)');
+        const flashColor=mod.mode==='mare'?'rgba(120,248,255,.22)':mod.mode==='nucleo'?'rgba(142,251,118,.20)':mod.mode==='dominio'?'rgba(223,179,255,.22)':'rgba(255,177,102,.20)';
+        grad.addColorStop(0,flashColor);
         grad.addColorStop(1,'rgba(0,0,0,0)');
         ctx.fillStyle=grad;ctx.fillRect(0,0,W,H);
       }
       ctx.globalAlpha=reducedMotion()?.48:Math.min(.84,g.fx*.9+.1);
-      ctx.drawImage(ult,W/2-drawW/2+waveSweep,H/2-drawH/2-6+liftY,drawW,drawH);
-      if(!reducedMotion() && mod.mode==='mare') {
-        ctx.strokeStyle='#a8fbff';ctx.lineWidth=1.5;ctx.globalAlpha=Math.min(.55,g.fx*.6);
-        const arcR=68+p*95;
-        ctx.beginPath();ctx.arc(W/2,H/2+12,arcR,Math.PI*1.08,Math.PI*1.92);ctx.stroke();
+      if(!reducedMotion() && mod.mode==='dominio') {
+        ctx.save();ctx.translate(W/2,H/2-6+liftY);ctx.rotate((.5-p)*.22);
+        ctx.drawImage(ult,-drawW/2,-drawH/2,drawW,drawH);ctx.restore();
+      } else {
+        ctx.drawImage(ult,W/2-drawW/2+waveSweep,H/2-drawH/2-6+liftY,drawW,drawH);
       }
+      if(!reducedMotion()) {
+        ctx.strokeStyle=mod.mode==='mare'?'#a8fbff':mod.color;ctx.lineWidth=1.5;ctx.globalAlpha=Math.min(.55,g.fx*.6);
+        const arcR=68+p*95;
+        if(mod.mode==='mare') {
+          ctx.beginPath();ctx.arc(W/2,H/2+12,arcR,Math.PI*1.08,Math.PI*1.92);ctx.stroke();
+        } else if(mod.mode==='nucleo') {
+          ctx.beginPath();
+          for(let i=0;i<4;i++){const a=i*Math.PI/2+p*.5;ctx.moveTo(W/2+Math.cos(a)*36,H/2+Math.sin(a)*36);ctx.lineTo(W/2+Math.cos(a)*(60+p*90),H/2+Math.sin(a)*(60+p*90));}
+          ctx.stroke();
+        } else if(mod.mode==='dominio') {
+          ctx.beginPath();ctx.moveTo(W/2-90-p*60,H/2+70);ctx.lineTo(W/2+90+p*60,H/2-70);ctx.stroke();
+        } else {
+          ctx.beginPath();ctx.arc(W/2,H/2,44+p*72,0,Math.PI*2);ctx.stroke();
+        }
+      }
+    }
+  }
+  if(!reducedMotion() && (g.dash>0 || (g.fx>0 && g.fxKind==='dash') || (g.fx>0 && g.fxKind==='q' && mod.mode==='nucleo')) && sprites.dash_lines) {
+    const dAlpha=g.dash>0?.52:Math.min(.48,g.fx*.6);
+    ctx.save();ctx.globalAlpha=dAlpha;
+    ctx.drawImage(sprites.dash_lines,0,29,88,H-73);
+    ctx.translate(W,0);ctx.scale(-1,1);ctx.drawImage(sprites.dash_lines,0,29,88,H-73);
+    ctx.restore();
+  }
+  if(!reducedMotion() && g.fx>0 && g.fxKind==='q') {
+    const qp=clamp(1-g.fx/.8,0,1);
+    if(mod.mode==='dominio' && sprites.melee_dominio) {
+      ctx.save();ctx.globalAlpha=Math.min(.75,g.fx*1.1);
+      ctx.translate(W/2+(.5-qp)*40,H/2-10);ctx.rotate(-.25+qp*.3);
+      ctx.drawImage(sprites.melee_dominio,-96,-48,192,96);ctx.restore();
+    } else if(mod.mode==='mare') {
+      ctx.save();ctx.strokeStyle='#8ff6ff';ctx.lineWidth=2.5;ctx.globalAlpha=Math.min(.62,g.fx*.85);
+      ctx.beginPath();ctx.arc(W/2,H-20-qp*95,95+qp*45,Math.PI*1.12,Math.PI*1.88);ctx.stroke();ctx.restore();
     }
   }
   if(g.fx>0 && g.fxKind==='melee') {
@@ -1781,6 +1835,14 @@ function drawResonance(g,mod) {
     const icon=sprites[`perk_${g.perkIcon}`];
     if(icon) {ctx.globalAlpha=.85;ctx.drawImage(icon,W-47,H-105,30,30);}
   }
+  if((g.shotTracer ?? 0)>0 && !reducedMotion()) {
+    const tp=clamp(1-g.shotTracer/.12,0,1);
+    const y0=H-52-tp*72, y1=H/2+6;
+    ctx.save();ctx.globalAlpha=.72*(1-tp*.5);ctx.strokeStyle=mod.color;ctx.lineWidth=mod.mode==='bio'?3:2;
+    ctx.beginPath();ctx.moveTo(W/2+(mod.mode==='mare'?Math.sin(tp*12)*3:0),y0);ctx.lineTo(W/2,y1);ctx.stroke();
+    ctx.fillStyle='#ffffff';ctx.beginPath();ctx.arc(W/2,y1,2.2*(1-tp*.4),0,Math.PI*2);ctx.fill();
+    ctx.restore();
+  }
   if(g.fire>.06 && !reducedMotion()) {
     // Traço de visor, curto e fora da mira; não é um projétil físico.
     const phase=(.23-g.fire)/.17;
@@ -1788,7 +1850,23 @@ function drawResonance(g,mod) {
     ctx.globalAlpha=.55;ctx.strokeStyle=mod.color;ctx.lineWidth=2;
     ctx.beginPath();ctx.moveTo(W/2,y);ctx.lineTo(W/2,y+9);ctx.stroke();
   }
-  if(g.hit>0){ctx.globalAlpha=.9;ctx.strokeStyle='#f4fff5';ctx.beginPath();for(const [x,y] of [[-1,-1],[1,-1],[-1,1],[1,1]]){ctx.moveTo(W/2+x*6,H/2+y*6);ctx.lineTo(W/2+x*10,H/2+y*10);}ctx.stroke();}
+  if(g.hit>0){
+    if((g.hitCrit ?? 0)>0 && sprites.impact_crit && !reducedMotion()) {
+      const cs=18+(1-clamp(g.hitCrit/.28,0,1))*10;
+      ctx.globalAlpha=clamp(g.hitCrit/.28,0,1)*.72;
+      ctx.drawImage(sprites.impact_crit,W/2-cs/2,H/2-cs/2,cs,cs);
+    }
+    const spread=reducedMotion()?0:Math.round((g.hit/.25)*4);
+    ctx.globalAlpha=.92;ctx.strokeStyle=(g.hitCrit ?? 0)>0?'#ffe885':'#f4fff5';ctx.lineWidth=(g.hitCrit ?? 0)>0?1.8:1.2;
+    ctx.beginPath();
+    for(const [x,y] of [[-1,-1],[1,-1],[-1,1],[1,1]]){ctx.moveTo(W/2+x*(5+spread),H/2+y*(5+spread));ctx.lineTo(W/2+x*(9+spread),H/2+y*(9+spread));}
+    ctx.stroke();
+    if((g.hitDmg ?? 0)>0 && !reducedMotion()) {
+      ctx.font='bold 8px monospace';ctx.textAlign='center';
+      ctx.fillStyle=(g.hitCrit ?? 0)>0?'#ffe885':'#dffcf8';
+      ctx.fillText(`-${g.hitDmg}`,W/2,H/2-14-spread);
+    }
+  }
   ctx.restore();
 }
 function drawMap(map,flags,p,g,progress) {
@@ -1866,6 +1944,14 @@ export function renderCitadel(canvas,state) {
   // UI independente evita ampliar pixels serrilhados do framebuffer do mundo.
   ctx=uiCtx;ctx.setTransform(1,0,0,1,0,0);ctx.clearRect(0,0,W*2,H*2);ctx.setTransform(2,0,0,2,0,0);ctx.imageSmoothingEnabled=true;
   ctx.fillStyle='#d8ffff';ctx.fillRect(W/2-4,H/2,9,1);ctx.fillRect(W/2,H/2-4,1,9);
+  if((g.shield>0 || g.guard>0 || g.shieldHit>0) && sprites.shield_visor){
+    ctx.save();
+    const shieldAlpha=g.shieldHit>0 ? (reducedMotion()?.5:.65*clamp(g.shieldHit/.28,0,1)) : (reducedMotion()?.22:.22+.08*Math.sin(g.time*4));
+    ctx.globalAlpha=shieldAlpha;
+    ctx.drawImage(sprites.shield_visor,8,37,35,35);
+    ctx.translate(W,0);ctx.scale(-1,1);ctx.drawImage(sprites.shield_visor,8,37,35,35);
+    ctx.restore();
+  }
   if(g.shieldHit>0){
     ctx.save();ctx.strokeStyle='rgba(85,225,255,.46)';ctx.lineWidth=6;
     ctx.globalAlpha=reducedMotion()?.45:.55*clamp(g.shieldHit/.28,0,1);
@@ -1893,8 +1979,8 @@ export function renderCitadel(canvas,state) {
   // Ícones acompanham rótulos em texto: nenhuma informação depende de cor ou arte.
   if(sprites.hud_health)ctx.drawImage(sprites.hud_health,9,H-39,10,10);
   ctx.fillStyle='#e2f4f0';ctx.fillText('VIDA '+Math.ceil(p.health||0)+'/'+(p.maxHealth||0),22,H-30);
-  const mareHudActive=!reducedMotion() && mod.mode==='mare' && (g.ultBuff || g.overdrive>0 || g.q>5 || (g.fx>0 && ['q','ultimate'].includes(g.fxKind))) && sprites.hud_weapon_mare_active;
-  const hudWeapon=mareHudActive ? sprites.hud_weapon_mare_active : sprites[`hud_weapon_${mod.mode}`];
+  const activeHudWeapon=!reducedMotion() && (g.ultBuff || g.overdrive>0 || g.q>5 || (g.fx>0 && ['q','ultimate'].includes(g.fxKind))) ? sprites[`hud_weapon_${mod.mode}_active`] : null;
+  const hudWeapon=activeHudWeapon ?? sprites[`hud_weapon_${mod.mode}`];
   if(hudWeapon)ctx.drawImage(hudWeapon,104,H-39,18,10);
   const ammoIcon=g.jam>0?(sprites.hud_jam ?? sprites.hud_ammo):sprites.hud_ammo;
   if(ammoIcon)ctx.drawImage(ammoIcon,126,H-39,10,10);

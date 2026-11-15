@@ -178,7 +178,7 @@ async function interactAt(x, y, expectedId) {
 }
 
 // 3. Barco oferece Rota da Maré Astral quando conduto_enseada_mare está liberado
-await interactAt(25.6, 18.2, 'barco_expedicao_enseada');
+await interactAt(27.5, 20.5, 'barco_expedicao_enseada');
 assert.equal(domIds.dialogueChoices.children.length, 3, 'Barco com Conduto aberto oferece Correntes, Maré Astral e Ficar');
 closeDialogue();
 

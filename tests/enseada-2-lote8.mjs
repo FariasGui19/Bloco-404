@@ -63,17 +63,17 @@ for (const [objId, spriteB] of paresB) {
   assert.equal(obj.spriteB, spriteB, `${objId} deve animar com ${spriteB}`);
 }
 
-// Ondulações e borboletas vivas presentes
-const ondas = enseada.objects.filter(o => o.id.startsWith('ondulacao_mar_'));
+// Borboletas vivas presentes e zero adesivo PNG de onda parado na beira da areia
 const borboletas = enseada.objects.filter(o => o.id.startsWith('borboletas_'));
-assert(ondas.length >= 3);
 assert(borboletas.length >= 2);
+assert.equal(enseada.objects.filter(o => o.id.startsWith('ondulacao_mar_')).length, 0);
 
-// Cardumes nunca encostam no barco de expedição
+// Cardumes nunca encostam no barco de expedição nem caem sobre a areia
 const barco = enseada.objects.find(o => o.id === 'barco_expedicao_enseada');
 for (const cardume of enseada.objects.filter(o => o.id.startsWith('cardume_orla_'))) {
   const d = Math.hypot(cardume.x - barco.x, cardume.y - barco.y);
   assert(d >= 6, `${cardume.id} deve nadar em água livre longe do barco (dist=${d.toFixed(2)})`);
+  assert.equal(enseada.walkMask[Math.floor(cardume.y)]?.[Math.floor(cardume.x)], '#');
 }
 
 // Todos os 36 marcos principais têm folga mínima >= 2.35 tiles
@@ -82,6 +82,7 @@ const marcos = enseada.objects.filter(o =>
   !o.id.startsWith('enseada_folhas_') &&
   !o.id.startsWith('enseada_flora_') &&
   !o.id.startsWith('enseada_ilhota_') &&
+  !o.id.startsWith('enseada_recife_') &&
   !o.id.startsWith('enseada_rochas') &&
   !o.id.startsWith('enseada_palmeira') &&
   !o.id.startsWith('enseada_arbusto') &&

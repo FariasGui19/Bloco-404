@@ -536,6 +536,17 @@ await loadSprites([
   { id: 'enseada_cais_pesca_b', src: 'assets/sprites/enseada-2/cais-madeira-pesca-b.png' },
   { id: 'enseada_ondulacao_mar', src: 'assets/sprites/enseada-2/ondulacao-mar-crista.png' },
   { id: 'enseada_borboletas_vivas', src: 'assets/sprites/enseada-2/borboletas-costa-vivas.png' },
+  // ---- ENSEADA DOS ECOS 2.0 — Lote #9 (Quadros B finais para animar 100% dos marcos) ----
+  { id: 'enseada_portico_praia_b', src: 'assets/sprites/enseada-2/portico-trilha-praia-b.png' },
+  { id: 'enseada_relogio_mare_b', src: 'assets/sprites/enseada-2/relogio-mare-solar-b.png' },
+  { id: 'enseada_torre_antena_b', src: 'assets/sprites/enseada-2/torre-antena-escuta-b.png' },
+  { id: 'enseada_bancada_campo_b', src: 'assets/sprites/enseada-2/bancada-campo-arquetipos-b.png' },
+  { id: 'enseada_santuario_lumeo_b', src: 'assets/sprites/enseada-2/santuario-lumeo-pedra-b.png' },
+  { id: 'enseada_estela_navegadores_b', src: 'assets/sprites/enseada-2/estela-navegadores-b.png' },
+  { id: 'enseada_gruta_concha_b', src: 'assets/sprites/enseada-2/gruta-concha-mar-b.png' },
+  { id: 'enseada_banco_ostras_b', src: 'assets/sprites/enseada-2/banco-ostras-perola-b.png' },
+  { id: 'enseada_bau_deriva_b', src: 'assets/sprites/enseada-2/bau-deriva-naufragio-b.png' },
+  { id: 'enseada_caixa_suprimentos_b', src: 'assets/sprites/enseada-2/caixa-suprimentos-mar-b.png' },
   {
     id: 'metro_rail_kit',
     src: 'assets/sprites/tiles/metro-rail-kit.png',

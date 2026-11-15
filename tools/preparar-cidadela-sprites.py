@@ -721,5 +721,35 @@ for name in ['imp-elite-passo-a','imp-elite-passo-b','imp-elite-lateral-ataque',
     image.save(dst / f'{name}.png', optimize=True)
     print(name, image.size)
 
+# Lote 7: piso de corredor, teto da cidadela, cobertura direcional completa do elite
+# e núcleo aberto/dano dedicados da Fase 2 do Vigilante.
+for tex in ['piso-corredor', 'teto-cidadela']:
+    tile = Image.open(src / f'{tex}.png').convert('RGB')
+    side_t = min(tile.size)
+    left_t = (tile.width - side_t) // 2
+    top_t = (tile.height - side_t) // 2
+    tile = tile.crop((left_t, top_t, left_t + side_t, top_t + side_t)).resize((128, 128), Image.Resampling.LANCZOS)
+    tile.save(dst / f'{tex}.png', optimize=True)
+    print(tex, tile.size)
+
+for name in ['imp-elite-lateral-passo-a','imp-elite-lateral-passo-b',
+             'imp-elite-lateral-dano','imp-elite-lateral-colapso',
+             'imp-elite-costas-ataque','vigilante-fase2-aberto','vigilante-fase2-dano']:
+    image = Image.open(src / f'{name}.png').convert('RGBA')
+    remove_border_magenta(image)
+    px = image.load()
+    for yy in range(image.height):
+        for xx in range(image.width):
+            r, g, b, a = px[xx, yy]
+            if a > 0 and r > 155 and b > 155 and g < 115 and min(r, b) - g > 75:
+                px[xx, yy] = (0, 0, 0, 0)
+    box = image.getbbox()
+    if not box: raise ValueError(f'Sprite vazio: {name}')
+    image = image.crop(box)
+    size = 256 if name.startswith('vigilante-') else 224
+    image.thumbnail((size, size), Image.Resampling.LANCZOS)
+    image.save(dst / f'{name}.png', optimize=True)
+    print(name, image.size)
+
 
 

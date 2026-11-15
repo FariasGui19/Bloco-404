@@ -70,7 +70,7 @@ recebem respostas visuais. A travessia dimensional ganha um anel ilustrado;
 a opção do sistema de movimento reduzido mantém os sinais importantes sem
 animação decorativa.
 
-Veja [a documentação da Cidadela](docs/cidadela-404.md) para regras e limites e o [roadmap vivo da Cidadela](docs/cidadela-roadmap.md) para o checklist completo de pendências até o entregável final.
+Veja [a documentação da Cidadela](docs/cidadela-404.md) para regras e limites e o [roadmap vivo da Cidadela](docs/cidadela-roadmap.md) para o checklist completo de conclusão (PR #105 + Lotes #2–#7, 69 artes e 141 testes automatizados).
 
 ## Organização
 

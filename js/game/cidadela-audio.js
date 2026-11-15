@@ -18,6 +18,8 @@ const TONES=Object.freeze({
   craft: {from:360,to:720,duration:.22,type:'triangle',volume:.024},
   shield_deflect: {from:480,to:240,duration:.09,type:'square',volume:.018},
   parry_double: {from:560,to:920,duration:.18,type:'triangle',volume:.024},
+  parry_q: {from:460,to:780,duration:.14,type:'triangle',volume:.022},
+  radar_ping: {from:640,to:820,duration:.11,type:'sine',volume:.016},
   core_open: {from:340,to:680,duration:.16,type:'sine',volume:.02},
   phase2: {from:140,to:360,duration:.36,type:'sawtooth',volume:.024},
   damage: {from:150,to:75,duration:.16,type:'triangle',volume:.028},

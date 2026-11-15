@@ -533,6 +533,46 @@ export const map = {
       pivotX: 0.5, pivotY: 0.8, depthOffset: -0.2, bloqueia: false,
     },
     {
+      id: 'capivara_piscina_termal', tipo: 'decoracao', x: 32.0, y: 51.0,
+      sprite: 'enseada5_capivara', larguraPx: 120,
+      pivotX: 0.5, pivotY: 0.96, depthOffset: -0.3, bloqueia: false,
+    },
+    {
+      id: 'golfinho_saltando', tipo: 'decoracao', x: 7.5, y: 44.5,
+      sprite: 'enseada5_golfinho_saltando', larguraPx: 110,
+      pivotX: 0.5, pivotY: 0.96, depthOffset: -0.3, bloqueia: false,
+    },
+    {
+      id: 'golfinho_nadando', tipo: 'decoracao', x: 60.5, y: 47.5,
+      sprite: 'enseada5_golfinho_nadando', larguraPx: 120,
+      pivotX: 0.5, pivotY: 0.96, depthOffset: -0.3, bloqueia: false,
+    },
+    {
+      id: 'tartaruga_marinha', tipo: 'decoracao', x: 10.5, y: 59.5,
+      sprite: 'enseada5_tartaruga', larguraPx: 100,
+      pivotX: 0.5, pivotY: 0.96, depthOffset: -0.3, bloqueia: false,
+    },
+    {
+      id: 'caranguejos_areia', tipo: 'decoracao', x: 43.5, y: 46.5,
+      sprite: 'enseada5_caranguejos', larguraPx: 70,
+      pivotX: 0.5, pivotY: 0.96, depthOffset: -0.3, bloqueia: false,
+    },
+    {
+      id: 'escadaria_acampamento', tipo: 'decoracao', x: 16.5, y: 31.5,
+      sprite: 'enseada5_escadaria', larguraPx: 110,
+      pivotX: 0.5, pivotY: 0.96, depthOffset: -0.3, bloqueia: false,
+    },
+    {
+      id: 'cristais_azuis_mar', tipo: 'decoracao', x: 53.5, y: 30.5,
+      sprite: 'enseada5_cristais', larguraPx: 80,
+      pivotX: 0.5, pivotY: 0.96, depthOffset: -0.3, bloqueia: false,
+    },
+    {
+      id: 'corais_amarelos', tipo: 'decoracao', x: 53.5, y: 39.5,
+      sprite: 'enseada5_corais', larguraPx: 90,
+      pivotX: 0.5, pivotY: 0.96, depthOffset: -0.3, bloqueia: false,
+    },
+    {
       id: 'barco_expedicao_enseada', nome: 'BARCO DE EXPEDIÇÃO', tipo: 'decoracao', x: 55.5, y: 36.5,
       sprite: 'enseada_barco_expedicao', spriteB: 'enseada_barco_expedicao_b', animPeriodo: 0.72,
       useCrop: true, larguraPx: 126, pivotX: 0.5, pivotY: 0.88,

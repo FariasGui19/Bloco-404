@@ -124,6 +124,7 @@ const marObjetos = new Set([
   'terminal_frequencia_666',
   'portico_trilha_praia',
   'travessia_pedras_agua',
+  'golfinho_saltando', 'golfinho_nadando', 'tartaruga_marinha', 'corais_amarelos',
 ]);
 for (const o of marcos) {
   if (marObjetos.has(o.id)) continue;

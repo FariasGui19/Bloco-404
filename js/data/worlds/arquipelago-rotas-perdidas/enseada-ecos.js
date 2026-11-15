@@ -100,6 +100,11 @@ for (let y = 0; y < ROWS; y++) {
   }
 }
 
+// Trecho de areia na margem da ponta do cais: o barco de expedição fica na praia,
+// acessível a pé, como na referência (a costa original deixava só água ali).
+for (const [cx, cy] of [[54, 35], [55, 35], [54, 36], [55, 36], [56, 36], [55, 37], [56, 37]]) {
+  if (grid[cy]?.[cx] !== undefined && grid[cy][cx] !== 'S') grid[cy][cx] = 'S';
+}
 const rows = grid.map(l => l.join(''));
 const ground = buildGround({
   sheet: 'BEACH_FLOOR_SPRITE',

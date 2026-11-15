@@ -132,7 +132,7 @@ assert(await loadMap(enseada.id, 'vindo_da_praia'));
 assert(state.progress.questLog.ecos_profundos_enseada, 'Missão ecos_profundos_enseada inicia na Enseada');
 
 const walkVisited = new Set();
-const q = [[6, 15]];
+const q = [[Math.floor(enseada.spawnPoints.inicio.x), Math.floor(enseada.spawnPoints.inicio.y)]];
 while (q.length) {
   const [x, y] = q.shift();
   const key = `${x},${y}`;

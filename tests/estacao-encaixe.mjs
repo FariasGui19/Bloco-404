@@ -28,7 +28,9 @@ for (const obj of state.objects.filter(o => o.id !== 'saida_estacao_666_visual')
   assert(!canStandAt(station,obj.x,obj.y,.25,state.player), `${obj.id} não permite atravessar o centro`);
 }
 await loadMap('ilha_enseada_ecos', 'vindo_da_estacao_666');
-assert(!canStandAt(coast,20,6.5,.25,state.player),'o corpo do abrigo não é atravessável');
+const porta = coast.objects.find(o => o.id === 'porta_estacao_666_visual');
+const corpo = porta.hitbox;
+assert(!canStandAt(coast, porta.x + corpo.offsetX + corpo.width / 2, porta.y + corpo.offsetY + corpo.height / 2, .25, state.player),'o corpo do abrigo não é atravessável');
 assert(canStandAt(coast,22.5,8.5,.25,state.player),'escadaria e entrada seguem acessíveis');
 assert(canStandAt(coast,16.5,13.5,.25,state.player),'retorno da estação continua seguro');
 // Da saída ao degrau, há um caminho real de meia célula apesar da fundação.

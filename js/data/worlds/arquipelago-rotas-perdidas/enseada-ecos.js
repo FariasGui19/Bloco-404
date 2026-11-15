@@ -623,6 +623,41 @@ export const map = {
       pivotX: 0.5, pivotY: 0.96, depthOffset: -0.3, bloqueia: false,
     },
     {
+      id: 'pilha_toras_madeira', tipo: 'decoracao', x: 13.5, y: 34.5,
+      sprite: 'enseada7_toras', larguraPx: 80,
+      pivotX: 0.5, pivotY: 0.96, depthOffset: -0.3, bloqueia: false,
+    },
+    {
+      id: 'cerca_madeira_baixa', tipo: 'decoracao', x: 33.5, y: 26.5,
+      sprite: 'enseada7_cerca', larguraPx: 80,
+      pivotX: 0.5, pivotY: 0.96, depthOffset: -0.3, bloqueia: false,
+    },
+    {
+      id: 'lanterna_pedra_chao', tipo: 'decoracao', x: 35.5, y: 36.5,
+      sprite: 'enseada7_lanterna', larguraPx: 50,
+      pivotX: 0.5, pivotY: 0.96, depthOffset: -0.3, bloqueia: false,
+    },
+    {
+      id: 'vaso_planta_pedra', tipo: 'decoracao', x: 23.5, y: 51.5,
+      sprite: 'enseada7_vaso', larguraPx: 60,
+      pivotX: 0.5, pivotY: 0.96, depthOffset: -0.3, bloqueia: false,
+    },
+    {
+      id: 'arco_pedra_degraus', tipo: 'decoracao', x: 13.5, y: 26.5,
+      sprite: 'enseada7_arco_pedra', larguraPx: 110,
+      pivotX: 0.5, pivotY: 0.96, depthOffset: -0.3, bloqueia: false,
+    },
+    {
+      id: 'banco_madeira', tipo: 'decoracao', x: 11.5, y: 40.5,
+      sprite: 'enseada7_banco_madeira', larguraPx: 80,
+      pivotX: 0.5, pivotY: 0.96, depthOffset: -0.3, bloqueia: false,
+    },
+    {
+      id: 'rede_pesca_areia', tipo: 'decoracao', x: 43.5, y: 40.5,
+      sprite: 'enseada7_rede_pesca', larguraPx: 80,
+      pivotX: 0.5, pivotY: 0.96, depthOffset: -0.3, bloqueia: false,
+    },
+    {
       id: 'barco_expedicao_enseada', nome: 'BARCO DE EXPEDIÇÃO', tipo: 'decoracao', x: 55.5, y: 36.5,
       sprite: 'enseada_barco_expedicao', spriteB: 'enseada_barco_expedicao_b', animPeriodo: 0.72,
       useCrop: true, larguraPx: 126, pivotX: 0.5, pivotY: 0.88,

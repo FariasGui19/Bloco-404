@@ -573,6 +573,56 @@ export const map = {
       pivotX: 0.5, pivotY: 0.96, depthOffset: -0.3, bloqueia: false,
     },
     {
+      id: 'estrela_do_mar', tipo: 'decoracao', x: 40.5, y: 50.5,
+      sprite: 'enseada6_estrela', larguraPx: 70,
+      pivotX: 0.5, pivotY: 0.96, depthOffset: -0.3, bloqueia: false,
+    },
+    {
+      id: 'poste_lanterna_madeira', tipo: 'decoracao', x: 24.5, y: 45.5,
+      sprite: 'enseada6_poste', larguraPx: 60,
+      pivotX: 0.5, pivotY: 0.96, depthOffset: -0.3, bloqueia: false,
+    },
+    {
+      id: 'boia_cone_laranja', tipo: 'decoracao', x: 60.5, y: 25.5,
+      sprite: 'enseada6_boia', larguraPx: 70,
+      pivotX: 0.5, pivotY: 0.96, depthOffset: -0.3, bloqueia: false,
+    },
+    {
+      id: 'coral_rosa', tipo: 'decoracao', x: 53.5, y: 47.5,
+      sprite: 'enseada6_coral_rosa', larguraPx: 80,
+      pivotX: 0.5, pivotY: 0.96, depthOffset: -0.3, bloqueia: false,
+    },
+    {
+      id: 'ourico_do_mar', tipo: 'decoracao', x: 39.5, y: 61.5,
+      sprite: 'enseada6_ourico', larguraPx: 60,
+      pivotX: 0.5, pivotY: 0.96, depthOffset: -0.3, bloqueia: false,
+    },
+    {
+      id: 'pedra_brilho_azul', tipo: 'decoracao', x: 12.5, y: 50.5,
+      sprite: 'enseada6_pedra_azul', larguraPx: 90,
+      pivotX: 0.5, pivotY: 0.96, depthOffset: -0.3, bloqueia: false,
+    },
+    {
+      id: 'banco_pedra', tipo: 'decoracao', x: 21.5, y: 44.5,
+      sprite: 'enseada6_banco', larguraPx: 80,
+      pivotX: 0.5, pivotY: 0.96, depthOffset: -0.3, bloqueia: false,
+    },
+    {
+      id: 'arbusto_flores_roxas', tipo: 'decoracao', x: 38.5, y: 40.5,
+      sprite: 'enseada6_arbusto', larguraPx: 90,
+      pivotX: 0.5, pivotY: 0.96, depthOffset: -0.3, bloqueia: false,
+    },
+    {
+      id: 'palmeira_jovem', tipo: 'decoracao', x: 46.5, y: 44.5,
+      sprite: 'enseada6_palmeira', larguraPx: 90,
+      pivotX: 0.5, pivotY: 0.96, depthOffset: -0.3, bloqueia: false,
+    },
+    {
+      id: 'concha_gigante', tipo: 'decoracao', x: 30.5, y: 55.5,
+      sprite: 'enseada6_concha', larguraPx: 80,
+      pivotX: 0.5, pivotY: 0.96, depthOffset: -0.3, bloqueia: false,
+    },
+    {
       id: 'barco_expedicao_enseada', nome: 'BARCO DE EXPEDIÇÃO', tipo: 'decoracao', x: 55.5, y: 36.5,
       sprite: 'enseada_barco_expedicao', spriteB: 'enseada_barco_expedicao_b', animPeriodo: 0.72,
       useCrop: true, larguraPx: 126, pivotX: 0.5, pivotY: 0.88,

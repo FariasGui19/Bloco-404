@@ -114,6 +114,10 @@ const agua = new Set([
   'porta_estacao_666_visual', 'terminal_frequencia_666', 'portico_trilha_praia',
   'travessia_pedras_agua',
   'golfinho_saltando', 'golfinho_nadando', 'tartaruga_marinha', 'corais_amarelos',
+  'boia_cone_laranja',
+  'coral_rosa',
+  'ourico_do_mar',
+  'pedra_brilho_azul',
 ]);
 for (const o of marcos) {
   if (agua.has(o.id)) continue;

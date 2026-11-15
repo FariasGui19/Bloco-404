@@ -20,8 +20,8 @@ const ehTerra = c => c !== undefined && 'SMT'.includes(c);
 // Cada célula da grade é convertida de volta para a imagem; a costa é o polígono
 // traçado sobre a referência (ilha principal e ilhota nordeste do portal de correntes).
 const REF = { cx: 745, cy: 405, s: 2.0, ox: 35.094, oy: 34.625 };
-const POLIGONO_ILHA = [[112, 395], [150, 300], [230, 250], [330, 195], [430, 150], [520, 110], [600, 70], [700, 30], [800, 20], [900, 35], [980, 80], [1040, 120], [1085, 165], [1050, 200], [1030, 240], [1090, 275], [1160, 320], [1230, 345], [1330, 420], [1320, 480], [1280, 520], [1230, 545], [1160, 560], [1090, 585], [1040, 620], [1000, 660], [930, 680], [860, 690], [790, 700], [720, 705], [650, 690], [560, 695], [470, 685], [390, 650], [300, 610], [220, 570], [160, 510], [118, 450]];
-const POLIGONO_ILHOTA = [[1200, 215], [1240, 190], [1290, 195], [1320, 225], [1300, 255], [1250, 260], [1210, 245]];
+const POLIGONO_ILHA = [[118,420],[150,300],[200,255],[260,205],[330,165],[400,125],[470,100],[520,85],[600,80],[650,55],[700,40],[760,30],[820,20],[880,25],[940,30],[980,70],[1020,100],[1060,130],[1080,165],[1040,195],[1000,225],[1030,250],[1070,300],[1120,330],[1180,350],[1220,365],[1275,365],[1320,395],[1335,440],[1320,480],[1280,515],[1240,540],[1190,548],[1150,565],[1100,580],[1050,585],[1000,570],[940,555],[880,560],[830,575],[790,600],[760,640],[730,680],[690,705],[640,715],[580,705],[520,700],[460,690],[420,680],[380,650],[330,640],[280,610],[230,570],[180,520],[140,470]];
+const POLIGONO_ILHOTA = [[1210,170],[1240,95],[1275,80],[1310,95],[1340,130],[1350,175],[1320,205],[1270,215],[1225,205]];
 // Células obrigatórias: missões, portais, spawns e a lagoa de treino.
 const CELULAS_OBRIGATORIAS = [[15, 51], [15, 52], [15, 53], [16, 51], [16, 52], [16, 53], [17, 37], [17, 38], [17, 39], [17, 51], [17, 52], [17, 53], [18, 37], [18, 38], [18, 39], [18, 50], [18, 51], [18, 52], [19, 37], [19, 38], [19, 39], [19, 50], [19, 51], [19, 52], [20, 50], [20, 51], [20, 52], [21, 45], [21, 46], [21, 47], [22, 45], [22, 46], [22, 47], [23, 45], [23, 46], [23, 47], [24, 52], [24, 53], [24, 54], [25, 14], [25, 15], [25, 16], [25, 39], [25, 40], [25, 41], [25, 52], [25, 53], [25, 54], [26, 14], [26, 15], [26, 16], [26, 17], [26, 39], [26, 40], [26, 41], [26, 42], [26, 43], [26, 44], [26, 52], [26, 53], [26, 54], [27, 14], [27, 15], [27, 16], [27, 17], [27, 39], [27, 40], [27, 41], [27, 42], [27, 43], [27, 44], [28, 15], [28, 16], [28, 17], [28, 39], [28, 40], [28, 41], [28, 42], [28, 43], [28, 44], [29, 18], [29, 19], [29, 20], [29, 39], [29, 40], [29, 41], [30, 18], [30, 19], [30, 20], [30, 39], [30, 40], [30, 41], [31, 18], [31, 19], [31, 20], [31, 38], [31, 39], [31, 40], [32, 38], [32, 39], [32, 40], [33, 36], [33, 37], [33, 38], [33, 39], [33, 40], [33, 54], [33, 55], [33, 56], [34, 1], [34, 2], [34, 3], [34, 36], [34, 37], [34, 38], [34, 54], [34, 55], [34, 56], [35, 1], [35, 2], [35, 3], [35, 4], [35, 36], [35, 37], [35, 38], [35, 54], [35, 55], [35, 56], [36, 1], [36, 2], [36, 3], [36, 4], [37, 2], [37, 3], [37, 4], [37, 6], [37, 7], [37, 8], [38, 6], [38, 7], [38, 8], [39, 6], [39, 7], [39, 8], [48, 18], [48, 19], [48, 20], [49, 17], [49, 18], [49, 19], [49, 20], [50, 17], [50, 18], [50, 19], [50, 20], [51, 17], [51, 18], [51, 19]];
 
@@ -458,7 +458,7 @@ export const map = {
       interacao: { label: 'SINTONIZAR CAPTADOR DE ECOS', distancia: 1.65 },
     },
     {
-      id: 'santuario_lumeo_enseada', nome: 'SANTUÁRIO DE LÚMEO', tipo: 'decoracao', x: 40.3, y: 16.3,
+      id: 'santuario_lumeo_enseada', nome: 'SANTUÁRIO DE LÚMEO', tipo: 'decoracao', x: 42.6, y: 19.6,
       sprite: 'enseada_santuario_lumeo', spriteB: 'enseada_santuario_lumeo_b', animPeriodo: 0.58,
       useCrop: true, larguraPx: 90, pivotX: 0.5, pivotY: 0.92,
       bloqueia: false, pulsoBiolum: '#70f3ff', brilho: { cor: '#70f3ff', raio: 1.35, forca: 0.32 },
@@ -508,7 +508,7 @@ export const map = {
       interacao: { label: 'OBSERVAR DO FAROLETE', distancia: 1.65 },
     },
     {
-      id: 'embarcadouro_mare_astral', nome: 'EMBARCADOURO DA MARÉ', tipo: 'decoracao', x: 54.4, y: 41.2,
+      id: 'embarcadouro_mare_astral', nome: 'EMBARCADOURO DA MARÉ', tipo: 'decoracao', x: 46.8, y: 39.8,
       sprite: 'enseada_embarcadouro_mare', spriteB: 'enseada_embarcadouro_mare_b', animPeriodo: 0.62,
       useCrop: true, larguraPx: 124, pivotX: 0.5, pivotY: 0.88,
       bloqueia: false, brilho: { cor: '#5cf7eb', raio: 1.35, forca: 0.3 },
@@ -521,14 +521,14 @@ export const map = {
       bloqueia: false, brilho: { cor: '#5cf7eb', raio: 1.5, forca: 0.34 },
     },
     {
-      id: 'cais_madeira_pesca_enseada', nome: 'CAIS DA ENSEADA', tipo: 'decoracao', x: 54.1, y: 46.3,
+      id: 'cais_madeira_pesca_enseada', nome: 'CAIS DA ENSEADA', tipo: 'decoracao', x: 48.8, y: 38.4,
       sprite: 'enseada3_cais_barco', spriteB: 'enseada3_cais_barco', animPeriodo: 0.68,
       useCrop: true, larguraPx: 420, pivotX: 0.5, pivotY: 0.97,
       bloqueia: false, brilho: { cor: '#ffd980', raio: 1.0, forca: 0.16 },
       interacao: { label: 'OBSERVAR A BAÍA DO CAIS', distancia: 1.75 },
     },
     {
-      id: 'barco_expedicao_enseada', nome: 'BARCO DE EXPEDIÇÃO', tipo: 'decoracao', x: 58.0, y: 41.3,
+      id: 'barco_expedicao_enseada', nome: 'BARCO DE EXPEDIÇÃO', tipo: 'decoracao', x: 55.5, y: 36.5,
       sprite: 'enseada_barco_expedicao', spriteB: 'enseada_barco_expedicao_b', animPeriodo: 0.72,
       useCrop: true, larguraPx: 126, pivotX: 0.5, pivotY: 0.88,
       bloqueia: false, flutuacaoSuave: true, renderizar: false,
@@ -591,7 +591,7 @@ export const map = {
 
     // ---- Bosquetes & Flora Ancorando Cada Núcleo (sem cobrir objetos nem caminhos) ----
     { id: 'enseada_pedra_leste', tipo: 'decoracao', x: 34.0, y: 11.0, sprite: 'costa_rochosa', frame: { col: 1, row: 0 }, useCrop: true, larguraPx: 98, pivotY: 1, bloqueia: false },
-    { id: 'enseada_pedra_sul', tipo: 'decoracao', x: 44.0, y: 60.0, sprite: 'costa_rochosa', frame: { col: 2, row: 0 }, useCrop: true, larguraPx: 72, pivotY: 1, bloqueia: false },
+    { id: 'enseada_pedra_sul', tipo: 'decoracao', x: 44, y: 61, sprite: 'costa_rochosa', frame: { col: 2, row: 0 }, useCrop: true, larguraPx: 72, pivotY: 1, bloqueia: false },
 
     // Bosquete ocidental enquadra o pórtico e o acampamento sem tampar a passagem.
     tropical('enseada_vegetacao_1', 15.6, 47.3, 3, 94, true),

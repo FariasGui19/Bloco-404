@@ -916,6 +916,26 @@ for name in ['canhao-nucleo-pulso', 'canhao-dominio-pulso', 'canhao-bio-pulso',
     image.save(dst / f'{name}.png', optimize=True)
     print(name, image.size)
 
+# Lote 13: Golpes cinéticos multi-quadro para todos os arquétipos, explosão
+# e projéteis em 2 quadros, estados ativos de bancada/ronda e visores de cura/eco.
+for name in ['melee-nucleo-b', 'melee-dominio-b', 'melee-bio-b',
+             'barril-explosao-b', 'projetil-estatica-b', 'projetil-vigilante-fase2-b',
+             'bancada-sintese-ativa', 'terminal-ronda-ativo',
+             'visor-pulso-cura', 'visor-echo-alerta']:
+    image = Image.open(src / f'{name}.png').convert('RGBA')
+    corners = [image.getpixel((0, 0)), image.getpixel((image.width - 1, 0))]
+    mode_bg = 'white' if any(min(r, g, b) > 220 for r, g, b, _ in corners) else 'dark'
+    remove_border_bg(image, mode_bg)
+    if name == 'projetil-vigilante-fase2-b':
+        remove_border_bg(image, 'white')
+    box = image.getbbox()
+    if not box: raise ValueError(f'Sprite vazio: {name}')
+    image = image.crop(box)
+    size = 256 if name.startswith('melee-') else 192 if name.startswith('barril-') else 160 if name.startswith(('bancada-', 'terminal-', 'visor-')) else 96
+    image.thumbnail((size, size), Image.Resampling.LANCZOS)
+    image.save(dst / f'{name}.png', optimize=True)
+    print(name, image.size)
+
 
 
 

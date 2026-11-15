@@ -841,6 +841,36 @@ for name in ['hud-arma-mare', 'hud-arma-nucleo', 'hud-arma-dominio', 'hud-arma-b
     image.save(dst / f'{name}.png', optimize=True)
     print(name, image.size)
 
+# Lote 10: Protocolo da Vigília, animação completa Fase 2 do Vigilante,
+# parede da Forja, teto da Galeria/Forja, insígnia suprema e emblemas HUD.
+art10 = Image.open(src / 'cidadela-protocolo-desperto.jpg').convert('RGB')
+art10.thumbnail((1280, 720), Image.Resampling.LANCZOS)
+art10.save(cutscenes / 'cidadela-protocolo-desperto.jpg', quality=88, optimize=True)
+print('cidadela-protocolo-desperto.jpg', art10.size)
+
+for tex in ['parede-forja', 'teto-galeria']:
+    tile = Image.open(src / f'{tex}.png').convert('RGB')
+    side_t = min(tile.size)
+    left_t = (tile.width - side_t) // 2
+    top_t = (tile.height - side_t) // 2
+    tile = tile.crop((left_t, top_t, left_t + side_t, top_t + side_t)).resize((128, 128), Image.Resampling.LANCZOS)
+    tile.save(dst / f'{tex}.png', optimize=True)
+    print(tex, tile.size)
+
+for name in ['vigilante-aviso-fase2', 'vigilante-fase2-ataque-b',
+             'baliza-protocolo-final', 'sonda-nexo-protocolo',
+             'reliquia-insignia-vigilia', 'hud-rank-max', 'hud-combo-emblema']:
+    image = Image.open(src / f'{name}.png').convert('RGBA')
+    remove_border_bg(image, 'white' if name == 'vigilante-aviso-fase2' else 'dark')
+    box = image.getbbox()
+    if not box: raise ValueError(f'Sprite vazio: {name}')
+    image = image.crop(box)
+    size = 256 if name.startswith('vigilante-') else 160 if name in ('baliza-protocolo-final', 'sonda-nexo-protocolo') else 96
+    image.thumbnail((size, size), Image.Resampling.LANCZOS)
+    image.save(dst / f'{name}.png', optimize=True)
+    print(name, image.size)
+
+
 
 
 

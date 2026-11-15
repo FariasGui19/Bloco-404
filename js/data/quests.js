@@ -86,6 +86,16 @@ export const QUESTS = Object.freeze({
     ]),
     rewards:Object.freeze({xp:70,flags:Object.freeze({cidadela_vozes_concluida:true})}),
   }),
+  cidadela_protocolo_vigilia: Object.freeze({
+    id:'cidadela_protocolo_vigilia', title:'PROTOCOLO DA VIGÍLIA // 66.6', giver:'NEXO-04', kind:'secundária',
+    description:'Após estabilizar o reator, ative a Baliza do Protocolo na arena, sincronize a Sonda ou o Console do Reator, honre o Vigilante Inerte e sele a convergência final.',
+    objectives:Object.freeze([
+      Object.freeze({type:'cidadela_protocolo_passo',target:'sonda',count:1,label:'Sincronizar Sonda ou Console do Reator [E]'}),
+      Object.freeze({type:'cidadela_protocolo_passo',target:'vigilante',count:1,label:'Honrar o Vigilante Inerte no Reator [E]'}),
+      Object.freeze({type:'cidadela_protocolo_passo',target:'console',count:1,label:'Selar convergência na Baliza do Protocolo [E]'}),
+    ]),
+    rewards:Object.freeze({xp:120,points:2,items:Object.freeze(['insignia_vigilia_404']),flags:Object.freeze({cidadela_protocolo_concluido:true})}),
+  }),
   jardim_de_retorno: Object.freeze({
     id:'jardim_de_retorno', title:'JARDIM DE RETORNO', giver:'O MAR', kind:'secundária',
     description:'Na Rota das Marés, retire a rede perdida, liberte a tartaruga e restaure o coral. Mergulhe até cada sinal e use [E]; volte à superfície sempre que precisar respirar.',

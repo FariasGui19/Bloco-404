@@ -35,6 +35,10 @@ export const CITADEL_RETURN_SCENES = [
   { image:'assets/cutscenes/cidadela-epilogo-nulo.jpg', eyebrow:'EPÍLOGO // FREQUÊNCIA 66.6', title:'ECOS NA MARÉ', text:'Por um segundo, o anel reflete uma silhueta de linhas sem rosto antes da aurora apagar o ruído. “O Bloco 404 respondeu ao primeiro chamado. As próximas dimensões aguardam.”', note:'Registro arquivado na Estação 66.6. Todo o progresso da Cidadela foi preservado.' },
 ];
 
+export const CITADEL_PROTOCOL_SCENES = [
+  { image:'assets/cutscenes/cidadela-protocolo-desperto.jpg', eyebrow:'CONVERGÊNCIA // 66.6 MHz', title:'O PROTOCOLO DA VIGÍLIA', text:'Três feixes harmônicos unem o Reator Estabilizado, a Sonda NEXO-04 e a Baliza da Arena. O Vigilante silencia em repouso definitivo: sua guarda foi assumida pelo Bloco 404.', note:'Relíquia Insígnia da Vigília // 404 integrada ao Códex. A Cidadela 404 está pronta para o salto final.' },
+];
+
 let open = false;
 export function isCutsceneOpen() { return open; }
 

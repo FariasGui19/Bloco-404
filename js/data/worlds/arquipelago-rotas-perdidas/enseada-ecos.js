@@ -264,6 +264,70 @@ export const map = {
     { id: 'baliza_666_receptor', tipo: 'decoracao', x: 12, y: 13, sprite: 'freq666_baliza', useCrop: true, larguraPx: 24, pivotX: 0.5, pivotY: 0.98, bloqueia: false },
     { id: 'baliza_666_entrada', tipo: 'decoracao', x: 19, y: 11, sprite: 'freq666_baliza', useCrop: true, larguraPx: 24, pivotX: 0.5, pivotY: 0.98, bloqueia: false },
 
+    // ---- Novos Marcos Interativos da Enseada 2.0 (Lote #5 — Portais, Infraestrutura & Barco) ----
+    {
+      id: 'portico_trilha_praia', nome: 'PÓRTICO DA TRILHA', tipo: 'decoracao', x: 5.0, y: 15.0,
+      sprite: 'enseada_portico_praia', useCrop: true, larguraPx: 120, pivotX: 0.5, pivotY: 0.94,
+      bloqueia: false, brilho: { cor: '#ffb86b', raio: 1.0, forca: 0.22 },
+    },
+    {
+      id: 'portal_caminho_correntes', nome: 'PORTAL DAS CORRENTES', tipo: 'decoracao', x: 25.0, y: 15.0,
+      sprite: 'enseada_portal_correntes', useCrop: true, larguraPx: 128, pivotX: 0.5, pivotY: 0.94,
+      bloqueia: false, brilho: { cor: '#5cf7eb', raio: 1.5, forca: 0.34 },
+    },
+    {
+      id: 'barco_expedicao_enseada', nome: 'BARCO DE EXPEDIÇÃO', tipo: 'decoracao', x: 26.6, y: 17.6,
+      sprite: 'enseada_barco_expedicao', useCrop: true, larguraPx: 146, pivotX: 0.5, pivotY: 0.88,
+      bloqueia: false, flutuacaoSuave: true, brilho: { cor: '#6ff7ff', raio: 1.1, forca: 0.2 },
+      interacao: { label: 'INSPECIONAR BARCO DE EXPEDIÇÃO', distancia: 2.15 },
+    },
+    {
+      id: 'santuario_lumeo_enseada', nome: 'SANTUÁRIO DE LÚMEO', tipo: 'decoracao', x: 19.6, y: 18.6,
+      sprite: 'enseada_santuario_lumeo', useCrop: true, larguraPx: 102, pivotX: 0.5, pivotY: 0.92,
+      bloqueia: false, brilho: { cor: '#70f3ff', raio: 1.35, forca: 0.32 },
+      interacao: { label: 'EXAMINAR SANTUÁRIO DE LÚMEO', distancia: 1.55 },
+    },
+    {
+      id: 'acampamento_vigilia_enseada', nome: 'ACAMPAMENTO DE VIGÍLIA', tipo: 'decoracao', x: 8.6, y: 17.2,
+      sprite: 'enseada_acampamento_vigilia', useCrop: true, larguraPx: 122, pivotX: 0.5, pivotY: 0.88,
+      bloqueia: false, brilho: { cor: '#ffae52', raio: 1.25, forca: 0.28 },
+      interacao: { label: 'DESCANSAR NA FOGUEIRA', distancia: 1.6 },
+    },
+    {
+      id: 'torre_antena_enseada', nome: 'TORRE-ANTENA DE ESCUTA', tipo: 'dispositivo', x: 13.4, y: 12.6,
+      sprite: 'enseada_torre_antena', useCrop: true, larguraPx: 88, pivotX: 0.5, pivotY: 0.96,
+      bloqueia: false, brilho: { cor: '#ff7e71', raio: 0.9, forca: 0.2 },
+      interacao: { label: 'SINTONIZAR TORRE-ANTENA', distancia: 1.55 },
+    },
+    {
+      id: 'farolete_baia_enseada', nome: 'FAROLETE DA BAÍA', tipo: 'decoracao', x: 25.2, y: 10.2,
+      sprite: 'enseada_farolete_baia', useCrop: true, larguraPx: 92, pivotX: 0.5, pivotY: 0.96,
+      bloqueia: false, brilho: { cor: '#5cf7eb', raio: 1.8, forca: 0.4 },
+      interacao: { label: 'OBSERVAR DO FAROLETE', distancia: 1.65 },
+    },
+    {
+      id: 'bancada_campo_enseada', nome: 'BANCADA DE CAMPO', tipo: 'dispositivo', x: 15.2, y: 11.4,
+      sprite: 'enseada_bancada_campo', useCrop: true, larguraPx: 106, pivotX: 0.5, pivotY: 0.92,
+      bloqueia: false, brilho: { cor: '#74ff8a', raio: 1.2, forca: 0.26 },
+      interacao: { label: 'CALIBRAR MÓDULO NA BANCADA', distancia: 1.55 },
+    },
+    {
+      id: 'totem_eco_enseada', nome: 'MONÓLITO DE ECO', tipo: 'decoracao', x: 15.4, y: 15.4,
+      sprite: 'enseada_totem_eco', useCrop: true, larguraPx: 76, pivotX: 0.5, pivotY: 0.94,
+      bloqueia: false, brilho: { cor: '#ffd980', raio: 1.15, forca: 0.25 },
+      interacao: { label: 'EXAMINAR MONÓLITO DE ECO', distancia: 1.5 },
+    },
+    {
+      id: 'baliza_mare_boia_1', nome: 'BOIA DE MARÉ', tipo: 'decoracao', x: 29.2, y: 13.2,
+      sprite: 'enseada_baliza_boia', useCrop: true, larguraPx: 54, pivotX: 0.5, pivotY: 0.9,
+      bloqueia: false, flutuacaoSuave: true, brilho: { cor: '#5cf7eb', raio: 1.3, forca: 0.3 },
+    },
+    {
+      id: 'baliza_mare_boia_2', nome: 'BOIA DE MARÉ', tipo: 'decoracao', x: 29.0, y: 16.8,
+      sprite: 'enseada_baliza_boia', useCrop: true, larguraPx: 54, pivotX: 0.5, pivotY: 0.9,
+      bloqueia: false, flutuacaoSuave: true, brilho: { cor: '#5cf7eb', raio: 1.3, forca: 0.3 },
+    },
+
     // ---- Novos Marcos Interativos da Enseada 2.0 (Lote #4) ----
     {
       id: 'espelho_arquetipos_enseada', nome: 'ESPELHO DE RESSONÂNCIA', tipo: 'dispositivo', x: 14.0, y: 10.2,
@@ -308,7 +372,7 @@ export const map = {
       interacao: { label: 'PROTEGER O NINHO', distancia: 1.6 },
     },
     {
-      id: 'banco_ostras_enseada', nome: 'BANCO DE OSTRAS PÉROLA', tipo: 'decoracao', x: 24.4, y: 17.0,
+      id: 'banco_ostras_enseada', nome: 'BANCO DE OSTRAS PÉROLA', tipo: 'decoracao', x: 23.6, y: 16.8,
       sprite: 'enseada_banco_ostras', useCrop: true, larguraPx: 88, pivotX: 0.5, pivotY: 0.9,
       bloqueia: false, brilho: { cor: '#70f3ff', raio: 1.0, forca: 0.24 },
       interacao: { label: 'COLHER PÉROLA DA ENSEADA', distancia: 1.65 },
@@ -376,8 +440,6 @@ export const map = {
     prop('enseada_pedras', 19, 13, 2, 1, 57),
     prop('enseada_concha', 14, 9, 1, 3, 40),
 
-    { id: 'marco_correntes', tipo: 'decoracao', x: 25, y: 15, routeMarker: 'CAMINHO DAS CORRENTES', bloqueia: false },
-    { id: 'marco_praia', tipo: 'decoracao', x: 5, y: 15, routeMarker: 'PRAIA', bloqueia: false },
     {
       id: 'arco_conduto_retorno_mare', tipo: 'decoracao', x: 28.9, y: 12.1,
       sprite: 'mare_sala_arco_enseada', useCrop: true, larguraPx: 142, anchorY: 0.92,

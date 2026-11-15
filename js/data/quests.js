@@ -328,6 +328,25 @@ export const QUESTS = Object.freeze({
       flags: Object.freeze({ enseada_viva_concluida: true }),
     }),
   }),
+  expedicao_da_baia_enseada: Object.freeze({
+    id: 'expedicao_da_baia_enseada',
+    title: 'EXPEDIÇÃO DA BAÍA',
+    giver: 'ENSEADA DOS ECOS',
+    kind: 'secundária',
+    description: 'Prepare a Enseada para rotas distantes: calibre seu módulo na Bancada de Campo, ouça a Torre-Antena, inspecione o Barco ou o Farolete da baía e visite o Acampamento ou o Santuário de Lúmeo.',
+    objectives: Object.freeze([
+      Object.freeze({ type: 'enseada_bancada_calibrada', target: 'bancada', count: 1, label: 'Calibrar módulo na Bancada de Campo [E]' }),
+      Object.freeze({ type: 'enseada_torre_lida', target: 'torre', count: 1, label: 'Sintonizar a Torre-Antena de Escuta [E]' }),
+      Object.freeze({ type: 'enseada_navegacao_lida', target: 'baia', count: 1, label: 'Inspecionar o Barco de Expedição ou o Farolete [E]' }),
+      Object.freeze({ type: 'enseada_vigilia_lida', target: 'vigilia', count: 1, label: 'Descansar no Acampamento ou visitar o Santuário de Lúmeo [E]' }),
+    ]),
+    rewards: Object.freeze({
+      xp: 130,
+      points: 1,
+      items: Object.freeze(['bussola_mar_ecos']),
+      flags: Object.freeze({ expedicao_enseada_concluida: true }),
+    }),
+  }),
 });
 
 export function getQuest(id) {

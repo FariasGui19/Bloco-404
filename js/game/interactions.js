@@ -1076,6 +1076,173 @@ function interactWithObject(object) {
     return;
   }
 
+  if (object.id === 'bancada_campo_enseada') {
+    const flags = state.progress.flags ??= {};
+    const arch = state.progress?.archetype ?? 'motor_bio_forja';
+    const buffs = {
+      mare_astral: { id: 'pulso_salino', nome: 'PULSO SALINO', desc: '+10% EXTRA DE AGILIDADE NA ORLA E NA ÁGUA + ENERGIA RESTAURADA.' },
+      nucleo_dez_forma: { id: 'vetor_leve', nome: 'VETOR LEVE', desc: '+10% EXTRA DE VELOCIDADE EM AREIA SECA + ENERGIA RESTAURADA.' },
+      lamina_dominio_anciao: { id: 'fio_ancestral', nome: 'FIO ANCESTRAL', desc: '+35% DE DANO NOS GOLPES NA ENSEADA E PROTEÇÃO CONTRA ECOS INSTÁVEIS.' },
+      motor_bio_forja: { id: 'escudo_bio', nome: 'ESCUDO BIO-FORJA', desc: '50% MENOS DANO DE ECOS INSTÁVEIS NA ENSEADA + ENERGIA RESTAURADA.' },
+    };
+    const buff = buffs[arch] ?? buffs.motor_bio_forja;
+    if (state.player) {
+      state.player.enseadaBuff = buff.id;
+      state.player.energy = state.player.maxEnergy ?? state.player.energy ?? 100;
+    }
+    if (state.progress.energiaMax != null) state.progress.energia = state.progress.energiaMax;
+    const primeira = !flags.enseada_bancada_calibrada;
+    flags.enseada_bancada_calibrada = true;
+    if (primeira && state.progress.archetype) grantArchetypeXp(state.progress, 20);
+    recordQuestEvent(state.progress, { type: 'enseada_bancada_calibrada', target: 'bancada' });
+    saveGame();
+    openDialogue({
+      speaker: 'BANCADA DE CAMPO',
+      dialogue: [
+        `CRISTAIS DE RESSONÂNCIA ALINHADOS PARA ${ARCHETYPES[arch]?.nome ?? 'SEU MÓDULO'}: ${buff.nome}.`,
+        buff.desc,
+        primeira ? 'CALIBRAÇÃO DE CAMPO REGISTRADA (+20 XP).' : 'SINTONIA DE CAMPO REATIVADA.',
+      ],
+    });
+    return;
+  }
+
+  if (object.id === 'torre_antena_enseada') {
+    const flags = state.progress.flags ??= {};
+    const climaAtual = nomeDoClima(state.clima);
+    const primeira = !flags.enseada_torre_lida;
+    flags.enseada_torre_lida = true;
+    if (primeira && state.progress.archetype) grantArchetypeXp(state.progress, 15);
+    recordQuestEvent(state.progress, { type: 'enseada_torre_lida', target: 'torre' });
+    saveGame();
+    const sinal = flags.frequencia666Registrada
+      ? 'A ANTENA CONFIRMA: O SINAL DE 66.6 MHz ESTÁ ANCORADO ENTRE A ESTAÇÃO E A BAÍA LESTE.'
+      : 'INTERFERÊNCIA DE SAL DETECTADA. USE [R] NO TERMINAL DE MANUTENÇÃO ABAIXO PARA ISOLAR A FREQUÊNCIA 66.6.';
+    const notaClima = (state.clima?.atual === 'chuva' || state.clima?.atual === 'ressaca')
+      ? `TEMPO (${climaAtual}): DESCARGAS ATMOSFÉRICAS CARREGAM O ECO DE TREINO AO SUL — DERROTÁ-LO RENDE BÔNUS DE TEMPESTADE.`
+      : `TEMPO (${climaAtual}): RECEPÇÃO LIMPA PELO ARQUIPÉLAGO.`;
+    openDialogue({
+      speaker: 'TORRE-ANTENA DE ESCUTA',
+      dialogue: [sinal, notaClima],
+    });
+    return;
+  }
+
+  if (object.id === 'barco_expedicao_enseada') {
+    const flags = state.progress.flags ??= {};
+    const primeira = !flags.enseada_barco_inspecionado;
+    flags.enseada_barco_inspecionado = true;
+    if (primeira && state.progress.archetype) grantArchetypeXp(state.progress, 15);
+    recordQuestEvent(state.progress, { type: 'enseada_navegacao_lida', target: 'baia' });
+    saveGame();
+    const archNota = {
+      mare_astral: 'MARÉ ASTRAL: O CASCO ESTÁ EM EQUILÍBRIO PERFEITO COM A CORRENTE DE LESTE.',
+      motor_bio_forja: 'BIO-FORJA: CALAFETAÇÃO E CORDAMES DE BRONZE EM ÓTIMO ESTADO PARA TRAVESSIA.',
+      lamina_dominio_anciao: 'DOMÍNIO ANCIÃO: PROA REFORÇADA CONTRA REBENTAÇÃO DE RECIFE.',
+      nucleo_dez_forma: 'NÚCLEO 10X: VELA ENROLADA PRONTA PARA VENTOS DE TRAVÉS.',
+    }[state.progress?.archetype] ?? 'VELEIRO LEVE DA EXPEDIÇÃO ANCORADO NA BAÍA.';
+    openDialogue({
+      speaker: 'BARCO DE EXPEDIÇÃO',
+      dialogue: [
+        archNota,
+        'ESTE BARCO COBRE A ROTA ATÉ O CAMINHO DAS CORRENTES. DESEJA ZARPAR AGORA?',
+      ],
+      choices: [
+        {
+          text: 'NAVEGAR: CAMINHO DAS CORRENTES',
+          onSelect: () => {
+            void usePortal({
+              id: 'barco_para_correntes',
+              label: 'CAMINHO DAS CORRENTES',
+              destino: { mapId: 'mar_caminho_das_correntes', spawnId: 'vindo_da_enseada' },
+              transition: 'fade',
+            });
+          },
+        },
+        { text: 'PERMANECER NA ENSEADA', onSelect: () => {} },
+      ],
+      cancelable: true,
+    });
+    return;
+  }
+
+  if (object.id === 'farolete_baia_enseada') {
+    const flags = state.progress.flags ??= {};
+    flags.enseada_farolete_lido = true;
+    recordQuestEvent(state.progress, { type: 'enseada_navegacao_lida', target: 'baia' });
+    saveGame();
+    const climaAtual = nomeDoClima(state.clima);
+    openDialogue({
+      speaker: 'FAROLETE DA BAÍA',
+      dialogue: [
+        `FEIXE TURQUESA ACESO SOB ${climaAtual}. AS BOIAS MARCAM A ENTRADA PROFUNDA DA ENSEADA.`,
+        'AO SUL FICA O PORTAL DO CAMINHO DAS CORRENTES; LOGO ABAIXO DO CAIS, O CONDUTO ABISSAL DA DÁRSENA.',
+      ],
+    });
+    return;
+  }
+
+  if (object.id === 'acampamento_vigilia_enseada') {
+    const flags = state.progress.flags ??= {};
+    if (state.player) {
+      const maxHp = state.player.maxHealth ?? 100;
+      const maxEn = state.player.maxEnergy ?? 100;
+      state.player.health = Math.min(maxHp, (state.player.health ?? maxHp) + Math.round(maxHp * 0.35));
+      state.player.energy = Math.min(maxEn, (state.player.energy ?? maxEn) + Math.round(maxEn * 0.4));
+    }
+    const primeira = !flags.enseada_acampamento_visitado;
+    flags.enseada_acampamento_visitado = true;
+    if (primeira && state.progress.archetype) grantArchetypeXp(state.progress, 15);
+    recordQuestEvent(state.progress, { type: 'enseada_vigilia_lida', target: 'vigilia' });
+    saveGame();
+    openDialogue({
+      speaker: 'ACAMPAMENTO DE VIGÍLIA',
+      dialogue: [
+        'BRASAS MORNAS E UM DIÁRIO DE CAMPO: "OS TRÊS RASTROS LEVAM A UMA PEQUENA LUZ ENTRE AS RUÍNAS E A MATA."',
+        primeira ? 'DESCANSO NA FOGUEIRA (+35% VIDA E +40% ENERGIA, +15 XP).' : 'ENERGIA E FÔLEGO RECUPERADOS JUNTO À FOGUEIRA.',
+      ],
+    });
+    return;
+  }
+
+  if (object.id === 'santuario_lumeo_enseada') {
+    const flags = state.progress.flags ??= {};
+    const temLumeo = !!flags.collected_lumeo_vinculo;
+    const primeira = !flags.enseada_santuario_lumeo_lido;
+    flags.enseada_santuario_lumeo_lido = true;
+    if (primeira && temLumeo && state.progress.archetype) grantArchetypeXp(state.progress, 20);
+    recordQuestEvent(state.progress, { type: 'enseada_vigilia_lida', target: 'vigilia' });
+    saveGame();
+    openDialogue({
+      speaker: 'SANTUÁRIO DE LÚMEO',
+      dialogue: temLumeo
+        ? [
+            'LÚMEO RESSOA COM O CRISTAL AZUL DO ALTAR, ILUMINANDO TODO O BOSQUE LESTE.',
+            primeira ? 'VÍNCULO HARMONIZADO NO SANTUÁRIO (+20 XP).' : 'A LUZ DO COMPANHEIRO CONTINUA ESTÁVEL JUNTO À SUA.',
+          ]
+        : [
+            'UM ALTAR DE PEDRA E MUSGO QUE GUARDA A MEMÓRIA DE UM PEQUENO ECO.',
+            'INVESTIGUE OS TRÊS RASTROS DA ENSEADA PARA DESPERTAR O SINAL DE LÚMEO.',
+          ],
+    });
+    return;
+  }
+
+  if (object.id === 'totem_eco_enseada') {
+    const climaAtual = nomeDoClima(state.clima);
+    const tempestade = state.clima?.atual === 'chuva' || state.clima?.atual === 'ressaca';
+    openDialogue({
+      speaker: 'MONÓLITO DE ECO',
+      dialogue: [
+        tempestade
+          ? `O TEMPO (${climaAtual}) INTENSIFICA O ECO DE TREINO AO LADO! DISPERSÁ-LO AGORA CONCEDE BÔNUS DE TEMPESTADE.`
+          : `TEMPO ATUAL (${climaAtual}). SINTONIZE CHUVA OU RESSACA NO RELÓGIO DE MARÉ PARA DESAFIAR O ECO CARREGADO.`,
+        'DICA TÁTICA: O ARQUÉTIPO DOMÍNIO ANCIÃO E O ESCUDO DA BANCADA REDUZEM O DANO DAS ZONAS DE ECO INSTÁVEL.',
+      ],
+    });
+    return;
+  }
+
   if (object.gate) {
     if (!checkGate(object.gate)) {
       openDialogue({

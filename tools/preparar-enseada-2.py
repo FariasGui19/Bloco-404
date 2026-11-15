@@ -97,6 +97,17 @@ SPECS = {
     'fonte-termal-enseada': 200,
     'banco-ostras-perola': 180,
     'carrilhao-vento-bambu': 190,
+    # Lote #5
+    'portal-caminho-correntes': 210,
+    'portico-trilha-praia': 200,
+    'barco-expedicao-enseada': 220,
+    'santuario-lumeo-pedra': 185,
+    'acampamento-vigilia-fogueira': 200,
+    'torre-antena-escuta': 210,
+    'farolete-baia-enseada': 210,
+    'bancada-campo-arquetipos': 195,
+    'baliza-mare-boia': 155,
+    'totem-eco-instavel': 190,
 }
 
 only = set(sys.argv[1:])
@@ -109,7 +120,7 @@ for name, max_dim in SPECS.items():
     image = Image.open(path).convert('RGBA')
     remove_border_bg(image, 'dark')
     remove_border_bg(image, 'white')
-    if name == 'carrilhao-vento-bambu':
+    if name in ('carrilhao-vento-bambu', 'santuario-lumeo-pedra'):
         remove_enclosed_white_pockets(image)
     box = image.getbbox()
     if not box:

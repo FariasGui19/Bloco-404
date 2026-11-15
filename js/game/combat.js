@@ -99,6 +99,16 @@ function registerDefeat(player, progress, target) {
     }
   }
   const completed = recordQuestEvent(progress, { type: 'defeat', target: 'training' });
+  if (state.world?.currentMapId === 'ilha_enseada_ecos' && (state.clima?.atual === 'chuva' || state.clima?.atual === 'ressaca')) {
+    progress.flags ??= {};
+    if (!progress.flags.enseada_eco_tempestade_disperso) {
+      progress.flags.enseada_eco_tempestade_disperso = true;
+      const bonus = grantArchetypeXp(progress, 15);
+      if (bonus.gained > 0) {
+        pushCombatText(player.x, player.y - .85, `+${bonus.gained} XP TEMPESTADE`, { color: '#7efce0', kind: 'xp', duration: 1.4 });
+      }
+    }
+  }
   for (const quest of completed) {
     player.ability ??= {};
     player.ability.lastMessage = `MISSÃO CONCLUÍDA • ${quest.title}`;
@@ -374,6 +384,10 @@ export function tryBasicAttack({ player, progress, map, targets, point, rng = Ma
   }
 
   const roll = rollBasicAttack(stats, rng);
+  if (best && state.world?.currentMapId === 'ilha_enseada_ecos' && player.enseadaBuff === 'fio_ancestral') {
+    roll.total = Math.max(1, Math.round(roll.total * 1.35));
+    roll.hits = roll.hits.map(h => Math.max(1, Math.round(h * 1.35)));
+  }
   if (best) {
     player.combat.damage = roll.total;
     player.combat.crit = roll.crit;

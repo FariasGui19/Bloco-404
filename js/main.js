@@ -481,6 +481,17 @@ await loadSprites([
     id: 'sala_nucleo_malha',
     src: 'assets/sprites/salas/malha-nucleo.png',
   },
+  // ---- ENSEADA DOS ECOS 2.0 — Lote #4 (tools/preparar-enseada-2.py) ----
+  { id: 'enseada_embarcadouro_mare', src: 'assets/sprites/enseada-2/embarcadouro-mare-astral.png' },
+  { id: 'enseada_espelho_arquetipo', src: 'assets/sprites/enseada-2/espelho-eco-arquetipo.png' },
+  { id: 'enseada_relogio_mare', src: 'assets/sprites/enseada-2/relogio-mare-solar.png' },
+  { id: 'enseada_ninho_tartarugas', src: 'assets/sprites/enseada-2/ninho-tartarugas-praia.png' },
+  { id: 'enseada_poleiro_aves', src: 'assets/sprites/enseada-2/poleiro-aves-costeiro.png' },
+  { id: 'enseada_banco_conchas', src: 'assets/sprites/enseada-2/banco-areia-conchas.png' },
+  { id: 'enseada_lanterna_marinha', src: 'assets/sprites/enseada-2/lanterna-marinha-flutuante.png' },
+  { id: 'enseada_fonte_termal', src: 'assets/sprites/enseada-2/fonte-termal-enseada.png' },
+  { id: 'enseada_banco_ostras', src: 'assets/sprites/enseada-2/banco-ostras-perola.png' },
+  { id: 'enseada_carrilhao_vento', src: 'assets/sprites/enseada-2/carrilhao-vento-bambu.png' },
   {
     id: 'metro_rail_kit',
     src: 'assets/sprites/tiles/metro-rail-kit.png',

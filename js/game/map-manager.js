@@ -185,6 +185,13 @@ export async function loadMap(mapId, spawnId = 'inicio') {
       state.progress.flags ??= {};
       state.progress.flags.visitou_viaduto_vetores = true;
     }
+    if (mapData.id === 'ilha_enseada_ecos' && state.progress) {
+      state.progress.flags ??= {};
+      state.progress.flags.visitou_enseada_ecos = true;
+      if (!state.progress.questLog?.ecos_da_enseada_viva) {
+        startQuest(state.progress, 'ecos_da_enseada_viva');
+      }
+    }
     reachFirstRoute(state.progress, mapData.id);
     // Salva a última localização somente se um perfil estiver ativo.
     rememberMapLocation(mapData.id, spawnId);

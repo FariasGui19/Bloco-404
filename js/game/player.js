@@ -49,7 +49,14 @@ export function getPlayerMoveSpeed(progress, player) {
   const veloz = form?.id === NUCLEO_VELOZ;
   const mastery = 1 + stats.moveSpeedPct + (veloz ? stats.formSpeedPct : 0);
   const formMultiplier = veloz ? VELOZ_SPEED_MULTIPLIER : getFormSpeedMultiplier(form);
-  return CONFIG.PLAYER_SPEED * formMultiplier * mastery;
+  let enseadaBonus = 1;
+  if (state.world?.currentMapId === 'ilha_enseada_ecos') {
+    const tile = state.world.currentMap?.aguaPraia?.[Math.floor(player?.y ?? 0)]?.[Math.floor(player?.x ?? 0)];
+    if (progress?.archetype === 'mare_astral' && (tile === 'M' || player?.nado?.ativo)) enseadaBonus = 1.1;
+    else if (progress?.archetype === 'nucleo_dez_forma' && tile === 'S') enseadaBonus = 1.08;
+    else if (progress?.archetype === 'motor_bio_forja') enseadaBonus = 1.04;
+  }
+  return CONFIG.PLAYER_SPEED * formMultiplier * mastery * enseadaBonus;
 }
 
 // Distância é acumulada e enviada em blocos para não recalcular maestria

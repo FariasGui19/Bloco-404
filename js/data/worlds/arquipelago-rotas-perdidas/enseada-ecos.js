@@ -712,6 +712,10 @@ export const map = {
       bloqueia: false, brilho: { cor: '#45f4f4', raio: 2.2, forca: 0.16 },
     },
     relevo('enseada_pilar_noroeste', 'pilar-palmeiras-a', 9.6, 35.7, 130),
+    // Estação 66.6 em cima da falésia: base rochosa sob a porta, com colisão.
+    relevo('enseada_falesia_estacao', 'falesia-alta', 26.5, 18.0, 300, { caixa: [24.8, 17.2, 28.2, 18.4] }),
+    // Portal NE sobre rochedo elevado, perto dos golfinhos e da tartaruga.
+    relevo('enseada_rochedo_portal_ne', 'rochedo-pe', 49.4, 20.6, 200, { caixa: [48.4, 20.0, 50.4, 21.2] }),
     relevo('enseada_rochas_mar_1', 'rochas-mar', 57.1, 22.0, 54, { espuma: 26, espumaY: -3 }),
     relevo('enseada_rochas_mar_2', 'rochas-mar', 57.6, 29.6, 54, { espelhar: true, espuma: 26, espumaY: -3 }),
     relevo('enseada_rochas_mar_3', 'rochas-mar', 50.7, 55.9, 56, { espuma: 28, espumaY: -3 }),

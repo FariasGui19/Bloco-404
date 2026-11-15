@@ -18,6 +18,9 @@ const assets = {
   enseada4_cairn: 'zen-stone-cairn',
 };
 const main = readFileSync('js/main.js', 'utf8');
+const renderer = readFileSync('js/engine/renderer.js', 'utf8');
+assert(renderer.includes("spriteId.startsWith('enseada3_')") && renderer.includes("spriteId.startsWith('enseada4_')"),
+  'as artes individuais das Enseadas 3 e 4 não podem ser recortadas como atlas HUB_PROPS');
 for (const [id, name] of Object.entries(assets)) {
   const source = `assets/source-art/enseada-4/${name}.png`;
   const sprite = `assets/sprites/enseada-4/${name}.png`;

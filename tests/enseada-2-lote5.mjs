@@ -164,7 +164,7 @@ state.progress.archetype = 'mare_astral';
 await interactAt(bancada.x, bancada.y, 'bancada_campo_enseada');
 assert.equal(state.player.enseadaBuff, 'pulso_salino');
 closeDialogue();
-Object.assign(state.player, { x: 5.5, y: 15.5 }); // tile 'M'
+Object.assign(state.player, { x: 4.5, y: 15.5 }); // tile 'M'
 const speedComBuff = getPlayerMoveSpeed(state.progress, state.player);
 state.player.enseadaBuff = null;
 const speedSemBuff = getPlayerMoveSpeed(state.progress, state.player);
@@ -176,7 +176,7 @@ await interactAt(torre.x, torre.y, 'torre_antena_enseada');
 closeDialogue();
 
 // Aproximação pela orla sudeste da baía (sem sobrepor portal rota_correntes nem banco de ostras)
-await interactAt(25.6, 18.2, 'barco_expedicao_enseada');
+await interactAt(27.5, 20.5, 'barco_expedicao_enseada');
 assert.equal(elements.dialogueChoices.children.length, 2);
 closeDialogue();
 

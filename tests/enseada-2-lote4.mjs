@@ -185,7 +185,7 @@ assert.equal(state.progress.flags.enseada_viva_concluida, true);
 assert(state.progress.inventory.includes('concha_eco_enseada'));
 
 // Velocidade diferenciada na Enseada (Maré Astral na areia molhada x Núcleo 10X na areia seca)
-Object.assign(state.player, { x: 5.5, y: 15.5 }); // tile 'M'
+Object.assign(state.player, { x: 4.5, y: 15.5 }); // tile 'M'
 const speedMareOrla = getPlayerMoveSpeed(state.progress, state.player);
 state.progress.archetype = 'lamina_dominio_anciao';
 const speedDominioOrla = getPlayerMoveSpeed(state.progress, state.player);

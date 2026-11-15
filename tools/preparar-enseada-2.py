@@ -160,6 +160,17 @@ SPECS = {
     'cais-madeira-pesca-b': 215,
     'ondulacao-mar-crista': 155,
     'borboletas-costa-vivas': 140,
+    # Lote #9 — Quadros B restantes para animar 100% dos marcos da Enseada
+    'portico-trilha-praia-b': 200,
+    'relogio-mare-solar-b': 170,
+    'torre-antena-escuta-b': 210,
+    'bancada-campo-arquetipos-b': 195,
+    'santuario-lumeo-pedra-b': 185,
+    'estela-navegadores-b': 205,
+    'gruta-concha-mar-b': 205,
+    'banco-ostras-perola-b': 180,
+    'bau-deriva-naufragio-b': 175,
+    'caixa-suprimentos-mar-b': 175,
 }
 
 only = set(sys.argv[1:])
@@ -174,10 +185,12 @@ for name, max_dim in SPECS.items():
     remove_border_bg(image, 'white')
     if name in (
         'carrilhao-vento-bambu', 'carrilhao-vento-bambu-b',
-        'santuario-lumeo-pedra',
+        'santuario-lumeo-pedra', 'santuario-lumeo-pedra-b',
         'banco-algas-douradas', 'banco-algas-douradas-b',
         'barco-expedicao-enseada-b', 'bandeirola-vento-expedicao',
-        'rede-cristal-ecos', 'rede-cristal-ecos-b', 'gruta-concha-mar',
+        'rede-cristal-ecos', 'rede-cristal-ecos-b',
+        'gruta-concha-mar', 'gruta-concha-mar-b',
+        'torre-antena-escuta-b',
     ):
         remove_enclosed_white_pockets(image, min_area=18)
     if name in (

@@ -547,6 +547,16 @@ await loadSprites([
   { id: 'enseada_banco_ostras_b', src: 'assets/sprites/enseada-2/banco-ostras-perola-b.png' },
   { id: 'enseada_bau_deriva_b', src: 'assets/sprites/enseada-2/bau-deriva-naufragio-b.png' },
   { id: 'enseada_caixa_suprimentos_b', src: 'assets/sprites/enseada-2/caixa-suprimentos-mar-b.png' },
+  // ---- ENSEADA DOS ECOS 2.0 — Lote #10 (+9 animações B para 100% dos itens vivos, costeiros e Conduto) ----
+  { id: 'enseada_bandeirola_vento_b', src: 'assets/sprites/enseada-2/bandeirola-vento-expedicao-b.png' },
+  { id: 'enseada_jardim_pedras_b', src: 'assets/sprites/enseada-2/jardim-pedras-equilibrio-b.png' },
+  { id: 'enseada_borboletas_vivas_b', src: 'assets/sprites/enseada-2/borboletas-costa-vivas-b.png' },
+  { id: 'enseada_banco_conchas_b', src: 'assets/sprites/enseada-2/banco-areia-conchas-b.png' },
+  { id: 'enseada_poleiro_aves_b', src: 'assets/sprites/enseada-2/poleiro-aves-costeiro-b.png' },
+  { id: 'enseada_ninho_tartarugas_b', src: 'assets/sprites/enseada-2/ninho-tartarugas-praia-b.png' },
+  { id: 'enseada_embarcadouro_mare_b', src: 'assets/sprites/enseada-2/embarcadouro-mare-astral-b.png' },
+  { id: 'enseada_cardume_vivo_b', src: 'assets/sprites/enseada-2/cardume-orla-vivo-b.png' },
+  { id: 'enseada_arco_conduto_b', src: 'assets/sprites/enseada-2/arco-conduto-mare-b.png' },
   {
     id: 'metro_rail_kit',
     src: 'assets/sprites/tiles/metro-rail-kit.png',

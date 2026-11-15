@@ -171,6 +171,16 @@ SPECS = {
     'banco-ostras-perola-b': 180,
     'bau-deriva-naufragio-b': 175,
     'caixa-suprimentos-mar-b': 175,
+    # Lote #10 — +9 quadros B para completar todos os itens vivos, portais e detalhes costeiros
+    'bandeirola-vento-expedicao-b': 185,
+    'jardim-pedras-equilibrio-b': 185,
+    'borboletas-costa-vivas-b': 140,
+    'banco-areia-conchas-b': 195,
+    'poleiro-aves-costeiro-b': 185,
+    'ninho-tartarugas-praia-b': 185,
+    'embarcadouro-mare-astral-b': 210,
+    'cardume-orla-vivo-b': 140,
+    'arco-conduto-mare-b': 220,
 }
 
 only = set(sys.argv[1:])
@@ -187,20 +197,46 @@ for name, max_dim in SPECS.items():
         'carrilhao-vento-bambu', 'carrilhao-vento-bambu-b',
         'santuario-lumeo-pedra', 'santuario-lumeo-pedra-b',
         'banco-algas-douradas', 'banco-algas-douradas-b',
-        'barco-expedicao-enseada-b', 'bandeirola-vento-expedicao',
+        'barco-expedicao-enseada-b',
+        'bandeirola-vento-expedicao', 'bandeirola-vento-expedicao-b',
         'rede-cristal-ecos', 'rede-cristal-ecos-b',
         'gruta-concha-mar', 'gruta-concha-mar-b',
         'torre-antena-escuta-b',
+        'poleiro-aves-costeiro-b',
     ):
         remove_enclosed_white_pockets(image, min_area=18)
     if name in (
         'coral-luminescente-azul', 'coral-luminescente-azul-b',
         'rede-cristal-ecos', 'rede-cristal-ecos-b',
         'banco-algas-douradas', 'banco-algas-douradas-b',
-        'cardume-orla-vivo', 'ondulacao-mar-crista',
+        'cardume-orla-vivo', 'cardume-orla-vivo-b',
+        'ondulacao-mar-crista', 'arco-conduto-mare-b',
     ):
         defringe_white_halo(image, passes=3)
-    if name == 'borboletas-costa-vivas':
+    if name == 'arco-conduto-mare-b':
+        # Flood-fill externo a partir do alpha 0 removendo o halo pastel ao redor dos corais externos
+        px_a = image.load()
+        w_a, h_a = image.size
+        vis_a = bytearray(w_a * h_a)
+        qa = deque()
+        def is_pale_halo(r, g, b, a):
+            return a == 0 or (r > 102 and g > 200 and b > 210 and (b - r) < 125)
+        for yy in range(h_a):
+            for xx in range(w_a):
+                if px_a[xx, yy][3] == 0:
+                    vis_a[yy * w_a + xx] = 1
+                    qa.append((xx, yy))
+        while qa:
+            cx, cy = qa.popleft()
+            px_a[cx, cy] = (0, 0, 0, 0)
+            for nx, ny in ((cx - 1, cy), (cx + 1, cy), (cx, cy - 1), (cx, cy + 1)):
+                if 0 <= nx < w_a and 0 <= ny < h_a:
+                    nidx = ny * w_a + nx
+                    if not vis_a[nidx] and is_pale_halo(*px_a[nx, ny]):
+                        vis_a[nidx] = 1
+                        qa.append((nx, ny))
+        defringe_white_halo(image, passes=2)
+    if name in ('borboletas-costa-vivas', 'borboletas-costa-vivas-b'):
         remove_enclosed_white_pockets(image, min_area=12)
         for _ in range(14):
             w_b, h_b = image.size

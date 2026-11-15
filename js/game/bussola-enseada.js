@@ -52,8 +52,8 @@ export function getEnseadaBuffMeta(buffId) {
 }
 
 const ENSEADA_LANDMARKS = Object.freeze([
-  { flag: 'collected_enseada_rastro_mar', label: 'Vestígio Marinho (oeste)', coords: '10, 18' },
-  { flag: 'collected_enseada_rastro_pedra', label: 'Vestígio da Pedra (norte)', coords: '15, 10' },
+  { flag: 'collected_enseada_rastro_mar', label: 'Vestígio Marinho (oeste)', coords: '10, 14' },
+  { flag: 'collected_enseada_rastro_pedra', label: 'Vestígio da Pedra (norte)', coords: '19, 12' },
   { flag: 'collected_enseada_rastro_mata', label: 'Vestígio da Mata (sul)', coords: '21, 20' },
   { flag: 'companheiro_lumeo', label: 'Vínculo com Lúmeo', coords: '20, 19' },
   { flag: 'conduto_enseada_mare', label: 'Conduto da Maré Astral (baía leste)', coords: '28, 12' },

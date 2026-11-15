@@ -113,6 +113,7 @@ const agua = new Set([
   'lanterna_marinha_norte', 'lanterna_marinha_sul', 'arco_conduto_retorno_mare',
   'porta_estacao_666_visual', 'terminal_frequencia_666', 'portico_trilha_praia',
   'travessia_pedras_agua',
+  'golfinho_saltando', 'golfinho_nadando', 'tartaruga_marinha', 'corais_amarelos',
 ]);
 for (const o of marcos) {
   if (agua.has(o.id)) continue;

@@ -35,7 +35,7 @@ for (const [id, name] of Object.entries(assets)) {
 for (const [objectId, spriteId] of [
   ['torre_antena_enseada', 'enseada4_torre_vigilia'],
   ['relogio_mare_enseada', 'enseada4_relogio'],
-  ['bancada_campo_enseada', 'enseada4_mesa_campo'],
+  ['bancada_campo_enseada', 'enseada_bancada_campo'],
   ['acampamento_vigilia_enseada', 'enseada4_fogueira'],
   ['maleta_expedicao_enseada', 'enseada4_caixas'],
   ['tenda_expedicao_enseada', 'enseada4_tenda'],
@@ -53,6 +53,9 @@ const barco = enseada.objects.find(o => o.id === 'barco_expedicao_enseada');
 const cais = enseada.objects.find(o => o.id === 'cais_madeira_pesca_enseada');
 assert(barco && barco.renderizar === false, 'o hotspot do barco não deve duplicar o barco já desenhado no sprite do cais');
 assert(renderer.includes('object.invisivel || object.renderizar === false'), 'o renderer deve respeitar renderizar=false sem ocultar interações');
+for (const id of ['bancada_campo_enseada', 'piscina_mare_viva_enseada', 'gruta_concha_enseada', 'algas_douradas_enseada']) {
+  assert(renderer.includes(`object.id === '${id}'`), `${id} precisa de animação visual de interação`);
+}
 assert(cais && cais.larguraPx >= 350, 'o cais com barco precisa manter a escala da referência');
 assert(enseada.objects.find(o => o.id === 'piscina_mare_viva_enseada')?.larguraPx >= 240,
   'a piscina de maré precisa usar a escala do grande poço rochoso da referência');

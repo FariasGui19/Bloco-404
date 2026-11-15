@@ -44,16 +44,17 @@ assert.equal(cartaMare(map,{x:56,y:32},'vindo_da_darsena').destino.nome,'ENSEADA
 await loadMap('ilha_enseada_ecos','vindo_da_darsena_mare');
 const gate=state.portals.find(p=>p.id==='retorno_darsena_mare');
 // A zona da Enseada é alcançável por água a partir da costa.
-Object.assign(state.player,{x:24.5,y:15.5});
-for(let i=0;i<100;i++) {const dx=28.5-state.player.x,dy=12.5-state.player.y,d=Math.hypot(dx,dy);if(d<.1)break;moveWithCollision(state.world.currentMap,state.player,dx/d*.08,dy/d*.08,.25,agua);}
-assert(Math.hypot(state.player.x-28.5,state.player.y-12.5)<.2,'passagem da Enseada acessível nadando');
+const gatePoint={x:gate.x+.5,y:gate.y+.5};
+Object.assign(state.player,{x:26.5,y:5.5});
+for(let i=0;i<150;i++) {const dx=gatePoint.x-state.player.x,dy=gatePoint.y-state.player.y,d=Math.hypot(dx,dy);if(d<.1)break;moveWithCollision(state.world.currentMap,state.player,dx/d*.08,dy/d*.08,.25,agua);}
+assert(Math.hypot(state.player.x-gatePoint.x,state.player.y-gatePoint.y)<.2,'passagem da Enseada acessível nadando');
 state.progress.flags.rota_livre_enseada_aberta=false; assert.equal(await usePortal(gate),false);
 state.progress.flags.rota_livre_enseada_aberta=true;state.progress.archetype='motor_bio_forja';assert.equal(await usePortal(gate),false);
 Object.assign(state.player,{x:gate.x+.5,y:gate.y+.5}); assert.match(getInteractionPrompt(findNearestInteraction()),/INATIVO/);
 state.progress.archetype='mare_astral';state.world.portalLockUntil=0;state.player.nado={...criarEstadoNado(),ativo:true,ar:7,profundidade:1.6,submerso:true};
 // Inicializar fora da zona, entrar e disparar a troca automática.
-Object.assign(state.player,{x:26.5,y:12.5});assert.equal(atualizarPassagemNado(),false);
-Object.assign(state.player,{x:28.5,y:12.5});assert(await atualizarPassagemNado());
+Object.assign(state.player,{x:26.5,y:5.5});assert.equal(atualizarPassagemNado(),false);
+Object.assign(state.player,gatePoint);assert(await atualizarPassagemNado());
 assert.equal(state.world.currentMapId,map.id);assert.equal(state.player.nado.ar,7,'troca não restaura ar');
 // Entrada da base: colisão e zona no mesmo ponto, sem prompt.
 state.world.portalLockUntil=0;Object.assign(state.player,{x:84,y:30.5});atualizarPassagemNado();

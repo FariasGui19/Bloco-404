@@ -42,7 +42,7 @@ for (const [objId, spriteB] of [
   ['portico_trilha_praia', 'enseada3_portico_oeste'],
   ['relogio_mare_enseada', 'enseada4_relogio'],
   ['torre_antena_enseada', 'enseada4_torre_vigilia'],
-  ['bancada_campo_enseada', 'enseada4_mesa_campo'],
+  ['bancada_campo_enseada', 'enseada_bancada_campo_b'],
   ['santuario_lumeo_enseada', 'enseada_santuario_lumeo_b'],
   ['estela_navegadores_enseada', 'enseada_estela_navegadores_b'],
   ['gruta_concha_enseada', 'enseada4_gruta'],

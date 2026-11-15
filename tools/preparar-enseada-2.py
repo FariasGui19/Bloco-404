@@ -138,6 +138,17 @@ SPECS = {
     'jardim-pedras-equilibrio': 185,
     'bau-deriva-naufragio': 175,
     'caixa-suprimentos-mar': 175,
+    # Lote #7 — Quadros B de animação + peças vivas de organização/orla
+    'acampamento-vigilia-fogueira-b': 200,
+    'portal-caminho-correntes-b': 210,
+    'farolete-baia-enseada-b': 210,
+    'totem-eco-instavel-b': 190,
+    'carrilhao-vento-bambu-b': 190,
+    'banco-algas-douradas-b': 180,
+    'barco-expedicao-enseada-b': 220,
+    'trilha-pedras-costa': 130,
+    'cardume-orla-vivo': 140,
+    'bandeirola-vento-expedicao': 185,
 }
 
 only = set(sys.argv[1:])
@@ -150,9 +161,15 @@ for name, max_dim in SPECS.items():
     image = Image.open(path).convert('RGBA')
     remove_border_bg(image, 'dark')
     remove_border_bg(image, 'white')
-    if name in ('carrilhao-vento-bambu', 'santuario-lumeo-pedra', 'banco-algas-douradas', 'rede-cristal-ecos', 'gruta-concha-mar'):
+    if name in (
+        'carrilhao-vento-bambu', 'carrilhao-vento-bambu-b',
+        'santuario-lumeo-pedra',
+        'banco-algas-douradas', 'banco-algas-douradas-b',
+        'barco-expedicao-enseada-b', 'bandeirola-vento-expedicao',
+        'rede-cristal-ecos', 'gruta-concha-mar',
+    ):
         remove_enclosed_white_pockets(image, min_area=18)
-    if name in ('coral-luminescente-azul', 'rede-cristal-ecos', 'banco-algas-douradas'):
+    if name in ('coral-luminescente-azul', 'rede-cristal-ecos', 'banco-algas-douradas', 'banco-algas-douradas-b', 'cardume-orla-vivo'):
         defringe_white_halo(image, passes=3)
     box = image.getbbox()
     if not box:

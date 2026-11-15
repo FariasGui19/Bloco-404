@@ -514,6 +514,17 @@ await loadSprites([
   { id: 'enseada_jardim_pedras', src: 'assets/sprites/enseada-2/jardim-pedras-equilibrio.png' },
   { id: 'enseada_bau_deriva', src: 'assets/sprites/enseada-2/bau-deriva-naufragio.png' },
   { id: 'enseada_caixa_suprimentos', src: 'assets/sprites/enseada-2/caixa-suprimentos-mar.png' },
+  // ---- ENSEADA DOS ECOS 2.0 — Lote #7 (Quadros B de animação + peças vivas de orla/trilha) ----
+  { id: 'enseada_acampamento_vigilia_b', src: 'assets/sprites/enseada-2/acampamento-vigilia-fogueira-b.png' },
+  { id: 'enseada_portal_correntes_b', src: 'assets/sprites/enseada-2/portal-caminho-correntes-b.png' },
+  { id: 'enseada_farolete_baia_b', src: 'assets/sprites/enseada-2/farolete-baia-enseada-b.png' },
+  { id: 'enseada_totem_eco_b', src: 'assets/sprites/enseada-2/totem-eco-instavel-b.png' },
+  { id: 'enseada_carrilhao_vento_b', src: 'assets/sprites/enseada-2/carrilhao-vento-bambu-b.png' },
+  { id: 'enseada_algas_douradas_b', src: 'assets/sprites/enseada-2/banco-algas-douradas-b.png' },
+  { id: 'enseada_barco_expedicao_b', src: 'assets/sprites/enseada-2/barco-expedicao-enseada-b.png' },
+  { id: 'enseada_trilha_pedras', src: 'assets/sprites/enseada-2/trilha-pedras-costa.png' },
+  { id: 'enseada_cardume_vivo', src: 'assets/sprites/enseada-2/cardume-orla-vivo.png' },
+  { id: 'enseada_bandeirola_vento', src: 'assets/sprites/enseada-2/bandeirola-vento-expedicao.png' },
   {
     id: 'metro_rail_kit',
     src: 'assets/sprites/tiles/metro-rail-kit.png',

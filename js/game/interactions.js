@@ -18,7 +18,7 @@ import { recordQuestEvent } from './quests.js';
 import { grantArchetypeXp, getArchetypeLevel } from './rpg.js';
 import { lerArvore, DEGRAUS } from './nado-arvore.js';
 import { recordFrequencyAnchor, countFrequencyAnchors, prepareFrequencyCrossing } from './frequencia-quest.js';
-import { playCutscene, THRESHOLD_SCENES } from '../ui/cutscene.js';
+import { playCutscene, THRESHOLD_SCENES, CITADEL_MARE_EPILOGUE_SCENES } from '../ui/cutscene.js';
 
 const DEFAULT_INTERACTION_DISTANCE = 1.35;
 
@@ -101,6 +101,9 @@ export function findNearestInteraction() {
 
   for (const object of state.objects ?? []) {
     if (!object.interacao) continue;
+    if (object.invisivel) continue;
+    if (object.hideWhenFlag && state.progress.flags?.[object.hideWhenFlag]) continue;
+    if (object.showWhenFlag && !state.progress.flags?.[object.showWhenFlag]) continue;
     if (object.interacao.somenteSubmerso && (!player.nado?.ativo || !player.nado.submerso || player.nado.profundidade <= 1.25)) continue;
     if (isGateOpen(object)) continue;
     consider('object', object, 4);
@@ -310,6 +313,49 @@ function interactWithObject(object) {
       `ÂNCORAS SINCRONIZADAS: ${n}/3. ORIGEM, RETORNO E MEMÓRIA.`,
       statusLine,
     ] }); return;
+  }
+  if (object.id === 'selo_convergencia_666') {
+    const flags = state.progress.flags ??= {};
+    const relics = ['selo_codigo_queimado', 'nucleo_vigilante_forjado', 'insignia_vigilia_404'].filter(id => state.progress.inventory?.includes(id)).length;
+    const rondas = flags.cidadela_rondas_concluidas ?? 0;
+    if (state.player) {
+      state.player.health = state.player.maxHealth ?? state.player.health;
+      state.player.energy = state.player.maxEnergy ?? state.player.energy;
+    }
+    const archNote = {
+      mare_astral: 'MARÉ ASTRAL: A CORRENTE DE 66.6 MHz SE ACALMOU COMO ÁGUA DE ENSEADA. O MÓDULO RESPONDE EM PLENA SINTONIA.',
+      nucleo_dez_forma: 'NÚCLEO X10: OS VETORES DA CIDADELA FORAM COMPRIMIDOS E ARQUIVADOS SEM PERDA DE SINAL.',
+      lamina_dominio_anciao: 'DOMÍNIO ANCIÃO: O JURAMENTO DA VIGÍLIA FOI HONRADO; A LÂMINA GUARDA O LIMIAR.',
+      motor_bio_forja: 'BIO-FORJA: O REATOR E O CHASSI DO VIGILANTE PULSAM NO MESMO COMPASSO ESTÁVEL.',
+    }[state.progress.archetype] ?? 'MÓDULO SINCRONIZADO COM O SELO DA ESTAÇÃO 66.6.';
+    const summaryLine = flags.cidadela_100_porcento
+      ? `CONVERGÊNCIA 100% SELADA • RELÍQUIAS ${relics}/3 • RONDAS ${rondas} • PROTOCOLO DA VIGÍLIA CONCLUÍDO.`
+      : flags.cidadela_protocolo_concluido
+      ? `PROTOCOLO DA VIGÍLIA CONCLUÍDO • RELÍQUIAS ${relics}/3 • RONDAS ${rondas}. CIDADELA PRONTA PARA O FECHAMENTO 100%.`
+      : `REATOR DA CIDADELA ESTÁVEL • RELÍQUIAS ${relics}/3 • RONDAS ${rondas}. COMPLETE A VIGÍLIA E AS FENDAS PARA SELAR 100%.`;
+    openDialogue({
+      speaker: 'SELO DE CONVERGÊNCIA // 66.6',
+      dialogue: [
+        summaryLine,
+        archNote,
+        'VIDA E ENERGIA DO MÓDULO RESTAURADAS NO LIMIAR.',
+      ],
+      choicesAfterDialogue: true,
+      choices: [
+        {
+          text: 'PROJETAR VISÃO DE DESFECHO',
+          onSelect: () => {
+            void (async () => {
+              flags.estacao666_epilogo_visto = true;
+              saveGame();
+              await playCutscene(CITADEL_MARE_EPILOGUE_SCENES);
+            })();
+          },
+        },
+        { text: 'MANTER SINTONIA', onSelect: () => {} },
+      ],
+    });
+    return;
   }
   if (object.id === 'anel_limiar_666') {
     if (!state.progress.flags?.freq666_limiar_estavel) {

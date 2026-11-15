@@ -39,6 +39,10 @@ export const CITADEL_PROTOCOL_SCENES = [
   { image:'assets/cutscenes/cidadela-protocolo-desperto.jpg', eyebrow:'CONVERGÊNCIA // 66.6 MHz', title:'O PROTOCOLO DA VIGÍLIA', text:'Três feixes harmônicos unem o Reator Estabilizado, a Sonda NEXO-04 e a Baliza da Arena. O Vigilante silencia em repouso definitivo: sua guarda foi assumida pelo Bloco 404.', note:'Relíquia Insígnia da Vigília // 404 integrada ao Códex. A Cidadela 404 está pronta para o salto final.' },
 ];
 
+export const CITADEL_MARE_EPILOGUE_SCENES = [
+  { image:'assets/cutscenes/cidadela-mare-desfecho.jpg', eyebrow:'ESTAÇÃO 66.6 // CONVERGÊNCIA CONCLUÍDA', title:'A ÚLTIMA MARÉ DE 66.6 MHz', text:'Diante do anel silencioso e das águas noturnas da Enseada dos Ecos, os monitores da Estação 66.6 registram estabilidade absoluta. O Vigilante descansou; o Bloco 404 fechou o ciclo da Cidadela do Código Queimado.', note:'Dimensão Cidadela 404 concluída. O Selo de Convergência permanece ancorado na Estação 66.6 para os próximos saltos.' },
+];
+
 let open = false;
 export function isCutsceneOpen() { return open; }
 

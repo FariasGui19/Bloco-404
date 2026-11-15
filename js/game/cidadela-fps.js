@@ -6,7 +6,7 @@ import { usePortal } from './portals.js';
 import { grantArchetypeXp } from './rpg.js';
 import { getActiveUltimate } from './ultimate.js';
 import { getUnlockState } from './unlocks.js';
-import { playCutscene, CITADEL_END_SCENES, CITADEL_RETURN_SCENES, CITADEL_PROTOCOL_SCENES } from '../ui/cutscene.js';
+import { playCutscene, CITADEL_END_SCENES, CITADEL_RETURN_SCENES, CITADEL_PROTOCOL_SCENES, CITADEL_MARE_EPILOGUE_SCENES } from '../ui/cutscene.js';
 import { citadelAudioEnabled, toggleCitadelAudio, playCitadelSound } from './cidadela-audio.js';
 import { CITADEL_DECOR, CITADEL_ARCHIVES, CITADEL_POSTGAME, CITADEL_BREACHES, CITADEL_BREACH_CONSOLE, CITADEL_NULL_MONITORS, CITADEL_ECHOES, CITADEL_ECHO_TERMINAL, CITADEL_ECHO_DECOR, CITADEL_WORKSHOP, CITADEL_ENERGY_CELLS, CITADEL_CRAFT_BENCH, CITADEL_PATROL_CONSOLE, CITADEL_DORMANT_GUARDIAN, CITADEL_BARRELS, CITADEL_SHIELD_CELLS, CITADEL_SECRET_E1M1, CITADEL_OVERDRIVE_CELL, CITADEL_REACTOR_CONSOLE, CITADEL_PROTOCOL_BEACON, sectorNameAt } from '../data/worlds/cidadela-404/cidadela.js';
 import { citadelMissions, missionObjective, interactCitadelMission, interactProtocolMission, isCitadelComplete } from './cidadela-missoes.js';
@@ -136,7 +136,7 @@ export function createCitadelRuntime(progress) {
       ? 'NEXO-04: CIDADELA 404 100% ESTABILIZADA. TODO O SETOR RESPONDE AO SEU MÓDULO.'
       : flags.cidadela_estavel
         ? 'NEXO-04: REATOR ESTÁVEL. A SONDA AGUARDA NA ARENA; A OFICINA ABRIU AO SUL.'
-        : 'NEXO-04: A LINHA ESTÁ ABERTA. ENCONTRE OS TRÊS REGISTROS.', messageTime: 8, time: 0, damage: 0, shieldHit: 0, hit: 0, fx: 0, signalTime:0, signalCooldown:0, signalMonitorId:null, weaponDeploy:0, fxKind: '', suppressed: 0, returning: false, training:false, patrol:false, breach:null, radioQueue:[],stepDistance:0,walkPhase:0,walkBlend:0, echoAnchor:0, echoTerminalCooldown:0, workshopHit:0, workshopTrial:null, localProgress:null, vectorCharge:0, perkIcon:null, panel: null };
+        : 'NEXO-04: A LINHA ESTÁ ABERTA. ENCONTRE OS TRÊS REGISTROS.', messageTime: 8, time: 0, damage: 0, shieldHit: 0, hit: 0, fx: 0, shake: 0, ultFlash: 0, signalTime:0, signalCooldown:0, signalMonitorId:null, weaponDeploy:0, fxKind: '', suppressed: 0, returning: false, training:false, patrol:false, breach:null, radioQueue:[],stepDistance:0,walkPhase:0,walkBlend:0, echoAnchor:0, echoTerminalCooldown:0, workshopHit:0, workshopTrial:null, localProgress:null, vectorCharge:0, perkIcon:null, panel: null };
 }
 function notice(g, text, seconds=4) { g.message=text; g.messageTime=seconds; }
 function queueRadio(g,text) { if(text && g.radioQueue.length<6) g.radioQueue.push(text); }
@@ -202,6 +202,18 @@ export function abilityVisualFrame(fx,reduce=false) {
   if(fx<=0) return null;
   if(reduce || fx>.55) return 'base';
   return fx<.4?'tail':'mid';
+}
+export function ultimateVisualFrame(mode,fx,reduce=false) {
+  if(fx<=0) return null;
+  if(reduce) return `ultimate_${mode}`;
+  const p=clamp(1-fx,0,1);
+  if(mode==='mare') return p<.34?'ultimate_mare':p<.68?'ultimate_mare_b':'ultimate_mare_c';
+  return (p<.35 || p>.72)?`ultimate_${mode}`:`ultimate_${mode}_b`;
+}
+export function meleeVisualFrame(mode,fx,reduce=false) {
+  if(fx<=0) return null;
+  if(reduce || mode!=='mare') return `melee_${mode}`;
+  return clamp(1-fx/.32,0,1)<.46?'melee_mare':'melee_mare_b';
 }
 // Mantém a pose final legível antes do desaparecimento; não muda a duração.
 export function enemyDeathAlpha(death,reduce=false) { return reduce?1:clamp(death/.32,0,1); }
@@ -372,7 +384,7 @@ function fire(map, flags, p, progress, g) {
 }
 function meleeBash(map, flags, p, progress, g) {
   if (g.melee > 0) return;
-  g.melee = 1.15; g.fx = .32; g.fxKind = 'melee'; playCitadelSound('melee');
+  g.melee = 1.15; g.fx = .32; g.fxKind = 'melee'; g.shake = Math.max(g.shake ?? 0, .14); playCitadelSound('melee');
   const mod = MODULES[progress.archetype] ?? MODULES.motor_bio_forja;
   let hitAny = false, parried = 0, bonusEn = 0;
   for (const shot of g.shots) {
@@ -490,7 +502,7 @@ function ultimate(map, flags, p, g, progress, input) {
   if ((p.ultimate.cooldown ?? 0)>0) { notice(g,'ULTIMATE EM RECARGA',2); return; }
   const def=active.definition;
   if ((p.energy ?? 0)<def.cost) { notice(g,'ENERGIA INSUFICIENTE PARA ULTIMATE',2); return; }
-  p.energy-=def.cost; playCitadelSound('ultimate'); g.fx=1; g.fxKind='ultimate'; p.ultimate.cooldown=def.cooldown; p.ultimate.casts=(p.ultimate.casts ?? 0)+1;
+  p.energy-=def.cost; playCitadelSound('ultimate'); g.fx=1; g.fxKind='ultimate'; g.shake=.45; g.ultFlash=.38; p.ultimate.cooldown=def.cooldown; p.ultimate.casts=(p.ultimate.casts ?? 0)+1;
   healPlayer(p,progress,p.maxHealth*(def.healPct ?? 0));
   // A geometria e o bônus da ferramenta escolhida também são respeitados
   // nesta perspectiva. O buff é local e não atravessa a saída da dimensão.
@@ -498,18 +510,35 @@ function ultimate(map, flags, p, g, progress, input) {
   if(def.buff?.duration>0) g.ultBuff={...def.buff,timeLeft:def.buff.duration};
   if(kind==='guard') g.guard=Math.max(g.guard,def.guard ?? 0);
   if(kind==='dash') startDash(g,input,.3);
+  const mareRadius=def.radius ?? def.range ?? 5;
   for(const b of (g.barrels ?? [])) {
     const d=Math.hypot(b.x-p.x,b.y-p.y), angle=Math.abs(angleDiff(Math.atan2(b.y-p.y,b.x-p.x)-g.angle));
     const inArc=!directional || Math.cos(angle)>=(def.arc ?? .25);
-    if(!b.dead && d<(def.radius ?? def.range ?? 5) && inArc && visible(map,flags,p.x,p.y,b.x,b.y)) detonateBarrel(map,flags,p,progress,g,b,true);
+    if(!b.dead && d<mareRadius && inArc && visible(map,flags,p.x,p.y,b.x,b.y)) detonateBarrel(map,flags,p,progress,g,b,true);
   }
   for(const e of [...g.enemies,...(g.boss.dead?[]:[g.boss])]) {
     const d=Math.hypot(e.x-p.x,e.y-p.y), angle=Math.abs(angleDiff(Math.atan2(e.y-p.y,e.x-p.x)-g.angle));
     const inArc=!directional || Math.cos(angle)>=(def.arc ?? .25);
-    if(e.hp>0 && d<(def.radius ?? def.range ?? 5) && inArc && (e.type!=='boss' || angle<.10) && visible(map,flags,p.x,p.y,e.x,e.y)) hurtEnemy(g,e,Math.round((def.damage ?? 30)*(1+(g.relicInsignia?.10:0))));
+    if(e.hp>0 && d<mareRadius && inArc && (e.type!=='boss' || angle<.10) && visible(map,flags,p.x,p.y,e.x,e.y)) {
+      hurtEnemy(g,e,Math.round((def.damage ?? 30)*(1+(g.relicInsignia?.10:0))));
+      if(progress.archetype==='mare_astral' && e.hp>0) {
+        addImpact(g,e.x,e.y,'cyan');
+        if(e.type!=='boss') {
+          const ka=Math.atan2(e.y-p.y,e.x-p.x);
+          move(map,flags,e,Math.cos(ka)*1.15,Math.sin(ka)*1.15);
+        }
+      }
+    }
   }
   if(progress.archetype==='motor_bio_forja') g.shield=Math.max(g.shield,4);
-  if(progress.archetype==='mare_astral') for(const e of g.enemies) if(Math.hypot(e.x-p.x,e.y-p.y)<(def.radius ?? def.range ?? 5) && visible(map,flags,p.x,p.y,e.x,e.y)) e.slow=Math.max(e.slow,3);
+  if(progress.archetype==='mare_astral') {
+    for(const e of g.enemies) if(Math.hypot(e.x-p.x,e.y-p.y)<mareRadius && visible(map,flags,p.x,p.y,e.x,e.y)) e.slow=Math.max(e.slow,3);
+    for(const shot of g.shots) {
+      if(shot.life>0 && Math.hypot(shot.x-p.x,shot.y-p.y)<mareRadius && visible(map,flags,p.x,p.y,shot.x,shot.y)) {
+        shot.life=0; addImpact(g,shot.x,shot.y,'shield');
+      }
+    }
+  }
   if(progress.archetype==='nucleo_dez_forma' && kind!=='guard') startDash(g,input,.35);
   addEcho(g,32,{player:p,progress,world:{currentMap:map}});
   notice(g,`SOBRECARGA • ${def.name}`,3);
@@ -580,7 +609,7 @@ export function updateCitadel(dt, state, input) {
   }
   g.time+=step;
   const jamBefore=g.jam;
-  for (const k of ['fire','melee','jam','q','boost','scan','dash','shield','guard','overdrive','comboTimer','echoLock','messageTime','damage','shieldHit','hit','fx','suppressed','vectorCharge','echoAnchor','echoTerminalCooldown','workshopHit','signalTime','signalCooldown','weaponDeploy']) g[k]=Math.max(0,(g[k] ?? 0)-step);
+  for (const k of ['fire','melee','jam','q','boost','scan','dash','shield','guard','overdrive','comboTimer','echoLock','messageTime','damage','shieldHit','hit','fx','shake','ultFlash','suppressed','vectorCharge','echoAnchor','echoTerminalCooldown','workshopHit','signalTime','signalCooldown','weaponDeploy']) g[k]=Math.max(0,(g[k] ?? 0)-step);
   if(g.comboTimer===0 && g.combo>0) g.combo=0;
   if(g.pendingEnergy>0) { p.energy=Math.min(p.maxEnergy ?? 100,(p.energy ?? 0)+g.pendingEnergy); g.pendingEnergy=0; }
   if(g.boss && g.boss.shieldFlash>0) g.boss.shieldFlash=Math.max(0,g.boss.shieldFlash-step);
@@ -661,9 +690,12 @@ export function updateCitadel(dt, state, input) {
     const target=nearestInteraction(map,flags,p);
     if (target?.kind==='exit') {
       g.returning=true; input.fpsFireHeld=false;
-      const playReturn=flags.cidadela_estavel && !flags.cidadela_retorno_visto && typeof document !== 'undefined' && document.body;
+      const canShowScenes=typeof document !== 'undefined' && document.body;
+      const playReturn=flags.cidadela_estavel && !flags.cidadela_retorno_visto && canShowScenes;
+      const playEpilogue=(flags.cidadela_protocolo_concluido || flags.cidadela_100_porcento) && !flags.estacao666_epilogo_visto && canShowScenes;
       void (async () => {
         if(playReturn) { flags.cidadela_retorno_visto=true; saveGame(); await playCutscene(CITADEL_RETURN_SCENES); }
+        else if(playEpilogue) { flags.estacao666_epilogo_visto=true; saveGame(); await playCutscene(CITADEL_MARE_EPILOGUE_SCENES); }
         const ok=await usePortal({id:'retorno_cidadela',label:'ESTAÇÃO 66.6',destino:{mapId:'estacao_limiar_666',spawnId:'vindo_da_cidadela'}});
         if(!ok) g.returning=false;
       })();
@@ -1154,7 +1186,12 @@ function setupBuffer() {
     ...['mare','nucleo','dominio','bio'].flatMap(mode=>[
       [`melee_${mode}`,`assets/sprites/cidadela-404/melee-${mode}.png`],
       [`ultimate_${mode}`,`assets/sprites/cidadela-404/ultimate-${mode}.png`],
+      [`ultimate_${mode}_b`,`assets/sprites/cidadela-404/ultimate-${mode}-b.png`],
     ]),
+    ['ultimate_mare_c','assets/sprites/cidadela-404/ultimate-mare-c.png'],
+    ['melee_mare_b','assets/sprites/cidadela-404/melee-mare-b.png'],
+    ['weapon_mare_pulse','assets/sprites/cidadela-404/canhao-mare-pulso.png'],
+    ['hud_weapon_mare_active','assets/sprites/cidadela-404/hud-arma-mare-ativa.png'],
     ['elite_walk_a','assets/sprites/cidadela-404/imp-elite-passo-a.png'],
     ['elite_walk_b','assets/sprites/cidadela-404/imp-elite-passo-b.png'],
     ['elite_side_walk_a','assets/sprites/cidadela-404/imp-elite-lateral-passo-a.png'],
@@ -1559,7 +1596,7 @@ function drawWorld(map, flags, p, g, progress) {
     const pulse=sprites[citadelPulseFrame(o.type,o.windup,g.scan,g.time,reducedMotion())];
     const alpha=o.alpha ?? (o.death>0 ? enemyDeathAlpha(o.death,reducedMotion()) : 1);
     const bob=reducedMotion()?0:o.moving?Math.sin(g.time*8+o.x)*2:
-      (['memory_echo_pending','memory_relay','drop_sucata','drop_nucleo','energy_cell','shield_cell'].includes(o.type)?Math.sin(g.time*2.1+o.x)*1.5:0);
+      (['memory_echo_pending','memory_relay','drop_sucata','drop_nucleo','energy_cell','shield_cell','probe','probe_b','probe_100','protocol_beacon_on'].includes(o.type)?Math.sin(g.time*2.1+o.x)*1.5:0);
     // Os frames gerados são próximos entre si. Um pequeno deslocamento das
     // pernas realça a passada sem girar o cenário ou modificar colisões.
     const stride=!directionalBase && !reducedMotion() && o.moving && (o.type==='imp'||o.type==='echo') ? Math.round(Math.sin(g.time*8+o.x)*2) : 0;
@@ -1619,22 +1656,35 @@ function drawWeapon(g, mod) {
   const animated=!reducedMotion(), recoil=g.fire>0 && animated?7*Math.sin(Math.PI*(.23-g.fire)/.23):0;
   const reloadDip=g.reload>0 && animated && g.jam<=0?14*Math.sin(Math.PI*(1.5-g.reload)/1.5):0;
   const bob=animated ? Math.sin(g.walkPhase)*g.walkBlend : 0;
+  const idleBreath=animated && !g.moving ? Math.sin(g.time*2.8)*1.1 : 0;
+  const meleeActive=animated && (g.melee ?? 0)>.83;
+  const meleePhase=meleeActive ? Math.sin(Math.PI*clamp((1.15-g.melee)/.32,0,1)) : 0;
   const deployDip=animated && g.fire<=0 && g.reload<=0 ? 16*clamp(g.weaponDeploy/.45,0,1) : 0;
-  const x=W/2+bob*2, y=H-26+recoil+reloadDip+deployDip+Math.abs(bob)*2;
+  const x=W/2+bob*2-meleePhase*16, y=H-26+recoil+reloadDip+deployDip+Math.abs(bob)*2+idleBreath-meleePhase*9;
   const weapon=sprites[`weapon_${mod.mode}`];
   if(weapon) {
     const stage=weaponVisualFrame(g.fire,!animated,g.reload,g.jam);
-    const frame=stage==='idle'?weapon:(sprites[`weapon_${mod.mode}_${stage}`] ?? weapon);
+    const marePulse=animated && mod.mode==='mare' && stage==='idle' && (g.ultBuff || g.overdrive>0 || g.q>5 || (g.fx>0 && ['q','ultimate'].includes(g.fxKind))) && sprites.weapon_mare_pulse;
+    const frame=stage==='idle'?(marePulse ? sprites.weapon_mare_pulse : weapon):(sprites[`weapon_${mod.mode}_${stage}`] ?? weapon);
     // A pose de recarga pode ter outra silhueta: preserve sua proporção.
     const sizing=stage==='reload' || stage==='blocked'?frame:weapon;
     const scale=Math.min(172/sizing.width,96/sizing.height);
     const w=sizing.width*scale,h=sizing.height*scale;
-    ctx.drawImage(frame,x-w/2,H-20-h+recoil+reloadDip+deployDip+Math.abs(bob)*2,w,h);
+    const wy=H-20-h+recoil+reloadDip+deployDip+Math.abs(bob)*2+idleBreath-meleePhase*10;
+    if(meleePhase>0) {
+      ctx.save();
+      ctx.translate(x,wy+h*.7);
+      ctx.rotate(-meleePhase*.16);
+      ctx.drawImage(frame,-w/2,-h*.7,w,h);
+      ctx.restore();
+    } else {
+      ctx.drawImage(frame,x-w/2,wy,w,h);
+    }
     const flash=muzzleVisualFrame(g.fire,!animated);
     if(flash) {
       const flare=flash==='tail'?(sprites[`muzzle_${mod.mode}_tail`] ?? sprites[`muzzle_${mod.mode}`]):sprites[`muzzle_${mod.mode}`];
       const size=flash==='tail'?22:28;
-      if(flare) { ctx.save();ctx.globalAlpha=flash==='tail'?.45:.72;ctx.drawImage(flare,x-size/2,H-20-h+recoil+reloadDip+Math.abs(bob)*2-12,size,size);ctx.restore(); }
+      if(flare) { ctx.save();ctx.globalAlpha=flash==='tail'?.45:.72;ctx.drawImage(flare,x-size/2,wy-12,size,size);ctx.restore(); }
     }
     return;
   }
@@ -1679,20 +1729,40 @@ function drawResonance(g,mod) {
     ctx.strokeRect(4,31,W-8,H-75);
     ctx.restore();
   }
-  if(g.fx>0 && g.fxKind==='ultimate' && sprites[`ultimate_${mod.mode}`]) {
-    const ult=sprites[`ultimate_${mod.mode}`];
-    const p=reducedMotion()?.5:clamp(1-g.fx,0,1);
-    const uw=210+p*70, uh=124+p*40;
-    ctx.globalAlpha=reducedMotion()?.48:Math.min(.72,g.fx*.75);
-    ctx.drawImage(ult,W/2-uw/2,H/2-uh/2-6,uw,uh);
+  if(g.fx>0 && g.fxKind==='ultimate') {
+    const ultKey=ultimateVisualFrame(mod.mode,g.fx,reducedMotion());
+    const ult=sprites[ultKey] ?? sprites[`ultimate_${mod.mode}`];
+    if(ult) {
+      const p=reducedMotion()?.5:clamp(1-g.fx,0,1);
+      const waveSweep=!reducedMotion() && mod.mode==='mare' ? (p<.34 ? (1-p/.34)*34 : p<.68 ? ((p-.34)/.34-.5)*28 : 0) : 0;
+      const liftY=!reducedMotion() && mod.mode==='mare' ? (p<.34 ? (1-p/.34)*22 : p>=.68 ? -((p-.68)/.32)*10 : -4) : 0;
+      const zoom=reducedMotion()?1:(mod.mode==='mare' && p>=.68 ? 1.15+(p-.68)*.55 : .92+p*.36);
+      const uw=(216*zoom)*(ult.width/Math.max(1,ult.height)*0.58), uh=126*zoom;
+      const drawW=clamp(uw,190,340), drawH=clamp(uh,108,198);
+      if(!reducedMotion() && (g.ultFlash ?? 0)>0) {
+        const grad=ctx.createRadialGradient(W/2,H/2,12,W/2,H/2,W*.6);
+        grad.addColorStop(0,mod.mode==='mare'?'rgba(120,248,255,.22)':'rgba(255,240,180,.18)');
+        grad.addColorStop(1,'rgba(0,0,0,0)');
+        ctx.fillStyle=grad;ctx.fillRect(0,0,W,H);
+      }
+      ctx.globalAlpha=reducedMotion()?.48:Math.min(.84,g.fx*.9+.1);
+      ctx.drawImage(ult,W/2-drawW/2+waveSweep,H/2-drawH/2-6+liftY,drawW,drawH);
+      if(!reducedMotion() && mod.mode==='mare') {
+        ctx.strokeStyle='#a8fbff';ctx.lineWidth=1.5;ctx.globalAlpha=Math.min(.55,g.fx*.6);
+        const arcR=68+p*95;
+        ctx.beginPath();ctx.arc(W/2,H/2+12,arcR,Math.PI*1.08,Math.PI*1.92);ctx.stroke();
+      }
+    }
   }
   if(g.fx>0 && g.fxKind==='melee') {
-    const meleeSprite=sprites[`melee_${mod.mode}`] ?? sprites.melee_wave;
+    const meleeKey=meleeVisualFrame(mod.mode,g.fx,reducedMotion());
+    const meleeSprite=sprites[meleeKey] ?? sprites[`melee_${mod.mode}`] ?? sprites.melee_wave;
     if(meleeSprite) {
       const p=reducedMotion()?.5:clamp(1-g.fx/.32,0,1);
-      const waveW=130+p*44, waveH=78+p*16;
-      ctx.globalAlpha=reducedMotion()?.55:Math.min(.78,g.fx*2.4);
-      ctx.drawImage(meleeSprite,W/2-waveW/2,H-55-waveH*.72,waveW,waveH);
+      const waveW=138+p*52, waveH=82+p*18;
+      const sweepX=reducedMotion()?0:(.5-p)*28;
+      ctx.globalAlpha=reducedMotion()?.55:Math.min(.84,g.fx*2.6);
+      ctx.drawImage(meleeSprite,W/2-waveW/2+sweepX,H-54-waveH*.74-p*6,waveW,waveH);
     }
   }
   if(g.fx>0 && ['q','ultimate'].includes(g.fxKind)) {
@@ -1783,7 +1853,16 @@ export function renderCitadel(canvas,state) {
   if (!game) return;
   setupBuffer();
   const g=game,p=state.player,flags=state.progress.flags,map=state.world.currentMap,mod=MODULES[state.progress.archetype] ?? MODULES.motor_bio_forja;
-  ctx=worldCtx;ctx.imageSmoothingEnabled=false;drawWorld(map,flags,p,g,state.progress);drawWeapon(g,mod);drawResonance(g,mod);
+  ctx=worldCtx;ctx.imageSmoothingEnabled=false;
+  const shakePower=!reducedMotion() && (g.shake ?? 0)>0 ? g.shake*8 : 0;
+  if(shakePower>0) {
+    ctx.fillStyle='#050a0d';ctx.fillRect(0,0,W,H);
+    ctx.save();ctx.translate(Math.sin(g.time*62)*shakePower,Math.cos(g.time*48)*shakePower*.7);
+    drawWorld(map,flags,p,g,state.progress);drawWeapon(g,mod);drawResonance(g,mod);
+    ctx.restore();
+  } else {
+    drawWorld(map,flags,p,g,state.progress);drawWeapon(g,mod);drawResonance(g,mod);
+  }
   // UI independente evita ampliar pixels serrilhados do framebuffer do mundo.
   ctx=uiCtx;ctx.setTransform(1,0,0,1,0,0);ctx.clearRect(0,0,W*2,H*2);ctx.setTransform(2,0,0,2,0,0);ctx.imageSmoothingEnabled=true;
   ctx.fillStyle='#d8ffff';ctx.fillRect(W/2-4,H/2,9,1);ctx.fillRect(W/2,H/2-4,1,9);
@@ -1814,7 +1893,8 @@ export function renderCitadel(canvas,state) {
   // Ícones acompanham rótulos em texto: nenhuma informação depende de cor ou arte.
   if(sprites.hud_health)ctx.drawImage(sprites.hud_health,9,H-39,10,10);
   ctx.fillStyle='#e2f4f0';ctx.fillText('VIDA '+Math.ceil(p.health||0)+'/'+(p.maxHealth||0),22,H-30);
-  const hudWeapon=sprites[`hud_weapon_${mod.mode}`];
+  const mareHudActive=!reducedMotion() && mod.mode==='mare' && (g.ultBuff || g.overdrive>0 || g.q>5 || (g.fx>0 && ['q','ultimate'].includes(g.fxKind))) && sprites.hud_weapon_mare_active;
+  const hudWeapon=mareHudActive ? sprites.hud_weapon_mare_active : sprites[`hud_weapon_${mod.mode}`];
   if(hudWeapon)ctx.drawImage(hudWeapon,104,H-39,18,10);
   const ammoIcon=g.jam>0?(sprites.hud_jam ?? sprites.hud_ammo):sprites.hud_ammo;
   if(ammoIcon)ctx.drawImage(ammoIcon,126,H-39,10,10);

@@ -870,6 +870,26 @@ for name in ['vigilante-aviso-fase2', 'vigilante-fase2-ataque-b',
     image.save(dst / f'{name}.png', optimize=True)
     print(name, image.size)
 
+# Lote 11: Animação multi-quadro de Ultimate e Golpe Cinético, pulso do canhão
+# Maré Astral, ícone HUD ativo, selo da Estação 66.6 e cena pós-Cidadela.
+art11 = Image.open(src / 'cidadela-mare-desfecho.jpg').convert('RGB')
+art11.thumbnail((1280, 720), Image.Resampling.LANCZOS)
+art11.save(cutscenes / 'cidadela-mare-desfecho.jpg', quality=88, optimize=True)
+print('cidadela-mare-desfecho.jpg', art11.size)
+
+for name in ['ultimate-mare-b', 'ultimate-mare-c', 'ultimate-nucleo-b', 'ultimate-dominio-b',
+             'ultimate-bio-b', 'melee-mare-b', 'canhao-mare-pulso',
+             'hud-arma-mare-ativa', 'estacao-666-selo-convergencia']:
+    image = Image.open(src / f'{name}.png').convert('RGBA')
+    remove_border_bg(image, 'white' if name == 'canhao-mare-pulso' else 'dark')
+    box = image.getbbox()
+    if not box: raise ValueError(f'Sprite vazio: {name}')
+    image = image.crop(box)
+    size = 256 if name.startswith(('ultimate-', 'melee-', 'canhao-')) else 160 if name == 'estacao-666-selo-convergencia' else 96
+    image.thumbnail((size, size), Image.Resampling.LANCZOS)
+    image.save(dst / f'{name}.png', optimize=True)
+    print(name, image.size)
+
 
 
 

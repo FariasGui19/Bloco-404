@@ -50,7 +50,12 @@ for (const [objectId, spriteId] of [
 }
 
 const barco = enseada.objects.find(o => o.id === 'barco_expedicao_enseada');
-assert(barco && barco.larguraPx >= 100, 'o barco de expedição precisa ser visível na escala do cais');
+const cais = enseada.objects.find(o => o.id === 'cais_madeira_pesca_enseada');
+assert(barco && barco.renderizar === false, 'o hotspot do barco não deve duplicar o barco já desenhado no sprite do cais');
+assert(renderer.includes('object.invisivel || object.renderizar === false'), 'o renderer deve respeitar renderizar=false sem ocultar interações');
+assert(cais && cais.larguraPx >= 350, 'o cais com barco precisa manter a escala da referência');
+assert(enseada.objects.find(o => o.id === 'piscina_mare_viva_enseada')?.larguraPx >= 240,
+  'a piscina de maré precisa usar a escala do grande poço rochoso da referência');
 
 assert.equal(enseada.layout.length, 64);
 assert.equal(enseada.layout[0].length, 72);

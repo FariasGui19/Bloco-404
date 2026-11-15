@@ -5061,7 +5061,7 @@ function drawBioGateResonance(object, curState) {
 }
 
 function drawMapObject(object, state) {
-  if (object.invisivel) return;
+  if (object.invisivel || object.renderizar === false) return;
   if (object.hideWhenFlag && state.progress.flags?.[object.hideWhenFlag]) return;
   if (object.showWhenFlag && !state.progress.flags?.[object.showWhenFlag]) return; // NOVO
 

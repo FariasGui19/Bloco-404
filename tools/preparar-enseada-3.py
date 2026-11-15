@@ -41,17 +41,6 @@ for name, shades in ASSETS.items():
         # graph lines. Include both shades and their antialiased edge pixels.
         return any(abs(r - shade) <= TOLERANCE for shade in shades) or r >= 247 or r <= 14
 
-    # The generated checkerboard was composited over the pier and sails too,
-    # so those neutral squares are interior rather than flood-fillable. Remove
-    # their two near-gray value bands; the real sail is warm cream and the pier
-    # is brown, so neither is keyed by this narrow neutral-color test.
-    if name == 'wooden-pier-sailboat':
-        for y in range(h):
-            for x in range(w):
-                r, g, b, a = pixels[x, y]
-                if a and max(r, g, b) - min(r, g, b) <= 28 and any(abs(r - shade) <= TOLERANCE for shade in shades):
-                    pixels[x, y] = (0, 0, 0, 0)
-
     visited = bytearray(w * h)
     queue = deque()
     for x in range(w):
@@ -78,6 +67,26 @@ for name, shades in ASSETS.items():
                 if not visited[idx] and is_background(*pixels[nx, ny]):
                     visited[idx] = 1
                     queue.append((nx, ny))
+
+    # In these assets the gray checker was painted through the leaves, inside
+    # the open arch, on the station's treetop, and behind the pier/sails, so it
+    # is not connected to the image border. Their foreground uses saturated
+    # greens or warm wood; clear only known neutral bands and antialiased edges.
+    if name in {'western-grove-arch', 'western-palm-grove', 'wooden-pier-sailboat', 'estacao-666-cliff-gate'}:
+        for y in range(h):
+            for x in range(w):
+                r, g, b, a = pixels[x, y]
+                if a and max(r, g, b) - min(r, g, b) <= NEUTRAL_SPREAD and any(abs(r - shade) <= TOLERANCE for shade in shades):
+                    pixels[x, y] = (0, 0, 0, 0)
+    elif name == 'echo-monolith-dais':
+        # A cyan aura was composited over the checker behind the monolith.
+        # Strip only its neutral checker remnants outside the stone silhouette;
+        # the renderer supplies the animated glow at runtime.
+        for y in range(min(h, 360)):
+            for x in list(range(0, min(610, w))) + list(range(min(808, w), w)):
+                r, g, b, a = pixels[x, y]
+                if a and max(r, g, b) - min(r, g, b) <= NEUTRAL_SPREAD and any(abs(r - shade) <= TOLERANCE for shade in shades):
+                    pixels[x, y] = (0, 0, 0, 0)
 
     # Drop generated stray pixels and locate the core sprite. Related pieces
     # (for example detached coral and foam) are retained if they are large and

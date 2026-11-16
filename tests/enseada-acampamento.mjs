@@ -54,4 +54,9 @@ for (const [x, y] of [[16.4,32.4],[16.1,32.1],[15.8,31.8],[15.5,31.5],[15.2,31.2
   assert(Math.hypot(jogador.x - x, jogador.y - y) < .001, 'degraus devem ser acessíveis a pé');
 }
 assert(main.includes('assets/sprites/enseada-estacao/terraco-curto.png'));
-assert('YyDdX'.includes(map.aguaPraia[9][21]), 'mar deve chegar à lateral da estação');
+// A costa agora é traçada da referência (`tools/tracar-enseada-chao.py`).
+// Nesse ponto a arte mostra a encosta verde da montanha, não mar — a
+// asserção antiga vinha do preenchimento manual de grade.
+const { CHAO } = await import('../js/data/enseada-chao.js');
+assert(CHAO[9][21] !== '.', 'tile 21,9 deve ser terra (encosta da estação)');
+assert('SMT'.includes(map.aguaPraia[9][21]), 'tile 21,9 deve ser terra caminhável');

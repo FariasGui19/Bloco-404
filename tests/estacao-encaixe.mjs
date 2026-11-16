@@ -92,4 +92,9 @@ console.log('Encaixe e acesso da Estação 66.6 OK.');
 assert(Math.abs(mountain.x - 16.2) < 1e-8 && Math.abs(mountain.y - 21.8) < 1e-8);
 const mata = coast.objects.find(o => o.id === 'enseada_mata_juncao_estacao');
 assert(mata?.bloqueia && mata.hitbox && mata.camada !== 'fundo');
-assert(coast.zonasGrama?.length, 'grama da junção precisa seguir a superfície do mapa');
+// O chão da ilha vem inteiro do traçado da arte (`enseada-chao.js`), não de
+// mancha elíptica: a grama da junção é a mesma célula de grama da referência.
+assert(coast.celulasGrama?.length, 'grama da junção precisa seguir a superfície do mapa');
+const gramaJuncao = coast.celulasGrama
+  .reduce((n, linha) => n + linha.filter(Boolean).length, 0);
+assert(gramaJuncao > 800, `grama traçada da arte ausente (${gramaJuncao} células)`);

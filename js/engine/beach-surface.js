@@ -40,7 +40,7 @@ function distanciaAoCaminho(x, y, caminhos) {
 // 66.6, maciços de pedra) já é o chão visível. Sem isso a mancha de grama do
 // interior sobe por cima da base do penhasco e fatia a cachoeira ao meio —
 // era o defeito de camada do setor norte.
-export function createBeachSurface(rows, scale = 16, { gramaInterior = false, caminhos = [], zonasGrama = [], zonasRocha = [] } = {}) {
+export function createBeachSurface(rows, scale = 16, { gramaInterior = false, caminhos = [], zonasGrama = [], zonasRocha = [], celulasGrama = null } = {}) {
   const height = rows.length, width = rows[0].length;
   const pixels = new Uint8ClampedArray(width * height * scale * scale * 4);
   for (let py = 0; py < height * scale; py++) for (let px = 0; px < width * scale; px++) {
@@ -81,6 +81,22 @@ export function createBeachSurface(rows, scale = 16, { gramaInterior = false, ca
     const ruidoTrilha = Math.sin(x * .71 + Math.sin(y * .48)) * .16;
     const foraDaTrilha = smooth((distancia + ruidoTrilha - .8) / .6);
     let grama = gramaInterior ? smooth((shore - 2.2) / 2.4) * foraDaTrilha : 0;
+    // Grama lida da arte de referência (`celulasGrama`). `x`/`y` aqui são
+    // PIXELS de textura (0.0625 de tile), não células: a interpolação bilinear
+    // do campo acontece dentro do tile e a borda sai curva, não em xadrez.
+    if (celulasGrama) {
+      const gx = x - .5, gy = y - .5;
+      const x0 = Math.floor(gx), y0 = Math.floor(gy);
+      const fx = smooth(gx - x0), fy = smooth(gy - y0);
+      const amostra = (ax, ay) => celulasGrama[ay]?.[ax] ?? 0;
+      const topo = amostra(x0, y0) * (1 - fx) + amostra(x0 + 1, y0) * fx;
+      const base = amostra(x0, y0 + 1) * (1 - fx) + amostra(x0 + 1, y0 + 1) * fx;
+      const campo = topo * (1 - fy) + base * fy;
+      // Borda irregular: ruído de mundo modula o limiar, como na arte.
+      const ondulacao = Math.sin(x * .9 + Math.sin(y * .7) * 1.4) * .10
+        + Math.sin(y * 1.13 + Math.sin(x * .53) * 1.1) * .08;
+      grama = Math.max(grama, smooth((campo - .5 + ondulacao) / .22));
+    }
     // Faixas internas de vegetação não mudam a máscara nem cobrem água.
     for (const zona of zonasGrama) {
       const dx = (x - zona.x) / zona.rx, dy = (y - zona.y) / zona.ry;

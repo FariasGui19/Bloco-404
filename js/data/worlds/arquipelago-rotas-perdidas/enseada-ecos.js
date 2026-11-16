@@ -4,7 +4,8 @@
 import { buildGround } from '../../ground.js';
 import { relevo } from '../../relevo-praia.js';
 import { flora } from '../../flora-praia.js';
-import { POLIGONO as POLIGONO_COSTA } from '../../enseada-costa.js';
+import { CHAO } from '../../enseada-chao.js';
+import { VEGETACAO } from '../../enseada-vegetacao.js';
 
 const COLS = 72;
 const ROWS = 64;
@@ -29,91 +30,45 @@ const ehTerra = c => c !== undefined && 'SMT'.includes(c);
 //
 //     px = 737.5 + 16 * (x - y)      py = -152.75 + 8 * (x + y)
 const REF = { cx: 737.5, cy: -152.75, sx: 16, sy: 8 };
-const POLIGONO_ILHA = POLIGONO_COSTA;
-// Células obrigatórias: missões, portais, spawns e a lagoa de treino.
-const CELULAS_OBRIGATORIAS = [[15, 51], [15, 52], [15, 53], [16, 51], [16, 52], [16, 53], [17, 37], [17, 38], [17, 39], [17, 51], [17, 52], [17, 53], [18, 37], [18, 38], [18, 39], [18, 50], [18, 51], [18, 52], [19, 37], [19, 38], [19, 39], [19, 50], [19, 51], [19, 52], [20, 50], [20, 51], [20, 52], [21, 45], [21, 46], [21, 47], [22, 45], [22, 46], [22, 47], [23, 45], [23, 46], [23, 47], [24, 52], [24, 53], [24, 54], [25, 14], [25, 15], [25, 16], [25, 39], [25, 40], [25, 41], [25, 52], [25, 53], [25, 54], [26, 14], [26, 15], [26, 16], [26, 17], [26, 39], [26, 40], [26, 41], [26, 42], [26, 43], [26, 44], [26, 52], [26, 53], [26, 54], [27, 14], [27, 15], [27, 16], [27, 17], [27, 39], [27, 40], [27, 41], [27, 42], [27, 43], [27, 44], [28, 15], [28, 16], [28, 17], [28, 39], [28, 40], [28, 41], [28, 42], [28, 43], [28, 44], [29, 18], [29, 19], [29, 20], [29, 39], [29, 40], [29, 41], [30, 18], [30, 19], [30, 20], [30, 39], [30, 40], [30, 41], [31, 18], [31, 19], [31, 20], [31, 38], [31, 39], [31, 40], [32, 38], [32, 39], [32, 40], [33, 36], [33, 37], [33, 38], [33, 39], [33, 40], [33, 54], [33, 55], [33, 56], [34, 1], [34, 2], [34, 3], [34, 36], [34, 37], [34, 38], [34, 54], [34, 55], [34, 56], [35, 1], [35, 2], [35, 3], [35, 4], [35, 36], [35, 37], [35, 38], [35, 54], [35, 55], [35, 56], [36, 1], [36, 2], [36, 3], [36, 4], [37, 2], [37, 3], [37, 4], [37, 6], [37, 7], [37, 8], [38, 6], [38, 7], [38, 8], [39, 6], [39, 7], [39, 8], [48, 18], [48, 19], [48, 20], [49, 17], [49, 18], [49, 19], [49, 20], [50, 17], [50, 18], [50, 19], [50, 20], [51, 17], [51, 18], [51, 19]];
 
 const imagemDaGrade = (x, y) => ({
   px: REF.cx + REF.sx * (x - y),
   py: REF.cy + REF.sy * (x + y),
 });
 
-function dentroDoPoligono(px, py, pts) {
-  let dentro = false;
-  for (let i = 0, j = pts.length - 1; i < pts.length; j = i++) {
-    const [xi, yi] = pts[i], [xj, yj] = pts[j];
-    if ((yi > py) !== (yj > py) && px < ((xj - xi) * (py - yi)) / (yj - yi) + xi) dentro = !dentro;
-  }
-  return dentro;
-}
 
-// O polígono já está em tiles, então a célula é terra quando o centro dela
-// cai dentro do contorno traçado.
-const landShape = (x, y) => dentroDoPoligono(x + 0.5, y + 0.5, POLIGONO_ILHA);
+
+// ---------------------------------------------------------------------------
+// CHÃO: vem inteiro de `js/data/enseada-chao.js`, traçado da arte de
+// referência por `tools/tracar-enseada-chao.py`. Nenhuma célula de terra é
+// acrescentada à mão aqui — era exatamente isso (preenchimentos manuais de
+// grade, ilhas extras, línguas de areia) que inflava a ilha para fora da
+// costa traçada e jogava todo prop para o lugar errado.
+// ---------------------------------------------------------------------------
+const chaoDaArte = (x, y) => CHAO[y]?.[x] ?? '.';
+const ehChaoArte = (x, y) => chaoDaArte(x, y) !== '.';
 
 const grid = Array.from({ length: ROWS }, () => Array(COLS).fill('W'));
 for (let y = 0; y < ROWS; y++) {
   for (let x = 0; x < COLS; x++) {
-    if (x >= 1 && x <= COLS - 2 && y >= 1 && y <= ROWS - 2 && landShape(x, y)) {
-      grid[y][x] = 'S';
-    }
+    if (ehChaoArte(x, y)) grid[y][x] = 'S';
   }
 }
 
-// Limpar células isoladas
-for (let y = 1; y < ROWS - 1; y++) {
-  for (let x = 1; x < COLS - 1; x++) {
-    if (grid[y][x] !== 'S') continue;
-    const viz = ehTerra(grid[y - 1]?.[x]) + ehTerra(grid[y + 1]?.[x]) +
-      ehTerra(grid[y]?.[x - 1]) + ehTerra(grid[y]?.[x + 1]);
-    if (viz < 2) grid[y][x] = 'W';
+// Praia larga e caminhável na orla: a célula de terra encostada no mar vira
+// areia molhada. É só a franja de 1 célula da própria costa — não muda a
+// forma da ilha.
+const copia = grid.map(l => [...l]);
+for (let y = 0; y < ROWS; y++) {
+  for (let x = 0; x < COLS; x++) {
+    if (copia[y][x] !== 'S') continue;
+    const borda = [[-1, 0], [1, 0], [0, -1], [0, 1]].some(([dx, dy]) => !ehTerra(copia[y + dy]?.[x + dx]));
+    if (borda) grid[y][x] = 'M';
   }
 }
 
-// Garantir terra sob os pontos de missão, portais e spawns
-for (const [x, y] of CELULAS_OBRIGATORIAS) {
-  if (grid[y]?.[x] !== undefined && !(x >= 33 && x <= 39 && y <= 8)) grid[y][x] = 'S';
-}
-
-// Preencher a enseada estreita que separava os dois maciços. A costa é
-// recalculada a partir deste solo, não apenas coberta por decoração.
-for (let y = 10; y <= 23; y++) {
-  const minX = y < 12 ? 10 : y < 15 ? 9 : y < 20 ? 8 : y < 21 ? 7 : 6;
-  for (let x = minX; x <= 15; x++) grid[y][x] = 'S';
-}
-
-// A leste do maciço, o mar chega à borda da falésia. A soleira e o
-// retorno permanecem em terra; o banco de areia antigo ficava atrás da arte.
-for (let y = 1; y <= 14; y++) for (let x = 13; x <= 25; x++) {
-  if (x - y > 6 && x + y < 32.5) grid[y][x] = 'W';
-}
-
-// A costa traçada é a da ilha principal. Os recifes da arte ficam no mar como
-// ilhas próprias: é assim que a referência os desenha, e as missões contam com
-// eles em terra.
-const ILHAS_COSTA = [
-  { x: 56.5, y: 23.0, r: 2.6 },   // base rochosa do portal leste
-  { x: 42.6, y: 19.6, r: 3.0 },   // promontório do santuário do lumeo
-  // A passagem de pedras é o único caminho para a chegada do mar: o arquipélago
-  // de lajes precisa ENCOSTAR na costa norte e sustentar um corredor caminhável
-  // até o spawn de retorno (36.5, 5.5).
-  // As lajes são estreitas de propósito: o mar da travessia tem de continuar
-  // visível (e nadável) entre elas, que é como a arte desenha a passagem.
-  { x: 36.5, y: 9.0, r: 1.5 },
-  { x: 36.0, y: 6.5, r: 1.4 },
-  { x: 36.5, y: 5.0, r: 1.3 },
-  { x: 47.0, y: 49.5, r: 3.6 },   // praia de desembarque do cais
-];
-for (const ilha of ILHAS_COSTA) {
-  for (let y = 1; y < ROWS - 1; y++) {
-    for (let x = 1; x < COLS - 1; x++) {
-      const dx = (x + .5 - ilha.x) / ilha.r;
-      const dy = (y + .5 - ilha.y) / (ilha.r * 0.72);
-      if (dx * dx + dy * dy <= 1) grid[y][x] = 'S';
-    }
-  }
-}
-
+// Água: rasa junto da costa, funda depois. Só preenche células que o traçado
+// deixou como mar.
 const TAM_RASO = 2;
 const TAM_FUNDO = 5;
 
@@ -129,65 +84,14 @@ function distanciaTerra(x, y) {
   return melhor;
 }
 
-const copia = grid.map(l => [...l]);
 for (let y = 0; y < ROWS; y++) {
   for (let x = 0; x < COLS; x++) {
-    if (copia[y][x] === 'S') {
-      const borda = [[-1, 0], [1, 0], [0, -1], [0, 1]].some(([dx, dy]) => !ehTerra(copia[y + dy]?.[x + dx]));
-      if (borda) grid[y][x] = 'M';
-      else if (hash(x, y, 29) < 0.025 && y > 18) grid[y][x] = 'T';
-    } else {
-      const d = distanciaTerra(x, y);
-      const flip = hash(x, y, 17) < 0.5;
-      if (d <= TAM_RASO) grid[y][x] = flip ? 'Y' : 'y';
-      else if (d <= TAM_FUNDO) grid[y][x] = flip ? 'D' : 'd';
-      else grid[y][x] = 'X';
-    }
-  }
-}
-
-// A costa frontal da arte tem praia larga: a franja `M` de uma célula lê como
-// linha de contorno, não como areia molhada. Alarga a orla onde ela dá para o
-// mar aberto (as enseadas fechadas continuam finas).
-for (let y = 44; y < ROWS - 1; y++) {
-  for (let x = 1; x < COLS - 1; x++) {
-    if (grid[y][x] !== 'S') continue;
-    let mar = 0;
-    for (const [dx, dy] of [[-1, 0], [1, 0], [0, -1], [0, 1]]) {
-      const c = grid[y + dy]?.[x + dx];
-      if (c === undefined || 'W'.includes(c)) mar++;
-    }
-    if (mar >= 1 && y >= 50) grid[y][x] = 'M';
-    else if (mar >= 2) grid[y][x] = 'M';
-  }
-}
-
-// Trecho de areia na margem da ponta do cais: o barco de expedição fica na praia,
-// acessível a pé, como na referência (a costa original deixava só água ali).
-for (const [cx, cy] of [[54, 35], [55, 35], [54, 36], [55, 36], [56, 36], [55, 37], [56, 37]]) {
-  if (grid[cy]?.[cx] !== undefined && grid[cy][cx] !== 'S') grid[cy][cx] = 'S';
-}
-// Píer de madeira da referência: a margem é estendida em areia para o cais sair da praia.
-for (let cy = 40; cy <= 42; cy++) for (let cx = 49; cx <= 53; cx++) {
-  if (grid[cy]?.[cx] !== undefined && grid[cy][cx] !== 'S') grid[cy][cx] = 'S';
-}
-// A língua de areia da arte liga a costa norte às lajes do caminho das
-// correntes; é ela que dá pé até a chegada do mar. A forma vem da diagonal
-// iso da arte (uma faixa larga, não um pixel de largura), então o corredor
-// caminhável abre de verdade em vez de virar um fio.
-// Cada par é o centro de uma célula de areia. A língua segue a diagonal iso
-// da arte e para em y=9: daí para cima o piso é a passagem de pedras, que
-// mantém o mar visível sob a travessia.
-// Cada par é o centro de uma célula de areia. A língua segue a diagonal iso
-// da arte e para em y=9: daí para cima o piso é a passagem de pedras, que
-// mantém o mar visível sob a travessia.
-const LINGUA = [
-  [28, 13], [29, 13], [29, 12], [30, 12], [30, 11], [31, 11], [31, 10], [32, 9],
-];
-for (const [cx, cy] of LINGUA) {
-  for (let dx = 0; dx <= 1; dx++) {
-    const x = cx + dx, y = cy;
-    if (grid[y]?.[x] !== undefined && !ehTerra(grid[y][x])) grid[y][x] = 'S';
+    if (ehTerra(grid[y][x])) continue;
+    const d = distanciaTerra(x, y);
+    const flip = hash(x, y, 17) < 0.5;
+    if (d <= TAM_RASO) grid[y][x] = flip ? 'Y' : 'y';
+    else if (d <= TAM_FUNDO) grid[y][x] = flip ? 'D' : 'd';
+    else grid[y][x] = 'X';
   }
 }
 
@@ -207,12 +111,23 @@ const ground = buildGround({
   },
 });
 
-// A passagem tem colisão de chão, mas conserva água na grade visual e de costa.
-// Dois tiles de largura permitem a passagem do círculo de colisão do jogador.
+// Células de GRAMA lidas da referência: o campo verde do miolo, a mata e a
+// encosta. A textura de areia pinta grama exatamente nesses tiles, então o
+// chão do jogo passa a ter a mesma forma do chão da arte.
+const celulasGrama = CHAO.map((linha, y) =>
+  [...linha].map((c, x) => (c === 'g' && ehTerra(grid[y]?.[x]) ? 1 : 0)));
+
+// A passagem de pedras das correntes é traçada da referência (as lajes estão
+// desenhadas nela). A colisão de chão acompanha as lajes; a água continua
+// visível entre elas.
 const passarelaCorrentes = new Set();
-for (let y = 7; y <= 8; y++) for (let x = 30; x <= 36; x++) passarelaCorrentes.add(`${x},${y}`);
-for (let y = 3; y <= 8; y++) for (let x = 35; x <= 37; x++) passarelaCorrentes.add(`${x},${y}`);
-for (let y = 3; y <= 6; y++) for (let x = 34; x <= 38; x++) passarelaCorrentes.add(`${x},${y}`);
+for (let y = 0; y < ROWS; y++) {
+  for (let x = 0; x < COLS; x++) {
+    if (grid[y][x] === 'W' && chaoDaArte(x, y) === 's' && y <= 12 && x >= 28 && x <= 40) {
+      passarelaCorrentes.add(`${x},${y}`);
+    }
+  }
+}
 // A chegada do mar fica sobre a água, no fim da passagem de pedras: o caminho
 // caminhável tem de alcançá-la, senão o retorno de barco fica isolado.
 for (const key of passarelaCorrentes) {
@@ -262,24 +177,18 @@ export const map = {
   walkMask: ground.walkMask,
   pisos: ground.pisos,
   aguaPraia: rows,
+  // Grama por célula, traçada da arte (ver `js/data/enseada-chao.js`).
+  celulasGrama,
   passarelaSobreAgua: [...passarelaCorrentes],
-  // Mancha de grama da junção com a estação (exigida por estacao-encaixe).
-  zonasGrama: [{ x: 8.8, y: 19, rx: 3.2, ry: 5.0 }],
+  // A grama não vem de mancha elíptica: vem de `celulasGrama`, traçada da
+  // referência. A elipse antiga era um retângulo verde por cima da arte.
+  zonasGrama: [],
   // Relevo desenhado: a montanha da Estação 66.6 ocupa a célula e o seu
   // próprio chão é pedra. Sem esta máscara a grama do interior subia até a
   // base do penhasco e cortava a piscina da cachoeira em duas.
-  zonasRocha: [
-    // só a faixa que o penhasco cobre — a piscina da cachoeira e o chão
-    // logo abaixo continuam com a grama/areia normais do mapa
-    { x: 15.0, y: 11.2, rx: 6.4, ry: 3.4 },
-    // O areal à direita da Estação 66.6 é AREIA, não grama: a mancha verde
-    // do `gramaInterior` invadia a praia bem ao lado da rocha e ficava em
-    // outro tom, "cortando" a base do penhasco.
-    { x: 22.6, y: 18.6, rx: 9.0, ry: 6.0 },
-    { x: 27.5, y: 24.0, rx: 6.5, ry: 5.0 },
-    // O mesmo vale para a faixa de areia atrás do platô do acampamento.
-    { x: 10.5, y: 24.5, rx: 7.5, ry: 6.0 },
-  ],
+  // O relevo desenhado (montanha, platô, maciços) já tem o próprio chão na
+  // arte; nenhuma máscara extra é aplicada por cima.
+  zonasRocha: [],
   // Corredores de areia entre os setores: arte do chão, sem alterar colisões.
   caminhosAreia: [
     [14, 42, 23, 41], [23, 41, 30, 35], [30, 35, 33, 32],
@@ -366,6 +275,18 @@ export const map = {
   ],
 
   objects: [
+    // ---------------------------------------------------------------------
+    // VEGETAÇÃO TRAÇADA DA ARTE (`enseada-vegetacao.js`): uma planta por
+    // célula de mata da referência. Substitui a mata antiga, que tinha sido
+    // posicionada para a geometria anterior e por isso flutuava sobre a
+    // praia e amontoava palmeiras em cima do acampamento.
+    // ---------------------------------------------------------------------
+    ...VEGETACAO.map(([x, y, largura, densidade], i) => ({
+      id: `enseada_mata_arte_${i + 1}`, tipo: 'decoracao', x, y,
+      sprite: densidade >= 0.55 ? 'enseada_ne_mata_densa' : 'enseada3_palmeiral',
+      useCrop: true, larguraPx: largura,
+      pivotX: 0.5, pivotY: 0.96, bloqueia: false,
+    })),
     // ---- Terminal (função preservada) ----
     {
       id: 'terminal_frequencia_666', nome: 'TERMINAL DE MANUTENÇÃO', tipo: 'painel', x: 18.5, y: 38.1,
@@ -400,10 +321,11 @@ export const map = {
     },
 
     {
+      // Fora do mapa: a mata abaixo do acampamento pertencia à geometria
+      // antiga e caía em cima da barraca. Na referência ali é areia.
       id: 'enseada_mata_abaixo_acampamento', tipo: 'decoracao', x: 17.6, y: 29.2,
       sprite: 'enseada3_palmeiral', useCrop: true, larguraPx: 240,
-      pivotX: 0.5, pivotY: 0.96, depthOffset: -6, bloqueia: true,
-      hitbox: { offsetX: -0.35, offsetY: -0.35, width: 0.70, height: 0.70 },
+      pivotX: 0.5, pivotY: 0.96, depthOffset: -6, bloqueia: false, oculto: true,
     },
     {
       id: 'enseada_planta_margem_cascata', tipo: 'decoracao', x: 19.8, y: 17.6,
@@ -519,15 +441,15 @@ export const map = {
       // partir da silhueta medida na referência (grama, clareira de areia,
       // paredão e degraus). O ponto de encaixe é a base do paredão.
       id: 'enseada_terraco_acampamento', tipo: 'decoracao',
-      x: 23.184, y: 40.653,
-      sprite: 'enseada_setor1_plato_v3', useCrop: true, larguraPx: 820,
+      x: 22.63, y: 44.59,
+      sprite: 'enseada_setor1_plato', useCrop: true, larguraPx: 786,
       pivotX: 0.5, pivotY: 1,
       // Camada de fundo: a mesa é o chão do setor e entra antes dos
       // equipamentos, então nenhum prop é recoberto pela grama.
       camada: 'fundo', ordem: -2, bloqueia: false,
     },
     {
-      id: 'relogio_mare_enseada', nome: 'RELÓGIO DE MARÉ SOLAR', tipo: 'dispositivo', x: 10.72, y: 32.98,
+      id: 'relogio_mare_enseada', nome: 'RELÓGIO DE MARÉ SOLAR', tipo: 'dispositivo', x: 11.81, y: 38.53,
       sprite: 'enseada_camp_ref_relogio', animPeriodo: 0.6,
       useCrop: true, larguraPx: 64, pivotX: 0.5, pivotY: 0.98,
       bloqueia: true, hitbox: { offsetX: -0.22, offsetY: -0.22, width: 0.44, height: 0.44 },
@@ -535,7 +457,7 @@ export const map = {
       interacao: { label: 'SINTONIZAR CLIMA E MARÉ', distancia: 1.55 },
     },
     {
-      id: 'torre_antena_enseada', nome: 'TORRE-ANTENA DE ESCUTA', tipo: 'dispositivo', x: 11.6, y: 29.84,
+      id: 'torre_antena_enseada', nome: 'TORRE-ANTENA DE ESCUTA', tipo: 'dispositivo', x: 11.97, y: 29.62,
       sprite: 'enseada_camp_ref_torre_radio', animPeriodo: 0.5,
       useCrop: true, larguraPx: 100, pivotX: 0.5, pivotY: 0.98,
       bloqueia: true, hitbox: { offsetX: -0.30, offsetY: -0.28, width: 0.6, height: 0.56 },
@@ -543,7 +465,7 @@ export const map = {
       interacao: { label: 'SINTONIZAR TORRE-ANTENA', distancia: 1.55 },
     },
     {
-      id: 'bancada_campo_enseada', nome: 'BANCADA DE CAMPO', tipo: 'dispositivo', x: 12.25, y: 31.96,
+      id: 'bancada_campo_enseada', nome: 'BANCADA DE CAMPO', tipo: 'dispositivo', x: 14.31, y: 34.78,
       sprite: 'enseada_camp_ref_bancada', animPeriodo: 0.58,
       useCrop: true, larguraPx: 116, pivotX: 0.5, pivotY: 0.98,
       bloqueia: true, hitbox: { offsetX: -0.58, offsetY: -0.38, width: 1.16, height: 0.76 },
@@ -551,7 +473,7 @@ export const map = {
       interacao: { label: 'CALIBRAR MÓDULO NA BANCADA', distancia: 1.7 },
     },
     {
-      id: 'acampamento_vigilia_enseada', nome: 'ACAMPAMENTO DE VIGÍLIA', tipo: 'decoracao', x: 14.05, y: 31.25,
+      id: 'acampamento_vigilia_enseada', nome: 'ACAMPAMENTO DE VIGÍLIA', tipo: 'decoracao', x: 22.59, y: 32.75,
       sprite: 'enseada_camp_ref_fogueira', animPeriodo: 0.42,
       useCrop: true, larguraPx: 89, pivotX: 0.5, pivotY: 0.98,
       bloqueia: true, hitbox: { offsetX: -0.30, offsetY: -0.24, width: 0.60, height: 0.48 },
@@ -559,7 +481,7 @@ export const map = {
       interacao: { label: 'DESCANSAR NA FOGUEIRA', distancia: 1.6 },
     },
     {
-      id: 'tenda_expedicao_enseada', nome: 'TENDA DA EXPEDIÇÃO', tipo: 'decoracao', x: 13.9, y: 29.48,
+      id: 'tenda_expedicao_enseada', nome: 'TENDA DA EXPEDIÇÃO', tipo: 'decoracao', x: 18.69, y: 29.78,
       sprite: 'enseada_camp_ref_tenda_referencia', useCrop: true, larguraPx: 213,
       pivotX: 0.5, pivotY: 0.98,
       bloqueia: true, hitbox: { offsetX: -0.48, offsetY: -0.34, width: 0.96, height: 0.68 },
@@ -567,7 +489,7 @@ export const map = {
         dialogue: ['A LONA GUARDA MAPAS, ROLOS DE CORDA E UM COBERTOR DOBRADO. A EXPEDIÇÃO ESTÁ EM PLENA ATIVIDADE.'] },
     },
     {
-      id: 'maleta_expedicao_enseada', nome: 'MALETA DA EXPEDIÇÃO', tipo: 'dispositivo', x: 16.25, y: 30.03,
+      id: 'maleta_expedicao_enseada', nome: 'MALETA DA EXPEDIÇÃO', tipo: 'dispositivo', x: 20.88, y: 31.34,
       sprite: 'enseada_camp_ref_pilha_caixas', animPeriodo: 0.56,
       useCrop: true, larguraPx: 132, pivotX: 0.5, pivotY: 0.98,
       bloqueia: true, hitbox: { offsetX: -0.38, offsetY: -0.32, width: 0.76, height: 0.64 },
@@ -575,7 +497,7 @@ export const map = {
       interacao: { label: 'ABRIR MALETA DA EXPEDIÇÃO', distancia: 1.55 },
     },
     {
-      id: 'bandeirola_vento_enseada', nome: 'BIRUTA DA EXPEDIÇÃO', tipo: 'decoracao', x: 13.19, y: 26.31,
+      id: 'bandeirola_vento_enseada', nome: 'BIRUTA DA EXPEDIÇÃO', tipo: 'decoracao', x: 20.56, y: 28.53,
       sprite: 'enseada_biruta_camp',
       useCrop: true, larguraPx: 75, pivotX: 0.5, pivotY: 0.94,
       depthOffset: 3, bloqueia: false, oscilaBrisa: true,
@@ -584,29 +506,29 @@ export const map = {
     // Vegetação de fundo e pequenos objetos independentes, sem recobrir
     // a entrada da tenda. As coordenadas são as dos pés dos sprites.
     {
-      id: 'enseada_arvore_camp_esquerda', tipo: 'decoracao', x: 12.97, y: 27.03,
+      id: 'enseada_arvore_camp_esquerda', tipo: 'decoracao', x: 10.41, y: 22.44,
       sprite: 'enseada_camp_ref_arvore', useCrop: true, larguraPx: 159,
       pivotX: 0.5, pivotY: 0.98, bloqueia: false,
     },
     {
-      id: 'enseada_arvore_camp_direita', tipo: 'decoracao', x: 13.9, y: 26.1,
+      id: 'enseada_arvore_camp_direita', tipo: 'decoracao', x: 13.53, y: 20.56,
       sprite: 'enseada_camp_ref_arvore', useCrop: true, espelhar: true, larguraPx: 136,
       pivotX: 0.5, pivotY: 0.98, bloqueia: false,
     },
     {
-      id: 'enseada_cesto_ferramentas_camp', tipo: 'decoracao', x: 12.29, y: 33.4,
+      id: 'enseada_cesto_ferramentas_camp', tipo: 'decoracao', x: 13.19, y: 38.66,
       sprite: 'enseada_camp_ref_cesto_ferramentas', useCrop: true, larguraPx: 77,
       pivotX: 0.5, pivotY: 0.98, bloqueia: false,
     },
     {
-      id: 'enseada_caixa_atras_tenda', tipo: 'decoracao', x: 10.21, y: 26.88,
+      id: 'enseada_caixa_atras_tenda', tipo: 'decoracao', x: 14.94, y: 29.78,
       sprite: 'enseada_camp_ref_caixa', useCrop: true, larguraPx: 62,
       pivotX: 0.5, pivotY: 0.98, bloqueia: true,
       hitbox: { offsetX: -0.20, offsetY: -0.20, width: 0.4, height: 0.4 },
     },
     {
       // O caixote solto fica entre a fogueira e a pilha, na referência.
-      id: 'enseada_caixote_camp', tipo: 'decoracao', x: 16.05, y: 29.85,
+      id: 'enseada_caixote_camp', tipo: 'decoracao', x: 16.34, y: 35.88,
       sprite: 'enseada_camp_ref_caixa', useCrop: true, larguraPx: 44,
       pivotX: 0.5, pivotY: 0.98, bloqueia: true,
       hitbox: { offsetX: -0.15, offsetY: -0.15, width: 0.3, height: 0.3 },
@@ -617,14 +539,14 @@ export const map = {
       // Degraus de pedra logo abaixo da fogueira/tronco, como na referência:
       // a escada que vinha embutida no platô ficava na extrema direita, sob a
       // pilha de caixas.
-      id: 'enseada_escada_camp', tipo: 'decoracao', x: 21.56, y: 34.69,
+      id: 'enseada_escada_camp', tipo: 'decoracao', x: 22.6, y: 38.1,
       sprite: 'enseada_camp_escada', useCrop: true, larguraPx: 210,
       pivotX: 0.5, pivotY: 0.94, bloqueia: false,
     },
     {
       // Movido para sudoeste: o terminal de manutencao senta em (18.5, 38.1)
       // e o banco, na posicao antiga, cobria o aparelho.
-      id: 'enseada_banco_tronco_camp', tipo: 'decoracao', x: 14.06, y: 32.69,
+      id: 'enseada_banco_tronco_camp', tipo: 'decoracao', x: 19.16, y: 37.44,
       sprite: 'enseada_camp_ref_tronco', useCrop: true, larguraPx: 112,
       pivotX: 0.5, pivotY: 0.98, bloqueia: false,
     },
@@ -641,7 +563,7 @@ export const map = {
 
     // ---- SETOR 3 (Oeste): Pórtico + bosques ----
     {
-      id: 'portico_trilha_praia', nome: 'PÓRTICO DA TRILHA', tipo: 'decoracao', x: 13.5, y: 42.0,
+      id: 'portico_trilha_praia', nome: 'PÓRTICO DA TRILHA', tipo: 'decoracao', x: 12.12, y: 50.72,
       sprite: 'enseada3_portico_oeste', spriteB: 'enseada3_portico_oeste', animPeriodo: 0.54,
       useCrop: true, larguraPx: 150, pivotX: 0.5, pivotY: 0.98,
       bloqueia: false, oscilaBrisa: true, brilho: { cor: '#ffb86b', raio: 1.0, forca: 0.16 },
@@ -653,34 +575,24 @@ export const map = {
       bloqueia: false, oscilaBrisa: true,
       interacao: { label: 'OUVIR O CARRILHÃO', distancia: 1.55 },
     },
-    {
-      id: 'enseada3_mata_oeste_a', tipo: 'decoracao', x: 18.0, y: 44.0,
-      sprite: 'enseada3_palmeiral', useCrop: true, larguraPx: 320,
-      pivotX: 0.5, pivotY: 0.96, depthOffset: -0.6, bloqueia: false,
-    },
-    {
-      id: 'enseada3_mata_oeste_b', tipo: 'decoracao', x: 21.5, y: 53.5,
-      sprite: 'enseada3_palmeiral', useCrop: true, larguraPx: 300,
-      pivotX: 0.5, pivotY: 0.96, depthOffset: -0.4, bloqueia: false,
-    },
 
     // ---- SETOR 4 (Centro): Monólito + estela + cairn ----
     {
-      id: 'totem_eco_enseada', nome: 'MONÓLITO DE ECO', tipo: 'decoracao', x: 33.0, y: 32.0,
+      id: 'totem_eco_enseada', nome: 'MONÓLITO DE ECO', tipo: 'decoracao', x: 31.72, y: 34.25,
       sprite: 'enseada3_monolito', spriteB: 'enseada3_monolito', animPeriodo: 0.52,
       useCrop: true, larguraPx: 220, pivotX: 0.5, pivotY: 0.98,
       bloqueia: false, pulsoTotem: true, brilho: { cor: '#52f6ff', raio: 1.4, forca: 0.32 },
       interacao: { label: 'EXAMINAR MONÓLITO DE ECO', distancia: 1.5 },
     },
     {
-      id: 'estela_navegadores_enseada', nome: 'ESTELA DOS NAVEGADORES', tipo: 'decoracao', x: 30.0, y: 33.5,
+      id: 'estela_navegadores_enseada', nome: 'ESTELA DOS NAVEGADORES', tipo: 'decoracao', x: 29.62, y: 34.47,
       sprite: 'enseada8_estela', spriteB: 'enseada8_estela', animPeriodo: 0.62,
       useCrop: true, larguraPx: 70, pivotX: 0.5, pivotY: 0.92,
       bloqueia: false, pulsoBiolum: '#6cf7ff', brilho: { cor: '#6cf7ff', raio: 1.35, forca: 0.3 },
       interacao: { label: 'DECIFRAR A ESTELA DOS NAVEGADORES', distancia: 1.6 },
     },
     {
-      id: 'jardim_pedras_enseada', nome: 'PEDRAS DO EQUILÍBRIO', tipo: 'decoracao', x: 36.5, y: 31.0,
+      id: 'jardim_pedras_enseada', nome: 'PEDRAS DO EQUILÍBRIO', tipo: 'decoracao', x: 33.38, y: 30.09,
       sprite: 'enseada4_cairn', spriteB: 'enseada4_cairn', animPeriodo: 0.64,
       useCrop: true, larguraPx: 80, pivotX: 0.5, pivotY: 0.98,
       bloqueia: true, hitbox: { offsetX: -0.30, offsetY: -0.24, width: 0.60, height: 0.48 },
@@ -688,25 +600,15 @@ export const map = {
       interacao: { label: 'MEDITAR NAS PEDRAS DO EQUILÍBRIO', distancia: 1.55 },
     },
     {
-      id: 'borboletas_fonte_enseada', nome: 'BORBOLETAS DO CENTRO', tipo: 'decoracao', x: 34.5, y: 30.0,
+      id: 'borboletas_fonte_enseada', nome: 'BORBOLETAS DO CENTRO', tipo: 'decoracao', x: 29.31, y: 32.28,
       sprite: 'enseada_borboletas_vivas', spriteB: 'enseada_borboletas_vivas_b', animPeriodo: 0.34,
       useCrop: true, larguraPx: 50, pivotX: 0.5, pivotY: 0.5,
       bloqueia: false, flutuacaoSuave: true, nadoCardume: true,
     },
-    {
-      id: 'enseada3_mata_centro_oeste', tipo: 'decoracao', x: 28.0, y: 28.0,
-      sprite: 'enseada3_palmeiral', useCrop: true, larguraPx: 300,
-      pivotX: 0.5, pivotY: 0.96, depthOffset: -0.35, bloqueia: false,
-    },
-    {
-      id: 'enseada3_mata_leste', tipo: 'decoracao', x: 40.0, y: 24.0,
-      sprite: 'enseada3_palmeiral', useCrop: true, larguraPx: 320,
-      pivotX: 0.5, pivotY: 0.96, depthOffset: -0.4, bloqueia: false,
-    },
 
     // ---- SETOR 5 (Sudoeste): Piscina + espelho + grutas + rede ----
     {
-      id: 'piscina_mare_viva_enseada', nome: 'PISCINA TERMAL', tipo: 'decoracao', x: 28.0, y: 50.0,
+      id: 'piscina_mare_viva_enseada', nome: 'PISCINA TERMAL', tipo: 'decoracao', x: 30.56, y: 52.28,
       sprite: 'enseada3_piscina_termal', useCrop: true, larguraPx: 300,
       pivotX: 0.5, pivotY: 0.90, vaporTermal: true,
       bloqueia: false, pulsoBiolum: '#5cf7eb', brilho: { cor: '#5cf7eb', raio: 1.25, forca: 0.26 },
@@ -720,19 +622,19 @@ export const map = {
     },
     {
       // A pequena fonte de cristal azul da referência, abaixo da piscina.
-      id: 'fonte_cristal_enseada', nome: 'FONTE DE CRISTAL', tipo: 'decoracao', x: 30.4, y: 54.6,
+      id: 'fonte_cristal_enseada', nome: 'FONTE DE CRISTAL', tipo: 'decoracao', x: 37.44, y: 55.41,
       sprite: 'enseada3_fonte_cristal', useCrop: true, larguraPx: 78,
       pivotX: 0.5, pivotY: 0.95, bloqueia: true,
       hitbox: { offsetX: -0.26, offsetY: -0.26, width: 0.52, height: 0.52 },
       pulsoBiolum: '#7fe3ff', brilho: { cor: '#7fe3ff', raio: 0.9, forca: 0.22 },
     },
     {
-      id: 'enseada3_praca_espelho', tipo: 'decoracao', x: 33.0, y: 48.0,
+      id: 'enseada3_praca_espelho', tipo: 'decoracao', x: 35.72, y: 49.62,
       sprite: 'enseada3_calcada', useCrop: true, larguraPx: 340,
       pivotX: 0.5, pivotY: 0.92, depthOffset: -1, bloqueia: false,
     },
     {
-      id: 'espelho_arquetipos_enseada', nome: 'ESPELHO DE RESSONÂNCIA', tipo: 'dispositivo', x: 33.0, y: 48.0,
+      id: 'espelho_arquetipos_enseada', nome: 'ESPELHO DE RESSONÂNCIA', tipo: 'dispositivo', x: 35.72, y: 49.62,
       sprite: 'enseada_espelho_arquetipo', spriteB: 'enseada_espelho_arquetipo_b', animPeriodo: 0.56,
       useCrop: true, larguraPx: 190, pivotX: 0.5, pivotY: 0.95,
       bloqueia: false, brilho: { cor: '#6ff7ff', raio: 1.5, forca: 0.34 },
@@ -741,7 +643,7 @@ export const map = {
     {
       // A referência desenha a Concha Gigante como monumento da praia oeste,
       // com a boca de cristais na altura de um personagem — não como toca.
-      id: 'gruta_concha_enseada', nome: 'CONCHA GIGANTE', tipo: 'decoracao', x: 24.0, y: 47.0,
+      id: 'gruta_concha_enseada', nome: 'CONCHA GIGANTE', tipo: 'decoracao', x: 25.88, y: 50.09,
       sprite: 'enseada8_gruta', spriteB: 'enseada8_gruta', animPeriodo: 0.66,
       useCrop: true, larguraPx: 250, pivotX: 0.5, pivotY: 0.98,
       bloqueia: true, hitbox: { offsetX: -0.45, offsetY: -0.28, width: 0.9, height: 0.56 },
@@ -755,7 +657,7 @@ export const map = {
       interacao: { label: 'EXAMINAR A GRUTA DE PEDRA', distancia: 1.6 },
     },
     {
-      id: 'rede_treino_praia_enseada', nome: 'REDE DE TREINO DA PRAIA', tipo: 'decoracao', x: 36.0, y: 54.0,
+      id: 'rede_treino_praia_enseada', nome: 'REDE DE TREINO DA PRAIA', tipo: 'decoracao', x: 42.75, y: 51.34,
       sprite: 'enseada4_rede', useCrop: true, larguraPx: 150,
       pivotX: 0.5, pivotY: 0.98, depthOffset: 0.2,
       bloqueia: true, hitboxes: [
@@ -766,14 +668,14 @@ export const map = {
         dialogue: ['A REDE MARCA UM ESPAÇO LIVRE PARA TREINAR. A AREIA AO REDOR ESTÁ FIRME E SEM OBSTÁCULOS.'] },
     },
     {
-      id: 'portal_submarino_sul', tipo: 'decoracao', x: 61.0, y: 55.0,
+      id: 'portal_submarino_sul', tipo: 'decoracao', x: 46.34, y: 19.62,
       sprite: 'enseada8_portal_ne', useCrop: true, larguraPx: 150,
       pivotX: 0.5, pivotY: 0.94, depthOffset: -6, bloqueia: true,
       hitbox: { offsetX: -0.30, offsetY: -0.30, width: 0.60, height: 0.60 },
       nome: 'PORTAL SUBMARINO DE CORAL',
     },
     {
-      id: 'portal_submarino_fundo', tipo: 'decoracao', x: 47.0, y: 60.5,
+      id: 'portal_submarino_fundo', tipo: 'decoracao', x: 34.0, y: 3.22,
       sprite: 'enseada4_portal_submarino', useCrop: true, larguraPx: 130,
       pivotX: 0.5, pivotY: 0.96, depthOffset: -6, bloqueia: false,
       nome: 'PORTA DE CORAL',
@@ -797,14 +699,14 @@ export const map = {
       pivotX: 0.5, pivotY: 0.97, camada: 'fundo', ordem: -1, bloqueia: false,
     },
     {
-      id: 'cais_madeira_pesca_enseada', nome: 'CAIS DA ENSEADA', tipo: 'decoracao', x: 49.5, y: 48.5,
+      id: 'cais_madeira_pesca_enseada', nome: 'CAIS DA ENSEADA', tipo: 'decoracao', x: 50.2, y: 43.0,
       sprite: 'enseada8_cais_barco_ref', spriteB: 'enseada8_cais_barco_ref', animPeriodo: 0.68,
       useCrop: true, larguraPx: 280, pivotX: 0.5, pivotY: 0.97,
       bloqueia: false, renderizar: false, brilho: { cor: '#ffd980', raio: 1.0, forca: 0.16 },
       interacao: { label: 'OBSERVAR A BAÍA DO CAIS', distancia: 1.75 },
     },
     {
-      id: 'barco_expedicao_enseada', nome: 'BARCO DE EXPEDIÇÃO', tipo: 'decoracao', x: 48.0, y: 49.0,
+      id: 'barco_expedicao_enseada', nome: 'BARCO DE EXPEDIÇÃO', tipo: 'decoracao', x: 55.25, y: 41.34,
       sprite: 'enseada_barco_expedicao', spriteB: 'enseada_barco_expedicao_b', animPeriodo: 0.72,
       useCrop: true, larguraPx: 126, pivotX: 0.5, pivotY: 0.88,
       bloqueia: false, flutuacaoSuave: true, renderizar: false,
@@ -840,7 +742,7 @@ export const map = {
       bloqueia: false, brilho: { cor: '#5cf7eb', raio: 2.2, forca: 0.44 },
     },
     {
-      id: 'enseada_jardim_cercado', tipo: 'decoracao', x: 44.0, y: 30.0,
+      id: 'enseada_jardim_cercado', tipo: 'decoracao', x: 39.0, y: 30.09,
       sprite: 'enseada7_jardim', useCrop: true, larguraPx: 110,
       pivotX: 0.5, pivotY: 0.96, bloqueia: false,
       interacao: { label: 'EXAMINAR O JARDIM', distancia: 1.6 },
@@ -1035,11 +937,6 @@ export const map = {
     },
 
     // ---- Bosque sul (fecha o setor 5 sem cobrir a rede) ----
-    {
-      id: 'enseada3_mata_sul', tipo: 'decoracao', x: 41.5, y: 42.6,
-      sprite: 'enseada3_palmeiral', useCrop: true, larguraPx: 300,
-      pivotX: 0.5, pivotY: 0.96, depthOffset: -0.4, bloqueia: false,
-    },
   ],
 
   collectibles: [

@@ -682,6 +682,7 @@ function drawBeachSurface(map) {
       caminhos: map.caminhosAreia ?? [],
       zonasGrama: map.zonasGrama ?? [],
       zonasRocha: map.zonasRocha ?? [],
+      celulasGrama: map.celulasGrama ?? null,
     });
     texture = document.createElement('canvas');
     texture.width = data.width; texture.height = data.height;

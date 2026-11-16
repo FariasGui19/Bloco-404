@@ -245,6 +245,8 @@ export const map = {
     { id: 'enseada_peixes', species: 'peixes', x: 10.9, y: 53.2 },
     { id: 'enseada_tartaruga_1', species: 'tartaruga', x: 6.5, y: 42.5 },
     { id: 'enseada_golfinho_1', species: 'golfinho', x: 50.4, y: 12.4 },
+    { id: 'enseada_golfinho_oeste', species: 'golfinho', x: 2.5, y: 30.5 },
+    { id: 'enseada_golfinho_leste', species: 'golfinho', x: 60.5, y: 38.5 },
     {
       id: 'enseada_capivara', species: 'capivara', x: 28.0, y: 50.0, calma: true,
       interacao: {
@@ -279,7 +281,7 @@ export const map = {
     // colisões e portal são independentes para não bloquear a entrada.
     {
       id: 'enseada_macico_leste', tipo: 'decoracao', x: 21.6, y: 13.6,
-      sprite: 'enseada_estacao_integrada', useCrop: true, larguraPx: 620,
+      sprite: 'enseada_estacao_integrada', useCrop: true, larguraPx: 620, cachoeiraViva: true,
       pivotX: 0.5, pivotY: 0.98, camada: 'fundo', ordem: -1,
       bloqueia: false,
     },
@@ -588,6 +590,7 @@ export const map = {
       id: 'arco_conduto_retorno_mare', tipo: 'decoracao', x: 57.5, y: 24.0,
       sprite: 'enseada8_portal_leste', spriteB: 'enseada8_portal_leste', animPeriodo: 0.7,
       useCrop: true, espelhar: true, larguraPx: 170, pivotX: 0.5, pivotY: 0.98, ajusteY: -55,
+      vorticidadeCorrentes: { y: -116, rx: 16, ry: 38 },
       bloqueia: false, brilho: { cor: '#5cf7eb', raio: 2.2, forca: 0.44 },
     },
     {
@@ -706,12 +709,12 @@ export const map = {
       bloqueia: false, flutuacaoSuave: true, nadoCardume: true,
     },
     {
-      id: 'golfinho_saltando', tipo: 'decoracao', x: 2.0, y: 30.0,
+      id: 'golfinho_saltando', tipo: 'decoracao', x: 2.0, y: 30.0, renderizar: false,
       sprite: 'enseada5_golfinho_saltando', spriteB: 'enseada5_golfinho_saltando_b', animPeriodo: 0.6, useCrop: true, larguraPx: 90,
       pivotX: 0.5, pivotY: 0.96, depthOffset: -0.3, bloqueia: false,
     },
     {
-      id: 'golfinho_nadando', tipo: 'decoracao', x: 60.0, y: 38.0,
+      id: 'golfinho_nadando', tipo: 'decoracao', x: 60.0, y: 38.0, renderizar: false,
       sprite: 'enseada5_golfinho_nadando', spriteB: 'enseada5_golfinho_nadando_b', animPeriodo: 0.6, useCrop: true, larguraPx: 100,
       pivotX: 0.5, pivotY: 0.96, depthOffset: -0.3, bloqueia: false,
     },

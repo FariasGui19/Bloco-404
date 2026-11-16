@@ -4110,7 +4110,7 @@ function drawEnseadaObjectAnimations(object, state) {
   const interactionFx = object.id === 'bancada_campo_enseada' || object.id === 'fonte_termal_enseada' ||
     object.id === 'piscina_mare_viva_enseada' || object.id === 'algas_douradas_enseada' ||
     object.id === 'gruta_concha_enseada';
-  if (!object.fogueiraViva && !object.feixeFarolete && !object.pulsoAntena && !object.pulsoTotem && !object.pulsoBiolum && !object.vorticidadeCorrentes && !interactionFx) return;
+  if (!object.fogueiraViva && !object.feixeFarolete && !object.pulsoAntena && !object.pulsoTotem && !object.pulsoBiolum && !object.vorticidadeCorrentes && !object.cachoeiraViva && !interactionFx) return;
   const reduced = typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
   const t = reduced ? 0 : performance.now() / 1000;
   const ix = (object.x - object.y) * HW + (object.ajusteX ?? 0);
@@ -4120,23 +4120,55 @@ function drawEnseadaObjectAnimations(object, state) {
 
   if (object.vorticidadeCorrentes) {
     // O vórtice fica restrito à abertura do arco, sem cobrir as pedras.
-    const cy = iy - 115;
+    const config = typeof object.vorticidadeCorrentes === 'object' ? object.vorticidadeCorrentes : {};
+    const cx = ix + (config.x ?? 0), cy = iy + (config.y ?? -115);
+    const rx = config.rx ?? 24, ry = config.ry ?? 55;
     ctx.save();
-    ctx.beginPath(); ctx.ellipse(ix, cy, 24, 55, 0, 0, Math.PI * 2); ctx.clip();
+    ctx.beginPath(); ctx.ellipse(cx, cy, rx, ry, 0, 0, Math.PI * 2); ctx.clip();
     for (let i = 0; i < 4; i++) {
       const fase = (t * .35 + i / 4) % 1;
       ctx.strokeStyle = `rgba(85, 255, 255, ${(.38 * (1 - fase)).toFixed(3)})`;
       ctx.lineWidth = 2;
-      ctx.beginPath(); ctx.ellipse(ix, cy, 4 + fase * 22, 10 + fase * 45, .18 * Math.sin(t + i), 0, Math.PI * 2); ctx.stroke();
+      ctx.beginPath(); ctx.ellipse(cx, cy, rx * (.17 + fase * .83), ry * (.18 + fase * .82), .18 * Math.sin(t + i), 0, Math.PI * 2); ctx.stroke();
     }
     for (let i = 0; i < 8; i++) {
       const f = (t * .18 + i * .137) % 1;
-      const px = ix + Math.sin(t * 1.7 + i * 4.2) * (5 + 14 * f);
-      const py = cy + (f - .5) * 88;
+      const px = cx + Math.sin(t * 1.7 + i * 4.2) * rx * (.2 + .6 * f);
+      const py = cy + (f - .5) * ry * 1.6;
       ctx.fillStyle = `rgba(196,255,255,${(.45 * Math.sin(Math.PI * f)).toFixed(3)})`;
       ctx.fillRect(px, py, 2, 2);
     }
     ctx.restore();
+  }
+
+  if (object.cachoeiraViva) {
+    // Faixas translúcidas só dentro da queda da arte; custo fixo por quadro.
+    // Coordenadas relativas à arte 530x275 ancorada na base do objeto.
+    const k = object.larguraPx / 530;
+    const left = ix - object.larguraPx * .5;
+    const top = iy - 275 * k * (object.pivotY ?? 1);
+    ctx.save();
+    ctx.translate(left, top); ctx.scale(k, k);
+    ctx.beginPath();
+    ctx.moveTo(220, 112); ctx.bezierCurveTo(233, 122, 235, 140, 235, 158);
+    ctx.lineTo(236, 207); ctx.bezierCurveTo(234, 217, 227, 224, 220, 226);
+    ctx.lineTo(248, 232); ctx.bezierCurveTo(255, 224, 254, 215, 250, 205);
+    ctx.lineTo(249, 155); ctx.bezierCurveTo(249, 132, 241, 117, 230, 108);
+    ctx.closePath(); ctx.clip();
+    for (let i = 0; i < 9; i++) {
+      const y = 112 + (t * 34 + i * 17) % 112;
+      const x = 228 + (i % 4) * 5 + Math.sin(t * 2 + i) * 1.5;
+      ctx.fillStyle = `rgba(220,255,255,${i % 2 ? .27 : .42})`;
+      ctx.fillRect(x, y, i % 3 === 0 ? 2 : 1, 7 + i % 3 * 3);
+    }
+    ctx.restore();
+    const foamX = left + 245 * k, foamY = top + 233 * k;
+    for (let i = 0; i < 3; i++) {
+      const f = (t * .45 + i / 3) % 1;
+      ctx.strokeStyle = `rgba(205,255,255,${(.42 * (1-f)).toFixed(3)})`;
+      ctx.lineWidth = 1.2;
+      ctx.beginPath(); ctx.ellipse(foamX, foamY, 3 + f * 15, 1 + f * 4, 0, 0, Math.PI * 2); ctx.stroke();
+    }
   }
 
   if (object.fogueiraViva) {

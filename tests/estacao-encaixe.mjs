@@ -7,6 +7,7 @@ import { state } from '../js/game/state.js';
 import { loadMap } from '../js/game/map-manager.js';
 import { canStandAt } from '../js/game/collision.js';
 import { findNearestInteraction } from '../js/game/interactions.js';
+import { usePortal } from '../js/game/portals.js';
 
 globalThis.window = { addEventListener() {}, removeEventListener() {} };
 const visual = station.objects.find(o => o.id === 'saida_estacao_666_visual');
@@ -15,8 +16,10 @@ assert.equal(visual.x + .5, 1, 'eclusa deve estar no plano da parede x=1');
 assert.equal(visual.y, exit.y, 'eclusa e interação devem apontar para a mesma seção');
 assert(visual.larguraPx >= 95 && visual.camada === 'fundo');
 assert(Math.hypot(station.spawnPoints.vindo_da_enseada.x-(exit.x+.5),station.spawnPoints.vindo_da_enseada.y-(exit.y+.5)) > exit.interactionDistance);
-const entrance = coast.objects.find(o => o.id === 'porta_estacao_666_visual');
-assert(entrance.larguraPx >= 280 && entrance.depthOffset < 0);
+const mountain = coast.objects.find(o => o.id === 'enseada_macico_leste');
+assert.equal(mountain.sprite, 'enseada_estacao_integrada');
+assert.equal(mountain.camada, 'fundo');
+assert(coast.objects.some(o => o.id.startsWith('enseada_parede_estacao_') && o.bloqueia));
 for (const file of ['abrigo-ampliado','fx-vortice','fx-vapor','fx-centelha','fx-sinal','fx-baliza','fx-poeira']) assert(existsSync(`assets/sprites/frequencia-666/${file}.png`));
 state.save.loaded = false; state.progress.flags = { frequencia666Registrada: true };
 await loadMap('estacao_limiar_666', 'vindo_da_enseada');
@@ -28,14 +31,16 @@ for (const obj of state.objects.filter(o => o.id !== 'saida_estacao_666_visual')
   assert(!canStandAt(station,obj.x,obj.y,.25,state.player), `${obj.id} não permite atravessar o centro`);
 }
 await loadMap('ilha_enseada_ecos', 'vindo_da_estacao_666');
-const porta = coast.objects.find(o => o.id === 'porta_estacao_666_visual');
-const corpo = porta.hitbox;
-assert(!canStandAt(coast, porta.x + corpo.offsetX + corpo.width / 2, porta.y + corpo.offsetY + corpo.height / 2, .25, state.player),'o corpo do abrigo não é atravessável');
-assert(canStandAt(coast,22.5,8.5,.25,state.player),'escadaria e entrada seguem acessíveis');
-assert(canStandAt(coast,16.5,13.5,.25,state.player),'retorno da estação continua seguro');
-// Da saída ao degrau, há um caminho real de meia célula apesar da fundação.
 const entrancePortal = state.portals.find(p => p.id === 'acesso_estacao_666');
-const seen = new Set(), queue = [[46,18]]; let entradaAlcancada = false;
+const returnSpawn = coast.spawnPoints.vindo_da_estacao_666;
+assert(canStandAt(coast, entrancePortal.x + .5, entrancePortal.y + .5, .25, state.player), 'soleira acessível');
+assert(canStandAt(coast, returnSpawn.x, returnSpawn.y, .25, state.player), 'retorno seguro');
+assert(Math.hypot(returnSpawn.x - entrancePortal.x - .5, returnSpawn.y - entrancePortal.y - .5) > entrancePortal.interactionDistance, 'retorno fora do alcance imediato');
+for (const wall of state.objects.filter(o => o.id.startsWith('enseada_parede_estacao_'))) {
+  assert(!canStandAt(coast, wall.x, wall.y, .2, state.player), `${wall.id} deve bloquear`);
+}
+// Da saída à porta há caminho real sem atravessar a fundação.
+const seen = new Set(), queue = [[Math.round(returnSpawn.x * 2), Math.round(returnSpawn.y * 2)]]; let entradaAlcancada = false;
 for (let i=0;i<queue.length;i++) {
   const [ix,iy] = queue[i], key=`${ix},${iy}`; if (seen.has(key)) continue;
   if (!canStandAt(coast,ix/2,iy/2,.25,state.player)) continue;
@@ -49,4 +54,17 @@ assert(!canStandAt(coast,receptor.x,receptor.y,.25,state.player));
 Object.assign(state.player,{x:receptor.x+.8,y:receptor.y});
 assert(canStandAt(coast,state.player.x,state.player.y,.25,state.player));
 assert.equal(findNearestInteraction()?.data.id,receptor.id,'terminal continua selecionável');
+// A porta mantém o bloqueio por sinal e realiza ida e retorno reais.
+globalThis.document = { getElementById: () => null };
+state.world.portalLockUntil = 0;
+state.progress.flags.frequencia666Registrada = false;
+assert.equal(await usePortal(entrancePortal), false, 'entrada fechada sem sinal');
+state.progress.flags.frequencia666Registrada = true;
+assert.equal(await usePortal(entrancePortal), true, 'entrada liberada com sinal');
+assert.equal(state.world.currentMapId, 'estacao_limiar_666');
+state.world.portalLockUntil = 0;
+const back = state.portals.find(p => p.id === 'voltar_enseada_666');
+assert.equal(await usePortal(back), true, 'retorno à Enseada');
+assert.equal(state.world.currentMapId, 'ilha_enseada_ecos');
+assert(canStandAt(coast, state.player.x, state.player.y, .25, state.player), 'retorno pousa em local seguro');
 console.log('Encaixe e acesso da Estação 66.6 OK.');

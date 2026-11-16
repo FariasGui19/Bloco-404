@@ -165,6 +165,7 @@ export const map = {
   aguaPraia: rows,
   // Corredores de areia entre os setores: arte do chão, sem alterar colisões.
   caminhosAreia: [
+    [22.5, 11.75, 30, 10], [22.5, 11.75, 25.5, 14.5],
     [14, 42, 23, 41], [23, 41, 30, 35], [30, 35, 33, 32],
     [33, 32, 39, 30], [39, 30, 48, 29], [48, 29, 56, 24],
     [30, 35, 24, 31], [24, 31, 19, 29],
@@ -175,7 +176,7 @@ export const map = {
   spawnPoints: {
     inicio: { x: 19.9, y: 51.7 },
     vindo_da_praia: { x: 19.9, y: 51.7 },
-    vindo_da_estacao_666: { x: 30.1, y: 19.0 },
+    vindo_da_estacao_666: { x: 24.2, y: 13.2 },
     vindo_do_mar: { x: 47.5, y: 49.5 },
     vindo_da_darsena_mare: { x: 57.0, y: 24.0 },
   },
@@ -262,21 +263,27 @@ export const map = {
       },
       moduleSystem: { id: 'frequencia_666_terminal', label: 'RASTREAR SINAL ANALÓGICO', distance: 1.6, speaker: 'TERMINAL DA ENSEADA' },
     },
-    { id: 'baliza_666_receptor', tipo: 'decoracao', x: 25.9, y: 17.2, sprite: 'freq666_baliza', useCrop: true, larguraPx: 24, pivotX: 0.5, pivotY: 0.98, bloqueia: false },
-    { id: 'baliza_666_entrada', tipo: 'decoracao', x: 30.5, y: 14.5, sprite: 'freq666_baliza', useCrop: true, larguraPx: 24, pivotX: 0.5, pivotY: 0.98, bloqueia: false },
-
-    // ---- SETOR 1 (Norte): Platô + Estação 66.6, lado a lado sem sobrepor ----
+    // ---- SETOR 1: penhasco contínuo, nascente, cascata e entrada embutida ----
+    // A arte vem da referência, com a placa corrigida. É desenhada no fundo;
+    // colisões e portal são independentes para não bloquear a entrada.
     {
       id: 'enseada_macico_leste', tipo: 'decoracao', x: 22.0, y: 14.0,
-      sprite: 'enseada3_platao_cascata', spriteB: 'enseada3_platao_cascata_b', animPeriodo: 0.7,
-      useCrop: true, larguraPx: 560, pivotX: 0.5, pivotY: 0.98, depthOffset: -2,
-      bloqueia: false, brilho: { cor: '#45f4f4', raio: 2.2, forca: 0.16 },
+      sprite: 'enseada_estacao_integrada', useCrop: true, larguraPx: 560,
+      pivotX: 0.5, pivotY: 0.98, camada: 'fundo', ordem: -1,
+      bloqueia: false,
     },
-    {
-      id: 'porta_estacao_666_visual', tipo: 'decoracao', x: 27.0, y: 16.0, sprite: 'enseada3_estacao_666',
-      useCrop: true, larguraPx: 220, pivotX: 0.5, pivotY: 0.96, ajusteY: -36, depthOffset: -1, bloqueia: true,
-      hitbox: { offsetX: -0.55, offsetY: -0.35, width: 1.1, height: 0.7 },
-    },
+
+    // Colisores discretos ao longo da face do penhasco. Mantêm uma abertura
+    // livre na soleira: o portal fica no centro da porta desenhada.
+    ...[
+      [14.3, 14.1], [15.9, 14.0], [17.4, 13.7],
+      [18.9, 13.8], [20.7, 14.0], [21.1, 12.0],
+      [22.8, 10.25], [23.75, 10.0], [23.6, 8.45],
+    ].map(([x, y], i) => ({
+      id: `enseada_parede_estacao_${i + 1}`, tipo: 'decoracao', x, y,
+      renderizar: false, bloqueia: true,
+      hitbox: { offsetX: -0.44, offsetY: -0.44, width: 0.88, height: 0.88 },
+    })),
 
     // ---- Trilha de pedras: pórtico → espelho → cais (uma linha, sem ramal duplo) ----
     ...[[14.5, 42.5], [15.8, 43.2], [17.2, 43.9], [18.6, 44.6], [20.0, 45.3], [21.4, 46.0], [22.8, 46.6], [24.2, 47.1], [25.6, 47.5], [27.0, 47.8], [28.4, 48.0], [29.8, 48.1], [31.2, 48.1], [32.6, 48.0], [34.0, 47.9], [35.4, 47.9], [36.8, 47.9], [38.2, 47.9], [39.6, 47.9], [41.0, 47.9], [42.4, 47.9], [43.8, 47.9]].map(([tx, ty], i) => ({
@@ -816,7 +823,7 @@ export const map = {
 
   portals: [
     {
-      id: 'acesso_estacao_666', tipo: 'door', x: 27.0, y: 16.0, label: 'ENTRAR NA ESTAÇÃO 66.6',
+      id: 'acesso_estacao_666', tipo: 'door', x: 22.05, y: 11.25, label: 'ENTRAR NA ESTAÇÃO 66.6',
       requiresFlag: 'frequencia666Registrada', lockedLabel: 'ESTAÇÃO DE ESCUTA // SEM SINAL',
       mensagemBloqueado: ['A PORTA AGUARDA UMA ASSINATURA. INVESTIGUE O TERMINAL DE MANUTENÇÃO COM [R].'],
       interactionDistance: 1.2, destino: { mapId: 'estacao_limiar_666', spawnId: 'vindo_da_enseada' }, transition: 'fade',

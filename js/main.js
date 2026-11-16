@@ -559,6 +559,7 @@ await loadSprites([
   { id: 'enseada_arco_conduto_b', src: 'assets/sprites/enseada-2/arco-conduto-mare-b.png' },
   // ---- ENSEADA DOS ECOS 3.0 — lote visual 1 (recorte e arte nova baseada na referência) ----
   { id: 'enseada3_estacao_666', src: 'assets/sprites/enseada-3/estacao-666-cliff-gate.png' },
+  { id: 'enseada_estacao_integrada', src: 'assets/sprites/enseada-estacao/estacao-integrada.png' },
   { id: 'enseada3_platao_cascata', src: 'assets/sprites/enseada-3/plateau-waterfall-wide.png' },
   { id: 'enseada3_platao_cascata_b', src: 'assets/sprites/enseada-3/plateau-waterfall-wide-b.png' },
   { id: 'enseada3_portal_recife', src: 'assets/sprites/enseada-3/reef-portal-arch.png' },

@@ -165,3 +165,19 @@ uma reprodução pixel a pixel da imagem de referência.
 Os pés visuais da bancada, fogueira e tenda coincidem com suas coordenadas de
 colisão e ordenação por profundidade; as interações continuam nos objetos
 originais. O platô e a rampa continuam cenográficos, sem altura física.
+
+## Estação 66.6 integrada ao penhasco
+
+O sprite `assets/sprites/enseada-estacao/estacao-integrada.png` foi recortado
+à mão de `docs/enseada-referencia-final.png`. A placa foi redesenhada com o
+texto “ESTAÇÃO 66.6” e o cone foi recolorido; o sprite reúne a rocha, a
+cachoeira, a lagoa, a entrada e as luzes. O abrigo cúbico e as duas balizas
+antigas foram removidos. A porta agora usa o portal na soleira visual e o
+retorno nasce à frente, fora do alcance imediato. Colisores invisíveis
+acompanham trechos da face, preservando uma passagem no vão da porta.
+
+A integração foi conferida no navegador. A imagem de origem é pequena e o
+recorte à esquerda encontra o terreno com uma borda reta; a costa atual também
+não coincide pixel a pixel com a referência. A superfície superior continua
+cenográfica e a lagoa desenhada não é uma massa de água física. Não se deve
+interpretar a composição como reprodução perfeitamente idêntica.

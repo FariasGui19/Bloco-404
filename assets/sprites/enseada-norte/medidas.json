@@ -1,0 +1,13 @@
+[
+  { "id": "terraco-plato", "arquivo": "terraco-plato.png", "w": 1302, "h": 816 },
+  { "id": "encosta-plato", "arquivo": "encosta-plato.png", "w": 1386, "h": 752 },
+  { "id": "degraus-embutidos", "arquivo": "degraus-embutidos.png", "w": 743, "h": 592 },
+  { "id": "parede-degraus", "arquivo": "parede-degraus.png", "w": 1150, "h": 664 },
+  { "id": "palmeira-media", "arquivo": "palmeira-media.png", "w": 570, "h": 646 },
+  { "id": "palmeira-baixa", "arquivo": "palmeira-baixa.png", "w": 430, "h": 482 },
+  { "id": "arvores-redondas", "arquivo": "arvores-redondas.png", "w": 734, "h": 622 },
+  { "id": "arbustos-densos", "arquivo": "arbustos-densos.png", "w": 913, "h": 628 },
+  { "id": "pedras-cinzentas", "arquivo": "pedras-cinzentas.png", "w": 1004, "h": 593 },
+  { "id": "planta-piscina", "arquivo": "planta-piscina.png", "w": 452, "h": 341 },
+  { "id": "biruta", "arquivo": "biruta.png", "w": 406, "h": 522 }
+]

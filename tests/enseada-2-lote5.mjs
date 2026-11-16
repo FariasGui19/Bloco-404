@@ -164,7 +164,9 @@ state.progress.archetype = 'mare_astral';
 await interactAt(bancada.x, bancada.y, 'bancada_campo_enseada');
 assert.equal(state.player.enseadaBuff, 'pulso_salino');
 closeDialogue();
-Object.assign(state.player, { x: 16.5, y: 54.5 }); // tile 'M' na orla oeste da nova silhueta
+// Tile 'M' da orla oeste medida na referência (a franja molhada da costa
+// frontal fica em x≈14–18 entre as linhas 52 e 56).
+Object.assign(state.player, { x: 14.5, y: 54.5 });
 const speedComBuff = getPlayerMoveSpeed(state.progress, state.player);
 state.player.enseadaBuff = null;
 const speedSemBuff = getPlayerMoveSpeed(state.progress, state.player);

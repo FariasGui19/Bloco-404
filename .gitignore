@@ -1,3 +1,6 @@
 .venv/
 node_modules/
 .cache/
+
+# prévias locais de QA (.qa/) não entram no repo
+.qa/

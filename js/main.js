@@ -584,6 +584,8 @@ await loadSprites([
   { id: 'enseada8_entrada_666', src: 'assets/sprites/enseada-8/entrada-estacao-666-recortado.png' },
   { id: 'enseada8_acampamento', src: 'assets/sprites/enseada-8/acampamento-plataforma-recortado.png' },
   { id: 'enseada_terraco_acampamento', src: 'assets/sprites/enseada-estacao/terraco-curto.png' },
+  // Setor 1: mesa desenhada em pixel art a partir da silhueta medida.
+  { id: 'enseada_setor1_plato', src: 'assets/sprites/enseada-norte/plato-acampamento.png' },
   { id: 'enseada_banco_tronco', src: 'assets/sprites/enseada-lote-10/04-troncos.png' },
   { id: 'enseada_biruta_camp', src: 'assets/sprites/enseada-lote-10/07-biruta.png' },
   { id: 'enseada_bancada_expedicao', src: 'assets/sprites/enseada-lote-10/05-paineis.png' },

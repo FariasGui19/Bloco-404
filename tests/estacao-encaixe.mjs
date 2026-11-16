@@ -86,7 +86,10 @@ console.log('Encaixe e acesso da Estação 66.6 OK.');
 // a mata tem colisão e a praia não foi sobreposta à força por um sprite.
 // A montanha foi reconectada à referência com o mar encostando na rocha;
 // o grupo inteiro (arte, paredes, soleira) se desloca junto.
-assert(Math.abs(mountain.x - 15.6) < 1e-8 && Math.abs(mountain.y - 22.6) < 1e-8);
+// Setor Norte revisado: a montanha subiu para a porta e o cone ficarem
+// livres acima da linha das palmeiras, e a borda rochosa direita encosta
+// no mar sem faixa de grama cortando a base.
+assert(Math.abs(mountain.x - 16.2) < 1e-8 && Math.abs(mountain.y - 21.8) < 1e-8);
 const mata = coast.objects.find(o => o.id === 'enseada_mata_juncao_estacao');
 assert(mata?.bloqueia && mata.hitbox && mata.camada !== 'fundo');
 assert(coast.zonasGrama?.length, 'grama da junção precisa seguir a superfície do mapa');

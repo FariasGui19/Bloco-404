@@ -566,6 +566,7 @@ await loadSprites([
   { id: 'enseada_correntes_pedra_1', src: 'assets/sprites/enseada-correntes/pedra-1.png' },
   { id: 'enseada_correntes_pedra_2', src: 'assets/sprites/enseada-correntes/pedra-2.png' },
   { id: 'enseada_correntes_pedra_3', src: 'assets/sprites/enseada-correntes/pedra-3.png' },
+  { id: 'enseada_estacao_mata_juncao', src: 'assets/sprites/enseada-estacao/mata-juncao.png' },
   { id: 'enseada_estacao_integrada', src: 'assets/sprites/enseada-estacao/estacao-integrada.png' },
   { id: 'enseada3_platao_cascata', src: 'assets/sprites/enseada-3/plateau-waterfall-wide.png' },
   { id: 'enseada3_platao_cascata_b', src: 'assets/sprites/enseada-3/plateau-waterfall-wide-b.png' },

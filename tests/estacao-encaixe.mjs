@@ -78,3 +78,9 @@ assert.equal(await usePortal(back), true, 'retorno à Enseada');
 assert.equal(state.world.currentMapId, 'ilha_enseada_ecos');
 assert(canStandAt(coast, state.player.x, state.player.y, .25, state.player), 'retorno pousa em local seguro');
 console.log('Encaixe e acesso da Estação 66.6 OK.');
+// A estação se move como um grupo: a porta mantém sua posição relativa,
+// a mata tem colisão e a praia não foi sobreposta à força por um sprite.
+assert(Math.abs(mountain.x - 18.6) < 1e-8 && Math.abs(mountain.y - 18.1) < 1e-8);
+const mata = coast.objects.find(o => o.id === 'enseada_mata_juncao_estacao');
+assert(mata?.bloqueia && mata.hitbox && mata.camada !== 'fundo');
+assert(coast.zonasGrama?.length, 'grama da junção precisa seguir a superfície do mapa');

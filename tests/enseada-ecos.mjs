@@ -25,7 +25,7 @@ while (queue.length) {
 for (const item of enseada.collectibles) assert(seen.has(`${item.x},${item.y}`), `${item.id} inacessível`);
 assert(seen.has(`${back.x},${back.y}`));
 assert.equal(enseada.collectibles.filter(i => i.id.startsWith('enseada_rastro_')).length, 3);
-assert(enseada.objects.filter(o => o.bloqueia).every(o => (o.hitbox || o.hitboxes) && (o.sprite === 'vegetacao_tropical' || ['porta_estacao_666_visual','terminal_frequencia_666'].includes(o.id) || o.id === 'torre_antena_enseada' || o.id === 'relogio_mare_enseada' || o.id === 'bancada_campo_enseada' || o.id === 'acampamento_vigilia_enseada' || o.id === 'maleta_expedicao_enseada' || o.id === 'jardim_pedras_enseada' || o.id === 'gruta_concha_enseada' || o.id === 'tenda_expedicao_enseada' || o.id === 'placa_trilha_enseada' || o.id === 'rede_treino_praia_enseada' || o.id === 'enseada_rochedo_portal_ne')));
+assert(enseada.objects.filter(o => o.bloqueia).every(o => (o.hitbox || o.hitboxes) && (o.sprite === 'vegetacao_tropical' || ['porta_estacao_666_visual','terminal_frequencia_666','enseada_caixa_atras_tenda','enseada_caixote_camp'].includes(o.id) || o.id === 'torre_antena_enseada' || o.id === 'relogio_mare_enseada' || o.id === 'bancada_campo_enseada' || o.id === 'acampamento_vigilia_enseada' || o.id === 'maleta_expedicao_enseada' || o.id === 'jardim_pedras_enseada' || o.id === 'gruta_concha_enseada' || o.id === 'tenda_expedicao_enseada' || o.id === 'placa_trilha_enseada' || o.id === 'rede_treino_praia_enseada' || o.id === 'enseada_rochedo_portal_ne')));
 console.log('Enseada: ida, volta e três vestígios acessíveis OK.');
 
 // As descobertas persistem em flags separadas e não reescrevem a missão do metrô.

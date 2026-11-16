@@ -151,3 +151,17 @@ terreno, vegetação, objetos e estação.
   coordenadas. Como o veleiro está fundido à mesma imagem, a inclinação afeta
   os dois e não resolve independentemente a sobreposição do barco ao píer.
 - O terraço e a rampa continuam cenográficos: não representam altura física.
+
+## Acampamento: composição com recortes da referência
+
+Os sprites em `assets/sprites/enseada-camp/` foram recortados e mascarados a
+partir de `docs/enseada-referencia-final.png`, incluindo torre, barraca,
+relógio, bancada, fogueira, banco, árvores e caixas. As duas árvores usam o
+mesmo recorte, sendo a segunda espelhada. O mastro e as palmeiras continuam
+sendo artes anteriores. As artes e a composição foram conferidas no navegador;
+por dependerem de recortes pequenos e do terraço existente, não constituem
+uma reprodução pixel a pixel da imagem de referência.
+
+Os pés visuais da bancada, fogueira e tenda coincidem com suas coordenadas de
+colisão e ordenação por profundidade; as interações continuam nos objetos
+originais. O platô e a rampa continuam cenográficos, sem altura física.

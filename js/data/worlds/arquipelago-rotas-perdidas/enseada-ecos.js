@@ -18,10 +18,9 @@ const ehTerra = c => c !== undefined && 'SMT'.includes(c);
 
 // Silhueta da referência (imagem 1, 1490×809): projeção isométrica 2:1 da arte.
 // Cada célula da grade é convertida de volta para a imagem; a costa é o polígono
-// traçado sobre a referência (ilha principal e ilhota nordeste do portal de correntes).
+// traçado sobre a referência (ilha principal; o portal não forma uma ilhota de areia).
 const REF = { cx: 745, cy: 405, s: 2.0, ox: 35.094, oy: 34.625 };
 const POLIGONO_ILHA = [[118,420],[150,300],[200,255],[260,205],[330,165],[400,125],[470,100],[520,85],[600,80],[650,55],[700,40],[760,30],[820,20],[880,25],[940,30],[980,70],[1020,100],[1060,130],[1080,165],[1040,195],[1000,225],[1030,250],[1070,300],[1120,330],[1180,350],[1220,365],[1275,365],[1320,395],[1335,440],[1320,480],[1280,515],[1240,540],[1190,548],[1150,565],[1100,580],[1050,585],[1000,570],[940,555],[880,560],[830,575],[790,600],[760,640],[730,680],[690,705],[640,715],[580,705],[520,700],[460,690],[420,680],[380,650],[330,640],[280,610],[230,570],[180,520],[140,470]];
-const POLIGONO_ILHOTA = [[1210,170],[1240,95],[1275,80],[1310,95],[1340,130],[1350,175],[1320,205],[1270,215],[1225,205]];
 // Células obrigatórias: missões, portais, spawns e a lagoa de treino.
 const CELULAS_OBRIGATORIAS = [[15, 51], [15, 52], [15, 53], [16, 51], [16, 52], [16, 53], [17, 37], [17, 38], [17, 39], [17, 51], [17, 52], [17, 53], [18, 37], [18, 38], [18, 39], [18, 50], [18, 51], [18, 52], [19, 37], [19, 38], [19, 39], [19, 50], [19, 51], [19, 52], [20, 50], [20, 51], [20, 52], [21, 45], [21, 46], [21, 47], [22, 45], [22, 46], [22, 47], [23, 45], [23, 46], [23, 47], [24, 52], [24, 53], [24, 54], [25, 14], [25, 15], [25, 16], [25, 39], [25, 40], [25, 41], [25, 52], [25, 53], [25, 54], [26, 14], [26, 15], [26, 16], [26, 17], [26, 39], [26, 40], [26, 41], [26, 42], [26, 43], [26, 44], [26, 52], [26, 53], [26, 54], [27, 14], [27, 15], [27, 16], [27, 17], [27, 39], [27, 40], [27, 41], [27, 42], [27, 43], [27, 44], [28, 15], [28, 16], [28, 17], [28, 39], [28, 40], [28, 41], [28, 42], [28, 43], [28, 44], [29, 18], [29, 19], [29, 20], [29, 39], [29, 40], [29, 41], [30, 18], [30, 19], [30, 20], [30, 39], [30, 40], [30, 41], [31, 18], [31, 19], [31, 20], [31, 38], [31, 39], [31, 40], [32, 38], [32, 39], [32, 40], [33, 36], [33, 37], [33, 38], [33, 39], [33, 40], [33, 54], [33, 55], [33, 56], [34, 1], [34, 2], [34, 3], [34, 36], [34, 37], [34, 38], [34, 54], [34, 55], [34, 56], [35, 1], [35, 2], [35, 3], [35, 4], [35, 36], [35, 37], [35, 38], [35, 54], [35, 55], [35, 56], [36, 1], [36, 2], [36, 3], [36, 4], [37, 2], [37, 3], [37, 4], [37, 6], [37, 7], [37, 8], [38, 6], [38, 7], [38, 8], [39, 6], [39, 7], [39, 8], [48, 18], [48, 19], [48, 20], [49, 17], [49, 18], [49, 19], [49, 20], [50, 17], [50, 18], [50, 19], [50, 20], [51, 17], [51, 18], [51, 19]];
 
@@ -41,7 +40,7 @@ function dentroDoPoligono(px, py, pts) {
 
 const landShape = (x, y) => {
   const { px, py } = imagemDaGrade(x + 0.5, y + 0.5);
-  return dentroDoPoligono(px, py, POLIGONO_ILHA) || dentroDoPoligono(px, py, POLIGONO_ILHOTA);
+  return dentroDoPoligono(px, py, POLIGONO_ILHA);
 };
 
 const grid = Array.from({ length: ROWS }, () => Array(COLS).fill('W'));
@@ -65,7 +64,7 @@ for (let y = 1; y < ROWS - 1; y++) {
 
 // Garantir terra sob os pontos de missão, portais e spawns
 for (const [x, y] of CELULAS_OBRIGATORIAS) {
-  if (grid[y]?.[x] !== undefined) grid[y][x] = 'S';
+  if (grid[y]?.[x] !== undefined && !(x >= 33 && x <= 39 && y <= 8)) grid[y][x] = 'S';
 }
 
 const TAM_RASO = 2;
@@ -125,6 +124,18 @@ const ground = buildGround({
   },
 });
 
+// A passagem tem colisão de chão, mas conserva água na grade visual e de costa.
+// Dois tiles de largura permitem a passagem do círculo de colisão do jogador.
+const passarelaCorrentes = new Set();
+for (let y = 7; y <= 8; y++) for (let x = 30; x <= 36; x++) passarelaCorrentes.add(`${x},${y}`);
+for (let y = 3; y <= 8; y++) for (let x = 35; x <= 37; x++) passarelaCorrentes.add(`${x},${y}`);
+for (let y = 3; y <= 6; y++) for (let x = 34; x <= 38; x++) passarelaCorrentes.add(`${x},${y}`);
+for (const key of passarelaCorrentes) {
+  const [x, y] = key.split(',').map(Number);
+  const row = ground.walkMask[y];
+  ground.walkMask[y] = row.slice(0, x) + '.' + row.slice(x + 1);
+}
+
 const layout = rows.map(row => [...row].map(c => ('SMT'.includes(c) ? 0 : 1)));
 for (let y = 0; y < ROWS; y++) {
   for (let x = 0; x < COLS; x++) {
@@ -163,6 +174,7 @@ export const map = {
   walkMask: ground.walkMask,
   pisos: ground.pisos,
   aguaPraia: rows,
+  passarelaSobreAgua: [...passarelaCorrentes],
   // Corredores de areia entre os setores: arte do chão, sem alterar colisões.
   caminhosAreia: [
     [14, 42, 23, 41], [23, 41, 30, 35], [30, 35, 33, 32],
@@ -176,7 +188,7 @@ export const map = {
     inicio: { x: 19.9, y: 51.7 },
     vindo_da_praia: { x: 19.9, y: 51.7 },
     vindo_da_estacao_666: { x: 23.805, y: 12.505 },
-    vindo_do_mar: { x: 47.5, y: 49.5 },
+    vindo_do_mar: { x: 36.5, y: 5.5 },
     vindo_da_darsena_mare: { x: 57.0, y: 24.0 },
   },
 
@@ -672,15 +684,27 @@ export const map = {
     // ---- SETOR 8 (Mar): Portal NE + boias + fauna marinha ----
     {
       id: 'portal_caminho_correntes', nome: 'PORTAL DAS CORRENTES', tipo: 'decoracao', x: 36.0, y: 4.0,
-      sprite: 'enseada8_portal_ne', spriteB: 'enseada8_portal_ne', animPeriodo: 0.48,
-      useCrop: true, larguraPx: 170, pivotX: 0.5, pivotY: 0.94,
+      sprite: 'enseada_correntes_portal_ref', vorticidadeCorrentes: true,
+      useCrop: true, larguraPx: 190, pivotX: 0.5, pivotY: 0.94,
       bloqueia: false, brilho: { cor: '#5cf7eb', raio: 1.5, forca: 0.34 },
     },
-    ...[[32.0, 2.0], [40.0, 2.0], [32.0, 7.0], [40.0, 7.0]].map(([bx, by], i) => ({
+    ...[[29.5, 2.0], [30.8, 5.3], [39.5, 1.0], [41.0, 4.0], [42.0, 6.5]].map(([bx, by], i) => ({
       id: `boia_ne_${i + 1}`, tipo: 'decoracao', x: bx, y: by,
-      sprite: 'enseada6_boia', useCrop: true, larguraPx: 40,
-      pivotX: 0.5, pivotY: 0.9, bloqueia: false, flutuacaoSuave: true,
+      sprite: i === 0 || i === 3 ? 'enseada_correntes_boia_vermelha' : 'enseada_correntes_boia_laranja',
+      useCrop: true, larguraPx: 20, pivotX: 0.5, pivotY: 0.9, bloqueia: false, flutuacaoSuave: true, sombra: [8, 3],
     })),
+    // Pedras de apoio separadas, sobre o mar e sem alterar a costa visual.
+    ...[[30.8,7.9],[31.7,7.7],[32.6,7.9],[33.5,7.7],[34.3,7.8],[35.2,7.4],[36.0,6.9],[36.2,6.1],[36.2,5.4]].map(([x,y], i) => ({
+      id: `pedra_correntes_${i}`, tipo: 'decoracao', x, y,
+      sprite: `enseada_correntes_pedra_${i % 3 + 1}`, useCrop: true, larguraPx: 38 + (i % 3) * 5,
+      pivotX: 0.5, pivotY: 0.8, camada: 'fundo', bloqueia: false,
+    })),
+    {
+      id: 'cardume_correntes', tipo: 'decoracao', x: 43, y: 5.5,
+      sprite: 'enseada_correntes_cardume',
+      useCrop: true, larguraPx: 68, pivotX: 0.5, pivotY: 0.65,
+      bloqueia: false, flutuacaoSuave: true, nadoCardume: true,
+    },
     {
       id: 'golfinho_saltando', tipo: 'decoracao', x: 2.0, y: 30.0,
       sprite: 'enseada5_golfinho_saltando', spriteB: 'enseada5_golfinho_saltando_b', animPeriodo: 0.6, useCrop: true, larguraPx: 90,

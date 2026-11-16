@@ -23,7 +23,7 @@ const portal = map.portals.find(p => p.id === 'retorno_darsena_mare');
 const arco = object('arco_conduto_retorno_mare');
 assert(Math.hypot(portal.x - arco.x, portal.y - arco.y) <= 2, 'o portal deve ficar junto à passagem');
 assert('YyDdX'.includes(map.aguaPraia[Math.floor(portal.y + .5)][Math.floor(portal.x + .5)]), 'a passagem automática precisa estar na água');
-assert.equal(object('portal_caminho_correntes').sprite, 'enseada8_portal_ne');
+assert.equal(object('portal_caminho_correntes').sprite, 'enseada_correntes_portal_ref');
 assert.equal(arco.espelhar, true, 'portal leste deve estar invertido');
 assert.equal(object('enseada_base_rochosa_portal_leste').espelhar, true, 'a subida deve acompanhar a inversão');
 const cais = object('cais_madeira_pesca_enseada');

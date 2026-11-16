@@ -111,6 +111,7 @@ export function aguaSobPonte(map, x, y) {
 }
 
 export function podeNadar(map, x, y) {
+  if (map?.passarelaSobreAgua?.includes(`${Math.floor(x)},${Math.floor(y)}`)) return false;
   const c = tileAtWorld(map, x, y);
   return isAgua(c) && !isDeck(c);
 }

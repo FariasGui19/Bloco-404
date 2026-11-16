@@ -169,14 +169,14 @@ export const map = {
     [33, 32, 39, 30], [39, 30, 48, 29], [48, 29, 56, 24],
     [30, 35, 24, 31], [24, 31, 19, 29],
     [23, 41, 28, 48], [28, 48, 33, 48],
-    [33, 32, 35, 39], [35, 39, 40, 44], [40, 44, 46, 48],
+    [33, 32, 35, 39], [35, 39, 40, 44], [40, 44, 48, 48],
   ],
 
   spawnPoints: {
     inicio: { x: 19.9, y: 51.7 },
     vindo_da_praia: { x: 19.9, y: 51.7 },
     vindo_da_estacao_666: { x: 30.1, y: 19.0 },
-    vindo_do_mar: { x: 44.0, y: 48.0 },
+    vindo_do_mar: { x: 47.5, y: 49.5 },
     vindo_da_darsena_mare: { x: 57.0, y: 24.0 },
   },
 
@@ -297,13 +297,13 @@ export const map = {
     // Terraço cenográfico atrás dos equipamentos. A subida ainda usa a
     // malha plana existente; a arte não adiciona colisões nem altura física.
     {
-      id: 'enseada_terraco_acampamento', tipo: 'decoracao', x: 20.5, y: 33.5,
-      sprite: 'enseada_terraco_acampamento', useCrop: true, larguraPx: 620,
+      id: 'enseada_terraco_acampamento', tipo: 'decoracao', x: 19.0, y: 34.5,
+      sprite: 'enseada_terraco_acampamento', useCrop: true, larguraPx: 820,
       pivotX: 0.5, pivotY: 1, ajusteY: 36,
       camada: 'fundo', ordem: -2, bloqueia: false,
     },
     {
-      id: 'relogio_mare_enseada', nome: 'RELÓGIO DE MARÉ SOLAR', tipo: 'dispositivo', x: 13.0, y: 28.0,
+      id: 'relogio_mare_enseada', nome: 'RELÓGIO DE MARÉ SOLAR', tipo: 'dispositivo', x: 9.5, y: 31.5,
       sprite: 'enseada4_relogio', spriteB: 'enseada4_relogio', animPeriodo: 0.6,
       useCrop: true, larguraPx: 70, pivotX: 0.5, pivotY: 0.98,
       bloqueia: true, hitbox: { offsetX: -0.22, offsetY: -0.22, width: 0.44, height: 0.44 },
@@ -311,7 +311,7 @@ export const map = {
       interacao: { label: 'SINTONIZAR CLIMA E MARÉ', distancia: 1.55 },
     },
     {
-      id: 'torre_antena_enseada', nome: 'TORRE-ANTENA DE ESCUTA', tipo: 'dispositivo', x: 15.5, y: 26.0,
+      id: 'torre_antena_enseada', nome: 'TORRE-ANTENA DE ESCUTA', tipo: 'dispositivo', x: 12.5, y: 29.0,
       sprite: 'enseada4_torre_vigilia', spriteB: 'enseada4_torre_vigilia', animPeriodo: 0.5,
       useCrop: true, larguraPx: 90, pivotX: 0.5, pivotY: 0.98,
       bloqueia: true, hitbox: { offsetX: -0.30, offsetY: -0.28, width: 0.6, height: 0.56 },
@@ -319,42 +319,59 @@ export const map = {
       interacao: { label: 'SINTONIZAR TORRE-ANTENA', distancia: 1.55 },
     },
     {
-      id: 'bancada_campo_enseada', nome: 'BANCADA DE CAMPO', tipo: 'dispositivo', x: 14.5, y: 30.5,
-      sprite: 'enseada4_mesa_campo', spriteB: 'enseada4_mesa_campo', animPeriodo: 0.58,
+      id: 'bancada_campo_enseada', nome: 'BANCADA DE CAMPO', tipo: 'dispositivo', x: 12.5, y: 32.5,
+      sprite: 'enseada_bancada_expedicao', spriteB: 'enseada_bancada_expedicao', animPeriodo: 0.58,
       useCrop: true, larguraPx: 110, pivotX: 0.5, pivotY: 0.98,
       bloqueia: true, hitbox: { offsetX: -0.58, offsetY: -0.38, width: 1.16, height: 0.76 },
       brilho: { cor: '#74ff8a', raio: 1.2, forca: 0.26 },
       interacao: { label: 'CALIBRAR MÓDULO NA BANCADA', distancia: 1.7 },
     },
     {
-      id: 'acampamento_vigilia_enseada', nome: 'ACAMPAMENTO DE VIGÍLIA', tipo: 'decoracao', x: 16.5, y: 33.0,
+      id: 'acampamento_vigilia_enseada', nome: 'ACAMPAMENTO DE VIGÍLIA', tipo: 'decoracao', x: 16.5, y: 31.5,
       sprite: 'enseada4_fogueira', spriteB: 'enseada4_fogueira', animPeriodo: 0.42,
-      useCrop: true, larguraPx: 90, pivotX: 0.5, pivotY: 0.98,
+      useCrop: true, larguraPx: 90, pivotX: 0.5, pivotY: 0.98, ajusteY: -50,
       bloqueia: true, hitbox: { offsetX: -0.30, offsetY: -0.24, width: 0.60, height: 0.48 },
       fogueiraViva: true, brilho: { cor: '#ffae52', raio: 1.25, forca: 0.28 },
       interacao: { label: 'DESCANSAR NA FOGUEIRA', distancia: 1.6 },
     },
     {
-      id: 'tenda_expedicao_enseada', nome: 'TENDA DA EXPEDIÇÃO', tipo: 'decoracao', x: 19.0, y: 29.0,
+      id: 'tenda_expedicao_enseada', nome: 'TENDA DA EXPEDIÇÃO', tipo: 'decoracao', x: 18.0, y: 28.0,
       sprite: 'enseada4_tenda', useCrop: true, larguraPx: 120,
-      pivotX: 0.5, pivotY: 0.98, depthOffset: -0.2,
+      pivotX: 0.5, pivotY: 0.98, depthOffset: -0.2, ajusteY: -30,
       bloqueia: true, hitbox: { offsetX: -0.48, offsetY: -0.34, width: 0.96, height: 0.68 },
       interacao: { label: 'INSPECIONAR TENDA DA EXPEDIÇÃO', distancia: 1.6, speaker: 'TENDA DA EXPEDIÇÃO',
         dialogue: ['A LONA GUARDA MAPAS, ROLOS DE CORDA E UM COBERTOR DOBRADO. A EXPEDIÇÃO ESTÁ EM PLENA ATIVIDADE.'] },
     },
     {
-      id: 'maleta_expedicao_enseada', nome: 'MALETA DA EXPEDIÇÃO', tipo: 'dispositivo', x: 22.0, y: 30.0,
+      id: 'maleta_expedicao_enseada', nome: 'MALETA DA EXPEDIÇÃO', tipo: 'dispositivo', x: 20.5, y: 28.0,
       sprite: 'enseada4_caixas', spriteB: 'enseada4_caixas', animPeriodo: 0.56,
-      useCrop: true, larguraPx: 90, pivotX: 0.5, pivotY: 0.98, ajusteY: -35,
+      useCrop: true, larguraPx: 90, pivotX: 0.5, pivotY: 0.98, ajusteY: -65,
       bloqueia: true, hitbox: { offsetX: -0.38, offsetY: -0.32, width: 0.76, height: 0.64 },
       pulsoAntena: true, brilho: { cor: '#ff9a5c', raio: 1.0, forca: 0.22 },
       interacao: { label: 'ABRIR MALETA DA EXPEDIÇÃO', distancia: 1.55 },
     },
     {
       id: 'bandeirola_vento_enseada', nome: 'BIRUTA DA EXPEDIÇÃO', tipo: 'decoracao', x: 18.0, y: 25.0,
-      sprite: 'enseada_bandeirola_vento', spriteB: 'enseada_bandeirola_vento_b', animPeriodo: 0.48,
-      useCrop: true, larguraPx: 50, pivotX: 0.5, pivotY: 0.94,
+      sprite: 'enseada_biruta_camp',
+      useCrop: true, larguraPx: 75, pivotX: 0.5, pivotY: 0.94, ajusteY: -35,
       bloqueia: false, oscilaBrisa: true,
+    },
+
+    // Assento e palmeiras do acampamento: peças independentes da área jogável.
+    {
+      id: 'enseada_banco_tronco_camp', tipo: 'decoracao', x: 14.5, y: 31.5,
+      sprite: 'enseada_banco_tronco', useCrop: true, larguraPx: 105,
+      pivotX: 0.5, pivotY: 0.98, ajusteY: -35, bloqueia: false,
+    },
+    {
+      id: 'enseada_palmeira_camp_oeste', tipo: 'decoracao', x: 10.0, y: 30.0,
+      sprite: 'enseada6_palmeira', useCrop: true, larguraPx: 95,
+      pivotX: 0.5, pivotY: 0.98, ajusteY: -45, bloqueia: false,
+    },
+    {
+      id: 'enseada_palmeira_camp_norte', tipo: 'decoracao', x: 16.5, y: 26.5,
+      sprite: 'enseada6_palmeira', useCrop: true, larguraPx: 95,
+      pivotX: 0.5, pivotY: 0.98, ajusteY: -55, bloqueia: false,
     },
 
     // ---- SETOR 3 (Oeste): Pórtico + bosques ----
@@ -475,14 +492,14 @@ export const map = {
 
     // ---- SETOR 6 (Sul): Cais + embarcadouro ----
     {
-      id: 'cais_madeira_pesca_enseada', nome: 'CAIS DA ENSEADA', tipo: 'decoracao', x: 46.0, y: 48.0,
-      sprite: 'enseada3_cais_barco', spriteB: 'enseada3_cais_barco', animPeriodo: 0.68,
+      id: 'cais_madeira_pesca_enseada', nome: 'CAIS DA ENSEADA', tipo: 'decoracao', x: 49.5, y: 48.5,
+      sprite: 'enseada8_cais_barco_ref', spriteB: 'enseada8_cais_barco_ref', animPeriodo: 0.68,
       useCrop: true, larguraPx: 280, pivotX: 0.5, pivotY: 0.97,
       bloqueia: false, brilho: { cor: '#ffd980', raio: 1.0, forca: 0.16 },
       interacao: { label: 'OBSERVAR A BAÍA DO CAIS', distancia: 1.75 },
     },
     {
-      id: 'barco_expedicao_enseada', nome: 'BARCO DE EXPEDIÇÃO', tipo: 'decoracao', x: 47.5, y: 49.0,
+      id: 'barco_expedicao_enseada', nome: 'BARCO DE EXPEDIÇÃO', tipo: 'decoracao', x: 48.0, y: 49.0,
       sprite: 'enseada_barco_expedicao', spriteB: 'enseada_barco_expedicao_b', animPeriodo: 0.72,
       useCrop: true, larguraPx: 126, pivotX: 0.5, pivotY: 0.88,
       bloqueia: false, flutuacaoSuave: true, renderizar: false,
@@ -513,7 +530,7 @@ export const map = {
     {
       id: 'arco_conduto_retorno_mare', tipo: 'decoracao', x: 57.5, y: 24.0,
       sprite: 'enseada8_portal_leste', spriteB: 'enseada8_portal_leste', animPeriodo: 0.7,
-      useCrop: true, larguraPx: 170, pivotX: 0.5, pivotY: 0.98,
+      useCrop: true, espelhar: true, larguraPx: 170, pivotX: 0.5, pivotY: 0.98,
       bloqueia: false, brilho: { cor: '#5cf7eb', raio: 2.2, forca: 0.44 },
     },
     {
@@ -620,7 +637,7 @@ export const map = {
       pivotX: 0.5, pivotY: 0.9, bloqueia: false, flutuacaoSuave: true,
     })),
     {
-      id: 'golfinho_saltando', tipo: 'decoracao', x: 5.0, y: 28.0,
+      id: 'golfinho_saltando', tipo: 'decoracao', x: 2.0, y: 30.0,
       sprite: 'enseada5_golfinho_saltando', spriteB: 'enseada5_golfinho_saltando_b', animPeriodo: 0.6, useCrop: true, larguraPx: 90,
       pivotX: 0.5, pivotY: 0.96, depthOffset: -0.3, bloqueia: false,
     },

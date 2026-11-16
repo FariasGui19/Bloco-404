@@ -163,13 +163,21 @@ export const map = {
   walkMask: ground.walkMask,
   pisos: ground.pisos,
   aguaPraia: rows,
+  // Corredores de areia entre os setores: arte do chão, sem alterar colisões.
+  caminhosAreia: [
+    [14, 42, 23, 41], [23, 41, 30, 35], [30, 35, 33, 32],
+    [33, 32, 39, 30], [39, 30, 48, 29], [48, 29, 56, 24],
+    [30, 35, 24, 31], [24, 31, 19, 29],
+    [23, 41, 28, 48], [28, 48, 33, 48],
+    [33, 32, 35, 39], [35, 39, 40, 44], [40, 44, 46, 48],
+  ],
 
   spawnPoints: {
     inicio: { x: 19.9, y: 51.7 },
     vindo_da_praia: { x: 19.9, y: 51.7 },
     vindo_da_estacao_666: { x: 30.1, y: 19.0 },
     vindo_do_mar: { x: 44.0, y: 48.0 },
-    vindo_da_darsena_mare: { x: 49.5, y: 19.6 },
+    vindo_da_darsena_mare: { x: 57.0, y: 24.0 },
   },
 
   pocas: [
@@ -265,8 +273,8 @@ export const map = {
       bloqueia: false, brilho: { cor: '#45f4f4', raio: 2.2, forca: 0.16 },
     },
     {
-      id: 'porta_estacao_666_visual', tipo: 'decoracao', x: 28.5, y: 15.5, sprite: 'enseada8_entrada_666',
-      useCrop: true, larguraPx: 170, pivotX: 0.5, pivotY: 0.96, depthOffset: -1, bloqueia: true,
+      id: 'porta_estacao_666_visual', tipo: 'decoracao', x: 27.0, y: 16.0, sprite: 'enseada3_estacao_666',
+      useCrop: true, larguraPx: 220, pivotX: 0.5, pivotY: 0.96, ajusteY: -36, depthOffset: -1, bloqueia: true,
       hitbox: { offsetX: -0.55, offsetY: -0.35, width: 1.1, height: 0.7 },
     },
 
@@ -286,6 +294,14 @@ export const map = {
     })),
 
     // ---- SETOR 2 (Noroeste): Acampamento ----
+    // Terraço cenográfico atrás dos equipamentos. A subida ainda usa a
+    // malha plana existente; a arte não adiciona colisões nem altura física.
+    {
+      id: 'enseada_terraco_acampamento', tipo: 'decoracao', x: 20.5, y: 33.5,
+      sprite: 'enseada_terraco_acampamento', useCrop: true, larguraPx: 620,
+      pivotX: 0.5, pivotY: 1, ajusteY: 36,
+      camada: 'fundo', ordem: -2, bloqueia: false,
+    },
     {
       id: 'relogio_mare_enseada', nome: 'RELÓGIO DE MARÉ SOLAR', tipo: 'dispositivo', x: 13.0, y: 28.0,
       sprite: 'enseada4_relogio', spriteB: 'enseada4_relogio', animPeriodo: 0.6,
@@ -311,7 +327,7 @@ export const map = {
       interacao: { label: 'CALIBRAR MÓDULO NA BANCADA', distancia: 1.7 },
     },
     {
-      id: 'acampamento_vigilia_enseada', nome: 'ACAMPAMENTO DE VIGÍLIA', tipo: 'decoracao', x: 16.0, y: 33.5,
+      id: 'acampamento_vigilia_enseada', nome: 'ACAMPAMENTO DE VIGÍLIA', tipo: 'decoracao', x: 16.5, y: 33.0,
       sprite: 'enseada4_fogueira', spriteB: 'enseada4_fogueira', animPeriodo: 0.42,
       useCrop: true, larguraPx: 90, pivotX: 0.5, pivotY: 0.98,
       bloqueia: true, hitbox: { offsetX: -0.30, offsetY: -0.24, width: 0.60, height: 0.48 },
@@ -327,9 +343,9 @@ export const map = {
         dialogue: ['A LONA GUARDA MAPAS, ROLOS DE CORDA E UM COBERTOR DOBRADO. A EXPEDIÇÃO ESTÁ EM PLENA ATIVIDADE.'] },
     },
     {
-      id: 'maleta_expedicao_enseada', nome: 'MALETA DA EXPEDIÇÃO', tipo: 'dispositivo', x: 21.5, y: 31.0,
+      id: 'maleta_expedicao_enseada', nome: 'MALETA DA EXPEDIÇÃO', tipo: 'dispositivo', x: 22.0, y: 30.0,
       sprite: 'enseada4_caixas', spriteB: 'enseada4_caixas', animPeriodo: 0.56,
-      useCrop: true, larguraPx: 90, pivotX: 0.5, pivotY: 0.98,
+      useCrop: true, larguraPx: 90, pivotX: 0.5, pivotY: 0.98, ajusteY: -35,
       bloqueia: true, hitbox: { offsetX: -0.38, offsetY: -0.32, width: 0.76, height: 0.64 },
       pulsoAntena: true, brilho: { cor: '#ff9a5c', raio: 1.0, forca: 0.22 },
       interacao: { label: 'ABRIR MALETA DA EXPEDIÇÃO', distancia: 1.55 },
@@ -480,7 +496,7 @@ export const map = {
       interacao: { label: 'EXAMINAR O CAIS DA MARÉ', distancia: 1.75 },
     },
     {
-      id: 'farolete_baia_enseada', nome: 'FAROLETE DA BAÍA', tipo: 'decoracao', x: 54.0, y: 20.5,
+      id: 'farolete_baia_enseada', nome: 'FAROLETE DA BAÍA', tipo: 'decoracao', x: 51.5, y: 22.5,
       sprite: 'enseada_farolete_baia', spriteB: 'enseada_farolete_baia_b', animPeriodo: 0.65,
       useCrop: true, larguraPx: 80, pivotX: 0.5, pivotY: 0.96,
       bloqueia: false, feixeFarolete: true, brilho: { cor: '#5cf7eb', raio: 1.8, forca: 0.4 },
@@ -489,7 +505,13 @@ export const map = {
 
     // ---- SETOR 7 (Leste): Portal + jardim + baú + recife ----
     {
-      id: 'arco_conduto_retorno_mare', tipo: 'decoracao', x: 53.0, y: 24.0,
+      id: 'enseada_base_rochosa_portal_leste', tipo: 'decoracao', x: 57.5, y: 24.0,
+      sprite: 'enseada_rochedo_portal', useCrop: true, larguraPx: 280,
+      pivotX: 0.5, pivotY: 1, ajusteY: 140,
+      camada: 'fundo', ordem: -1, bloqueia: false,
+    },
+    {
+      id: 'arco_conduto_retorno_mare', tipo: 'decoracao', x: 57.5, y: 24.0,
       sprite: 'enseada8_portal_leste', spriteB: 'enseada8_portal_leste', animPeriodo: 0.7,
       useCrop: true, larguraPx: 170, pivotX: 0.5, pivotY: 0.98,
       bloqueia: false, brilho: { cor: '#5cf7eb', raio: 2.2, forca: 0.44 },
@@ -588,7 +610,7 @@ export const map = {
     // ---- SETOR 8 (Mar): Portal NE + boias + fauna marinha ----
     {
       id: 'portal_caminho_correntes', nome: 'PORTAL DAS CORRENTES', tipo: 'decoracao', x: 36.0, y: 4.0,
-      sprite: 'enseada3_portal_recife', spriteB: 'enseada3_portal_recife', animPeriodo: 0.48,
+      sprite: 'enseada8_portal_ne', spriteB: 'enseada8_portal_ne', animPeriodo: 0.48,
       useCrop: true, larguraPx: 170, pivotX: 0.5, pivotY: 0.94,
       bloqueia: false, brilho: { cor: '#5cf7eb', raio: 1.5, forca: 0.34 },
     },
@@ -598,7 +620,7 @@ export const map = {
       pivotX: 0.5, pivotY: 0.9, bloqueia: false, flutuacaoSuave: true,
     })),
     {
-      id: 'golfinho_saltando', tipo: 'decoracao', x: 8.0, y: 30.0,
+      id: 'golfinho_saltando', tipo: 'decoracao', x: 5.0, y: 28.0,
       sprite: 'enseada5_golfinho_saltando', spriteB: 'enseada5_golfinho_saltando_b', animPeriodo: 0.6, useCrop: true, larguraPx: 90,
       pivotX: 0.5, pivotY: 0.96, depthOffset: -0.3, bloqueia: false,
     },
@@ -623,7 +645,7 @@ export const map = {
       pivotX: 0.5, pivotY: 0.96, depthOffset: -0.3, bloqueia: false,
     },
     {
-      id: 'cristais_azuis_mar', tipo: 'decoracao', x: 54.0, y: 34.0,
+      id: 'cristais_azuis_mar', tipo: 'decoracao', x: 59.0, y: 34.0,
       sprite: 'enseada5_cristais', spriteB: 'enseada5_cristais_b', animPeriodo: 0.6, useCrop: true, larguraPx: 70,
       pivotX: 0.5, pivotY: 0.96, depthOffset: -0.3, bloqueia: false,
     },
@@ -748,7 +770,7 @@ export const map = {
       interactionDistance: 1.4, destino: { mapId: 'mar_caminho_das_correntes', spawnId: 'vindo_da_enseada' }, transition: 'fade',
     },
     {
-      id: 'retorno_darsena_mare', tipo: 'door', x: 50.0, y: 18.0, automaticoNado: true, raioAutomatico: 0.8,
+      id: 'retorno_darsena_mare', tipo: 'door', x: 59.0, y: 24.0, automaticoNado: true, raioAutomatico: 0.8,
       requiresFlag: 'rota_livre_enseada_aberta', lockedLabel: 'CONDUTO ABISSAL INATIVO',
       mensagemBloqueado: ['UM VÓRTICE PROFUNDO RESSOA COM A DÁRSENA DA MARÉ ASTRAL, MAS PERMANECE SELADO DO OUTRO LADO.'],
       label: 'NADAR: ROTA DAS MARÉS ATÉ A DÁRSENA', requiresArchetype: 'mare_astral',

@@ -249,7 +249,10 @@ export const map = {
     minZoom: 0.32,
     initialZoom: 0.50,
     estiloPiso: 'livre',
-    gramaInterior: true,
+    // Chão da Enseada é AREIA. A camada global de grama pintava um tapete
+    // verde sobre a praia inteira (a "faixa" que aparecia em todos os setores).
+    // Grama agora só nasce onde uma `zonasGrama` mandar.
+    gramaInterior: false,
     useBackgroundWalls: true,
     sandSprite: 'beach_novas_artes',
     ambiente: { poeira: 18, cor: '#ffd98a' },
@@ -260,6 +263,7 @@ export const map = {
   pisos: ground.pisos,
   aguaPraia: rows,
   passarelaSobreAgua: [...passarelaCorrentes],
+  // Mancha de grama da junção com a estação (exigida por estacao-encaixe).
   zonasGrama: [{ x: 8.8, y: 19, rx: 3.2, ry: 5.0 }],
   // Relevo desenhado: a montanha da Estação 66.6 ocupa a célula e o seu
   // próprio chão é pedra. Sem esta máscara a grama do interior subia até a
@@ -523,7 +527,7 @@ export const map = {
       camada: 'fundo', ordem: -2, bloqueia: false,
     },
     {
-      id: 'relogio_mare_enseada', nome: 'RELÓGIO DE MARÉ SOLAR', tipo: 'dispositivo', x: 8.6, y: 33.0,
+      id: 'relogio_mare_enseada', nome: 'RELÓGIO DE MARÉ SOLAR', tipo: 'dispositivo', x: 10.72, y: 32.98,
       sprite: 'enseada_camp_ref_relogio', animPeriodo: 0.6,
       useCrop: true, larguraPx: 64, pivotX: 0.5, pivotY: 0.98,
       bloqueia: true, hitbox: { offsetX: -0.22, offsetY: -0.22, width: 0.44, height: 0.44 },
@@ -531,7 +535,7 @@ export const map = {
       interacao: { label: 'SINTONIZAR CLIMA E MARÉ', distancia: 1.55 },
     },
     {
-      id: 'torre_antena_enseada', nome: 'TORRE-ANTENA DE ESCUTA', tipo: 'dispositivo', x: 14.20, y: 27.60,
+      id: 'torre_antena_enseada', nome: 'TORRE-ANTENA DE ESCUTA', tipo: 'dispositivo', x: 11.6, y: 29.84,
       sprite: 'enseada_camp_ref_torre_radio', animPeriodo: 0.5,
       useCrop: true, larguraPx: 100, pivotX: 0.5, pivotY: 0.98,
       bloqueia: true, hitbox: { offsetX: -0.30, offsetY: -0.28, width: 0.6, height: 0.56 },
@@ -539,7 +543,7 @@ export const map = {
       interacao: { label: 'SINTONIZAR TORRE-ANTENA', distancia: 1.55 },
     },
     {
-      id: 'bancada_campo_enseada', nome: 'BANCADA DE CAMPO', tipo: 'dispositivo', x: 10.6, y: 32.3,
+      id: 'bancada_campo_enseada', nome: 'BANCADA DE CAMPO', tipo: 'dispositivo', x: 12.25, y: 31.96,
       sprite: 'enseada_camp_ref_bancada', animPeriodo: 0.58,
       useCrop: true, larguraPx: 116, pivotX: 0.5, pivotY: 0.98,
       bloqueia: true, hitbox: { offsetX: -0.58, offsetY: -0.38, width: 1.16, height: 0.76 },
@@ -547,7 +551,7 @@ export const map = {
       interacao: { label: 'CALIBRAR MÓDULO NA BANCADA', distancia: 1.7 },
     },
     {
-      id: 'acampamento_vigilia_enseada', nome: 'ACAMPAMENTO DE VIGÍLIA', tipo: 'decoracao', x: 17.6, y: 29.1,
+      id: 'acampamento_vigilia_enseada', nome: 'ACAMPAMENTO DE VIGÍLIA', tipo: 'decoracao', x: 14.05, y: 31.25,
       sprite: 'enseada_camp_ref_fogueira', animPeriodo: 0.42,
       useCrop: true, larguraPx: 89, pivotX: 0.5, pivotY: 0.98,
       bloqueia: true, hitbox: { offsetX: -0.30, offsetY: -0.24, width: 0.60, height: 0.48 },
@@ -555,7 +559,7 @@ export const map = {
       interacao: { label: 'DESCANSAR NA FOGUEIRA', distancia: 1.6 },
     },
     {
-      id: 'tenda_expedicao_enseada', nome: 'TENDA DA EXPEDIÇÃO', tipo: 'decoracao', x: 19.6, y: 26.2,
+      id: 'tenda_expedicao_enseada', nome: 'TENDA DA EXPEDIÇÃO', tipo: 'decoracao', x: 13.9, y: 29.48,
       sprite: 'enseada_camp_ref_tenda_referencia', useCrop: true, larguraPx: 213,
       pivotX: 0.5, pivotY: 0.98,
       bloqueia: true, hitbox: { offsetX: -0.48, offsetY: -0.34, width: 0.96, height: 0.68 },
@@ -563,7 +567,7 @@ export const map = {
         dialogue: ['A LONA GUARDA MAPAS, ROLOS DE CORDA E UM COBERTOR DOBRADO. A EXPEDIÇÃO ESTÁ EM PLENA ATIVIDADE.'] },
     },
     {
-      id: 'maleta_expedicao_enseada', nome: 'MALETA DA EXPEDIÇÃO', tipo: 'dispositivo', x: 21.4, y: 26.6,
+      id: 'maleta_expedicao_enseada', nome: 'MALETA DA EXPEDIÇÃO', tipo: 'dispositivo', x: 16.25, y: 30.03,
       sprite: 'enseada_camp_ref_pilha_caixas', animPeriodo: 0.56,
       useCrop: true, larguraPx: 132, pivotX: 0.5, pivotY: 0.98,
       bloqueia: true, hitbox: { offsetX: -0.38, offsetY: -0.32, width: 0.76, height: 0.64 },
@@ -571,7 +575,7 @@ export const map = {
       interacao: { label: 'ABRIR MALETA DA EXPEDIÇÃO', distancia: 1.55 },
     },
     {
-      id: 'bandeirola_vento_enseada', nome: 'BIRUTA DA EXPEDIÇÃO', tipo: 'decoracao', x: 21.6, y: 25.2,
+      id: 'bandeirola_vento_enseada', nome: 'BIRUTA DA EXPEDIÇÃO', tipo: 'decoracao', x: 13.19, y: 26.31,
       sprite: 'enseada_biruta_camp',
       useCrop: true, larguraPx: 75, pivotX: 0.5, pivotY: 0.94,
       depthOffset: 3, bloqueia: false, oscilaBrisa: true,
@@ -580,29 +584,29 @@ export const map = {
     // Vegetação de fundo e pequenos objetos independentes, sem recobrir
     // a entrada da tenda. As coordenadas são as dos pés dos sprites.
     {
-      id: 'enseada_arvore_camp_esquerda', tipo: 'decoracao', x: 17.7, y: 24.8,
+      id: 'enseada_arvore_camp_esquerda', tipo: 'decoracao', x: 12.97, y: 27.03,
       sprite: 'enseada_camp_ref_arvore', useCrop: true, larguraPx: 159,
       pivotX: 0.5, pivotY: 0.98, bloqueia: false,
     },
     {
-      id: 'enseada_arvore_camp_direita', tipo: 'decoracao', x: 19.3, y: 24.6,
+      id: 'enseada_arvore_camp_direita', tipo: 'decoracao', x: 13.9, y: 26.1,
       sprite: 'enseada_camp_ref_arvore', useCrop: true, espelhar: true, larguraPx: 136,
       pivotX: 0.5, pivotY: 0.98, bloqueia: false,
     },
     {
-      id: 'enseada_cesto_ferramentas_camp', tipo: 'decoracao', x: 9.75, y: 34.55,
+      id: 'enseada_cesto_ferramentas_camp', tipo: 'decoracao', x: 12.29, y: 33.4,
       sprite: 'enseada_camp_ref_cesto_ferramentas', useCrop: true, larguraPx: 77,
       pivotX: 0.5, pivotY: 0.98, bloqueia: false,
     },
     {
-      id: 'enseada_caixa_atras_tenda', tipo: 'decoracao', x: 17.3, y: 25.9,
+      id: 'enseada_caixa_atras_tenda', tipo: 'decoracao', x: 10.21, y: 26.88,
       sprite: 'enseada_camp_ref_caixa', useCrop: true, larguraPx: 62,
       pivotX: 0.5, pivotY: 0.98, bloqueia: true,
       hitbox: { offsetX: -0.20, offsetY: -0.20, width: 0.4, height: 0.4 },
     },
     {
       // O caixote solto fica entre a fogueira e a pilha, na referência.
-      id: 'enseada_caixote_camp', tipo: 'decoracao', x: 18.9, y: 29.4,
+      id: 'enseada_caixote_camp', tipo: 'decoracao', x: 16.05, y: 29.85,
       sprite: 'enseada_camp_ref_caixa', useCrop: true, larguraPx: 44,
       pivotX: 0.5, pivotY: 0.98, bloqueia: true,
       hitbox: { offsetX: -0.15, offsetY: -0.15, width: 0.3, height: 0.3 },
@@ -613,15 +617,15 @@ export const map = {
       // Degraus de pedra logo abaixo da fogueira/tronco, como na referência:
       // a escada que vinha embutida no platô ficava na extrema direita, sob a
       // pilha de caixas.
-      id: 'enseada_escada_camp', tipo: 'decoracao', x: 19.7, y: 33.0,
+      id: 'enseada_escada_camp', tipo: 'decoracao', x: 21.56, y: 34.69,
       sprite: 'enseada_camp_escada', useCrop: true, larguraPx: 210,
       pivotX: 0.5, pivotY: 0.94, bloqueia: false,
     },
     {
       // Movido para sudoeste: o terminal de manutencao senta em (18.5, 38.1)
       // e o banco, na posicao antiga, cobria o aparelho.
-      id: 'enseada_banco_tronco_camp', tipo: 'decoracao', x: 15.2, y: 32.0,
-      sprite: 'enseada_camp_ref_tronco', useCrop: true, larguraPx: 190,
+      id: 'enseada_banco_tronco_camp', tipo: 'decoracao', x: 14.06, y: 32.69,
+      sprite: 'enseada_camp_ref_tronco', useCrop: true, larguraPx: 112,
       pivotX: 0.5, pivotY: 0.98, bloqueia: false,
     },
     {

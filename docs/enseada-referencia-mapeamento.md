@@ -137,3 +137,17 @@ terreno, vegetação, objetos e estação.
   água: ainda não há malha de altura nem passarela navegável correspondente
   às artes. O acampamento ainda precisa de refinamento visual em relação à
   referência; a presente revisão não comprova equivalência exata.
+
+## Ajuste em andamento: três setores
+
+- Reposicionamos torre, fogueira, tenda, caixas, banco e biruta no terraço;
+  reduzimos torre e fogueira e conferimos a composição no navegador. Ainda há
+  diferenças visíveis em relação à referência, que não deve ser considerada
+  reproduzida literalmente.
+- O portal e o rochedo com rampa foram espelhados. A imagem da rampa agora
+  termina sobre a água e se sobrepõe à boia existente; falta corrigir a
+  integração com a costa sem voltar à orientação anterior.
+- Aplicamos uma inclinação discreta ao conjunto visual do cais sem mudar suas
+  coordenadas. Como o veleiro está fundido à mesma imagem, a inclinação afeta
+  os dois e não resolve independentemente a sobreposição do barco ao píer.
+- O terraço e a rampa continuam cenográficos: não representam altura física.

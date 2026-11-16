@@ -441,8 +441,12 @@ export const map = {
       // partir da silhueta medida na referência (grama, clareira de areia,
       // paredão e degraus). O ponto de encaixe é a base do paredão.
       id: 'enseada_terraco_acampamento', tipo: 'decoracao',
-      x: 14.22, y: 36.13,
-      sprite: 'enseada_setor1_plato', useCrop: true, larguraPx: 822,
+      // Pé medido no pôster: o pedestal de pedra do platô termina em
+      // (457, 372) na arte; a mesa precisa cair ali, não 114 px acima.
+      x: 23.63, y: 41.06,
+      // 414 px de arte de largura (medido no pôster) — no render dá 467 px com
+      // 856, ou seja, 9% maior que a arte. 790 fecha a largura na referência.
+      sprite: 'enseada_setor1_plato', useCrop: true, larguraPx: 790,
       pivotX: 0.5, pivotY: 1,
       // `ordem: 0` na camada de fundo = desenhado DEPOIS do chão e ANTES dos
       // props. Com `ordem: -2` o platô entrava antes da textura de areia e
@@ -450,7 +454,7 @@ export const map = {
       camada: 'fundo', ordem: 0, bloqueia: false,
     },
     {
-      id: 'relogio_mare_enseada', nome: 'RELÓGIO DE MARÉ SOLAR', tipo: 'dispositivo', x: 11.81, y: 38.53,
+      id: 'relogio_mare_enseada', nome: 'RELÓGIO DE MARÉ SOLAR', tipo: 'dispositivo', x: 13.22, y: 38.88,
       sprite: 'enseada_camp_ref_relogio', animPeriodo: 0.6,
       useCrop: true, larguraPx: 64, pivotX: 0.5, pivotY: 0.98,
       bloqueia: true, hitbox: { offsetX: -0.22, offsetY: -0.22, width: 0.44, height: 0.44 },
@@ -458,7 +462,7 @@ export const map = {
       interacao: { label: 'SINTONIZAR CLIMA E MARÉ', distancia: 1.55 },
     },
     {
-      id: 'torre_antena_enseada', nome: 'TORRE-ANTENA DE ESCUTA', tipo: 'dispositivo', x: 11.97, y: 29.62,
+      id: 'torre_antena_enseada', nome: 'TORRE-ANTENA DE ESCUTA', tipo: 'dispositivo', x: 16.47, y: 34.38,
       sprite: 'enseada_camp_ref_torre_radio', animPeriodo: 0.5,
       useCrop: true, larguraPx: 100, pivotX: 0.5, pivotY: 0.98,
       bloqueia: true, hitbox: { offsetX: -0.30, offsetY: -0.28, width: 0.6, height: 0.56 },
@@ -466,7 +470,7 @@ export const map = {
       interacao: { label: 'SINTONIZAR TORRE-ANTENA', distancia: 1.55 },
     },
     {
-      id: 'bancada_campo_enseada', nome: 'BANCADA DE CAMPO', tipo: 'dispositivo', x: 14.31, y: 34.78,
+      id: 'bancada_campo_enseada', nome: 'BANCADA DE CAMPO', tipo: 'dispositivo', x: 16.47, y: 37.25,
       sprite: 'enseada_camp_ref_bancada', animPeriodo: 0.58,
       useCrop: true, larguraPx: 116, pivotX: 0.5, pivotY: 0.98,
       bloqueia: true, hitbox: { offsetX: -0.58, offsetY: -0.38, width: 1.16, height: 0.76 },
@@ -474,7 +478,7 @@ export const map = {
       interacao: { label: 'CALIBRAR MÓDULO NA BANCADA', distancia: 1.7 },
     },
     {
-      id: 'acampamento_vigilia_enseada', nome: 'ACAMPAMENTO DE VIGÍLIA', tipo: 'decoracao', x: 22.59, y: 32.75,
+      id: 'acampamento_vigilia_enseada', nome: 'ACAMPAMENTO DE VIGÍLIA', tipo: 'decoracao', x: 19.56, y: 36.03,
       sprite: 'enseada_camp_ref_fogueira', animPeriodo: 0.42,
       useCrop: true, larguraPx: 89, pivotX: 0.5, pivotY: 0.98,
       bloqueia: true, hitbox: { offsetX: -0.30, offsetY: -0.24, width: 0.60, height: 0.48 },
@@ -482,7 +486,7 @@ export const map = {
       interacao: { label: 'DESCANSAR NA FOGUEIRA', distancia: 1.6 },
     },
     {
-      id: 'tenda_expedicao_enseada', nome: 'TENDA DA EXPEDIÇÃO', tipo: 'decoracao', x: 18.69, y: 29.78,
+      id: 'tenda_expedicao_enseada', nome: 'TENDA DA EXPEDIÇÃO', tipo: 'decoracao', x: 19.50, y: 32.59,
       sprite: 'enseada_camp_ref_tenda_referencia', useCrop: true, larguraPx: 213,
       pivotX: 0.5, pivotY: 0.98,
       bloqueia: true, hitbox: { offsetX: -0.48, offsetY: -0.34, width: 0.96, height: 0.68 },
@@ -490,7 +494,7 @@ export const map = {
         dialogue: ['A LONA GUARDA MAPAS, ROLOS DE CORDA E UM COBERTOR DOBRADO. A EXPEDIÇÃO ESTÁ EM PLENA ATIVIDADE.'] },
     },
     {
-      id: 'maleta_expedicao_enseada', nome: 'MALETA DA EXPEDIÇÃO', tipo: 'dispositivo', x: 20.88, y: 31.34,
+      id: 'maleta_expedicao_enseada', nome: 'MALETA DA EXPEDIÇÃO', tipo: 'dispositivo', x: 22.72, y: 32.75,
       sprite: 'enseada_camp_ref_pilha_caixas', animPeriodo: 0.56,
       useCrop: true, larguraPx: 132, pivotX: 0.5, pivotY: 0.98,
       bloqueia: true, hitbox: { offsetX: -0.38, offsetY: -0.32, width: 0.76, height: 0.64 },
@@ -498,7 +502,7 @@ export const map = {
       interacao: { label: 'ABRIR MALETA DA EXPEDIÇÃO', distancia: 1.55 },
     },
     {
-      id: 'bandeirola_vento_enseada', nome: 'BIRUTA DA EXPEDIÇÃO', tipo: 'decoracao', x: 20.56, y: 28.53,
+      id: 'bandeirola_vento_enseada', nome: 'BIRUTA DA EXPEDIÇÃO', tipo: 'decoracao', x: 23.63, y: 32.72,
       sprite: 'enseada_biruta_camp',
       useCrop: true, larguraPx: 75, pivotX: 0.5, pivotY: 0.94,
       depthOffset: 3, bloqueia: false, oscilaBrisa: true,
@@ -517,19 +521,20 @@ export const map = {
       pivotX: 0.5, pivotY: 0.98, bloqueia: false,
     },
     {
-      id: 'enseada_cesto_ferramentas_camp', tipo: 'decoracao', x: 13.19, y: 38.66,
+      id: 'enseada_cesto_ferramentas_camp', tipo: 'decoracao', x: 15.47, y: 38.75,
       sprite: 'enseada_camp_ref_cesto_ferramentas', useCrop: true, larguraPx: 77,
       pivotX: 0.5, pivotY: 0.98, bloqueia: false,
     },
     {
-      id: 'enseada_caixa_atras_tenda', tipo: 'decoracao', x: 14.94, y: 29.78,
+      id: 'enseada_caixa_atras_tenda', tipo: 'decoracao', x: 16.03, y: 31.06,
       sprite: 'enseada_camp_ref_caixa', useCrop: true, larguraPx: 62,
       pivotX: 0.5, pivotY: 0.98, bloqueia: true,
       hitbox: { offsetX: -0.20, offsetY: -0.20, width: 0.4, height: 0.4 },
     },
     {
-      // O caixote solto fica entre a fogueira e a pilha, na referência.
-      id: 'enseada_caixote_camp', tipo: 'decoracao', x: 16.34, y: 35.88,
+      // O caixote solto fica entre a fogueira e a tenda, logo atrás da
+      // fogueira na arte medida (500, 258) — não entre bancada e fogueira.
+      id: 'enseada_caixote_camp', tipo: 'decoracao', x: 20.41, y: 33.94,
       sprite: 'enseada_camp_ref_caixa', useCrop: true, larguraPx: 44,
       pivotX: 0.5, pivotY: 0.98, bloqueia: true,
       hitbox: { offsetX: -0.15, offsetY: -0.15, width: 0.3, height: 0.3 },
@@ -537,17 +542,18 @@ export const map = {
 
     // Assento e palmeiras do acampamento: peças independentes da área jogável.
     {
-      // Degraus de pedra logo abaixo da fogueira/tronco, como na referência:
-      // a escada que vinha embutida no platô ficava na extrema direita, sob a
-      // pilha de caixas.
-      id: 'enseada_escada_camp', tipo: 'decoracao', x: 22.6, y: 38.1,
-      sprite: 'enseada_camp_escada', useCrop: true, larguraPx: 210,
+      // Degraus de pedra descendo do platô logo abaixo da fogueira e do
+      // tronco, como pedido. A arte tem uma trilha de terra ali; a escada é a
+      // peça que dá a subida visível na borda frontal do terraço.
+      // Pé no pôster: (452, 356) — a boca dos degraus no paredão.
+      id: 'enseada_escada_camp', tipo: 'decoracao', x: 22.38, y: 40.22,
+      sprite: 'enseada_camp_escada', useCrop: true, larguraPx: 190,
       pivotX: 0.5, pivotY: 0.94, bloqueia: false,
     },
     {
       // Movido para sudoeste: o terminal de manutencao senta em (18.5, 38.1)
       // e o banco, na posicao antiga, cobria o aparelho.
-      id: 'enseada_banco_tronco_camp', tipo: 'decoracao', x: 19.16, y: 37.44,
+      id: 'enseada_banco_tronco_camp', tipo: 'decoracao', x: 19.56, y: 38.78,
       sprite: 'enseada_camp_ref_tronco', useCrop: true, larguraPx: 112,
       pivotX: 0.5, pivotY: 0.98, bloqueia: false,
     },
@@ -630,14 +636,23 @@ export const map = {
       pulsoBiolum: '#7fe3ff', brilho: { cor: '#7fe3ff', raio: 0.9, forca: 0.22 },
     },
     {
-      id: 'enseada3_praca_espelho', tipo: 'decoracao', x: 35.72, y: 49.62,
-      sprite: 'enseada3_calcada', useCrop: true, larguraPx: 340,
+      // A laje `enseada3_calcada` era a praça antiga do espelho. O sprite novo
+      // (recortado da própria referência) já traz a praça de losangos e o
+      // medalhão — manter as duas duplicava o piso e desalinhava a borda.
+      id: 'enseada3_praca_espelho', tipo: 'decoracao', x: 33.85, y: 48.62,
+      sprite: 'enseada3_calcada', useCrop: true, larguraPx: 300,
       pivotX: 0.5, pivotY: 0.92, depthOffset: -1, bloqueia: false,
+      renderizar: false,
     },
     {
-      id: 'espelho_arquetipos_enseada', nome: 'ESPELHO DE RESSONÂNCIA', tipo: 'dispositivo', x: 35.72, y: 49.62,
-      sprite: 'enseada_espelho_arquetipo', spriteB: 'enseada_espelho_arquetipo_b', animPeriodo: 0.56,
-      useCrop: true, larguraPx: 190, pivotX: 0.5, pivotY: 0.95,
+      // A referência desenha um espelho oval de moldura dourada com pedrarias,
+      // sobre praça de losangos com medalhão. O sprite antigo era um portal
+      // tecnológico de pedra escura com vórtice roxo — outra coisa.
+      // Pé do espelho no pôster: (515, 552). O sprite inclui a praça, então a
+      // âncora é o centro da praça e o espelho fica acima.
+      id: 'espelho_arquetipos_enseada', nome: 'ESPELHO DE RESSONÂNCIA', tipo: 'dispositivo', x: 36.35, y: 50.25,
+      sprite: 'enseada2_espelho_referencia',
+      useCrop: true, larguraPx: 296, pivotX: 0.5, pivotY: 0.70,
       bloqueia: false, brilho: { cor: '#6ff7ff', raio: 1.5, forca: 0.34 },
       interacao: { label: 'SINTONIZAR ARQUÉTIPO', distancia: 1.65 },
     },
@@ -672,7 +687,9 @@ export const map = {
       // Portal da costa leste: a arte da referência é um arco de pedra com
       // vórtice azul e corais na base rochosa. O sprite anterior era uma
       // plataforma de pedra cinza com cristais, que a arte não tem.
-      id: 'portal_submarino_sul', tipo: 'decoracao', x: 46.34, y: 19.62,
+      // O pôster põe este arco em cima do rochedo da praia sudeste, ligado à
+      // areia por pedras de travessia — não ilhado no meio do mar.
+      id: 'portal_submarino_sul', tipo: 'decoracao', x: 48.97, y: 17.88,
       sprite: 'enseada3_portal_recife', useCrop: true, larguraPx: 236,
       pivotX: 0.5, pivotY: 0.96, depthOffset: -6, bloqueia: true,
       hitbox: { offsetX: -0.30, offsetY: -0.30, width: 0.60, height: 0.60 },
@@ -689,6 +706,23 @@ export const map = {
       sprite: 'enseada4_orla_rochas', useCrop: true, larguraPx: 96,
       pivotX: 0.5, pivotY: 0.96, bloqueia: false,
     },
+    // Pedras de travessia do portal sudeste até a praia (a referência liga o
+    // arco à areia por uma linha de pedras na água rasa).
+    // A linha desce do arco (sudeste) até a ponta de areia, como na arte.
+    ...[[51.06, 23.53], [51.13, 25.22], [51.19, 26.91], [51.25, 28.59], [51.38, 30.22]]
+      .map(([x, y], i) => ({
+        id: `pedra_travessia_sudeste_${i + 1}`, tipo: 'decoracao', x, y,
+        sprite: `enseada_correntes_pedra_${i % 3 + 1}`, useCrop: true,
+        larguraPx: 44 + (i % 2) * 6, pivotX: 0.5, pivotY: 0.62,
+        espuma: true, camada: 'fundo', bloqueia: false,
+      })),
+    // Boias cônicas flutuando ao redor do arco, como na arte.
+    ...[[51.78, 20.06], [51.56, 18.41], [50.4, 15.2]].map(([x, y], i) => ({
+      id: `boia_sudeste_${i + 1}`, tipo: 'decoracao', x, y,
+      sprite: i === 1 ? 'enseada_correntes_boia_vermelha' : 'enseada_correntes_boia_laranja',
+      useCrop: true, larguraPx: 22, pivotX: 0.5, pivotY: 0.9,
+      bloqueia: false, flutuacaoSuave: true, sombra: [8, 3],
+    })),
     {
       id: 'travessia_pedras_agua', tipo: 'decoracao', x: 52.0, y: 56.0,
       sprite: 'enseada4_travessia_pedras', useCrop: true, larguraPx: 110,

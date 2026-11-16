@@ -53,23 +53,27 @@ const fire = camp('acampamento_vigilia_enseada');
 const tent = camp('tenda_expedicao_enseada');
 const crates = camp('maleta_expedicao_enseada');
 const bench = camp('enseada_banco_tronco_camp');
-// Ordem lida da arte de referência (`/tmp/props_ref.py`, mesma projeção):
-// relógio na ponta esquerda, bancada, torre ao fundo, fogueira, barraca,
-// pilha de caixas à direita. A fogueira fica À ESQUERDA da barraca na arte.
-// A pilha de caixas senta à direita da barraca e praticamente sobre a
-// fogueira na arte (caixas x=570, fogueira x=575): a comparação dela é
-// com a barraca, não com a fogueira.
-assert(clock.x < table.x && table.x < tower.x && tower.x < tent.x && tent.x < fire.x, 'ordem horizontal do acampamento');
+// Ordem lida da arte de referência, medida em `referencia-mestre.png`:
+// relógio (327) < bancada (400) < torre (450) < fogueira (474) < tenda (528)
+// < pilha de caixas (577). A versão anterior deste teste exigia a fogueira à
+// DIREITA da barraca, o que contradiz o pôster e forçava a fogueira para
+// cima do paredão.
+assert(clock.x < table.x && table.x < tower.x && tower.x < fire.x && fire.x < tent.x, 'ordem horizontal do acampamento');
 assert(crates.x > tent.x, 'pilha de caixas à direita da barraca');
-assert(tower.y < table.y && tower.y < fire.y && tent.y < fire.y, 'torre e tenda devem ficar atrás da fogueira');
+// Na arte a torre sobe ao fundo (acima da bancada e da fogueira) e a tenda
+// fica um pouco atrás da fogueira, mas não acima dela.
+assert(tower.y < table.y && tower.y < fire.y, 'torre ao fundo do acampamento');
+assert(tent.y < fire.y, 'tenda ligeiramente atrás da fogueira');
 assert(table.x < bench.x && bench.x < fire.x && bench.y > fire.y, 'banco à frente e à esquerda da fogueira');
 assert.equal(object('enseada_banco_tronco_camp').sprite, 'enseada_camp_ref_tronco');
 for (const id of ['enseada_arvore_camp_esquerda', 'enseada_arvore_camp_direita', 'enseada_cesto_ferramentas_camp', 'enseada_caixa_atras_tenda', 'enseada_caixote_camp']) assert(object(id));
 assert(camp('enseada_caixa_atras_tenda').x < tent.x && camp('enseada_caixa_atras_tenda').y < tent.y);
-// O caixote solto fica entre a bancada e a fogueira na arte (x=425),
-// então a referência dele é a bancada, não a fogueira.
+// O caixote solto senta entre a fogueira e a tenda, atrás da fogueira
+// (arte: 500, 258). Antes ele era ancorado entre bancada e fogueira, o que o
+// colocava em cima do banco de tronco.
 const caixote = camp('enseada_caixote_camp');
-assert(table.x < caixote.x && caixote.x < fire.x, 'caixote entre a bancada e a fogueira');
+assert(fire.x < caixote.x && caixote.x < tent.x, 'caixote entre a fogueira e a tenda');
+assert(caixote.y < fire.y, 'caixote atrás da fogueira');
 assert(camp('bandeirola_vento_enseada').x > tent.x);
 // Os pés visuais e os pontos lógicos coincidem: a ordenação por x+y
 // e as hitboxes devem acompanhar o mesmo ponto, sem ajuste de tela.

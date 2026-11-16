@@ -484,6 +484,8 @@ await loadSprites([
   // ---- ENSEADA DOS ECOS 2.0 — Lote #4 (tools/preparar-enseada-2.py) ----
   { id: 'enseada_embarcadouro_mare', src: 'assets/sprites/enseada-2/embarcadouro-mare-astral.png' },
   { id: 'enseada_espelho_arquetipo', src: 'assets/sprites/enseada-2/espelho-eco-arquetipo.png' },
+  // Lote 2: espelho da arte de referência (moldura dourada sobre praça de losangos).
+  { id: 'enseada2_espelho_referencia', src: 'assets/sprites/enseada-lote2/espelho-arquetipos.png' },
   { id: 'enseada_relogio_mare', src: 'assets/sprites/enseada-2/relogio-mare-solar.png' },
   { id: 'enseada_ninho_tartarugas', src: 'assets/sprites/enseada-2/ninho-tartarugas-praia.png' },
   { id: 'enseada_poleiro_aves', src: 'assets/sprites/enseada-2/poleiro-aves-costeiro.png' },

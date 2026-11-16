@@ -48,6 +48,16 @@ const { initRenderer, render } = await import('../../js/engine/renderer.js');
 const { loadSprites } = await import('../../js/engine/sprites.js');
 const { map } = await import('../../js/data/worlds/arquipelago-rotas-perdidas/enseada-ecos.js');
 
+// --only=id1,id2 desenha só esses objetos; --except=id1,id2 esconde esses.
+// Serve para identificar qual sprite está em cada ponto sem adivinhar.
+const argOnly = process.argv.find(a => a.startsWith('--only='));
+const argExcept = process.argv.find(a => a.startsWith('--except='));
+const filtroArgs = (o) => {
+  if (argOnly) return argOnly.slice(7).split(',').includes(o.id);
+  if (argExcept) return !argExcept.slice(9).split(',').includes(o.id);
+  return true;
+};
+
 const zoom = Number(process.argv[2] ?? 0.5);
 const out = process.argv[3] ?? '.qa/enseada.png';
 const cx = Number(process.argv[4] ?? 19);
@@ -81,7 +91,9 @@ await loadSprites(lista);
 const state = {
   player: { x: cx, y: cy, nado: null, ability: {}, health: 100, maxHealth: 100, energy: 60, maxEnergy: 100, facing: [1, 1] },
   actors: [], fauna: [], companion: null, collectibles: [], hazards: [], trainingTargets: [],
-  objects: (map.objects ?? []).map(o => ({ ...o, x: o.x + .5, y: o.y + .5, renderType: 'object' })),
+  objects: (map.objects ?? [])
+    .map(o => ({ ...o, x: o.x + .5, y: o.y + .5, renderType: 'object' }))
+    .filter(filtroArgs),
   progress: { flags: {}, mastery: {}, kills: 0 }, world: { currentMapId: map.id },
 };
 
@@ -89,3 +101,29 @@ render(map, state);
 fs.mkdirSync(path.dirname(out), { recursive: true });
 fs.writeFileSync(out, canvas.toBuffer('image/png'));
 console.log('ok', out);
+
+// --labels: depois do render, escreve o id de cada objeto na sua posição de
+// tela. Serve para saber EXATAMENTE qual sprite está em cada ponto antes de
+// dizer que um portal/peça está no lugar errado.
+if (process.argv.includes('--labels')) {
+  const { worldToScreen } = await import('../../js/engine/camera.js');
+  const c2 = canvas.getContext('2d');
+  c2.setTransform(1, 0, 0, 1, 0, 0);
+  c2.font = 'bold 11px sans-serif';
+  c2.textBaseline = 'middle';
+  for (const o of map.objects) {
+    const p = worldToScreen(o.x + .5, o.y + .5);
+    if (p.x < -60 || p.x > VW + 60 || p.y < -20 || p.y > VH + 20) continue;
+    if (o.renderizar === false || o.oculto) continue;
+    const t = o.id;
+    const w = c2.measureText(t).width;
+    c2.fillStyle = 'rgba(0,0,0,.72)';
+    c2.fillRect(p.x - 1, p.y - 7, w + 4, 14);
+    c2.fillStyle = '#ffe14d';
+    c2.fillText(t, p.x + 1, p.y);
+    c2.fillStyle = '#ff3b3b';
+    c2.fillRect(p.x - 2, p.y - 2, 4, 4);
+  }
+  fs.writeFileSync(out, canvas.toBuffer('image/png'));
+  console.log('labels', out);
+}

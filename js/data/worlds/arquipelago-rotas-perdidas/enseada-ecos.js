@@ -327,15 +327,15 @@ export const map = {
       interacao: { label: 'CALIBRAR MÓDULO NA BANCADA', distancia: 1.7 },
     },
     {
-      id: 'acampamento_vigilia_enseada', nome: 'ACAMPAMENTO DE VIGÍLIA', tipo: 'decoracao', x: 16.5, y: 31.5,
+      id: 'acampamento_vigilia_enseada', nome: 'ACAMPAMENTO DE VIGÍLIA', tipo: 'decoracao', x: 15.0, y: 29.0,
       sprite: 'enseada4_fogueira', spriteB: 'enseada4_fogueira', animPeriodo: 0.42,
-      useCrop: true, larguraPx: 90, pivotX: 0.5, pivotY: 0.98, ajusteY: -50,
+      useCrop: true, larguraPx: 90, pivotX: 0.5, pivotY: 0.98, ajusteY: -40,
       bloqueia: true, hitbox: { offsetX: -0.30, offsetY: -0.24, width: 0.60, height: 0.48 },
       fogueiraViva: true, brilho: { cor: '#ffae52', raio: 1.25, forca: 0.28 },
       interacao: { label: 'DESCANSAR NA FOGUEIRA', distancia: 1.6 },
     },
     {
-      id: 'tenda_expedicao_enseada', nome: 'TENDA DA EXPEDIÇÃO', tipo: 'decoracao', x: 18.0, y: 28.0,
+      id: 'tenda_expedicao_enseada', nome: 'TENDA DA EXPEDIÇÃO', tipo: 'decoracao', x: 14.5, y: 26.5,
       sprite: 'enseada4_tenda', useCrop: true, larguraPx: 120,
       pivotX: 0.5, pivotY: 0.98, depthOffset: -0.2, ajusteY: -30,
       bloqueia: true, hitbox: { offsetX: -0.48, offsetY: -0.34, width: 0.96, height: 0.68 },
@@ -343,7 +343,7 @@ export const map = {
         dialogue: ['A LONA GUARDA MAPAS, ROLOS DE CORDA E UM COBERTOR DOBRADO. A EXPEDIÇÃO ESTÁ EM PLENA ATIVIDADE.'] },
     },
     {
-      id: 'maleta_expedicao_enseada', nome: 'MALETA DA EXPEDIÇÃO', tipo: 'dispositivo', x: 20.5, y: 28.0,
+      id: 'maleta_expedicao_enseada', nome: 'MALETA DA EXPEDIÇÃO', tipo: 'dispositivo', x: 17.5, y: 25.8,
       sprite: 'enseada4_caixas', spriteB: 'enseada4_caixas', animPeriodo: 0.56,
       useCrop: true, larguraPx: 90, pivotX: 0.5, pivotY: 0.98, ajusteY: -65,
       bloqueia: true, hitbox: { offsetX: -0.38, offsetY: -0.32, width: 0.76, height: 0.64 },
@@ -351,7 +351,7 @@ export const map = {
       interacao: { label: 'ABRIR MALETA DA EXPEDIÇÃO', distancia: 1.55 },
     },
     {
-      id: 'bandeirola_vento_enseada', nome: 'BIRUTA DA EXPEDIÇÃO', tipo: 'decoracao', x: 18.0, y: 25.0,
+      id: 'bandeirola_vento_enseada', nome: 'BIRUTA DA EXPEDIÇÃO', tipo: 'decoracao', x: 16.5, y: 24.5,
       sprite: 'enseada_biruta_camp',
       useCrop: true, larguraPx: 75, pivotX: 0.5, pivotY: 0.94, ajusteY: -35,
       bloqueia: false, oscilaBrisa: true,
@@ -359,9 +359,9 @@ export const map = {
 
     // Assento e palmeiras do acampamento: peças independentes da área jogável.
     {
-      id: 'enseada_banco_tronco_camp', tipo: 'decoracao', x: 14.5, y: 31.5,
-      sprite: 'enseada_banco_tronco', useCrop: true, larguraPx: 105,
-      pivotX: 0.5, pivotY: 0.98, ajusteY: -35, bloqueia: false,
+      id: 'enseada_banco_tronco_camp', tipo: 'decoracao', x: 14.1, y: 31.9,
+      sprite: 'enseada_banco_tronco', useCrop: true, larguraPx: 80,
+      pivotX: 0.5, pivotY: 0.98, ajusteY: -15, bloqueia: false,
     },
     {
       id: 'enseada_palmeira_camp_oeste', tipo: 'decoracao', x: 10.0, y: 30.0,
@@ -491,11 +491,17 @@ export const map = {
     },
 
     // ---- SETOR 6 (Sul): Cais + embarcadouro ----
+    // Arte do cais separada do ponto de interação em terra: a ponta fica no mar.
+    {
+      id: 'cais_enseada_visual', tipo: 'decoracao', x: 56.5, y: 51.0,
+      sprite: 'enseada8_cais_barco_ref', useCrop: true, larguraPx: 280,
+      pivotX: 0.5, pivotY: 0.97, camada: 'fundo', ordem: -1, bloqueia: false,
+    },
     {
       id: 'cais_madeira_pesca_enseada', nome: 'CAIS DA ENSEADA', tipo: 'decoracao', x: 49.5, y: 48.5,
       sprite: 'enseada8_cais_barco_ref', spriteB: 'enseada8_cais_barco_ref', animPeriodo: 0.68,
       useCrop: true, larguraPx: 280, pivotX: 0.5, pivotY: 0.97,
-      bloqueia: false, brilho: { cor: '#ffd980', raio: 1.0, forca: 0.16 },
+      bloqueia: false, renderizar: false, brilho: { cor: '#ffd980', raio: 1.0, forca: 0.16 },
       interacao: { label: 'OBSERVAR A BAÍA DO CAIS', distancia: 1.75 },
     },
     {
@@ -509,7 +515,7 @@ export const map = {
       id: 'embarcadouro_mare_astral', nome: 'EMBARCADOURO DA MARÉ', tipo: 'decoracao', x: 44.0, y: 46.0,
       sprite: 'enseada_embarcadouro_mare', spriteB: 'enseada_embarcadouro_mare_b', animPeriodo: 0.62,
       useCrop: true, larguraPx: 110, pivotX: 0.5, pivotY: 0.88,
-      bloqueia: false, brilho: { cor: '#5cf7eb', raio: 1.35, forca: 0.3 },
+      bloqueia: false, renderizar: false, brilho: { cor: '#5cf7eb', raio: 1.35, forca: 0.3 },
       interacao: { label: 'EXAMINAR O CAIS DA MARÉ', distancia: 1.75 },
     },
     {
@@ -523,14 +529,14 @@ export const map = {
     // ---- SETOR 7 (Leste): Portal + jardim + baú + recife ----
     {
       id: 'enseada_base_rochosa_portal_leste', tipo: 'decoracao', x: 57.5, y: 24.0,
-      sprite: 'enseada_rochedo_portal', useCrop: true, larguraPx: 280,
-      pivotX: 0.5, pivotY: 1, ajusteY: 140,
+      sprite: 'enseada_rochedo_portal', useCrop: true, larguraPx: 380,
+      pivotX: 0.5, pivotY: 1, ajusteX: -70, ajusteY: 100,
       camada: 'fundo', ordem: -1, bloqueia: false,
     },
     {
       id: 'arco_conduto_retorno_mare', tipo: 'decoracao', x: 57.5, y: 24.0,
       sprite: 'enseada8_portal_leste', spriteB: 'enseada8_portal_leste', animPeriodo: 0.7,
-      useCrop: true, espelhar: true, larguraPx: 170, pivotX: 0.5, pivotY: 0.98,
+      useCrop: true, espelhar: false, larguraPx: 170, pivotX: 0.5, pivotY: 0.98, ajusteY: -55,
       bloqueia: false, brilho: { cor: '#5cf7eb', raio: 2.2, forca: 0.44 },
     },
     {

@@ -123,3 +123,17 @@ Esses ajustes foram conferidos numa vista geral do navegador, mas ainda não
 reproduzem toda a referência. A rampa continua cenográfica, sem altura física
 nem colisão que obrigue o uso do caminho; faltam também novos ajustes finos do
 terreno, vegetação, objetos e estação.
+
+## Ajuste de proximidade: acampamento, cais e portal leste
+
+- Mesa, banco, fogueira, tenda, caixas e biruta do acampamento foram
+  redistribuídos; a composição foi conferida em zoom próximo no navegador.
+- O píer visual foi deslocado para fora da areia e pintado antes do jogador;
+  os pontos de interação do cais, barco e embarcadouro permanecem na praia,
+  sem exibir plataformas duplicadas.
+- O portal foi virado novamente e recebeu um rochedo com subida de areia,
+  preparado a partir da arte `03-rochedo.png` do lote anterior.
+- A subida dos dois relevos continua cenográfica, assim como o píer sobre a
+  água: ainda não há malha de altura nem passarela navegável correspondente
+  às artes. O acampamento ainda precisa de refinamento visual em relação à
+  referência; a presente revisão não comprova equivalência exata.

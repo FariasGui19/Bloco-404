@@ -576,7 +576,7 @@ await loadSprites([
   { id: 'enseada_banco_tronco', src: 'assets/sprites/enseada-lote-10/04-troncos.png' },
   { id: 'enseada_biruta_camp', src: 'assets/sprites/enseada-lote-10/07-biruta.png' },
   { id: 'enseada_bancada_expedicao', src: 'assets/sprites/enseada-lote-10/05-paineis.png' },
-  { id: 'enseada_rochedo_portal', src: 'assets/sprites/enseada-setores/rochedo-portal.png' },
+  { id: 'enseada_rochedo_portal', src: 'assets/sprites/enseada-lote-10/03-rochedo.png' },
   { id: 'enseada8_portal_ne', src: 'assets/sprites/enseada-8/portal-nordeste-coral-recortado.png' },
   { id: 'enseada8_portal_leste', src: 'assets/sprites/enseada-8/portal-leste-rochedo-recortado.png' },
   { id: 'enseada8_mesa_trabalho', src: 'assets/sprites/enseada-8/mesa-trabalho-madeira-recortado.png' },

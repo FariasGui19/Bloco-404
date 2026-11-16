@@ -42,11 +42,15 @@ DESTINO = RAIZ / 'assets/sprites/enseada-setor4'
 ALTURA_ARTE = {
     'portal-submarino-coral': 110,
     'orla-rochas-poste':       40,
+    # Setor 3 (centro-sul / oeste)
+    'capivara':                34,   # ~0,7x o personagem
+    'fonte-cristal':           52,
+    'piscina-termal':         118,
 }
 
 # Peças que devem manter só o maior componente: coral e rocha às vezes vêm com
 # um tufo solto que ficaria flutuando no mapa.
-SO_MAIOR_COMPONENTE = {'orla-rochas-poste'}
+SO_MAIOR_COMPONENTE = {'orla-rochas-poste', 'capivara'}
 
 # Recorte manual, quando a geração devolveu mais de uma variante.
 #   orla-rochas-poste: a imagem veio como uma PLATAFORMA de areia isométrica
@@ -62,9 +66,17 @@ ARQUIVOS = {
     'orla-rochas-poste': 'praia-sul-orla',
 }
 
+# As duas fontes ficam em pastas diferentes (setor4 e setor3).
+PASTAS = {
+    'capivara': 'setor3',
+    'fonte-cristal': 'setor3',
+    'piscina-termal': 'setor3',
+}
+
 
 def recortar(nome: str) -> dict:
-    arquivo = FONTE / f"{ARQUIVOS.get(nome, nome)}.png"
+    pasta = RAIZ / 'assets/source-art' / PASTAS.get(nome, 'setor4')
+    arquivo = pasta / f"{ARQUIVOS.get(nome, nome)}.png"
     rgb = np.asarray(Image.open(arquivo).convert('RGB'))
     if nome in RECORTES:
         x0, y0, x1, y1 = RECORTES[nome]

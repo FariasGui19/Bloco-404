@@ -681,6 +681,7 @@ function drawBeachSurface(map) {
       gramaInterior: map.meta?.gramaInterior === true,
       caminhos: map.caminhosAreia ?? [],
       zonasGrama: map.zonasGrama ?? [],
+      zonasRocha: map.zonasRocha ?? [],
     });
     texture = document.createElement('canvas');
     texture.width = data.width; texture.height = data.height;
@@ -4111,7 +4112,7 @@ function drawEnseadaObjectAnimations(object, state) {
   const interactionFx = object.id === 'bancada_campo_enseada' || object.id === 'fonte_termal_enseada' ||
     object.id === 'piscina_mare_viva_enseada' || object.id === 'algas_douradas_enseada' ||
     object.id === 'gruta_concha_enseada';
-  if (!object.fogueiraViva && !object.feixeFarolete && !object.pulsoAntena && !object.pulsoTotem && !object.pulsoBiolum && !object.vorticidadeCorrentes && !object.cachoeiraViva && !interactionFx) return;
+  if (!object.fogueiraViva && !object.feixeFarolete && !object.pulsoAntena && !object.pulsoTotem && !object.pulsoBiolum && !object.vorticidadeCorrentes && !object.cachoeiraViva && !object.vaporTermal && !interactionFx) return;
   const reduced = typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
   const t = reduced ? 0 : performance.now() / 1000;
   const ix = (object.x - object.y) * HW + (object.ajusteX ?? 0);
@@ -4249,6 +4250,33 @@ function drawEnseadaObjectAnimations(object, state) {
       ctx.fillStyle = `rgba(${cor}, ${(Math.sin(f * Math.PI) * 0.65).toFixed(2)})`;
       ctx.beginPath(); ctx.arc(px, py, 1.5, 0, Math.PI * 2); ctx.fill();
     }
+  }
+
+  if (object.vaporTermal) {
+    // Vapor da piscina termal: colunas curvas subindo da água. Fica aqui
+    // (e não no fim de drawObject) porque `useCrop` retorna antes daquele
+    // trecho — o efeito existia no código e nunca era desenhado.
+    const visitada = !!state.progress?.flags?.enseada_fonte_termal_visitada;
+    ctx.save();
+    ctx.strokeStyle = visitada ? 'rgba(185, 255, 240, 0.52)' : 'rgba(218, 255, 248, 0.34)';
+    ctx.lineWidth = visitada ? 2 : 1.6;
+    ctx.lineCap = 'round';
+    for (let i = 0; i < 5; i++) {
+      const fase = (t * (visitada ? 0.58 : 0.48) + i * 0.2) % 1;
+      const vx = ix + (i - 2) * 13 + Math.sin(t * 2 + i * 2) * (visitada ? 5 : 3);
+      const vy = iy - 14 - fase * (visitada ? 34 : 26);
+      ctx.globalAlpha = Math.sin(fase * Math.PI) * (visitada ? 0.58 : 0.45);
+      ctx.beginPath();
+      ctx.moveTo(vx, vy + 7);
+      ctx.quadraticCurveTo(vx + Math.sin(t * 3 + i) * 4, vy + 3, vx, vy - 5);
+      ctx.stroke();
+    }
+    if (visitada) {
+      ctx.globalAlpha = 0.22 + Math.sin(t * 2.4) * 0.08;
+      ctx.strokeStyle = '#9affeb';
+      ctx.beginPath(); ctx.ellipse(ix, iy - 8, 34, 12, 0, 0, Math.PI * 2); ctx.stroke();
+    }
+    ctx.restore();
   }
 
   // A bancada responde à calibração com um pequeno holograma de três nós;
@@ -5260,30 +5288,6 @@ function drawMapObject(object, state) {
   if (object.useCrop && drawCroppedObject(object, image, sheet)) {
     drawFrequencyObjectLife(object, image);
     drawEnseadaObjectAnimations(object, state);
-    if (object.vaporTermal) {
-      const ix = (object.x - object.y) * HW, iy = (object.x + object.y) * HH;
-      const t = performance.now() / 1000;
-      const visitada = !!state.progress?.flags?.enseada_fonte_termal_visitada;
-      ctx.save();
-      ctx.strokeStyle = visitada ? 'rgba(185, 255, 240, 0.52)' : 'rgba(218, 255, 248, 0.34)';
-      ctx.lineWidth = visitada ? 2 : 1.6;
-      for (let i = 0; i < 4; i++) {
-        const fase = (t * (visitada ? 0.58 : 0.48) + i * 0.25) % 1;
-        const vx = ix + (i - 1.5) * 11 + Math.sin(t * 2 + i * 2) * (visitada ? 5 : 3);
-        const vy = iy - 18 - fase * (visitada ? 31 : 24);
-        ctx.globalAlpha = Math.sin(fase * Math.PI) * (visitada ? 0.58 : 0.45);
-        ctx.beginPath();
-        ctx.moveTo(vx, vy + 7);
-        ctx.quadraticCurveTo(vx + Math.sin(t * 3 + i) * 4, vy + 3, vx, vy - 5);
-        ctx.stroke();
-      }
-      if (visitada) {
-        ctx.globalAlpha = 0.22 + Math.sin(t * 2.4) * 0.08;
-        ctx.strokeStyle = '#9affeb';
-        ctx.beginPath(); ctx.ellipse(ix, iy - 6, 28, 10, 0, 0, Math.PI * 2); ctx.stroke();
-      }
-      ctx.restore();
-    }
     if (object.id === 'grade_impeto_vivo' && (!object.__coluna || object.__coluna.index === object.__coluna.count - 1)) {
       drawBioGateResonance(object, state);
     }

@@ -23,6 +23,39 @@
         460,
         320
       ]
+    },
+    "capivara": {
+      "larguraPx": 89,
+      "alturaPx": 68,
+      "arquivo": "assets/sprites/enseada-setor4/capivara.png",
+      "arte": [
+        418,
+        183,
+        985,
+        615
+      ]
+    },
+    "fonte-cristal": {
+      "larguraPx": 119,
+      "alturaPx": 104,
+      "arquivo": "assets/sprites/enseada-setor4/fonte-cristal.png",
+      "arte": [
+        363,
+        111,
+        1014,
+        679
+      ]
+    },
+    "piscina-termal": {
+      "larguraPx": 343,
+      "alturaPx": 236,
+      "arquivo": "assets/sprites/enseada-setor4/piscina-termal.png",
+      "arte": [
+        300,
+        63,
+        1162,
+        656
+      ]
     }
   }
 }

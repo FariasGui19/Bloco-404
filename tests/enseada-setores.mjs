@@ -56,7 +56,7 @@ const bench = camp('enseada_banco_tronco_camp');
 assert(clock.x < table.x && table.x < tower.x && tower.x < fire.x && fire.x < tent.x && tent.x < crates.x, 'ordem horizontal do acampamento');
 assert(tower.y < table.y && tower.y < fire.y && tent.y < fire.y, 'torre e tenda devem ficar atrás da fogueira');
 assert(table.x < bench.x && bench.x < fire.x && bench.y > fire.y, 'banco à frente e à esquerda da fogueira');
-assert.equal(object('enseada_banco_tronco_camp').sprite, 'enseada_camp_ref_banco');
+assert.equal(object('enseada_banco_tronco_camp').sprite, 'enseada_camp_ref_tronco');
 for (const id of ['enseada_arvore_camp_esquerda', 'enseada_arvore_camp_direita', 'enseada_cesto_ferramentas_camp', 'enseada_caixa_atras_tenda', 'enseada_caixote_camp']) assert(object(id));
 assert(camp('enseada_caixa_atras_tenda').x < tent.x && camp('enseada_caixa_atras_tenda').y < tent.y);
 assert(fire.x < camp('enseada_caixote_camp').x && camp('enseada_caixote_camp').x < crates.x);

@@ -17,17 +17,20 @@ assert.equal(visual.y, exit.y, 'eclusa e interação devem apontar para a mesma 
 assert(visual.larguraPx >= 95 && visual.camada === 'fundo');
 assert(Math.hypot(station.spawnPoints.vindo_da_enseada.x-(exit.x+.5),station.spawnPoints.vindo_da_enseada.y-(exit.y+.5)) > exit.interactionDistance);
 const mountain = coast.objects.find(o => o.id === 'enseada_macico_leste');
-assert.equal(mountain.sprite, 'enseada_estacao_integrada');
+assert.equal(mountain.sprite, 'enseada_estacao_integrada_v2');
 assert.equal(mountain.camada, 'fundo');
-assert.equal(mountain.larguraPx, 860, 'penhasco ampliado');
+assert.equal(mountain.larguraPx, 700, 'penhasco ampliado');
 const visualPortal = coast.portals.find(p => p.id === 'acesso_estacao_666');
-// Em pixels isométricos, a soleira da arte fica a 16% da largura à
-// direita da âncora e cerca de 7,7% acima dela. Objetos e portal recebem
-// ambos meio tile na renderização/interação, então o deslocamento cancela.
+// Em pixels isométricos, a porta da arte fica a 5% da largura à direita do
+// centro e a Soleira a ~87% da altura do sprite. A arte nova
+// (`estacao-66-completa`) tem a base arenosa FECHADA: a anterior terminava em
+// diagonal e o chão do mapa aparecia por baixo, cortando a piscina da
+// cachoeira. Objetos e portal recebem ambos meio tile na renderização e na
+// interação, então o deslocamento cancela.
 const dx = ((visualPortal.x - visualPortal.y) - (mountain.x - mountain.y)) * 32;
 const dy = ((visualPortal.x + visualPortal.y) - (mountain.x + mountain.y)) * 16;
-assert(Math.abs(dx - mountain.larguraPx * .16) < 1, 'portal alinhado horizontalmente com a porta');
-assert(Math.abs(dy + mountain.larguraPx * .077) < 1, 'portal alinhado verticalmente com a soleira');
+assert(Math.abs(dx - mountain.larguraPx * .0498) < 2, 'portal alinhado horizontalmente com a porta');
+assert(Math.abs(dy + mountain.larguraPx * 0.0679) < 3, 'portal alinhado verticalmente com a soleira');
 assert(!coast.caminhosAreia.some(([x,y]) => x === 22.5 && y === 11.75), 'manchas de areia antigas removidas');
 assert(coast.objects.some(o => o.id.startsWith('enseada_parede_estacao_') && o.bloqueia));
 for (const file of ['abrigo-ampliado','fx-vortice','fx-vapor','fx-centelha','fx-sinal','fx-baliza','fx-poeira']) assert(existsSync(`assets/sprites/frequencia-666/${file}.png`));
@@ -80,7 +83,7 @@ assert(canStandAt(coast, state.player.x, state.player.y, .25, state.player), 're
 console.log('Encaixe e acesso da Estação 66.6 OK.');
 // A estação se move como um grupo: a porta mantém sua posição relativa,
 // a mata tem colisão e a praia não foi sobreposta à força por um sprite.
-assert(Math.abs(mountain.x - 18.6) < 1e-8 && Math.abs(mountain.y - 18.1) < 1e-8);
+assert(Math.abs(mountain.x - 16.2) < 1e-8 && Math.abs(mountain.y - 19.9) < 1e-8);
 const mata = coast.objects.find(o => o.id === 'enseada_mata_juncao_estacao');
 assert(mata?.bloqueia && mata.hitbox && mata.camada !== 'fundo');
 assert(coast.zonasGrama?.length, 'grama da junção precisa seguir a superfície do mapa');

@@ -4,3 +4,6 @@ node_modules/
 
 # prévias locais de QA (.qa/) não entram no repo
 .qa/
+
+# bytecode do python dos tools de arte
+__pycache__/

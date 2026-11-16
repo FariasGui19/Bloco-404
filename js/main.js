@@ -597,6 +597,9 @@ await loadSprites([
   { id: 'enseada8_estela', src: 'assets/sprites/enseada-8/estela-navegacao-runas-recortado.png' },
   { id: 'enseada8_cairn', src: 'assets/sprites/enseada-8/cairn-pedras-zen-recortado.png' },
   { id: 'enseada8_gruta', src: 'assets/sprites/enseada-8/gruta-concha-cristal-recortado.png' },
+  // SETOR 4 — praia sul e portais submarinos (geração dedicada, fundo magenta).
+  { id: 'enseada4_portal_submarino', src: 'assets/sprites/enseada-setor4/portal-submarino-coral.png' },
+  { id: 'enseada4_orla_rochas', src: 'assets/sprites/enseada-setor4/orla-rochas-poste.png' },
   // ---- ENSEADA DOS ECOS 3.1 — lote visual 2 (acampamento, gruta e praia sul) ----
   { id: 'enseada4_torre_vigilia', src: 'assets/sprites/enseada-4/signal-watchtower.png' },
   { id: 'enseada4_tenda', src: 'assets/sprites/enseada-4/expedition-tent.png' },

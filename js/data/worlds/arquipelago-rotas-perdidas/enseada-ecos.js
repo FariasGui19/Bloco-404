@@ -367,7 +367,7 @@ export const map = {
     // colisões e portal são independentes para não bloquear a entrada.
     {
       id: 'enseada_macico_leste', tipo: 'decoracao', x: 21.6 + ESTACAO_DX, y: 13.6 + ESTACAO_DY,
-      sprite: 'enseada_estacao_integrada', useCrop: true, larguraPx: 620, cachoeiraViva: true,
+      sprite: 'enseada_estacao_integrada', useCrop: true, larguraPx: 860, cachoeiraViva: true,
       pivotX: 0.5, pivotY: 0.98, camada: 'fundo', ordem: -1,
       bloqueia: false,
     },
@@ -400,9 +400,9 @@ export const map = {
     // Colisores discretos ao longo da face do penhasco. Mantêm uma abertura
     // livre na soleira: o portal fica no centro da porta desenhada.
     ...[
-      [13.075, 13.711], [14.846, 13.6], [16.507, 13.268],
-      [18.168, 13.379], [20.161, 13.6], [20.604, 11.386],
-      [22.486, 9.448], [23.538, 9.171], [23.371, 7.455],
+      [9.775, 13.754], [12.232, 13.6], [14.536, 13.139],
+      [16.839, 13.293], [19.604, 13.6], [20.218, 10.529],
+      [22.829, 7.841], [24.288, 7.457], [24.057, 5.076],
     ].map(([x, y], i) => ({
       id: `enseada_parede_estacao_${i + 1}`, tipo: 'decoracao', x: x + ESTACAO_DX, y: y + ESTACAO_DY,
       renderizar: false, bloqueia: true,
@@ -482,9 +482,9 @@ export const map = {
       // partir da silhueta medida na referência (grama, clareira de areia,
       // paredão e degraus). O ponto de encaixe é a base do paredão.
       id: 'enseada_terraco_acampamento', tipo: 'decoracao',
-      x: 21.592, y: 39.060,
+      x: 23.184, y: 40.653,
       sprite: 'enseada_setor1_plato', useCrop: true, larguraPx: 856,
-      pivotX: 0.5, pivotY: 0.831057,
+      pivotX: 0.5, pivotY: 0.939912,
       // Camada de fundo: a mesa é o chão do setor e entra antes dos
       // equipamentos, então nenhum prop é recoberto pela grama.
       camada: 'fundo', ordem: -2, bloqueia: false,
@@ -705,6 +705,24 @@ export const map = {
       ],
       interacao: { label: 'PRATICAR NA REDE DA PRAIA', distancia: 1.8, speaker: 'REDE DE TREINO',
         dialogue: ['A REDE MARCA UM ESPAÇO LIVRE PARA TREINAR. A AREIA AO REDOR ESTÁ FIRME E SEM OBSTÁCULOS.'] },
+    },
+    {
+      id: 'portal_submarino_sul', tipo: 'decoracao', x: 61.0, y: 55.0,
+      sprite: 'enseada8_portal_ne', useCrop: true, larguraPx: 150,
+      pivotX: 0.5, pivotY: 0.94, depthOffset: -6, bloqueia: true,
+      hitbox: { offsetX: -0.30, offsetY: -0.30, width: 0.60, height: 0.60 },
+      nome: 'PORTAL SUBMARINO DE CORAL',
+    },
+    {
+      id: 'portal_submarino_fundo', tipo: 'decoracao', x: 47.0, y: 60.5,
+      sprite: 'enseada4_portal_submarino', useCrop: true, larguraPx: 130,
+      pivotX: 0.5, pivotY: 0.96, depthOffset: -6, bloqueia: false,
+      nome: 'PORTA DE CORAL',
+    },
+    {
+      id: 'orla_rochas_sul', tipo: 'decoracao', x: 43.0, y: 55.5,
+      sprite: 'enseada4_orla_rochas', useCrop: true, larguraPx: 96,
+      pivotX: 0.5, pivotY: 0.96, bloqueia: false,
     },
     {
       id: 'travessia_pedras_agua', tipo: 'decoracao', x: 52.0, y: 56.0,
@@ -1018,7 +1036,7 @@ export const map = {
 
   portals: [
     {
-      id: 'acesso_estacao_666', tipo: 'door', x: 21.655 + ESTACAO_DX, y: 10.555 + ESTACAO_DY, label: 'ENTRAR NA ESTAÇÃO 66.6',
+      id: 'acesso_estacao_666', tipo: 'door', x: 21.681 + ESTACAO_DX, y: 9.381 + ESTACAO_DY, label: 'ENTRAR NA ESTAÇÃO 66.6',
       requiresFlag: 'frequencia666Registrada', lockedLabel: 'ESTAÇÃO DE ESCUTA // SEM SINAL',
       mensagemBloqueado: ['A PORTA AGUARDA UMA ASSINATURA. INVESTIGUE O TERMINAL DE MANUTENÇÃO COM [R].'],
       interactionDistance: 1.2, destino: { mapId: 'estacao_limiar_666', spawnId: 'vindo_da_enseada' }, transition: 'fade',

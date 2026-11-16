@@ -45,11 +45,11 @@ PALETA = {
     'areia_clara':    (255, 235, 148),
     'areia_sombra':   (231, 191, 84),
     'areia_borda':    (198, 158, 70),
-    'rocha_clara':    (186, 146, 91),
-    'rocha_media':    (152, 114, 71),
-    'rocha_escura':   (114, 79, 53),
-    'rocha_fundo':    (84, 57, 40),
-    'rocha_contorno': (52, 34, 24),
+    'rocha_clara':    (190, 152, 98),
+    'rocha_media':    (158, 118, 74),
+    'rocha_escura':   (122, 86, 56),
+    'rocha_fundo':    (62, 42, 28),
+    'rocha_contorno': (38, 25, 17),
     'degrau':         (206, 174, 116),
     'degrau_sombra':  (146, 113, 72),
     'degrau_borda':   (70, 48, 32),
@@ -83,7 +83,7 @@ TOPO = [
 # Altura do paredão em cada trecho da borda frontal (px de arte).
 # Mais alto no miolo (a encosta é côncava), mais baixo nas pontas.
 PAREDE = {
-    'oeste': 10, 'centro': 38, 'leste': 14,
+    'oeste': 16, 'centro': 60, 'leste': 22,
 }
 
 
@@ -205,7 +205,11 @@ def desenhar_parede(c: Cena):
                    else PALETA['rocha_media'])
             caixa = [c.p((cx - rx, cy - ry))[0], c.p((cx - rx, cy - ry))[1],
                      c.p((cx + rx, cy + ry))[0], c.p((cx + rx, cy + ry))[1]]
-            d.ellipse(caixa, fill=cor + (255,))
+            # A referência desenha CADA pedra com contorno escuro grosso: é
+            # esse contorno que dá leitura de rocha empilhada. Sem ele a
+            # parede vira uma mancha de lama chapada.
+            d.ellipse(caixa, fill=cor + (255,),
+                      outline=PALETA['rocha_contorno'] + (255,), width=1)
             d.arc(caixa, 195, 345, fill=PALETA['rocha_fundo'] + (255,))
             d.arc(caixa, 20, 160, fill=PALETA['rocha_clara'] + (255,))
 

@@ -77,6 +77,12 @@ for (let y = 10; y <= 23; y++) {
   for (let x = minX; x <= 15; x++) grid[y][x] = 'S';
 }
 
+// A leste do maciço, o mar chega à borda da falésia. A soleira e o
+// retorno permanecem em terra; o banco de areia antigo ficava atrás da arte.
+for (let y = 1; y <= 14; y++) for (let x = 13; x <= 25; x++) {
+  if (x - y > 6 && x + y < 32.5) grid[y][x] = 'W';
+}
+
 const TAM_RASO = 2;
 const TAM_FUNDO = 5;
 
@@ -305,6 +311,23 @@ export const map = {
       hitbox: { offsetX: -0.38, offsetY: -0.38, width: 0.76, height: 0.76 },
     },
 
+    {
+      id: 'enseada_mata_abaixo_acampamento', tipo: 'decoracao', x: 18.0, y: 26.8,
+      sprite: 'enseada3_palmeiral', useCrop: true, larguraPx: 240,
+      pivotX: 0.5, pivotY: 0.96, depthOffset: -6, bloqueia: true,
+      hitbox: { offsetX: -0.35, offsetY: -0.35, width: 0.70, height: 0.70 },
+    },
+    {
+      id: 'enseada_planta_margem_cascata', tipo: 'decoracao', x: 19.8, y: 17.6,
+      sprite: 'enseada_estacao_planta_piscina', useCrop: true, larguraPx: 54,
+      pivotX: 0.5, pivotY: 0.95, bloqueia: false,
+    },
+    {
+      id: 'enseada_pedras_perto_degraus', tipo: 'decoracao', x: 17.54, y: 30.88,
+      sprite: 'enseada_estacao_pedras_degrau', useCrop: true, larguraPx: 48,
+      pivotX: 0.5, pivotY: 0.95, bloqueia: false,
+    },
+
     // Colisores discretos ao longo da face do penhasco. Mantêm uma abertura
     // livre na soleira: o portal fica no centro da porta desenhada.
     ...[
@@ -340,8 +363,10 @@ export const map = {
     // malha plana existente; a arte não adiciona colisões nem altura física.
     {
       id: 'enseada_terraco_acampamento', tipo: 'decoracao', x: 19.0, y: 34.5,
-      sprite: 'enseada_terraco_acampamento', useCrop: true, larguraPx: 820,
-      pivotX: 0.5, pivotY: 1, ajusteY: 36,
+      // O recorte menor preserva a mesma escala e âncora do platô antigo,
+      // mantendo os pés dos equipamentos nas posições já calibradas.
+      sprite: 'enseada_terraco_acampamento', useCrop: true, larguraPx: 675.1,
+      pivotX: 0.607317, pivotY: 1.173828, ajusteY: 36,
       camada: 'fundo', ordem: -2, bloqueia: false,
     },
     {

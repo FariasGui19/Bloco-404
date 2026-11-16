@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { existsSync, readFileSync } from 'node:fs';
 import { map } from '../js/data/worlds/arquipelago-rotas-perdidas/enseada-ecos.js';
 import { state } from '../js/game/state.js';
-import { canStandAt, getObjectHitbox } from '../js/game/collision.js';
+import { canStandAt, getObjectHitbox, moveWithCollision } from '../js/game/collision.js';
 import { getObjectSpriteConfig } from '../js/engine/renderer.js';
 
 const main = readFileSync('js/main.js', 'utf8');
@@ -46,3 +46,12 @@ for (const id of ['relogio_mare_enseada', 'torre_antena_enseada', 'bancada_campo
   assert(reachable.some(([x, y]) => Math.hypot(x - o.x, y - o.y) <= o.interacao.distancia), `${id}: interação inacessível`);
 }
 console.log('Acampamento: artes, pés, colisões e passagem à frente e atrás OK.');
+
+// A subida visual curta não pode ser apenas um desenho sobre colisões fechadas.
+const jogador = {x: 16.7, y: 32.7};
+for (const [x, y] of [[16.4,32.4],[16.1,32.1],[15.8,31.8],[15.5,31.5],[15.2,31.2],[14.9,30.9],[14.6,30.6]]) {
+  moveWithCollision(map, jogador, x - jogador.x, y - jogador.y, .2);
+  assert(Math.hypot(jogador.x - x, jogador.y - y) < .001, 'degraus devem ser acessíveis a pé');
+}
+assert(main.includes('assets/sprites/enseada-estacao/terraco-curto.png'));
+assert('YyDdX'.includes(map.aguaPraia[9][21]), 'mar deve chegar à lateral da estação');

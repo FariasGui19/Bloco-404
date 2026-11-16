@@ -623,6 +623,7 @@ await loadSprites([
   { id: 'enseada7_arco_pedra', src: 'assets/sprites/enseada-7/arco-pedra-degraus.png' },
   { id: 'enseada7_banco_madeira', src: 'assets/sprites/enseada-7/banco-madeira.png' },
   { id: 'enseada7_rede_pesca', src: 'assets/sprites/enseada-7/rede-pesca-areia.png' },
+  { id: 'enseada7_jardim', src: 'assets/sprites/enseada-7/jardim-cercado-pedras.png' },
   {
     id: 'metro_rail_kit',
     src: 'assets/sprites/tiles/metro-rail-kit.png',

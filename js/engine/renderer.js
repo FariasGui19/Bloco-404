@@ -677,7 +677,7 @@ const beachSurfaceCache = new WeakMap();
 function drawBeachSurface(map) {
   let texture = beachSurfaceCache.get(map);
   if (!texture) {
-    const data = createBeachSurface(map.aguaPraia);
+    const data = createBeachSurface(map.aguaPraia, 16, { gramaInterior: map.meta?.gramaInterior === true });
     texture = document.createElement('canvas');
     texture.width = data.width; texture.height = data.height;
     const paint = texture.getContext('2d');

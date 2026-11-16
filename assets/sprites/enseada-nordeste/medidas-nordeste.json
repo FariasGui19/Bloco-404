@@ -1,0 +1,115 @@
+{
+  "fonte": "assets/source-art/nordeste-2 (geração dedicada, fundo magenta)",
+  "props": {
+    "parede-falesia": {
+      "larguraPx": 227,
+      "alturaPx": 80,
+      "arquivo": "assets/sprites/enseada-nordeste/parede-falesia.png",
+      "arte": [
+        53,
+        0,
+        1731,
+        592
+      ]
+    },
+    "plato-topo-grama": {
+      "larguraPx": 420,
+      "alturaPx": 192,
+      "arquivo": "assets/sprites/enseada-nordeste/plato-topo-grama.png",
+      "arte": [
+        83,
+        100,
+        1326,
+        668
+      ]
+    },
+    "matacao-grande": {
+      "larguraPx": 71,
+      "alturaPx": 52,
+      "arquivo": "assets/sprites/enseada-nordeste/matacao-grande.png",
+      "arte": [
+        325,
+        107,
+        1084,
+        661
+      ]
+    },
+    "trilha-areia-curva": {
+      "larguraPx": 85,
+      "alturaPx": 28,
+      "arquivo": "assets/sprites/enseada-nordeste/trilha-areia-curva.png",
+      "arte": [
+        4,
+        0,
+        1792,
+        592
+      ]
+    },
+    "poco-cachoeira": {
+      "larguraPx": 138,
+      "alturaPx": 80,
+      "arquivo": "assets/sprites/enseada-nordeste/poco-cachoeira.png",
+      "arte": [
+        36,
+        0,
+        1360,
+        768
+      ]
+    },
+    "mata-transicao-densa": {
+      "larguraPx": 174,
+      "alturaPx": 124,
+      "arquivo": "assets/sprites/enseada-nordeste/mata-transicao-densa.png",
+      "arte": [
+        177,
+        7,
+        1231,
+        757
+      ]
+    },
+    "arbusto-florido": {
+      "larguraPx": 57,
+      "alturaPx": 60,
+      "arquivo": "assets/sprites/enseada-nordeste/arbusto-florido.png",
+      "arte": [
+        417,
+        101,
+        991,
+        708
+      ]
+    },
+    "palmeira-nordeste": {
+      "larguraPx": 97,
+      "alturaPx": 172,
+      "arquivo": "assets/sprites/enseada-nordeste/palmeira-nordeste.png",
+      "arte": [
+        55,
+        104,
+        718,
+        1277
+      ]
+    },
+    "caixa-vegetacao-falésia": {
+      "larguraPx": 145,
+      "alturaPx": 44,
+      "arquivo": "assets/sprites/enseada-nordeste/caixa-vegetacao-falésia.png",
+      "arte": [
+        201,
+        15,
+        1841,
+        512
+      ]
+    },
+    "penhasco-canto-leste": {
+      "larguraPx": 164,
+      "alturaPx": 156,
+      "arquivo": "assets/sprites/enseada-nordeste/penhasco-canto-leste.png",
+      "arte": [
+        103,
+        124,
+        921,
+        900
+      ]
+    }
+  }
+}

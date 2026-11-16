@@ -421,26 +421,39 @@ export const map = {
     // arbusto, árvore) para não virar parede de árvores.
     ...[
       // [x, y, sprite, larguraPx, espelhar]
-      [25.0, 24.6, 'enseada_ne_arvores', 210, false],
-      [28.4, 23.6, 'enseada_ne_arbustos', 150, true],
-      [31.4, 24.2, 'enseada_ne_arvores', 175, true],
-      [35.0, 24.0, 'enseada_ne_arbustos', 165, false],
-      [38.4, 25.0, 'enseada_ne_arvores', 195, false],
-      [41.6, 26.6, 'enseada_ne_arbustos', 145, true],
-      [44.4, 28.6, 'enseada_ne_palmeira_media', 140, false],
-      [46.6, 30.8, 'enseada_ne_palmeira_baixa', 120, true],
+      [25.0, 24.6, 'enseada_ne_mata_densa', 250, false],
+      [28.4, 23.6, 'enseada_ne_arbusto_florido', 96, true],
+      [31.4, 24.2, 'enseada_ne_mata_densa', 215, true],
+      [35.0, 24.0, 'enseada_ne_arbusto_florido', 88, false],
+      [38.4, 25.0, 'enseada_ne_mata_densa', 195, false],
+      [41.6, 26.6, 'enseada_ne_arbusto_florido', 80, true],
+      [44.4, 28.6, 'enseada_ne_palmeira', 150, false],
+      [46.6, 30.8, 'enseada_ne_palmeira', 120, true],
     ].map(([x, y, sprite, larguraPx, espelhar], i) => ({
       id: `enseada_ne_mata_${i + 1}`, tipo: 'decoracao', x, y,
       sprite, useCrop: true, larguraPx, espelhar,
       pivotX: 0.5, pivotY: 0.96, depthOffset: -4, bloqueia: false,
     })),
     ...[
-      [30.0, 27.2, 88], [34.2, 27.6, 74], [38.2, 28.4, 82],
-      [42.2, 29.8, 66],
+      [30.0, 27.2, 96], [34.2, 27.6, 78], [38.2, 28.4, 88],
+      [42.2, 29.8, 72],
     ].map(([x, y, larguraPx], i) => ({
       id: `enseada_ne_matacao_${i + 1}`, tipo: 'decoracao', x, y,
-      sprite: 'enseada_ne_pedras', useCrop: true, larguraPx,
+      sprite: 'enseada_ne_matacao', useCrop: true, larguraPx,
       pivotX: 0.5, pivotY: 0.92, bloqueia: false,
+    })),
+
+    // Falésia leste: a referência termina o planalto num paredão que cai
+    // direto no mar. Sem isso a franja nordeste acaba em grama chapada e o
+    // mar parece começar do nada.
+    ...[
+      // [x, y, sprite, larguraPx]
+      [44.0, 24.2, 'enseada_ne_penhasco', 230],
+      [46.6, 21.4, 'enseada_ne_penhasco', 190],
+    ].map(([x, y, sprite, larguraPx], i) => ({
+      id: `enseada_ne_falesia_${i + 1}`, tipo: 'decoracao', x, y,
+      sprite, useCrop: true, larguraPx,
+      pivotX: 0.5, pivotY: 0.94, camada: 'fundo', ordem: -1, bloqueia: false,
     })),
 
     // ---- Trilha de pedras: pórtico → espelho → cais (uma linha, sem ramal duplo) ----

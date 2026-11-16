@@ -663,26 +663,28 @@ export const map = {
     {
       id: 'piscina_mare_viva_enseada', nome: 'PISCINA DE MARÉ VIVA', tipo: 'decoracao', x: 28.0, y: 50.0,
       sprite: 'enseada3_piscina', spriteB: 'enseada3_piscina', animPeriodo: 0.64,
-      useCrop: true, larguraPx: 240, pivotX: 0.5, pivotY: 0.92,
+      useCrop: true, larguraPx: 360, pivotX: 0.5, pivotY: 0.92,
       bloqueia: false, pulsoBiolum: '#5cf7eb', brilho: { cor: '#5cf7eb', raio: 1.25, forca: 0.26 },
       interacao: { label: 'MERGULHAR AS MÃOS NA MARÉ VIVA', distancia: 1.65 },
     },
     {
       id: 'enseada3_praca_espelho', tipo: 'decoracao', x: 33.0, y: 48.0,
-      sprite: 'enseada3_calcada', useCrop: true, larguraPx: 200,
+      sprite: 'enseada3_calcada', useCrop: true, larguraPx: 340,
       pivotX: 0.5, pivotY: 0.92, depthOffset: -1, bloqueia: false,
     },
     {
       id: 'espelho_arquetipos_enseada', nome: 'ESPELHO DE RESSONÂNCIA', tipo: 'dispositivo', x: 33.0, y: 48.0,
       sprite: 'enseada_espelho_arquetipo', spriteB: 'enseada_espelho_arquetipo_b', animPeriodo: 0.56,
-      useCrop: true, larguraPx: 80, pivotX: 0.5, pivotY: 0.95,
+      useCrop: true, larguraPx: 190, pivotX: 0.5, pivotY: 0.95,
       bloqueia: false, brilho: { cor: '#6ff7ff', raio: 1.5, forca: 0.34 },
       interacao: { label: 'SINTONIZAR ARQUÉTIPO', distancia: 1.65 },
     },
     {
-      id: 'gruta_concha_enseada', nome: 'GRUTA-CONCHA', tipo: 'decoracao', x: 24.0, y: 47.0,
+      // A referência desenha a Concha Gigante como monumento da praia oeste,
+      // com a boca de cristais na altura de um personagem — não como toca.
+      id: 'gruta_concha_enseada', nome: 'CONCHA GIGANTE', tipo: 'decoracao', x: 24.0, y: 47.0,
       sprite: 'enseada8_gruta', spriteB: 'enseada8_gruta', animPeriodo: 0.66,
-      useCrop: true, larguraPx: 120, pivotX: 0.5, pivotY: 0.98,
+      useCrop: true, larguraPx: 250, pivotX: 0.5, pivotY: 0.98,
       bloqueia: true, hitbox: { offsetX: -0.45, offsetY: -0.28, width: 0.9, height: 0.56 },
       pulsoBiolum: '#54ccff', brilho: { cor: '#54ccff', raio: 1.3, forca: 0.28 },
       interacao: { label: 'ABRIGAR-SE NA GRUTA-CONCHA', distancia: 1.7 },

@@ -586,6 +586,8 @@ await loadSprites([
   { id: 'enseada_terraco_acampamento', src: 'assets/sprites/enseada-estacao/terraco-curto.png' },
   // Setor 1: mesa desenhada em pixel art a partir da silhueta medida.
   { id: 'enseada_setor1_plato', src: 'assets/sprites/enseada-norte/plato-acampamento.png' },
+  { id: 'enseada_setor1_terraco', src: 'assets/sprites/enseada-norte/terraco-plato-recortado.png' },
+  { id: 'enseada_setor1_encosta', src: 'assets/sprites/enseada-norte/encosta-plato-recortado.png' },
   { id: 'enseada_banco_tronco', src: 'assets/sprites/enseada-lote-10/04-troncos.png' },
   { id: 'enseada_biruta_camp', src: 'assets/sprites/enseada-lote-10/07-biruta.png' },
   { id: 'enseada_bancada_expedicao', src: 'assets/sprites/enseada-lote-10/05-paineis.png' },
@@ -600,6 +602,10 @@ await loadSprites([
   // SETOR 4 — praia sul e portais submarinos (geração dedicada, fundo magenta).
   { id: 'enseada4_portal_submarino', src: 'assets/sprites/enseada-setor4/portal-submarino-coral.png' },
   { id: 'enseada4_orla_rochas', src: 'assets/sprites/enseada-setor4/orla-rochas-poste.png' },
+  // SETOR 3 — centro-sul e oeste (geração dedicada, fundo magenta).
+  { id: 'enseada3_capivara', src: 'assets/sprites/enseada-setor3/capivara.png' },
+  { id: 'enseada3_fonte_cristal', src: 'assets/sprites/enseada-setor3/fonte-cristal.png' },
+  { id: 'enseada3_piscina_termal', src: 'assets/sprites/enseada-setor3/piscina-termal.png' },
   // ---- ENSEADA DOS ECOS 3.1 — lote visual 2 (acampamento, gruta e praia sul) ----
   { id: 'enseada4_torre_vigilia', src: 'assets/sprites/enseada-4/signal-watchtower.png' },
   { id: 'enseada4_tenda', src: 'assets/sprites/enseada-4/expedition-tent.png' },

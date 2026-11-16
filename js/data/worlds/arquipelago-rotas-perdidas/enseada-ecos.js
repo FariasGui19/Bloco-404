@@ -261,6 +261,14 @@ export const map = {
   aguaPraia: rows,
   passarelaSobreAgua: [...passarelaCorrentes],
   zonasGrama: [{ x: 8.8, y: 19, rx: 3.2, ry: 5.0 }],
+  // Relevo desenhado: a montanha da Estação 66.6 ocupa a célula e o seu
+  // próprio chão é pedra. Sem esta máscara a grama do interior subia até a
+  // base do penhasco e cortava a piscina da cachoeira em duas.
+  zonasRocha: [
+    // só a faixa que o penhasco cobre — a piscina da cachoeira e o chão
+    // logo abaixo continuam com a grama/areia normais do mapa
+    { x: 15.0, y: 11.2, rx: 6.4, ry: 3.4 },
+  ],
   // Corredores de areia entre os setores: arte do chão, sem alterar colisões.
   caminhosAreia: [
     [14, 42, 23, 41], [23, 41, 30, 35], [30, 35, 33, 32],
@@ -483,11 +491,18 @@ export const map = {
       // paredão e degraus). O ponto de encaixe é a base do paredão.
       id: 'enseada_terraco_acampamento', tipo: 'decoracao',
       x: 23.184, y: 40.653,
-      sprite: 'enseada_setor1_plato', useCrop: true, larguraPx: 856,
-      pivotX: 0.5, pivotY: 0.939912,
+      sprite: 'enseada_setor1_terraco', useCrop: true, larguraPx: 820,
+      pivotX: 0.5, pivotY: 1,
       // Camada de fundo: a mesa é o chão do setor e entra antes dos
       // equipamentos, então nenhum prop é recoberto pela grama.
       camada: 'fundo', ordem: -2, bloqueia: false,
+    },
+    {
+      // Ligação contínua entre o platô do acampamento e a encosta da Estação
+      // 66.6: a referência não tem vão entre os dois morros.
+      id: 'enseada_ligacao_plato_estacao', tipo: 'decoracao', x: 20.6, y: 27.4,
+      sprite: 'enseada_setor1_encosta', useCrop: true, larguraPx: 430,
+      pivotX: 0.5, pivotY: 0.98, camada: 'fundo', ordem: -1, bloqueia: false,
     },
     {
       id: 'relogio_mare_enseada', nome: 'RELÓGIO DE MARÉ SOLAR', tipo: 'dispositivo', x: 13.547, y: 39.172,
@@ -661,11 +676,25 @@ export const map = {
 
     // ---- SETOR 5 (Sudoeste): Piscina + espelho + grutas + rede ----
     {
-      id: 'piscina_mare_viva_enseada', nome: 'PISCINA DE MARÉ VIVA', tipo: 'decoracao', x: 28.0, y: 50.0,
-      sprite: 'enseada3_piscina', spriteB: 'enseada3_piscina', animPeriodo: 0.64,
-      useCrop: true, larguraPx: 360, pivotX: 0.5, pivotY: 0.92,
+      id: 'piscina_mare_viva_enseada', nome: 'PISCINA TERMAL', tipo: 'decoracao', x: 28.0, y: 50.0,
+      sprite: 'enseada3_piscina_termal', useCrop: true, larguraPx: 300,
+      pivotX: 0.5, pivotY: 0.90, vaporTermal: true,
       bloqueia: false, pulsoBiolum: '#5cf7eb', brilho: { cor: '#5cf7eb', raio: 1.25, forca: 0.26 },
-      interacao: { label: 'MERGULHAR AS MÃOS NA MARÉ VIVA', distancia: 1.65 },
+      interacao: { label: 'MERGULHAR AS MÃOS NA ÁGUA TERMAL', distancia: 1.65 },
+    },
+    {
+      // A capivara da referência, sentada dentro da piscina termal.
+      id: 'capivara_piscina_enseada', nome: 'CAPIVARA', tipo: 'fauna', x: 27.9, y: 49.9,
+      sprite: 'enseada3_capivara', useCrop: true, larguraPx: 42,
+      pivotX: 0.5, pivotY: 0.97, depthOffset: 1, bloqueia: false,
+    },
+    {
+      // A pequena fonte de cristal azul da referência, abaixo da piscina.
+      id: 'fonte_cristal_enseada', nome: 'FONTE DE CRISTAL', tipo: 'decoracao', x: 30.4, y: 54.6,
+      sprite: 'enseada3_fonte_cristal', useCrop: true, larguraPx: 78,
+      pivotX: 0.5, pivotY: 0.95, bloqueia: true,
+      hitbox: { offsetX: -0.26, offsetY: -0.26, width: 0.52, height: 0.52 },
+      pulsoBiolum: '#7fe3ff', brilho: { cor: '#7fe3ff', raio: 0.9, forca: 0.22 },
     },
     {
       id: 'enseada3_praca_espelho', tipo: 'decoracao', x: 33.0, y: 48.0,

@@ -36,7 +36,11 @@ function distanciaAoCaminho(x, y, caminhos) {
   return menor;
 }
 
-export function createBeachSurface(rows, scale = 16, { gramaInterior = false, caminhos = [], zonasGrama = [] } = {}) {
+// `zonasRocha` apaga a grama onde o relevo desenhado (montanha da Estação
+// 66.6, maciços de pedra) já é o chão visível. Sem isso a mancha de grama do
+// interior sobe por cima da base do penhasco e fatia a cachoeira ao meio —
+// era o defeito de camada do setor norte.
+export function createBeachSurface(rows, scale = 16, { gramaInterior = false, caminhos = [], zonasGrama = [], zonasRocha = [] } = {}) {
   const height = rows.length, width = rows[0].length;
   const pixels = new Uint8ClampedArray(width * height * scale * scale * 4);
   for (let py = 0; py < height * scale; py++) for (let px = 0; px < width * scale; px++) {
@@ -83,6 +87,13 @@ export function createBeachSurface(rows, scale = 16, { gramaInterior = false, ca
       if (Math.abs(dx) >= 1 || Math.abs(dy) >= 1) continue;
       const borda = Math.sqrt(dx * dx + dy * dy);
       grama = Math.max(grama, smooth((1 - borda) / .35) * foraDaTrilha);
+    }
+    // Relevo desenhado manda no próprio chão: onde o penhasco já ocupa a
+    // célula, a grama do interior sai de cena e a pedra fica exposta.
+    for (const zona of zonasRocha) {
+      const dx = (x - zona.x) / zona.rx, dy = (y - zona.y) / zona.ry;
+      const borda = Math.sqrt(dx * dx + dy * dy);
+      if (borda < 1) grama *= smooth(borda / .35) * (zona.manter ?? 0);
     }
     if (grama > 0) {
       const gr = 126 + broad * .6 + grain * .7 - wet * 8;

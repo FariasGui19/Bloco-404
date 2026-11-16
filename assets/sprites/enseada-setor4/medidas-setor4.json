@@ -1,0 +1,28 @@
+{
+  "fonte": "assets/source-art/setor4 (geração dedicada, fundo magenta)",
+  "nota": "cais e veleiro aprovados NÃO são redesenhados neste setor",
+  "props": {
+    "portal-submarino-coral": {
+      "larguraPx": 226,
+      "alturaPx": 220,
+      "arquivo": "assets/sprites/enseada-setor4/portal-submarino-coral.png",
+      "arte": [
+        376,
+        92,
+        1032,
+        732
+      ]
+    },
+    "orla-rochas-poste": {
+      "larguraPx": 116,
+      "alturaPx": 80,
+      "arquivo": "assets/sprites/enseada-setor4/orla-rochas-poste.png",
+      "arte": [
+        0,
+        2,
+        460,
+        320
+      ]
+    }
+  }
+}

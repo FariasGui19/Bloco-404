@@ -19,7 +19,7 @@ assert(Math.hypot(station.spawnPoints.vindo_da_enseada.x-(exit.x+.5),station.spa
 const mountain = coast.objects.find(o => o.id === 'enseada_macico_leste');
 assert.equal(mountain.sprite, 'enseada_estacao_integrada');
 assert.equal(mountain.camada, 'fundo');
-assert.equal(mountain.larguraPx, 620, 'penhasco ampliado');
+assert.equal(mountain.larguraPx, 860, 'penhasco ampliado');
 const visualPortal = coast.portals.find(p => p.id === 'acesso_estacao_666');
 // Em pixels isométricos, a soleira da arte fica a 16% da largura à
 // direita da âncora e cerca de 7,7% acima dela. Objetos e portal recebem

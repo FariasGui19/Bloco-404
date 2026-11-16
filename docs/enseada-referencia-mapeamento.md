@@ -104,3 +104,22 @@ A renderização foi conferida no navegador em vista geral; as dimensões e a
 composição ainda não são equivalentes à referência. Faltam altura física e
 escada funcional, unir organicamente estação e falésia, melhorar as trilhas e
 vegetação, acertar costa e ilhota, e revisar os demais setores em detalhe.
+
+## Ajustes seguintes: acampamento, portal e cais
+
+- O acampamento passou para um terraço mais a oeste com rampa de areia, e o
+  relógio, a antena, a bancada, a fogueira, a tenda e as caixas foram
+  redistribuídos; o conjunto ganhou banco de tronco, palmeiras e biruta.
+- O portal sobre o rochedo leste foi espelhado; sua zona de nado permanece
+  na mesma costa. O cais usa a peça orientada para baixo e à direita, deslocada
+  até a orla; o retorno do barco e sua interação ficam em terra.
+- Foi gerado um lote de dez artes em `assets/source-art/enseada-lote-10/`.
+  Quatro foram preparadas para uso em `assets/sprites/enseada-lote-10/`.
+  As demais ainda não estão prontas para uso: várias têm fundo quadriculado
+  desenhado na imagem e precisam de recorte/revisão antes de entrar no jogo.
+- O golfinho saltando foi afastado para não se projetar sobre o terraço.
+
+Esses ajustes foram conferidos numa vista geral do navegador, mas ainda não
+reproduzem toda a referência. A rampa continua cenográfica, sem altura física
+nem colisão que obrigue o uso do caminho; faltam também novos ajustes finos do
+terreno, vegetação, objetos e estação.

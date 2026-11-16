@@ -24,6 +24,17 @@ const arco = object('arco_conduto_retorno_mare');
 assert(Math.hypot(portal.x - arco.x, portal.y - arco.y) <= 2, 'o portal deve ficar junto à passagem');
 assert('YyDdX'.includes(map.aguaPraia[Math.floor(portal.y + .5)][Math.floor(portal.x + .5)]), 'a passagem automática precisa estar na água');
 assert.equal(object('portal_caminho_correntes').sprite, 'enseada8_portal_ne');
+assert.equal(arco.espelhar, true, 'portal leste deve olhar para a ilha');
+const cais = object('cais_madeira_pesca_enseada');
+assert.equal(cais.sprite, 'enseada8_cais_barco_ref', 'cais deve descer para a direita com veleiro à direita');
+// O centro da interação fica na orla; a extremidade inferior direita
+// (cerca de dois tiles à frente) estende-se sobre a água.
+const tileCais = map.aguaPraia[Math.floor(cais.y + 1.5)]?.[Math.floor(cais.x + 2.5)];
+assert(tileCais && 'YyDdX'.includes(tileCais), 'a ponta do cais deve estar no mar');
+const barco = object('barco_expedicao_enseada');
+assert.equal(barco.renderizar, false, 'o veleiro do cais não deve ser duplicado');
+assert.equal(map.walkMask[Math.floor(barco.y + .5)]?.[Math.floor(barco.x + .5)], '.', 'a interação do barco deve estar acessível na costa');
+for (const id of ['enseada_banco_tronco_camp', 'enseada_palmeira_camp_oeste', 'enseada_palmeira_camp_norte']) assert(object(id));
 
 // A trilha clareia o miolo sem alterar a máscara ou a areia fora do mapa.
 const rows = Array.from({length: 13}, (_, y) => Array.from({length: 13}, (_, x) => x === 0 || y === 0 || x === 12 || y === 12 ? 'Y' : 'S').join(''));

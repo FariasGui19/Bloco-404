@@ -7,6 +7,9 @@ import { flora } from '../../flora-praia.js';
 
 const COLS = 72;
 const ROWS = 64;
+// Deslocamento comum à arte da estação, sua porta, paredes e retorno.
+const ESTACAO_DX = -3;
+const ESTACAO_DY = 4.5;
 
 function hash(x, y, seed = 0) {
   let h = Math.imul(x + seed * 131, 374761393) + Math.imul(y, 668265263);
@@ -65,6 +68,13 @@ for (let y = 1; y < ROWS - 1; y++) {
 // Garantir terra sob os pontos de missão, portais e spawns
 for (const [x, y] of CELULAS_OBRIGATORIAS) {
   if (grid[y]?.[x] !== undefined && !(x >= 33 && x <= 39 && y <= 8)) grid[y][x] = 'S';
+}
+
+// Preencher a enseada estreita que separava os dois maciços. A costa é
+// recalculada a partir deste solo, não apenas coberta por decoração.
+for (let y = 10; y <= 23; y++) {
+  const minX = y < 12 ? 10 : y < 15 ? 9 : y < 20 ? 8 : y < 21 ? 7 : 6;
+  for (let x = minX; x <= 15; x++) grid[y][x] = 'S';
 }
 
 const TAM_RASO = 2;
@@ -175,6 +185,7 @@ export const map = {
   pisos: ground.pisos,
   aguaPraia: rows,
   passarelaSobreAgua: [...passarelaCorrentes],
+  zonasGrama: [{ x: 8.8, y: 19, rx: 3.2, ry: 5.0 }],
   // Corredores de areia entre os setores: arte do chão, sem alterar colisões.
   caminhosAreia: [
     [14, 42, 23, 41], [23, 41, 30, 35], [30, 35, 33, 32],
@@ -187,7 +198,7 @@ export const map = {
   spawnPoints: {
     inicio: { x: 19.9, y: 51.7 },
     vindo_da_praia: { x: 19.9, y: 51.7 },
-    vindo_da_estacao_666: { x: 23.805, y: 12.505 },
+    vindo_da_estacao_666: { x: 23.805 + ESTACAO_DX, y: 12.505 + ESTACAO_DY },
     vindo_do_mar: { x: 36.5, y: 5.5 },
     vindo_da_darsena_mare: { x: 57.0, y: 24.0 },
   },
@@ -280,10 +291,18 @@ export const map = {
     // A arte vem da referência, com a placa corrigida. É desenhada no fundo;
     // colisões e portal são independentes para não bloquear a entrada.
     {
-      id: 'enseada_macico_leste', tipo: 'decoracao', x: 21.6, y: 13.6,
+      id: 'enseada_macico_leste', tipo: 'decoracao', x: 21.6 + ESTACAO_DX, y: 13.6 + ESTACAO_DY,
       sprite: 'enseada_estacao_integrada', useCrop: true, larguraPx: 620, cachoeiraViva: true,
       pivotX: 0.5, pivotY: 0.98, camada: 'fundo', ordem: -1,
       bloqueia: false,
+    },
+
+    // Vegetação da junção tem pé próprio para entrar no depth sorting.
+    {
+      id: 'enseada_mata_juncao_estacao', tipo: 'decoracao', x: 18.0, y: 22.5,
+      sprite: 'enseada_estacao_mata_juncao', useCrop: true, larguraPx: 210,
+      pivotX: 0.5, pivotY: 0.96, bloqueia: true,
+      hitbox: { offsetX: -0.38, offsetY: -0.38, width: 0.76, height: 0.76 },
     },
 
     // Colisores discretos ao longo da face do penhasco. Mantêm uma abertura
@@ -293,7 +312,7 @@ export const map = {
       [18.168, 13.379], [20.161, 13.6], [20.604, 11.386],
       [22.486, 9.448], [23.538, 9.171], [23.371, 7.455],
     ].map(([x, y], i) => ({
-      id: `enseada_parede_estacao_${i + 1}`, tipo: 'decoracao', x, y,
+      id: `enseada_parede_estacao_${i + 1}`, tipo: 'decoracao', x: x + ESTACAO_DX, y: y + ESTACAO_DY,
       renderizar: false, bloqueia: true,
       hitbox: { offsetX: -0.487, offsetY: -0.487, width: 0.974, height: 0.974 },
     })),
@@ -849,7 +868,7 @@ export const map = {
 
   portals: [
     {
-      id: 'acesso_estacao_666', tipo: 'door', x: 21.655, y: 10.555, label: 'ENTRAR NA ESTAÇÃO 66.6',
+      id: 'acesso_estacao_666', tipo: 'door', x: 21.655 + ESTACAO_DX, y: 10.555 + ESTACAO_DY, label: 'ENTRAR NA ESTAÇÃO 66.6',
       requiresFlag: 'frequencia666Registrada', lockedLabel: 'ESTAÇÃO DE ESCUTA // SEM SINAL',
       mensagemBloqueado: ['A PORTA AGUARDA UMA ASSINATURA. INVESTIGUE O TERMINAL DE MANUTENÇÃO COM [R].'],
       interactionDistance: 1.2, destino: { mapId: 'estacao_limiar_666', spawnId: 'vindo_da_enseada' }, transition: 'fade',

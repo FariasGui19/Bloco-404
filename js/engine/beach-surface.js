@@ -36,7 +36,7 @@ function distanciaAoCaminho(x, y, caminhos) {
   return menor;
 }
 
-export function createBeachSurface(rows, scale = 16, { gramaInterior = false, caminhos = [] } = {}) {
+export function createBeachSurface(rows, scale = 16, { gramaInterior = false, caminhos = [], zonasGrama = [] } = {}) {
   const height = rows.length, width = rows[0].length;
   const pixels = new Uint8ClampedArray(width * height * scale * scale * 4);
   for (let py = 0; py < height * scale; py++) for (let px = 0; px < width * scale; px++) {
@@ -76,7 +76,14 @@ export function createBeachSurface(rows, scale = 16, { gramaInterior = false, ca
     // Bordas levemente irregulares sem mudar a faixa navegável.
     const ruidoTrilha = Math.sin(x * .71 + Math.sin(y * .48)) * .16;
     const foraDaTrilha = smooth((distancia + ruidoTrilha - .8) / .6);
-    const grama = gramaInterior ? smooth((shore - 2.2) / 2.4) * foraDaTrilha : 0;
+    let grama = gramaInterior ? smooth((shore - 2.2) / 2.4) * foraDaTrilha : 0;
+    // Faixas internas de vegetação não mudam a máscara nem cobrem água.
+    for (const zona of zonasGrama) {
+      const dx = (x - zona.x) / zona.rx, dy = (y - zona.y) / zona.ry;
+      if (Math.abs(dx) >= 1 || Math.abs(dy) >= 1) continue;
+      const borda = Math.sqrt(dx * dx + dy * dy);
+      grama = Math.max(grama, smooth((1 - borda) / .35) * foraDaTrilha);
+    }
     if (grama > 0) {
       const gr = 126 + broad * .6 + grain * .7 - wet * 8;
       const gg = 186 + broad * .6 + grain * .7 - wet * 6;

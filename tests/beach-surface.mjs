@@ -23,3 +23,14 @@ for (const map of [praia, enseada]) {
   }
 }
 console.log('Praias: areia contínua respeita máscaras, pontes e água.');
+
+// Manchas de grama na junção não criam chão em água e não mudam o alpha.
+{
+  const rows = Array.from({length: 9}, (_, y) => y === 0 || y === 8 ? 'YYYYYYYYY' : 'YSSSSSSSY');
+  const options = { gramaInterior: true };
+  const normal = createBeachSurface(rows, 2, options);
+  const special = createBeachSurface(rows, 2, { ...options, zonasGrama: [{x: 2.5, y: 4.5, rx: 2, ry: 2}] });
+  for (let i = 3; i < normal.pixels.length; i += 4) assert.equal(special.pixels[i], normal.pixels[i]);
+  const i = (9 * special.width + 5) * 4;
+  assert(special.pixels[i] < normal.pixels[i], 'a área interna deve ganhar grama');
+}

@@ -223,7 +223,7 @@ export function render(map, state) {
     drawHazards(state.hazards);
     if (map.id === 'hub_saguao') drawHubFloorMarkings();
     if (map.id === 'ilha_praia_inicial') drawBeachStation(map);
-    if (map.id === 'ilha_enseada_ecos') { drawFrequencyExteriorFloor(state); drawObjectContactShadows(map); }
+    if (map.id === 'ilha_enseada_ecos') drawObjectContactShadows(map);
     if (map.id === 'bio_sala_controle') drawBioControlFloor();
     if (map.meta?.estiloSala === 'bio_forja') drawBioForjaFloorOverlay(map, state);
     if (map.meta?.estiloSala === 'dominio_anciao') drawDominioFloorOverlay(map, state);
@@ -680,6 +680,7 @@ function drawBeachSurface(map) {
     const data = createBeachSurface(map.aguaPraia, 16, {
       gramaInterior: map.meta?.gramaInterior === true,
       caminhos: map.caminhosAreia ?? [],
+      zonasGrama: map.zonasGrama ?? [],
     });
     texture = document.createElement('canvas');
     texture.width = data.width; texture.height = data.height;

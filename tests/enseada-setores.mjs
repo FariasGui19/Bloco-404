@@ -39,6 +39,26 @@ assert.equal(barco.renderizar, false, 'o veleiro do cais não deve ser duplicado
 assert.equal(map.walkMask[Math.floor(barco.y + .5)]?.[Math.floor(barco.x + .5)], '.', 'a interação do barco deve estar acessível na costa');
 for (const id of ['enseada_banco_tronco_camp', 'enseada_palmeira_camp_oeste', 'enseada_palmeira_camp_norte']) assert(object(id));
 
+// Posições projetadas em pixels isométricos, incluindo o ajuste do sprite.
+// A ordem e a profundidade são comparadas à composição da referência, não
+// apenas às coordenadas x/y que não correspondem aos eixos da imagem.
+const camp = id => {
+  const o = object(id);
+  return { x: (o.x - o.y) * 32 + (o.ajusteX ?? 0), y: (o.x + o.y) * 16 + (o.ajusteY ?? 0) };
+};
+const clock = camp('relogio_mare_enseada');
+const table = camp('bancada_campo_enseada');
+const tower = camp('torre_antena_enseada');
+const fire = camp('acampamento_vigilia_enseada');
+const tent = camp('tenda_expedicao_enseada');
+const crates = camp('maleta_expedicao_enseada');
+const bench = camp('enseada_banco_tronco_camp');
+assert(clock.x < table.x && table.x < tower.x && tower.x < fire.x && fire.x < tent.x && tent.x < crates.x, 'ordem horizontal do acampamento');
+assert(tower.y < table.y && tower.y < fire.y && tent.y < fire.y, 'torre e tenda devem ficar atrás da fogueira');
+assert(table.x < bench.x && bench.x < fire.x && bench.y > fire.y, 'banco à frente e à esquerda da fogueira');
+assert.equal(object('enseada_banco_tronco_camp').espelhar, true);
+
+
 // A trilha clareia o miolo sem alterar a máscara ou a areia fora do mapa.
 const rows = Array.from({length: 13}, (_, y) => Array.from({length: 13}, (_, x) => x === 0 || y === 0 || x === 12 || y === 12 ? 'Y' : 'S').join(''));
 const verde = createBeachSurface(rows, 2, {gramaInterior: true});

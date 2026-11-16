@@ -1,0 +1,135 @@
+{
+  "fonte": "assets/source-art/reparo-norte-11 (geracao dedicada, fundo magenta)",
+  "props": {
+    "relogio": {
+      "larguraPx": 92,
+      "alturaPx": 138,
+      "arquivo": "assets/sprites/enseada-camp/relogio.png",
+      "larguraArte": 22,
+      "alturaArte": 69,
+      "arte": [
+        599,
+        68,
+        809,
+        720
+      ]
+    },
+    "bancada": {
+      "larguraPx": 120,
+      "alturaPx": 130,
+      "arquivo": "assets/sprites/enseada-camp/bancada.png",
+      "larguraArte": 55,
+      "alturaArte": 65,
+      "arte": [
+        412,
+        21,
+        1025,
+        737
+      ]
+    },
+    "torre-radio": {
+      "larguraPx": 120,
+      "alturaPx": 280,
+      "arquivo": "assets/sprites/enseada-camp/torre-radio.png",
+      "larguraArte": 41,
+      "alturaArte": 140,
+      "arte": [
+        7,
+        53,
+        208,
+        730
+      ]
+    },
+    "fogueira": {
+      "larguraPx": 82,
+      "alturaPx": 86,
+      "arquivo": "assets/sprites/enseada-camp/fogueira.png",
+      "larguraArte": 41,
+      "alturaArte": 36,
+      "arte": [
+        353,
+        59,
+        1055,
+        685
+      ]
+    },
+    "tenda-referencia": {
+      "larguraPx": 154,
+      "alturaPx": 160,
+      "arquivo": "assets/sprites/enseada-camp/tenda-referencia.png",
+      "larguraArte": 77,
+      "alturaArte": 42,
+      "arte": [
+        0,
+        0,
+        1408,
+        768
+      ]
+    },
+    "pilha-caixas": {
+      "larguraPx": 136,
+      "alturaPx": 110,
+      "arquivo": "assets/sprites/enseada-camp/pilha-caixas.png",
+      "larguraArte": 63,
+      "alturaArte": 55,
+      "arte": [
+        288,
+        25,
+        1120,
+        744
+      ]
+    },
+    "banco": {
+      "larguraPx": 144,
+      "alturaPx": 94,
+      "arquivo": "assets/sprites/enseada-camp/banco.png",
+      "larguraArte": 63,
+      "alturaArte": 47,
+      "arte": [
+        312,
+        89,
+        1101,
+        679
+      ]
+    },
+    "cesto-ferramentas": {
+      "larguraPx": 58,
+      "alturaPx": 90,
+      "arquivo": "assets/sprites/enseada-camp/cesto-ferramentas.png",
+      "larguraArte": 29,
+      "alturaArte": 25,
+      "arte": [
+        470,
+        183,
+        938,
+        592
+      ]
+    },
+    "arvore-referencia-a": {
+      "larguraPx": 172,
+      "alturaPx": 158,
+      "arquivo": "assets/sprites/enseada-camp/arvore-referencia-a.png",
+      "larguraArte": 73,
+      "alturaArte": 79,
+      "arte": [
+        376,
+        31,
+        1032,
+        738
+      ]
+    },
+    "caixa": {
+      "larguraPx": 116,
+      "alturaPx": 108,
+      "arquivo": "assets/sprites/enseada-camp/caixa.png",
+      "larguraArte": 54,
+      "alturaArte": 54,
+      "arte": [
+        359,
+        42,
+        1049,
+        732
+      ]
+    }
+  }
+}

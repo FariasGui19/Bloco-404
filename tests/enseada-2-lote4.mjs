@@ -185,7 +185,9 @@ assert.equal(state.progress.flags.enseada_viva_concluida, true);
 assert(state.progress.inventory.includes('concha_eco_enseada'));
 
 // Velocidade diferenciada na Enseada (Maré Astral na areia molhada x Núcleo 10X na areia seca)
-Object.assign(state.player, { x: 16.5, y: 54.5 }); // tile 'M' na orla oeste da nova silhueta
+// Tile 'M' da orla oeste medida na referência (a franja molhada da costa
+// frontal fica em x≈14–18 entre as linhas 52 e 56).
+Object.assign(state.player, { x: 14.5, y: 54.5 });
 const speedMareOrla = getPlayerMoveSpeed(state.progress, state.player);
 state.progress.archetype = 'lamina_dominio_anciao';
 const speedDominioOrla = getPlayerMoveSpeed(state.progress, state.player);

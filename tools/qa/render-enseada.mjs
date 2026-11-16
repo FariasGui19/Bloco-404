@@ -1,0 +1,91 @@
+// Renderiza a Enseada dos Ecos em Node para inspeção visual (sem navegador).
+// Uso: node tools/qa/render-enseada.mjs [zoom] [saida.png] [cx] [cy] [--ref]
+// Requer @napi-rs/canvas — dependência OPCIONAL de QA, não do jogo.
+import fs from 'node:fs';
+import path from 'node:path';
+import { createCanvas, loadImage, Image as NapiImage } from '@napi-rs/canvas';
+
+const root = path.resolve(path.dirname(new URL(import.meta.url).pathname), '../..');
+process.chdir(root);
+
+const noop = () => {};
+const ctxProxy = () => new Proxy({}, {
+  get: (_, key) => {
+    if (key === 'canvas') return { width: 1600, height: 900 };
+    if (key === 'measureText') return () => ({ width: 10 });
+    if (key === 'createRadialGradient' || key === 'createLinearGradient') return () => ({ addColorStop: noop });
+    if (key === 'getImageData') return () => ({ data: new Uint8ClampedArray(4) });
+    return noop;
+  },
+  set: () => true,
+});
+const el = () => ({
+  style: {}, dataset: {}, children: [], classList: { add: noop, remove: noop, toggle: noop, contains: () => false },
+  width: 1600, height: 900, textContent: '', innerHTML: '',
+  addEventListener: noop, appendChild: noop, remove: noop, setAttribute: noop, removeAttribute: noop,
+  getContext: () => ctxProxy(), getBoundingClientRect: () => ({ left: 0, top: 0, width: 1600, height: 900 }),
+  querySelector: () => null, querySelectorAll: () => [], animate: () => ({ finished: Promise.resolve() }),
+});
+const elReal = (tag) => (tag === 'canvas' ? createCanvas(1600, 900) : el());
+globalThis.document = {
+  createElement: elReal, createElementNS: elReal, body: el(), documentElement: el(),
+  getElementById: () => el(), querySelector: () => el(), querySelectorAll: () => [],
+  addEventListener: noop, fonts: { ready: Promise.resolve() },
+};
+globalThis.window = globalThis;
+globalThis.devicePixelRatio = 1;
+globalThis.addEventListener = noop; globalThis.requestAnimationFrame = () => 1;
+globalThis.localStorage = { data: {}, getItem() { return null; }, setItem() {}, removeItem() {} };
+Object.defineProperty(globalThis, 'navigator', { value: { userAgent: 'node' }, configurable: true });
+
+// Image nativa do @napi-rs; o carregador do jogo usa `new Image()` + `src`.
+globalThis.Image = class extends NapiImage {
+  set src(v) { super.src = path.join(root, v); }
+};
+
+const { view, camera } = await import('../../js/engine/camera.js');
+const { initRenderer, render } = await import('../../js/engine/renderer.js');
+const { loadSprites } = await import('../../js/engine/sprites.js');
+const { map } = await import('../../js/data/worlds/arquipelago-rotas-perdidas/enseada-ecos.js');
+
+const zoom = Number(process.argv[2] ?? 0.5);
+const out = process.argv[3] ?? '.qa/enseada.png';
+const cx = Number(process.argv[4] ?? 19);
+const cy = Number(process.argv[5] ?? 31);
+const VW = Number(process.env.QA_W ?? 1600), VH = Number(process.env.QA_H ?? 900);
+
+const canvas = createCanvas(VW, VH);
+initRenderer(canvas);
+canvas.width = VW; canvas.height = VH;
+view.w = VW; view.h = VH; view.dpr = 1;
+camera.zoom = zoom; camera.targetZoom = zoom;
+if (process.argv.includes('--ref')) {
+  // 1:1 com a arte conceitual. A arte usa px = 737.5 + 16*(x-y) e o jogo usa
+  // px = (x-y)*16 - camera.x + w/2; igualando: camera.x = w/2 - 737.5.
+  // escala: o jogo desenha 32 px por tile de 45°, a arte desenha 16 px ->
+  // zoom 0.5 iguala as duas. As constantes saem de igualar as duas fórmulas.
+  camera.zoom = camera.targetZoom = 0.5;
+  camera.x = VW - 1475;      // = (VW/2 - 737.5) / 0.5
+  camera.y = VH + 305.5;     // = (VH/2 + 152.75) / 0.5
+} else {
+  camera.x = (cx - cy) * 32; camera.y = (cx + cy) * 16;
+}
+camera.follow = false;
+
+const src = fs.readFileSync(path.join(root, 'js/main.js'), 'utf8');
+const lista = [...src.matchAll(/\{ id: '([^']+)', src: '([^']+)' \}/g)]
+  .map(([, id, s]) => ({ id, src: s }))
+  .filter(r => fs.existsSync(path.join(root, r.src)));
+await loadSprites(lista);
+
+const state = {
+  player: { x: cx, y: cy, nado: null, ability: {}, health: 100, maxHealth: 100, energy: 60, maxEnergy: 100, facing: [1, 1] },
+  actors: [], fauna: [], companion: null, collectibles: [], hazards: [], trainingTargets: [],
+  objects: (map.objects ?? []).map(o => ({ ...o, x: o.x + .5, y: o.y + .5, renderType: 'object' })),
+  progress: { flags: {}, mastery: {}, kills: 0 }, world: { currentMapId: map.id },
+};
+
+render(map, state);
+fs.mkdirSync(path.dirname(out), { recursive: true });
+fs.writeFileSync(out, canvas.toBuffer('image/png'));
+console.log('ok', out);

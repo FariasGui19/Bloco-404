@@ -453,7 +453,7 @@ export const map = {
     },
     {
       id: 'travessia_pedras_agua', tipo: 'decoracao', x: 52.0, y: 56.0,
-      sprite: 'enseada4_travessia_pedras', larguraPx: 110,
+      sprite: 'enseada4_travessia_pedras', useCrop: true, larguraPx: 110,
       pivotX: 0.5, pivotY: 0.8, depthOffset: -0.2, bloqueia: false,
     },
 
@@ -594,37 +594,37 @@ export const map = {
     },
     ...[[32.0, 2.0], [40.0, 2.0], [32.0, 7.0], [40.0, 7.0]].map(([bx, by], i) => ({
       id: `boia_ne_${i + 1}`, tipo: 'decoracao', x: bx, y: by,
-      sprite: 'enseada6_boia', larguraPx: 40,
+      sprite: 'enseada6_boia', useCrop: true, larguraPx: 40,
       pivotX: 0.5, pivotY: 0.9, bloqueia: false, flutuacaoSuave: true,
     })),
     {
       id: 'golfinho_saltando', tipo: 'decoracao', x: 8.0, y: 30.0,
-      sprite: 'enseada5_golfinho_saltando', spriteB: 'enseada5_golfinho_saltando_b', animPeriodo: 0.6, larguraPx: 90,
+      sprite: 'enseada5_golfinho_saltando', spriteB: 'enseada5_golfinho_saltando_b', animPeriodo: 0.6, useCrop: true, larguraPx: 90,
       pivotX: 0.5, pivotY: 0.96, depthOffset: -0.3, bloqueia: false,
     },
     {
       id: 'golfinho_nadando', tipo: 'decoracao', x: 60.0, y: 38.0,
-      sprite: 'enseada5_golfinho_nadando', spriteB: 'enseada5_golfinho_nadando_b', animPeriodo: 0.6, larguraPx: 100,
+      sprite: 'enseada5_golfinho_nadando', spriteB: 'enseada5_golfinho_nadando_b', animPeriodo: 0.6, useCrop: true, larguraPx: 100,
       pivotX: 0.5, pivotY: 0.96, depthOffset: -0.3, bloqueia: false,
     },
     {
       id: 'tartaruga_marinha', tipo: 'decoracao', x: 60.0, y: 42.0,
-      sprite: 'enseada5_tartaruga', spriteB: 'enseada5_tartaruga_b', animPeriodo: 0.6, larguraPx: 90,
+      sprite: 'enseada5_tartaruga', spriteB: 'enseada5_tartaruga_b', animPeriodo: 0.6, useCrop: true, larguraPx: 90,
       pivotX: 0.5, pivotY: 0.96, depthOffset: -0.3, bloqueia: false,
     },
     {
       id: 'corais_amarelos', tipo: 'decoracao', x: 56.0, y: 44.0,
-      sprite: 'enseada5_corais', spriteB: 'enseada5_corais_b', animPeriodo: 0.6, larguraPx: 80,
+      sprite: 'enseada5_corais', spriteB: 'enseada5_corais_b', animPeriodo: 0.6, useCrop: true, larguraPx: 80,
       pivotX: 0.5, pivotY: 0.96, depthOffset: -0.3, bloqueia: false,
     },
     {
       id: 'coral_rosa', tipo: 'decoracao', x: 58.0, y: 36.0,
-      sprite: 'enseada6_coral_rosa', larguraPx: 70,
+      sprite: 'enseada6_coral_rosa', useCrop: true, larguraPx: 70,
       pivotX: 0.5, pivotY: 0.96, depthOffset: -0.3, bloqueia: false,
     },
     {
       id: 'cristais_azuis_mar', tipo: 'decoracao', x: 54.0, y: 34.0,
-      sprite: 'enseada5_cristais', spriteB: 'enseada5_cristais_b', animPeriodo: 0.6, larguraPx: 70,
+      sprite: 'enseada5_cristais', spriteB: 'enseada5_cristais_b', animPeriodo: 0.6, useCrop: true, larguraPx: 70,
       pivotX: 0.5, pivotY: 0.96, depthOffset: -0.3, bloqueia: false,
     },
     {
@@ -655,17 +655,17 @@ export const map = {
     // ---- SETOR 9 (Praia): detalhes pequenos na areia ----
     {
       id: 'caranguejos_areia', tipo: 'decoracao', x: 38.0, y: 56.0,
-      sprite: 'enseada5_caranguejos', spriteB: 'enseada5_caranguejos_b', animPeriodo: 0.6, larguraPx: 60,
+      sprite: 'enseada5_caranguejos', spriteB: 'enseada5_caranguejos_b', animPeriodo: 0.6, useCrop: true, larguraPx: 60,
       pivotX: 0.5, pivotY: 0.96, depthOffset: -0.3, bloqueia: false,
     },
     {
       id: 'estrela_do_mar', tipo: 'decoracao', x: 34.0, y: 55.0,
-      sprite: 'enseada6_estrela', larguraPx: 60,
+      sprite: 'enseada6_estrela', useCrop: true, larguraPx: 60,
       pivotX: 0.5, pivotY: 0.96, depthOffset: -0.3, bloqueia: false,
     },
     {
       id: 'poste_lanterna_madeira', tipo: 'decoracao', x: 30.0, y: 46.0,
-      sprite: 'enseada6_poste', larguraPx: 50,
+      sprite: 'enseada6_poste', useCrop: true, larguraPx: 50,
       pivotX: 0.5, pivotY: 0.96, depthOffset: -0.3, bloqueia: false,
     },
     {

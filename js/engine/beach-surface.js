@@ -24,7 +24,19 @@ function hash(x, y) {
 const water = c => c != null && 'YyDdX'.includes(c);
 const smooth = t => { t = Math.max(0, Math.min(1, t)); return t * t * (3 - 2 * t); };
 
-export function createBeachSurface(rows, scale = 16, { gramaInterior = false } = {}) {
+// Distância a segmentos em coordenadas da grade; os caminhos só alteram cor.
+function distanciaAoCaminho(x, y, caminhos) {
+  let menor = Infinity;
+  for (const [ax, ay, bx, by] of caminhos) {
+    const dx = bx - ax, dy = by - ay;
+    const comprimento2 = dx * dx + dy * dy;
+    const t = comprimento2 ? Math.max(0, Math.min(1, ((x - ax) * dx + (y - ay) * dy) / comprimento2)) : 0;
+    menor = Math.min(menor, Math.hypot(x - ax - t * dx, y - ay - t * dy));
+  }
+  return menor;
+}
+
+export function createBeachSurface(rows, scale = 16, { gramaInterior = false, caminhos = [] } = {}) {
   const height = rows.length, width = rows[0].length;
   const pixels = new Uint8ClampedArray(width * height * scale * scale * 4);
   for (let py = 0; py < height * scale; py++) for (let px = 0; px < width * scale; px++) {
@@ -57,7 +69,14 @@ export function createBeachSurface(rows, scale = 16, { gramaInterior = false } =
     let b = 143 + broad + grain - wet * 7 - drift * .45;
     // Grama do interior: verde-amarelado da referência, com o mesmo grão.
     // `grama` é 0 na orla e 1 no miolo; a mistura é suave (sem linha dura).
-    const grama = gramaInterior ? smooth((shore - 2.2) / 2.4) : 0;
+    // Deslocamento suave quebra linhas retas sem introduzir ruído por tile.
+    const tx = x + .45 * Math.sin(y * .42) + .16 * Math.sin(y * 1.05);
+    const ty = y + .45 * Math.sin(x * .38) + .16 * Math.sin(x * .93);
+    const distancia = caminhos.length ? distanciaAoCaminho(tx, ty, caminhos) : Infinity;
+    // Bordas levemente irregulares sem mudar a faixa navegável.
+    const ruidoTrilha = Math.sin(x * .71 + Math.sin(y * .48)) * .16;
+    const foraDaTrilha = smooth((distancia + ruidoTrilha - .8) / .6);
+    const grama = gramaInterior ? smooth((shore - 2.2) / 2.4) * foraDaTrilha : 0;
     if (grama > 0) {
       const gr = 126 + broad * .6 + grain * .7 - wet * 8;
       const gg = 186 + broad * .6 + grain * .7 - wet * 6;

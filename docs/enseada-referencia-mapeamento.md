@@ -81,3 +81,26 @@ e redimensionados. O ponto de retorno do mar foi movido para o cais,
 pois o anterior ficava numa ilhota desconectada. A poça de treino foi
 movida para a piscina. A acessibilidade pela máscara não substitui a
 verificação visual e de colisões dentro do jogo.
+
+## Revisão por setores após a captura da versão 3.1
+
+- **Mar:** o golfinho saltando e os cristais azuis foram movidos para células
+  de água (considerando o meio tile somado pelo carregador).
+- **Acampamento:** novo terraço com escada, atrás dos equipamentos existentes;
+  a fogueira e as caixas foram realinhadas. É uma peça **cenográfica**: a
+  malha de navegação ainda é plana e não restringe a subida à escada.
+- **Norte:** a entrada da Estação foi encostada à falésia e alinhada à posição
+  do portal. Ainda precisa de refinamento para reproduzir a construção da
+  referência sem emenda entre as duas peças.
+- **Portais:** a arte do portal nordeste foi trocada pela versão com base de
+  coral; o portal leste recebeu rochedo próprio. A zona de nado da Dársena foi
+  movida para a água junto ao portal leste; a rota automática foi testada.
+- **Chão:** corredores de areia atravessam o interior verde sem mudar a
+  máscara de colisão. As novas artes de terraço e rochedo estão em
+  `assets/source-art/enseada-setores/` e suas versões com fundo removido em
+  `assets/sprites/enseada-setores/`.
+
+A renderização foi conferida no navegador em vista geral; as dimensões e a
+composição ainda não são equivalentes à referência. Faltam altura física e
+escada funcional, unir organicamente estação e falésia, melhorar as trilhas e
+vegetação, acertar costa e ilhota, e revisar os demais setores em detalhe.

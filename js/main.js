@@ -572,6 +572,8 @@ await loadSprites([
   { id: 'enseada8_montanha_66', src: 'assets/sprites/enseada-8/montanha-cachoeira-66-recortado.png' },
   { id: 'enseada8_entrada_666', src: 'assets/sprites/enseada-8/entrada-estacao-666-recortado.png' },
   { id: 'enseada8_acampamento', src: 'assets/sprites/enseada-8/acampamento-plataforma-recortado.png' },
+  { id: 'enseada_terraco_acampamento', src: 'assets/sprites/enseada-setores/terraco-acampamento.png' },
+  { id: 'enseada_rochedo_portal', src: 'assets/sprites/enseada-setores/rochedo-portal.png' },
   { id: 'enseada8_portal_ne', src: 'assets/sprites/enseada-8/portal-nordeste-coral-recortado.png' },
   { id: 'enseada8_portal_leste', src: 'assets/sprites/enseada-8/portal-leste-rochedo-recortado.png' },
   { id: 'enseada8_mesa_trabalho', src: 'assets/sprites/enseada-8/mesa-trabalho-madeira-recortado.png' },

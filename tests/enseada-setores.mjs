@@ -24,13 +24,14 @@ const arco = object('arco_conduto_retorno_mare');
 assert(Math.hypot(portal.x - arco.x, portal.y - arco.y) <= 2, 'o portal deve ficar junto à passagem');
 assert('YyDdX'.includes(map.aguaPraia[Math.floor(portal.y + .5)][Math.floor(portal.x + .5)]), 'a passagem automática precisa estar na água');
 assert.equal(object('portal_caminho_correntes').sprite, 'enseada8_portal_ne');
-assert.equal(arco.espelhar, true, 'portal leste deve olhar para a ilha');
+assert.equal(arco.espelhar, false, 'portal leste usa a orientação voltada para a subida');
 const cais = object('cais_madeira_pesca_enseada');
-assert.equal(cais.sprite, 'enseada8_cais_barco_ref', 'cais deve descer para a direita com veleiro à direita');
-// O centro da interação fica na orla; a extremidade inferior direita
-// (cerca de dois tiles à frente) estende-se sobre a água.
-const tileCais = map.aguaPraia[Math.floor(cais.y + 1.5)]?.[Math.floor(cais.x + 2.5)];
-assert(tileCais && 'YyDdX'.includes(tileCais), 'a ponta do cais deve estar no mar');
+const visualCais = object('cais_enseada_visual');
+assert.equal(cais.renderizar, false, 'a interação do cais não deve desenhar um segundo píer');
+assert.equal(visualCais.sprite, 'enseada8_cais_barco_ref', 'cais deve descer para a direita com veleiro à direita');
+const tileCais = map.aguaPraia[Math.floor(visualCais.y + .5)]?.[Math.floor(visualCais.x + .5)];
+assert(tileCais && 'YyDdX'.includes(tileCais), 'o cais visual deve estar no mar');
+assert.equal(map.walkMask[Math.floor(cais.y + .5)]?.[Math.floor(cais.x + .5)], '.', 'interação do cais deve ficar acessível na costa');
 const barco = object('barco_expedicao_enseada');
 assert.equal(barco.renderizar, false, 'o veleiro do cais não deve ser duplicado');
 assert.equal(map.walkMask[Math.floor(barco.y + .5)]?.[Math.floor(barco.x + .5)], '.', 'a interação do barco deve estar acessível na costa');

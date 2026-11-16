@@ -4110,13 +4110,34 @@ function drawEnseadaObjectAnimations(object, state) {
   const interactionFx = object.id === 'bancada_campo_enseada' || object.id === 'fonte_termal_enseada' ||
     object.id === 'piscina_mare_viva_enseada' || object.id === 'algas_douradas_enseada' ||
     object.id === 'gruta_concha_enseada';
-  if (!object.fogueiraViva && !object.feixeFarolete && !object.pulsoAntena && !object.pulsoTotem && !object.pulsoBiolum && !interactionFx) return;
+  if (!object.fogueiraViva && !object.feixeFarolete && !object.pulsoAntena && !object.pulsoTotem && !object.pulsoBiolum && !object.vorticidadeCorrentes && !interactionFx) return;
   const reduced = typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
   const t = reduced ? 0 : performance.now() / 1000;
   const ix = (object.x - object.y) * HW + (object.ajusteX ?? 0);
   const iy = (object.x + object.y) * HH + (object.ajusteY ?? 0);
   ctx.save();
   ctx.globalCompositeOperation = 'lighter';
+
+  if (object.vorticidadeCorrentes) {
+    // O vórtice fica restrito à abertura do arco, sem cobrir as pedras.
+    const cy = iy - 115;
+    ctx.save();
+    ctx.beginPath(); ctx.ellipse(ix, cy, 24, 55, 0, 0, Math.PI * 2); ctx.clip();
+    for (let i = 0; i < 4; i++) {
+      const fase = (t * .35 + i / 4) % 1;
+      ctx.strokeStyle = `rgba(85, 255, 255, ${(.38 * (1 - fase)).toFixed(3)})`;
+      ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.ellipse(ix, cy, 4 + fase * 22, 10 + fase * 45, .18 * Math.sin(t + i), 0, Math.PI * 2); ctx.stroke();
+    }
+    for (let i = 0; i < 8; i++) {
+      const f = (t * .18 + i * .137) % 1;
+      const px = ix + Math.sin(t * 1.7 + i * 4.2) * (5 + 14 * f);
+      const py = cy + (f - .5) * 88;
+      ctx.fillStyle = `rgba(196,255,255,${(.45 * Math.sin(Math.PI * f)).toFixed(3)})`;
+      ctx.fillRect(px, py, 2, 2);
+    }
+    ctx.restore();
+  }
 
   if (object.fogueiraViva) {
     const pulso = 0.8 + Math.sin(t * 7.5 + object.x) * 0.18;

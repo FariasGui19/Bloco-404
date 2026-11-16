@@ -559,6 +559,13 @@ await loadSprites([
   { id: 'enseada_arco_conduto_b', src: 'assets/sprites/enseada-2/arco-conduto-mare-b.png' },
   // ---- ENSEADA DOS ECOS 3.0 — lote visual 1 (recorte e arte nova baseada na referência) ----
   { id: 'enseada3_estacao_666', src: 'assets/sprites/enseada-3/estacao-666-cliff-gate.png' },
+  { id: 'enseada_correntes_boia_vermelha', src: 'assets/sprites/enseada-correntes/boia-vermelha.png' },
+  { id: 'enseada_correntes_boia_laranja', src: 'assets/sprites/enseada-correntes/boia-laranja.png' },
+  { id: 'enseada_correntes_cardume', src: 'assets/sprites/enseada-correntes/cardume.png' },
+  { id: 'enseada_correntes_portal_ref', src: 'assets/sprites/enseada-correntes/portal-referencia.png' },
+  { id: 'enseada_correntes_pedra_1', src: 'assets/sprites/enseada-correntes/pedra-1.png' },
+  { id: 'enseada_correntes_pedra_2', src: 'assets/sprites/enseada-correntes/pedra-2.png' },
+  { id: 'enseada_correntes_pedra_3', src: 'assets/sprites/enseada-correntes/pedra-3.png' },
   { id: 'enseada_estacao_integrada', src: 'assets/sprites/enseada-estacao/estacao-integrada.png' },
   { id: 'enseada3_platao_cascata', src: 'assets/sprites/enseada-3/plateau-waterfall-wide.png' },
   { id: 'enseada3_platao_cascata_b', src: 'assets/sprites/enseada-3/plateau-waterfall-wide-b.png' },

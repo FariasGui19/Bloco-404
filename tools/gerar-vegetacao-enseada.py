@@ -15,8 +15,29 @@ from PIL import Image
 
 FONTE = 'assets/source-art/reparo-norte-10/referencia-mestre.png'
 SAIDA = 'js/data/enseada-vegetacao.js'
-CEL = 40           # px de arte por planta
-LIMIAR = 0.46      # fração mínima de verde na célula
+CEL = 36           # px de arte por planta
+LIMIAR = 0.34      # fração mínima de verde na célula
+
+# Áreas estruturais: a arte já desenha a vegetação delas DENTRO do próprio
+# sprite (a montanha da 66.6 tem palmeiras no topo, o platô tem as copas do
+# acampamento). Plantar aqui por cima cobre a porta blindada, a placa e as
+# luzes vermelhas — foi o que aconteceu antes.
+EXCLUSAO = [
+    (690, 60, 940, 260),     # só a face da Estação 66.6 (porta, placa, luzes)
+    (230, 150, 640, 400),    # só a clareira e o gramado do platô
+    (640, 300, 790, 440),    # monólito, estela e pilha de pedras
+    (350, 430, 600, 600),    # concha, piscina e espelho
+]
+
+
+def excluido(x0, y0):
+    # A planta é desenhada com o pé em (x0, y0+CEL) e sobe ~200 px acima
+    # disso. A exclusão precisa olhar a MANCHA INTEIRA que o sprite ocupa,
+    # senão a copa invade a área estrutural por cima enquanto o pé está
+    # fora dela — era por isso que a mata cobria a porta da 66.6.
+    copa_topo = y0 - 200
+    copa_base = y0 + CEL
+    return any(a <= x0 < c and copa_topo < d and copa_base > b for a, b, c, d in EXCLUSAO)
 
 
 def mundo(px, py):
@@ -39,6 +60,8 @@ def main():
             bloco = verde[y0:y0 + CEL, x0:x0 + CEL]
             if bloco.size == 0:
                 continue
+            if excluido(x0, y0):
+                continue
             densidade = bloco.mean()
             if densidade < LIMIAR:
                 continue
@@ -48,7 +71,7 @@ def main():
                 continue
             # pé da planta na base do bloco, no meio dele
             x, y = mundo(x0 + CEL / 2, y0 + CEL * 0.92)
-            largura = int(np.clip(100 + densidade * 190, 100, 290))
+            largura = int(np.clip(110 + densidade * 200, 110, 300))
             itens.append((x, y, largura, round(densidade, 2)))
     itens.sort(key=lambda t: (t[1], t[0]))
     with open(SAIDA, 'w', encoding='utf-8') as f:

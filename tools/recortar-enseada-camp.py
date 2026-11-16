@@ -157,35 +157,40 @@ def recortar(nome: str) -> dict:
     limpo = limpo[y0:y1, x0:x1]
     alfa = alfa[y0:y1, x0:x1]
 
-    # --- enquadra no aspecto aprovado --------------------------------
+    # --- escala ------------------------------------------------------
+    # `getFrame` recorta o quadro no bbox do CONTEUDO antes de desenhar, e o
+    # renderer deriva a altura de `larguraPx * crop.h / crop.w`. Ou seja: o
+    # que vale na tela e o aspecto do CONTEUDO, nao o do arquivo.
+    #
+    # Por isso nada de tela transparente (o crop joga fora): o conteudo e
+    # escalado UNIFORMEMENTE ate a altura medida na referencia-mestre e o
+    # `larguraPx` do objeto passa a ser a largura que saiu daqui. Sem
+    # distorcao nenhuma, e a escala na tela e a da arte conceitual.
     largura_px, altura_px = ENQUADRAMENTO[nome]
-    alvo_w, alvo_h = largura_px * 2, altura_px * 2          # 1 px arte = 2 px jogo
-    h, w = alfa.shape
-    escala = min(alvo_w / w, alvo_h / h)
-    art_w, art_h = max(1, round(w * escala)), max(1, round(h * escala))
+    ref_w, ref_h = largura_px * 2, altura_px * 2             # 1 px arte = 2 px jogo
+    # Media geometrica das duas escalas desejadas (largura e altura). Pela
+    # altura pura, uma geracao mais "gorda" que a arte-mestre estoura em
+    # largura; pela largura, achata. A media fica sempre perto das duas.
+    escala = float(np.sqrt((ref_w / alfa.shape[1]) * (ref_h / alfa.shape[0])))
+    out_w = max(1, round(alfa.shape[1] * escala))
+    out_h = max(1, round(alfa.shape[0] * escala))
 
     rgba = np.dstack([limpo, alfa])
-    arte = cv2.resize(rgba, (art_w, art_h), interpolation=cv2.INTER_AREA)
+    arte = cv2.resize(rgba, (out_w, out_h), interpolation=cv2.INTER_AREA)
     a = arte[..., 3]
     arte[..., 3] = np.where(a > 110, 255, 0).astype(np.uint8)
 
-    # tela transparente no aspecto aprovado, arte centralizada na base
-    # (pivotY 1 = pe do objeto), que e como o renderer posiciona os props.
-    tela = np.zeros((alvo_h, alvo_w, 4), np.uint8)
-    ox = (alvo_w - art_w) // 2
-    oy = alvo_h - art_h
-    tela[oy:oy + art_h, ox:ox + art_w] = arte
-
     # `limpo`/`alfa` vem de uma PIL RGB, ou seja ja estao em R,G,B,A — nao
     # passar por cvtColor(BGRA2RGBA) aqui, senao R e B trocam (madeira vira azul).
-    Image.fromarray(tela).save(DESTINO / f"{nome}.png")
+    Image.fromarray(arte).save(DESTINO / f"{nome}.png")
 
     return {
-        "larguraPx": largura_px * 2,
+        "larguraPx": out_w,
         "alturaPx": altura_px * 2,
+        "larguraRef": largura_px * 2,
         "arquivo": f"assets/sprites/enseada-camp/{nome}.png",
-        "larguraArte": art_w // 2,
-        "alturaArte": art_h // 2,
+        "larguraArte": out_w // 2,
+        "alturaArte": out_h // 2,
         "arte": [int(x0), int(y0), int(x1), int(y1)],
     }
 
@@ -199,8 +204,9 @@ def main() -> None:
     for nome in ENQUADRAMENTO:
         m = recortar(nome)
         medidas["props"][nome] = m
-        print(f"{nome:22s} enquadrado {m['larguraPx']:4d}x{m['alturaPx']:4d} | "
-              f"arte {m['larguraArte']:4d}x{m['alturaArte']:4d}")
+        desvio = (m['larguraPx'] - m['larguraRef']) / m['larguraRef'] * 100
+        print(f"{nome:22s} {m['larguraPx']:4d}x{m['alturaPx']:4d} px  "
+              f"(ref {m['larguraRef']:3d} de largura, desvio {desvio:+5.1f}%)")
     (DESTINO / "medidas-camp.json").write_text(
         json.dumps(medidas, indent=2, ensure_ascii=False) + "\n", encoding="utf-8"
     )

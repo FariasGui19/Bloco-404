@@ -32,24 +32,35 @@ chave é exata e não sobra franja.
 
 ## Por que o enquadramento importa
 
-O renderer desenha `w = object.larguraPx` e `h = w * frame.h / frame.w`: a
-**altura desenhada vem do aspecto do arquivo**, não de uma medida do mapa. Por
-isso a proporção de cada PNG é o que aparece na tela. As proporções saem da
-`referencia-mestre.png` em px de arte, lembrando que **1 px de arte = 2 px de
-jogo**.
+O caminho do desenho é `getFrame` → `drawCroppedObject`. O `getFrame` **recorta
+o quadro no bbox do conteúdo** antes de desenhar, e o renderer faz
+`h = larguraPx * crop.h / crop.w`. Duas consequências:
 
-| prop | arte (px) | larguraPx no jogo |
-|---|---|---|
-| relógio | 46 × 69 | 92 |
-| bancada | 60 × 65 | 120 |
-| torre-antena | 60 × 140 | 120 |
-| fogueira | 41 × 43 | 82 |
-| tenda | 77 × 80 | 154 |
-| pilha de caixas | 68 × 55 | 136 |
-| banco | 72 × 47 | 144 |
-| cesto | 29 × 45 | 58 |
-| árvore | 86 × 79 | 172 / 150 / 132 |
-| caixa | 58 × 54 | 54 / 38 |
+- **tela transparente não funciona** — o crop joga fora o padding, então
+  enquadrar a arte numa tela com o aspecto desejado não muda nada;
+- o que vale na tela é o **aspecto do conteúdo** contra a `larguraPx` do mapa.
+
+Por isso o recorte é escalado uniformemente (sem distorção) até o tamanho
+medido na `referencia-mestre.png`, e a `larguraPx` de cada objeto passa a ser
+a largura **que o recorte realmente ficou**, não a largura da referência.
+
+A escala final é a **média geométrica** entre a escala que casaria a largura e
+a que casaria a altura da referência. Pela altura pura, uma geração mais
+"gorda" que a arte-mestre estoura em largura (a tenda ia a 293 px, quase o
+dobro da referência); pela largura, achata. A média fica perto das duas.
+
+| prop | ref. (px de arte) | ref. jogo | saída (jogo) | larguraPx usada |
+|---|---|---|---|---|
+| relógio | 46 × 69 | 92 × 138 | 64 × 138 | 64 |
+| bancada | 60 × 65 | 120 × 130 | 116 × 130 | 116 |
+| torre-antena | 60 × 140 | 120 × 280 | 100 × 280 | 100 |
+| fogueira | 41 × 43 | 82 × 86 | 89 × 86 | 89 |
+| tenda | 77 × 80 | 154 × 160 | 213 × 160 | 213 |
+| pilha de caixas | 68 × 55 | 136 × 110 | 132 × 110 | 132 |
+| banco | 72 × 47 | 144 × 94 | 135 × 94 | 135 |
+| cesto | 29 × 45 | 58 × 90 | 77 × 90 | 77 |
+| árvore | 86 × 79 | 172 × 158 | 159 × 158 | 159 / 136 |
+| caixa | 58 × 54 | 116 × 108 | 112 × 108 | 62 / 44 |
 
 ## Sobre a métrica de diferença
 

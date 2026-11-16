@@ -2,11 +2,12 @@
   "fonte": "assets/source-art/reparo-norte-11 (geracao dedicada, fundo magenta)",
   "props": {
     "relogio": {
-      "larguraPx": 92,
+      "larguraPx": 64,
       "alturaPx": 138,
+      "larguraRef": 92,
       "arquivo": "assets/sprites/enseada-camp/relogio.png",
-      "larguraArte": 22,
-      "alturaArte": 69,
+      "larguraArte": 32,
+      "alturaArte": 99,
       "arte": [
         599,
         68,
@@ -15,11 +16,12 @@
       ]
     },
     "bancada": {
-      "larguraPx": 120,
+      "larguraPx": 116,
       "alturaPx": 130,
+      "larguraRef": 120,
       "arquivo": "assets/sprites/enseada-camp/bancada.png",
-      "larguraArte": 55,
-      "alturaArte": 65,
+      "larguraArte": 58,
+      "alturaArte": 67,
       "arte": [
         412,
         21,
@@ -28,11 +30,12 @@
       ]
     },
     "torre-radio": {
-      "larguraPx": 120,
+      "larguraPx": 100,
       "alturaPx": 280,
+      "larguraRef": 120,
       "arquivo": "assets/sprites/enseada-camp/torre-radio.png",
-      "larguraArte": 41,
-      "alturaArte": 140,
+      "larguraArte": 50,
+      "alturaArte": 168,
       "arte": [
         7,
         53,
@@ -41,11 +44,12 @@
       ]
     },
     "fogueira": {
-      "larguraPx": 82,
+      "larguraPx": 89,
       "alturaPx": 86,
+      "larguraRef": 82,
       "arquivo": "assets/sprites/enseada-camp/fogueira.png",
-      "larguraArte": 41,
-      "alturaArte": 36,
+      "larguraArte": 44,
+      "alturaArte": 39,
       "arte": [
         353,
         59,
@@ -54,11 +58,12 @@
       ]
     },
     "tenda-referencia": {
-      "larguraPx": 154,
+      "larguraPx": 213,
       "alturaPx": 160,
+      "larguraRef": 154,
       "arquivo": "assets/sprites/enseada-camp/tenda-referencia.png",
-      "larguraArte": 77,
-      "alturaArte": 42,
+      "larguraArte": 106,
+      "alturaArte": 58,
       "arte": [
         0,
         0,
@@ -67,11 +72,12 @@
       ]
     },
     "pilha-caixas": {
-      "larguraPx": 136,
+      "larguraPx": 132,
       "alturaPx": 110,
+      "larguraRef": 136,
       "arquivo": "assets/sprites/enseada-camp/pilha-caixas.png",
-      "larguraArte": 63,
-      "alturaArte": 55,
+      "larguraArte": 66,
+      "alturaArte": 57,
       "arte": [
         288,
         25,
@@ -80,11 +86,12 @@
       ]
     },
     "banco": {
-      "larguraPx": 144,
+      "larguraPx": 135,
       "alturaPx": 94,
+      "larguraRef": 144,
       "arquivo": "assets/sprites/enseada-camp/banco.png",
-      "larguraArte": 63,
-      "alturaArte": 47,
+      "larguraArte": 67,
+      "alturaArte": 50,
       "arte": [
         312,
         89,
@@ -93,11 +100,12 @@
       ]
     },
     "cesto-ferramentas": {
-      "larguraPx": 58,
+      "larguraPx": 77,
       "alturaPx": 90,
+      "larguraRef": 58,
       "arquivo": "assets/sprites/enseada-camp/cesto-ferramentas.png",
-      "larguraArte": 29,
-      "alturaArte": 25,
+      "larguraArte": 38,
+      "alturaArte": 34,
       "arte": [
         470,
         183,
@@ -106,11 +114,12 @@
       ]
     },
     "arvore-referencia-a": {
-      "larguraPx": 172,
+      "larguraPx": 159,
       "alturaPx": 158,
+      "larguraRef": 172,
       "arquivo": "assets/sprites/enseada-camp/arvore-referencia-a.png",
-      "larguraArte": 73,
-      "alturaArte": 79,
+      "larguraArte": 79,
+      "alturaArte": 85,
       "arte": [
         376,
         31,
@@ -119,11 +128,12 @@
       ]
     },
     "caixa": {
-      "larguraPx": 116,
+      "larguraPx": 112,
       "alturaPx": 108,
+      "larguraRef": 116,
       "arquivo": "assets/sprites/enseada-camp/caixa.png",
-      "larguraArte": 54,
-      "alturaArte": 54,
+      "larguraArte": 56,
+      "alturaArte": 56,
       "arte": [
         359,
         42,

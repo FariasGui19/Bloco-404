@@ -4895,10 +4895,10 @@ function drawWallProcedural(x, y, front) {
 // - dimensional_train
 // =====================================================================
 
-function getObjectSpriteConfig(spriteId) {
+export function getObjectSpriteConfig(spriteId) {
   if (typeof spriteId === 'string' && (
     spriteId.startsWith('freq666_') || spriteId.startsWith('oceano_vivo_') ||
-    spriteId.startsWith('enseada_') || spriteId.startsWith('enseada3_') || spriteId.startsWith('enseada4_')
+    /^enseada(?:\d+)?_/.test(spriteId)
   )) return { SHEET_COLS: 1, SHEET_ROWS: 1, DEFAULT_SCALE: 1, FEET_ANCHOR_Y: 1 };
   if (typeof spriteId === 'string' && (spriteId.startsWith('bio_sala_') || spriteId.startsWith('dom_sala_') || spriteId.startsWith('mare_sala_') || spriteId.startsWith('nucleo_sala_') || spriteId.startsWith('viaduto_'))) return { SHEET_COLS: 1, SHEET_ROWS: 1, DEFAULT_SCALE: 1, FEET_ANCHOR_Y: 1 };
   if (['sala_bio_maquina', 'sala_bio_grade', 'sala_dominio_lacre', 'sala_mare_fluxo', 'sala_nucleo_malha', 'aero_painel_partidas', 'aero_carrinho_bagagem', 'aero_totem_holo', 'aero_planta_aliena'].includes(spriteId)) return { SHEET_COLS: 1, SHEET_ROWS: 1, DEFAULT_SCALE: 1, FEET_ANCHOR_Y: 1 };

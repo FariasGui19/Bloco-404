@@ -374,8 +374,8 @@ export const map = {
     // A arte vem da referência, com a placa corrigida. É desenhada no fundo;
     // colisões e portal são independentes para não bloquear a entrada.
     {
-      id: 'enseada_macico_leste', tipo: 'decoracao', x: 21.6 + ESTACAO_DX, y: 13.6 + ESTACAO_DY,
-      sprite: 'enseada_estacao_integrada', useCrop: true, larguraPx: 860, cachoeiraViva: true,
+      id: 'enseada_macico_leste', tipo: 'decoracao', x: 19.2 + ESTACAO_DX, y: 15.4 + ESTACAO_DY,
+      sprite: 'enseada_estacao_integrada_v2', useCrop: true, larguraPx: 700, cachoeiraViva: true,
       pivotX: 0.5, pivotY: 0.98, camada: 'fundo', ordem: -1,
       bloqueia: false,
     },
@@ -491,7 +491,7 @@ export const map = {
       // paredão e degraus). O ponto de encaixe é a base do paredão.
       id: 'enseada_terraco_acampamento', tipo: 'decoracao',
       x: 23.184, y: 40.653,
-      sprite: 'enseada_setor1_terraco', useCrop: true, larguraPx: 820,
+      sprite: 'enseada_setor1_plato_v3', useCrop: true, larguraPx: 820,
       pivotX: 0.5, pivotY: 1,
       // Camada de fundo: a mesa é o chão do setor e entra antes dos
       // equipamentos, então nenhum prop é recoberto pela grama.
@@ -592,10 +592,18 @@ export const map = {
 
     // Assento e palmeiras do acampamento: peças independentes da área jogável.
     {
+      // Degraus de pedra logo abaixo da fogueira/tronco, como na referência:
+      // a escada que vinha embutida no platô ficava na extrema direita, sob a
+      // pilha de caixas.
+      id: 'enseada_escada_camp', tipo: 'decoracao', x: 21.9, y: 42.6,
+      sprite: 'enseada_camp_escada', useCrop: true, larguraPx: 210,
+      pivotX: 0.5, pivotY: 0.94, bloqueia: false,
+    },
+    {
       // Movido para sudoeste: o terminal de manutencao senta em (18.5, 38.1)
       // e o banco, na posicao antiga, cobria o aparelho.
       id: 'enseada_banco_tronco_camp', tipo: 'decoracao', x: 21.15, y: 39.95,
-      sprite: 'enseada_camp_ref_banco', useCrop: true, larguraPx: 135,
+      sprite: 'enseada_camp_ref_tronco', useCrop: true, larguraPx: 190,
       pivotX: 0.5, pivotY: 0.98, bloqueia: false,
     },
     {
@@ -1065,7 +1073,7 @@ export const map = {
 
   portals: [
     {
-      id: 'acesso_estacao_666', tipo: 'door', x: 21.681 + ESTACAO_DX, y: 9.381 + ESTACAO_DY, label: 'ENTRAR NA ESTAÇÃO 66.6',
+      id: 'acesso_estacao_666', tipo: 'door', x: 18.259 + ESTACAO_DX, y: 13.370 + ESTACAO_DY, label: 'ENTRAR NA ESTAÇÃO 66.6',
       requiresFlag: 'frequencia666Registrada', lockedLabel: 'ESTAÇÃO DE ESCUTA // SEM SINAL',
       mensagemBloqueado: ['A PORTA AGUARDA UMA ASSINATURA. INVESTIGUE O TERMINAL DE MANUTENÇÃO COM [R].'],
       interactionDistance: 1.2, destino: { mapId: 'estacao_limiar_666', spawnId: 'vindo_da_enseada' }, transition: 'fade',

@@ -588,6 +588,13 @@ await loadSprites([
   { id: 'enseada_setor1_plato', src: 'assets/sprites/enseada-norte/plato-acampamento.png' },
   { id: 'enseada_setor1_terraco', src: 'assets/sprites/enseada-norte/terraco-plato-recortado.png' },
   { id: 'enseada_setor1_encosta', src: 'assets/sprites/enseada-norte/encosta-plato-recortado.png' },
+  // Montanha da Estação 66.6 com a base arenosa FECHADA (a arte anterior
+  // terminava em diagonal e o chão do mapa aparecia por baixo, cortando a
+  // piscina da cachoeira).
+  { id: 'enseada_estacao_integrada_v2', src: 'assets/sprites/enseada-estacao/estacao-66-completa.png' },
+  { id: 'enseada_camp_ref_tronco', src: 'assets/sprites/enseada-camp/tronco-banco.png' },
+  { id: 'enseada_camp_escada', src: 'assets/sprites/enseada-camp/escada-pedra.png' },
+  { id: 'enseada_setor1_plato_v3', src: 'assets/sprites/enseada-norte/plato-sem-escada.png' },
   { id: 'enseada_banco_tronco', src: 'assets/sprites/enseada-lote-10/04-troncos.png' },
   { id: 'enseada_biruta_camp', src: 'assets/sprites/enseada-lote-10/07-biruta.png' },
   { id: 'enseada_bancada_expedicao', src: 'assets/sprites/enseada-lote-10/05-paineis.png' },

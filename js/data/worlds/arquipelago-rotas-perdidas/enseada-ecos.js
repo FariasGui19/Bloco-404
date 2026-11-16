@@ -441,12 +441,13 @@ export const map = {
       // partir da silhueta medida na referência (grama, clareira de areia,
       // paredão e degraus). O ponto de encaixe é a base do paredão.
       id: 'enseada_terraco_acampamento', tipo: 'decoracao',
-      x: 22.63, y: 44.59,
-      sprite: 'enseada_setor1_plato', useCrop: true, larguraPx: 786,
+      x: 14.22, y: 36.13,
+      sprite: 'enseada_setor1_plato', useCrop: true, larguraPx: 822,
       pivotX: 0.5, pivotY: 1,
-      // Camada de fundo: a mesa é o chão do setor e entra antes dos
-      // equipamentos, então nenhum prop é recoberto pela grama.
-      camada: 'fundo', ordem: -2, bloqueia: false,
+      // `ordem: 0` na camada de fundo = desenhado DEPOIS do chão e ANTES dos
+      // props. Com `ordem: -2` o platô entrava antes da textura de areia e
+      // era coberto por ela (era por isso que só a borda de pedra aparecia).
+      camada: 'fundo', ordem: 0, bloqueia: false,
     },
     {
       id: 'relogio_mare_enseada', nome: 'RELÓGIO DE MARÉ SOLAR', tipo: 'dispositivo', x: 11.81, y: 38.53,
@@ -668,9 +669,12 @@ export const map = {
         dialogue: ['A REDE MARCA UM ESPAÇO LIVRE PARA TREINAR. A AREIA AO REDOR ESTÁ FIRME E SEM OBSTÁCULOS.'] },
     },
     {
+      // Portal da costa leste: a arte da referência é um arco de pedra com
+      // vórtice azul e corais na base rochosa. O sprite anterior era uma
+      // plataforma de pedra cinza com cristais, que a arte não tem.
       id: 'portal_submarino_sul', tipo: 'decoracao', x: 46.34, y: 19.62,
-      sprite: 'enseada8_portal_ne', useCrop: true, larguraPx: 150,
-      pivotX: 0.5, pivotY: 0.94, depthOffset: -6, bloqueia: true,
+      sprite: 'enseada3_portal_recife', useCrop: true, larguraPx: 236,
+      pivotX: 0.5, pivotY: 0.96, depthOffset: -6, bloqueia: true,
       hitbox: { offsetX: -0.30, offsetY: -0.30, width: 0.60, height: 0.60 },
       nome: 'PORTAL SUBMARINO DE CORAL',
     },
@@ -729,15 +733,21 @@ export const map = {
 
     // ---- SETOR 7 (Leste): Portal + jardim + baú + recife ----
     {
-      id: 'enseada_base_rochosa_portal_leste', tipo: 'decoracao', x: 57.5, y: 24.0,
-      sprite: 'enseada_rochedo_portal', useCrop: true, larguraPx: 380, espelhar: true,
-      pivotX: 0.5, pivotY: 1, ajusteX: 70, ajusteY: 100,
+      // Base rochosa do promontório do conduto. Fica ACIMA do arco no
+      // desenho (y menor) para os dois aparecerem: o rochedo é o chão da
+      // plataforma, não um adesivo atrás dela.
+      id: 'enseada_base_rochosa_portal_leste', tipo: 'decoracao', x: 58.4, y: 25.3,
+      sprite: 'enseada_rochedo_portal', useCrop: true, larguraPx: 360, espelhar: true,
+      pivotX: 0.5, pivotY: 1, ajusteX: 0, ajusteY: 0,
       camada: 'fundo', ordem: -1, bloqueia: false,
     },
     {
+      // Arco do conduto no promontório leste: mesma arte de coral da
+      // referência. O sprite antigo (pedra cinza + cristais azuis) não existe
+      // na arte e destoava da paleta do resto da costa.
       id: 'arco_conduto_retorno_mare', tipo: 'decoracao', x: 57.5, y: 24.0,
-      sprite: 'enseada8_portal_leste', spriteB: 'enseada8_portal_leste', animPeriodo: 0.7,
-      useCrop: true, espelhar: true, larguraPx: 170, pivotX: 0.5, pivotY: 0.98, ajusteY: -55,
+      sprite: 'enseada3_portal_recife', spriteB: 'enseada3_portal_recife', animPeriodo: 0.7,
+      useCrop: true, espelhar: true, larguraPx: 210, pivotX: 0.5, pivotY: 0.96, ajusteY: -40,
       vorticidadeCorrentes: { y: -116, rx: 16, ry: 38 },
       bloqueia: false, brilho: { cor: '#5cf7eb', raio: 2.2, forca: 0.44 },
     },

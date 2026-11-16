@@ -165,7 +165,6 @@ export const map = {
   aguaPraia: rows,
   // Corredores de areia entre os setores: arte do chão, sem alterar colisões.
   caminhosAreia: [
-    [22.5, 11.75, 30, 10], [22.5, 11.75, 25.5, 14.5],
     [14, 42, 23, 41], [23, 41, 30, 35], [30, 35, 33, 32],
     [33, 32, 39, 30], [39, 30, 48, 29], [48, 29, 56, 24],
     [30, 35, 24, 31], [24, 31, 19, 29],
@@ -176,7 +175,7 @@ export const map = {
   spawnPoints: {
     inicio: { x: 19.9, y: 51.7 },
     vindo_da_praia: { x: 19.9, y: 51.7 },
-    vindo_da_estacao_666: { x: 24.2, y: 13.2 },
+    vindo_da_estacao_666: { x: 23.805, y: 12.505 },
     vindo_do_mar: { x: 47.5, y: 49.5 },
     vindo_da_darsena_mare: { x: 57.0, y: 24.0 },
   },
@@ -267,8 +266,8 @@ export const map = {
     // A arte vem da referência, com a placa corrigida. É desenhada no fundo;
     // colisões e portal são independentes para não bloquear a entrada.
     {
-      id: 'enseada_macico_leste', tipo: 'decoracao', x: 22.0, y: 14.0,
-      sprite: 'enseada_estacao_integrada', useCrop: true, larguraPx: 560,
+      id: 'enseada_macico_leste', tipo: 'decoracao', x: 21.6, y: 13.6,
+      sprite: 'enseada_estacao_integrada', useCrop: true, larguraPx: 620,
       pivotX: 0.5, pivotY: 0.98, camada: 'fundo', ordem: -1,
       bloqueia: false,
     },
@@ -276,13 +275,13 @@ export const map = {
     // Colisores discretos ao longo da face do penhasco. Mantêm uma abertura
     // livre na soleira: o portal fica no centro da porta desenhada.
     ...[
-      [14.3, 14.1], [15.9, 14.0], [17.4, 13.7],
-      [18.9, 13.8], [20.7, 14.0], [21.1, 12.0],
-      [22.8, 10.25], [23.75, 10.0], [23.6, 8.45],
+      [13.075, 13.711], [14.846, 13.6], [16.507, 13.268],
+      [18.168, 13.379], [20.161, 13.6], [20.604, 11.386],
+      [22.486, 9.448], [23.538, 9.171], [23.371, 7.455],
     ].map(([x, y], i) => ({
       id: `enseada_parede_estacao_${i + 1}`, tipo: 'decoracao', x, y,
       renderizar: false, bloqueia: true,
-      hitbox: { offsetX: -0.44, offsetY: -0.44, width: 0.88, height: 0.88 },
+      hitbox: { offsetX: -0.487, offsetY: -0.487, width: 0.974, height: 0.974 },
     })),
 
     // ---- Trilha de pedras: pórtico → espelho → cais (uma linha, sem ramal duplo) ----
@@ -823,7 +822,7 @@ export const map = {
 
   portals: [
     {
-      id: 'acesso_estacao_666', tipo: 'door', x: 22.05, y: 11.25, label: 'ENTRAR NA ESTAÇÃO 66.6',
+      id: 'acesso_estacao_666', tipo: 'door', x: 21.655, y: 10.555, label: 'ENTRAR NA ESTAÇÃO 66.6',
       requiresFlag: 'frequencia666Registrada', lockedLabel: 'ESTAÇÃO DE ESCUTA // SEM SINAL',
       mensagemBloqueado: ['A PORTA AGUARDA UMA ASSINATURA. INVESTIGUE O TERMINAL DE MANUTENÇÃO COM [R].'],
       interactionDistance: 1.2, destino: { mapId: 'estacao_limiar_666', spawnId: 'vindo_da_enseada' }, transition: 'fade',

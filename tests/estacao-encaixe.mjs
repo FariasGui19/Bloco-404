@@ -19,6 +19,16 @@ assert(Math.hypot(station.spawnPoints.vindo_da_enseada.x-(exit.x+.5),station.spa
 const mountain = coast.objects.find(o => o.id === 'enseada_macico_leste');
 assert.equal(mountain.sprite, 'enseada_estacao_integrada');
 assert.equal(mountain.camada, 'fundo');
+assert.equal(mountain.larguraPx, 620, 'penhasco ampliado');
+const visualPortal = coast.portals.find(p => p.id === 'acesso_estacao_666');
+// Em pixels isométricos, a soleira da arte fica a 16% da largura à
+// direita da âncora e cerca de 7,7% acima dela. Objetos e portal recebem
+// ambos meio tile na renderização/interação, então o deslocamento cancela.
+const dx = ((visualPortal.x - visualPortal.y) - (mountain.x - mountain.y)) * 32;
+const dy = ((visualPortal.x + visualPortal.y) - (mountain.x + mountain.y)) * 16;
+assert(Math.abs(dx - mountain.larguraPx * .16) < 1, 'portal alinhado horizontalmente com a porta');
+assert(Math.abs(dy + mountain.larguraPx * .077) < 1, 'portal alinhado verticalmente com a soleira');
+assert(!coast.caminhosAreia.some(([x,y]) => x === 22.5 && y === 11.75), 'manchas de areia antigas removidas');
 assert(coast.objects.some(o => o.id.startsWith('enseada_parede_estacao_') && o.bloqueia));
 for (const file of ['abrigo-ampliado','fx-vortice','fx-vapor','fx-centelha','fx-sinal','fx-baliza','fx-poeira']) assert(existsSync(`assets/sprites/frequencia-666/${file}.png`));
 state.save.loaded = false; state.progress.flags = { frequencia666Registrada: true };

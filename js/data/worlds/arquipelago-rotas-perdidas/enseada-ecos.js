@@ -409,6 +409,40 @@ export const map = {
       hitbox: { offsetX: -0.487, offsetY: -0.487, width: 0.974, height: 0.974 },
     })),
 
+    // ---- SETOR 2 (Nordeste): mata de transição e borda da falésia ----
+    // A referência desenha a franja nordeste como um cordão de mata de
+    // transição que separa o areal da Estação 66.6 do mar aberto, salpicado
+    // de matacões na borda da falésia. No jogo a faixa era grama chapada: as
+    // artes já estavam em `assets/sprites/enseada-norte/`, mas nunca foram
+    // registradas nem posicionadas.
+    //
+    // O cordão fica ao SUL da clareira — subir a mata até a porta fecharia o
+    // areal que a referência deixa aberto. Os pares se intercalam (árvore,
+    // arbusto, árvore) para não virar parede de árvores.
+    ...[
+      // [x, y, sprite, larguraPx, espelhar]
+      [25.0, 24.6, 'enseada_ne_arvores', 210, false],
+      [28.4, 23.6, 'enseada_ne_arbustos', 150, true],
+      [31.4, 24.2, 'enseada_ne_arvores', 175, true],
+      [35.0, 24.0, 'enseada_ne_arbustos', 165, false],
+      [38.4, 25.0, 'enseada_ne_arvores', 195, false],
+      [41.6, 26.6, 'enseada_ne_arbustos', 145, true],
+      [44.4, 28.6, 'enseada_ne_palmeira_media', 140, false],
+      [46.6, 30.8, 'enseada_ne_palmeira_baixa', 120, true],
+    ].map(([x, y, sprite, larguraPx, espelhar], i) => ({
+      id: `enseada_ne_mata_${i + 1}`, tipo: 'decoracao', x, y,
+      sprite, useCrop: true, larguraPx, espelhar,
+      pivotX: 0.5, pivotY: 0.96, depthOffset: -4, bloqueia: false,
+    })),
+    ...[
+      [30.0, 27.2, 88], [34.2, 27.6, 74], [38.2, 28.4, 82],
+      [42.2, 29.8, 66],
+    ].map(([x, y, larguraPx], i) => ({
+      id: `enseada_ne_matacao_${i + 1}`, tipo: 'decoracao', x, y,
+      sprite: 'enseada_ne_pedras', useCrop: true, larguraPx,
+      pivotX: 0.5, pivotY: 0.92, bloqueia: false,
+    })),
+
     // ---- Trilha de pedras: pórtico → espelho → cais (uma linha, sem ramal duplo) ----
     ...[[14.5, 42.5], [15.8, 43.2], [17.2, 43.9], [18.6, 44.6], [20.0, 45.3], [21.4, 46.0], [22.8, 46.6], [24.2, 47.1], [25.6, 47.5], [27.0, 47.8], [28.4, 48.0], [29.8, 48.1], [31.2, 48.1], [32.6, 48.0], [34.0, 47.9], [35.4, 47.9], [36.8, 47.9], [38.2, 47.9], [39.6, 47.9], [41.0, 47.9], [42.4, 47.9], [43.8, 47.9]].map(([tx, ty], i) => ({
       id: `trilha_pedras_${i + 1}`,

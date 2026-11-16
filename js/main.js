@@ -613,6 +613,12 @@ await loadSprites([
   { id: 'enseada_camp_ref_banco', src: 'assets/sprites/enseada-camp/banco.png' },
   { id: 'enseada_camp_ref_fogueira', src: 'assets/sprites/enseada-camp/fogueira.png' },
   { id: 'enseada_camp_ref_pilha_caixas', src: 'assets/sprites/enseada-camp/pilha-caixas.png' },
+  // ---- SETOR 2 (Nordeste): vegetação de transição e rochas do planalto ----
+  { id: 'enseada_ne_arvores', src: 'assets/sprites/enseada-norte/arvores-redondas.png' },
+  { id: 'enseada_ne_arbustos', src: 'assets/sprites/enseada-norte/arbustos-densos.png' },
+  { id: 'enseada_ne_pedras', src: 'assets/sprites/enseada-norte/pedras-cinzentas.png' },
+  { id: 'enseada_ne_palmeira_baixa', src: 'assets/sprites/enseada-norte/palmeira-baixa.png' },
+  { id: 'enseada_ne_palmeira_media', src: 'assets/sprites/enseada-norte/palmeira-media.png' },
   { id: 'enseada4_relogio', src: 'assets/sprites/enseada-4/coastal-clock-post.png' },
   { id: 'enseada4_placa', src: 'assets/sprites/enseada-4/trail-marker-sign.png' },
   { id: 'enseada4_gruta', src: 'assets/sprites/enseada-4/shell-grotto.png' },

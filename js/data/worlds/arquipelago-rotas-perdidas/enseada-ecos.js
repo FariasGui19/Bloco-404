@@ -258,7 +258,7 @@ export const map = {
       moduleSystem: { id: 'frequencia_666_terminal', label: 'RASTREAR SINAL ANALÓGICO', distance: 1.6, speaker: 'TERMINAL DA ENSEADA' },
     },
     {
-      id: 'porta_estacao_666_visual', tipo: 'decoracao', x: 26.0, y: 15.0, sprite: 'enseada8_entrada_666',
+      id: 'porta_estacao_666_visual', tipo: 'decoracao', x: 26.0, y: 15.0, sprite: 'enseada3_estacao_666',
       // Entrada inspirada na referência: porta pequena dentro de um bloco de pedra
       // alto e gramado. A caixa de fundação antiga é mantida para preservar o acesso.
       useCrop: true, larguraPx: 380, pivotX: 0.5, pivotY: 0.96, depthOffset: -2, bloqueia: true,

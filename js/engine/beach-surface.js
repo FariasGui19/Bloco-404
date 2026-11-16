@@ -7,6 +7,11 @@
 // e o `alpha` acompanha a iso-linha, então a areia termina em curva.
 // Nenhuma célula de terra nova nasce daí: o campo é travado para não trocar
 // de lado no centro de nenhuma célula (ver `coast-field.js`).
+//
+// AREIA + GRAMA (referência da Enseada): a orla é areia e o interior é
+// grama. A cor muda pela MESMA distância à água (`shore`): até 2,2 tiles
+// é areia, depois vira grama com transição suave. Nenhuma letra nova na
+// grade, nenhuma mudança de colisão — só a cor da textura.
 
 
 const sand = c => c != null && 'SMT'.includes(c);
@@ -19,15 +24,16 @@ function hash(x, y) {
 const water = c => c != null && 'YyDdX'.includes(c);
 const smooth = t => { t = Math.max(0, Math.min(1, t)); return t * t * (3 - 2 * t); };
 
-export function createBeachSurface(rows, scale = 16) {
+export function createBeachSurface(rows, scale = 16, { gramaInterior = false } = {}) {
   const height = rows.length, width = rows[0].length;
   const pixels = new Uint8ClampedArray(width * height * scale * scale * 4);
   for (let py = 0; py < height * scale; py++) for (let px = 0; px < width * scale; px++) {
     const x = (px + .5) / scale, y = (py + .5) / scale;
     const ix = Math.floor(x), iy = Math.floor(y), tile = rows[iy][ix];
     if (!sand(tile)) continue;
-    let shore = 3;
-    for (let dy = -2; dy <= 2; dy++) for (let dx = -2; dx <= 2; dx++) {
+    const alcance = gramaInterior ? 5 : 2;
+    let shore = gramaInterior ? 5 : 3;
+    for (let dy = -alcance; dy <= alcance; dy++) for (let dx = -alcance; dx <= alcance; dx++) {
       if (!water(rows[iy + dy]?.[ix + dx])) continue;
       const nx = ix + dx, ny = iy + dy;
       const ex = Math.max(nx - x, 0, x - nx - 1);
@@ -45,9 +51,21 @@ export function createBeachSurface(rows, scale = 16) {
     const grain = (hash(px, py) - .5) * 9 + (hash(px >> 1, py >> 1) - .5) * 6;
     // Veios largos e irregulares sugerem depósitos de areia, não tiles soltos.
     const drift = Math.max(0, Math.sin(x * .85 + Math.sin(y * .38) * 2.1 + y * .17) - .72) * (1 - wet) * 12;
+    // Areia da orla (referência): dourada, molhada na beira.
     let r = 229 + broad + grain - wet * 30 - drift;
     let g = 197 + broad + grain - wet * 18 - drift * .8;
     let b = 143 + broad + grain - wet * 7 - drift * .45;
+    // Grama do interior: verde-amarelado da referência, com o mesmo grão.
+    // `grama` é 0 na orla e 1 no miolo; a mistura é suave (sem linha dura).
+    const grama = gramaInterior ? smooth((shore - 2.2) / 2.4) : 0;
+    if (grama > 0) {
+      const gr = 126 + broad * .6 + grain * .7 - wet * 8;
+      const gg = 186 + broad * .6 + grain * .7 - wet * 6;
+      const gb = 78 + broad * .5 + grain * .6;
+      r += (gr - r) * grama;
+      g += (gg - g) * grama;
+      b += (gb - b) * grama;
+    }
     // As antigas poças quadradas viram manchas suaves na mesma área caminhável.
     if (tile === 'T') {
       const d = Math.hypot((x - ix - .5) / .32, (y - iy - .5) / .22);

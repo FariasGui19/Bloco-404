@@ -181,3 +181,12 @@ recorte à esquerda encontra o terreno com uma borda reta; a costa atual também
 não coincide pixel a pixel com a referência. A superfície superior continua
 cenográfica e a lagoa desenhada não é uma massa de água física. Não se deve
 interpretar a composição como reprodução perfeitamente idêntica.
+
+### Ajuste de escala e integração ao terreno
+
+O conjunto foi ampliado de 560 para 620 px e deslocado para cima. A posição
+do portal, o retorno e os colisores foram recalculados com a mesma mudança;
+a ida e a volta continuam acessíveis. Os dois caminhos de areia adicionados
+na revisão anterior foram removidos. O trecho transparente à esquerda da
+fachada foi preenchido com rocha de uma arte já existente, para que o chão
+não atravesse o recorte; ainda é possível perceber uma emenda entre artes.

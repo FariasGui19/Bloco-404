@@ -409,6 +409,53 @@ export const map = {
       hitbox: { offsetX: -0.487, offsetY: -0.487, width: 0.974, height: 0.974 },
     })),
 
+    // ---- SETOR 2 (Nordeste): mata de transição e borda da falésia ----
+    // A referência desenha a franja nordeste como um cordão de mata de
+    // transição que separa o areal da Estação 66.6 do mar aberto, salpicado
+    // de matacões na borda da falésia. No jogo a faixa era grama chapada: as
+    // artes já estavam em `assets/sprites/enseada-norte/`, mas nunca foram
+    // registradas nem posicionadas.
+    //
+    // O cordão fica ao SUL da clareira — subir a mata até a porta fecharia o
+    // areal que a referência deixa aberto. Os pares se intercalam (árvore,
+    // arbusto, árvore) para não virar parede de árvores.
+    ...[
+      // [x, y, sprite, larguraPx, espelhar]
+      [25.0, 24.6, 'enseada_ne_mata_densa', 250, false],
+      [28.4, 23.6, 'enseada_ne_arbusto_florido', 96, true],
+      [31.4, 24.2, 'enseada_ne_mata_densa', 215, true],
+      [35.0, 24.0, 'enseada_ne_arbusto_florido', 88, false],
+      [38.4, 25.0, 'enseada_ne_mata_densa', 195, false],
+      [41.6, 26.6, 'enseada_ne_arbusto_florido', 80, true],
+      [44.4, 28.6, 'enseada_ne_palmeira', 150, false],
+      [46.6, 30.8, 'enseada_ne_palmeira', 120, true],
+    ].map(([x, y, sprite, larguraPx, espelhar], i) => ({
+      id: `enseada_ne_mata_${i + 1}`, tipo: 'decoracao', x, y,
+      sprite, useCrop: true, larguraPx, espelhar,
+      pivotX: 0.5, pivotY: 0.96, depthOffset: -4, bloqueia: false,
+    })),
+    ...[
+      [30.0, 27.2, 96], [34.2, 27.6, 78], [38.2, 28.4, 88],
+      [42.2, 29.8, 72],
+    ].map(([x, y, larguraPx], i) => ({
+      id: `enseada_ne_matacao_${i + 1}`, tipo: 'decoracao', x, y,
+      sprite: 'enseada_ne_matacao', useCrop: true, larguraPx,
+      pivotX: 0.5, pivotY: 0.92, bloqueia: false,
+    })),
+
+    // Falésia leste: a referência termina o planalto num paredão que cai
+    // direto no mar. Sem isso a franja nordeste acaba em grama chapada e o
+    // mar parece começar do nada.
+    ...[
+      // [x, y, sprite, larguraPx]
+      [44.0, 24.2, 'enseada_ne_penhasco', 230],
+      [46.6, 21.4, 'enseada_ne_penhasco', 190],
+    ].map(([x, y, sprite, larguraPx], i) => ({
+      id: `enseada_ne_falesia_${i + 1}`, tipo: 'decoracao', x, y,
+      sprite, useCrop: true, larguraPx,
+      pivotX: 0.5, pivotY: 0.94, camada: 'fundo', ordem: -1, bloqueia: false,
+    })),
+
     // ---- Trilha de pedras: pórtico → espelho → cais (uma linha, sem ramal duplo) ----
     ...[[14.5, 42.5], [15.8, 43.2], [17.2, 43.9], [18.6, 44.6], [20.0, 45.3], [21.4, 46.0], [22.8, 46.6], [24.2, 47.1], [25.6, 47.5], [27.0, 47.8], [28.4, 48.0], [29.8, 48.1], [31.2, 48.1], [32.6, 48.0], [34.0, 47.9], [35.4, 47.9], [36.8, 47.9], [38.2, 47.9], [39.6, 47.9], [41.0, 47.9], [42.4, 47.9], [43.8, 47.9]].map(([tx, ty], i) => ({
       id: `trilha_pedras_${i + 1}`,
@@ -445,7 +492,7 @@ export const map = {
     {
       id: 'relogio_mare_enseada', nome: 'RELÓGIO DE MARÉ SOLAR', tipo: 'dispositivo', x: 13.547, y: 39.172,
       sprite: 'enseada_camp_ref_relogio', animPeriodo: 0.6,
-      useCrop: true, larguraPx: 82, pivotX: 0.5, pivotY: 0.98,
+      useCrop: true, larguraPx: 64, pivotX: 0.5, pivotY: 0.98,
       bloqueia: true, hitbox: { offsetX: -0.22, offsetY: -0.22, width: 0.44, height: 0.44 },
       brilho: { cor: '#ffd980', raio: 1.15, forca: 0.25 },
       interacao: { label: 'SINTONIZAR CLIMA E MARÉ', distancia: 1.55 },
@@ -453,7 +500,7 @@ export const map = {
     {
       id: 'torre_antena_enseada', nome: 'TORRE-ANTENA DE ESCUTA', tipo: 'dispositivo', x: 15.641, y: 33.578,
       sprite: 'enseada_camp_ref_torre_radio', animPeriodo: 0.5,
-      useCrop: true, larguraPx: 110, pivotX: 0.5, pivotY: 0.98,
+      useCrop: true, larguraPx: 100, pivotX: 0.5, pivotY: 0.98,
       bloqueia: true, hitbox: { offsetX: -0.30, offsetY: -0.28, width: 0.6, height: 0.56 },
       pulsoAntena: true, brilho: { cor: '#ff7e71', raio: 0.9, forca: 0.2 },
       interacao: { label: 'SINTONIZAR TORRE-ANTENA', distancia: 1.55 },
@@ -461,7 +508,7 @@ export const map = {
     {
       id: 'bancada_campo_enseada', nome: 'BANCADA DE CAMPO', tipo: 'dispositivo', x: 16.141, y: 37.203,
       sprite: 'enseada_camp_ref_bancada', animPeriodo: 0.58,
-      useCrop: true, larguraPx: 122, pivotX: 0.5, pivotY: 0.98,
+      useCrop: true, larguraPx: 116, pivotX: 0.5, pivotY: 0.98,
       bloqueia: true, hitbox: { offsetX: -0.58, offsetY: -0.38, width: 1.16, height: 0.76 },
       brilho: { cor: '#74ff8a', raio: 1.2, forca: 0.26 },
       interacao: { label: 'CALIBRAR MÓDULO NA BANCADA', distancia: 1.7 },
@@ -469,14 +516,14 @@ export const map = {
     {
       id: 'acampamento_vigilia_enseada', nome: 'ACAMPAMENTO DE VIGÍLIA', tipo: 'decoracao', x: 19.156, y: 35.688,
       sprite: 'enseada_camp_ref_fogueira', animPeriodo: 0.42,
-      useCrop: true, larguraPx: 76, pivotX: 0.5, pivotY: 0.98,
+      useCrop: true, larguraPx: 89, pivotX: 0.5, pivotY: 0.98,
       bloqueia: true, hitbox: { offsetX: -0.30, offsetY: -0.24, width: 0.60, height: 0.48 },
       fogueiraViva: true, brilho: { cor: '#ffae52', raio: 1.25, forca: 0.28 },
       interacao: { label: 'DESCANSAR NA FOGUEIRA', distancia: 1.6 },
     },
     {
       id: 'tenda_expedicao_enseada', nome: 'TENDA DA EXPEDIÇÃO', tipo: 'decoracao', x: 19.406, y: 32.438,
-      sprite: 'enseada_camp_ref_tenda_referencia', useCrop: true, larguraPx: 184,
+      sprite: 'enseada_camp_ref_tenda_referencia', useCrop: true, larguraPx: 213,
       pivotX: 0.5, pivotY: 0.98,
       bloqueia: true, hitbox: { offsetX: -0.48, offsetY: -0.34, width: 0.96, height: 0.68 },
       interacao: { label: 'INSPECIONAR TENDA DA EXPEDIÇÃO', distancia: 1.6, speaker: 'TENDA DA EXPEDIÇÃO',
@@ -485,7 +532,7 @@ export const map = {
     {
       id: 'maleta_expedicao_enseada', nome: 'MALETA DA EXPEDIÇÃO', tipo: 'dispositivo', x: 22.484, y: 32.484,
       sprite: 'enseada_camp_ref_pilha_caixas', animPeriodo: 0.56,
-      useCrop: true, larguraPx: 102, pivotX: 0.5, pivotY: 0.98,
+      useCrop: true, larguraPx: 132, pivotX: 0.5, pivotY: 0.98,
       bloqueia: true, hitbox: { offsetX: -0.38, offsetY: -0.32, width: 0.76, height: 0.64 },
       pulsoAntena: true, brilho: { cor: '#ff9a5c', raio: 1.0, forca: 0.22 },
       interacao: { label: 'ABRIR MALETA DA EXPEDIÇÃO', distancia: 1.55 },
@@ -501,37 +548,39 @@ export const map = {
     // a entrada da tenda. As coordenadas são as dos pés dos sprites.
     {
       id: 'enseada_arvore_camp_esquerda', tipo: 'decoracao', x: 11.29, y: 25.70,
-      sprite: 'enseada_camp_ref_arvore', useCrop: true, larguraPx: 130,
+      sprite: 'enseada_camp_ref_arvore', useCrop: true, larguraPx: 159,
       pivotX: 0.5, pivotY: 0.98, bloqueia: false,
     },
     {
       id: 'enseada_arvore_camp_direita', tipo: 'decoracao', x: 12.25, y: 24.74,
-      sprite: 'enseada_camp_ref_arvore', useCrop: true, espelhar: true, larguraPx: 115,
+      sprite: 'enseada_camp_ref_arvore', useCrop: true, espelhar: true, larguraPx: 136,
       pivotX: 0.5, pivotY: 0.98, bloqueia: false,
     },
     {
       id: 'enseada_cesto_ferramentas_camp', tipo: 'decoracao', x: 15.344, y: 38.625,
-      sprite: 'enseada_camp_ref_cesto_ferramentas', useCrop: true, larguraPx: 36,
+      sprite: 'enseada_camp_ref_cesto_ferramentas', useCrop: true, larguraPx: 77,
       pivotX: 0.5, pivotY: 0.98, bloqueia: false,
     },
     {
       id: 'enseada_caixa_atras_tenda', tipo: 'decoracao', x: 11.34, y: 26.66,
-      sprite: 'enseada_camp_ref_caixa', useCrop: true, larguraPx: 38,
+      sprite: 'enseada_camp_ref_caixa', useCrop: true, larguraPx: 62,
       pivotX: 0.5, pivotY: 0.98, bloqueia: true,
       hitbox: { offsetX: -0.20, offsetY: -0.20, width: 0.4, height: 0.4 },
     },
     {
       // O caixote solto fica entre a fogueira e a pilha, na referência.
       id: 'enseada_caixote_camp', tipo: 'decoracao', x: 21.30, y: 34.30,
-      sprite: 'enseada_camp_ref_caixa', useCrop: true, larguraPx: 27,
+      sprite: 'enseada_camp_ref_caixa', useCrop: true, larguraPx: 44,
       pivotX: 0.5, pivotY: 0.98, bloqueia: true,
       hitbox: { offsetX: -0.15, offsetY: -0.15, width: 0.3, height: 0.3 },
     },
 
     // Assento e palmeiras do acampamento: peças independentes da área jogável.
     {
-      id: 'enseada_banco_tronco_camp', tipo: 'decoracao', x: 19.484, y: 38.734,
-      sprite: 'enseada_camp_ref_banco', useCrop: true, larguraPx: 106,
+      // Movido para sudoeste: o terminal de manutencao senta em (18.5, 38.1)
+      // e o banco, na posicao antiga, cobria o aparelho.
+      id: 'enseada_banco_tronco_camp', tipo: 'decoracao', x: 21.15, y: 39.95,
+      sprite: 'enseada_camp_ref_banco', useCrop: true, larguraPx: 135,
       pivotX: 0.5, pivotY: 0.98, bloqueia: false,
     },
     {
@@ -614,26 +663,28 @@ export const map = {
     {
       id: 'piscina_mare_viva_enseada', nome: 'PISCINA DE MARÉ VIVA', tipo: 'decoracao', x: 28.0, y: 50.0,
       sprite: 'enseada3_piscina', spriteB: 'enseada3_piscina', animPeriodo: 0.64,
-      useCrop: true, larguraPx: 240, pivotX: 0.5, pivotY: 0.92,
+      useCrop: true, larguraPx: 360, pivotX: 0.5, pivotY: 0.92,
       bloqueia: false, pulsoBiolum: '#5cf7eb', brilho: { cor: '#5cf7eb', raio: 1.25, forca: 0.26 },
       interacao: { label: 'MERGULHAR AS MÃOS NA MARÉ VIVA', distancia: 1.65 },
     },
     {
       id: 'enseada3_praca_espelho', tipo: 'decoracao', x: 33.0, y: 48.0,
-      sprite: 'enseada3_calcada', useCrop: true, larguraPx: 200,
+      sprite: 'enseada3_calcada', useCrop: true, larguraPx: 340,
       pivotX: 0.5, pivotY: 0.92, depthOffset: -1, bloqueia: false,
     },
     {
       id: 'espelho_arquetipos_enseada', nome: 'ESPELHO DE RESSONÂNCIA', tipo: 'dispositivo', x: 33.0, y: 48.0,
       sprite: 'enseada_espelho_arquetipo', spriteB: 'enseada_espelho_arquetipo_b', animPeriodo: 0.56,
-      useCrop: true, larguraPx: 80, pivotX: 0.5, pivotY: 0.95,
+      useCrop: true, larguraPx: 190, pivotX: 0.5, pivotY: 0.95,
       bloqueia: false, brilho: { cor: '#6ff7ff', raio: 1.5, forca: 0.34 },
       interacao: { label: 'SINTONIZAR ARQUÉTIPO', distancia: 1.65 },
     },
     {
-      id: 'gruta_concha_enseada', nome: 'GRUTA-CONCHA', tipo: 'decoracao', x: 24.0, y: 47.0,
+      // A referência desenha a Concha Gigante como monumento da praia oeste,
+      // com a boca de cristais na altura de um personagem — não como toca.
+      id: 'gruta_concha_enseada', nome: 'CONCHA GIGANTE', tipo: 'decoracao', x: 24.0, y: 47.0,
       sprite: 'enseada8_gruta', spriteB: 'enseada8_gruta', animPeriodo: 0.66,
-      useCrop: true, larguraPx: 120, pivotX: 0.5, pivotY: 0.98,
+      useCrop: true, larguraPx: 250, pivotX: 0.5, pivotY: 0.98,
       bloqueia: true, hitbox: { offsetX: -0.45, offsetY: -0.28, width: 0.9, height: 0.56 },
       pulsoBiolum: '#54ccff', brilho: { cor: '#54ccff', raio: 1.3, forca: 0.28 },
       interacao: { label: 'ABRIGAR-SE NA GRUTA-CONCHA', distancia: 1.7 },

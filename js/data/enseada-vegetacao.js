@@ -64,7 +64,7 @@ export const VEGETACAO = [
 
   // ---------- Palmeiras que emolduram a clareira central ----------
   ['B', 26.8, 37.6, 90],
-  ['J', 32.8, 32.0, 78],
+  ['J', 31.5, 30.1, 78],
   ['B', 36.4, 28.2, 92], ['P', 37.6, 27.0, 88],
 
   // ---------- Palmeiras do jardim cercado / lado leste do monólito ----------

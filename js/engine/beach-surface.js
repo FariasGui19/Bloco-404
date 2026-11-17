@@ -53,7 +53,7 @@ function intensidadePoligono(px, py, pontos, suavidade = 10) {
   return smooth(.5 + (dentro ? menor : -menor) / suavidade);
 }
 
-export function createBeachSurface(rows, scale = 16, { gramaInterior = false, caminhos = [], zonasGrama = [], zonasRocha = [], celulasGrama = null, ajusteSolo = null, ajusteSoloCentral = null, texturaGramaCentral = null, ajusteSoloSudeste = null } = {}) {
+export function createBeachSurface(rows, scale = 16, { gramaInterior = false, caminhos = [], zonasGrama = [], zonasRocha = [], celulasGrama = null, ajusteSolo = null, ajusteSoloCentral = null, texturaGramaCentral = null, ajusteSoloSudeste = null, trilhaEstacaoPortal = [] } = {}) {
   const height = rows.length, width = rows[0].length;
   const margemAjuste = 55;
   const limitesAjuste = ajusteSolo && {
@@ -197,6 +197,11 @@ export function createBeachSurface(rows, scale = 16, { gramaInterior = false, ca
           grama += (ilha - grama) * area;
         }
       }
+    }
+    // Só muda a cor: a trilha contínua não cria terra nem muda colisões.
+    if (trilhaEstacaoPortal.length && x >= 14 && x <= 51 && y >= 15 && y <= 30) {
+      const dist = distanciaAoCaminho(x, y, trilhaEstacaoPortal);
+      grama *= smooth((dist + ruidoTrilha - 0.9) / 0.48);
     }
     if (grama > 0) {
       let gr = 126 + broad * .6 + grain * .7 - wet * 8;

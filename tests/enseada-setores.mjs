@@ -24,7 +24,7 @@ const arco = object('arco_conduto_retorno_mare');
 assert(Math.hypot(portal.x - arco.x, portal.y - arco.y) <= 2, 'o portal deve ficar junto à passagem');
 assert('YyDdX'.includes(map.aguaPraia[Math.floor(portal.y + .5)][Math.floor(portal.x + .5)]), 'a passagem automática precisa estar na água');
 assert.equal(object('portal_caminho_correntes').sprite, 'enseada_correntes_portal_ref');
-assert.equal(arco.sprite, 'enseada_promontorio_sudeste', 'portal usa o recorte orientado da referência');
+assert.equal(arco.sprite, 'enseada_sudeste_portal_completo', 'portal usa o promontório completo');
 assert.equal(object('enseada_base_rochosa_portal_leste').espelhar, true, 'a subida deve acompanhar a inversão');
 const cais = object('cais_madeira_pesca_enseada');
 const visualCais = object('cais_enseada_visual');

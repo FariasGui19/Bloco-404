@@ -697,6 +697,7 @@ function drawBeachSurface(map) {
       ajusteSolo: map.ajusteSolo ?? null,
       ajusteSoloCentral: map.ajusteSoloCentral ?? null,
       ajusteSoloSudeste: map.ajusteSoloSudeste ?? null,
+      trilhaEstacaoPortal: map.trilhaEstacaoPortal ?? [],
       texturaGramaCentral,
     });
     texture = document.createElement('canvas');
@@ -4152,11 +4153,12 @@ function drawEnseadaObjectAnimations(object, state) {
     const config = typeof object.vorticidadeCorrentes === 'object' ? object.vorticidadeCorrentes : {};
     const cx = ix + (config.x ?? 0), cy = iy + (config.y ?? -115);
     const rx = config.rx ?? 24, ry = config.ry ?? 55;
+    const intensidade = config.intensidade ?? 1;
     ctx.save();
     ctx.beginPath(); ctx.ellipse(cx, cy, rx, ry, 0, 0, Math.PI * 2); ctx.clip();
     for (let i = 0; i < 4; i++) {
       const fase = (t * .35 + i / 4) % 1;
-      ctx.strokeStyle = `rgba(85, 255, 255, ${(.38 * (1 - fase)).toFixed(3)})`;
+      ctx.strokeStyle = `rgba(85, 255, 255, ${(.38 * intensidade * (1 - fase)).toFixed(3)})`;
       ctx.lineWidth = 2;
       ctx.beginPath(); ctx.ellipse(cx, cy, rx * (.17 + fase * .83), ry * (.18 + fase * .82), .18 * Math.sin(t + i), 0, Math.PI * 2); ctx.stroke();
     }
@@ -4164,7 +4166,7 @@ function drawEnseadaObjectAnimations(object, state) {
       const f = (t * .18 + i * .137) % 1;
       const px = cx + Math.sin(t * 1.7 + i * 4.2) * rx * (.2 + .6 * f);
       const py = cy + (f - .5) * ry * 1.6;
-      ctx.fillStyle = `rgba(196,255,255,${(.45 * Math.sin(Math.PI * f)).toFixed(3)})`;
+      ctx.fillStyle = `rgba(196,255,255,${(.45 * intensidade * Math.sin(Math.PI * f)).toFixed(3)})`;
       ctx.fillRect(px, py, 2, 2);
     }
     ctx.restore();

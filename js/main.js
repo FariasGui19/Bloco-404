@@ -605,6 +605,7 @@ await loadSprites([
   // Rochedo orgânico da praia (pedra + musgo), para a base dos arcos de coral.
   { id: 'enseada_rochedo_organico', src: 'assets/sprites/enseada-lote2/rochedo-praia-sudeste.png' },
   { id: 'enseada_portal_sudeste_rochedo', src: 'assets/sprites/enseada-lote2/portal-sudeste-rochedo.png' },
+  { id: 'enseada_sudeste_portal_completo', src: 'assets/sprites/enseada-sudeste/portal-completo.png' },
   { id: 'enseada_sudeste_encosta', src: 'assets/sprites/enseada-sudeste/encosta.png' },
   { id: 'enseada_sudeste_cercado', src: 'assets/sprites/enseada-sudeste/cercado.png' },
   { id: 'enseada_sudeste_gaivotas', src: 'assets/sprites/enseada-sudeste/gaivotas-rochedo.png' },

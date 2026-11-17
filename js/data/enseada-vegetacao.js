@@ -88,6 +88,7 @@ export const VEGETACAO = [
   // Palmeiras no promontório, em terra firme, não em ilhas no mar.
   ['P', 43.65, 27.4, 90], ['M', 44.9, 26.78, 90], ['P', 45.61, 25.45, 90],
   ['D', 44.2, 27.15, 78], ['F', 45.0, 26.2, 64], ['D', 45.7, 25.65, 66],
+  ['F', 43.0, 27.55, 52], ['D', 44.35, 26.5, 58], ['F', 45.9, 25.25, 50],
 
   // Canteiro compacto junto à concha menor; a entrada do píer permanece livre.
   ['J', 40.8, 46.6, 55], ['F', 40.55, 46.55, 58],

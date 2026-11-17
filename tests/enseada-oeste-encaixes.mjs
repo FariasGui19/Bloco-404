@@ -18,3 +18,8 @@ assert(palmeiras.some(p=>Math.abs((p.x-p.y)*32-pontaDir) < 35 && Math.abs((p.x+p
 assert.equal(obj('enseada_palmeira_camp_oeste').renderizar, false, 'remove duplicação das palmeiras');
 assert.equal(obj('enseada_palmeira_camp_norte').renderizar, false, 'remove duplicação das palmeiras');
 console.log('Oeste: orientação da concha, poste e apoios da rede OK.');
+const sino = obj('carrilhao_vento_enseada');
+assert.equal(sino.sprite, 'enseada_sino_oeste_frontal');
+assert(sino.larguraPx >= 90 && sino.interacao, 'sino maior continua interativo');
+assert(VEGETACAO.some(([tipo,x,y]) => tipo === 'J' && x === 40.8 && y === 46.6), 'palmeira junto à concha menor');
+assert(map.ajusteSolo.grama.length >= 3, 'canteiro da concha integrado ao solo');

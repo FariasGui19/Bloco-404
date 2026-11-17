@@ -493,6 +493,7 @@ await loadSprites([
   { id: 'enseada_lanterna_marinha', src: 'assets/sprites/enseada-2/lanterna-marinha-flutuante.png' },
   { id: 'enseada_fonte_termal', src: 'assets/sprites/enseada-2/fonte-termal-enseada.png' },
   { id: 'enseada_banco_ostras', src: 'assets/sprites/enseada-2/banco-ostras-perola.png' },
+  { id: 'enseada_sino_oeste_frontal', src: 'assets/sprites/enseada-lote2/sino-bambu-frontal.png' },
   { id: 'enseada_carrilhao_vento', src: 'assets/sprites/enseada-2/carrilhao-vento-bambu.png' },
   // ---- ENSEADA DOS ECOS 2.0 — Lote #5 (tools/preparar-enseada-2.py) ----
   { id: 'enseada_portal_correntes', src: 'assets/sprites/enseada-2/portal-caminho-correntes.png' },

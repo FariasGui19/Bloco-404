@@ -138,9 +138,13 @@ export function createBeachSurface(rows, scale = 16, { gramaInterior = false, ca
       const sy = ajusteSolo.cy + ajusteSolo.sy * (x + y);
       const area = sx < limitesAjuste.minX || sx > limitesAjuste.maxX || sy < limitesAjuste.minY || sy > limitesAjuste.maxY
         ? 0 : intensidadePoligono(sx, sy, ajusteSolo.area, 110);
+      // A estreita orla oeste fica arenosa até o limite da água.
+      const faixaOeste = smooth((260 - sx) / 35) * smooth((sy - 160) / 35) * smooth((650 - sy) / 35);
+      grama *= 1 - faixaOeste * (1 - smooth((shore - .8) / 1.2));
       if (area > 0) {
         const verde = Math.max(...ajusteSolo.grama.map(p => intensidadePoligono(sx, sy, p, 10)));
         grama += (verde - grama) * area;
+        grama *= 1 - faixaOeste * (1 - smooth((shore - .8) / 1.2));
         r += 16 * area; g += 9 * area; b -= 12 * area;
       }
     }

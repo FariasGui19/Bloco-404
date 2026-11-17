@@ -54,12 +54,11 @@ for (const [x, y] of [[16.4,32.4],[16.1,32.1],[15.8,31.8],[15.5,31.5],[15.2,31.2
   assert(Math.hypot(jogador.x - x, jogador.y - y) < .001, 'degraus devem ser acessíveis a pé');
 }
 assert(main.includes('assets/sprites/enseada-estacao/terraco-curto.png'));
-// A costa agora é traçada da referência (`tools/tracar-enseada-chao.py`).
-// Nesse ponto a arte mostra a encosta verde da montanha, não mar — a
-// asserção antiga vinha do preenchimento manual de grade.
+// O recuo solicitado remove a ponta costeira a leste da estação;
+// a grade original permanece como fonte, mas aqui a costa passa a ser mar.
 const { CHAO } = await import('../js/data/enseada-chao.js');
 assert(CHAO[9][21] !== '.', 'tile 21,9 deve ser terra (encosta da estação)');
-assert('SMT'.includes(map.aguaPraia[9][21]), 'tile 21,9 deve ser terra caminhável');
+assert('YyDdX'.includes(map.aguaPraia[9][21]), 'tile 21,9 fica no recuo costeiro');
 
 // Pedido atual: orientação da tenda/relógio e cesto visível no lugar do painel.
 const obj = id => map.objects.find(o => o.id === id);

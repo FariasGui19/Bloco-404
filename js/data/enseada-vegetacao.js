@@ -97,7 +97,7 @@ export const VEGETACAO = [
   ['J', 40.8, 46.6, 55], ['F', 40.55, 46.55, 58],
 
   // Dois coqueiros sustentam a rede de descanso na areia.
-  ['P', 38.28, 49.94, 74], ['B', 44.20, 50.15, 78],
+  ['P', 38.28, 49.94, 74],
 
   // ---------- Moitas e arbustos floridos soltos (recheio, não mata) ----------
   ['D', 21.0, 44.2, 100], ['D', 24.8, 41.4, 108], ['D', 31.2, 41.0, 110],

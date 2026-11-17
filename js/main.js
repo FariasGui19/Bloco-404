@@ -606,6 +606,8 @@ await loadSprites([
   { id: 'enseada_portal_sudeste_rochedo', src: 'assets/sprites/enseada-lote2/portal-sudeste-rochedo.png' },
   { id: 'enseada_monolito_vertical', src: 'assets/sprites/enseada-lote2/monolito-eco-vertical.png' },
   { id: 'enseada_calcada_central', src: 'assets/sprites/enseada-lote2/calcada-central.png' },
+  { id: 'enseada_parede_escada', src: 'assets/sprites/enseada-lote2/parede-camp-embutida.png' },
+  { id: 'enseada_rede_descanso', src: 'assets/sprites/enseada-lote2/rede-descanso.png' },
   { id: 'enseada_concha_gigante', src: 'assets/sprites/enseada-lote2/concha-gigante.png' },
   { id: 'enseada_promontorio_sudeste', src: 'assets/sprites/enseada-lote2/promontorio-sudeste.png' },
   { id: 'enseada_rede_praia_branca', src: 'assets/sprites/enseada-lote2/rede-praia-branca.png' },

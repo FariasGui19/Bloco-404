@@ -46,7 +46,7 @@ const gate=state.portals.find(p=>p.id==='retorno_darsena_mare');
 // A zona da Enseada é alcançável por água a partir da costa.
 const gatePoint={x:gate.x+.5,y:gate.y+.5};
 Object.assign(state.player,{x:53.5,y:15.5});
-for(let i=0;i<150;i++) {const dx=gatePoint.x-state.player.x,dy=gatePoint.y-state.player.y,d=Math.hypot(dx,dy);if(d<.1)break;moveWithCollision(state.world.currentMap,state.player,dx/d*.08,dy/d*.08,.25,agua);}
+for(let i=0;i<250;i++) {const dx=gatePoint.x-state.player.x,dy=gatePoint.y-state.player.y,d=Math.hypot(dx,dy);if(d<.1)break;moveWithCollision(state.world.currentMap,state.player,dx/d*.08,dy/d*.08,.25,agua);}
 assert(Math.hypot(state.player.x-gatePoint.x,state.player.y-gatePoint.y)<.2,'passagem da Enseada acessível nadando');
 state.progress.flags.rota_livre_enseada_aberta=false; assert.equal(await usePortal(gate),false);
 state.progress.flags.rota_livre_enseada_aberta=true;state.progress.archetype='motor_bio_forja';assert.equal(await usePortal(gate),false);

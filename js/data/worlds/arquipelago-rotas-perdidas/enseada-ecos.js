@@ -371,13 +371,7 @@ export const map = {
     // palmeiras médias e árvores arredondadas, como na referência.
     ...[
       // [x, y, sprite, larguraPx, espelhar]
-      [26.4, 26.6, 'enseada_ne_palmeira', 145, false],
-      [28.2, 24.8, 'enseada_camp_ref_arvore', 150, false],
       [27.4, 28.6, 'enseada_ne_palmeira', 132, true],
-      [25.6, 24.6, 'enseada_camp_ref_arvore', 155, true],
-      [27.0, 22.8, 'enseada_ne_palmeira', 138, false],
-      [28.8, 25.2, 'enseada_camp_ref_arvore', 148, true],
-      [29.2, 21.6, 'enseada_ne_palmeira', 130, true],
       [30.4, 24.0, 'enseada_ne_arbusto_florido', 92, false],
     ].map(([x, y, sprite, larguraPx, espelhar], i) => ({
       id: `enseada_mata_transicao_norte_${i + 1}`, tipo: 'decoracao', x, y,
@@ -386,14 +380,10 @@ export const map = {
     })),
     ...[
       // [x, y, sprite, larguraPx, espelhar]
-      [25.0, 24.6, 'enseada_ne_mata_densa', 250, false],
       [28.4, 23.6, 'enseada_ne_arbusto_florido', 96, true],
-      [31.4, 24.2, 'enseada_ne_mata_densa', 215, true],
       [35.0, 24.0, 'enseada_ne_arbusto_florido', 88, false],
       [38.4, 25.0, 'enseada_ne_mata_densa', 195, false],
       [41.6, 26.6, 'enseada_ne_arbusto_florido', 80, true],
-      [44.4, 28.6, 'enseada_ne_palmeira', 150, false],
-      [46.6, 30.8, 'enseada_ne_palmeira', 120, true],
     ].map(([x, y, sprite, larguraPx, espelhar], i) => ({
       id: `enseada_ne_mata_${i + 1}`, tipo: 'decoracao', x, y,
       sprite, useCrop: true, larguraPx, espelhar,
@@ -549,9 +539,9 @@ export const map = {
     {
       // Degraus de pedra EMBUTIDOS no paredão do platô, logo abaixo da
       // fogueira e do tronco, sobre a borda frontal do terraço.
-      id: 'enseada_escada_camp', tipo: 'decoracao', x: 21.10, y: 37.98,
-      sprite: 'enseada_camp_escada', useCrop: true, larguraPx: 118,
-      pivotX: 0.5, pivotY: 0.97, depthOffset: 0.6, bloqueia: false,
+      id: 'enseada_escada_camp', tipo: 'decoracao', x: 11.24, y: 41.30,
+      sprite: 'enseada_parede_escada', useCrop: true, larguraPx: 826, escalaY: 0.42,
+      pivotX: 0.04, pivotY: 0.04, camada: 'fundo', ordem: 0, bloqueia: false,
     },
     {
       // Movido para sudoeste: o terminal de manutencao senta em (18.5, 38.1)
@@ -573,7 +563,7 @@ export const map = {
 
     // ---- SETOR 3 (Oeste): Pórtico + bosques ----
     {
-      id: 'portico_trilha_praia', nome: 'PÓRTICO DA TRILHA', tipo: 'decoracao', x: 14.03, y: 53.44,
+      id: 'portico_trilha_praia', nome: 'PÓRTICO DA TRILHA', tipo: 'decoracao', x: 16.4, y: 53.84,
       sprite: 'enseada3_portico_oeste', spriteB: 'enseada3_portico_oeste', animPeriodo: 0.54,
       useCrop: true, larguraPx: 150, pivotX: 0.5, pivotY: 0.98,
       bloqueia: false, oscilaBrisa: true, brilho: { cor: '#ffb86b', raio: 1.0, forca: 0.16 },
@@ -707,17 +697,13 @@ export const map = {
     },
     {
       // A referência desenha esta rede em branco-azulado, pendurada entre dois
-      // mourões na areia logo abaixo da praça do espelho (600,600 no pôster).
-      // É a mesma peça do sprite de treino, com a malha clareada.
+      // Rede de descanso entre os coqueiros, sem postes nem colisão adicional.
       id: 'rede_treino_praia_enseada', nome: 'REDE DE DESCANSO DA PRAIA', tipo: 'decoracao', x: 42.75, y: 51.34,
-      sprite: 'enseada_rede_praia_branca', useCrop: true, larguraPx: 220,
+      sprite: 'enseada_rede_descanso', useCrop: true, larguraPx: 220,
       pivotX: 0.5, pivotY: 0.98, depthOffset: 0.2,
-      bloqueia: true, hitboxes: [
-        { offsetX: -1.28, offsetY: -0.24, width: 0.30, height: 0.48 },
-        { offsetX: 0.98, offsetY: -0.24, width: 0.30, height: 0.48 },
-      ],
-      interacao: { label: 'PRATICAR NA REDE DA PRAIA', distancia: 1.8, speaker: 'REDE DE TREINO',
-        dialogue: ['A REDE MARCA UM ESPAÇO LIVRE PARA TREINAR. A AREIA AO REDOR ESTÁ FIRME E SEM OBSTÁCULOS.'] },
+      bloqueia: false,
+      interacao: { label: 'DESCANSAR NA REDE DA PRAIA', distancia: 1.8, speaker: 'REDE DE DESCANSO',
+        dialogue: ['A REDE BALANÇA ENTRE OS COQUEIROS, CONVIDANDO A UM MOMENTO DE DESCANSO.'] },
     },
     {
       // Portal da costa leste: a arte da referência é um arco de pedra com
@@ -731,8 +717,7 @@ export const map = {
       // testes de interação).
       id: 'portal_submarino_sul', tipo: 'decoracao', x: 48.97, y: 17.88, renderizar: false,
       sprite: 'enseada3_portal_recife', useCrop: true, larguraPx: 236,
-      pivotX: 0.5, pivotY: 0.96, depthOffset: -6, bloqueia: true,
-      hitbox: { offsetX: -0.30, offsetY: -0.30, width: 0.60, height: 0.60 },
+      pivotX: 0.5, pivotY: 0.96, depthOffset: -6, bloqueia: false,
       nome: 'PORTAL SUBMARINO DE CORAL',
     },
     {
@@ -1029,9 +1014,8 @@ export const map = {
       pivotX: 0.5, pivotY: 0.96, depthOffset: -0.3, bloqueia: false,
     },
     {
-      // Poste de lampião da referência fica na praia leste, ao lado do píer —
-      // não no meio da praça do espelho (era o que aparecia em cima da concha).
-      id: 'poste_lanterna_madeira', tipo: 'decoracao', x: 42.75, y: 39.47,
+      // Mantém o identificador legado, mas não desenha o poste sobre o píer.
+      id: 'poste_lanterna_madeira', tipo: 'decoracao', x: 42.75, y: 39.47, renderizar: false,
       sprite: 'enseada6_poste', useCrop: true, larguraPx: 50,
       pivotX: 0.5, pivotY: 0.96, depthOffset: -0.3, bloqueia: false,
     },

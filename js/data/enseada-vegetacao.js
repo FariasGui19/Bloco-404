@@ -40,8 +40,10 @@ export const VEGETACAO = [
 
 
   // ---------- Palmeiral em frente à piscina da capivara ----------
-  ['P', 23.2, 49.4, 94], ['P', 24.4, 48.2, 90],
-  ['J', 25.2, 47.1, 78], ['P', 26.1, 46.0, 86],
+  ['P', 20.6, 51.6, 88], ['J', 22.3, 50.8, 74],
+  ['P', 26.1, 46.0, 86],
+  // Dois coqueiros discretos ao fundo da gruta e dos cristais.
+  ['B', 28.2, 43.0, 82], ['P', 29.15, 42.05, 76],
 
 
   // ---------- Palmeiras do norte do platô (gramado atrás da bancada) ----------
@@ -72,8 +74,8 @@ export const VEGETACAO = [
   // Faixa livre para a lanterna e o acesso ao cais.
 
   // ---------- Matinha da praia sudoeste (pôster 100–200, 560–640) ----------
-  ['T', 25.6, 62.4, 176], ['T', 27.2, 61.0, 168],
-  ['B', 24.4, 63.6, 92], ['P', 28.6, 59.8, 86], ['J', 26.4, 64.2, 74],
+  ['T', 20.9, 52.6, 160], ['T', 23.4, 51.3, 150],
+  ['B', 20.6, 53.7, 88], ['P', 23.7, 51.6, 82], ['J', 22.6, 53.7, 72],
 
   // ---------- Palmeiras e moitas do litoral leste ----------
   ['J', 53.0, 35.4, 74],

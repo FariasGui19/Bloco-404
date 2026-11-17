@@ -47,6 +47,7 @@ const { view, camera } = await import('../../js/engine/camera.js');
 const { initRenderer, render } = await import('../../js/engine/renderer.js');
 const { loadSprites } = await import('../../js/engine/sprites.js');
 const { map } = await import('../../js/data/worlds/arquipelago-rotas-perdidas/enseada-ecos.js');
+const { createCoastalFauna } = await import('../../js/game/fauna-costeira.js');
 
 // --only=id1,id2 desenha só esses objetos; --except=id1,id2 esconde esses.
 // Serve para identificar qual sprite está em cada ponto sem adivinhar.
@@ -89,8 +90,8 @@ const lista = [...src.matchAll(/\{ id: '([^']+)', src: '([^']+)' \}/g)]
 await loadSprites(lista);
 
 const state = {
-  player: { x: cx, y: cy, nado: null, ability: {}, health: 100, maxHealth: 100, energy: 60, maxEnergy: 100, facing: [1, 1] },
-  actors: [], fauna: [], companion: null, collectibles: [], hazards: [], trainingTargets: [],
+  player: { x: process.argv.includes('--sem-jogador') ? -100 : cx, y: process.argv.includes('--sem-jogador') ? -100 : cy, nado: null, ability: {}, health: 100, maxHealth: 100, energy: 60, maxEnergy: 100, facing: [1, 1] },
+  actors: [], fauna: process.argv.includes('--fauna') ? createCoastalFauna(map) : [], companion: null, collectibles: [], hazards: [], trainingTargets: [],
   objects: (map.objects ?? [])
     .map(o => ({ ...o, x: o.x + .5, y: o.y + .5, renderType: 'object' }))
     .filter(filtroArgs),

@@ -211,9 +211,9 @@ export const map = {
     {
       id: 'poca_cascata_enseada',
       nome: 'PISCINA DE MARÉ VIVA',
-      x: 26.5, y: 51.6, rx: 1.45, ry: 1.15,
+      x: 28.3, y: 51.65, rx: 1.45, ry: 1.15,
       profundidade: 0.45,
-      treino: true, renderizar: false,
+      treino: true, renderizar: false, ocultarMarcador: true,
     },
   ],
 
@@ -235,7 +235,7 @@ export const map = {
     { x: 2.5, y: 24.5, tipo: 'ruina-submersa', origem: 'mar-vivo', tamanho: 1.1 },
   ],
 
-  trainingTargets: [{ id: 'eco_treino_enseada', x: 25.9, y: 53.2, maxHealth: 60 }],
+  trainingTargets: [],
 
   hazards: [
     { id: 'eco_instavel_oeste', x: 10.7, y: 41.2, radius: 0.9, damage: 9, interval: 1.3 },
@@ -264,7 +264,7 @@ export const map = {
     { id: 'enseada_tartaruga_cais', species: 'tartaruga', x: 53, y: 55 },
     // Cardume no canto sudeste, girando perto das boias do conduto.
     { id: 'enseada_cardume_sudeste', species: 'peixes', x: 55, y: 50 },
-    { id: 'enseada_capivara', species: 'capivara', x: 25.5, y: 49.8, calma: true,
+    { id: 'enseada_capivara', species: 'capivara', x: 27.6, y: 50.7, calma: true,
       interacao: {
         distancia: 1.45, speaker: 'CAPIVARA DA PISCINA',
         dialogue: ['ELA DESCANSA NA ÁGUA MORNA DA PISCINA, COMPLETAMENTE TRANQUILA COM SUA PRESENÇA.'],
@@ -570,7 +570,7 @@ export const map = {
 
     // ---- SETOR 3 (Oeste): Pórtico + bosques ----
     {
-      id: 'portico_trilha_praia', nome: 'PÓRTICO DA TRILHA', tipo: 'decoracao', x: 16.4, y: 53.84,
+      id: 'portico_trilha_praia', nome: 'PÓRTICO DA TRILHA', tipo: 'decoracao', x: 16.45, y: 54.45,
       sprite: 'enseada3_portico_oeste', spriteB: 'enseada3_portico_oeste', animPeriodo: 0.54,
       useCrop: true, larguraPx: 150, pivotX: 0.5, pivotY: 0.98,
       bloqueia: false, oscilaBrisa: true, brilho: { cor: '#ffb86b', raio: 1.0, forca: 0.16 },
@@ -579,7 +579,7 @@ export const map = {
       // Movido para a borda oeste do platô. Em (16.0, 40.0) os dois tubos
       // cruzados do carrilhão caíam exatamente sobre o tronco e liam como
       // "duas toras em X".
-      id: 'carrilhao_vento_enseada', nome: 'CARRILHÃO DE VENTO', tipo: 'decoracao', x: 16.56, y: 46.28,
+      id: 'carrilhao_vento_enseada', nome: 'CARRILHÃO DE VENTO', tipo: 'decoracao', x: 16.2, y: 50.4,
       sprite: 'enseada_carrilhao_vento', spriteB: 'enseada_carrilhao_vento_b', animPeriodo: 0.58,
       useCrop: true, larguraPx: 60, pivotX: 0.5, pivotY: 0.96,
       bloqueia: false, oscilaBrisa: true,
@@ -639,10 +639,10 @@ export const map = {
     {
       // A piscina da capivara da arte é a bacia de pedras redonda com
       // cascatinha e juncos no canto — não a tina termal retangular cinza.
-      id: 'piscina_mare_viva_enseada', nome: 'PISCINA TERMAL', tipo: 'decoracao', x: 26.88, y: 51.22,
+      id: 'piscina_mare_viva_enseada', nome: 'PISCINA TERMAL', tipo: 'decoracao', x: 28.3, y: 51.65,
       sprite: 'enseada3_piscina', useCrop: true, larguraPx: 300,
-      pivotX: 0.5, pivotY: 0.92, vaporTermal: true,
-      bloqueia: false, pulsoBiolum: '#5cf7eb', brilho: { cor: '#5cf7eb', raio: 1.25, forca: 0.26 },
+      pivotX: 0.5, pivotY: 0.92, depthOffset: -4,
+      bloqueia: false,
       interacao: { label: 'MERGULHAR AS MÃOS NA ÁGUA TERMAL', distancia: 1.65 },
     },
     {
@@ -689,11 +689,27 @@ export const map = {
     },
     {
       // Gruta nítida, proporcional ao espelho e junto à borda da calçada.
-      id: 'gruta_concha_enseada', nome: 'CONCHA GIGANTE', tipo: 'decoracao', x: 29.2, y: 43.1,
-      sprite: 'enseada_concha_gigante', useCrop: true, larguraPx: 145, pivotX: 0.5, pivotY: 0.97,
+      id: 'gruta_concha_enseada', nome: 'CONCHA GIGANTE', tipo: 'decoracao', x: 29.0, y: 45.8,
+      sprite: 'enseada_gruta_oeste', useCrop: true, larguraPx: 130, pivotX: 0.5, pivotY: 0.97,
       bloqueia: true, hitbox: { offsetX: -0.45, offsetY: -0.28, width: 0.9, height: 0.56 },
       interacao: { label: 'ABRIGAR-SE NA GRUTA-CONCHA', distancia: 1.7 },
     },
+    {
+      id: 'cristais_corais_gruta_oeste', tipo: 'decoracao', x: 30.9, y: 44.5,
+      sprite: 'enseada_cristais_oeste', useCrop: true, larguraPx: 67,
+      pivotX: 0.5, pivotY: 0.97, bloqueia: false,
+    },
+    {
+      id: 'bambus_portico_oeste', tipo: 'decoracao', x: 17.0, y: 53.0,
+      sprite: 'enseada_bambus_oeste', useCrop: true, larguraPx: 65,
+      pivotX: 0.5, pivotY: 0.97, bloqueia: false,
+    },
+    // Vegetação baixa quebra a silhueta da base, sem fechar a escada.
+    ...[[16.4, 43.3, 48], [18.3, 42.2, 38], [20.0, 40.7, 48], [23.8, 37.3, 38]].map(([x, y, larguraPx], i) => ({
+      id: `tufos_encosta_oeste_${i + 1}`, tipo: 'decoracao', x, y,
+      sprite: 'enseada_ne_arbustos', useCrop: true, larguraPx,
+      pivotX: 0.5, pivotY: 0.97, bloqueia: false,
+    })),
     {
       // A arte não tem caverna de pedra na praia oeste: o que existe ali é a
       // Concha Gigante acima do Espelho. O objeto fica na lista (interação e
@@ -908,10 +924,10 @@ export const map = {
       interacao: { label: 'OBSERVAR O POLEIRO', distancia: 1.5 },
     },
     {
-      id: 'fonte_termal_enseada', nome: 'FONTE TERMAL DA ENSEADA', tipo: 'decoracao', x: 29.0, y: 53.0,
+      id: 'fonte_termal_enseada', nome: 'FONTE TERMAL DA ENSEADA', tipo: 'decoracao', x: 29.0, y: 53.0, renderizar: false,
       sprite: 'enseada_fonte_termal', spriteB: 'enseada_fonte_termal_b', animPeriodo: 0.58,
       useCrop: true, larguraPx: 90, pivotX: 0.5, pivotY: 0.9,
-      bloqueia: false, vaporTermal: true, brilho: { cor: '#7efce0', raio: 1.4, forca: 0.28 },
+      bloqueia: false,
       interacao: { label: 'DESCANSAR NA FONTE TERMAL', distancia: 1.7 },
     },
     {
@@ -919,9 +935,9 @@ export const map = {
       // coqueiros centrais (630,490 no pôster). A referência tem DOIS conchas
       // grandes na praia; antes só a da piscina existia.
       id: 'concha_praia_central_enseada', nome: 'CONCHA DA PRAIA CENTRAL', tipo: 'decoracao',
-      x: 37.88, y: 43.97,
-      sprite: 'beach_props', frame: { col: 1, row: 3 },
-      useCrop: true, larguraPx: 92, pivotX: 0.5, pivotY: 0.98,
+      x: 39.25, y: 47.65,
+      sprite: 'enseada_concha_perola_oeste',
+      useCrop: true, larguraPx: 80, pivotX: 0.5, pivotY: 0.98,
       bloqueia: false,
       interacao: { label: 'EXAMINAR A CONCHA DA PRAIA', distancia: 1.4 },
     },

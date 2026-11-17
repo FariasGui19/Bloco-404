@@ -5,7 +5,7 @@ import { VEGETACAO } from '../js/data/enseada-vegetacao.js';
 const get = id => { const obj = map.objects.find(o => o.id === id); assert(obj, id); return obj; };
 const shell = get('gruta_concha_enseada'), mirror = get('espelho_arquetipos_enseada');
 // No isométrico, x-y determina a posição horizontal e x+y a vertical.
-assert(Math.abs((shell.x-shell.y)-(mirror.x-mirror.y)) < 1, 'gruta alinhada com espelho');
+assert(shell.x-shell.y < mirror.x-mirror.y-1, 'gruta à esquerda do espelho');
 assert(shell.x+shell.y < mirror.x+mirror.y-5, 'gruta acima do espelho');
 assert(shell.larguraPx < mirror.larguraPx, 'gruta proporcional à praça do espelho');
 assert.equal(get('santuario_lumeo_enseada').renderizar, false);

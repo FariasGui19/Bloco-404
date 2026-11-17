@@ -5,7 +5,7 @@ import { buildGround } from '../../ground.js';
 import { relevo } from '../../relevo-praia.js';
 import { flora } from '../../flora-praia.js';
 import { CHAO } from '../../enseada-chao.js';
-import { VEGETACAO } from '../../enseada-vegetacao.js';
+import { VEGETACAO, SPRITES_VEGETACAO } from '../../enseada-vegetacao.js';
 
 const COLS = 72;
 const ROWS = 64;
@@ -210,7 +210,7 @@ export const map = {
     {
       id: 'poca_cascata_enseada',
       nome: 'PISCINA DE MARÉ VIVA',
-      x: 28.0, y: 50.0, rx: 1.8, ry: 1.25,
+      x: 26.5, y: 51.6, rx: 1.45, ry: 1.15,
       profundidade: 0.45,
       treino: true,
     },
@@ -242,22 +242,12 @@ export const map = {
   ],
 
   fauna: [
-    {
-      id: 'enseada_caranguejo_1', species: 'caranguejo', x: 21.5, y: 55.1, calma: true,
-      interacao: {
-        distancia: 1.35, speaker: 'CARANGUEJO DA ORLA',
-        dialogue: ['ELE MOVE AS PINÇAS NO RITMO DAS ONDAS, COMO SE MEDISSE A MARÉ.'],
-        porArquetipo: {
-          mare_astral: 'MARÉ ASTRAL: VOCÊ PERCEBE QUE ELE SE ENTERRA MAIS FUNDO ANTES DE VIRADAS DE RESSACA.',
-          motor_bio_forja: 'BIO-FORJA: CARAPAÇA LIMPA, SEM PLÁSTICO NEM ÓLEO — SINAL DE ÁGUA SAUDVEL.',
-        },
-      },
-    },
-    { id: 'enseada_caranguejo_2', species: 'caranguejo', x: 53, y: 33 },
-    // Caranguejos-vermelhos na areia da enseada sul, como no pôster.
-    { id: 'enseada_caranguejo_areia_1', species: 'caranguejo', x: 37.5, y: 55.4 },
-    { id: 'enseada_caranguejo_areia_2', species: 'caranguejo', x: 40.6, y: 52.6 },
-    { id: 'enseada_caranguejo_areia_3', species: 'caranguejo', x: 43.2, y: 55.8 },
+    // Os DOIS caranguejos-vermelhos da arte: os únicos bichos da espécie no
+    // mapa, na areia da praia leste, perto do veleiro e do píer
+    // (pôster 1042,535 e 1072,523). O que estava na areia do sudeste e o da
+    // escada do acampamento não existem na referência.
+    { id: 'enseada_caranguejo_areia_1', species: 'caranguejo', x: 53.0, y: 33.06 },
+    { id: 'enseada_caranguejo_areia_2', species: 'caranguejo', x: 53.19, y: 31.16 },
     { id: 'enseada_gaivota', species: 'gaivota', x: 23.4, y: 37 },
     { id: 'enseada_trinta_reis', species: 'trinta_reis', x: 27.1, y: 35.7 },
     { id: 'enseada_peixes', species: 'peixes', x: 10.9, y: 53.2 },
@@ -287,16 +277,20 @@ export const map = {
 
   objects: [
     // ---------------------------------------------------------------------
-    // VEGETAÇÃO TRAÇADA DA ARTE (`enseada-vegetacao.js`): uma planta por
-    // célula de mata da referência. Substitui a mata antiga, que tinha sido
-    // posicionada para a geometria anterior e por isso flutuava sobre a
-    // praia e amontoava palmeiras em cima do acampamento.
+    // VEGETAÇÃO LIDA À MÃO NA ARTE (`enseada-vegetacao.js`): cada entrada é um
+    // grupo com palmeira alta, palmeira de copa cheia, palmeira baixa, jovem,
+    // árvore frondosa, moita ou arbusto florido, na posição em que ele aparece
+    // no pôster. O gerador automático foi desligado — ele repetia o mesmo
+    // sprite em blocos quadrados e plantava palmeiras em cima da cachoeira e
+    // da placa "ESTAÇÃO 66.6".
     // ---------------------------------------------------------------------
-    ...VEGETACAO.map(([x, y, largura, densidade], i) => ({
-      id: `enseada_mata_arte_${i + 1}`, tipo: 'decoracao', x, y,
-      sprite: densidade >= 0.55 ? 'enseada_ne_mata_densa' : 'enseada3_palmeiral',
-      useCrop: true, larguraPx: largura,
+    ...VEGETACAO.map(([tipo, x, y, largura], i) => ({
+      id: `enseada_vegetacao_${i + 1}`, tipo: 'decoracao', x, y,
+      sprite: SPRITES_VEGETACAO[tipo], useCrop: true, larguraPx: largura,
       pivotX: 0.5, pivotY: 0.96, bloqueia: false,
+      // Palmeira e árvore de tronco: ordena pelo pé (a copa pode passar na
+      // frente de quem anda atrás dela, como na arte).
+      depthOffset: ['P', 'M', 'B', 'J', 'C', 'T', 'G'].includes(tipo) ? -0.35 : -0.2,
     })),
     // ---- Terminal (função preservada) ----
     {
@@ -418,8 +412,9 @@ export const map = {
     // mar parece começar do nada.
     ...[
       // [x, y, sprite, larguraPx]
-      [44.0, 24.2, 'enseada_ne_penhasco', 230],
-      [46.6, 21.4, 'enseada_ne_penhasco', 190],
+      // As duas falesias que ficavam ATRÁS do portal sudeste saíram: a arte
+      // tem uma só massa rochosa ali (o promontório recortado da referência),
+      // e as peças antigas apareciam como uma rocha cinza encavalada.
     ].map(([x, y, sprite, larguraPx], i) => ({
       id: `enseada_ne_falesia_${i + 1}`, tipo: 'decoracao', x, y,
       sprite, useCrop: true, larguraPx,
@@ -427,18 +422,14 @@ export const map = {
     })),
 
     // ---- Trilha de pedras: pórtico → espelho → cais (uma linha, sem ramal duplo) ----
-    ...[[14.5, 42.5], [15.8, 43.2], [17.2, 43.9], [18.6, 44.6], [20.0, 45.3], [21.4, 46.0], [22.8, 46.6], [24.2, 47.1], [25.6, 47.5], [27.0, 47.8], [28.4, 48.0], [29.8, 48.1], [31.2, 48.1], [32.6, 48.0], [34.0, 47.9], [35.4, 47.9], [36.8, 47.9], [38.2, 47.9], [39.6, 47.9], [41.0, 47.9], [42.4, 47.9], [43.8, 47.9]].map(([tx, ty], i) => ({
+    // Traçado da calçada contínua da arte (pórtico → clareira central): a peça
+    // `calcada_central_enseada` já é a faixa inteira, então NÃO se espalham
+    // pedrinhas soltas por cima da piscina, da laje do espelho nem do gramado.
+    ...[[16.4, 46.6], [18.0, 46.2], [19.6, 45.8], [21.2, 45.4]].map(([tx, ty], i) => ({
       id: `trilha_pedras_${i + 1}`,
       tipo: 'decoracao',
-      x: tx,
-      y: ty,
-      sprite: 'enseada_trilha_pedras',
-      useCrop: true,
-      larguraPx: 36,
-      pivotX: 0.5,
-      pivotY: 0.55,
-      depthOffset: -3,
-      bloqueia: false,
+      x: tx, y: ty, sprite: 'enseada_trilha_pedras', useCrop: true, larguraPx: 40,
+      pivotX: 0.5, pivotY: 0.9, depthOffset: -1, bloqueia: false,
     })),
 
     // ---- SETOR 2 (Noroeste): Acampamento ----
@@ -452,20 +443,22 @@ export const map = {
       // partir da silhueta medida na referência (grama, clareira de areia,
       // paredão e degraus). O ponto de encaixe é a base do paredão.
       id: 'enseada_terraco_acampamento', tipo: 'decoracao',
-      // Pé medido no pôster: o pedestal de pedra do platô termina em
-      // (457, 372) na arte; a mesa precisa cair ali, não 114 px acima.
-      x: 23.63, y: 41.06,
-      // 414 px de arte de largura (medido no pôster) — no render dá 467 px com
-      // 856, ou seja, 9% maior que a arte. 790 fecha a largura na referência.
-      sprite: 'enseada_setor1_plato', useCrop: true, larguraPx: 790,
-      pivotX: 0.5, pivotY: 1,
-      // `ordem: 0` na camada de fundo = desenhado DEPOIS do chão e ANTES dos
-      // props. Com `ordem: -2` o platô entrava antes da textura de areia e
-      // era coberto por ela (era por isso que só a borda de pedra aparecia).
-      camada: 'fundo', ordem: 0, bloqueia: false,
+      // Platô elevado do acampamento, medido no pôster: a borda de grama corre
+      // de (250,285) até (720,320) e o paredão de rocha desce ~50 px até o
+      // chão. A peça usada antes era uma laje de pedrinhas miúdas sem altura
+      // nenhuma — por isso o acampamento lia como adesivo plano colado na
+      // grama. `plato-sem-escada` é o mesmo terraço com grama, clareira de
+      // areia e o paredão de blocos na frente (a escada sai como objeto
+      // próprio, embutida no paredão, logo abaixo da fogueira).
+      // `escalaY` comprime só a altura: a arte do platô é mais redonda que a
+      // do pôster, que é um terraço achatado.
+      x: 14.74, y: 44.80,
+      sprite: 'enseada_setor1_plato_v3', useCrop: true, larguraPx: 826, escalaY: 0.3125,
+      pivotX: 0.04, pivotY: 0.90, skewY: 0.05,
+      camada: 'fundo', ordem: -1, bloqueia: false,
     },
     {
-      id: 'relogio_mare_enseada', nome: 'RELÓGIO DE MARÉ SOLAR', tipo: 'dispositivo', x: 13.22, y: 38.88,
+      id: 'relogio_mare_enseada', nome: 'RELÓGIO DE MARÉ SOLAR', tipo: 'dispositivo', x: 12.19, y: 38.16,
       sprite: 'enseada_camp_ref_relogio', animPeriodo: 0.6,
       useCrop: true, larguraPx: 64, pivotX: 0.5, pivotY: 0.98,
       bloqueia: true, hitbox: { offsetX: -0.22, offsetY: -0.22, width: 0.44, height: 0.44 },
@@ -473,7 +466,7 @@ export const map = {
       interacao: { label: 'SINTONIZAR CLIMA E MARÉ', distancia: 1.55 },
     },
     {
-      id: 'torre_antena_enseada', nome: 'TORRE-ANTENA DE ESCUTA', tipo: 'dispositivo', x: 16.47, y: 34.38,
+      id: 'torre_antena_enseada', nome: 'TORRE-ANTENA DE ESCUTA', tipo: 'dispositivo', x: 15.09, y: 33.13,
       sprite: 'enseada_camp_ref_torre_radio', animPeriodo: 0.5,
       useCrop: true, larguraPx: 100, pivotX: 0.5, pivotY: 0.98,
       bloqueia: true, hitbox: { offsetX: -0.30, offsetY: -0.28, width: 0.6, height: 0.56 },
@@ -481,7 +474,7 @@ export const map = {
       interacao: { label: 'SINTONIZAR TORRE-ANTENA', distancia: 1.55 },
     },
     {
-      id: 'bancada_campo_enseada', nome: 'BANCADA DE CAMPO', tipo: 'dispositivo', x: 15.63, y: 36.72,
+      id: 'bancada_campo_enseada', nome: 'BANCADA DE CAMPO', tipo: 'dispositivo', x: 15.13, y: 36.22,
       sprite: 'enseada_camp_ref_bancada', animPeriodo: 0.58,
       useCrop: true, larguraPx: 116, pivotX: 0.5, pivotY: 0.98,
       bloqueia: true, hitbox: { offsetX: -0.58, offsetY: -0.38, width: 1.16, height: 0.76 },
@@ -489,7 +482,7 @@ export const map = {
       interacao: { label: 'CALIBRAR MÓDULO NA BANCADA', distancia: 1.7 },
     },
     {
-      id: 'acampamento_vigilia_enseada', nome: 'ACAMPAMENTO DE VIGÍLIA', tipo: 'decoracao', x: 19.56, y: 36.03,
+      id: 'acampamento_vigilia_enseada', nome: 'ACAMPAMENTO DE VIGÍLIA', tipo: 'decoracao', x: 18.31, y: 34.78,
       sprite: 'enseada_camp_ref_fogueira', animPeriodo: 0.42,
       useCrop: true, larguraPx: 89, pivotX: 0.5, pivotY: 0.98,
       bloqueia: true, hitbox: { offsetX: -0.30, offsetY: -0.24, width: 0.60, height: 0.48 },
@@ -497,7 +490,7 @@ export const map = {
       interacao: { label: 'DESCANSAR NA FOGUEIRA', distancia: 1.6 },
     },
     {
-      id: 'tenda_expedicao_enseada', nome: 'TENDA DA EXPEDIÇÃO', tipo: 'decoracao', x: 19.50, y: 32.59,
+      id: 'tenda_expedicao_enseada', nome: 'TENDA DA EXPEDIÇÃO', tipo: 'decoracao', x: 18.31, y: 31.41,
       sprite: 'enseada_camp_ref_tenda_referencia', useCrop: true, larguraPx: 213,
       pivotX: 0.5, pivotY: 0.98,
       bloqueia: true, hitbox: { offsetX: -0.48, offsetY: -0.34, width: 0.96, height: 0.68 },
@@ -505,7 +498,7 @@ export const map = {
         dialogue: ['A LONA GUARDA MAPAS, ROLOS DE CORDA E UM COBERTOR DOBRADO. A EXPEDIÇÃO ESTÁ EM PLENA ATIVIDADE.'] },
     },
     {
-      id: 'maleta_expedicao_enseada', nome: 'MALETA DA EXPEDIÇÃO', tipo: 'dispositivo', x: 22.72, y: 32.75,
+      id: 'maleta_expedicao_enseada', nome: 'MALETA DA EXPEDIÇÃO', tipo: 'dispositivo', x: 21.38, y: 31.34,
       sprite: 'enseada_camp_ref_pilha_caixas', animPeriodo: 0.56,
       useCrop: true, larguraPx: 132, pivotX: 0.5, pivotY: 0.98,
       bloqueia: true, hitbox: { offsetX: -0.38, offsetY: -0.32, width: 0.76, height: 0.64 },
@@ -513,7 +506,7 @@ export const map = {
       interacao: { label: 'ABRIR MALETA DA EXPEDIÇÃO', distancia: 1.55 },
     },
     {
-      id: 'bandeirola_vento_enseada', nome: 'BIRUTA DA EXPEDIÇÃO', tipo: 'decoracao', x: 25.06, y: 35.53,
+      id: 'bandeirola_vento_enseada', nome: 'BIRUTA DA EXPEDIÇÃO', tipo: 'decoracao', x: 22.13, y: 28.22,
       sprite: 'enseada_biruta_camp',
       useCrop: true, larguraPx: 75, pivotX: 0.5, pivotY: 0.94,
       depthOffset: 3, bloqueia: false, oscilaBrisa: true,
@@ -522,22 +515,22 @@ export const map = {
     // Vegetação de fundo e pequenos objetos independentes, sem recobrir
     // a entrada da tenda. As coordenadas são as dos pés dos sprites.
     {
-      id: 'enseada_arvore_camp_esquerda', tipo: 'decoracao', x: 10.41, y: 22.44,
+      id: 'enseada_arvore_camp_esquerda', tipo: 'decoracao', x: 11.94, y: 28.03,
       sprite: 'enseada_camp_ref_arvore', useCrop: true, larguraPx: 159,
       pivotX: 0.5, pivotY: 0.98, bloqueia: false,
     },
     {
-      id: 'enseada_arvore_camp_direita', tipo: 'decoracao', x: 13.53, y: 20.56,
+      id: 'enseada_arvore_camp_direita', tipo: 'decoracao', x: 12.88, y: 27.72,
       sprite: 'enseada_camp_ref_arvore', useCrop: true, espelhar: true, larguraPx: 136,
       pivotX: 0.5, pivotY: 0.98, bloqueia: false,
     },
     {
-      id: 'enseada_cesto_ferramentas_camp', tipo: 'decoracao', x: 15.47, y: 38.75,
+      id: 'enseada_cesto_ferramentas_camp', tipo: 'decoracao', x: 13.97, y: 36.00,
       sprite: 'enseada_camp_ref_cesto_ferramentas', useCrop: true, larguraPx: 77,
       pivotX: 0.5, pivotY: 0.98, bloqueia: false,
     },
     {
-      id: 'enseada_caixa_atras_tenda', tipo: 'decoracao', x: 16.03, y: 31.06,
+      id: 'enseada_caixa_atras_tenda', tipo: 'decoracao', x: 20.16, y: 29.56,
       sprite: 'enseada_camp_ref_caixa', useCrop: true, larguraPx: 62,
       pivotX: 0.5, pivotY: 0.98, bloqueia: true,
       hitbox: { offsetX: -0.20, offsetY: -0.20, width: 0.4, height: 0.4 },
@@ -545,7 +538,7 @@ export const map = {
     {
       // O caixote solto fica entre a fogueira e a tenda, logo atrás da
       // fogueira na arte medida (500, 258) — não entre bancada e fogueira.
-      id: 'enseada_caixote_camp', tipo: 'decoracao', x: 20.41, y: 33.94,
+      id: 'enseada_caixote_camp', tipo: 'decoracao', x: 20.16, y: 32.94,
       sprite: 'enseada_camp_ref_caixa', useCrop: true, larguraPx: 44,
       pivotX: 0.5, pivotY: 0.98, bloqueia: true,
       hitbox: { offsetX: -0.15, offsetY: -0.15, width: 0.3, height: 0.3 },
@@ -553,35 +546,33 @@ export const map = {
 
     // Assento e palmeiras do acampamento: peças independentes da área jogável.
     {
-      // Degraus de pedra descendo do platô logo abaixo da fogueira e do
-      // tronco, como pedido. A arte tem uma trilha de terra ali; a escada é a
-      // peça que dá a subida visível na borda frontal do terraço.
-      // Pé no pôster: (452, 356) — a boca dos degraus no paredão.
-      id: 'enseada_escada_camp', tipo: 'decoracao', x: 22.38, y: 40.22,
-      sprite: 'enseada_camp_escada', useCrop: true, larguraPx: 190,
-      pivotX: 0.5, pivotY: 0.94, bloqueia: false,
+      // Degraus de pedra EMBUTIDOS no paredão do platô, logo abaixo da
+      // fogueira e do tronco, sobre a borda frontal do terraço.
+      id: 'enseada_escada_camp', tipo: 'decoracao', x: 21.10, y: 37.98,
+      sprite: 'enseada_camp_escada', useCrop: true, larguraPx: 118,
+      pivotX: 0.5, pivotY: 0.97, depthOffset: 0.6, bloqueia: false,
     },
     {
       // Movido para sudoeste: o terminal de manutencao senta em (18.5, 38.1)
       // e o banco, na posicao antiga, cobria o aparelho.
-      id: 'enseada_banco_tronco_camp', tipo: 'decoracao', x: 19.56, y: 38.78,
+      id: 'enseada_banco_tronco_camp', tipo: 'decoracao', x: 18.19, y: 37.53,
       sprite: 'enseada_camp_ref_tronco', useCrop: true, larguraPx: 112,
       pivotX: 0.5, pivotY: 0.98, bloqueia: false,
     },
     {
-      id: 'enseada_palmeira_camp_oeste', tipo: 'decoracao', x: 8.1, y: 30.1,
-      sprite: 'enseada6_palmeira', useCrop: true, larguraPx: 95,
-      pivotX: 0.5, pivotY: 0.98, ajusteY: -45, bloqueia: false,
+      id: 'enseada_palmeira_camp_oeste', tipo: 'decoracao', x: 12.4, y: 33.4,
+      sprite: 'enseada_ne_palmeira_media', useCrop: true, larguraPx: 92,
+      pivotX: 0.5, pivotY: 0.98, bloqueia: false,
     },
     {
-      id: 'enseada_palmeira_camp_norte', tipo: 'decoracao', x: 10.1, y: 29.5,
-      sprite: 'enseada6_palmeira', useCrop: true, larguraPx: 95,
-      pivotX: 0.5, pivotY: 0.98, ajusteY: -80, depthOffset: -4, bloqueia: false,
+      id: 'enseada_palmeira_camp_norte', tipo: 'decoracao', x: 14.4, y: 30.8,
+      sprite: 'enseada_ne_palmeira', useCrop: true, larguraPx: 84,
+      pivotX: 0.5, pivotY: 0.98, bloqueia: false,
     },
 
     // ---- SETOR 3 (Oeste): Pórtico + bosques ----
     {
-      id: 'portico_trilha_praia', nome: 'PÓRTICO DA TRILHA', tipo: 'decoracao', x: 12.12, y: 50.72,
+      id: 'portico_trilha_praia', nome: 'PÓRTICO DA TRILHA', tipo: 'decoracao', x: 15.53, y: 51.94,
       sprite: 'enseada3_portico_oeste', spriteB: 'enseada3_portico_oeste', animPeriodo: 0.54,
       useCrop: true, larguraPx: 150, pivotX: 0.5, pivotY: 0.98,
       bloqueia: false, oscilaBrisa: true, brilho: { cor: '#ffb86b', raio: 1.0, forca: 0.16 },
@@ -617,22 +608,22 @@ export const map = {
       // A referência desenha o monólito como laje alta plantada na clareira,
       // não sobre a base/pedestal largo do sprite antigo. O recorte vem da
       // própria arte (`monolito-eco-vertical.png`).
-      id: 'totem_eco_enseada', nome: 'MONÓLITO DE ECO', tipo: 'decoracao', x: 34.63, y: 35.59,
+      id: 'totem_eco_enseada', nome: 'MONÓLITO DE ECO', tipo: 'decoracao', x: 32.59, y: 35.75,
       sprite: 'enseada_monolito_vertical', spriteB: 'enseada_monolito_vertical', animPeriodo: 0.52,
-      useCrop: true, larguraPx: 150, pivotX: 0.5, pivotY: 0.98,
+      useCrop: true, larguraPx: 62, pivotX: 0.5, pivotY: 0.98,
       bloqueia: true, hitbox: { offsetX: -0.26, offsetY: -0.22, width: 0.52, height: 0.44 },
       pulsoTotem: true, brilho: { cor: '#52f6ff', raio: 1.4, forca: 0.32 },
       interacao: { label: 'EXAMINAR MONÓLITO DE ECO', distancia: 1.5 },
     },
     {
-      id: 'estela_navegadores_enseada', nome: 'ESTELA DOS NAVEGADORES', tipo: 'decoracao', x: 33.13, y: 38.09,
+      id: 'estela_navegadores_enseada', nome: 'ESTELA DOS NAVEGADORES', tipo: 'decoracao', x: 30.22, y: 37.25,
       sprite: 'enseada8_estela', spriteB: 'enseada8_estela', animPeriodo: 0.62,
       useCrop: true, larguraPx: 62, pivotX: 0.5, pivotY: 0.94,
       bloqueia: false, pulsoBiolum: '#6cf7ff', brilho: { cor: '#6cf7ff', raio: 1.35, forca: 0.3 },
       interacao: { label: 'DECIFRAR A ESTELA DOS NAVEGADORES', distancia: 1.6 },
     },
     {
-      id: 'jardim_pedras_enseada', nome: 'PEDRAS DO EQUILÍBRIO', tipo: 'decoracao', x: 35.19, y: 30.78,
+      id: 'jardim_pedras_enseada', nome: 'PEDRAS DO EQUILÍBRIO', tipo: 'decoracao', x: 34.13, y: 30.34,
       sprite: 'enseada4_cairn', spriteB: 'enseada4_cairn', animPeriodo: 0.64,
       useCrop: true, larguraPx: 80, pivotX: 0.5, pivotY: 0.98,
       bloqueia: true, hitbox: { offsetX: -0.30, offsetY: -0.24, width: 0.60, height: 0.48 },
@@ -648,16 +639,19 @@ export const map = {
 
     // ---- SETOR 5 (Sudoeste): Piscina + espelho + grutas + rede ----
     {
-      id: 'piscina_mare_viva_enseada', nome: 'PISCINA TERMAL', tipo: 'decoracao', x: 30.56, y: 52.28,
-      sprite: 'enseada3_piscina_termal', useCrop: true, larguraPx: 300,
-      pivotX: 0.5, pivotY: 0.90, vaporTermal: true,
+      // A piscina da capivara da arte é a bacia de pedras redonda com
+      // cascatinha e juncos no canto — não a tina termal retangular cinza.
+      id: 'piscina_mare_viva_enseada', nome: 'PISCINA TERMAL', tipo: 'decoracao', x: 26.88, y: 51.22,
+      sprite: 'enseada3_piscina', useCrop: true, larguraPx: 300,
+      pivotX: 0.5, pivotY: 0.92, vaporTermal: true,
       bloqueia: false, pulsoBiolum: '#5cf7eb', brilho: { cor: '#5cf7eb', raio: 1.25, forca: 0.26 },
       interacao: { label: 'MERGULHAR AS MÃOS NA ÁGUA TERMAL', distancia: 1.65 },
     },
     {
       // A capivara da referência, sentada dentro da piscina termal.
-      id: 'capivara_piscina_enseada', nome: 'CAPIVARA', tipo: 'fauna', x: 27.9, y: 49.9,
-      sprite: 'enseada3_capivara', useCrop: true, larguraPx: 42,
+      // Dentro da bacia da piscina, virada para leste como na arte.
+      id: 'capivara_piscina_enseada', nome: 'CAPIVARA', tipo: 'fauna', x: 26.5, y: 51.3,
+      sprite: 'enseada3_capivara', useCrop: true, larguraPx: 42, espelhar: true,
       pivotX: 0.5, pivotY: 0.97, depthOffset: 1, bloqueia: false,
     },
     {
@@ -692,17 +686,22 @@ export const map = {
     {
       // A referência desenha a Concha Gigante como monumento da praia oeste,
       // com a boca de cristais na altura de um personagem — não como toca.
-      id: 'gruta_concha_enseada', nome: 'CONCHA GIGANTE', tipo: 'decoracao', x: 25.88, y: 50.09,
-      sprite: 'enseada8_gruta', spriteB: 'enseada8_gruta', animPeriodo: 0.66,
-      useCrop: true, larguraPx: 250, pivotX: 0.5, pivotY: 0.98,
+      // A Concha Gigante da arte é a caramujeira bege com a boca escura,
+      // encostada logo ACIMA (nordeste) do Espelho, sob a curva da calçada.
+      // As peças antigas (gruta rosa de cristais / caverna de pedra) não
+      // existem no pôster; o sprite agora é recorte da própria referência.
+      id: 'gruta_concha_enseada', nome: 'CONCHA GIGANTE', tipo: 'decoracao', x: 28.03, y: 46.94,
+      sprite: 'enseada_concha_gigante', useCrop: true, larguraPx: 260, pivotX: 0.5, pivotY: 0.97,
       bloqueia: true, hitbox: { offsetX: -0.45, offsetY: -0.28, width: 0.9, height: 0.56 },
-      pulsoBiolum: '#54ccff', brilho: { cor: '#54ccff', raio: 1.3, forca: 0.28 },
       interacao: { label: 'ABRIGAR-SE NA GRUTA-CONCHA', distancia: 1.7 },
     },
     {
+      // A arte não tem caverna de pedra na praia oeste: o que existe ali é a
+      // Concha Gigante acima do Espelho. O objeto fica na lista (interação e
+      // testes) mas não é desenhado.
       id: 'enseada_gruta_pedra', nome: 'GRUTA DE PEDRA', tipo: 'decoracao', x: 32.0, y: 52.5,
       sprite: 'enseada4_gruta', useCrop: true, larguraPx: 110,
-      pivotX: 0.5, pivotY: 0.98, bloqueia: false,
+      pivotX: 0.5, pivotY: 0.98, bloqueia: false, renderizar: false,
       interacao: { label: 'EXAMINAR A GRUTA DE PEDRA', distancia: 1.6 },
     },
     {
@@ -725,7 +724,11 @@ export const map = {
       // plataforma de pedra cinza com cristais, que a arte não tem.
       // O pôster põe este arco em cima do rochedo da praia sudeste, ligado à
       // areia por pedras de travessia — não ilhado no meio do mar.
-      id: 'portal_submarino_sul', tipo: 'decoracao', x: 48.97, y: 17.88,
+      // DESLIGADO: era o arco antigo de pedra cinza, que ficava encavalado
+      // atrás do promontório novo. A peça `arco_conduto_retorno_mare` já traz
+      // o arco de coral da arte. O objeto permanece na lista (colisão e
+      // testes de interação).
+      id: 'portal_submarino_sul', tipo: 'decoracao', x: 48.97, y: 17.88, renderizar: false,
       sprite: 'enseada3_portal_recife', useCrop: true, larguraPx: 236,
       pivotX: 0.5, pivotY: 0.96, depthOffset: -6, bloqueia: true,
       hitbox: { offsetX: -0.30, offsetY: -0.30, width: 0.60, height: 0.60 },
@@ -829,14 +832,21 @@ export const map = {
       // Arco do conduto no promontório leste: mesma arte de coral da
       // referência. O sprite antigo (pedra cinza + cristais azuis) não existe
       // na arte e destoava da paleta do resto da costa.
-      id: 'arco_conduto_retorno_mare', tipo: 'decoracao', x: 55.75, y: 27.34,
-      sprite: 'enseada_portal_sudeste_rochedo', useCrop: true, espelhar: true,
-      larguraPx: 400, pivotX: 0.5, pivotY: 0.90, ajusteY: 0,
-      vorticidadeCorrentes: { x: 0, y: -356, rx: 31, ry: 78 },
+      // Peça ÚNICA: o promontório recortado da arte já traz o arco do conduto,
+      // o lajeado, a grama do topo e os corais da base rochosa. Antes havia
+      // duas peças sobrepostas aqui (o arco antigo de pedra cinza aparecia
+      // encavalado atrás do novo) e a base parecia pilha solta de pedras.
+      // Pé no pôster: a ponta leste do lajeado, em (1233,497). O recorte tem
+      // 140 px de largura na arte, então 140 é a largura em tela (antes estava
+      // em 410 e o promontório saía três vezes maior que o da referência).
+      id: 'arco_conduto_retorno_mare', tipo: 'decoracao', x: 51.6, y: 28.2,
+      sprite: 'enseada_promontorio_sudeste', useCrop: true,
+      larguraPx: 152, pivotX: 0.5, pivotY: 0.985,
+      vorticidadeCorrentes: { x: 0, y: -300, rx: 16, ry: 40 },
       bloqueia: false, brilho: { cor: '#5cf7eb', raio: 2.2, forca: 0.44 },
     },
     {
-      id: 'enseada_jardim_cercado', tipo: 'decoracao', x: 39.0, y: 30.09,
+      id: 'enseada_jardim_cercado', tipo: 'decoracao', x: 42.47, y: 35.63,
       sprite: 'enseada7_jardim', useCrop: true, larguraPx: 110,
       pivotX: 0.5, pivotY: 0.96, bloqueia: false,
       interacao: { label: 'EXAMINAR O JARDIM', distancia: 1.6 },
@@ -1018,17 +1028,14 @@ export const map = {
 
     // ---- SETOR 9 (Praia): detalhes pequenos na areia ----
     {
-      id: 'caranguejos_areia', tipo: 'decoracao', x: 38.0, y: 56.0,
-      sprite: 'enseada5_caranguejos', spriteB: 'enseada5_caranguejos_b', animPeriodo: 0.6, useCrop: true, larguraPx: 60,
-      pivotX: 0.5, pivotY: 0.96, depthOffset: -0.3, bloqueia: false,
-    },
-    {
       id: 'estrela_do_mar', tipo: 'decoracao', x: 34.0, y: 55.0,
       sprite: 'enseada6_estrela', useCrop: true, larguraPx: 60,
       pivotX: 0.5, pivotY: 0.96, depthOffset: -0.3, bloqueia: false,
     },
     {
-      id: 'poste_lanterna_madeira', tipo: 'decoracao', x: 30.0, y: 46.0,
+      // Poste de lampião da referência fica na praia leste, ao lado do píer —
+      // não no meio da praça do espelho (era o que aparecia em cima da concha).
+      id: 'poste_lanterna_madeira', tipo: 'decoracao', x: 44.75, y: 41.47,
       sprite: 'enseada6_poste', useCrop: true, larguraPx: 50,
       pivotX: 0.5, pivotY: 0.96, depthOffset: -0.3, bloqueia: false,
     },
@@ -1107,7 +1114,7 @@ export const map = {
       interactionDistance: 1.4, destino: { mapId: 'mar_caminho_das_correntes', spawnId: 'vindo_da_enseada' }, transition: 'fade',
     },
     {
-      id: 'retorno_darsena_mare', tipo: 'door', x: 56.5, y: 28.3, automaticoNado: true, raioAutomatico: 0.8,
+      id: 'retorno_darsena_mare', tipo: 'door', x: 53.0, y: 27.5, automaticoNado: true, raioAutomatico: 0.8,
       requiresFlag: 'rota_livre_enseada_aberta', lockedLabel: 'CONDUTO ABISSAL INATIVO',
       mensagemBloqueado: ['UM VÓRTICE PROFUNDO RESSOA COM A DÁRSENA DA MARÉ ASTRAL, MAS PERMANECE SELADO DO OUTRO LADO.'],
       label: 'NADAR: ROTA DAS MARÉS ATÉ A DÁRSENA', requiresArchetype: 'mare_astral',

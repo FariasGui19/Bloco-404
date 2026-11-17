@@ -67,7 +67,7 @@ assert(tent.y < fire.y, 'tenda ligeiramente atrás da fogueira');
 assert(table.x < bench.x && bench.x < fire.x && bench.y > fire.y, 'banco à frente e à esquerda da fogueira');
 assert.equal(object('enseada_banco_tronco_camp').sprite, 'enseada_camp_ref_tronco');
 for (const id of ['enseada_arvore_camp_esquerda', 'enseada_arvore_camp_direita', 'enseada_cesto_ferramentas_camp', 'enseada_caixa_atras_tenda', 'enseada_caixote_camp']) assert(object(id));
-assert(camp('enseada_caixa_atras_tenda').x > tent.x && Math.abs(camp('enseada_caixa_atras_tenda').y - tent.y) < 1, 'caixa alinhada à direita da tenda');
+assert(camp('enseada_caixa_atras_tenda').x < tent.x && camp('enseada_caixa_atras_tenda').y < tent.y && tent.y - camp('enseada_caixa_atras_tenda').y < 40, 'caixa atrás à esquerda da tenda');
 // O caixote solto fica à direita da fogueira, aproximadamente alinhado
 // com ela em profundidade, conforme as âncoras medidas no pôster.
 const caixote = camp('enseada_caixote_camp');

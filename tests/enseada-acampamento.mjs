@@ -60,3 +60,36 @@ assert(main.includes('assets/sprites/enseada-estacao/terraco-curto.png'));
 const { CHAO } = await import('../js/data/enseada-chao.js');
 assert(CHAO[9][21] !== '.', 'tile 21,9 deve ser terra (encosta da estação)');
 assert('SMT'.includes(map.aguaPraia[9][21]), 'tile 21,9 deve ser terra caminhável');
+
+// Pedido atual: orientação da tenda/relógio e cesto visível no lugar do painel.
+const obj = id => map.objects.find(o => o.id === id);
+assert(obj('relogio_mare_enseada').espelhar);
+assert(obj('tenda_expedicao_enseada').espelhar);
+assert.equal(obj('terminal_frequencia_666').sprite, 'enseada_camp_ref_cesto_ferramentas');
+assert.equal(obj('enseada_terraco_acampamento').sprite, 'enseada_camp_chao_completo');
+assert(obj('enseada_arvore_camp_esquerda').larguraPx > 159);
+assert(obj('enseada_arvore_camp_direita').larguraPx > 136);
+// Comparar projeção de tela: o cesto não pode invadir a bancada, e o banco
+// deve ficar acima da escada em vez de sobre os seus primeiros degraus.
+const tela = o => ({ x: (o.x-o.y)*32, y: (o.x+o.y)*16 });
+const bancada = obj('bancada_campo_enseada'), cesto = obj('terminal_frequencia_666');
+const banco = obj('enseada_banco_tronco_camp');
+assert(tela(cesto).x + cesto.larguraPx/2 <= tela(bancada).x - bancada.larguraPx/2 + 3, 'cesto ao lado da bancada');
+assert(tela(banco).y < (18.19 + 37.53)*16 - 25, 'banco retirado do topo da escada');
+assert(tela(bancada).y < (15.13 + 36.22)*16 - 10, 'bancada recuada');
+// Translação uniforme do conjunto deixa as distâncias relativas intactas.
+for (const [id, x, y] of [
+  ['relogio_mare_enseada', 12.19, 38.16], ['torre_antena_enseada', 15.09, 33.13],
+  ['bancada_campo_enseada', 14.75, 35.84], ['enseada_banco_tronco_camp', 16.465, 37.055],
+  ['acampamento_vigilia_enseada', 18.31, 34.78], ['tenda_expedicao_enseada', 18.31, 31.41],
+  ['maleta_expedicao_enseada', 21.38, 31.34], ['bandeirola_vento_enseada', 21.5, 29.75],
+  ['enseada_caixa_atras_tenda', 16.4, 31.3], ['enseada_caixote_camp', 20.16, 32.94],
+  ['terminal_frequencia_666', 13.8, 37.4],
+]) {
+  assert(Math.abs(obj(id).x - (x - .35)) < 1e-8 && Math.abs(obj(id).y - (y - .35)) < 1e-8, `${id}: translação uniforme`);
+}
+assert.equal(obj('bandeirola_vento_enseada').larguraPx, 130);
+for (const id of ['enseada_lateral_camp_esquerda', 'enseada_lateral_camp_direita']) {
+  assert.equal(obj(id).camada, 'fundo');
+  assert.equal(obj(id).bloqueia, false);
+}

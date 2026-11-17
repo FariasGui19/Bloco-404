@@ -183,15 +183,15 @@ export const map = {
   // Desenho local lido na referência: apenas a cor do chão do quadrante oeste.
   ajusteSolo: {
     ...REF,
-    area: [[80, 320], [540, 320], [575, 380], [575, 570], [500, 605], [75, 605]],
+    area: [[0, 140], [155, 140], [210, 270], [275, 312], [540, 320], [575, 380], [575, 570], [500, 605], [20, 605]],
     grama: [
       // Corredor abaixo da calçada, dos bambus aos coqueiros da gruta.
       [[156, 378], [222, 372], [300, 376], [370, 378], [435, 365], [500, 363],
-       [530, 388], [545, 455], [525, 477], [493, 485], [465, 480], [438, 465], [414, 440],
+       [530, 388], [535, 434], [515, 449], [490, 455], [466, 456], [438, 450], [414, 440],
        [390, 452], [365, 448], [337, 445], [307, 448], [267, 465], [219, 467], [171, 453]],
       // Vegetação encostada à face ocidental do paredão e junto ao sino.
-      [[173, 328], [230, 323], [305, 331], [390, 343], [400, 372], [353, 386],
-       [270, 385], [211, 390], [165, 373]],
+      [[174, 348], [181, 336], [197, 329], [230, 323], [305, 331], [390, 343], [400, 372], [353, 386],
+       [270, 385], [211, 390], [178, 380], [166, 368]],
     ],
   },
   passarelaSobreAgua: [...passarelaCorrentes],
@@ -567,12 +567,12 @@ export const map = {
       pivotX: 0.5, pivotY: 0.98, bloqueia: false,
     },
     {
-      id: 'enseada_palmeira_camp_oeste', tipo: 'decoracao', x: 12.4, y: 33.4,
+      id: 'enseada_palmeira_camp_oeste', tipo: 'decoracao', x: 12.4, y: 33.4, renderizar: false,
       sprite: 'enseada_ne_palmeira_media', useCrop: true, larguraPx: 92,
       pivotX: 0.5, pivotY: 0.98, bloqueia: false,
     },
     {
-      id: 'enseada_palmeira_camp_norte', tipo: 'decoracao', x: 14.4, y: 30.8,
+      id: 'enseada_palmeira_camp_norte', tipo: 'decoracao', x: 14.4, y: 30.8, renderizar: false,
       sprite: 'enseada_ne_palmeira', useCrop: true, larguraPx: 84,
       pivotX: 0.5, pivotY: 0.98, bloqueia: false,
     },
@@ -714,7 +714,7 @@ export const map = {
       pivotX: 0.5, pivotY: 0.97, bloqueia: false,
     },
     // Vegetação baixa quebra a silhueta da base, sem fechar a escada.
-    ...[[16.4, 43.3, 48], [18.3, 42.2, 38], [20.0, 40.7, 48], [23.8, 37.3, 38]].map(([x, y, larguraPx], i) => ({
+    ...[[17.4, 44.3, 48], [19.3, 43.2, 38], [21.0, 41.7, 48], [24.8, 38.3, 38]].map(([x, y, larguraPx], i) => ({
       id: `tufos_encosta_oeste_${i + 1}`, tipo: 'decoracao', x, y,
       sprite: 'enseada_ne_arbustos', useCrop: true, larguraPx,
       pivotX: 0.5, pivotY: 0.97, bloqueia: false,
@@ -946,9 +946,14 @@ export const map = {
       id: 'concha_praia_central_enseada', nome: 'CONCHA DA PRAIA CENTRAL', tipo: 'decoracao',
       x: 39.25, y: 47.65,
       sprite: 'enseada_concha_perola_oeste',
-      useCrop: true, larguraPx: 80, pivotX: 0.5, pivotY: 0.98,
+      espelhar: true, useCrop: true, larguraPx: 80, pivotX: 0.5, pivotY: 0.98,
       bloqueia: false,
       interacao: { label: 'EXAMINAR A CONCHA DA PRAIA', distancia: 1.4 },
+    },
+    {
+      id: 'arbusto_concha_perola_oeste', tipo: 'decoracao', x: 37.7, y: 45.55,
+      sprite: 'enseada_ne_arbusto_florido', useCrop: true, larguraPx: 55,
+      pivotX: 0.5, pivotY: 0.97, bloqueia: false,
     },
     {
       id: 'banco_conchas_enseada', nome: 'BANCO DE CONCHAS', tipo: 'decoracao', x: 38.5, y: 45.5,
@@ -1048,7 +1053,7 @@ export const map = {
     },
     {
       // Lanterna na areia à esquerda da entrada, sem cruzar o tabuleiro.
-      id: 'poste_lanterna_madeira', tipo: 'decoracao', x: 39.5, y: 46.3,
+      id: 'poste_lanterna_madeira', tipo: 'decoracao', x: 40.1, y: 46.9,
       sprite: 'enseada6_poste', useCrop: true, larguraPx: 30,
       pivotX: 0.5, pivotY: 0.96, depthOffset: -0.3, bloqueia: false,
     },

@@ -1,0 +1,20 @@
+import assert from 'node:assert/strict';
+import { map } from '../js/data/worlds/arquipelago-rotas-perdidas/enseada-ecos.js';
+import { VEGETACAO } from '../js/data/enseada-vegetacao.js';
+const obj = id => { const o = map.objects.find(v => v.id === id); assert(o, id); return o; };
+const concha = obj('concha_praia_central_enseada');
+assert.equal(concha.espelhar, true, 'concha menor deve olhar para o espelho');
+assert(concha.x-concha.y > obj('espelho_arquetipos_enseada').x-obj('espelho_arquetipos_enseada').y);
+assert(obj('arbusto_concha_perola_oeste'));
+const poste = obj('poste_lanterna_madeira');
+assert(poste.x + poste.y > 39.5 + 46.3, 'poste desceu na imagem');
+const rede = obj('rede_treino_praia_enseada');
+// Ancoragens em x isométrico: a rede tem largura de 220 pixels no mundo.
+const pontaEsq = (rede.x-rede.y)*32 - rede.larguraPx/2;
+const pontaDir = (rede.x-rede.y)*32 + rede.larguraPx/2;
+const palmeiras = VEGETACAO.filter(([tipo]) => ['P','B'].includes(tipo)).map(([,x,y])=>({x,y}));
+assert(palmeiras.some(p=>Math.abs((p.x-p.y)*32-pontaEsq) < 35 && Math.abs((p.x+p.y)-(rede.x+rede.y))<9), 'apoio esquerdo da rede');
+assert(palmeiras.some(p=>Math.abs((p.x-p.y)*32-pontaDir) < 35 && Math.abs((p.x+p.y)-(rede.x+rede.y))<9), 'apoio direito da rede');
+assert.equal(obj('enseada_palmeira_camp_oeste').renderizar, false, 'remove duplicação das palmeiras');
+assert.equal(obj('enseada_palmeira_camp_norte').renderizar, false, 'remove duplicação das palmeiras');
+console.log('Oeste: orientação da concha, poste e apoios da rede OK.');

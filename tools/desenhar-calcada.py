@@ -18,14 +18,15 @@ import math
 
 from PIL import Image, ImageDraw
 
-RAIZ = '/home/user/Bloco-404'
+from pathlib import Path
+RAIZ = Path(__file__).resolve().parents[1]
 S = 3  # supersampling
 
 # Pontos de controle da calçada no PÔSTER (px da arte de referência).
 PONTOS = [
-    (166, 407), (215, 398), (263, 393), (308, 392), (352, 399),
-    (396, 409), (441, 410), (487, 399), (531, 385), (576, 373),
-    (620, 359), (662, 347),
+    (166, 407), (210, 397), (250, 380), (295, 369), (340, 368),
+    (385, 369), (430, 370), (475, 372), (520, 369), (565, 361),
+    (615, 353), (662, 347),
 ]
 LARGURA = 34          # meia-espessura aparente da faixa, em px de pôster
 JUNTA = 13            # espaçamento das juntas transversais

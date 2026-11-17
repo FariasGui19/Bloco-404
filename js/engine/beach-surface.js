@@ -203,7 +203,7 @@ export function createBeachSurface(rows, scale = 16, { gramaInterior = false, ca
       }
     }
     // Só muda a cor: a trilha contínua não cria terra nem muda colisões.
-    if (trilhaEstacaoPortal.length && x >= 14 && x <= 51 && y >= 15 && y <= 30) {
+    if (trilhaEstacaoPortal.length && x >= 14 && x <= 51 && y >= 15 && y <= 32) {
       const dist = distanciaAoCaminho(x, y, trilhaEstacaoPortal);
       grama *= smooth((dist + ruidoTrilha - 0.9) / 0.48);
     }

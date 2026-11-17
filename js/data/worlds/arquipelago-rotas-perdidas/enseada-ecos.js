@@ -55,6 +55,12 @@ for (let y = 0; y < ROWS; y++) {
   }
 }
 
+// Retira a língua isolada de areia atrás do promontório sudeste; o mar
+// e a colisão são recalculados abaixo a partir desta costa corrigida.
+for (const [x, y] of [[48,19], [49,20], [50,20], [49,21], [50,21], [51,22], [52,22], [52,23]]) {
+  grid[y][x] = 'W';
+}
+
 // Praia larga e caminhável na orla: a célula de terra encostada no mar vira
 // areia molhada. É só a franja de 1 célula da própria costa — não muda a
 // forma da ilha.
@@ -243,6 +249,7 @@ export const map = {
     [31.2, 21.2, 35, 22.6], [35, 22.6, 39, 24.2],
     [39, 24.2, 43, 25.1], [43, 25.1, 42.5, 28.8],
     [42.5, 28.8, 44.5, 31.0], [44.5, 31.0, 48.0, 30.6],
+    [48.0, 30.6, 49.0, 29.6],
   ],
   passarelaSobreAgua: [...passarelaCorrentes],
   // A grama não vem de mancha elíptica: vem de `celulasGrama`, traçada da
@@ -938,7 +945,7 @@ export const map = {
     { id: 'conchas_fosseis_sudeste', tipo: 'decoracao', x: 49.6, y: 32.8,
       sprite: 'enseada_sudeste_conchas', useCrop: true, larguraPx: 57,
       pivotX: 0.5, pivotY: 0.98, bloqueia: false },
-    { id: 'lanterna_coral_sudeste', tipo: 'decoracao', x: 54.3, y: 27.35,
+    { id: 'lanterna_coral_sudeste', tipo: 'decoracao', x: 55.3, y: 26.35,
       sprite: 'enseada_sudeste_lanterna', useCrop: true, larguraPx: 27,
       pivotX: 0.5, pivotY: 0.98, bloqueia: false, flutuacaoSuave: true,
       brilho: { cor: '#ffd37a', raio: 0.8, forca: 0.23 } },
@@ -960,7 +967,7 @@ export const map = {
     {
       // Peça íntegra do promontório: arco, rocha, acesso de areia e coral.
       // O objeto lógico do conduto e o acesso por nado permanecem independentes.
-      id: 'arco_conduto_retorno_mare', tipo: 'decoracao', x: 52.35, y: 27.45,
+      id: 'arco_conduto_retorno_mare', tipo: 'decoracao', x: 53.35, y: 26.45,
       sprite: 'enseada_sudeste_portal_completo', useCrop: true,
       larguraPx: 320, pivotX: 0.66, pivotY: 0.985,
       vorticidadeCorrentes: { x: 15, y: -139, rx: 14, ry: 27, intensidade: 0.35 },
@@ -1118,7 +1125,7 @@ export const map = {
       pivotX: 0.5, pivotY: 0.96, depthOffset: -0.3, bloqueia: false,
     },
     {
-      id: 'cristais_azuis_mar', tipo: 'decoracao', x: 59.0, y: 34.0,
+      id: 'cristais_azuis_mar', tipo: 'decoracao', x: 59.0, y: 34.0, renderizar: false,
       sprite: 'enseada5_cristais', spriteB: 'enseada5_cristais_b', animPeriodo: 0.6, useCrop: true, larguraPx: 70,
       pivotX: 0.5, pivotY: 0.96, depthOffset: -0.3, bloqueia: false,
     },
@@ -1234,7 +1241,7 @@ export const map = {
       interactionDistance: 1.4, destino: { mapId: 'mar_caminho_das_correntes', spawnId: 'vindo_da_enseada' }, transition: 'fade',
     },
     {
-      id: 'retorno_darsena_mare', tipo: 'door', x: 53.0, y: 27.5, automaticoNado: true, raioAutomatico: 0.8,
+      id: 'retorno_darsena_mare', tipo: 'door', x: 54.0, y: 26.5, automaticoNado: true, raioAutomatico: 0.8,
       requiresFlag: 'rota_livre_enseada_aberta', lockedLabel: 'CONDUTO ABISSAL INATIVO',
       mensagemBloqueado: ['UM VÓRTICE PROFUNDO RESSOA COM A DÁRSENA DA MARÉ ASTRAL, MAS PERMANECE SELADO DO OUTRO LADO.'],
       label: 'NADAR: ROTA DAS MARÉS ATÉ A DÁRSENA', requiresArchetype: 'mare_astral',

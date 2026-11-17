@@ -28,9 +28,9 @@ assert.equal(arco.sprite, 'enseada_sudeste_portal_completo', 'portal usa o promo
 assert.equal(object('enseada_base_rochosa_portal_leste').espelhar, true, 'a subida deve acompanhar a inversão');
 const cais = object('cais_madeira_pesca_enseada');
 const visualCais = object('cais_enseada_visual');
-assert.equal(visualCais.skewY, -0.10, 'inclinação suave sem deslocar o cais');
+assert.equal(visualCais.skewY, undefined, 'a perspectiva vem da nova arte, sem cisalhamento');
 assert.equal(cais.renderizar, false, 'a interação do cais não deve desenhar um segundo píer');
-assert.equal(visualCais.sprite, 'enseada8_cais_barco_ref', 'cais deve descer para a direita com veleiro à direita');
+assert.equal(visualCais.sprite, 'enseada_cais_barco', 'cais deve descer para a direita com veleiro à direita');
 const tileCais = map.aguaPraia[Math.floor(visualCais.y + .5)]?.[Math.floor(visualCais.x + .5)];
 assert(tileCais && 'YyDdX'.includes(tileCais), 'o cais visual deve estar no mar');
 assert.equal(map.walkMask[Math.floor(cais.y + .5)]?.[Math.floor(cais.x + .5)], '.', 'interação do cais deve ficar acessível na costa');

@@ -76,9 +76,22 @@ const corteSul = [[0,325],[31,312],[103,311],[160,303],[239,299],
   [576,312],[620,299],[657,294],[704,299],[753,295],[798,281],
   [870,277],[870,900],[0,900]]
   .map(([x,y]) => [977.5 + (x - 440) * .4, 511.25 + (y - 245) * .4]);
+// Linha marcada na captura da praia sudoeste: o lado inferior vira mar.
+// A captura foi alinhada pela fonte e pela piscina, sem deslocar outros setores.
+const cortePraiaSul = [[137,8],[143,30],[160,56],[188,94],[220,135],
+  [265,165],[309,195],[357,216],[408,236],[464,265],[511,289],
+  [562,322],[595,358],[620,376],[661,395],[700,410],[746,439],
+  [797,453],[850,462],[902,473],[955,483],[1037,488],[1074,485],
+  [1107,454],[1143,430],[1175,407],[1183,372],[1192,345],
+  [1202,328],[1224,318],[1242,309],[1306,309],[1306,1200],
+  [0,1200],[0,8]].map(([x,y]) => [
+    (786 + (x - 786) / .91 + 114.16) / 2,
+    (352 + (y - 350) / .91 + 831.08) / 2,
+  ]);
 for (let y = 0; y < ROWS; y++) for (let x = 0; x < COLS; x++) {
   const {px, py} = imagemDaGrade(x + .5, y + .5);
-  if (dentroPoligono(px, py, corteOeste) || dentroPoligono(px, py, corteSul)) grid[y][x] = 'W';
+  if (dentroPoligono(px, py, corteOeste) || dentroPoligono(px, py, corteSul)
+      || dentroPoligono(px, py, cortePraiaSul)) grid[y][x] = 'W';
 }
 
 // Retira a língua isolada de areia atrás do promontório sudeste; o mar
@@ -246,6 +259,16 @@ export const map = {
       [[174, 348], [181, 336], [197, 329], [230, 323], [305, 331], [390, 343], [400, 372], [353, 386],
        [270, 385], [211, 390], [178, 380], [166, 368]],
     ].map(contornoSuave),
+  },
+  areiaPraiaSul: {
+    ...REF,
+    area: contornoSuave([[125,5],[190,93],[265,145],[360,190],[450,235],
+      [560,295],[665,350],[745,380],[830,390],[900,375],[965,305],
+      [1030,290],[1100,292],[1160,270],[1220,255],[1500,255],
+      [1500,900],[0,900],[0,5]].map(([x,y]) => [
+        (786 + (x - 786) / .91 + 114.16) / 2,
+        (352 + (y - 350) / .91 + 831.08) / 2,
+      ])),
   },
   // Clareira central: areia ao redor de uma única ilha gramada, sem alterar colisão.
   ajusteSoloCentral: {
@@ -847,14 +870,13 @@ export const map = {
       interacao: { label: 'EXAMINAR A GRUTA DE PEDRA', distancia: 1.6 },
     },
     {
-      // A referência desenha esta rede em branco-azulado, pendurada entre dois
-      // Rede de descanso entre os coqueiros, sem postes nem colisão adicional.
-      id: 'rede_treino_praia_enseada', nome: 'REDE DE DESCANSO DA PRAIA', tipo: 'decoracao', x: 42.75, y: 51.34,
-      sprite: 'enseada_rede_descanso', useCrop: true, larguraPx: 220,
+      // Rede de praia com postes e estacas próprios, sobre a areia.
+      id: 'rede_treino_praia_enseada', nome: 'REDE DE PRAIA', tipo: 'decoracao', x: 42.75, y: 51.34,
+      sprite: 'enseada_cais_rede', useCrop: true, larguraPx: 180,
       pivotX: 0.5, pivotY: 0.98, depthOffset: 0.2,
       bloqueia: false,
-      interacao: { label: 'DESCANSAR NA REDE DA PRAIA', distancia: 1.8, speaker: 'REDE DE DESCANSO',
-        dialogue: ['A REDE BALANÇA ENTRE OS COQUEIROS, CONVIDANDO A UM MOMENTO DE DESCANSO.'] },
+      interacao: { label: 'EXAMINAR A REDE DA PRAIA', distancia: 1.8, speaker: 'REDE DE PRAIA',
+        dialogue: ['A REDE ESTÁ ARMADA NA AREIA, PRONTA PARA UMA PARTIDA NA PRAIA.'] },
     },
     {
       // Portal da costa leste: a arte da referência é um arco de pedra com
@@ -900,10 +922,9 @@ export const map = {
       bloqueia: false, flutuacaoSuave: true, sombra: [8, 3],
     })),
     {
-      // As quatro lajes com runas submersas à esquerda do píer, como no
-      // pôster (x 705–790, y 560–645). A peça de arte já é a fileira inteira.
-      id: 'travessia_pedras_agua', nome: 'PEDRAS RÚNICAS DO EMBARCADOURO', tipo: 'decoracao', x: 47.6, y: 47.5,
-      sprite: 'enseada4_travessia_pedras', useCrop: true, larguraPx: 150,
+      // Cinco lajes rúnicas à esquerda do píer, avançando pela água rasa.
+      id: 'travessia_pedras_agua', nome: 'PEDRAS RÚNICAS DO EMBARCADOURO', tipo: 'decoracao', x: 46.04, y: 50.94,
+      sprite: 'enseada_cais_pedras', useCrop: true, larguraPx: 150,
       pivotX: 0.5, pivotY: 0.55, depthOffset: -0.2, bloqueia: false,
       interacao: { label: 'LER AS PEDRAS RÚNICAS', distancia: 1.7 },
     },
@@ -911,11 +932,9 @@ export const map = {
     // ---- SETOR 6 (Sul): Cais + embarcadouro ----
     // Arte do cais separada do ponto de interação em terra: a ponta fica no mar.
     {
-      // Medido no pôster: a cabeceira do píer encosta na areia em (712,570) e
-      // a ponta, com o veleiro, termina em (900,675). A âncora é o centro do
-      // tabuleiro; `skewY` acompanha a inclinação da arte.
+      // A cabeceira encontra a praia; a corda liga o veleiro à ponta no mar.
       id: 'cais_enseada_visual', tipo: 'decoracao', x: 50.0, y: 48.3,
-      sprite: 'enseada8_cais_barco_ref', useCrop: true, larguraPx: 410, skewY: -0.10,
+      sprite: 'enseada_cais_barco', useCrop: true, larguraPx: 370,
       pivotX: 0.5, pivotY: 0.97, camada: 'fundo', ordem: -1, bloqueia: false,
     },
     {

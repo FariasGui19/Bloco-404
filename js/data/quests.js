@@ -10,6 +10,15 @@
 // =====================================================================
 
 export const QUESTS = Object.freeze({
+  mare_cromatica_ancora: Object.freeze({
+    id:'mare_cromatica_ancora',title:'A MARÉ CROMÁTICA',giver:'METRÔ INTERDIMENSIONAL',kind:'principal',
+    description:'Investigue a projeção contaminada da Enseada, recompile o traje e recupere a âncora de dados sob a Estação 66.6.',
+    objectives:Object.freeze([
+      Object.freeze({type:'cromatica',target:'recompilar',count:1,label:'Recompilar o traje no terminal seguro'}),
+      Object.freeze({type:'cromatica',target:'selo',count:1,label:'Abrir o selo da Estação 66.6'}),
+      Object.freeze({type:'cromatica',target:'ancora',count:1,label:'Estabilizar a âncora de dados'}),
+    ]), rewards:Object.freeze({xp:120,flags:Object.freeze({mare_cromatica_missao_concluida:true})}),
+  }),
   cidadela_forja_sobrevivencia: Object.freeze({
     id:'cidadela_forja_sobrevivencia',title:'FORJA DO CÓDIGO QUEIMADO',giver:'NEXO-04',kind:'secundária',
     description:'Recolha fragmentos de combate na Cidadela e utilize a Bancada de Síntese na Forja para fabricar suprimentos táticos ou relíquias dimensionais.',

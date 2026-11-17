@@ -4542,3 +4542,13 @@ body.immersive-active #ui, body.immersive-active #controls, body.immersive-activ
 .immersive-view button[aria-pressed="true"] { color: #b5f4cd; background: rgba(104,165,127,.19); }
 .immersive-view button b { display: inline-block; color: #bfe7c6; border: 1px solid rgba(172,222,186,.38); border-radius: 3px; padding: 2px 4px; margin-right: 5px; font-size: 10px; }
 @media (max-width: 600px) { .immersive-heading p { font-size: 10px; } .immersive-bottom nav { max-width: 96%; padding: 3px; } .immersive-view button { padding: 8px 7px; font-size: 10px; } }
+
+/* Estado da incursão sem depender apenas da cor para comunicar perigo. */
+.cromatica-hud[hidden] { display:none; }
+.cromatica-hud { position:fixed; right:18px; top:18px; z-index:48; max-width:min(340px,45vw); padding:10px 14px; color:#f8e5f8; background:rgba(23,12,29,.90); border:1px solid #a969a9; box-shadow:0 3px 18px #100a1a99; font:11px/1.45 monospace; pointer-events:none; }
+.cromatica-hud strong { display:block; color:#ffb6eb; letter-spacing:.06em; }
+.cromatica-hud div { margin-top:3px; }
+@media (max-width:600px) { .cromatica-hud { top:auto; bottom:12px; right:10px; max-width:48vw; font-size:9px; padding:7px; } }
+
+.cromatica-hud button { pointer-events:auto; margin-top:7px; padding:4px 7px; border:1px solid #a969a9; color:#f8e5f8; background:#29192e; font:10px monospace; cursor:pointer; }
+.cromatica-hud button:focus-visible { outline:2px solid #fff0fd; outline-offset:2px; }

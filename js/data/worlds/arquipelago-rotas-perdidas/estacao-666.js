@@ -18,6 +18,7 @@ export const map = {
   spawnPoints: { inicio: { x: 3.5, y: 8.5 }, vindo_da_enseada: { x: 3.5, y: 8.5 }, vindo_da_cidadela: { x: 7.5, y: 4.2 } },
   actors: [],
   objects: [
+    machine('cromatica_alerta', 9, 8, 'freq666_receptor', 53, 'ALERTA DO METRÔ • MARÉ CROMÁTICA', '#e68dcf'),
     { id: 'saida_estacao_666_visual', tipo: 'decoracao', x: .5, y: 8, sprite: 'bio_sala_porta_eclusa', useCrop: true, larguraPx: 100, pivotX: .5, pivotY: 1, ajusteY: 9, camada: 'fundo', bloqueia: false },
     { id: 'anel_limiar_666', nome: 'LIMIAR DA CIDADELA', tipo: 'limiar_frequencia', x: 7, y: 2,
       sprite: 'freq666_portal', useCrop: true, larguraPx: 172, pivotX: .5, pivotY: .95, sombra: [59, 13], bloqueia: false, interacao: { label: 'EXAMINAR LIMIAR', distancia: 1.7 } },

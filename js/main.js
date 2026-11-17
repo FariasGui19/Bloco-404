@@ -43,6 +43,10 @@ import { beginUltimate, updateUltimate } from './game/ultimate.js';
 import { toggleArchetypeSuit } from './game/ability-context.js';
 import { openNucleoWheel, isNucleoWheelOpen, updateNucleoWheel } from './ui/nucleo-wheel.js';
 import { updateCamera, camera } from './engine/camera.js';
+import { atualizarAmeacasCromaticas } from './game/mare-cromatica-ameacas.js';
+import { CROMATICA_MAPS, lerMareCromatica, avancarMareCromatica, colapsarMareCromatica } from './game/mare-cromatica.js';
+import { initHudCromatico, atualizarHudCromatico, desenharAtmosferaCromatica } from './ui/mare-cromatica-hud.js';
+import { usePortal, isPortalLocked } from './game/portals.js';
 import { ImmersiveViewManager, IMMERSIVE_MODE } from './game/immersive-view-manager.js';
 import { initImmersiveView } from './ui/immersive-view.js';
 import { playImmersiveSound } from './ui/immersive-audio.js';
@@ -79,6 +83,7 @@ import {
 } from './ui/save-menu.js';
 import {
   initDialogue,
+  openDialogue,
   isDialogueOpen,
 } from './ui/dialogue.js';
 
@@ -107,6 +112,7 @@ initTransition();
 initSaveMenu();
 initArchetypeCards();
 initDialogue();
+initHudCromatico();
 const immersive = new ImmersiveViewManager({
   state, camera, clearInput: resetInput, visit: registrarVisitaImersiva, sound: playImmersiveSound,
 });
@@ -201,6 +207,9 @@ await loadSprites([
   // Estação 66.6: artes próprias, recortadas com transparência real.
   { id: 'freq666_entrada', src: 'assets/sprites/frequencia-666/abrigo-ampliado.png' },
   { id: 'freq666_receptor', src: 'assets/sprites/frequencia-666/receptor-costeiro.png' },
+  { id: 'cromatica_ancora', src: 'assets/sprites/mare-cromatica/ancora.png' },
+  { id: 'cromatica_infectado', src: 'assets/sprites/mare-cromatica/infectado-folha.png' },
+  { id: 'cromatica_nulo', src: 'assets/sprites/mare-cromatica/nulo.png' },
   { id: 'freq666_portal', src: 'assets/sprites/frequencia-666/limiar-industrial.png' },
   { id: 'freq666_console', src: 'assets/sprites/frequencia-666/mesa-controle.png' },
   { id: 'freq666_origem', src: 'assets/sprites/frequencia-666/ancora-origem.png' },
@@ -850,6 +859,8 @@ if (bioMissing.length) {
 // UPDATE
 // =====================================================================
 
+let cromaticaSaveClock = 0, cromaticaReturning = false;
+
 async function update(dt) {
   if (immersive.active) {
     if (state.world.currentMapId !== 'ilha_enseada_ecos') immersive.finish();
@@ -950,6 +961,28 @@ async function update(dt) {
     input.click = null; input.attackClick = null;
     state.onElevator = false;
   } else {
+    if (CROMATICA_MAPS.includes(mapaAtual?.id) && !state.world.isLoading) {
+      let data = lerMareCromatica(state.progress);
+      if (!data.desfecho && (player.health ?? 1) <= 0) {
+        colapsarMareCromatica(state.progress); saveGame(); data = lerMareCromatica(state.progress);
+      }
+      if (!data.desfecho && avancarMareCromatica(state.progress,dt)) { saveGame(); data=lerMareCromatica(state.progress); }
+      cromaticaSaveClock += dt;
+      if (cromaticaSaveClock >= 10) { cromaticaSaveClock=0;saveGame(); }
+      if (data.desfecho === 'colapso') {
+        player.target=null;player.moving=false;
+        if (!cromaticaReturning && !isPortalLocked()) {
+          cromaticaReturning=true;
+          void usePortal({id:'cromatica_colapso',label:'RETORNO DE EMERGÊNCIA',destino:{mapId:'estacao_limiar_666',spawnId:'vindo_da_enseada'}}).then(ok=>{
+            if(ok) {
+              if(Number.isFinite(player.maxHealth)) player.health=Math.max(1,Math.round(player.maxHealth*.5));
+              openDialogue({speaker:'NEXO-04 // RETORNO DE EMERGÊNCIA',dialogue:['A LINHA DE CONTENÇÃO CAIU. A ÂNCORA FOI CONSUMIDA E A INCURSÃO ENTROU EM QUARENTENA.', 'SEUS REGISTROS FORAM PRESERVADOS. CONSULTE O ALERTA DO METRÔ PARA TENTAR A REDENÇÃO.']});
+            }
+          }).finally(()=>{cromaticaReturning=false;});
+        }
+        return;
+      }
+    }
     // T não atua em diálogos, menus, calibração ou durante um dash.
     if (input.pressed.has('t') || input.pressed.has('keyt')) {
       if (state.progress.archetype === 'nucleo_dez_forma') {
@@ -1030,6 +1063,9 @@ async function update(dt) {
     // nem durante uma habilidade que trava o movimento.
     if (!abilityLocksMovement) updateHazards(state.hazards, player, state.progress, dt);
     updateHealth(player, state.progress, dt, { onRespawn: () => getSafeSpawn() });
+    if (mapaAtual?.meta?.cromatica && state.cromaticaRuntime && !state.world.isLoading) {
+      state.cromaticaRuntime.perigo=atualizarAmeacasCromaticas(mapaAtual, state.cromaticaRuntime, state.trainingTargets, player, state.progress, dt).perto;
+    }
 
   }
 
@@ -1272,6 +1308,7 @@ async function frame(now) {
   await update(dt);
 
   const map = getFloor();
+  atualizarHudCromatico(state, isDialogueOpen() || isCutsceneOpen() || state.world.isLoading || isCodexOpen() || isArchetypeCardsOpen() || isNucleoWheelOpen() || isElevatorMenuOpen());
   const fpsWorld = map?.meta?.camera === 'retro-fps';
   document.body.classList.toggle('retro-fps', !!fpsWorld);
   if (fpsWorld) {
@@ -1290,6 +1327,7 @@ async function frame(now) {
     return;
   }
   render(map, state);
+  desenharAtmosferaCromatica(canvas,state);
   updateHud(map, state);
   // Fôlego só aparece quando importa (nadando); em terra não ocupa tela.
   if (state.player?.nado?.ativo) desenharMedidorAr(state.player.nado);

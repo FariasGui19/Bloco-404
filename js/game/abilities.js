@@ -31,6 +31,7 @@ import { executeBrutaSmash } from './combat.js';
 import { chargeFormHit } from './nucleo-form.js';
 import { NUCLEO_FORMS } from '../data/nucleo-forms.js';
 import { recordQuestEvent } from './quests.js';
+import { perfilSincronizacao } from './mare-cromatica.js';
 
 // ---------------------------------------------------------------------
 // CONFIGURAÇÃO INTERNA DE HABILIDADES
@@ -173,16 +174,18 @@ function tryStartBioDash() {
     return false;
   }
 
-  if (player.energy < profile.energyCost) {
+  const sync = perfilSincronizacao(state.progress, state.world.currentMapId);
+  const cost = Math.ceil(profile.energyCost * sync.custo);
+  if (player.energy < cost) {
     showAbilityMessage('ENERGIA INSUFICIENTE');
     return false;
   }
 
   const direction = getFacingWorldDirection(player.facing);
 
-  player.energy -= profile.energyCost;
+  player.energy -= cost;
 
-  ability.cooldowns.bio_dash = profile.cooldown;
+  ability.cooldowns.bio_dash = profile.cooldown * sync.recarga;
   recordMastery(state.progress, 'distance', 6); // o dash também treina locomoção
   recordMastery(state.progress, 'ability_use');
 
@@ -193,7 +196,7 @@ function tryStartBioDash() {
     directionY: direction.y,
 
     timeLeft: profile.duration,
-    speed: profile.distance / profile.duration,
+    speed: profile.distance * sync.alcance / profile.duration,
     mode: profile.mode,
 
     // Usaremos isso depois no renderer para rastro/partículas.
@@ -309,7 +312,8 @@ function tryBrutaSmash(player) {
     showAbilityMessage('PISTÕES RECARREGANDO');
     return true;
   }
-  if (player.energy < perfil.cost) {
+  const sync = perfilSincronizacao(state.progress, state.world.currentMapId);
+  if (player.energy < Math.ceil(perfil.cost * sync.custo)) {
     showAbilityMessage('ENERGIA INSUFICIENTE');
     return true;
   }
@@ -318,10 +322,10 @@ function tryBrutaSmash(player) {
   const facing = player.facing ?? 'down';
   const direction = getFacingWorldDirection(facing);
   player.facing = facing;
-  player.ability.cooldowns[perfil.id] = perfil.cooldown;
+  player.ability.cooldowns[perfil.id] = perfil.cooldown * sync.recarga;
   recordMastery(state.progress, 'ability_use');
   const form = NUCLEO_FORMS[player.nucleoForm];
-  player.energy -= perfil.cost;
+  player.energy -= Math.ceil(perfil.cost * sync.custo);
   // O efeito usa id PRÓPRIO. Antes ele reaproveitava o id da transformação e,
   // com forma já ativa, o jogo desfazia e refazia a metamorfose em vez de
   // socar — era o "me destransforma e transforma de novo" do relato.

@@ -126,3 +126,21 @@ Ele usa um mapa real e registra as chamadas de desenho; não usa nem altera save
   as cenas FPV de monólito, estela e pedras continuam fora desta etapa.
 
 Teste: `node --experimental-default-type=module tests/imersao-enseada.mjs`.
+
+## FPV — lote 1: dez folhas de efeitos pixelados
+
+- [x] Mar, ondas, ondulações, vapor, bolhas, chuva, respingos, mão,
+  brilho de carinho e cascata: dez folhas de 8 quadros, 32×32 por quadro.
+- [x] Dioramas compostos em resolução fixa com planos independentes: fauna
+  costeira e piscina/palmeiras animadas já existentes, rochas, concha e recorte
+  do tileset da praia. Os panoramas e a capivara gerada foram removidos.
+- [x] Capivara usa quadros existentes de fauna com linha d'água e respiração;
+  chuva e luz seguem o clima real, e o movimento reduzido fixa os quadros.
+- [x] Teste de composição e teste do controlador; inspeção das duas cenas e
+  saída no navegador. As folhas se regeneram com
+  `python tools/gerar-folhas-enseada-fpv.py` (requer Pillow).
+- [ ] Refinar desenho do braço por arquétipo e criar quadros específicos de
+  nado/carinho da capivara; a folha atual é a da fauna do jogo, recortada na
+  linha d'água, não uma folha de nado dedicada.
+- [ ] Validar desempenho e enquadramento em dispositivos, proporções e zooms
+  variados. O FPS de 60 não foi medido em hardware de referência.

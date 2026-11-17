@@ -202,6 +202,13 @@ export function createBeachSurface(rows, scale = 16, { gramaInterior = false, ca
         }
       }
     }
+    // Após o recuo oeste, a orla exposta é areia, não relva até o mar.
+    if (ajusteSolo && shore < 2.2) {
+      const sx = ajusteSolo.cx + ajusteSolo.sx * (x - y);
+      const sy = ajusteSolo.cy + ajusteSolo.sy * (x + y);
+      const oesteNorte = smooth((445 - sx) / 35) * smooth((430 - sy) / 35);
+      grama *= 1 - oesteNorte * (1 - smooth((shore - .65) / 1.55));
+    }
     // Só muda a cor: a trilha contínua não cria terra nem muda colisões.
     if (trilhaEstacaoPortal.length && x >= 14 && x <= 51 && y >= 15 && y <= 32) {
       const dist = distanciaAoCaminho(x, y, trilhaEstacaoPortal);

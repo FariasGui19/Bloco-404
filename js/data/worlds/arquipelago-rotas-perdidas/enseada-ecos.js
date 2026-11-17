@@ -55,6 +55,32 @@ for (let y = 0; y < ROWS; y++) {
   }
 }
 
+// Cortes da costa marcados nas capturas: coordenadas convertidas à projeção
+// REF. A operação acontece ANTES de calcular água, colisão e campo de costa.
+function dentroPoligono(px, py, pontos) {
+  let dentro = false;
+  for (let i = 0, j = pontos.length - 1; i < pontos.length; j = i++) {
+    const [ax, ay] = pontos[i], [bx, by] = pontos[j];
+    if ((ay > py) !== (by > py) && px < (bx - ax) * (py - ay) / (by - ay) + ax) dentro = !dentro;
+  }
+  return dentro;
+}
+const corteOeste = [[0,0],[800,0],[800,112],[750,110],[710,106],[679,95],
+  [570,93],[510,102],[451,116],[414,144],[384,173],[367,202],
+  [346,261],[320,307],[298,327],[262,343],[234,357],[218,346],
+  [204,347],[185,356],[160,383],[139,412],[128,443],[124,510],
+  [103,552],[96,612],[90,636],[0,636]]
+  .map(([x,y]) => [(x + 63.8) / 2, (y + 192.5) / 2]);
+const corteSul = [[0,325],[31,312],[103,311],[160,303],[239,299],
+  [300,299],[338,303],[381,319],[423,328],[477,327],[526,320],
+  [576,312],[620,299],[657,294],[704,299],[753,295],[798,281],
+  [870,277],[870,900],[0,900]]
+  .map(([x,y]) => [977.5 + (x - 440) * .4, 511.25 + (y - 245) * .4]);
+for (let y = 0; y < ROWS; y++) for (let x = 0; x < COLS; x++) {
+  const {px, py} = imagemDaGrade(x + .5, y + .5);
+  if (dentroPoligono(px, py, corteOeste) || dentroPoligono(px, py, corteSul)) grid[y][x] = 'W';
+}
+
 // Retira a língua isolada de areia atrás do promontório sudeste; o mar
 // e a colisão são recalculados abaixo a partir desta costa corrigida.
 for (const [x, y] of [[48,19], [49,20], [50,20], [49,21], [50,21], [51,22], [52,22], [52,23]]) {
@@ -230,16 +256,18 @@ export const map = {
   // Areia na faixa costeira e gramados somente sob os dois maciços.
   ajusteSoloSudeste: {
     ...REF,
-    area: contornoSuave([[888,342],[945,330],[1000,345],[1060,369],
-      [1110,383],[1160,395],[1198,419],[1202,451],[1175,489],
-      [1124,504],[1068,489],[1003,478],[942,462],[897,432],[880,390]]),
+    area: contornoSuave([[840,342],[945,330],[1000,345],[1060,369],
+      [1110,383],[1160,395],[1198,419],[1202,451],[1175,510],
+      [1124,552],[1020,561],[910,558],[815,551],[805,490],[820,410]]),
     grama: contornoSuave([[967,394],[990,390],[1015,394],[1045,398],
       [1070,402],[1086,411],[1088,424],[1077,435],[1057,438],
       [1035,435],[1012,433],[989,431],[969,422],[963,408]]),
     gramaIntermediaria: contornoSuave([[884,356],[911,346],[944,348],[964,356],
       [978,368],[980,382],[968,397],[950,402],[927,400],[901,393],[886,380]]),
-    gramaCercado: contornoSuave([[952,447],[969,441],[990,443],[1008,446],
-      [1020,452],[1036,455],[1040,463],[1028,469],[1007,468],[988,470],[969,470],[953,464]]),
+    gramaCercado: contornoSuave([[846,454],[861,440],[884,432],[909,428],
+      [933,431],[956,439],[978,441],[997,444],[1020,452],[1036,455],
+      [1040,463],[1044,476],[1035,486],[1018,489],[1000,486],[984,480],
+      [967,479],[953,476],[932,481],[906,489],[882,490],[859,482],[846,469]]),
   },
   // Trilha orgânica de areia, em trechos medidos: Estação até o pé da rampa.
   trilhaEstacaoPortal: [
@@ -248,8 +276,8 @@ export const map = {
     [24, 18.2, 27.7, 19.3], [27.7, 19.3, 31.2, 21.2],
     [31.2, 21.2, 35, 22.6], [35, 22.6, 39, 24.2],
     [39, 24.2, 43, 25.1], [43, 25.1, 42.5, 28.8],
-    [42.5, 28.8, 44.5, 31.0], [44.5, 31.0, 48.0, 30.6],
-    [48.0, 30.6, 49.0, 29.6],
+    [42.5, 28.8, 44.5, 31.0], [44.5, 31.0, 46.8, 28.6],
+    [46.8, 28.6, 49.0, 29.6],
   ],
   passarelaSobreAgua: [...passarelaCorrentes],
   // A grama não vem de mancha elíptica: vem de `celulasGrama`, traçada da
@@ -318,7 +346,7 @@ export const map = {
     // mapa, na areia da praia leste, perto do veleiro e do píer
     // (pôster 1042,535 e 1072,523). O que estava na areia do sudeste e o da
     // escada do acampamento não existem na referência.
-    { id: 'enseada_caranguejo_areia_1', species: 'caranguejo', x: 53.0, y: 33.06 },
+    { id: 'enseada_caranguejo_areia_1', species: 'caranguejo', x: 52.35, y: 31.55 },
     { id: 'enseada_caranguejo_areia_2', species: 'caranguejo', x: 53.19, y: 31.16 },
     { id: 'enseada_gaivota', species: 'gaivota', x: 23.4, y: 37 },
     { id: 'enseada_trinta_reis', species: 'trinta_reis', x: 27.1, y: 35.7 },
@@ -891,14 +919,14 @@ export const map = {
       pivotX: 0.5, pivotY: 0.97, camada: 'fundo', ordem: -1, bloqueia: false,
     },
     {
-      id: 'cais_madeira_pesca_enseada', nome: 'CAIS DA ENSEADA', tipo: 'decoracao', x: 50.2, y: 43.0,
+      id: 'cais_madeira_pesca_enseada', nome: 'CAIS DA ENSEADA', tipo: 'decoracao', x: 43.0, y: 41.0,
       sprite: 'enseada8_cais_barco_ref', spriteB: 'enseada8_cais_barco_ref', animPeriodo: 0.68,
       useCrop: true, larguraPx: 280, pivotX: 0.5, pivotY: 0.97,
       bloqueia: false, renderizar: false, brilho: { cor: '#ffd980', raio: 1.0, forca: 0.16 },
       interacao: { label: 'OBSERVAR A BAÍA DO CAIS', distancia: 1.75 },
     },
     {
-      id: 'barco_expedicao_enseada', nome: 'BARCO DE EXPEDIÇÃO', tipo: 'decoracao', x: 55.25, y: 41.34,
+      id: 'barco_expedicao_enseada', nome: 'BARCO DE EXPEDIÇÃO', tipo: 'decoracao', x: 44.0, y: 40.0,
       sprite: 'enseada_barco_expedicao', spriteB: 'enseada_barco_expedicao_b', animPeriodo: 0.72,
       useCrop: true, larguraPx: 126, pivotX: 0.5, pivotY: 0.88,
       bloqueia: false, flutuacaoSuave: true, renderizar: false,
@@ -945,7 +973,7 @@ export const map = {
     { id: 'conchas_fosseis_sudeste', tipo: 'decoracao', x: 49.6, y: 32.8,
       sprite: 'enseada_sudeste_conchas', useCrop: true, larguraPx: 57,
       pivotX: 0.5, pivotY: 0.98, bloqueia: false },
-    { id: 'lanterna_coral_sudeste', tipo: 'decoracao', x: 55.3, y: 26.35,
+    { id: 'lanterna_coral_sudeste', tipo: 'decoracao', x: 55.8, y: 27.85,
       sprite: 'enseada_sudeste_lanterna', useCrop: true, larguraPx: 27,
       pivotX: 0.5, pivotY: 0.98, bloqueia: false, flutuacaoSuave: true,
       brilho: { cor: '#ffd37a', raio: 0.8, forca: 0.23 } },
@@ -967,7 +995,7 @@ export const map = {
     {
       // Peça íntegra do promontório: arco, rocha, acesso de areia e coral.
       // O objeto lógico do conduto e o acesso por nado permanecem independentes.
-      id: 'arco_conduto_retorno_mare', tipo: 'decoracao', x: 53.35, y: 26.45,
+      id: 'arco_conduto_retorno_mare', tipo: 'decoracao', x: 53.85, y: 27.95,
       sprite: 'enseada_sudeste_portal_completo', useCrop: true,
       larguraPx: 320, pivotX: 0.66, pivotY: 0.985,
       vorticidadeCorrentes: { x: 15, y: -139, rx: 14, ry: 27, intensidade: 0.35 },
@@ -1035,7 +1063,7 @@ export const map = {
       interacao: { label: 'COLHER ESSÊNCIA DE ALGAS DOURADAS', distancia: 1.55 },
     },
     {
-      id: 'poleiro_aves_enseada', nome: 'POLEIRO DAS AVES', tipo: 'decoracao', x: 50.65, y: 31.9,
+      id: 'poleiro_aves_enseada', nome: 'POLEIRO DAS AVES', tipo: 'decoracao', x: 51.15, y: 32.4,
       sprite: 'enseada_sudeste_gaivotas',
       useCrop: true, larguraPx: 100, pivotX: 0.5, pivotY: 0.94,
       bloqueia: false,
@@ -1241,7 +1269,7 @@ export const map = {
       interactionDistance: 1.4, destino: { mapId: 'mar_caminho_das_correntes', spawnId: 'vindo_da_enseada' }, transition: 'fade',
     },
     {
-      id: 'retorno_darsena_mare', tipo: 'door', x: 54.0, y: 26.5, automaticoNado: true, raioAutomatico: 0.8,
+      id: 'retorno_darsena_mare', tipo: 'door', x: 54.5, y: 28.0, automaticoNado: true, raioAutomatico: 0.8,
       requiresFlag: 'rota_livre_enseada_aberta', lockedLabel: 'CONDUTO ABISSAL INATIVO',
       mensagemBloqueado: ['UM VÓRTICE PROFUNDO RESSOA COM A DÁRSENA DA MARÉ ASTRAL, MAS PERMANECE SELADO DO OUTRO LADO.'],
       label: 'NADAR: ROTA DAS MARÉS ATÉ A DÁRSENA', requiresArchetype: 'mare_astral',

@@ -69,7 +69,7 @@ export const VEGETACAO = [
 
   // ---------- Palmeiras do jardim cercado / lado leste do monólito ----------
   ['B', 40.4, 31.8, 90],
-  ['P', 44.2, 27.4, 86], ['J', 39.4, 33.0, 76],
+  ['J', 39.4, 33.0, 76],
 
   // ---------- Mata da encosta leste (pôster 900–1010, 300–430) ----------
   ['T', 43.0, 32.4, 174], ['T', 44.6, 34.0, 168], ['B', 41.9, 34.4, 94],
@@ -86,7 +86,8 @@ export const VEGETACAO = [
   ['J', 53.0, 35.4, 74],
 
   // Palmeiras no promontório, em terra firme, não em ilhas no mar.
-  ['P', 48.0, 25.8, 88], ['B', 47.2, 27.0, 82],
+  ['P', 43.65, 27.4, 90], ['M', 44.9, 26.78, 90], ['P', 45.61, 25.45, 90],
+  ['D', 44.2, 27.15, 78], ['F', 45.0, 26.2, 64], ['D', 45.7, 25.65, 66],
 
   // Canteiro compacto junto à concha menor; a entrada do píer permanece livre.
   ['J', 40.8, 46.6, 55], ['F', 40.55, 46.55, 58],

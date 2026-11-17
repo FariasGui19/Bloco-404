@@ -221,6 +221,12 @@ export const map = {
     area: contornoSuave([[605, 359], [655, 349], [686, 345], [730, 334], [769, 328], [810, 337], [820, 370], [798, 394], [754, 417], [710, 432], [654, 441], [610, 432], [598, 405]]),
     grama: contornoSuave([[625, 390], [642, 379], [666, 376], [691, 372], [718, 361], [750, 350], [770, 350], [786, 356], [786, 368], [769, 384], [745, 397], [716, 407], [689, 419], [659, 422], [634, 418], [624, 406]]),
   },
+  // Clareira de areia do sudeste contorna a faixa de vegetação do portal.
+  ajusteSoloSudeste: {
+    ...REF,
+    area: contornoSuave([[967,395],[1015,385],[1060,389],[1095,396],[1126,412],[1139,443],[1120,476],[1090,486],[1047,476],[1001,466],[969,445]]),
+    grama: contornoSuave([[974,396],[1000,393],[1030,394],[1057,399],[1083,409],[1094,422],[1082,433],[1061,435],[1040,432],[1022,430],[1000,428],[981,422],[972,411]]),
+  },
   passarelaSobreAgua: [...passarelaCorrentes],
   // A grama não vem de mancha elíptica: vem de `celulasGrama`, traçada da
   // referência. A elipse antiga era um retângulo verde por cima da arte.
@@ -293,6 +299,8 @@ export const map = {
     { id: 'enseada_gaivota', species: 'gaivota', x: 23.4, y: 37 },
     { id: 'enseada_trinta_reis', species: 'trinta_reis', x: 27.1, y: 35.7 },
     { id: 'enseada_peixes', species: 'peixes', x: 10.9, y: 53.2 },
+    { id: 'enseada_tartaruga_sudeste', species: 'tartaruga', x: 54.5, y: 25.5, raioPasseio: 0.45 },
+    { id: 'enseada_golfinho_sudeste', species: 'golfinho', x: 54.5, y: 20.5, raioPasseio: 0.6 },
     { id: 'enseada_tartaruga_1', species: 'tartaruga', x: 4.2, y: 42.5 },
     { id: 'enseada_golfinho_1', species: 'golfinho', x: 50.4, y: 12.4 },
     { id: 'enseada_golfinho_oeste', species: 'golfinho', x: 2.5, y: 30.5 },
@@ -827,7 +835,7 @@ export const map = {
     // A linha desce do arco (sudeste) até a ponta de areia, como na arte.
     ...[[51.06, 23.53], [51.13, 25.22], [51.19, 26.91], [51.25, 28.59], [51.38, 30.22]]
       .map(([x, y], i) => ({
-        id: `pedra_travessia_sudeste_${i + 1}`, tipo: 'decoracao', x, y,
+        id: `pedra_travessia_sudeste_${i + 1}`, tipo: 'decoracao', x, y, renderizar: false,
         sprite: `enseada_correntes_pedra_${i % 3 + 1}`, useCrop: true,
         larguraPx: 44 + (i % 2) * 6, pivotX: 0.5, pivotY: 0.62,
         espuma: true, camada: 'fundo', bloqueia: false,
@@ -891,6 +899,18 @@ export const map = {
     },
 
     // ---- SETOR 7 (Leste): Portal + jardim + baú + recife ----
+    // Prolongamento independente: a rampa se encaixa atrás do arco existente.
+    { id: 'encosta_portal_sudeste', tipo: 'decoracao', x: 49.275, y: 28.025,
+      sprite: 'enseada_sudeste_encosta', useCrop: true, larguraPx: 190,
+      pivotX: 0.5, pivotY: 0.98, camada: 'fundo', ordem: 0, bloqueia: false },
+    { id: 'conchas_fosseis_sudeste', tipo: 'decoracao', x: 49.6, y: 32.8,
+      sprite: 'enseada_sudeste_conchas', useCrop: true, larguraPx: 57,
+      pivotX: 0.5, pivotY: 0.98, bloqueia: false },
+    { id: 'lanterna_coral_sudeste', tipo: 'decoracao', x: 53.55, y: 28.1,
+      sprite: 'enseada_sudeste_lanterna', useCrop: true, larguraPx: 27,
+      pivotX: 0.5, pivotY: 0.98, bloqueia: false, flutuacaoSuave: true,
+      brilho: { cor: '#ffd37a', raio: 0.8, forca: 0.23 } },
+
     {
       // Base rochosa do promontório do conduto.
       // A arte de referência é um rochedo orgânico de pedra e musgo; a peça
@@ -919,45 +939,45 @@ export const map = {
       id: 'arco_conduto_retorno_mare', tipo: 'decoracao', x: 51.6, y: 28.2,
       sprite: 'enseada_promontorio_sudeste', useCrop: true,
       larguraPx: 152, pivotX: 0.5, pivotY: 0.985,
-      vorticidadeCorrentes: { x: 0, y: -300, rx: 16, ry: 40 },
+      vorticidadeCorrentes: { x: 0, y: -136, rx: 12, ry: 28 },
       bloqueia: false, brilho: { cor: '#5cf7eb', raio: 2.2, forca: 0.44 },
     },
     {
-      id: 'enseada_jardim_cercado', tipo: 'decoracao', x: 42.47, y: 35.63,
+      id: 'enseada_jardim_cercado', tipo: 'decoracao', x: 42.47, y: 35.63, renderizar: false,
       sprite: 'enseada7_jardim', useCrop: true, larguraPx: 110,
       pivotX: 0.5, pivotY: 0.96, bloqueia: false,
       interacao: { label: 'EXAMINAR O JARDIM', distancia: 1.6 },
     },
     {
-      id: 'bau_deriva_enseada', nome: 'BAÚ À DERIVA', tipo: 'decoracao', x: 46.0, y: 33.0,
+      id: 'bau_deriva_enseada', nome: 'BAÚ À DERIVA', tipo: 'decoracao', x: 46.0, y: 33.0, renderizar: false,
       sprite: 'enseada_bau_deriva', spriteB: 'enseada_bau_deriva_b', animPeriodo: 0.56,
       useCrop: true, larguraPx: 60, pivotX: 0.5, pivotY: 0.9,
       bloqueia: false, pulsoBiolum: '#5cf7eb', brilho: { cor: '#5cf7eb', raio: 1.15, forca: 0.26 },
       interacao: { label: 'ABRIR O BAÚ À DERIVA', distancia: 1.55 },
     },
     {
-      id: 'banco_ostras_enseada', nome: 'BANCO DE OSTRAS PÉROLA', tipo: 'decoracao', x: 48.5, y: 29.0,
+      id: 'banco_ostras_enseada', nome: 'BANCO DE OSTRAS PÉROLA', tipo: 'decoracao', x: 48.5, y: 29.0, renderizar: false,
       sprite: 'enseada_banco_ostras', spriteB: 'enseada_banco_ostras_b', animPeriodo: 0.64,
       useCrop: true, larguraPx: 70, pivotX: 0.5, pivotY: 0.9,
       bloqueia: false, brilho: { cor: '#70f3ff', raio: 1.0, forca: 0.24 },
       interacao: { label: 'COLHER PÉROLA DA ENSEADA', distancia: 1.65 },
     },
     {
-      id: 'coral_luminescente_enseada', nome: 'RECIFE LUMINESCENTE', tipo: 'decoracao', x: 50.0, y: 26.0,
+      id: 'coral_luminescente_enseada', nome: 'RECIFE LUMINESCENTE', tipo: 'decoracao', x: 50.0, y: 26.0, renderizar: false,
       sprite: 'enseada_coral_azul', spriteB: 'enseada_coral_azul_b', animPeriodo: 0.62,
       useCrop: true, larguraPx: 70, pivotX: 0.5, pivotY: 0.92,
       bloqueia: false, pulsoBiolum: '#44e8ff', brilho: { cor: '#44e8ff', raio: 1.35, forca: 0.34 },
       interacao: { label: 'COLHER AMOSTRA DE CORAL', distancia: 1.6 },
     },
     {
-      id: 'ninho_tartarugas_enseada', nome: 'NINHO DE TARTARUGAS', tipo: 'decoracao', x: 49.0, y: 34.0,
-      sprite: 'enseada_ninho_tartarugas', spriteB: 'enseada_ninho_tartarugas_b', animPeriodo: 0.68,
-      useCrop: true, larguraPx: 70, pivotX: 0.5, pivotY: 0.9,
+      id: 'ninho_tartarugas_enseada', nome: 'NINHO DE TARTARUGAS', tipo: 'decoracao', x: 48.3, y: 33.2,
+      sprite: 'enseada_sudeste_cercado',
+      useCrop: true, larguraPx: 100, pivotX: 0.5, pivotY: 0.9,
       bloqueia: false,
       interacao: { label: 'PROTEGER O NINHO', distancia: 1.6 },
     },
     {
-      id: 'captador_ecos_enseada', nome: 'CAPTADOR DE ECOS', tipo: 'dispositivo', x: 46.0, y: 25.0,
+      id: 'captador_ecos_enseada', nome: 'CAPTADOR DE ECOS', tipo: 'dispositivo', x: 46.0, y: 25.0, renderizar: false,
       sprite: 'enseada_rede_cristal', spriteB: 'enseada_rede_cristal_b', animPeriodo: 0.6,
       useCrop: true, larguraPx: 80, pivotX: 0.5, pivotY: 0.92,
       bloqueia: false, pulsoAntena: true, brilho: { cor: '#5cf7eb', raio: 1.3, forca: 0.28 },
@@ -984,9 +1004,9 @@ export const map = {
       interacao: { label: 'COLHER ESSÊNCIA DE ALGAS DOURADAS', distancia: 1.55 },
     },
     {
-      id: 'poleiro_aves_enseada', nome: 'POLEIRO DAS AVES', tipo: 'decoracao', x: 50.5, y: 27.0,
-      sprite: 'enseada_poleiro_aves', spriteB: 'enseada_poleiro_aves_b', animPeriodo: 0.56,
-      useCrop: true, larguraPx: 70, pivotX: 0.5, pivotY: 0.94,
+      id: 'poleiro_aves_enseada', nome: 'POLEIRO DAS AVES', tipo: 'decoracao', x: 49.4, y: 30.65,
+      sprite: 'enseada_sudeste_gaivotas',
+      useCrop: true, larguraPx: 100, pivotX: 0.5, pivotY: 0.94,
       bloqueia: false,
       interacao: { label: 'OBSERVAR O POLEIRO', distancia: 1.5 },
     },

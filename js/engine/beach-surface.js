@@ -53,7 +53,7 @@ function intensidadePoligono(px, py, pontos, suavidade = 10) {
   return smooth(.5 + (dentro ? menor : -menor) / suavidade);
 }
 
-export function createBeachSurface(rows, scale = 16, { gramaInterior = false, caminhos = [], zonasGrama = [], zonasRocha = [], celulasGrama = null, ajusteSolo = null, ajusteSoloCentral = null, texturaGramaCentral = null } = {}) {
+export function createBeachSurface(rows, scale = 16, { gramaInterior = false, caminhos = [], zonasGrama = [], zonasRocha = [], celulasGrama = null, ajusteSolo = null, ajusteSoloCentral = null, texturaGramaCentral = null, ajusteSoloSudeste = null } = {}) {
   const height = rows.length, width = rows[0].length;
   const margemAjuste = 55;
   const limitesAjuste = ajusteSolo && {
@@ -76,6 +76,12 @@ export function createBeachSurface(rows, scale = 16, { gramaInterior = false, ca
     maxX: Math.max(...ajusteSoloCentral.area.map(p => p[0])) + 10,
     minY: Math.min(...ajusteSoloCentral.area.map(p => p[1])) - 10,
     maxY: Math.max(...ajusteSoloCentral.area.map(p => p[1])) + 10,
+  };
+  const limitesSudeste = ajusteSoloSudeste && {
+    minX: Math.min(...ajusteSoloSudeste.area.map(p => p[0])) - 10,
+    maxX: Math.max(...ajusteSoloSudeste.area.map(p => p[0])) + 10,
+    minY: Math.min(...ajusteSoloSudeste.area.map(p => p[1])) - 10,
+    maxY: Math.max(...ajusteSoloSudeste.area.map(p => p[1])) + 10,
   };
   const pixels = new Uint8ClampedArray(width * height * scale * scale * 4);
   for (let py = 0; py < height * scale; py++) for (let px = 0; px < width * scale; px++) {
@@ -178,6 +184,17 @@ export function createBeachSurface(rows, scale = 16, { gramaInterior = false, ca
           const ilha = intensidadePoligono(sx, sy, ajusteSoloCentral.grama, 8);
           grama += (ilha - grama) * area;
           intensidadeRelvaCentral = ilha * area; refCentralX = sx; refCentralY = sy;
+        }
+      }
+    }
+    if (ajusteSoloSudeste) {
+      const sx = ajusteSoloSudeste.cx + ajusteSoloSudeste.sx * (x-y);
+      const sy = ajusteSoloSudeste.cy + ajusteSoloSudeste.sy * (x+y);
+      if (sx >= limitesSudeste.minX && sx <= limitesSudeste.maxX && sy >= limitesSudeste.minY && sy <= limitesSudeste.maxY) {
+        const area = intensidadePoligono(sx, sy, ajusteSoloSudeste.area, 20);
+        if (area > 0) {
+          const ilha = intensidadePoligono(sx, sy, ajusteSoloSudeste.grama, 10);
+          grama += (ilha - grama) * area;
         }
       }
     }

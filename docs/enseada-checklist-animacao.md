@@ -56,6 +56,31 @@ diferentes. O vento não altera suas coordenadas nem colisões.
 - [x] Portais: vórtices procedurais; o das Correntes recebeu também a folha do
   lote 6. Falta revisar os dois portais visualmente em todas as condições.
 
+## Lote 7 — revisão de visibilidade (dez folhas)
+
+Os lotes anteriores foram marcados como implementados sem validação suficiente
+no jogo. Os deslocamentos eram pequenos demais na escala em que as artes são
+exibidas. Este lote substitui as folhas dos pontos abaixo por quadros mais
+perceptíveis (o código anterior continua no histórico/arquivos, mas não é a
+animação ativa desses pontos):
+
+- [x] Cachoeira da Estação 66.6 — dezena de filetes móveis e espuma.
+- [x] Piscina termal — ondulações na água, sem mover as pedras.
+- [x] Fogueira — chamas oscilantes com base fixa.
+- [x] Barco do cais — movimento do casco e da amarra, píer fixo.
+- [x] Portal das Correntes — anéis na abertura, além do vórtice existente.
+- [x] Palmeira alta — copa ao vento.
+- [x] Palmeira baixa — copa ao vento.
+- [x] Palmeira jovem — copa ao vento.
+- [x] Palmeira média — copa ao vento.
+- [x] Árvore do acampamento — copa ao vento.
+- [x] Mar da Enseada: luz móvel não é mais inteiramente desligada pelo
+  controle automático de desempenho; mantém um único desenho adicional.
+- [x] Chromium: o renderizador real carregou e desenhou as dez folhas em dois
+  tempos distintos; movimento reduzido usa a arte estática.
+- [ ] Revisão humana dos ciclos, contraste e encaixe em todos os zooms e
+  dispositivos. O teste de navegador não substitui esta avaliação.
+
 ## Próximos lotes — ainda não concluídos
 
 - [ ] Inventariar e revisar as demais instâncias de vegetação, incluindo
@@ -72,6 +97,12 @@ diferentes. O vento não altera suas coordenadas nem colisões.
 
 Regerar as folhas: instalar `@napi-rs/canvas` sem salvar dependência e executar
 `node --experimental-default-type=module tools/gerar-folhas-enseada-lote5.mjs`
-ou `node --experimental-default-type=module tools/gerar-folhas-enseada-lote6.mjs`.
+ou `node --experimental-default-type=module tools/gerar-folhas-enseada-lote6.mjs`
+ou `node --experimental-default-type=module tools/gerar-folhas-enseada-lote7.mjs`.
 As folhas usam o mesmo recorte de `sprite-clean.js` que o renderizador; se a
 arte-base mudar, regenere e atualize as dimensões no teste do lote.
+
+Teste opcional de renderização no navegador: instale `playwright-core` sem salvar
+a dependência e execute `BROWSER_EXECUTABLE=/caminho/para/chromium node
+--experimental-default-type=module tests/enseada-animacao-render-browser.mjs`.
+Ele usa um mapa real e registra as chamadas de desenho; não usa nem altera saves.

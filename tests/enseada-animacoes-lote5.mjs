@@ -20,12 +20,13 @@ for (const [id, name, w, h, interactive] of items) {
   const o = map.objects.find(o => o.id === id);
   assert(o && o.renderizar !== false && o.useCrop, `${id}: objeto visível`);
   assert.equal(Boolean(o.interacao), interactive, `${id}: interação preservada`);
-  assert.equal(o.animacaoFolha.sprite, `enseada_folha5_${name}`);
+  assert.equal(o.animacaoFolha.sprite, id === 'piscina_mare_viva_enseada' ? 'enseada_folha7_piscina' : `enseada_folha5_${name}`);
   assert.equal(o.animacaoFolha.quadros, 8);
-  assert.equal(o.animacaoFolha.margem, 8);
+  assert.equal(o.animacaoFolha.margem, id === 'piscina_mare_viva_enseada' ? 24 : 8);
   assert(o.animacaoFolha.periodo > 0);
   const path = `assets/sprites/enseada-animacao-lote5/${name}.png`;
-  assert(main.includes(`id: 'enseada_folha5_${name}', src: '${path}'`));
+  assert(main.includes(`id: '${o.animacaoFolha.sprite}'`));
+  if (id !== 'piscina_mare_viva_enseada') assert(main.includes(`src: '${path}'`));
   const png = fs.readFileSync(path);
   assert.equal(png.subarray(0,8).toString('hex'), '89504e470d0a1a0a');
   assert.equal(png.readUInt32BE(16), (w + 16) * 8, `${name}: largura`);

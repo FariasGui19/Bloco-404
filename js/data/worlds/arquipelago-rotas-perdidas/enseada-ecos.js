@@ -17,19 +17,19 @@ function contornoIso(pontos, origemX, origemY, escala = 1) {
 // Lote de animações: só instâncias existentes da vegetação manual; nenhuma
 // árvore é criada ou reposicionada e a âncora do tronco permanece fixa.
 const PALMEIRAS_ANIMADAS = new Map([
-  ['12.51,43.11', 'enseada_folha_palmeira_alta'],
-  ['16.1,47.9', 'enseada_folha_palmeira_baixa'],
-  ['20.9,53.4', 'enseada_folha_palmeira_alta'],
-  ['16.76,45.57', 'enseada_folha_palmeira_baixa'],
-  ['18.24,45.2', 'enseada_folha_palmeira_jovem'],
-  ['16.6,46.7', 'enseada_folha_palmeira_media'],
+  ['12.51,43.11', 'enseada_folha7_palmeira_alta'],
+  ['16.1,47.9', 'enseada_folha7_palmeira_baixa'],
+  ['20.9,53.4', 'enseada_folha7_palmeira_alta'],
+  ['16.76,45.57', 'enseada_folha7_palmeira_baixa'],
+  ['18.24,45.2', 'enseada_folha7_palmeira_jovem'],
+  ['16.6,46.7', 'enseada_folha7_palmeira_media'],
 ]);
 const folhaViva = (sprite, periodo = .18, fase = 0, margem = 8) => ({ sprite, quadros: 8, margem, periodo, fase });
 // Reaproveita as folhas já aprovadas para as demais instâncias da mesma arte.
 const FOLHAS_VEGETACAO = {
-  P: ['enseada_folha_palmeira_alta', 8], M: ['enseada_folha_palmeira_media', 8],
-  B: ['enseada_folha_palmeira_baixa', 8], J: ['enseada_folha_palmeira_jovem', 8],
-  C: ['enseada_folha_arvore', 8], T: ['enseada_folha6_arvores_redondas', 8],
+  P: ['enseada_folha7_palmeira_alta', 24], M: ['enseada_folha7_palmeira_media', 24],
+  B: ['enseada_folha7_palmeira_baixa', 24], J: ['enseada_folha7_palmeira_jovem', 24],
+  C: ['enseada_folha7_arvore_camp', 24], T: ['enseada_folha6_arvores_redondas', 8],
   D: ['enseada_folha4_arbustos', 24], F: ['enseada_folha4_arbusto_florido', 24],
 };
 
@@ -454,7 +454,7 @@ export const map = {
     ...VEGETACAO.map(([tipo, x, y, largura], i) => ({
       id: `enseada_vegetacao_${i + 1}`, tipo: 'decoracao', x, y,
       sprite: SPRITES_VEGETACAO[tipo], useCrop: true, larguraPx: largura,
-      ...(PALMEIRAS_ANIMADAS.has(`${x},${y}`) ? { animacaoFolha: folhaViva(PALMEIRAS_ANIMADAS.get(`${x},${y}`), .19, i * .19) } : FOLHAS_VEGETACAO[tipo] ? { animacaoFolha: folhaViva(FOLHAS_VEGETACAO[tipo][0], .19 + (i % 4) * .015, i * .19, FOLHAS_VEGETACAO[tipo][1]) } : {}),
+      ...(PALMEIRAS_ANIMADAS.has(`${x},${y}`) ? { animacaoFolha: folhaViva(PALMEIRAS_ANIMADAS.get(`${x},${y}`), .19, i * .19, 24) } : FOLHAS_VEGETACAO[tipo] ? { animacaoFolha: folhaViva(FOLHAS_VEGETACAO[tipo][0], .19 + (i % 4) * .015, i * .19, FOLHAS_VEGETACAO[tipo][1]) } : {}),
       pivotX: 0.5, pivotY: 0.96, bloqueia: !(x === 14.4 && y === 30.8) && ['P', 'M', 'B', 'J', 'C', 'T', 'G'].includes(tipo),
       hitbox: { offsetX: -0.18, offsetY: -0.18, width: 0.36, height: 0.36 },
       // Palmeira e árvore de tronco: ordena pelo pé (a copa pode passar na
@@ -482,6 +482,7 @@ export const map = {
     {
       id: 'enseada_macico_leste', tipo: 'decoracao', x: 18.6 + ESTACAO_DX, y: 18.1 + ESTACAO_DY,
       sprite: 'enseada_estacao_revisada', useCrop: true, larguraPx: 1100, cachoeiraViva: { revisada: true },
+      animacaoFolha: folhaViva('enseada_folha7_cachoeira', .14, 0, 24),
       pivotX: 0.520, pivotY: 0.9425, camada: 'fundo', ordem: -1,
       bloqueia: false,
     },
@@ -660,7 +661,7 @@ export const map = {
     {
       id: 'acampamento_vigilia_enseada', nome: 'ACAMPAMENTO DE VIGÍLIA', tipo: 'decoracao', x: 17.96, y: 34.43,
       sprite: 'enseada_camp_ref_fogueira', animPeriodo: 0.42,
-      animacaoFolha: folhaViva('enseada_folha_fogueira', .11),
+      animacaoFolha: folhaViva('enseada_folha7_fogueira', .11, 0, 24),
       useCrop: true, larguraPx: 89, pivotX: 0.5, pivotY: 0.98,
       bloqueia: true, hitbox: { offsetX: -0.30, offsetY: -0.24, width: 0.60, height: 0.48 },
       fogueiraViva: true, brilho: { cor: '#ffae52', raio: 1.25, forca: 0.28 },
@@ -695,14 +696,14 @@ export const map = {
     {
       id: 'enseada_arvore_camp_esquerda', tipo: 'decoracao', x: 15.0, y: 29.0,
       sprite: 'enseada_camp_ref_arvore', useCrop: true, larguraPx: 185,
-      animacaoFolha: folhaViva('enseada_folha_arvore', .22),
+      animacaoFolha: folhaViva('enseada_folha7_arvore_camp', .22, 0, 24),
       pivotX: 0.5, pivotY: 0.98, bloqueia: true,
       hitbox: { offsetX: -0.22, offsetY: -0.22, width: 0.44, height: 0.44 },
     },
     {
       id: 'enseada_arvore_camp_direita', tipo: 'decoracao', x: 16.7, y: 28.6,
       sprite: 'enseada_camp_ref_arvore', useCrop: true, espelhar: true, larguraPx: 165,
-      animacaoFolha: folhaViva('enseada_folha_arvore', .25, .7),
+      animacaoFolha: folhaViva('enseada_folha7_arvore_camp', .25, .7, 24),
       pivotX: 0.5, pivotY: 0.98, bloqueia: true,
       hitbox: { offsetX: -0.22, offsetY: -0.22, width: 0.44, height: 0.44 },
     },
@@ -836,7 +837,7 @@ export const map = {
       // A piscina da capivara da arte é a bacia de pedras redonda com
       // cascatinha e juncos no canto — não a tina termal retangular cinza.
       id: 'piscina_mare_viva_enseada', nome: 'PISCINA TERMAL', tipo: 'decoracao', x: 28.3, y: 51.65,
-      animacaoFolha: folhaViva('enseada_folha5_piscina', 0.16, 0.85),
+      animacaoFolha: folhaViva('enseada_folha7_piscina', .16, .85, 24),
       sprite: 'enseada3_piscina', useCrop: true, larguraPx: 220,
       pivotX: 0.5, pivotY: 0.92, depthOffset: -4,
       bloqueia: true, hitbox: { offsetX: -2.2, offsetY: -2.2, width: 1.35, height: 1.35 },
@@ -1022,7 +1023,7 @@ export const map = {
     {
       // A cabeceira encontra a praia; a corda liga o veleiro à ponta no mar.
       id: 'cais_enseada_visual', tipo: 'decoracao', x: 50.3125, y: 44.05,
-      animacaoFolha: folhaViva('enseada_folha6_cais_barco', 0.25, 0.23),
+      animacaoFolha: folhaViva('enseada_folha7_barco', .22, .23, 24),
       sprite: 'enseada_cais_barco', useCrop: true, larguraPx: 370,
       pivotX: 0.5, pivotY: 0.97, camada: 'fundo', ordem: -1, bloqueia: false,
     },
@@ -1234,7 +1235,7 @@ export const map = {
     // ---- SETOR 8 (Mar): Portal NE + boias + fauna marinha ----
     {
       id: 'portal_caminho_correntes', nome: 'PORTAL DAS CORRENTES', tipo: 'decoracao', x: 28.0, y: 10.0,
-      animacaoFolha: folhaViva('enseada_folha6_portal_correntes', 0.18, 0.92),
+      animacaoFolha: folhaViva('enseada_folha7_portal', .16, .92, 24),
       sprite: 'enseada_correntes_portal_ref', vorticidadeCorrentes: true,
       useCrop: true, larguraPx: 190, pivotX: 0.5, pivotY: 0.94,
       bloqueia: false, brilho: { cor: '#5cf7eb', raio: 1.5, forca: 0.34 },

@@ -1,0 +1,21 @@
+<!doctype html><canvas id="game"></canvas><script type="module">
+import { loadSprites, getSprite } from '../../js/engine/sprites.js';
+import { getFrame } from '../../js/engine/sprite-clean.js';
+import { map } from '../../js/data/worlds/arquipelago-rotas-perdidas/enseada-ecos.js';
+import { state } from '../../js/game/state.js';
+import { getSeaCanvas } from '../../js/engine/beach-water.js';
+import { initRenderer, render } from '../../js/engine/renderer.js';
+import { snapCameraTo, camera } from '../../js/engine/camera.js';
+const ids=['enseada_macico_leste','piscina_mare_viva_enseada','acampamento_vigilia_enseada','cais_enseada_visual','portal_caminho_correntes','enseada_vegetacao_1','enseada_vegetacao_2','enseada_vegetacao_3','enseada_vegetacao_4','enseada_arvore_camp_esquerda'];
+const selected=ids.map(id=>map.objects.find(o=>o.id===id));
+const source=await (await fetch('../../js/main.js')).text();
+const defs=Array.from(source.matchAll(/\{ id: '([^']+)', src: '([^']+)' \}/g),m=>({id:m[1],src:'/'+m[2]}));
+const names=new Set(selected.flatMap(o=>[o.sprite,o.animacaoFolha.sprite]));
+await loadSprites(defs.filter(d=>names.has(d.id)));
+const verify=selected.map(o=>{const image=getSprite(o.sprite),f=getSprite(o.animacaoFolha.sprite);const crop=getFrame(image,0,0,1,1).crop;return {id:o.id, sprite:o.animacaoFolha.sprite, file:f?.src.split('/').pop(), period:o.animacaoFolha.periodo, phase:o.animacaoFolha.fase, margin:o.animacaoFolha.margem, loaded:!!f, crop:[crop.w,crop.h],sheet:[f?.width,f?.height],valid:!!f&&f.width===(crop.w+2*o.animacaoFolha.margem)*8&&f.height===crop.h}});
+state.world.currentMapId=map.id;state.world.currentMap=map;state.objects=selected.map(o=>({...o,x:o.x+.5,y:o.y+.5,renderType:'object'}));state.actors=[];state.fauna=[];state.collectibles=[];state.trainingTargets=[];
+initRenderer(document.getElementById('game'));camera.zoom=1;camera.targetZoom=1;
+window.results=verify; window.getSprite=getSprite; window.seaCanvas=()=>getSeaCanvas(map).causticas;
+window.sample=(id)=>{const object=state.objects.find(o=>o.id===id);snapCameraTo(object.x,object.y,map);const x=object.x,y=object.y;state.player.x=x+2;state.player.y=y+2;render(map,state);return document.getElementById('game').toDataURL()};
+window.ready=true;
+</script>

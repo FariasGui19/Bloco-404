@@ -14,7 +14,8 @@ import { saveGame } from './save.js';
 import { startNexoOnboarding } from './onboarding.js';
 import { getNearestCollectible, getCollectiblePrompt, collectItem } from './collectibles.js';
 import { checkGate, getGateFailureMessage, getGateSuccessMessage, isGateOpen, openGate } from './gates.js';
-import { recordQuestEvent } from './quests.js';
+import { recordQuestEvent, startQuest } from './quests.js';
+import { iniciarMareCromatica, lerMareCromatica, registrarMareCromatica, recompilarMareCromatica, abrirEstacaoCromatica, estabilizarAncoraCromatica } from './mare-cromatica.js';
 import { grantArchetypeXp, getArchetypeLevel } from './rpg.js';
 import { lerArvore, DEGRAUS } from './nado-arvore.js';
 import { recordFrequencyAnchor, countFrequencyAnchors, prepareFrequencyCrossing } from './frequencia-quest.js';
@@ -341,6 +342,53 @@ function interactWithObject(object) {
   const interaction = object.interacao;
   if (!interaction) return;
 
+  if (object.id === 'cromatica_alerta') {
+    const data=lerMareCromatica(state.progress);
+    openDialogue({speaker:'METRÔ // ALERTA CRÍTICO',dialogue:[
+      'UMA ÂNCORA PRIMÁRIA DO HUB FOI ARRASTADA PARA UM ECO CORROMPIDO DA ENSEADA, SOB A ESTAÇÃO 66.6.',
+      'SE ELA COLAPSAR, O AEROPORTO CENTRAL PERDERÁ ESTABILIDADE. O NÚCLEO X10 E O PRÓPRIO HUB ESTÃO EM RISCO.',
+      'NULO INTERCEPTA O SINAL. A ENSEADA ORIGINAL PERMANECE SEGURA: CRUZAREMOS PARA UMA PROJEÇÃO CONTAMINADA.',
+      data.desfecho==='colapso' ? 'A LINHA FOI PERDIDA. PODEMOS TENTAR UMA REDENÇÃO; O REGISTRO DA FALHA PERMANECE NO SAVE.' : 'A DESCOMPRESSÃO DO TRAJE AFETA ESTA REALIDADE, NÃO SEU PROGRESSO GLOBAL.',
+    ],choicesAfterDialogue:true,choices:[{text:data.desfecho==='colapso'?'INICIAR NOVA TENTATIVA':'ENTRAR NA MARÉ CROMÁTICA',onSelect:()=>{
+      if(!state.progress.archetype) {openDialogue({speaker:'NEXO-04',dialogue:['CALIBRE PRIMEIRO UM MÓDULO DE ECO.']});return;}
+      iniciarMareCromatica(state.progress);startQuest(state.progress,'mare_cromatica_ancora');saveGame();
+      void usePortal({id:'cromatica_entrada',label:'MARÉ CROMÁTICA',destino:{mapId:'mare_cromatica_superficie',spawnId:'inicio'}});
+    }},{text:'AINDA NÃO',onSelect:()=>{}}]});return;
+  }
+  if (object.id?.startsWith('cromatica_')) {
+    const d=lerMareCromatica(state.progress), id=object.id;
+    if(id.startsWith('cromatica_fragmento_')) {
+      const part=id.slice('cromatica_fragmento_'.length), fresh=registrarMareCromatica(state.progress,'fragmentos',part);
+      if(fresh) saveGame();
+      openDialogue({speaker:'FRAGMENTO MNEMÔNICO',dialogue:[fresh?'UM FRAGMENTO DE FÍSICA LOCAL RESPONDE AO TRAJE.':'ESTE FRAGMENTO JÁ FOI REGISTRADO.', 'LEVE OS FRAGMENTOS AO TERMINAL SEGURO JUNTO AO ACAMPAMENTO PARA RECOMPILAR.']});return;
+    }
+    if(id.startsWith('cromatica_fita_')) {
+      const part=id.slice('cromatica_fita_'.length),fresh=registrarMareCromatica(state.progress,'fitas',part);if(fresh) saveGame();
+      const record=part==='casa'?'FITA 01: A ÁGUA MUDOU DE COR ANTES DE A CHUVA CHEGAR. NÃO OLHEM PARA O REFLEXO.':'FITA 02: NULO USOU O SINAL DE RESGATE. MANTENHAM A ÂNCORA DE RETORNO VIVA.';
+      openDialogue({speaker:'GRAVADOR // ESTÁTICA',dialogue:[record,'NEXO-04: O REGISTRO PODE AJUDAR A PURIFICAR A INCURSÃO.']});return;
+    }
+    if(id==='cromatica_terminal') {
+      const changed=recompilarMareCromatica(state.progress),now=lerMareCromatica(state.progress);if(changed){recordQuestEvent(state.progress,{type:'cromatica',target:'recompilar'});saveGame();}
+      openDialogue({speaker:'TERMINAL SEGURO',dialogue:[`SINCRONIZAÇÃO LOCAL ${now.sincronizacao}/4 • FRAGMENTOS ${now.fragmentos.length}/3.`,changed?'RECOMPILAÇÃO CONCLUÍDA. O MÓDULO RECUPEROU PARTE DA SUA RESPOSTA.':'TRAGA NOVOS FRAGMENTOS PARA RECOMPILAR.','SUAS HABILIDADES E SEU NÍVEL GLOBAL NÃO FORAM APAGADOS.']});return;
+    }
+    if(id==='cromatica_selo') {
+      const opened=abrirEstacaoCromatica(state.progress);if(opened){recordQuestEvent(state.progress,{type:'cromatica',target:'selo'});saveGame();}
+      openDialogue({speaker:'SELO // 66.6',dialogue:[opened||d.estacaoAberta?'A TRAVA DA ESTAÇÃO SE ABRE. A DESCIDA À CONTENÇÃO ESTÁ LIBERADA.':'O SELO REJEITA O TRAJE. COLETE UM FRAGMENTO E RECOMPILE NO TERMINAL DO ACAMPAMENTO.', 'NULO: SUA RESSONÂNCIA É UM ERRO DE SINTAXE.']});return;
+    }
+    if(id.startsWith('cromatica_painel_')) {
+      const part=id.slice('cromatica_painel_'.length),fresh=registrarMareCromatica(state.progress,'paineis',part);if(fresh)saveGame();
+      openDialogue({speaker:'PAINEL DE CONTENÇÃO',dialogue:[fresh?`CIRCUITO ${part.toUpperCase()} ALINHADO.`:'ESTE CIRCUITO JÁ ESTÁ ALINHADO.',`PAINÉIS ${lerMareCromatica(state.progress).paineis.length}/3 • CUIDADO COM A RESINA NO CHÃO.`]});return;
+    }
+    if(id==='cromatica_ancora') {
+      const threats=(state.trainingTargets??[]).filter(t=>t.cromaticaEnemy && t.health>0).length;
+      if (!d.ancoraEstavel && threats > 0) {
+        openDialogue({speaker:'NEXO-04 // CONTENÇÃO',dialogue:[`A ÂNCORA ATRAIU ${threats} INFECTADO(S). DISPERSE AS AMEAÇAS ANTES DE INICIAR A ESTABILIZAÇÃO.`, 'CLIQUE NA DIREÇÃO DO INIMIGO PARA ATACAR; O ANEL CLARO AVISA ANTES DELE GOLPEAR.']});return;
+      }
+      const result=estabilizarAncoraCromatica(state.progress);if(result){recordQuestEvent(state.progress,{type:'cromatica',target:'ancora'});saveGame();}
+      openDialogue({speaker:'NÚCLEO DE ÂNCORA',dialogue:result ? [result==='total'?'A ÂNCORA FOI PURIFICADA. AS DUAS FITAS E A RECOMPILAÇÃO COMPLETA PERMITIRAM ISOLAR A PRAGA.':'ÂNCORA SALVA, MAS A CONTENÇÃO PERMANECE FRATURADA. A INFECÇÃO AINDA RESISTE NAS ZONAS BAIXAS.','A SOBRECARGA ABRIU UMA FENDA ATRÁS DA CÂMARA. O HUB ESTÁ SEGURO.'] : [d.ancoraEstavel?'A ÂNCORA PERMANECE ESTÁVEL.':'A ÂNCORA AINDA OSCILA. ALINHE OS TRÊS PAINÉIS ANTES DE TENTAR.']});return;
+    }
+    if(id==='cromatica_limiar_final') {openDialogue({speaker:'NEXO-04 // FENDA',dialogue:['VOCÊ ATRAVESSOU O RASGO. ALÉM DESTE LIMIAR, A NOVA REALIDADE AINDA NÃO FOI CARTOGRAFADA.','A LINHA DE RETORNO PERMANECE ABERTA.']});return;}
+  }
   if (object.id?.startsWith('ancora_666_')) {
     const id = object.id.slice('ancora_666_'.length);
     const logs = {

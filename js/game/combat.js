@@ -1,6 +1,6 @@
 // Combate básico: dano por arquétipo, crítico, XP e alvos de treino.
-// Inimigos agressivos e dano ao jogador continuam pendentes; aqui o
-// jogador só ataca alvos explícitos de treino.
+// Alvos de treino e infectados da Maré compartilham a detecção de golpes;
+// a IA e a ausência de recompensa de treino dos infectados são separadas.
 import { canStandAt } from './collision.js';
 import { state } from './state.js';
 import { CONFIG } from '../config.js';
@@ -43,7 +43,7 @@ export function updateBasicCombat(player, targets, dt) {
   }
   for (const target of targets) {
     target.hitTimer = Math.max(0, target.hitTimer - dt);
-    if (target.downTimer > 0) {
+    if (!target.cromaticaEnemy && target.downTimer > 0) {
       target.downTimer = Math.max(0, target.downTimer - dt);
       if (target.downTimer === 0) target.health = target.maxHealth;
     }
@@ -82,6 +82,9 @@ function applyMasteryRankUps(player, rankUps) {
 }
 
 function registerDefeat(player, progress, target) {
+  // Infectados não são alvos de treino: não contam para missões nem XP de
+  // treinamento e não renascem automaticamente após quatro segundos.
+  if (target.cromaticaEnemy) return 0;
   let xp = 0;
   // Vitória conta para o eco do arquétipo (maestria), não gasta ponto nenhum.
   applyMasteryRankUps(player, recordMastery(progress, 'resonance'));
@@ -317,7 +320,7 @@ export function tryBasicAttack({ player, progress, map, targets, point, rng = Ma
   const selected = (targets ?? []).find(target => {
     if (target.health <= 0) return false;
     const at = iso(target), dx = click.x - at.x, dy = click.y - at.y;
-    return Math.abs(dx) <= 20 && dy >= -55 && dy <= 10;
+    return Math.abs(dx) <= (target.cromaticaEnemy ? 35 : 20) && dy >= (target.cromaticaEnemy ? -108 : -55) && dy <= 10;
   });
   if (selected) point = selected;
 

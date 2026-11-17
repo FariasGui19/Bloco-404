@@ -1,5 +1,8 @@
 // js/data/world-registry.js
 export const WORLD_REGISTRY = {
+  mare_cromatica_superficie: { nome: 'Maré Cromática — Superfície', dimensao: 'mare_cromatica', load: () => import('./worlds/arquipelago-rotas-perdidas/mare-cromatica.js').then(m => ({map:m.superficie})) },
+  mare_cromatica_contencao: { nome: 'Maré Cromática — Contenção', dimensao: 'mare_cromatica', load: () => import('./worlds/arquipelago-rotas-perdidas/mare-cromatica.js').then(m => ({map:m.contencao})) },
+  mare_cromatica_fenda: { nome: 'Maré Cromática — Fenda', dimensao: 'mare_cromatica', load: () => import('./worlds/arquipelago-rotas-perdidas/mare-cromatica.js').then(m => ({map:m.fenda})) },
   cidadela_404: { nome: 'Cidadela do Código Queimado', dimensao: 'cidadela_404', load: () => import('./worlds/cidadela-404/cidadela.js') },
   hub_saguao: {
     nome: 'Saguão Central',

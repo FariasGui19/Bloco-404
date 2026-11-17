@@ -16,6 +16,7 @@ import { DEGRAUS } from './nado-arvore.js';
 import { fragmentosColetados } from './mare-missao.js';
 import { detalhesFauna } from './fauna-ferida.js';
 import { getVidaAquatica } from './vida-aquatica.js';
+import { perfilSincronizacao } from './mare-cromatica.js';
 
 export const POWER_PROFILES = {
   golpe_ruptura: { cost: 24, cooldown: 1.4, color: '#ffd264', duration: 0.55 },
@@ -59,12 +60,14 @@ function canStart(id, showMessage) {
     showMessage('HABILIDADE RECARREGANDO');
     return false;
   }
-  if (player.energy < profile.cost) {
+  const sync = perfilSincronizacao(state.progress, state.world.currentMapId);
+  const cost = Math.ceil(profile.cost * sync.custo);
+  if (player.energy < cost) {
     showMessage('ENERGIA INSUFICIENTE');
     return false;
   }
-  player.energy -= profile.cost;
-  player.ability.cooldowns[id] = profile.cooldown;
+  player.energy -= cost;
+  player.ability.cooldowns[id] = profile.cooldown * sync.recarga;
   // Apenas a duração visual aumenta com o traje; deslocamento, custo e recarga não mudam.
   const visualDuration = player.equippedSuit === 'dominio' && id === 'golpe_ruptura' ? 0.8
     : player.equippedSuit === 'mare' && id === 'passo_corrente' ? 0.55
@@ -132,7 +135,8 @@ export function tryArchetypePower(id, showMessage) {
     player.ability.messageTimer = 3;
   }
   if (SCAN_LABELS[id]) {
-    const target = nearestGate(5, o => !!o.gate?.scanFlag) ?? nearestGate(5);
+    const radius = 5 * perfilSincronizacao(state.progress, state.world.currentMapId).alcance;
+    const target = nearestGate(radius, o => !!o.gate?.scanFlag) ?? nearestGate(radius);
     if (target?.gate?.scanFlag && target.gate.diagnosisArchetype === state.progress.archetype) {
       state.progress.flags ??= {};
       state.progress.flags[target.gate.scanFlag] = true;
@@ -195,7 +199,7 @@ export function tryArchetypePower(id, showMessage) {
   // Se já está tocando a barreira (inclusive saves antigos), deixe sair para
   // qualquer lado conforme a direção; fora dela, exige apontar para o gate.
   const phaseDirection = phaseGate ? (Math.abs(phaseDelta) < 0.75 ? Math.sign(direction[phaseAxis]) : Math.sign(phaseDelta)) : 0;
-  const phaseDistance = phaseGate ? Math.abs(phaseGate[phaseAxis] - player[phaseAxis]) + 1 : profile.distance;
+  const phaseDistance = phaseGate ? Math.abs(phaseGate[phaseAxis] - player[phaseAxis]) + 1 : profile.distance * perfilSincronizacao(state.progress, state.world.currentMapId).alcance;
   player.ability.active = id;
   player.ability.dash = {
     directionX: phaseGate ? (phaseAxis === 'x' ? phaseDirection : 0) : direction.x, directionY: phaseGate ? (phaseAxis === 'y' ? phaseDirection : 0) : direction.y,

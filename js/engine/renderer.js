@@ -2737,6 +2737,7 @@ function drawWorld(map, state) {
   if (state.companion) drawList.push(state.companion);
   for (const a of state.fauna ?? []) if (visivel(a)) drawList.push(a);
   for (const target of state.trainingTargets ?? []) if (visivel(target)) drawList.push(target);
+  if (state.cromaticaRuntime?.visao && visivel(state.cromaticaRuntime.visao)) drawList.push(state.cromaticaRuntime.visao);
 
   for (const o of state.objects ?? []) {
     if (o.camada === 'fundo') { backList.push(o); continue; }  // trem/trilho sempre
@@ -2791,7 +2792,9 @@ function drawWorld(map, state) {
         ctx.save(); ctx.globalAlpha = .35; drawMapObject(item, state); ctx.restore();
       } else drawMapObject(item, state);
     } else if (item.renderType === 'trainingTarget') {
-      drawTrainingTarget(item);
+      if (item.cromaticaEnemy) drawCromaticaInfectado(item); else drawTrainingTarget(item);
+    } else if (item.renderType === 'cromaticaVisao') {
+      drawCromaticaNulo(item);
     } else if (item.renderType === 'companion') {
       if (item.speciesId === 'bolt') drawBolt(item); else drawLumeo(item);
     } else if (item.renderType === 'fauna') {
@@ -3026,6 +3029,25 @@ function drawBioRail(rail) {
   ctx.fillStyle = rail.side === 'perto' ? '#f0c57b' : '#96d3bc';
   ctx.beginPath(); ctx.arc(ix, iy - altura - 3, 2.6, 0, Math.PI * 2); ctx.fill();
   ctx.restore();
+}
+
+// Aparição e infectados vivem no mesmo espaço/profundidade dos objetos.
+function drawCromaticaInfectado(target) {
+  if (target.health <= 0) return;
+  const x=(target.x-target.y)*HW,y=(target.x+target.y)*HH,img=getSprite('cromatica_infectado');
+  ctx.save();ctx.fillStyle='rgba(18,8,28,.32)';ctx.beginPath();ctx.ellipse(x,y+1,17,6,0,0,Math.PI*2);ctx.fill();
+  if (target.windup>0) {ctx.strokeStyle='#ffb3dc';ctx.lineWidth=2;ctx.beginPath();ctx.ellipse(x,y,21,9,0,0,Math.PI*2);ctx.stroke();}
+  if(img) {const fw=img.width/8,fh=img.height,frame=Math.floor((target.clock??0)*5)%8;
+    ctx.translate(x,y);if(target.flip)ctx.scale(-1,1);ctx.imageSmoothingEnabled=false;
+    ctx.globalAlpha=target.hitTimer>0?.65:1;ctx.drawImage(img,frame*fw,0,fw,fh,-45,-114,90,114);
+  } else {ctx.fillStyle='#8e4d83';ctx.fillRect(x-8,y-34,16,34);}
+  ctx.restore();
+}
+function drawCromaticaNulo(vision) {
+  const img=getSprite('cromatica_nulo');if(!img)return;
+  const x=(vision.x-vision.y)*HW,y=(vision.x+vision.y)*HH;
+  const alpha=Math.min(1,Math.max(0,vision.tempo/0.65),Math.max(0,(3.5-vision.tempo)/.45));
+  ctx.save();ctx.globalAlpha=alpha*.8;ctx.imageSmoothingEnabled=false;ctx.drawImage(img,x-23,y-75,46,75);ctx.restore();
 }
 
 // Manifestação de treino é um alvo explícito e inofensivo; não é fauna.

@@ -215,6 +215,12 @@ export const map = {
        [270, 385], [211, 390], [178, 380], [166, 368]],
     ].map(contornoSuave),
   },
+  // Clareira central: areia ao redor de uma única ilha gramada, sem alterar colisão.
+  ajusteSoloCentral: {
+    ...REF,
+    area: contornoSuave([[605, 359], [655, 349], [686, 345], [730, 334], [769, 328], [810, 337], [820, 370], [798, 394], [754, 417], [710, 432], [654, 441], [610, 432], [598, 405]]),
+    grama: contornoSuave([[625, 390], [642, 379], [666, 376], [691, 372], [718, 361], [750, 350], [770, 350], [786, 356], [786, 368], [769, 384], [745, 397], [716, 407], [689, 419], [659, 422], [634, 418], [624, 406]]),
+  },
   passarelaSobreAgua: [...passarelaCorrentes],
   // A grama não vem de mancha elíptica: vem de `celulasGrama`, traçada da
   // referência. A elipse antiga era um retângulo verde por cima da arte.
@@ -630,32 +636,35 @@ export const map = {
       // própria arte (`monolito-eco-vertical.png`).
       id: 'totem_eco_enseada', nome: 'MONÓLITO DE ECO', tipo: 'decoracao', x: 32.59, y: 35.75,
       sprite: 'enseada_monolito_vertical', spriteB: 'enseada_monolito_vertical', animPeriodo: 0.52,
-      useCrop: true, larguraPx: 62, pivotX: 0.5, pivotY: 0.98,
+      useCrop: true, larguraPx: 67, pivotX: 0.5, pivotY: 0.98,
       bloqueia: true, hitbox: { offsetX: -0.26, offsetY: -0.22, width: 0.52, height: 0.44 },
-      pulsoTotem: true, brilho: { cor: '#52f6ff', raio: 1.4, forca: 0.32 },
+      pulsoTotem: true, pulsoBiolum: '#6cf7ff', brilho: { cor: '#52f6ff', raio: 1.4, forca: 0.32 },
       interacao: { label: 'EXAMINAR MONÓLITO DE ECO', distancia: 1.5 },
     },
     {
-      id: 'estela_navegadores_enseada', nome: 'ESTELA DOS NAVEGADORES', tipo: 'decoracao', x: 30.22, y: 37.25,
+      id: 'estela_navegadores_enseada', nome: 'ESTELA DOS NAVEGADORES', tipo: 'decoracao', x: 31.345, y: 36.875,
       sprite: 'enseada8_estela', spriteB: 'enseada8_estela', animPeriodo: 0.62,
-      useCrop: true, larguraPx: 62, pivotX: 0.5, pivotY: 0.94,
+      useCrop: true, larguraPx: 35, pivotX: 0.5, pivotY: 0.94,
       bloqueia: false, pulsoBiolum: '#6cf7ff', brilho: { cor: '#6cf7ff', raio: 1.35, forca: 0.3 },
       interacao: { label: 'DECIFRAR A ESTELA DOS NAVEGADORES', distancia: 1.6 },
     },
     {
-      id: 'jardim_pedras_enseada', nome: 'PEDRAS DO EQUILÍBRIO', tipo: 'decoracao', x: 34.13, y: 30.34,
-      sprite: 'enseada4_cairn', spriteB: 'enseada4_cairn', animPeriodo: 0.64,
-      useCrop: true, larguraPx: 80, pivotX: 0.5, pivotY: 0.98,
+      id: 'jardim_pedras_enseada', nome: 'PEDRAS DO EQUILÍBRIO', tipo: 'decoracao', x: 33.0, y: 32.0,
+      sprite: 'enseada_cairn_central',
+      useCrop: true, larguraPx: 65, pivotX: 0.5, pivotY: 0.98,
       bloqueia: true, hitbox: { offsetX: -0.30, offsetY: -0.24, width: 0.60, height: 0.48 },
-      oscilaBrisa: true,
       interacao: { label: 'MEDITAR NAS PEDRAS DO EQUILÍBRIO', distancia: 1.55 },
     },
-    {
-      id: 'borboletas_fonte_enseada', nome: 'BORBOLETAS DO CENTRO', tipo: 'decoracao', x: 36.28, y: 33.55,
-      sprite: 'enseada_borboletas_vivas', spriteB: 'enseada_borboletas_vivas_b', animPeriodo: 0.34,
-      useCrop: true, larguraPx: 50, pivotX: 0.5, pivotY: 0.5,
-      bloqueia: false, flutuacaoSuave: true, nadoCardume: true,
-    },
+    // Três borboletas independentes: voam e batem asas em volta da pedra.
+    ...[
+      ['borboletas_fonte_enseada', 'enseada_borboleta_dourada', 32.59, 35.75, -52, -103],
+      ['borboleta_centro_azul_a', 'enseada_borboleta_azul_a', 32.59, 35.75, 51, -106],
+      ['borboleta_centro_azul_b', 'enseada_borboleta_azul_b', 32.59, 35.75, 45, -65],
+    ].map(([id, sprite, x, y, ajusteX, ajusteY]) => ({
+      id, nome: 'BORBOLETA DO MONÓLITO', tipo: 'decoracao', x, y, sprite,
+      useCrop: true, larguraPx: 17, pivotX: 0.5, pivotY: 0.5, ajusteX, ajusteY,
+      bloqueia: false, flutuacaoSuave: true, nadoCardume: true, bateAsas: true,
+    })),
 
     // ---- SETOR 5 (Sudoeste): Piscina + espelho + grutas + rede ----
     {

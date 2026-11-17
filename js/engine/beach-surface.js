@@ -53,7 +53,7 @@ function intensidadePoligono(px, py, pontos, suavidade = 10) {
   return smooth(.5 + (dentro ? menor : -menor) / suavidade);
 }
 
-export function createBeachSurface(rows, scale = 16, { gramaInterior = false, caminhos = [], zonasGrama = [], zonasRocha = [], celulasGrama = null, ajusteSolo = null } = {}) {
+export function createBeachSurface(rows, scale = 16, { gramaInterior = false, caminhos = [], zonasGrama = [], zonasRocha = [], celulasGrama = null, ajusteSolo = null, ajusteSoloCentral = null, texturaGramaCentral = null } = {}) {
   const height = rows.length, width = rows[0].length;
   const margemAjuste = 55;
   const limitesAjuste = ajusteSolo && {
@@ -71,6 +71,12 @@ export function createBeachSurface(rows, scale = 16, { gramaInterior = false, ca
     minY: Math.min(...pontos.map(p => p[1])) - 5,
     maxY: Math.max(...pontos.map(p => p[1])) + 5,
   })) ?? [];
+  const limitesCentral = ajusteSoloCentral && {
+    minX: Math.min(...ajusteSoloCentral.area.map(p => p[0])) - 10,
+    maxX: Math.max(...ajusteSoloCentral.area.map(p => p[0])) + 10,
+    minY: Math.min(...ajusteSoloCentral.area.map(p => p[1])) - 10,
+    maxY: Math.max(...ajusteSoloCentral.area.map(p => p[1])) + 10,
+  };
   const pixels = new Uint8ClampedArray(width * height * scale * scale * 4);
   for (let py = 0; py < height * scale; py++) for (let px = 0; px < width * scale; px++) {
     const x = (px + .5) / scale, y = (py + .5) / scale;
@@ -161,10 +167,38 @@ export function createBeachSurface(rows, scale = 16, { gramaInterior = false, ca
         r += 16 * area; g += 9 * area; b -= 12 * area;
       }
     }
+    let intensidadeRelvaCentral = 0, refCentralX = 0, refCentralY = 0;
+    // Recorte local do centro, posterior ao ajuste oeste e sem alterar alpha.
+    if (ajusteSoloCentral) {
+      const sx = ajusteSoloCentral.cx + ajusteSoloCentral.sx * (x - y);
+      const sy = ajusteSoloCentral.cy + ajusteSoloCentral.sy * (x + y);
+      if (sx >= limitesCentral.minX && sx <= limitesCentral.maxX && sy >= limitesCentral.minY && sy <= limitesCentral.maxY) {
+        const area = intensidadePoligono(sx, sy, ajusteSoloCentral.area, 20);
+        if (area > 0) {
+          const ilha = intensidadePoligono(sx, sy, ajusteSoloCentral.grama, 8);
+          grama += (ilha - grama) * area;
+          intensidadeRelvaCentral = ilha * area; refCentralX = sx; refCentralY = sy;
+        }
+      }
+    }
     if (grama > 0) {
-      const gr = 126 + broad * .6 + grain * .7 - wet * 8;
-      const gg = 186 + broad * .6 + grain * .7 - wet * 6;
-      const gb = 78 + broad * .5 + grain * .6;
+      let gr = 126 + broad * .6 + grain * .7 - wet * 8;
+      let gg = 186 + broad * .6 + grain * .7 - wet * 6;
+      let gb = 78 + broad * .5 + grain * .6;
+      if (texturaGramaCentral && intensidadeRelvaCentral > 0) {
+        // Projeta a arte como uma peça só, sem ladrilhar ou plantar clones.
+        const tx = Math.floor((refCentralX - 624) / 162 * texturaGramaCentral.width);
+        const ty = Math.floor((refCentralY - 350) / 73 * texturaGramaCentral.height);
+        let tr = 135, tg = 168, tb = 58; // paleta da grama do platô
+        if (tx >= 0 && tx < texturaGramaCentral.width && ty >= 0 && ty < texturaGramaCentral.height) {
+          const i = (ty * texturaGramaCentral.width + tx) * 4, p = texturaGramaCentral.pixels;
+          // As bordas escuras do recorte não devem formar uma segunda ilha.
+          if (p[i+3] > 200 && p[i] + p[i+1] + p[i+2] > 155) { tr = p[i]; tg = p[i+1]; tb = p[i+2]; }
+        }
+        gr += (tr - gr) * intensidadeRelvaCentral;
+        gg += (tg - gg) * intensidadeRelvaCentral;
+        gb += (tb - gb) * intensidadeRelvaCentral;
+      }
       r += (gr - r) * grama;
       g += (gg - g) * grama;
       b += (gb - b) * grama;

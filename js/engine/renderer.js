@@ -677,6 +677,17 @@ const beachSurfaceCache = new WeakMap();
 function drawBeachSurface(map) {
   let texture = beachSurfaceCache.get(map);
   if (!texture) {
+    // A textura de relva da ilha central é lida do sprite uma vez no cache.
+    let texturaGramaCentral = null;
+    const arteGrama = map.ajusteSoloCentral && getSprite('enseada_ilha_grama_central');
+    if (arteGrama) {
+      const amostra = document.createElement('canvas');
+      amostra.width = 256; amostra.height = 160;
+      const ag = amostra.getContext('2d');
+      ag.drawImage(arteGrama, 0, 0, amostra.width, amostra.height);
+      texturaGramaCentral = { width: amostra.width, height: amostra.height,
+        pixels: ag.getImageData(0, 0, amostra.width, amostra.height).data };
+    }
     const data = createBeachSurface(map.aguaPraia, 16, {
       gramaInterior: map.meta?.gramaInterior === true,
       caminhos: map.caminhosAreia ?? [],
@@ -684,6 +695,8 @@ function drawBeachSurface(map) {
       zonasRocha: map.zonasRocha ?? [],
       celulasGrama: map.celulasGrama ?? null,
       ajusteSolo: map.ajusteSolo ?? null,
+      ajusteSoloCentral: map.ajusteSoloCentral ?? null,
+      texturaGramaCentral,
     });
     texture = document.createElement('canvas');
     texture.width = data.width; texture.height = data.height;
@@ -4238,6 +4251,13 @@ function drawEnseadaObjectAnimations(object, state) {
     }
   }
 
+  if (object.pulsoTotem && object.id === 'totem_eco_enseada') {
+    const orbY = iy - 75 * (object.larguraPx / 62);
+    const g = ctx.createRadialGradient(ix, orbY, 1, ix, orbY, 17);
+    g.addColorStop(0, 'rgba(139,255,255,.45)');
+    g.addColorStop(1, 'rgba(45,225,255,0)');
+    ctx.fillStyle = g; ctx.beginPath(); ctx.arc(ix, orbY, 17, 0, Math.PI * 2); ctx.fill();
+  }
   if (object.pulsoTotem) {
     const pulso = 0.78 + Math.sin(t * 2.8) * 0.22;
     ctx.strokeStyle = `rgba(255, 217, 128, ${(0.34 * pulso).toFixed(2)})`;
@@ -5440,9 +5460,11 @@ function drawCroppedObject(object, image, sheet) {
   const py = object.pivotY ?? 1;
 
   const agora = performance.now() / 1000;
-  const boiaY = object.flutuacaoSuave ? Math.sin(agora * 2.1 + object.x * 1.7 + object.y) * 2.4 : 0;
-  const cardumeX = object.nadoCardume ? Math.cos(agora * 1.35 + object.x) * 4.5 : 0;
-  const cardumeY = object.nadoCardume ? Math.sin(agora * 2.0 + object.y) * 2.2 : 0;
+  const movimentoReduzido = typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+  const voa = !object.bateAsas || !movimentoReduzido;
+  const boiaY = object.flutuacaoSuave && voa ? Math.sin(agora * 2.1 + object.x * 1.7 + object.y) * 2.4 : 0;
+  const cardumeX = object.nadoCardume && voa ? Math.cos(agora * 1.35 + object.x) * 4.5 : 0;
+  const cardumeY = object.nadoCardume && voa ? Math.sin(agora * 2.0 + object.y) * 2.2 : 0;
   const ix = (object.x - object.y) * HW + (object.ajusteX ?? 0) + cardumeX;
   const iy = (object.x + object.y) * HH + (object.ajusteY ?? 0) + boiaY + cardumeY;
 
@@ -5451,6 +5473,7 @@ function drawCroppedObject(object, image, sheet) {
   // depois do espelhamento, então vale igual para objetos espelhados.
   const skewY = object.skewY ?? 0;
   const escalaY = object.escalaY ?? 1;
+  const asas = object.bateAsas && !movimentoReduzido ? 0.68 + 0.32 * Math.abs(Math.sin(agora * 8 + object.ajusteX * .07)) : 1;
   const brisaSkewX = object.oscilaBrisa
     ? Math.sin(agora * 2.1 + object.x * 1.3 + object.y) * 0.032 * (0.65 + (state.clima?.vento ?? 0.3))
     : 0;
@@ -5478,7 +5501,7 @@ function drawCroppedObject(object, image, sheet) {
   const filtro = filtroObjeto(object);
   // Cópia 1:1 do sprite já reduzido (ver "SPRITES JÁ NA ESCALA DA TELA").
   const kTela = scale * escaladosZoom;
-  const pronto = escaladosAtivo && !filtro && skewY === 0 && brisaSkewX === 0 && escalaY === 1 && kTela <= ESCALADOS_MAX_K
+  const pronto = escaladosAtivo && !filtro && skewY === 0 && brisaSkewX === 0 && escalaY === 1 && asas === 1 && kTela <= ESCALADOS_MAX_K
     ? spriteEscalado(c.canvas, kTela, Boolean(object.espelhar))
     : null;
   if (pronto) {
@@ -5507,6 +5530,7 @@ function drawCroppedObject(object, image, sheet) {
     ctx.translate(ix, iy);
     if (skewY !== 0 || brisaSkewX !== 0 || escalaY !== 1) ctx.transform(1, skewY, brisaSkewX, escalaY, 0, 0);
     if (object.espelhar) ctx.scale(-1, 1);
+    if (asas !== 1) ctx.scale(asas, 1);
     ctx.drawImage(c.canvas, sx, banda.sy, sw, banda.sh,
       -w * px + sx * scale, -h * py + banda.sy * scale, sw * scale, banda.sh * scale);
     ctx.filter = 'none';

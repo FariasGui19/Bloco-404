@@ -7,6 +7,13 @@ import { flora } from '../../flora-praia.js';
 import { CHAO } from '../../enseada-chao.js';
 import { VEGETACAO, SPRITES_VEGETACAO } from '../../enseada-vegetacao.js';
 
+// Converte contornos medidos na imagem isométrica para offsets em tiles.
+// O carregador acrescenta meio tile ao objeto, então a origem é runtime.
+function contornoIso(pontos, origemX, origemY, escala = 1) {
+  return pontos.map(([px, py]) => [(px / (32*escala) + py / (16*escala))/2 - origemX,
+    (-px / (32*escala) + py / (16*escala))/2 - origemY]);
+}
+
 const COLS = 72;
 const ROWS = 64;
 // Deslocamento comum à arte da estação, sua porta, paredes e retorno.
@@ -315,7 +322,8 @@ export const map = {
     [31.2, 21.2, 35, 22.6], [35, 22.6, 39, 24.2],
     [39, 24.2, 43, 25.1], [43, 25.1, 42.5, 28.8],
     [42.5, 28.8, 44.5, 31.0], [44.5, 31.0, 46.8, 28.6],
-    [46.8, 28.6, 49.0, 29.6],
+    [46.8, 28.6, 48.5, 28.5], [48.5, 28.5, 48.75, 30.25],
+    [48.75, 30.25, 50.1, 30.3],
   ],
   passarelaSobreAgua: [...passarelaCorrentes],
   // A grama não vem de mancha elíptica: vem de `celulasGrama`, traçada da
@@ -427,7 +435,8 @@ export const map = {
     ...VEGETACAO.map(([tipo, x, y, largura], i) => ({
       id: `enseada_vegetacao_${i + 1}`, tipo: 'decoracao', x, y,
       sprite: SPRITES_VEGETACAO[tipo], useCrop: true, larguraPx: largura,
-      pivotX: 0.5, pivotY: 0.96, bloqueia: false,
+      pivotX: 0.5, pivotY: 0.96, bloqueia: !(x === 14.4 && y === 30.8) && ['P', 'M', 'B', 'J', 'C', 'T', 'G'].includes(tipo),
+      hitbox: { offsetX: -0.18, offsetY: -0.18, width: 0.36, height: 0.36 },
       // Palmeira e árvore de tronco: ordena pelo pé (a copa pode passar na
       // frente de quem anda atrás dela, como na arte).
       depthOffset: ['P', 'M', 'B', 'J', 'C', 'T', 'G'].includes(tipo) ? -0.35 : -0.2,
@@ -455,6 +464,18 @@ export const map = {
       sprite: 'enseada_estacao_revisada', useCrop: true, larguraPx: 1100, cachoeiraViva: { revisada: true },
       pivotX: 0.520, pivotY: 0.9425, camada: 'fundo', ordem: -1,
       bloqueia: false,
+    },
+
+    // Face e topo do maciço em coordenadas do sprite; a soleira permanece
+    // aberta. O objeto invisível colide também durante o nado na superfície.
+    {
+      id: 'colisao_corpo_montanha', tipo: 'decoracao', x: 16.2, y: 21.8,
+      renderizar: false, bloqueia: true, superficieSomente: true,
+      poligonosColisao: [contornoIso(
+        [[20,220],[220,145],[450,140],[650,130],[900,135],[1150,195],
+         [1190,430],[1090,510],[960,510],[930,500],[740,500],
+         [720,535],[620,545],[575,600],[430,615],[260,565],[30,510]]
+          .map(([x,y]) => [(x-1301*.520)*1100/1301, (y-685*.9425)*1100/1301]), 0, 0)],
     },
 
     // Fragmentos baixos quebram a borda reta do maciço, sem tocar a porta.
@@ -577,8 +598,8 @@ export const map = {
       x: 17.94, y: 25.94, sprite: 'enseada_camp_lateral_direita',
       useCrop: true, larguraPx: 120, escalaY: 1.0, pivotX: 0, pivotY: 0,
       camada: 'fundo', ordem: -2, bloqueia: false },
-    // Terraço cenográfico atrás dos equipamentos. A subida ainda usa a
-    // malha plana existente; a arte não adiciona colisões nem altura física.
+    // Terraço cenográfico atrás dos equipamentos; a face é bloqueada abaixo.
+    // A escada continua transitável, sem simulação física de altura.
     {
       // Chão cenográfico completo; a parede frontal e escada são independentes.
       id: 'enseada_terraco_acampamento', tipo: 'decoracao',
@@ -647,12 +668,14 @@ export const map = {
     {
       id: 'enseada_arvore_camp_esquerda', tipo: 'decoracao', x: 15.0, y: 29.0,
       sprite: 'enseada_camp_ref_arvore', useCrop: true, larguraPx: 185,
-      pivotX: 0.5, pivotY: 0.98, bloqueia: false,
+      pivotX: 0.5, pivotY: 0.98, bloqueia: true,
+      hitbox: { offsetX: -0.22, offsetY: -0.22, width: 0.44, height: 0.44 },
     },
     {
       id: 'enseada_arvore_camp_direita', tipo: 'decoracao', x: 16.7, y: 28.6,
       sprite: 'enseada_camp_ref_arvore', useCrop: true, espelhar: true, larguraPx: 165,
-      pivotX: 0.5, pivotY: 0.98, bloqueia: false,
+      pivotX: 0.5, pivotY: 0.98, bloqueia: true,
+      hitbox: { offsetX: -0.22, offsetY: -0.22, width: 0.44, height: 0.44 },
     },
     {
       id: 'enseada_cesto_ferramentas_camp', tipo: 'decoracao', x: 13.45, y: 37.05, renderizar: false,
@@ -686,7 +709,8 @@ export const map = {
       // Banco acima da escada, entre a bancada e a fogueira.
       id: 'enseada_banco_tronco_camp', tipo: 'decoracao', x: 16.115, y: 36.705,
       sprite: 'enseada_camp_ref_tronco', useCrop: true, larguraPx: 112,
-      pivotX: 0.5, pivotY: 0.98, bloqueia: false,
+      pivotX: 0.5, pivotY: 0.98, bloqueia: true,
+      hitbox: { offsetX: -0.22, offsetY: -0.22, width: 0.44, height: 0.44 },
     },
     {
       id: 'enseada_palmeira_camp_oeste', tipo: 'decoracao', x: 12.4, y: 33.4, renderizar: false,
@@ -727,6 +751,17 @@ export const map = {
       depthOffset: -6, bloqueia: false,
     },
 
+    // Face frontal do platô: dois trechos deixam a escada central livre.
+    // Contorno medido em tela a 103%, com o jogador em (25.4, 32.7).
+    {
+      id: 'colisao_face_acampamento', tipo: 'decoracao', x: 24.9, y: 32.2,
+      renderizar: false, bloqueia: true, superficieSomente: true,
+      poligonosColisao: [
+        [[300,550],[480,530],[480,650],[300,670]],
+        [[610,530],[970,520],[975,650],[610,670]],
+      ].map(p => contornoIso(p.map(([x,y]) => [x-913,y-574]), 0, 0, 1.03)),
+    },
+
     // ---- SETOR 4 (Centro): Monólito + estela + cairn ----
     {
       // A referência desenha o monólito como laje alta plantada na clareira,
@@ -743,7 +778,7 @@ export const map = {
       id: 'estela_navegadores_enseada', nome: 'ESTELA DOS NAVEGADORES', tipo: 'decoracao', x: 31.345, y: 36.875,
       sprite: 'enseada8_estela', spriteB: 'enseada8_estela', animPeriodo: 0.62,
       useCrop: true, larguraPx: 35, pivotX: 0.5, pivotY: 0.94,
-      bloqueia: false, pulsoBiolum: '#6cf7ff', brilho: { cor: '#6cf7ff', raio: 1.35, forca: 0.3 },
+      bloqueia: true, hitbox: { offsetX: -0.16, offsetY: -0.16, width: 0.32, height: 0.32 }, pulsoBiolum: '#6cf7ff', brilho: { cor: '#6cf7ff', raio: 1.35, forca: 0.3 },
       interacao: { label: 'DECIFRAR A ESTELA DOS NAVEGADORES', distancia: 1.6 },
     },
     {
@@ -771,7 +806,7 @@ export const map = {
       id: 'piscina_mare_viva_enseada', nome: 'PISCINA TERMAL', tipo: 'decoracao', x: 28.3, y: 51.65,
       sprite: 'enseada3_piscina', useCrop: true, larguraPx: 220,
       pivotX: 0.5, pivotY: 0.92, depthOffset: -4,
-      bloqueia: false,
+      bloqueia: true, hitbox: { offsetX: -2.2, offsetY: -2.2, width: 1.35, height: 1.35 },
       interacao: { label: 'MERGULHAR AS MÃOS NA ÁGUA TERMAL', distancia: 1.65 },
     },
     {
@@ -793,7 +828,8 @@ export const map = {
       // Rochas discretas à esquerda da fonte de cristal.
       id: 'pedras_fonte_cristal_enseada', tipo: 'decoracao', x: 36.2, y: 56.65,
       sprite: 'enseada_pedras_revisadas', useCrop: true, larguraPx: 85,
-      pivotX: 0.5, pivotY: 0.95, bloqueia: false,
+      pivotX: 0.5, pivotY: 0.95, bloqueia: true,
+      hitbox: { offsetX: -0.32, offsetY: -0.32, width: 0.64, height: 0.64 },
     },
     {
       // A laje `enseada3_calcada` era a praça antiga do espelho. O sprite novo
@@ -810,7 +846,7 @@ export const map = {
       id: 'espelho_arquetipos_enseada', nome: 'ESPELHO DE RESSONÂNCIA', tipo: 'dispositivo', x: 36.35, y: 50.25,
       sprite: 'enseada_espelho_revisado',
       useCrop: true, larguraPx: 296, pivotX: 0.5, pivotY: 0.53,
-      bloqueia: false, brilho: { cor: '#6ff7ff', raio: 1.5, forca: 0.34 },
+      bloqueia: true, hitbox: { offsetX: -0.28, offsetY: -0.28, width: 0.56, height: 0.56 }, brilho: { cor: '#6ff7ff', raio: 1.5, forca: 0.34 },
       interacao: { label: 'SINTONIZAR ARQUÉTIPO', distancia: 1.65 },
     },
     {
@@ -1032,6 +1068,17 @@ export const map = {
       vorticidadeCorrentes: { x: 15, y: -139, rx: 14, ry: 27, intensidade: 0.35 },
       bloqueia: false, brilho: { cor: '#5cf7eb', raio: 2.2, forca: 0.44 },
     },
+    // Costado do promontório, deixando o corredor de areia livre.
+    {
+      id: 'colisao_face_promontorio', tipo: 'decoracao', x: 51.4, y: 29.0,
+      renderizar: false, bloqueia: true, superficieSomente: true,
+      // Em pixels ao zoom 1, contornam as duas faces de pedra sem
+      // transformar a rampa arenosa nem a praia em paredes invisíveis.
+      poligonosColisao: [
+        [[570,375],[640,341],[690,345],[700,363],[675,387],[620,400]],
+        [[515,350],[618,301],[667,284],[676,294],[625,313],[525,365]],
+      ].map(p => contornoIso(p.map(([x,y]) => [x-612.8,y-390.4]), 0, 0)),
+    },
     {
       id: 'enseada_jardim_cercado', tipo: 'decoracao', x: 42.47, y: 35.63, renderizar: false,
       sprite: 'enseada7_jardim', useCrop: true, larguraPx: 110,
@@ -1115,7 +1162,7 @@ export const map = {
       x: 39.25, y: 47.65,
       sprite: 'enseada_concha_perola_oeste',
       espelhar: true, useCrop: true, larguraPx: 80, pivotX: 0.5, pivotY: 0.98,
-      bloqueia: false,
+      bloqueia: true, hitbox: { offsetX: -0.27, offsetY: -0.27, width: 0.54, height: 0.54 },
       interacao: { label: 'EXAMINAR A CONCHA DA PRAIA', distancia: 1.4 },
     },
     {

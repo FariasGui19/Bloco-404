@@ -5,6 +5,8 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { createCanvas, loadImage, Image as NapiImage } from '@napi-rs/canvas';
 
+if (process.env.QA_TIME !== undefined) globalThis.performance = { now: () => Number(process.env.QA_TIME) * 1000 };
+
 const root = path.resolve(path.dirname(new URL(import.meta.url).pathname), '../..');
 process.chdir(root);
 
@@ -127,4 +129,16 @@ if (process.argv.includes('--labels')) {
   }
   fs.writeFileSync(out, canvas.toBuffer('image/png'));
   console.log('labels', out);
+}
+
+// --colisao: mostra os novos contornos medidos sobre o render para conferência.
+if (process.argv.includes('--colisao')) {
+  const { worldToScreen } = await import('../../js/engine/camera.js');
+  const c2 = canvas.getContext('2d');
+  c2.setTransform(1,0,0,1,0,0); c2.strokeStyle = '#ff354b'; c2.fillStyle = 'rgba(255,25,60,.22)'; c2.lineWidth = 2;
+  for (const o of state.objects.filter(o => o.poligonosColisao)) for (const poly of o.poligonosColisao) {
+    c2.beginPath(); poly.forEach(([x,y],i) => {const p=worldToScreen(o.x+x,o.y+y); if(i) c2.lineTo(p.x,p.y); else c2.moveTo(p.x,p.y);});
+    c2.closePath(); c2.fill(); c2.stroke();
+  }
+  fs.writeFileSync(out, canvas.toBuffer('image/png'));
 }

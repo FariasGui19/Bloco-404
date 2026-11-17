@@ -4141,7 +4141,8 @@ function drawFrequencyStationFloor(curState) {
 function drawEnseadaObjectAnimations(object, state) {
   const interactionFx = object.id === 'bancada_campo_enseada' || object.id === 'fonte_termal_enseada' ||
     object.id === 'piscina_mare_viva_enseada' || object.id === 'algas_douradas_enseada' ||
-    object.id === 'gruta_concha_enseada';
+    object.id === 'gruta_concha_enseada' || object.id === 'espelho_arquetipos_enseada' ||
+    object.id === 'jardim_pedras_enseada';
   if (!object.fogueiraViva && !object.feixeFarolete && !object.pulsoAntena && !object.pulsoTotem && !object.pulsoBiolum && !object.vorticidadeCorrentes && !object.cachoeiraViva && !object.vaporTermal && !interactionFx) return;
   const reduced = typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
   const t = reduced ? 0 : performance.now() / 1000;
@@ -4282,7 +4283,7 @@ function drawEnseadaObjectAnimations(object, state) {
   if (object.pulsoTotem && object.id === 'totem_eco_enseada') {
     const orbY = iy - 75 * (object.larguraPx / 62);
     const g = ctx.createRadialGradient(ix, orbY, 1, ix, orbY, 17);
-    g.addColorStop(0, 'rgba(139,255,255,.45)');
+    g.addColorStop(0, `rgba(139,255,255,${(.30 + .15 * Math.sin(t * 2.2)).toFixed(3)})`);
     g.addColorStop(1, 'rgba(45,225,255,0)');
     ctx.fillStyle = g; ctx.beginPath(); ctx.arc(ix, orbY, 17, 0, Math.PI * 2); ctx.fill();
   }
@@ -4369,13 +4370,13 @@ function drawEnseadaObjectAnimations(object, state) {
       ctx.globalAlpha = (1 - f) * (visita ? .38 : .2);
       ctx.strokeStyle = visita ? '#a0fff4' : '#63e8e2';
       ctx.lineWidth = 1.2;
-      ctx.beginPath(); ctx.ellipse(ix, iy - 10, 16 + f * 30, 6 + f * 10, 0, 0, Math.PI * 2); ctx.stroke();
+      ctx.beginPath(); ctx.ellipse(ix, iy - 49, 16 + f * 30, 6 + f * 10, 0, 0, Math.PI * 2); ctx.stroke();
     }
     for (let i = 0; i < 3; i++) {
       const f = (t * .28 + i / 3) % 1;
       ctx.globalAlpha = Math.sin(f * Math.PI) * .6;
       ctx.fillStyle = '#b4fff6';
-      ctx.beginPath(); ctx.arc(ix + Math.sin(t + i * 2) * 10, iy - 7 - f * 18, 1.2 + (1 - f), 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.arc(ix + Math.sin(t + i * 2) * 10, iy - 48 - f * 9, 1.2 + (1 - f), 0, Math.PI * 2); ctx.fill();
     }
     ctx.globalAlpha = 1;
   }
@@ -4393,6 +4394,55 @@ function drawEnseadaObjectAnimations(object, state) {
       const q = (t * .22 + i * .5) % 1;
       ctx.fillStyle = visitada ? '#d7ffff' : '#6cecff';
       ctx.beginPath(); ctx.arc(ix + (i ? 1 : -1) * (6 + q * 5), iy - 14 - q * 16, 1.2, 0, Math.PI * 2); ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+  }
+
+  // Reflexo restrito ao vidro do espelho, com resposta à sintonia real.
+  if (object.id === 'espelho_arquetipos_enseada') {
+    const sintonizado = !!state.progress?.flags?.enseada_espelho_sintonizado;
+    const fase = (t * .24) % 1;
+    ctx.save();
+    ctx.beginPath(); ctx.ellipse(ix, iy - 39, 14, 24, 0, 0, Math.PI * 2); ctx.clip();
+    ctx.globalAlpha = sintonizado ? .28 : .17;
+    ctx.strokeStyle = '#e7ffff'; ctx.lineWidth = 4;
+    ctx.beginPath(); ctx.moveTo(ix - 25 + fase * 50, iy - 15);
+    ctx.lineTo(ix - 5 + fase * 50, iy - 65); ctx.stroke();
+    ctx.restore();
+    ctx.globalAlpha = sintonizado ? .65 : .28;
+    ctx.fillStyle = '#d2ffff';
+    const y = iy - 38 + Math.sin(t * 1.7) * 17;
+    ctx.fillRect(ix + 10, y, 2, 2); ctx.globalAlpha = 1;
+  }
+
+  // Pequenas runas percorrem a estela; ficam mais claras após a decifração.
+  if (object.id === 'estela_navegadores_enseada') {
+    const decifrada = !!state.progress?.flags?.enseada_estela_decifrada;
+    ctx.fillStyle = '#baffff';
+    for (let i = 0; i < 3; i++) {
+      ctx.globalAlpha = (decifrada ? .65 : .35) * (.5 + .5 * Math.sin(t * 2 + i * 1.8));
+      ctx.fillRect(ix - 2 + (i % 2) * 3, iy - 14 - i * 9, 2, 2);
+    }
+    ctx.globalAlpha = 1;
+  }
+
+  // Cintilação junto à ponta do cristal, sem redesenhar o pedestal.
+  if (object.id === 'fonte_cristal_enseada') {
+    const f = (t * .3) % 1;
+    ctx.globalAlpha = Math.sin(f * Math.PI) * .65;
+    ctx.fillStyle = '#e4ffff';
+    ctx.fillRect(ix + 7, iy - 64 - f * 7, 2, 3);
+    ctx.globalAlpha = 1;
+  }
+
+  // Luz suave, sem mover as pedras nem simular física sobre o cairn.
+  if (object.id === 'jardim_pedras_enseada') {
+    const meditado = !!state.progress?.flags?.enseada_pedras_meditado;
+    for (let i = 0; i < 3; i++) {
+      const f = (t * .18 + i / 3) % 1;
+      ctx.globalAlpha = Math.sin(f * Math.PI) * (meditado ? .6 : .25);
+      ctx.fillStyle = '#ffe6a3';
+      ctx.beginPath(); ctx.arc(ix + Math.sin(t + i * 2.1) * 14, iy - 20 - f * 36, 1.3, 0, Math.PI * 2); ctx.fill();
     }
     ctx.globalAlpha = 1;
   }

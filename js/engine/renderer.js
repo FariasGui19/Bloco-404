@@ -4372,7 +4372,7 @@ function drawEnseadaObjectAnimations(object, state) {
 function drawFrequencyObjectLife(object, image) {
   const ids = ['terminal_frequencia_666', 'registro_estacao_666', 'baliza_666_receptor',
     'baliza_666_entrada', 'reator_estacao_666', 'console_limiar_666', 'rack_estacao_666_c'];
-  if (!ids.includes(object.id)) return;
+  if (!ids.includes(object.id) || (object.id === 'terminal_frequencia_666' && object.sprite !== 'freq666_receptor')) return;
   const frame = getFrame(image, 0, 0, 1, 1)?.crop;
   if (!frame) return;
   const w = object.larguraPx, h = w * frame.h / frame.w;

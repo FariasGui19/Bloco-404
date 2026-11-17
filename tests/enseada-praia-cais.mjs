@@ -39,3 +39,13 @@ for(const id of ['rede_treino_praia_enseada','travessia_pedras_agua','cais_madei
  const o=obj(id);assert(reach.some(([x,y])=>Math.hypot(x-o.x-.5,y-o.y-.5)<=o.interacao.distancia),`${id} acessível`);
 }
 console.log('Praia sul: corte, areia, peças e interações OK.');
+// Pés aproximados dos seis postes, medidos no sprite já posicionado:
+// os dois pares de entrada ficam na praia, o par da ponta sobre água.
+const cais=obj('cais_enseada_visual');
+const ancoraX=cais.x+.5, ancoraY=cais.y+.5;
+for (const [dx,dy,emTerra] of [[-174,-138,true],[-111,-179,true],[-120,-108,true],[-48,-139,true],[-56,-75,false],[2,-109,false]]) {
+ const x=ancoraX+(dy/16+dx/32)/2, y=ancoraY+(dy/16-dx/32)/2;
+ const tile=map.aguaPraia[Math.floor(y)]?.[Math.floor(x)] ?? '';
+ assert(emTerra ? 'SMT'.includes(tile) : 'YyDdX'.includes(tile),`pé do cais em ${x},${y}: ${tile}`);
+}
+assert.equal(obj('rede_treino_praia_enseada').larguraPx,205);

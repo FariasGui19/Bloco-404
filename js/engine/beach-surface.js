@@ -53,7 +53,7 @@ function intensidadePoligono(px, py, pontos, suavidade = 10) {
   return smooth(.5 + (dentro ? menor : -menor) / suavidade);
 }
 
-export function createBeachSurface(rows, scale = 16, { gramaInterior = false, caminhos = [], zonasGrama = [], zonasRocha = [], celulasGrama = null, ajusteSolo = null, ajusteSoloCentral = null, texturaGramaCentral = null, ajusteSoloSudeste = null, areiaPraiaSul = null, trilhaEstacaoPortal = [] } = {}) {
+export function createBeachSurface(rows, scale = 16, { gramaInterior = false, caminhos = [], zonasGrama = [], zonasRocha = [], celulasGrama = null, ajusteSolo = null, ajusteSoloCentral = null, texturaGramaCentral = null, ajusteSoloSudeste = null, areiaPraiaSul = null, areiaCostaLeste = null, trilhaEstacaoPortal = [] } = {}) {
   const height = rows.length, width = rows[0].length;
   const margemAjuste = 55;
   const limitesAjuste = ajusteSolo && {
@@ -82,6 +82,12 @@ export function createBeachSurface(rows, scale = 16, { gramaInterior = false, ca
     maxX: Math.max(...areiaPraiaSul.area.map(p => p[0])) + 8,
     minY: Math.min(...areiaPraiaSul.area.map(p => p[1])) - 8,
     maxY: Math.max(...areiaPraiaSul.area.map(p => p[1])) + 8,
+  };
+  const limitesAreiaLeste = areiaCostaLeste && {
+    minX: Math.min(...areiaCostaLeste.area.map(p => p[0])) - 8,
+    maxX: Math.max(...areiaCostaLeste.area.map(p => p[0])) + 8,
+    minY: Math.min(...areiaCostaLeste.area.map(p => p[1])) - 8,
+    maxY: Math.max(...areiaCostaLeste.area.map(p => p[1])) + 8,
   };
   const limitesSudeste = ajusteSoloSudeste && {
     minX: Math.min(...ajusteSoloSudeste.area.map(p => p[0])) - 10,
@@ -214,6 +220,13 @@ export function createBeachSurface(rows, scale = 16, { gramaInterior = false, ca
       const sy = areiaPraiaSul.cy + areiaPraiaSul.sy * (x+y);
       if (sx >= limitesAreiaSul.minX && sx <= limitesAreiaSul.maxX && sy >= limitesAreiaSul.minY && sy <= limitesAreiaSul.maxY) {
         grama *= 1 - intensidadePoligono(sx, sy, areiaPraiaSul.area, 16);
+      }
+    }
+    if (areiaCostaLeste) {
+      const sx = areiaCostaLeste.cx + areiaCostaLeste.sx * (x-y);
+      const sy = areiaCostaLeste.cy + areiaCostaLeste.sy * (x+y);
+      if (sx >= limitesAreiaLeste.minX && sx <= limitesAreiaLeste.maxX && sy >= limitesAreiaLeste.minY && sy <= limitesAreiaLeste.maxY) {
+        grama *= 1 - intensidadePoligono(sx, sy, areiaCostaLeste.area, 16);
       }
     }
     // Após o recuo oeste, a orla exposta é areia, não relva até o mar.

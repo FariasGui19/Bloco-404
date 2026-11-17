@@ -88,10 +88,23 @@ const cortePraiaSul = [[137,8],[143,30],[160,56],[188,94],[220,135],
     (786 + (x - 786) / .91 + 114.16) / 2,
     (352 + (y - 350) / .91 + 831.08) / 2,
   ]);
+// Borda leste indicada na captura: registro obtido a partir dos sprites fixos
+// da mata; a linha é convertida para REF antes de recalcular mar e colisão.
+const linhaCostaLeste = [[10,175],[12,204],[16,240],[19,275],
+  [33,302],[53,325],[82,350],[112,371],[145,392],[175,409],[206,419],
+  [239,442],[267,460],[294,470],[320,483],[347,494],[367,511],
+  [382,534],[400,585]];
+const projecaoCostaLeste = ([x,y]) => [((x + 93.335) / .704762 + 1505) / 2,
+                                       ((y - 223.361) / .704762 + 316.5) / 2];
+const corteLeste = [[60,-300],[60,154],...linhaCostaLeste,[520,620],
+  [1200,620],[1200,-300]].map(projecaoCostaLeste);
+// Faixa estreita do lado de terra, adjacente à linha, sem pintar a mata.
+const areiaCostaLeste = [...linhaCostaLeste, ...linhaCostaLeste.slice().reverse().map(([x,y]) => [x-32,y])]
+  .map(projecaoCostaLeste);
 for (let y = 0; y < ROWS; y++) for (let x = 0; x < COLS; x++) {
   const {px, py} = imagemDaGrade(x + .5, y + .5);
   if (dentroPoligono(px, py, corteOeste) || dentroPoligono(px, py, corteSul)
-      || dentroPoligono(px, py, cortePraiaSul)) grid[y][x] = 'W';
+      || dentroPoligono(px, py, cortePraiaSul) || dentroPoligono(px, py, corteLeste)) grid[y][x] = 'W';
 }
 
 // Retira a língua isolada de areia atrás do promontório sudeste; o mar
@@ -260,6 +273,7 @@ export const map = {
        [270, 385], [211, 390], [178, 380], [166, 368]],
     ].map(contornoSuave),
   },
+  areiaCostaLeste: { ...REF, area: areiaCostaLeste },
   areiaPraiaSul: {
     ...REF,
     area: contornoSuave([[125,5],[190,93],[265,145],[360,190],[450,235],
@@ -295,8 +309,9 @@ export const map = {
   // Trilha orgânica de areia, em trechos medidos: Estação até o pé da rampa.
   trilhaEstacaoPortal: [
     [16.36, 17.57, 16.5, 18.65], [16.5, 18.65, 19.5, 18.65],
-    [19.5, 18.65, 24, 18.2],
-    [24, 18.2, 27.7, 19.3], [27.7, 19.3, 31.2, 21.2],
+    [19.5, 18.65, 22.5, 19.0],
+    [22.5, 19.0, 25.0, 20.0], [25.0, 20.0, 28.0, 21.5],
+    [28.0, 21.5, 31.2, 21.2],
     [31.2, 21.2, 35, 22.6], [35, 22.6, 39, 24.2],
     [39, 24.2, 43, 25.1], [43, 25.1, 42.5, 28.8],
     [42.5, 28.8, 44.5, 31.0], [44.5, 31.0, 46.8, 28.6],
@@ -324,7 +339,7 @@ export const map = {
   spawnPoints: {
     inicio: { x: 19.9, y: 51.7 },
     vindo_da_praia: { x: 19.9, y: 51.7 },
-    vindo_da_estacao_666: { x: 23.805 + ESTACAO_DX, y: 12.505 + ESTACAO_DY },
+    vindo_da_estacao_666: { x: 19.3, y: 19.3 },
     vindo_do_mar: { x: 36.5, y: 5.5 },
     vindo_da_darsena_mare: { x: 57.0, y: 24.0 },
   },
@@ -872,7 +887,7 @@ export const map = {
     {
       // Rede de praia com postes e estacas próprios, sobre a areia.
       id: 'rede_treino_praia_enseada', nome: 'REDE DE PRAIA', tipo: 'decoracao', x: 42.75, y: 51.34,
-      sprite: 'enseada_cais_rede', useCrop: true, larguraPx: 180,
+      sprite: 'enseada_cais_rede', useCrop: true, larguraPx: 205,
       pivotX: 0.5, pivotY: 0.98, depthOffset: 0.2,
       bloqueia: false,
       interacao: { label: 'EXAMINAR A REDE DA PRAIA', distancia: 1.8, speaker: 'REDE DE PRAIA',
@@ -933,19 +948,19 @@ export const map = {
     // Arte do cais separada do ponto de interação em terra: a ponta fica no mar.
     {
       // A cabeceira encontra a praia; a corda liga o veleiro à ponta no mar.
-      id: 'cais_enseada_visual', tipo: 'decoracao', x: 50.0, y: 48.3,
+      id: 'cais_enseada_visual', tipo: 'decoracao', x: 50.3125, y: 44.05,
       sprite: 'enseada_cais_barco', useCrop: true, larguraPx: 370,
       pivotX: 0.5, pivotY: 0.97, camada: 'fundo', ordem: -1, bloqueia: false,
     },
     {
-      id: 'cais_madeira_pesca_enseada', nome: 'CAIS DA ENSEADA', tipo: 'decoracao', x: 43.0, y: 41.0,
+      id: 'cais_madeira_pesca_enseada', nome: 'CAIS DA ENSEADA', tipo: 'decoracao', x: 43.83, y: 42.92,
       sprite: 'enseada8_cais_barco_ref', spriteB: 'enseada8_cais_barco_ref', animPeriodo: 0.68,
       useCrop: true, larguraPx: 280, pivotX: 0.5, pivotY: 0.97,
       bloqueia: false, renderizar: false, brilho: { cor: '#ffd980', raio: 1.0, forca: 0.16 },
       interacao: { label: 'OBSERVAR A BAÍA DO CAIS', distancia: 1.75 },
     },
     {
-      id: 'barco_expedicao_enseada', nome: 'BARCO DE EXPEDIÇÃO', tipo: 'decoracao', x: 44.0, y: 40.0,
+      id: 'barco_expedicao_enseada', nome: 'BARCO DE EXPEDIÇÃO', tipo: 'decoracao', x: 44.8, y: 42.6,
       sprite: 'enseada_barco_expedicao', spriteB: 'enseada_barco_expedicao_b', animPeriodo: 0.72,
       useCrop: true, larguraPx: 126, pivotX: 0.5, pivotY: 0.88,
       bloqueia: false, flutuacaoSuave: true, renderizar: false,

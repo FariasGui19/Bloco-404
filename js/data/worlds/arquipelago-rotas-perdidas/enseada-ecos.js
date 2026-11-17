@@ -221,11 +221,19 @@ export const map = {
     area: contornoSuave([[605, 359], [655, 349], [686, 345], [730, 334], [769, 328], [810, 337], [820, 370], [798, 394], [754, 417], [710, 432], [654, 441], [610, 432], [598, 405]]),
     grama: contornoSuave([[625, 390], [642, 379], [666, 376], [691, 372], [718, 361], [750, 350], [770, 350], [786, 356], [786, 368], [769, 384], [745, 397], [716, 407], [689, 419], [659, 422], [634, 418], [624, 406]]),
   },
-  // Clareira de areia do sudeste contorna a faixa de vegetação do portal.
+  // Areia na faixa costeira e gramados somente sob os dois maciços.
   ajusteSoloSudeste: {
     ...REF,
-    area: contornoSuave([[967,395],[1015,385],[1060,389],[1095,396],[1126,412],[1139,443],[1120,476],[1090,486],[1047,476],[1001,466],[969,445]]),
-    grama: contornoSuave([[974,396],[1000,393],[1030,394],[1057,399],[1083,409],[1094,422],[1082,433],[1061,435],[1040,432],[1022,430],[1000,428],[981,422],[972,411]]),
+    area: contornoSuave([[888,342],[945,330],[1000,345],[1060,369],
+      [1110,383],[1160,395],[1198,419],[1202,451],[1175,489],
+      [1124,504],[1068,489],[1003,478],[942,462],[897,432],[880,390]]),
+    grama: contornoSuave([[967,394],[990,390],[1015,394],[1045,398],
+      [1070,402],[1086,411],[1088,424],[1077,435],[1057,438],
+      [1035,435],[1012,433],[989,431],[969,422],[963,408]]),
+    gramaIntermediaria: contornoSuave([[884,356],[911,346],[944,348],[964,356],
+      [978,368],[980,382],[968,397],[950,402],[927,400],[901,393],[886,380]]),
+    gramaCercado: contornoSuave([[952,447],[969,441],[990,443],[1008,446],
+      [1020,452],[1036,455],[1040,463],[1028,469],[1007,468],[988,470],[969,470],[953,464]]),
   },
   // Trilha orgânica de areia, em trechos medidos: Estação até o pé da rampa.
   trilhaEstacaoPortal: [
@@ -233,7 +241,8 @@ export const map = {
     [19.5, 18.65, 24, 18.2],
     [24, 18.2, 27.7, 19.3], [27.7, 19.3, 31.2, 21.2],
     [31.2, 21.2, 35, 22.6], [35, 22.6, 39, 24.2],
-    [39, 24.2, 43, 25.1], [43, 25.1, 44.0, 28.35], [44.0, 28.35, 47.6, 30.7],
+    [39, 24.2, 43, 25.1], [43, 25.1, 42.5, 28.8],
+    [42.5, 28.8, 44.5, 31.0], [44.5, 31.0, 48.0, 30.6],
   ],
   passarelaSobreAgua: [...passarelaCorrentes],
   // A grama não vem de mancha elíptica: vem de `celulasGrama`, traçada da
@@ -922,10 +931,14 @@ export const map = {
     { id: 'encosta_portal_sudeste', tipo: 'decoracao', x: 49.275, y: 28.025, renderizar: false,
       sprite: 'enseada_sudeste_encosta', useCrop: true, larguraPx: 190,
       pivotX: 0.5, pivotY: 0.98, camada: 'fundo', ordem: 0, bloqueia: false },
+    { id: 'poste_cercado_sudeste', tipo: 'decoracao', x: 47.875, y: 34.75,
+      sprite: 'enseada_sudeste_poste', useCrop: true, larguraPx: 47,
+      pivotX: 0.5, pivotY: 0.98, bloqueia: false,
+      brilho: { cor: '#ffcf76', raio: 0.9, forca: 0.2 } },
     { id: 'conchas_fosseis_sudeste', tipo: 'decoracao', x: 49.6, y: 32.8,
       sprite: 'enseada_sudeste_conchas', useCrop: true, larguraPx: 57,
       pivotX: 0.5, pivotY: 0.98, bloqueia: false },
-    { id: 'lanterna_coral_sudeste', tipo: 'decoracao', x: 53.55, y: 28.1,
+    { id: 'lanterna_coral_sudeste', tipo: 'decoracao', x: 54.3, y: 27.35,
       sprite: 'enseada_sudeste_lanterna', useCrop: true, larguraPx: 27,
       pivotX: 0.5, pivotY: 0.98, bloqueia: false, flutuacaoSuave: true,
       brilho: { cor: '#ffd37a', raio: 0.8, forca: 0.23 } },
@@ -947,7 +960,7 @@ export const map = {
     {
       // Peça íntegra do promontório: arco, rocha, acesso de areia e coral.
       // O objeto lógico do conduto e o acesso por nado permanecem independentes.
-      id: 'arco_conduto_retorno_mare', tipo: 'decoracao', x: 51.6, y: 28.2,
+      id: 'arco_conduto_retorno_mare', tipo: 'decoracao', x: 52.35, y: 27.45,
       sprite: 'enseada_sudeste_portal_completo', useCrop: true,
       larguraPx: 320, pivotX: 0.66, pivotY: 0.985,
       vorticidadeCorrentes: { x: 15, y: -139, rx: 14, ry: 27, intensidade: 0.35 },

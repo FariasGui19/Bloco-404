@@ -4,13 +4,16 @@ const PATHS = {
   fauna: 'assets/sprites/fauna/fauna-costeira.png',
   pool: 'assets/sprites/enseada-animacao-lote7/piscina.png',
   palm: 'assets/sprites/enseada-animacao-lote7/palmeira-baixa.png',
-  tallPalm: 'assets/sprites/enseada-animacao-lote7/palmeira-alta.png',
+  tallPalm: 'assets/sprites/enseada-fpv-polimento/palmeira-sem-franja.png',
   rocks: 'assets/sprites/enseada-5/rochas-borda-piscina.png',
   waterTiles: 'assets/sprites/tiles/beach-shore.png',
-  shell: 'assets/sprites/enseada-lote2/gruta-oeste-compacta.png',
+  shellFrame: 'assets/sprites/enseada-fpv-polimento/moldura-gruta.png',
+  poolFrame: 'assets/sprites/enseada-fpv-polimento/moldura-fonte.png',
+  forest: 'assets/sprites/enseada-fpv-polimento/mata-sem-franja.png',
+  trees: 'assets/sprites/enseada-animacao-lote6/arvores-redondas.png',
   coral: 'assets/sprites/enseada-animacao-lote6/corais-amarelos.png',
 };
-const EFFECTS = ['mar','onda','ondulacao','vapor','bolhas','chuva','respingo','mao','brilho','cascata'];
+const EFFECTS = ['mar','onda','ondulacao','vapor','bolhas','chuva','respingo','brilho','cascata'];
 const clamp = (v,a,b) => Math.max(a,Math.min(b,v));
 
 export function createDioramaRenderer(canvas) {
@@ -27,29 +30,41 @@ export function createDioramaRenderer(canvas) {
   };
   const effect = (key, t, x, y, w=32, h=w, speed=8, phase=0) => sheet(key,Math.floor(t*speed+phase)%8,x,y,w,h);
   const plan = (x,y,depth,fn) => { ctx.save();ctx.translate(Math.round(-x*depth),Math.round(-y*depth*.6));fn();ctx.restore(); };
-  function sky(t) {
-    ctx.fillStyle='#80cad1';ctx.fillRect(-35,-30,550,135);
-    for (let i=0;i<7;i++) { ctx.fillStyle=i%2?'#cdebe0':'#e3f2df'; const x=(i*93+31)%560-30,y=22+(i%3)*12;ctx.fillRect(x,y,50,5);ctx.fillRect(x+9,y-5,28,5);ctx.fillRect(x+19,y-9,12,4); }
-    // Ilhas distantes em silhueta, com contornos escalonados de pixel art.
-    ctx.fillStyle='#528b87';ctx.beginPath();ctx.moveTo(-25,90);ctx.lineTo(20,90);ctx.lineTo(37,82);ctx.lineTo(55,82);ctx.lineTo(68,73);ctx.lineTo(79,73);ctx.lineTo(95,84);ctx.lineTo(121,90);ctx.lineTo(320,90);ctx.lineTo(336,80);ctx.lineTo(356,80);ctx.lineTo(368,72);ctx.lineTo(381,72);ctx.lineTo(405,87);ctx.lineTo(510,90);ctx.lineTo(510,112);ctx.lineTo(-25,112);ctx.fill();
+  function sky() {
+    // Céu em faixas tonais e nuvens agrupadas, sem imagem panorâmica.
+    const colors=['#548f9b','#599ca6','#68adb5','#7cbec4','#98cfc9','#b4dcd1'];
+    colors.forEach((color,i)=>{ctx.fillStyle=color;ctx.fillRect(-45,-35+i*23,570,24);});
+    const cloud = (x,y,s) => {
+      ctx.save();ctx.translate(x,y);ctx.scale(s,s);
+      ctx.fillStyle='#91bfbb';ctx.fillRect(2,13,42,4);ctx.fillRect(9,17,29,2);
+      ctx.fillStyle='#cce1d6';ctx.fillRect(0,10,49,5);ctx.fillRect(4,6,37,5);
+      ctx.fillRect(11,3,22,5);ctx.fillRect(17,0,12,5);
+      ctx.fillStyle='#e6e9d9';ctx.fillRect(12,5,17,2);ctx.fillRect(19,2,8,2);ctx.fillRect(5,9,8,2);ctx.restore();
+    };
+    cloud(25,19,1.0);cloud(126,37,.65);cloud(200,61,.64);cloud(295,53,.72);cloud(281,13,1.1);cloud(405,39,.7);
+    // Recortes de vegetação do próprio mapa formam ilhas e o horizonte.
+    ctx.save();ctx.globalAlpha=.55;
+    sheet('trees',0,-30,65,105,56);sheet('trees',3,352,62,121,62);
+    sheet('trees',1,110,78,74,30);sheet('trees',4,298,80,82,29);ctx.restore();
   }
   function sea(t) {
-    ctx.fillStyle='#328e9a';ctx.fillRect(-35,94,550,140);
+    ctx.fillStyle='#328e9a';ctx.fillRect(-35,94,550,250);
     ctx.fillStyle='#47acb0';ctx.fillRect(-35,119,550,35);
-    ctx.fillStyle='#6bc7bb';ctx.fillRect(-35,154,550,40);
+    ctx.fillStyle='#6bc7bb';ctx.fillRect(-35,154,550,155);
     // Recorte de água rasa do tileset da praia, sem as bordas isométricas.
     // Os brilhos animados são sobrepostos a esse material do jogo.
     if (ready('waterTiles')) {
-      const tile=images.waterTiles;ctx.save();ctx.globalAlpha=.18;
-      for(let y=98;y<200;y+=27) for(let x=-40;x<525;x+=62)
-        ctx.drawImage(tile, tile.naturalWidth*.60, tile.naturalHeight*.085, tile.naturalWidth*.055, tile.naturalHeight*.045, x,y,62,27);
+      const tile=images.waterTiles;ctx.save();ctx.globalAlpha=.38;
+      for(let y=98;y<315;y+=27) for(let x=-40;x<525;x+=62)
+        ctx.drawImage(tile, tile.naturalWidth*.59, tile.naturalHeight*.085, tile.naturalWidth*.055, tile.naturalHeight*.045, x,y,62,27);
       ctx.restore();
     }
-    for(let yy=96;yy<195;yy+=24) for(let xx=-40;xx<525;xx+=32) effect('mar',t,xx,yy,32,24,4,(xx+yy)/32);
+    for(let yy=96;yy<315;yy+=24) for(let xx=-40;xx<525;xx+=32) effect('mar',t,xx,yy,32,24,4,(xx+yy)/32);
     for(let i=0;i<12;i++) effect('onda',t,-30+i*46,137+(i%3)*10,36,20,5,i);
   }
   function palms(t) {
     const frame=Math.floor(t*5)%8;
+    sheet('forest',frame,-36,50,164,106);sheet('forest',(frame+2)%8,350,49,164,106);
     sheet('tallPalm',frame,-40,24,143,149);sheet('palm',(frame+2)%8,2,62,90,96);
     sheet('tallPalm',(frame+3)%8,365,21,146,154);sheet('palm',(frame+5)%8,405,68,91,94);
   }
@@ -65,24 +80,31 @@ export function createDioramaRenderer(canvas) {
     for(let i=0;i<4;i++) effect('respingo',t,i<2?65+i*24:330+i*17,153+(i%2)*13,20,15,8,i*2);
   }
   function foregroundWater(t) {
-    ctx.fillStyle='#3bafa5';ctx.fillRect(-30,174,540,130);
-    ctx.fillStyle='#55c4b0';ctx.fillRect(-30,214,540,90);
+    ctx.fillStyle='#287c79';ctx.fillRect(-40,174,560,130);
+    ctx.fillStyle='#399e91';ctx.fillRect(-40,195,560,110);
+    // Textura da água rasa da Enseada com reflexos independentes por cima.
+    if (ready('waterTiles')) {
+      const tile=images.waterTiles;ctx.save();ctx.globalAlpha=.48;
+      for(let y=176;y<310;y+=31) for(let x=-50;x<530;x+=66)
+        ctx.drawImage(tile,tile.naturalWidth*.59,tile.naturalHeight*.085,tile.naturalWidth*.055,tile.naturalHeight*.045,x,y,66,31);
+      ctx.restore();
+    }
     for(let yy=176;yy<305;yy+=25) for(let xx=-32;xx<525;xx+=32) effect('mar',t,xx,yy,32,25,4,(xx+yy)/32);
   }
+  function drawFrame(key) {
+    // Com object-fit: cover, um celular em retrato recorta boa parte das
+    // laterais do canvas. Ajusta somente a moldura ao trecho visível; os
+    // demais planos mantêm a escala e não são esticados.
+    const ratio = (globalThis.innerWidth || 16) / (globalThis.innerHeight || 9);
+    const visible = ratio < 480 / 270 ? 270 * ratio : 480;
+    const width = visible + Math.min(80, visible * .16);
+    image(key, 240 - width / 2, -24, width, 315);
+  }
   function caveFrame(x,y,t,rainAmount) {
-    // A textura vem da própria gruta usada no mapa. O recorte perfura a
-    // abertura: mar e chuva continuam camadas independentes atrás da concha.
-    ctx.save();ctx.translate(Math.round(-x*17),Math.round(-y*10));
-    ctx.beginPath();ctx.rect(-40,-30,560,330);
-    ctx.moveTo(92,182);ctx.lineTo(92,109);ctx.lineTo(99,82);ctx.lineTo(114,60);ctx.lineTo(141,42);ctx.lineTo(177,31);ctx.lineTo(303,31);ctx.lineTo(339,42);ctx.lineTo(366,60);ctx.lineTo(381,82);ctx.lineTo(388,109);ctx.lineTo(388,182);ctx.lineTo(405,230);ctx.lineTo(75,230);ctx.closePath();
-    ctx.clip('evenodd');
-    ctx.fillStyle='#493447';ctx.fillRect(-40,-30,560,330);
-    // Um único sprite da gruta é ampliado e espelhado, não um fundo pronto.
-    image('shell',-165,-100,430,380);
-    ctx.save();ctx.translate(480,0);ctx.scale(-1,1);image('shell',-165,-100,430,380);ctx.restore();
-    ctx.fillStyle='rgba(49,31,56,.30)';ctx.fillRect(-40,-30,560,330);
-    ctx.restore();
-    if(rainAmount>.02) for(let i=0;i<8;i++) effect('respingo',t,75+i*42-x*17,184+(i%2)*3-y*10,20,16,8,i*2);
+    // Moldura transparente em primeiro plano; horizonte e mar continuam
+    // atrás dela, movendo-se em velocidades distintas com o olhar.
+    plan(x,y,17,()=>drawFrame('shellFrame'));
+    if(rainAmount>.02) for(let i=0;i<6;i++) effect('respingo',t,78+i*54-x*17,189+(i%2)*3-y*10,15,12,8,i*2);
   }
   return function draw(scene, manager, t, still, x, y) {
     if (!ctx) return;
@@ -114,15 +136,19 @@ export function createDioramaRenderer(canvas) {
         for(let i=0;i<9;i++) effect('bolhas',t,18+i*51,193+(i%3)*19,22,22,5,i*3);
         for(let i=0;i<8;i++) effect('vapor',t,20+i*57,140+(i%3)*9,35,48,5,i*2);
         if(manager.petTime>0) {
-          const elapsed=2.4-manager.petTime, progress=Math.sin(Math.PI*clamp(elapsed/2.4,0,1));
-          effect('mao',elapsed,239-progress*20,198-progress*60,90,90,3);
-          effect('brilho',elapsed,209,160,24,24,6);
+          const elapsed=2.4-manager.petTime;
+          effect('ondulacao',elapsed,205,171,48,19,4);
+          effect('brilho',elapsed,229,178,13,13,5);
+          effect('brilho',elapsed,269,186,9,9,5,3);
         }
       });
+      plan(x,y,15,()=>drawFrame('poolFrame'));
     } else {
       plan(x,y,11,()=>{
-        ctx.fillStyle='#dfc995';ctx.fillRect(-25,206,530,80);
-        for(let i=0;i<20;i++){ ctx.fillStyle=i%2?'#bfa579':'#f0dcaa';ctx.fillRect((i*71)%500-10,208+(i*19)%70,3+i%3,2); }
+        // Água e espuma avançam até os pés da moldura, sem uma faixa
+        // chapada de areia entre a paisagem e a interface.
+        ctx.fillStyle='rgba(32,77,77,.24)';ctx.fillRect(-30,206,540,80);
+        for(let i=0;i<7;i++) effect('onda',t,25+i*66,204+(i%2)*8,46,20,5,i*2);
         image('rocks',-45,190,110,86);image('rocks',413,185,110,86);
       });
       caveFrame(x,y,t,rainAmount);

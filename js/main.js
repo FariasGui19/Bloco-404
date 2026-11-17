@@ -573,6 +573,8 @@ await loadSprites([
   { id: 'enseada_estacao_planta_piscina', src: 'assets/sprites/enseada-estacao/planta-piscina.png' },
   { id: 'enseada_estacao_pedras_degrau', src: 'assets/sprites/enseada-estacao/pedras-degrau.png' },
   { id: 'enseada_estacao_integrada', src: 'assets/sprites/enseada-estacao/estacao-integrada.png' },
+  { id: 'enseada_estacao_revisada', src: 'assets/sprites/enseada-estacao-revisada/montanha.png' },
+  { id: 'enseada_correntes_recife_revisado', src: 'assets/sprites/enseada-estacao-revisada/recife-submerso.png' },
   { id: 'enseada3_platao_cascata', src: 'assets/sprites/enseada-3/plateau-waterfall-wide.png' },
   { id: 'enseada3_platao_cascata_b', src: 'assets/sprites/enseada-3/plateau-waterfall-wide-b.png' },
   { id: 'enseada3_portal_recife', src: 'assets/sprites/enseada-3/reef-portal-arch.png' },

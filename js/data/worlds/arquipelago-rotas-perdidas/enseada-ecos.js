@@ -340,7 +340,7 @@ export const map = {
     inicio: { x: 19.9, y: 51.7 },
     vindo_da_praia: { x: 19.9, y: 51.7 },
     vindo_da_estacao_666: { x: 19.3, y: 19.3 },
-    vindo_do_mar: { x: 36.5, y: 5.5 },
+    vindo_do_mar: { x: 28.5, y: 11.5 },
     vindo_da_darsena_mare: { x: 57.0, y: 24.0 },
   },
 
@@ -452,8 +452,8 @@ export const map = {
     // colisões e portal são independentes para não bloquear a entrada.
     {
       id: 'enseada_macico_leste', tipo: 'decoracao', x: 18.6 + ESTACAO_DX, y: 18.1 + ESTACAO_DY,
-      sprite: 'enseada_estacao_integrada', useCrop: true, larguraPx: 860, cachoeiraViva: true,
-      pivotX: 0.5, pivotY: 0.98, camada: 'fundo', ordem: -1,
+      sprite: 'enseada_estacao_revisada', useCrop: true, larguraPx: 1100, cachoeiraViva: { revisada: true },
+      pivotX: 0.520, pivotY: 0.9425, camada: 'fundo', ordem: -1,
       bloqueia: false,
     },
 
@@ -1144,17 +1144,22 @@ export const map = {
 
     // ---- SETOR 8 (Mar): Portal NE + boias + fauna marinha ----
     {
-      id: 'portal_caminho_correntes', nome: 'PORTAL DAS CORRENTES', tipo: 'decoracao', x: 36.0, y: 4.0,
+      id: 'portal_caminho_correntes', nome: 'PORTAL DAS CORRENTES', tipo: 'decoracao', x: 28.0, y: 10.0,
       sprite: 'enseada_correntes_portal_ref', vorticidadeCorrentes: true,
       useCrop: true, larguraPx: 190, pivotX: 0.5, pivotY: 0.94,
       bloqueia: false, brilho: { cor: '#5cf7eb', raio: 1.5, forca: 0.34 },
     },
-    ...[[29.5, 2.0], [30.8, 5.3], [39.5, 1.0], [41.0, 4.0], [42.0, 6.5]].map(([bx, by], i) => ({
+    ...[[21.5, 8.0], [22.8, 11.3], [31.5, 7.0], [33.0, 10.0], [34.0, 12.5]].map(([bx, by], i) => ({
       id: `boia_ne_${i + 1}`, tipo: 'decoracao', x: bx, y: by,
       sprite: i === 0 || i === 3 ? 'enseada_correntes_boia_vermelha' : 'enseada_correntes_boia_laranja',
       useCrop: true, larguraPx: 20, pivotX: 0.5, pivotY: 0.9, bloqueia: false, flutuacaoSuave: true, sombra: [8, 3],
     })),
-    // A plataforma nordeste é isolada; não há pedras de apoio na água.
+    // Leito submerso e pedras emersas são apenas visuais: a travessia continua nadável.
+    {
+      id: 'recife_caminho_correntes', tipo: 'decoracao', x: 26.2, y: 12.3,
+      sprite: 'enseada_correntes_recife_revisado', useCrop: true, larguraPx: 285,
+      pivotX: 0.5, pivotY: 0.68, camada: 'fundo', ordem: -1, bloqueia: false,
+    },
     {
       id: 'cardume_correntes', tipo: 'decoracao', x: 43, y: 5.5,
       sprite: 'enseada_correntes_cardume',
@@ -1299,7 +1304,7 @@ export const map = {
       interactionDistance: 1.2, destino: { mapId: 'estacao_limiar_666', spawnId: 'vindo_da_enseada' }, transition: 'fade',
     },
     {
-      id: 'rota_correntes', tipo: 'door', x: 36.0, y: 3.0, label: 'NAVEGAR: CAMINHO DAS CORRENTES',
+      id: 'rota_correntes', tipo: 'door', x: 28.0, y: 9.0, label: 'NAVEGAR: CAMINHO DAS CORRENTES',
       interactionDistance: 1.4, destino: { mapId: 'mar_caminho_das_correntes', spawnId: 'vindo_da_enseada' }, transition: 'fade',
     },
     {

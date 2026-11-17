@@ -4176,31 +4176,54 @@ function drawEnseadaObjectAnimations(object, state) {
 
   if (object.cachoeiraViva) {
     // Faixas translúcidas só dentro da queda da arte; custo fixo por quadro.
-    // Coordenadas relativas à arte 530x275 ancorada na base do objeto.
-    const k = object.larguraPx / 530;
-    const left = ix - object.larguraPx * .5;
-    const top = iy - 275 * k * (object.pivotY ?? 1);
-    ctx.save();
-    ctx.translate(left, top); ctx.scale(k, k);
-    ctx.beginPath();
-    ctx.moveTo(220, 112); ctx.bezierCurveTo(233, 122, 235, 140, 235, 158);
-    ctx.lineTo(236, 207); ctx.bezierCurveTo(234, 217, 227, 224, 220, 226);
-    ctx.lineTo(248, 232); ctx.bezierCurveTo(255, 224, 254, 215, 250, 205);
-    ctx.lineTo(249, 155); ctx.bezierCurveTo(249, 132, 241, 117, 230, 108);
-    ctx.closePath(); ctx.clip();
-    for (let i = 0; i < 9; i++) {
-      const y = 112 + (t * 34 + i * 17) % 112;
-      const x = 228 + (i % 4) * 5 + Math.sin(t * 2 + i) * 1.5;
-      ctx.fillStyle = `rgba(220,255,255,${i % 2 ? .27 : .42})`;
-      ctx.fillRect(x, y, i % 3 === 0 ? 2 : 1, 7 + i % 3 * 3);
-    }
-    ctx.restore();
-    const foamX = left + 245 * k, foamY = top + 233 * k;
-    for (let i = 0; i < 3; i++) {
-      const f = (t * .45 + i / 3) % 1;
-      ctx.strokeStyle = `rgba(205,255,255,${(.42 * (1-f)).toFixed(3)})`;
-      ctx.lineWidth = 1.2;
-      ctx.beginPath(); ctx.ellipse(foamX, foamY, 3 + f * 15, 1 + f * 4, 0, 0, Math.PI * 2); ctx.stroke();
+    // Cada versão usa coordenadas próprias da arte e o pivô do objeto.
+    const revisada = object.cachoeiraViva?.revisada === true;
+    const k = object.larguraPx / (revisada ? 1301 : 530);
+    const left = ix - object.larguraPx * (object.pivotX ?? .5);
+    const top = iy - (revisada ? 685 : 275) * k * (object.pivotY ?? 1);
+    if (revisada) {
+      ctx.save(); ctx.translate(left, top); ctx.scale(k, k);
+      ctx.beginPath(); ctx.moveTo(405, 190); ctx.bezierCurveTo(455, 230, 495, 264, 515, 320);
+      ctx.bezierCurveTo(532, 375, 527, 485, 529, 550);
+      ctx.lineTo(595, 577); ctx.lineTo(587, 500); ctx.lineTo(577, 370);
+      ctx.bezierCurveTo(570, 292, 507, 248, 445, 192); ctx.closePath(); ctx.clip();
+      for (let i = 0; i < 9; i++) {
+        const y = 280 + (t * 64 + i * 39) % 285;
+        const x = 535 + (i % 4) * 11 + Math.sin(t * 2 + i) * 3;
+        ctx.fillStyle = `rgba(220,255,255,${i % 2 ? .20 : .33})`;
+        ctx.fillRect(x, y, i % 3 === 0 ? 4 : 2, 15 + i % 3 * 5);
+      }
+      ctx.restore();
+      const foamX = left + 535 * k, foamY = top + 586 * k;
+      for (let i = 0; i < 3; i++) {
+        const f = (t * .45 + i / 3) % 1;
+        ctx.strokeStyle = `rgba(205,255,255,${(.42 * (1-f)).toFixed(3)})`;
+        ctx.lineWidth = 1.2; ctx.beginPath();
+        ctx.ellipse(foamX, foamY, 3 + f * 20, 1 + f * 5, 0, 0, Math.PI * 2); ctx.stroke();
+      }
+    } else {
+      ctx.save();
+      ctx.translate(left, top); ctx.scale(k, k);
+      ctx.beginPath();
+      ctx.moveTo(220, 112); ctx.bezierCurveTo(233, 122, 235, 140, 235, 158);
+      ctx.lineTo(236, 207); ctx.bezierCurveTo(234, 217, 227, 224, 220, 226);
+      ctx.lineTo(248, 232); ctx.bezierCurveTo(255, 224, 254, 215, 250, 205);
+      ctx.lineTo(249, 155); ctx.bezierCurveTo(249, 132, 241, 117, 230, 108);
+      ctx.closePath(); ctx.clip();
+      for (let i = 0; i < 9; i++) {
+        const y = 112 + (t * 34 + i * 17) % 112;
+        const x = 228 + (i % 4) * 5 + Math.sin(t * 2 + i) * 1.5;
+        ctx.fillStyle = `rgba(220,255,255,${i % 2 ? .27 : .42})`;
+        ctx.fillRect(x, y, i % 3 === 0 ? 2 : 1, 7 + i % 3 * 3);
+      }
+      ctx.restore();
+      const foamX = left + 245 * k, foamY = top + 233 * k;
+      for (let i = 0; i < 3; i++) {
+        const f = (t * .45 + i / 3) % 1;
+        ctx.strokeStyle = `rgba(205,255,255,${(.42 * (1-f)).toFixed(3)})`;
+        ctx.lineWidth = 1.2;
+        ctx.beginPath(); ctx.ellipse(foamX, foamY, 3 + f * 15, 1 + f * 4, 0, 0, Math.PI * 2); ctx.stroke();
+      }
     }
   }
 

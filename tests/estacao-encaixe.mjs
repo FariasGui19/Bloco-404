@@ -17,21 +17,18 @@ assert.equal(visual.y, exit.y, 'eclusa e interação devem apontar para a mesma 
 assert(visual.larguraPx >= 95 && visual.camada === 'fundo');
 assert(Math.hypot(station.spawnPoints.vindo_da_enseada.x-(exit.x+.5),station.spawnPoints.vindo_da_enseada.y-(exit.y+.5)) > exit.interactionDistance);
 const mountain = coast.objects.find(o => o.id === 'enseada_macico_leste');
-// Arte aprovada: a montanha angular da referência (`estacao-integrada`).
-// A v2 (`estacao-66-completa`, com a base arredondada) foi rejeitada.
-assert.equal(mountain.sprite, 'enseada_estacao_integrada');
+// Montanha integral revisada, com porta ampliada e cachoeira animada.
+assert.equal(mountain.sprite, 'enseada_estacao_revisada');
+assert(mountain.cachoeiraViva?.revisada);
 assert.equal(mountain.camada, 'fundo');
-assert.equal(mountain.larguraPx, 860, 'penhasco ampliado');
+assert.equal(mountain.larguraPx, 1100, 'penhasco e porta ampliados');
 const visualPortal = coast.portals.find(p => p.id === 'acesso_estacao_666');
-// Em pixels isométricos, a porta da arte fica a ~16% da largura à direita do
-// centro e a Soleira a ~8,8% da largura ACIMA da base do sprite. A montanha
-// aprovada (`estacao-integrada`, 530x275) tem a base arenosa inteira e o mar
-// encosta direto na rocha da direita. Objetos e portal recebem ambos meio tile
-// na renderização e na interação, então o deslocamento cancela.
+// A soleira da nova arte (x=839, y=556 de um recorte 1301x685)
+// coincide com a posição lógica do portal; ambos recebem meio tile.
 const dx = ((visualPortal.x - visualPortal.y) - (mountain.x - mountain.y)) * 32;
 const dy = ((visualPortal.x + visualPortal.y) - (mountain.x + mountain.y)) * 16;
-assert(Math.abs(dx - mountain.larguraPx * .1594) < 8, 'portal alinhado horizontalmente com a porta');
-assert(Math.abs(dy - mountain.larguraPx * -.0881) < 8, 'portal alinhado verticalmente com a soleira');
+assert(Math.abs(dx - mountain.larguraPx * (839/1301 - mountain.pivotX)) < 8, 'portal alinhado horizontalmente com a porta');
+assert(Math.abs(dy - mountain.larguraPx * (685/1301) * (556/685 - mountain.pivotY)) < 8, 'portal alinhado verticalmente com a soleira');
 assert(!coast.caminhosAreia.some(([x,y]) => x === 22.5 && y === 11.75), 'manchas de areia antigas removidas');
 assert(coast.objects.some(o => o.id.startsWith('enseada_parede_estacao_') && o.bloqueia));
 for (const file of ['abrigo-ampliado','fx-vortice','fx-vapor','fx-centelha','fx-sinal','fx-baliza','fx-poeira']) assert(existsSync(`assets/sprites/frequencia-666/${file}.png`));

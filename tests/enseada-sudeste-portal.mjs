@@ -10,7 +10,7 @@ const obj = id => { const o=map.objects.find(o=>o.id===id); assert(o, id); retur
 const arc=obj('arco_conduto_retorno_mare');
 assert.equal(arc.sprite, 'enseada_sudeste_portal_completo');
 // O coral azul faz parte do sprite e acompanha a rocha integralmente.
-assert.equal(arc.x, 53.35); assert.equal(arc.y, 26.45);
+assert.equal(arc.x, 53.85); assert.equal(arc.y, 27.95);
 assert.equal(obj('cristais_azuis_mar').renderizar, false);
 for (const [x,y] of [[48,19],[49,20],[50,20],[49,21],[50,21],[51,22],[52,22],[52,23]]) {
  assert('YyDdX'.includes(map.aguaPraia[y][x]), `língua de areia removida em ${x},${y}`);
@@ -42,7 +42,7 @@ for(const [x,y] of [[20,50],[33,36],[15,32]]) {const i=(Math.floor(y*4)*before.w
 state.objects=map.objects.map(o=>({...o,x:o.x+.5,y:o.y+.5}));
 const spawn=map.spawnPoints.vindo_da_praia,queue=[[Math.round(spawn.x*2),Math.round(spawn.y*2)]],seen=new Set(),reach=[];
 for(let i=0;i<queue.length;i++){const [ix,iy]=queue[i],key=`${ix},${iy}`;if(seen.has(key))continue;seen.add(key);const x=ix/2,y=iy/2;if(!canStandAt(map,x,y,.2,state.player))continue;reach.push([x,y]);queue.push([ix+1,iy],[ix-1,iy],[ix,iy+1],[ix,iy-1]);}
-for(const id of ['ninho_tartarugas_enseada','poleiro_aves_enseada','bau_deriva_enseada','captador_ecos_enseada']) {const o=obj(id);assert(reach.some(([x,y])=>Math.hypot(x-o.x-.5,y-o.y-.5)<=o.interacao.distancia),`${id}: alcance de interação`);}
+for(const id of ['ninho_tartarugas_enseada','poleiro_aves_enseada','bau_deriva_enseada','captador_ecos_enseada','cais_madeira_pesca_enseada','barco_expedicao_enseada']) {const o=obj(id);assert(reach.some(([x,y])=>Math.hypot(x-o.x-.5,y-o.y-.5)<=o.interacao.distancia),`${id}: alcance de interação`);}
 console.log('Sudeste: composição, fauna, terreno e interações OK.');
 // O eixo da trilha é um único caminho contínuo, de terra firme e acessível.
 assert(map.trilhaEstacaoPortal.length >= 2);
@@ -66,3 +66,16 @@ for (const [x0,y0,x1,y1] of map.trilhaEstacaoPortal) {
   assert(Math.hypot(jogador.x-x,jogador.y-y)<.02,'trilha deve ser caminhável');
  }
 }
+
+// Os recuos alteram água e colisão em conjunto, nos dois trechos anotados.
+for (const [x,y] of [[2,40],[50,39],[49,40]]) {
+ assert('YyDdX'.includes(map.aguaPraia[y][x]), `corte costeiro em ${x},${y} deve ser água`);
+ assert.equal(map.walkMask[y][x], '#', 'água não pode conservar colisão de terra');
+}
+const solo=createBeachSurface(map.aguaPraia,8,{celulasGrama:map.celulasGrama,
+ ajusteSolo:map.ajusteSolo,ajusteSoloCentral:map.ajusteSoloCentral,
+ ajusteSoloSudeste:map.ajusteSoloSudeste,trilhaEstacaoPortal:map.trilhaEstacaoPortal});
+const cor=(x,y)=>{const i=(Math.floor(y*8)*solo.width+Math.floor(x*8))*4;return [...solo.pixels.slice(i,i+4)];};
+const areia=cor(47.44,36.81), relva=cor(47.91,31.03);
+assert(areia[0]>areia[1] && areia[3]===255, 'orla do cercado deve ser areia');
+assert(relva[1]>relva[0] && relva[3]===255, 'vegetação deve ter grama sob os pés');

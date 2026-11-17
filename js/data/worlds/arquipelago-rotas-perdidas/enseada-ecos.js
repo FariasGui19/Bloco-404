@@ -14,6 +14,16 @@ function contornoIso(pontos, origemX, origemY, escala = 1) {
     (-px / (32*escala) + py / (16*escala))/2 - origemY]);
 }
 
+// Lote de animações: só instâncias existentes da vegetação manual; nenhuma
+// árvore é criada ou reposicionada e a âncora do tronco permanece fixa.
+const PALMEIRAS_ANIMADAS = new Map([
+  ['20.9,53.4', 'enseada_folha_palmeira_alta'],
+  ['16.76,45.57', 'enseada_folha_palmeira_baixa'],
+  ['18.24,45.2', 'enseada_folha_palmeira_jovem'],
+  ['16.6,46.7', 'enseada_folha_palmeira_media'],
+]);
+const folhaViva = (sprite, periodo = .18, fase = 0) => ({ sprite, quadros: 8, margem: 8, periodo, fase });
+
 const COLS = 72;
 const ROWS = 64;
 // Deslocamento comum à arte da estação, sua porta, paredes e retorno.
@@ -435,6 +445,7 @@ export const map = {
     ...VEGETACAO.map(([tipo, x, y, largura], i) => ({
       id: `enseada_vegetacao_${i + 1}`, tipo: 'decoracao', x, y,
       sprite: SPRITES_VEGETACAO[tipo], useCrop: true, larguraPx: largura,
+      ...(PALMEIRAS_ANIMADAS.has(`${x},${y}`) ? { animacaoFolha: folhaViva(PALMEIRAS_ANIMADAS.get(`${x},${y}`), .19, i * .19) } : {}),
       pivotX: 0.5, pivotY: 0.96, bloqueia: !(x === 14.4 && y === 30.8) && ['P', 'M', 'B', 'J', 'C', 'T', 'G'].includes(tipo),
       hitbox: { offsetX: -0.18, offsetY: -0.18, width: 0.36, height: 0.36 },
       // Palmeira e árvore de tronco: ordena pelo pé (a copa pode passar na
@@ -635,6 +646,7 @@ export const map = {
     {
       id: 'acampamento_vigilia_enseada', nome: 'ACAMPAMENTO DE VIGÍLIA', tipo: 'decoracao', x: 17.96, y: 34.43,
       sprite: 'enseada_camp_ref_fogueira', animPeriodo: 0.42,
+      animacaoFolha: folhaViva('enseada_folha_fogueira', .11),
       useCrop: true, larguraPx: 89, pivotX: 0.5, pivotY: 0.98,
       bloqueia: true, hitbox: { offsetX: -0.30, offsetY: -0.24, width: 0.60, height: 0.48 },
       fogueiraViva: true, brilho: { cor: '#ffae52', raio: 1.25, forca: 0.28 },
@@ -643,6 +655,7 @@ export const map = {
     {
       id: 'tenda_expedicao_enseada', nome: 'TENDA DA EXPEDIÇÃO', tipo: 'decoracao', x: 17.96, y: 31.06,
       sprite: 'enseada_camp_ref_tenda_referencia', espelhar: true, useCrop: true, larguraPx: 213,
+      animacaoFolha: folhaViva('enseada_folha_tenda', .24, .4),
       pivotX: 0.5, pivotY: 0.98,
       bloqueia: true, hitbox: { offsetX: -0.48, offsetY: -0.34, width: 0.96, height: 0.68 },
       interacao: { label: 'INSPECIONAR TENDA DA EXPEDIÇÃO', distancia: 1.6, speaker: 'TENDA DA EXPEDIÇÃO',
@@ -658,9 +671,9 @@ export const map = {
     },
     {
       id: 'bandeirola_vento_enseada', nome: 'BIRUTA DA EXPEDIÇÃO', tipo: 'decoracao', x: 21.15, y: 29.4,
-      sprite: 'enseada_biruta_camp',
+      sprite: 'enseada_biruta_camp', animacaoFolha: folhaViva('enseada_folha_biruta', .16),
       useCrop: true, larguraPx: 130, pivotX: 0.5, pivotY: 0.94,
-      depthOffset: -0.6, bloqueia: false, oscilaBrisa: true,
+      depthOffset: -0.6, bloqueia: false,
     },
 
     // Vegetação de fundo e pequenos objetos independentes, sem recobrir
@@ -668,12 +681,14 @@ export const map = {
     {
       id: 'enseada_arvore_camp_esquerda', tipo: 'decoracao', x: 15.0, y: 29.0,
       sprite: 'enseada_camp_ref_arvore', useCrop: true, larguraPx: 185,
+      animacaoFolha: folhaViva('enseada_folha_arvore', .22),
       pivotX: 0.5, pivotY: 0.98, bloqueia: true,
       hitbox: { offsetX: -0.22, offsetY: -0.22, width: 0.44, height: 0.44 },
     },
     {
       id: 'enseada_arvore_camp_direita', tipo: 'decoracao', x: 16.7, y: 28.6,
       sprite: 'enseada_camp_ref_arvore', useCrop: true, espelhar: true, larguraPx: 165,
+      animacaoFolha: folhaViva('enseada_folha_arvore', .25, .7),
       pivotX: 0.5, pivotY: 0.98, bloqueia: true,
       hitbox: { offsetX: -0.22, offsetY: -0.22, width: 0.44, height: 0.44 },
     },
@@ -1137,8 +1152,9 @@ export const map = {
     {
       id: 'algas_douradas_enseada', nome: 'BANCO DE ALGAS DOURADAS', tipo: 'decoracao', x: 38.7, y: 28.2,
       sprite: 'enseada_algas_douradas', spriteB: 'enseada_algas_douradas_b', animPeriodo: 0.62,
+      animacaoFolha: folhaViva('enseada_folha_algas', .2, .5),
       useCrop: true, larguraPx: 70, pivotX: 0.5, pivotY: 0.92,
-      bloqueia: false, oscilaBrisa: true, pulsoBiolum: '#ffd86b', brilho: { cor: '#ffd86b', raio: 1.0, forca: 0.24 },
+      bloqueia: false, pulsoBiolum: '#ffd86b', brilho: { cor: '#ffd86b', raio: 1.0, forca: 0.24 },
       interacao: { label: 'COLHER ESSÊNCIA DE ALGAS DOURADAS', distancia: 1.55 },
     },
     {

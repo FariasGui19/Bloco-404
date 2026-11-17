@@ -19,12 +19,14 @@ const main = fs.readFileSync('js/main.js', 'utf8');
 for (const [id, name, w, h] of items) {
   const o = map.objects.find(o => o.id === id);
   assert(o && o.renderizar !== false && o.useCrop, `${id} visível`);
-  assert.equal(o.animacaoFolha.sprite, `enseada_folha6_${name.replaceAll('-', '_')}`);
+  const atualizado = { cais_enseada_visual: 'barco', portal_caminho_correntes: 'portal' };
+  assert.equal(o.animacaoFolha.sprite, atualizado[id] ? `enseada_folha7_${atualizado[id]}` : `enseada_folha6_${name.replaceAll('-', '_')}`);
   assert.equal(o.animacaoFolha.quadros, 8);
-  assert.equal(o.animacaoFolha.margem, 8);
+  assert.equal(o.animacaoFolha.margem, atualizado[id] ? 24 : 8);
   assert(o.animacaoFolha.periodo > 0);
   const path = `assets/sprites/enseada-animacao-lote6/${name}.png`;
-  assert(main.includes(`id: '${o.animacaoFolha.sprite}', src: '${path}'`));
+  if (!atualizado[id]) assert(main.includes(`src: '${path}'`));
+  assert(main.includes(`id: '${o.animacaoFolha.sprite}'`));
   const png = fs.readFileSync(path);
   assert.equal(png.subarray(0, 8).toString('hex'), '89504e470d0a1a0a');
   assert.equal(png.readUInt32BE(16), (w + 16) * 8);

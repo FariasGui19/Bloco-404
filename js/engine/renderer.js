@@ -625,11 +625,15 @@ function drawBeachSea(map) {
   // cruzando é o que faz a água "dançar". É UM drawImage a mais, de uma
   // textura pronta; sem folga, não é desenhada.
   const nivel = medirFolga();
-  if (sea.causticas && nivel > .02) {
+  const reduzir = typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+  // A Enseada conserva uma camada animada mesmo quando a heurística de FPS
+  // desliga os enfeites: água parada não comunica mar. Um único drawImage.
+  const forca = map.id === 'ilha_enseada_ecos' && !reduzir ? Math.max(.45, nivel) : nivel;
+  if (sea.causticas && forca > .02 && !reduzir) {
     const t = performance.now() / 1000;
-    ctx.globalAlpha = nivel * (.34 + Math.sin(t * .8) * .06);
+    ctx.globalAlpha = forca * (.40 + Math.sin(t * .8) * .08);
     ctx.drawImage(sea.causticas,
-      -m + .43 + Math.sin(t * .27) * .22, -m + .31 + Math.cos(t * .21) * .18, cols, lines);
+      -m + .43 + Math.sin(t * .45) * .32, -m + .31 + Math.cos(t * .37) * .25, cols, lines);
     ctx.globalAlpha = 1;
   }
   ctx.restore();
@@ -739,7 +743,8 @@ function drawBeachSurface(map) {
 const SHORE_ARC_BUDGET = 72;
 function drawBeachRipples(map) {
   const rows = map.aguaPraia;
-  const time = performance.now() / 1000;
+  const reduzir = typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+  const time = reduzir ? 0 : performance.now() / 1000;
   const arcs = foamArcs(rows, range, time, SHORE_ARC_BUDGET);
   if (!arcs.length) return;
   ctx.save();

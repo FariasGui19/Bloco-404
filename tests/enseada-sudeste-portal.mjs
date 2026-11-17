@@ -9,6 +9,13 @@ import { state } from '../js/game/state.js';
 const obj = id => { const o=map.objects.find(o=>o.id===id); assert(o, id); return o; };
 const arc=obj('arco_conduto_retorno_mare');
 assert.equal(arc.sprite, 'enseada_sudeste_portal_completo');
+// O coral azul faz parte do sprite e acompanha a rocha integralmente.
+assert.equal(arc.x, 53.35); assert.equal(arc.y, 26.45);
+assert.equal(obj('cristais_azuis_mar').renderizar, false);
+for (const [x,y] of [[48,19],[49,20],[50,20],[49,21],[50,21],[51,22],[52,22],[52,23]]) {
+ assert('YyDdX'.includes(map.aguaPraia[y][x]), `língua de areia removida em ${x},${y}`);
+}
+
 assert.equal(arc.vorticidadeCorrentes.y, -139, 'vórtice deve ficar no arco');
 assert.equal(obj('encosta_portal_sudeste').bloqueia, false);
 assert.equal(obj('encosta_portal_sudeste').renderizar, false);

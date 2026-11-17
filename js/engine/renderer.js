@@ -6853,7 +6853,7 @@ function drawMarcadorDeTreino(map, state) {
   const arvore = lerArvore(state.progress);
   if (arvore.nivel >= 2) return;
   const poca = map.pocas.find(p => p.treino);
-  if (!poca) return;
+  if (!poca || poca.ocultarMarcador) return;
   const d = Math.hypot(state.player.x - poca.x, state.player.y - poca.y);
   // Dentro da poça o painel do degrau já explica: o marcador recua.
   const forca = Math.max(0, Math.min(1, (d - 1.2) / 1.6));

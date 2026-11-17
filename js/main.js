@@ -606,6 +606,7 @@ await loadSprites([
   { id: 'enseada_rochedo_organico', src: 'assets/sprites/enseada-lote2/rochedo-praia-sudeste.png' },
   { id: 'enseada_portal_sudeste_rochedo', src: 'assets/sprites/enseada-lote2/portal-sudeste-rochedo.png' },
   { id: 'enseada_monolito_vertical', src: 'assets/sprites/enseada-lote2/monolito-eco-vertical.png' },
+  { id: 'enseada_grama_orla_animada', src: 'assets/sprites/enseada-lote2/grama-orla-animada.png' },
   { id: 'enseada_grama_alta_vento', src: 'assets/sprites/enseada-lote2/grama-alta-vento.png' },
   { id: 'enseada_portico_lateral', src: 'assets/sprites/enseada-lote2/portico-oeste-lateral.png' },
   { id: 'enseada_calcada_oeste_escada', src: 'assets/sprites/enseada-lote2/calcada-oeste-escada.png' },

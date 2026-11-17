@@ -154,6 +154,21 @@ const tropical = (id, x, y, col, larguraPx, tree = false) => ({
   bloqueia: tree,
   ...(tree ? { hitbox: { offsetX: -0.18, offsetY: -0.18, width: 0.36, height: 0.36 } } : {}),
 });
+// Contornos arredondados para os limites de grama desenhados à mão.
+function contornoSuave(pontos) {
+  const out = [];
+  for (let i = 0; i < pontos.length; i++) {
+    const a = pontos[(i - 1 + pontos.length) % pontos.length], b = pontos[i];
+    const c = pontos[(i + 1) % pontos.length], d = pontos[(i + 2) % pontos.length];
+    for (let j = 0; j < 4; j++) {
+      const t = j / 4, t2 = t*t, t3 = t2*t;
+      out.push([0, 1].map(k => .5 * (2*b[k] + (-a[k]+c[k])*t +
+        (2*a[k]-5*b[k]+4*c[k]-d[k])*t2 + (-a[k]+3*b[k]-3*c[k]+d[k])*t3)));
+    }
+  }
+  return out;
+}
+
 export const map = {
   id: 'ilha_enseada_ecos',
   meta: {
@@ -183,20 +198,22 @@ export const map = {
   // Desenho local lido na referência: apenas a cor do chão do quadrante oeste.
   ajusteSolo: {
     ...REF,
-    area: [[0, 140], [155, 140], [210, 270], [275, 312], [540, 320], [575, 380], [655, 480], [665, 555], [600, 605], [500, 605], [20, 605]],
+    area: [[0, 140], [155, 140], [210, 270], [275, 312], [540, 320], [575, 380], [675, 475], [690, 580], [620, 640], [500, 650], [20, 605]],
     grama: [
       // Corredor abaixo da calçada, dos bambus aos coqueiros da gruta.
       [[156, 378], [222, 372], [300, 376], [370, 378], [435, 365], [500, 363],
        [530, 388], [535, 434], [515, 449], [490, 455], [466, 456], [438, 450], [414, 440],
-       [390, 452], [365, 448], [337, 445], [307, 448], [267, 465], [219, 467], [171, 453]],
-      // Grama apenas ao redor do piso do espelho, não sobre a praia.
-      [[455, 518], [472, 501], [510, 496], [542, 507], [560, 524], [555, 548], [538, 564], [485, 562], [455, 546]],
+       [390, 452], [365, 448], [337, 445], [307, 448], [307, 479], [275, 490], [240, 489], [200, 483], [171, 453]],
+      // Contorno do espelho e concha menor traçado nas anotações do jogador.
+      [[423, 471], [447, 538], [494, 577], [554, 585], [584, 559],
+       [644, 558], [644, 485], [598, 479], [577, 491], [559, 483],
+       [504, 473], [470, 489], [457, 470]],
       // Pequeno canteiro junto à ostra, sem avançar sobre o píer.
       [[615, 520], [632, 515], [651, 526], [654, 545], [643, 558], [623, 558], [612, 544]],
       // Vegetação encostada à face ocidental do paredão e junto ao sino.
       [[174, 348], [181, 336], [197, 329], [230, 323], [305, 331], [390, 343], [400, 372], [353, 386],
        [270, 385], [211, 390], [178, 380], [166, 368]],
-    ],
+    ].map(contornoSuave),
   },
   passarelaSobreAgua: [...passarelaCorrentes],
   // A grama não vem de mancha elíptica: vem de `celulasGrama`, traçada da
@@ -584,8 +601,8 @@ export const map = {
     // ---- SETOR 3 (Oeste): Pórtico + bosques ----
     {
       id: 'portico_trilha_praia', nome: 'PÓRTICO DA TRILHA', tipo: 'decoracao', x: 16.94, y: 53.96,
-      sprite: 'enseada_portico_lateral',
-      useCrop: true, larguraPx: 144, escalaY: 0.52, pivotX: 0.5, pivotY: 0.98,
+      sprite: 'enseada3_portico_oeste',
+      espelhar: true, useCrop: true, larguraPx: 150, pivotX: 0.5, pivotY: 0.98,
       bloqueia: false, oscilaBrisa: true, brilho: { cor: '#ffb86b', raio: 1.0, forca: 0.16 },
     },
     {
@@ -712,6 +729,31 @@ export const map = {
       sprite: 'enseada_bambus_oeste', useCrop: true, larguraPx: 65,
       pivotX: 0.5, pivotY: 0.97, bloqueia: false,
     },
+    // Arbustos individuais, alinhados aos círculos da referência anotada.
+    ...[
+      [23.38, 47.89, 'enseada_ne_arbusto_florido', 50],
+      [24.52, 47.73, 'enseada_ne_arbustos', 62],
+      [24.29, 45.87, 'enseada_ne_arbusto_florido', 48],
+      [25.71, 44.91, 'enseada_ne_arbustos', 58],
+      [25.97, 42.96, 'enseada_ne_arbusto_florido', 46],
+      [27.01, 42.57, 'enseada_ne_arbustos', 48],
+    ].map(([x, y, sprite, larguraPx], i) => ({
+      id: `arbusto_anotado_oeste_${i + 1}`, tipo: 'decoracao', x, y, sprite,
+      useCrop: true, larguraPx, pivotX: 0.5, pivotY: 0.97,
+      bloqueia: false, espelhar: i % 2 === 1,
+    })),
+    // Grama elevada: pinceladas manuais nas bordas, animadas pela brisa.
+    ...[
+      [20.2, 54.0, 30], [22.0, 53.0, 27], [23.5, 52.2, 31],
+      [24.0, 50.5, 27], [26.0, 48.5, 26], [28.7, 46.4, 27],
+      [32.9, 49.7, 26], [34.0, 51.6, 30], [36.9, 52.9, 29],
+      [39.5, 51.2, 26], [40.1, 47.3, 28],
+    ].map(([x, y, larguraPx], i) => ({
+      id: `borda_grama_oeste_${i + 1}`, tipo: 'decoracao', x, y,
+      sprite: 'enseada_grama_orla_animada', useCrop: true, larguraPx,
+      pivotX: 0.5, pivotY: 0.98, bloqueia: false, oscilaBrisa: true,
+      espelhar: i % 2 === 1,
+    })),
     // Touceiras feitas à mão: balanço contínuo da brisa, sem colisão.
     ...[
       [19.2, 52.0, 26], [21.6, 51.1, 23], [23.6, 49.8, 27],

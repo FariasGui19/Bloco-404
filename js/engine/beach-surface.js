@@ -62,6 +62,15 @@ export function createBeachSurface(rows, scale = 16, { gramaInterior = false, ca
     minY: Math.min(...ajusteSolo.area.map(p => p[1])) - margemAjuste,
     maxY: Math.max(...ajusteSolo.area.map(p => p[1])) + margemAjuste,
   };
+  // A borda suave tem alcance de cinco pixels; não percorrer polígonos
+  // distantes ao montar o cache de terreno.
+  const regioesGrama = ajusteSolo?.grama.map(pontos => ({
+    pontos,
+    minX: Math.min(...pontos.map(p => p[0])) - 5,
+    maxX: Math.max(...pontos.map(p => p[0])) + 5,
+    minY: Math.min(...pontos.map(p => p[1])) - 5,
+    maxY: Math.max(...pontos.map(p => p[1])) + 5,
+  })) ?? [];
   const pixels = new Uint8ClampedArray(width * height * scale * scale * 4);
   for (let py = 0; py < height * scale; py++) for (let px = 0; px < width * scale; px++) {
     const x = (px + .5) / scale, y = (py + .5) / scale;
@@ -142,7 +151,11 @@ export function createBeachSurface(rows, scale = 16, { gramaInterior = false, ca
       const faixaOeste = smooth((260 - sx) / 35) * smooth((sy - 160) / 35) * smooth((650 - sy) / 35);
       grama *= 1 - faixaOeste * (1 - smooth((shore - .8) / 1.2));
       if (area > 0) {
-        const verde = Math.max(...ajusteSolo.grama.map(p => intensidadePoligono(sx, sy, p, 10)));
+        let verde = 0;
+        for (const regiao of regioesGrama) {
+          if (sx < regiao.minX || sx > regiao.maxX || sy < regiao.minY || sy > regiao.maxY) continue;
+          verde = Math.max(verde, intensidadePoligono(sx, sy, regiao.pontos, 10));
+        }
         grama += (verde - grama) * area;
         grama *= 1 - faixaOeste * (1 - smooth((shore - .8) / 1.2));
         r += 16 * area; g += 9 * area; b -= 12 * area;

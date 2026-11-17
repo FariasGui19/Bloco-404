@@ -52,6 +52,48 @@ def main():
     # suaviza decisões isoladas para a borda não ficar picotada
     classe = ndimage.median_filter(classe, size=7)
 
+    # A LEGENDA DO PÔSTER NÃO É CHÃO. O pergaminho do canto inferior direito
+    # ("Echo Monolith / Shell Grotto / ...") é creme o bastante para cair na
+    # máscara de areia. Ele virava uma única coluna de areia de três tiles de
+    # largura subindo pelo mar a leste do portal sudeste — a "tira de areia com
+    # pedrinhas flutuando" que aparece no render. Zera a região do pergaminho
+    # e devolve água.
+    y_leg, x_leg = np.ogrid[:classe.shape[0], :classe.shape[1]]
+    legenda = (x_leg >= 1024) & (y_leg >= 596)
+    classe[legenda] = 0
+
+    # MANCHAS DE AREIA NO MAR: a arte também tem ilhas de areia clara no fundo
+    # do mar (areia dos vasos de coral, bancos rasos). Só a areia LIGADA ao
+    # continente conta; as manchas pequenas voltam a ser água.
+    areia_classe = classe == 2
+    rot, n = ndimage.label(areia_classe)
+    if n:
+        tamanhos = ndimage.sum(areia_classe, rot, range(1, n + 1))
+        grande = int(np.argmax(tamanhos)) + 1
+        for i in range(1, n + 1):
+            if i != grande and tamanhos[i - 1] < areia_classe.size * 0.004:
+                classe[rot == i] = 0
+
+    # ÁGUA INTERIOR: a arte tem nacos turquesa chapados no meio da ilha (poças
+    # rasas da clareira) que, virando célula de água, saem como retângulos
+    # ciano soltos na areia. Água de verdade é a que se liga ao mar: o que não
+    # alcança a borda do mapa vira o chão em volta (grama ou areia).
+    # Miolo da ilha: onde a água está CERCADA por chão seco. É só aí que um
+    # naco turquesa pode virar célula de água por acidente.
+    seca = ndimage.binary_fill_holes(classe != 0)
+    seca = ndimage.binary_erosion(seca, np.ones((25, 25)))
+    agua_cel = classe == 0
+    rot_w, _ = ndimage.label(agua_cel)
+    borda = set(rot_w[0, :]) | set(rot_w[-1, :]) | set(rot_w[:, 0]) | set(rot_w[:, -1])
+    for i in range(1, rot_w.max() + 1):
+        if i not in borda and (seca[rot_w == i].mean() > .5):
+            nacos = rot_w == i
+            vizinhos = ndimage.binary_dilation(nacos, np.ones((7, 7))) & ~nacos
+            if (classe[vizinhos] == 1).sum() >= (classe[vizinhos] == 2).sum():
+                classe[nacos] = 1
+            else:
+                classe[nacos] = 2
+
     # Amostragem FINA: 4x4 pontos por célula. O losango iso é largo em X e
     # estreito em Y; ler só o centro perde a curva do campo e o chão sai em
     # blocos. Cada sub-ponto é resolvido no mesmo chão que o motor usa.

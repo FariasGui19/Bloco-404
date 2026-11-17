@@ -24,7 +24,7 @@ const arco = object('arco_conduto_retorno_mare');
 assert(Math.hypot(portal.x - arco.x, portal.y - arco.y) <= 2, 'o portal deve ficar junto à passagem');
 assert('YyDdX'.includes(map.aguaPraia[Math.floor(portal.y + .5)][Math.floor(portal.x + .5)]), 'a passagem automática precisa estar na água');
 assert.equal(object('portal_caminho_correntes').sprite, 'enseada_correntes_portal_ref');
-assert.equal(arco.espelhar, true, 'portal leste deve estar invertido');
+assert.equal(arco.sprite, 'enseada_promontorio_sudeste', 'portal usa o recorte orientado da referência');
 assert.equal(object('enseada_base_rochosa_portal_leste').espelhar, true, 'a subida deve acompanhar a inversão');
 const cais = object('cais_madeira_pesca_enseada');
 const visualCais = object('cais_enseada_visual');
@@ -67,13 +67,12 @@ assert(tent.y < fire.y, 'tenda ligeiramente atrás da fogueira');
 assert(table.x < bench.x && bench.x < fire.x && bench.y > fire.y, 'banco à frente e à esquerda da fogueira');
 assert.equal(object('enseada_banco_tronco_camp').sprite, 'enseada_camp_ref_tronco');
 for (const id of ['enseada_arvore_camp_esquerda', 'enseada_arvore_camp_direita', 'enseada_cesto_ferramentas_camp', 'enseada_caixa_atras_tenda', 'enseada_caixote_camp']) assert(object(id));
-assert(camp('enseada_caixa_atras_tenda').x < tent.x && camp('enseada_caixa_atras_tenda').y < tent.y);
-// O caixote solto senta entre a fogueira e a tenda, atrás da fogueira
-// (arte: 500, 258). Antes ele era ancorado entre bancada e fogueira, o que o
-// colocava em cima do banco de tronco.
+assert(camp('enseada_caixa_atras_tenda').x > tent.x && Math.abs(camp('enseada_caixa_atras_tenda').y - tent.y) < 1, 'caixa alinhada à direita da tenda');
+// O caixote solto fica à direita da fogueira, aproximadamente alinhado
+// com ela em profundidade, conforme as âncoras medidas no pôster.
 const caixote = camp('enseada_caixote_camp');
-assert(fire.x < caixote.x && caixote.x < tent.x, 'caixote entre a fogueira e a tenda');
-assert(caixote.y < fire.y, 'caixote atrás da fogueira');
+assert(caixote.x > fire.x && caixote.x >= tent.x, 'caixote à direita da fogueira');
+assert(Math.abs(caixote.y - fire.y) < 1, 'caixote alinhado à fogueira');
 assert(camp('bandeirola_vento_enseada').x > tent.x);
 // Os pés visuais e os pontos lógicos coincidem: a ordenação por x+y
 // e as hitboxes devem acompanhar o mesmo ponto, sem ajuste de tela.

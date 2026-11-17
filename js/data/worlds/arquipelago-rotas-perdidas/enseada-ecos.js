@@ -180,6 +180,20 @@ export const map = {
   aguaPraia: rows,
   // Grama por célula, traçada da arte (ver `js/data/enseada-chao.js`).
   celulasGrama,
+  // Desenho local lido na referência: apenas a cor do chão do quadrante oeste.
+  ajusteSolo: {
+    ...REF,
+    area: [[80, 320], [540, 320], [575, 380], [575, 570], [500, 605], [75, 605]],
+    grama: [
+      // Corredor abaixo da calçada, dos bambus aos coqueiros da gruta.
+      [[156, 378], [222, 372], [300, 376], [370, 378], [435, 365], [500, 363],
+       [530, 388], [545, 455], [525, 477], [493, 485], [465, 480], [438, 465], [414, 440],
+       [390, 452], [365, 448], [337, 445], [307, 448], [267, 465], [219, 467], [171, 453]],
+      // Vegetação encostada à face ocidental do paredão e junto ao sino.
+      [[173, 328], [230, 323], [305, 331], [390, 343], [400, 372], [353, 386],
+       [270, 385], [211, 390], [165, 373]],
+    ],
+  },
   passarelaSobreAgua: [...passarelaCorrentes],
   // A grama não vem de mancha elíptica: vem de `celulasGrama`, traçada da
   // referência. A elipse antiga era um retângulo verde por cima da arte.
@@ -264,7 +278,7 @@ export const map = {
     { id: 'enseada_tartaruga_cais', species: 'tartaruga', x: 53, y: 55 },
     // Cardume no canto sudeste, girando perto das boias do conduto.
     { id: 'enseada_cardume_sudeste', species: 'peixes', x: 55, y: 50 },
-    { id: 'enseada_capivara', species: 'capivara', x: 27.6, y: 50.7, calma: true,
+    { id: 'enseada_capivara', species: 'capivara', x: 28.0, y: 51.05, calma: true, submersa: true, raioPasseio: 0.16, depthOffset: 2,
       interacao: {
         distancia: 1.45, speaker: 'CAPIVARA DA PISCINA',
         dialogue: ['ELA DESCANSA NA ÁGUA MORNA DA PISCINA, COMPLETAMENTE TRANQUILA COM SUA PRESENÇA.'],
@@ -423,12 +437,7 @@ export const map = {
     // Traçado da calçada contínua da arte (pórtico → clareira central): a peça
     // `calcada_central_enseada` já é a faixa inteira, então NÃO se espalham
     // pedrinhas soltas por cima da piscina, da laje do espelho nem do gramado.
-    ...[[16.4, 46.6], [18.0, 46.2], [19.6, 45.8], [21.2, 45.4]].map(([tx, ty], i) => ({
-      id: `trilha_pedras_${i + 1}`,
-      tipo: 'decoracao',
-      x: tx, y: ty, sprite: 'enseada_trilha_pedras', useCrop: true, larguraPx: 40,
-      pivotX: 0.5, pivotY: 0.9, depthOffset: -1, bloqueia: false,
-    })),
+
 
     // ---- SETOR 2 (Noroeste): Acampamento ----
     // Composição conforme a referência: relógio e palmeiras à esquerda,
@@ -640,7 +649,7 @@ export const map = {
       // A piscina da capivara da arte é a bacia de pedras redonda com
       // cascatinha e juncos no canto — não a tina termal retangular cinza.
       id: 'piscina_mare_viva_enseada', nome: 'PISCINA TERMAL', tipo: 'decoracao', x: 28.3, y: 51.65,
-      sprite: 'enseada3_piscina', useCrop: true, larguraPx: 300,
+      sprite: 'enseada3_piscina', useCrop: true, larguraPx: 220,
       pivotX: 0.5, pivotY: 0.92, depthOffset: -4,
       bloqueia: false,
       interacao: { label: 'MERGULHAR AS MÃOS NA ÁGUA TERMAL', distancia: 1.65 },
@@ -690,7 +699,7 @@ export const map = {
     {
       // Gruta nítida, proporcional ao espelho e junto à borda da calçada.
       id: 'gruta_concha_enseada', nome: 'CONCHA GIGANTE', tipo: 'decoracao', x: 29.0, y: 45.8,
-      sprite: 'enseada_gruta_oeste', useCrop: true, larguraPx: 130, pivotX: 0.5, pivotY: 0.97,
+      sprite: 'enseada_gruta_oeste', useCrop: true, larguraPx: 111, pivotX: 0.5, pivotY: 0.97,
       bloqueia: true, hitbox: { offsetX: -0.45, offsetY: -0.28, width: 0.9, height: 0.56 },
       interacao: { label: 'ABRIGAR-SE NA GRUTA-CONCHA', distancia: 1.7 },
     },

@@ -46,7 +46,7 @@ export function updateCoastalFauna(map, animals, player, dt) {
     const fleeRadius = a.calma ? 0.75 : (a.interacao ? 1.15 : (a.species === 'gaivota' ? 2.8 : 2.1));
     a.fleeing = distance < fleeRadius;
     // O destino de passeio muda suavemente; fuga aponta para longe do jogador.
-    const radius = a.species === 'peixes' ? 0.75 : (a.calma ? 0.55 : 1.15);
+    const radius = a.raioPasseio ?? (a.species === 'peixes' ? 0.75 : (a.calma ? 0.55 : 1.15));
     const freq = a.species === 'tartaruga' || a.species === 'capivara' ? 0.18 : 0.27;
     let tx = a.homeX + Math.sin(a.clock * freq + a.homeX) * radius;
     let ty = a.homeY + Math.cos(a.clock * freq + a.homeX) * radius;

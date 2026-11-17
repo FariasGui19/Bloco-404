@@ -42,6 +42,17 @@ def remover_areia(src, dest, remover_parede=False):
         # A face antiga não deve aparecer atrás da nova parede integrada.
         rocha = (r > 50) & (r > g * 1.12) & (g > b * 1.1)
         a[rocha, 3] = 0
+    if dest == 'piscina-sem-areia.png':
+        # Restavam riscos soltos do contorno externo da antiga faixa de areia.
+        # Mantém o corpo conectado da bacia e as plantas/rochas da cascata.
+        componentes, _ = ndimage.label(a[:, :, 3] > 0, structure=np.ones((3, 3)))
+        tamanhos = np.bincount(componentes.ravel()); tamanhos[0] = 0
+        principal = tamanhos.argmax()
+        manter = np.zeros_like(tamanhos, dtype=bool); manter[principal] = True
+        for i, fatia in enumerate(ndimage.find_objects(componentes), 1):
+            if fatia and fatia[1].start >= 480 and fatia[1].stop <= 800 and fatia[0].stop <= 190:
+                manter[i] = True
+        a[~manter[componentes], 3] = 0
     Image.fromarray(a).save(out / dest)
 
 for nome in ('gruta-concha-nitida.png', 'parede-camp-integrada.png'):

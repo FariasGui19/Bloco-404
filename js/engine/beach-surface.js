@@ -40,8 +40,28 @@ function distanciaAoCaminho(x, y, caminhos) {
 // 66.6, maciços de pedra) já é o chão visível. Sem isso a mancha de grama do
 // interior sobe por cima da base do penhasco e fatia a cachoeira ao meio —
 // era o defeito de camada do setor norte.
-export function createBeachSurface(rows, scale = 16, { gramaInterior = false, caminhos = [], zonasGrama = [], zonasRocha = [], celulasGrama = null } = {}) {
+// Campos manuais limitados a um setor, em coordenadas da arte de referência.
+function intensidadePoligono(px, py, pontos, suavidade = 10) {
+  let dentro = false, menor = Infinity;
+  for (let i = 0, j = pontos.length - 1; i < pontos.length; j = i++) {
+    const [ax, ay] = pontos[j], [bx, by] = pontos[i];
+    if ((ay > py) !== (by > py) && px < (bx - ax) * (py - ay) / (by - ay) + ax) dentro = !dentro;
+    const dx = bx - ax, dy = by - ay, len = dx*dx + dy*dy;
+    const t = len ? Math.max(0, Math.min(1, ((px-ax)*dx + (py-ay)*dy)/len)) : 0;
+    menor = Math.min(menor, Math.hypot(px-ax-t*dx, py-ay-t*dy));
+  }
+  return smooth(.5 + (dentro ? menor : -menor) / suavidade);
+}
+
+export function createBeachSurface(rows, scale = 16, { gramaInterior = false, caminhos = [], zonasGrama = [], zonasRocha = [], celulasGrama = null, ajusteSolo = null } = {}) {
   const height = rows.length, width = rows[0].length;
+  const margemAjuste = 55;
+  const limitesAjuste = ajusteSolo && {
+    minX: Math.min(...ajusteSolo.area.map(p => p[0])) - margemAjuste,
+    maxX: Math.max(...ajusteSolo.area.map(p => p[0])) + margemAjuste,
+    minY: Math.min(...ajusteSolo.area.map(p => p[1])) - margemAjuste,
+    maxY: Math.max(...ajusteSolo.area.map(p => p[1])) + margemAjuste,
+  };
   const pixels = new Uint8ClampedArray(width * height * scale * scale * 4);
   for (let py = 0; py < height * scale; py++) for (let px = 0; px < width * scale; px++) {
     const x = (px + .5) / scale, y = (py + .5) / scale;
@@ -110,6 +130,19 @@ export function createBeachSurface(rows, scale = 16, { gramaInterior = false, ca
       const dx = (x - zona.x) / zona.rx, dy = (y - zona.y) / zona.ry;
       const borda = Math.sqrt(dx * dx + dy * dy);
       if (borda < 1) grama *= smooth(borda / .35) * (zona.manter ?? 0);
+    }
+    // O ajuste é estritamente visual e só existe no polígono deste setor;
+    // não altera a costa, a grade de colisão nem a paleta de outros mapas.
+    if (ajusteSolo) {
+      const sx = ajusteSolo.cx + ajusteSolo.sx * (x - y);
+      const sy = ajusteSolo.cy + ajusteSolo.sy * (x + y);
+      const area = sx < limitesAjuste.minX || sx > limitesAjuste.maxX || sy < limitesAjuste.minY || sy > limitesAjuste.maxY
+        ? 0 : intensidadePoligono(sx, sy, ajusteSolo.area, 110);
+      if (area > 0) {
+        const verde = Math.max(...ajusteSolo.grama.map(p => intensidadePoligono(sx, sy, p, 10)));
+        grama += (verde - grama) * area;
+        r += 16 * area; g += 9 * area; b -= 12 * area;
+      }
     }
     if (grama > 0) {
       const gr = 126 + broad * .6 + grain * .7 - wet * 8;

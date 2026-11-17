@@ -2,7 +2,7 @@
 const { createCanvas, loadImage } = require('@napi-rs/canvas');
 const fs = require('node:fs');
 (async () => {
-  for (const name of ['gaivotas-rochedo', 'conchas', 'cercado', 'encosta', 'lanterna', 'portal-completo']) {
+  for (const name of ['gaivotas-rochedo', 'conchas', 'cercado', 'encosta', 'lanterna', 'portal-completo', 'poste-praia']) {
     const im=await loadImage(`assets/sprites/enseada-sudeste/${name}-fonte.png`), w=im.width, h=im.height;
     const c=createCanvas(w,h), g=c.getContext('2d'); g.drawImage(im,0,0);
     const image=g.getImageData(0,0,w,h), a=image.data, seen=new Uint8Array(w*h), stack=new Int32Array(w*h); let count=0;

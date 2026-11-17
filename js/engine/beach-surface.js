@@ -193,7 +193,11 @@ export function createBeachSurface(rows, scale = 16, { gramaInterior = false, ca
       if (sx >= limitesSudeste.minX && sx <= limitesSudeste.maxX && sy >= limitesSudeste.minY && sy <= limitesSudeste.maxY) {
         const area = intensidadePoligono(sx, sy, ajusteSoloSudeste.area, 20);
         if (area > 0) {
-          const ilha = intensidadePoligono(sx, sy, ajusteSoloSudeste.grama, 10);
+          const ilha = Math.max(
+            intensidadePoligono(sx, sy, ajusteSoloSudeste.grama, 10),
+            ajusteSoloSudeste.gramaIntermediaria ? intensidadePoligono(sx, sy, ajusteSoloSudeste.gramaIntermediaria, 10) : 0,
+            ajusteSoloSudeste.gramaCercado ? intensidadePoligono(sx, sy, ajusteSoloSudeste.gramaCercado, 10) : 0,
+          );
           grama += (ilha - grama) * area;
         }
       }

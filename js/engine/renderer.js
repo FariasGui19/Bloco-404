@@ -696,6 +696,7 @@ function drawBeachSurface(map) {
       celulasGrama: map.celulasGrama ?? null,
       ajusteSolo: map.ajusteSolo ?? null,
       ajusteSoloCentral: map.ajusteSoloCentral ?? null,
+      ajusteSoloSudeste: map.ajusteSoloSudeste ?? null,
       texturaGramaCentral,
     });
     texture = document.createElement('canvas');

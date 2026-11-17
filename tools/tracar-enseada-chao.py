@@ -61,6 +61,11 @@ def main():
     y_leg, x_leg = np.ogrid[:classe.shape[0], :classe.shape[1]]
     legenda = (x_leg >= 1024) & (y_leg >= 596)
     classe[legenda] = 0
+    # Moldura ilustrada não faz parte do cenário.
+    classe[:20, :] = 0
+    classe[-20:, :] = 0
+    classe[:, :20] = 0
+    classe[:, -20:] = 0
 
     # MANCHAS DE AREIA NO MAR: a arte também tem ilhas de areia clara no fundo
     # do mar (areia dos vasos de coral, bancos rasos). Só a areia LIGADA ao
@@ -113,6 +118,8 @@ def main():
                     ix, iy = int(round(px)), int(round(py))
                     if 0 <= ix < classe.shape[1] and 0 <= iy < classe.shape[0]:
                         votos.append(int(classe[iy, ix]))
+                    else:
+                        votos.append(0)  # Fora do pôster também é mar.
             if not votos:
                 linha.append('.')
                 continue
@@ -124,6 +131,17 @@ def main():
                 v = 1
             linha.append('.' if v == 0 else ('g' if v == 1 else 's'))
         linhas.append(''.join(linha))
+
+    # A moldura e o pergaminho do pôster geram ilhotas falsas ao longo das
+    # bordas. Após a projeção, a ilha é o maior componente de terra; manter
+    # conexões diagonais preserva pontas estreitas da costa.
+    tiles = np.array([list(linha) for linha in linhas])
+    rotulos, n = ndimage.label(tiles != '.', structure=np.ones((3, 3)))
+    if n:
+        tamanhos = np.bincount(rotulos.ravel())
+        tamanhos[0] = 0
+        tiles[(rotulos != 0) & (rotulos != tamanhos.argmax())] = '.'
+        linhas = [''.join(linha) for linha in tiles]
 
     with open(SAIDA, 'w', encoding='utf-8') as f:
         f.write('// GERADO por tools/tracar-enseada-chao.py — não edite à mão.\n')

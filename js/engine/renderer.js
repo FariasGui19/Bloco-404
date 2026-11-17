@@ -208,7 +208,7 @@ export function render(map, state) {
       desenharPocas(ctx, map, performance.now() / 1000, HW, HH);
       // Cordão de boias: o limite do degrau de nado, só perto do operador.
       const nivelNado = lerArvore(state.progress).nivel;
-      if (nivelNado === 1 || nivelNado === 2) {
+      if (!map.meta?.ocultarCordaoBoias && (nivelNado === 1 || nivelNado === 2)) {
         desenharBoias(ctx, boiasDoLimite(map, nivelNado), state.player, range, performance.now() / 1000, HW, HH);
       }
     }

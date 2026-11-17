@@ -164,6 +164,7 @@ export const map = {
     minZoom: 0.32,
     initialZoom: 0.50,
     estiloPiso: 'livre',
+    ocultarCordaoBoias: true,
     // Chão da Enseada é AREIA. A camada global de grama pintava um tapete
     // verde sobre a praia inteira (a "faixa" que aparecia em todos os setores).
     // Grama agora só nasce onde uma `zonasGrama` mandar.
@@ -212,7 +213,7 @@ export const map = {
       nome: 'PISCINA DE MARÉ VIVA',
       x: 26.5, y: 51.6, rx: 1.45, ry: 1.15,
       profundidade: 0.45,
-      treino: true,
+      treino: true, renderizar: false,
     },
   ],
 
@@ -263,7 +264,7 @@ export const map = {
     { id: 'enseada_tartaruga_cais', species: 'tartaruga', x: 53, y: 55 },
     // Cardume no canto sudeste, girando perto das boias do conduto.
     { id: 'enseada_cardume_sudeste', species: 'peixes', x: 55, y: 50 },
-    { id: 'enseada_capivara', species: 'capivara', x: 28, y: 50, calma: true,
+    { id: 'enseada_capivara', species: 'capivara', x: 25.5, y: 49.8, calma: true,
       interacao: {
         distancia: 1.45, speaker: 'CAPIVARA DA PISCINA',
         dialogue: ['ELA DESCANSA NA ÁGUA MORNA DA PISCINA, COMPLETAMENTE TRANQUILA COM SUA PRESENÇA.'],
@@ -294,7 +295,7 @@ export const map = {
     })),
     // ---- Terminal (função preservada) ----
     {
-      id: 'terminal_frequencia_666', nome: 'TERMINAL DE MANUTENÇÃO', tipo: 'painel', x: 18.5, y: 38.1,
+      id: 'terminal_frequencia_666', nome: 'TERMINAL DE MANUTENÇÃO', tipo: 'painel', x: 24.0, y: 17.5,
       sprite: 'freq666_receptor', useCrop: true, larguraPx: 58, pivotX: 0.5, pivotY: 0.88,
       sombra: [16, 7], bloqueia: true, hitbox: { offsetX: -0.28, offsetY: -0.28, width: 0.56, height: 0.56 },
       brilho: { cor: '#ff7e71', raio: 0.7, forca: 0.2 },
@@ -453,7 +454,7 @@ export const map = {
       // `escalaY` comprime só a altura: a arte do platô é mais redonda que a
       // do pôster, que é um terraço achatado.
       x: 14.74, y: 44.80,
-      sprite: 'enseada_setor1_plato_v3', useCrop: true, larguraPx: 826, escalaY: 0.3125,
+      sprite: 'enseada_setor1_plato_v3', useCrop: true, larguraPx: 826, escalaY: 0.45,
       pivotX: 0.04, pivotY: 0.90, skewY: 0.05,
       camada: 'fundo', ordem: -1, bloqueia: false,
     },
@@ -572,7 +573,7 @@ export const map = {
 
     // ---- SETOR 3 (Oeste): Pórtico + bosques ----
     {
-      id: 'portico_trilha_praia', nome: 'PÓRTICO DA TRILHA', tipo: 'decoracao', x: 15.53, y: 51.94,
+      id: 'portico_trilha_praia', nome: 'PÓRTICO DA TRILHA', tipo: 'decoracao', x: 14.03, y: 53.44,
       sprite: 'enseada3_portico_oeste', spriteB: 'enseada3_portico_oeste', animPeriodo: 0.54,
       useCrop: true, larguraPx: 150, pivotX: 0.5, pivotY: 0.98,
       bloqueia: false, oscilaBrisa: true, brilho: { cor: '#ffb86b', raio: 1.0, forca: 0.16 },
@@ -650,7 +651,7 @@ export const map = {
     {
       // A capivara da referência, sentada dentro da piscina termal.
       // Dentro da bacia da piscina, virada para leste como na arte.
-      id: 'capivara_piscina_enseada', nome: 'CAPIVARA', tipo: 'fauna', x: 26.5, y: 51.3,
+      id: 'capivara_piscina_enseada', nome: 'CAPIVARA', tipo: 'fauna', x: 26.5, y: 51.3, renderizar: false,
       sprite: 'enseada3_capivara', useCrop: true, larguraPx: 42, espelhar: true,
       pivotX: 0.5, pivotY: 0.97, depthOffset: 1, bloqueia: false,
     },
@@ -690,7 +691,7 @@ export const map = {
       // encostada logo ACIMA (nordeste) do Espelho, sob a curva da calçada.
       // As peças antigas (gruta rosa de cristais / caverna de pedra) não
       // existem no pôster; o sprite agora é recorte da própria referência.
-      id: 'gruta_concha_enseada', nome: 'CONCHA GIGANTE', tipo: 'decoracao', x: 28.03, y: 46.94,
+      id: 'gruta_concha_enseada', nome: 'CONCHA GIGANTE', tipo: 'decoracao', x: 29.53, y: 45.44,
       sprite: 'enseada_concha_gigante', useCrop: true, larguraPx: 260, pivotX: 0.5, pivotY: 0.97,
       bloqueia: true, hitbox: { offsetX: -0.45, offsetY: -0.28, width: 0.9, height: 0.56 },
       interacao: { label: 'ABRIGAR-SE NA GRUTA-CONCHA', distancia: 1.7 },
@@ -735,7 +736,7 @@ export const map = {
       nome: 'PORTAL SUBMARINO DE CORAL',
     },
     {
-      id: 'portal_submarino_fundo', tipo: 'decoracao', x: 34.0, y: 3.22,
+      id: 'portal_submarino_fundo', tipo: 'decoracao', x: 34.0, y: 3.22, renderizar: false,
       sprite: 'enseada4_portal_submarino', useCrop: true, larguraPx: 130,
       pivotX: 0.5, pivotY: 0.96, depthOffset: -6, bloqueia: false,
       nome: 'PORTA DE CORAL',
@@ -873,7 +874,7 @@ export const map = {
       interacao: { label: 'COLHER AMOSTRA DE CORAL', distancia: 1.6 },
     },
     {
-      id: 'ninho_tartarugas_enseada', nome: 'NINHO DE TARTARUGAS', tipo: 'decoracao', x: 52.0, y: 30.0,
+      id: 'ninho_tartarugas_enseada', nome: 'NINHO DE TARTARUGAS', tipo: 'decoracao', x: 49.0, y: 34.0,
       sprite: 'enseada_ninho_tartarugas', spriteB: 'enseada_ninho_tartarugas_b', animPeriodo: 0.68,
       useCrop: true, larguraPx: 70, pivotX: 0.5, pivotY: 0.9,
       bloqueia: false,
@@ -887,7 +888,7 @@ export const map = {
       interacao: { label: 'SINTONIZAR CAPTADOR DE ECOS', distancia: 1.65 },
     },
     {
-      id: 'santuario_lumeo_enseada', nome: 'SANTUÁRIO DE LÚMEO', tipo: 'decoracao', x: 42.6, y: 19.6,
+      id: 'santuario_lumeo_enseada', nome: 'SANTUÁRIO DE LÚMEO', tipo: 'decoracao', x: 39.0, y: 26.0,
       sprite: 'enseada_santuario_lumeo', spriteB: 'enseada_santuario_lumeo_b', animPeriodo: 0.58,
       useCrop: true, larguraPx: 80, pivotX: 0.5, pivotY: 0.92,
       bloqueia: false, pulsoBiolum: '#70f3ff', brilho: { cor: '#70f3ff', raio: 1.35, forca: 0.32 },
@@ -959,12 +960,7 @@ export const map = {
       sprite: i === 0 || i === 3 ? 'enseada_correntes_boia_vermelha' : 'enseada_correntes_boia_laranja',
       useCrop: true, larguraPx: 20, pivotX: 0.5, pivotY: 0.9, bloqueia: false, flutuacaoSuave: true, sombra: [8, 3],
     })),
-    // Pedras de apoio separadas, sobre o mar e sem alterar a costa visual.
-    ...[[30.8,7.9],[31.7,7.7],[32.6,7.9],[33.5,7.7],[34.3,7.8],[35.2,7.4],[36.0,6.9],[36.2,6.1],[36.2,5.4]].map(([x,y], i) => ({
-      id: `pedra_correntes_${i}`, tipo: 'decoracao', x, y,
-      sprite: `enseada_correntes_pedra_${i % 3 + 1}`, useCrop: true, larguraPx: 38 + (i % 3) * 5,
-      pivotX: 0.5, pivotY: 0.8, camada: 'fundo', bloqueia: false,
-    })),
+    // A plataforma nordeste é isolada; não há pedras de apoio na água.
     {
       id: 'cardume_correntes', tipo: 'decoracao', x: 43, y: 5.5,
       sprite: 'enseada_correntes_cardume',
@@ -1035,7 +1031,7 @@ export const map = {
     {
       // Poste de lampião da referência fica na praia leste, ao lado do píer —
       // não no meio da praça do espelho (era o que aparecia em cima da concha).
-      id: 'poste_lanterna_madeira', tipo: 'decoracao', x: 44.75, y: 41.47,
+      id: 'poste_lanterna_madeira', tipo: 'decoracao', x: 42.75, y: 39.47,
       sprite: 'enseada6_poste', useCrop: true, larguraPx: 50,
       pivotX: 0.5, pivotY: 0.96, depthOffset: -0.3, bloqueia: false,
     },

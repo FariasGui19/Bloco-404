@@ -69,16 +69,13 @@ export const VEGETACAO = [
   ['J', 42.9, 36.0, 76],
 
   // ---------- Palmeiras da praia sul (entre a praça do espelho e a rede) ----------
-  ['P', 39.6, 44.2, 94], ['B', 38.6, 45.6, 92],
-  ['J', 40.2, 46.6, 78], ['B', 42.2, 45.0, 88],
-  ['J', 46.4, 42.0, 76],
+  // Faixa livre para a lanterna e o acesso ao cais.
 
   // ---------- Matinha da praia sudoeste (pôster 100–200, 560–640) ----------
   ['T', 25.6, 62.4, 176], ['T', 27.2, 61.0, 168],
   ['B', 24.4, 63.6, 92], ['P', 28.6, 59.8, 86], ['J', 26.4, 64.2, 74],
 
   // ---------- Palmeiras e moitas do litoral leste ----------
-  ['B', 50.4, 41.8, 88],
   ['J', 53.0, 35.4, 74],
 
   // Palmeiras no promontório, em terra firme, não em ilhas no mar.

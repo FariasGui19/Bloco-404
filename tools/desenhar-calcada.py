@@ -97,14 +97,6 @@ def main():
     for i in range(0, len(linha), 2):
         d.point([e(*meio_a[i])], fill=(150, 143, 128))
 
-    # Variação de tom por bloco (algumas pedras mais escuras).
-    for i in range(0, len(linha) - 6, 6):
-        pts = esq[i:i + 6] + dir_[i:i + 6][::-1]
-        if len(pts) < 8:
-            continue
-        if (i // 6) % 3 == 0:
-            d.polygon([e(*p) for p in pts], fill=(191, 184, 166))
-
     im = im.resize((W, H), Image.LANCZOS)
     im.save(f'{RAIZ}/assets/sprites/enseada-lote2/calcada-central.png')
 

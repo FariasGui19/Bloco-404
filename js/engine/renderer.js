@@ -683,6 +683,7 @@ function drawBeachSurface(map) {
       zonasGrama: map.zonasGrama ?? [],
       zonasRocha: map.zonasRocha ?? [],
       celulasGrama: map.celulasGrama ?? null,
+      ajusteSolo: map.ajusteSolo ?? null,
     });
     texture = document.createElement('canvas');
     texture.width = data.width; texture.height = data.height;
@@ -3088,7 +3089,7 @@ function drawCoastalFauna(a) {
   const x = (a.x - a.y) * HW, y = (a.x + a.y) * HH;
   // Golfinho e tartaruga vivem na água: a sombra deles é na própria
   // lâmina d'água, e o golfinho ganha arco de salto.
-  const naAgua = a.species === 'golfinho' || a.species === 'tartaruga' || a.species === 'peixes';
+  const naAgua = a.submersa || a.species === 'golfinho' || a.species === 'tartaruga' || a.species === 'peixes';
   // Animação vem do módulo de fauna: parábola de verdade para o golfinho,
   // batida em rajada para o trinta-réis, passo para o graxaim. O renderer
   // só obedece — nada de seno solto aqui dentro.
@@ -3107,7 +3108,18 @@ function drawCoastalFauna(a) {
   const box = (a.species === 'capivara' || nova) ? getVisibleBox(image, col * cw, row * ch, cw, ch) : null;
   // Usa a base opaca de cada quadro, sem redimensioná-lo ou deslocar a sombra.
   const anchor = faunaFootAnchor(box, ch);
-  ctx.drawImage(image, col * cw, row * ch, cw, ch, -width / 2, -height * anchor, width, height);
+  if (a.submersa && box) {
+    // A linha da água corta as patas, respeitando a caixa visível do quadro.
+    const linhaAgua = -height * anchor + height * (box.y + box.h * .72) / ch;
+    ctx.save();
+    ctx.beginPath(); ctx.rect(-width, -height * 2, width * 2, linhaAgua + height * 2); ctx.clip();
+    ctx.drawImage(image, col * cw, row * ch, cw, ch, -width / 2, -height * anchor, width, height);
+    ctx.restore();
+    ctx.strokeStyle = 'rgba(196,255,242,.8)'; ctx.lineWidth = 1.4;
+    ctx.beginPath(); ctx.ellipse(0, linhaAgua, width * .22, 3, 0, 0, Math.PI); ctx.stroke();
+  } else {
+    ctx.drawImage(image, col * cw, row * ch, cw, ch, -width / 2, -height * anchor, width, height);
+  }
   ctx.restore();
 }
 

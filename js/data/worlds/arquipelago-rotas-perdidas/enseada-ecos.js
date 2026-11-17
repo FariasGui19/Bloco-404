@@ -921,6 +921,7 @@ export const map = {
       // Rede de praia com postes e estacas próprios, sobre a areia.
       id: 'rede_treino_praia_enseada', nome: 'REDE DE PRAIA', tipo: 'decoracao', x: 42.75, y: 51.34,
       sprite: 'enseada_cais_rede', useCrop: true, larguraPx: 205,
+      quadrosAnimacao: ['enseada_cais_rede','enseada_rede_alta','enseada_cais_rede','enseada_rede_baixa'], duracaoQuadro: 0.36,
       pivotX: 0.5, pivotY: 0.98, depthOffset: 0.2,
       bloqueia: false,
       interacao: { label: 'EXAMINAR A REDE DA PRAIA', distancia: 1.8, speaker: 'REDE DE PRAIA',
@@ -1143,6 +1144,7 @@ export const map = {
     {
       id: 'poleiro_aves_enseada', nome: 'POLEIRO DAS AVES', tipo: 'decoracao', x: 51.15, y: 32.4,
       sprite: 'enseada_sudeste_gaivotas',
+      quadrosAnimacao: ['enseada_sudeste_gaivotas','enseada_sudeste_gaivotas','enseada_sudeste_gaivotas','enseada_sudeste_gaivotas','enseada_gaivota_esquerda','enseada_sudeste_gaivotas','enseada_sudeste_gaivotas','enseada_gaivota_direita'], duracaoQuadro: 0.24,
       useCrop: true, larguraPx: 100, pivotX: 0.5, pivotY: 0.94,
       bloqueia: false,
       interacao: { label: 'OBSERVAR O POLEIRO', distancia: 1.5 },

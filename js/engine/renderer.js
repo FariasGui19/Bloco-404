@@ -24,6 +24,7 @@ import { bridgeGateGeometry } from './bridge-geometry.js';
 import { getBioWalkFrame, bioWalkSheet } from '../data/bio-walk.js';
 import { faunaFootAnchor } from '../game/fauna-costeira.js';
 import { getFrame } from './sprite-clean.js';
+import { quadroEnseada, temDetalheEnseada, desenharDetalheEnseada } from './enseada-vida-lote2.js';
 import { drawAmbientBack, drawAmbientFront } from './ambient.js';
 import { tintaDoClima, atualizarParticulas, climaVisivelNoMapa, neblinaDoClima } from '../game/clima.js';
 import { renderSideViewMap } from './side-view.js';
@@ -4269,7 +4270,7 @@ function drawEnseadaObjectAnimations(object, state) {
   }
 
   if (object.pulsoAntena) {
-    const topoY = iy - (object.id === 'torre_antena_enseada' ? 76 : 42);
+    const topoY = iy - (object.id === 'torre_antena_enseada' ? object.larguraPx * 3.2 : 42);
     for (let i = 0; i < 2; i++) {
       const f = (t * 0.55 + i * 0.5) % 1;
       ctx.strokeStyle = `rgba(110, 247, 255, ${((1 - f) * 0.42).toFixed(2)})`;
@@ -5381,14 +5382,15 @@ function drawMapObject(object, state) {
   // ...
 
   const reducedMotion = typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
-  let spriteId = object.sprite;
-  if (object.spriteB && !reducedMotion) {
+  let spriteId = quadroEnseada(object, performance.now() / 1000, reducedMotion);
+  if (!object.quadrosAnimacao && object.spriteB && !reducedMotion) {
     const periodo = object.animPeriodo ?? 0.55;
     const fase = (performance.now() / 1000) / periodo + (object.x + object.y) * 0.27;
     if (Math.floor(fase) % 2 === 1 && getSprite(object.spriteB)) {
       spriteId = object.spriteB;
     }
   }
+  if (object.quadrosAnimacao && !getSprite(spriteId)) spriteId = object.sprite;
   const sheet = getObjectSpriteConfig(spriteId);
   const image = getSprite(spriteId ?? sheet.ID);
   if (!image || !sheet) return;
@@ -5399,6 +5401,10 @@ function drawMapObject(object, state) {
   if (object.useCrop && drawCroppedObject(object, image, sheet)) {
     drawFrequencyObjectLife(object, image);
     drawEnseadaObjectAnimations(object, state);
+    if (temDetalheEnseada(object.id)) {
+      const crop = getFrame(image, 0, 0, sheet.SHEET_COLS, sheet.SHEET_ROWS)?.crop;
+      desenharDetalheEnseada(ctx, object, crop, performance.now() / 1000, reducedMotion);
+    }
     if (object.id === 'grade_impeto_vivo' && (!object.__coluna || object.__coluna.index === object.__coluna.count - 1)) {
       drawBioGateResonance(object, state);
     }
@@ -5539,7 +5545,7 @@ function drawCroppedObject(object, image, sheet) {
 
   const agora = performance.now() / 1000;
   const movimentoReduzido = typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
-  const voa = !object.bateAsas || !movimentoReduzido;
+  const voa = !movimentoReduzido;
   const boiaY = object.flutuacaoSuave && voa ? Math.sin(agora * 2.1 + object.x * 1.7 + object.y) * 2.4 : 0;
   const cardumeX = object.nadoCardume && voa ? Math.cos(agora * 1.35 + object.x) * 4.5 : 0;
   const cardumeY = object.nadoCardume && voa ? Math.sin(agora * 2.0 + object.y) * 2.2 : 0;
@@ -5552,7 +5558,7 @@ function drawCroppedObject(object, image, sheet) {
   const skewY = object.skewY ?? 0;
   const escalaY = object.escalaY ?? 1;
   const asas = object.bateAsas && !movimentoReduzido ? 0.68 + 0.32 * Math.abs(Math.sin(agora * 8 + object.ajusteX * .07)) : 1;
-  const brisaSkewX = object.oscilaBrisa
+  const brisaSkewX = object.oscilaBrisa && !movimentoReduzido
     ? Math.sin(agora * 2.1 + object.x * 1.3 + object.y) * 0.032 * (0.65 + (state.clima?.vento ?? 0.3))
     : 0;
 

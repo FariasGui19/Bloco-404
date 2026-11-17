@@ -485,6 +485,9 @@ await loadSprites([
   { id: 'enseada_embarcadouro_mare', src: 'assets/sprites/enseada-2/embarcadouro-mare-astral.png' },
   { id: 'enseada_espelho_arquetipo', src: 'assets/sprites/enseada-2/espelho-eco-arquetipo.png' },
   // Lote 2: espelho da arte de referência (moldura dourada sobre praça de losangos).
+  { id: 'enseada_espelho_revisado', src: 'assets/sprites/enseada-espelho-revisado/espelho.png' },
+  { id: 'enseada_altar_revisado', src: 'assets/sprites/enseada-espelho-revisado/altar.png' },
+  { id: 'enseada_pedras_revisadas', src: 'assets/sprites/enseada-espelho-revisado/pedras.png' },
   { id: 'enseada2_espelho_referencia', src: 'assets/sprites/enseada-lote2/espelho-arquetipos.png' },
   { id: 'enseada_relogio_mare', src: 'assets/sprites/enseada-2/relogio-mare-solar.png' },
   { id: 'enseada_ninho_tartarugas', src: 'assets/sprites/enseada-2/ninho-tartarugas-praia.png' },

@@ -431,7 +431,7 @@ export const map = {
       // Palmeira e árvore de tronco: ordena pelo pé (a copa pode passar na
       // frente de quem anda atrás dela, como na arte).
       depthOffset: ['P', 'M', 'B', 'J', 'C', 'T', 'G'].includes(tipo) ? -0.35 : -0.2,
-    })),
+    })).filter(o => !(o.x === 38.28 && o.y === 49.94)),
     // ---- Terminal (função preservada) ----
     {
       id: 'terminal_frequencia_666', nome: 'CESTO DE FERRAMENTAS', tipo: 'painel', x: 13.45, y: 37.05,
@@ -782,9 +782,9 @@ export const map = {
       pivotX: 0.5, pivotY: 0.97, depthOffset: 1, bloqueia: false,
     },
     {
-      // A pequena fonte de cristal azul da referência, abaixo da piscina.
+      // Altar de cristal compacto, preservando a colisão e o brilho originais.
       id: 'fonte_cristal_enseada', nome: 'FONTE DE CRISTAL', tipo: 'decoracao', x: 37.44, y: 55.41,
-      sprite: 'enseada3_fonte_cristal', useCrop: true, larguraPx: 78,
+      sprite: 'enseada_altar_revisado', useCrop: true, larguraPx: 52,
       pivotX: 0.5, pivotY: 0.95, bloqueia: true,
       hitbox: { offsetX: -0.26, offsetY: -0.26, width: 0.52, height: 0.52 },
       pulsoBiolum: '#7fe3ff', brilho: { cor: '#7fe3ff', raio: 0.9, forca: 0.22 },
@@ -792,7 +792,7 @@ export const map = {
     {
       // Rochas discretas à esquerda da fonte de cristal.
       id: 'pedras_fonte_cristal_enseada', tipo: 'decoracao', x: 36.2, y: 56.65,
-      sprite: 'enseada_estacao_pedras_degrau', useCrop: true, larguraPx: 65,
+      sprite: 'enseada_pedras_revisadas', useCrop: true, larguraPx: 85,
       pivotX: 0.5, pivotY: 0.95, bloqueia: false,
     },
     {
@@ -805,14 +805,11 @@ export const map = {
       renderizar: false,
     },
     {
-      // A referência desenha um espelho oval de moldura dourada com pedrarias,
-      // sobre praça de losangos com medalhão. O sprite antigo era um portal
-      // tecnológico de pedra escura com vórtice roxo — outra coisa.
-      // Pé do espelho no pôster: (515, 552). O sprite inclui a praça, então a
-      // âncora é o centro da praça e o espelho fica acima.
+      // Composição única: espelho oval, medalhão e praça de pedra; a âncora
+      // coincide com o pé do espelho para preservar a interação de sintonia.
       id: 'espelho_arquetipos_enseada', nome: 'ESPELHO DE RESSONÂNCIA', tipo: 'dispositivo', x: 36.35, y: 50.25,
-      sprite: 'enseada2_espelho_referencia',
-      useCrop: true, larguraPx: 296, pivotX: 0.5, pivotY: 0.70,
+      sprite: 'enseada_espelho_revisado',
+      useCrop: true, larguraPx: 296, pivotX: 0.5, pivotY: 0.53,
       bloqueia: false, brilho: { cor: '#6ff7ff', raio: 1.5, forca: 0.34 },
       interacao: { label: 'SINTONIZAR ARQUÉTIPO', distancia: 1.65 },
     },
@@ -915,7 +912,7 @@ export const map = {
       nome: 'PORTA DE CORAL',
     },
     {
-      id: 'orla_rochas_sul', tipo: 'decoracao', x: 43.0, y: 55.5,
+      id: 'orla_rochas_sul', tipo: 'decoracao', x: 43.0, y: 55.5, renderizar: false,
       sprite: 'enseada4_orla_rochas', useCrop: true, larguraPx: 96,
       pivotX: 0.5, pivotY: 0.96, bloqueia: false,
     },
@@ -1234,7 +1231,7 @@ export const map = {
       pivotX: 0.5, pivotY: 0.96, depthOffset: -0.3, bloqueia: false,
     },
     {
-      id: 'enseada_arbusto_1', tipo: 'decoracao', x: 40.5, y: 57.5, sprite: 'beach_props', frame: { col: 3, row: 0 },
+      id: 'enseada_arbusto_1', tipo: 'decoracao', x: 40.5, y: 57.5, renderizar: false, sprite: 'beach_props', frame: { col: 3, row: 0 },
       useCrop: true, larguraPx: 44, pivotX: 0.5, pivotY: 1, bloqueia: false,
     },
     {

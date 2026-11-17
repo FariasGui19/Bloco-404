@@ -697,6 +697,7 @@ function drawBeachSurface(map) {
       ajusteSolo: map.ajusteSolo ?? null,
       ajusteSoloCentral: map.ajusteSoloCentral ?? null,
       ajusteSoloSudeste: map.ajusteSoloSudeste ?? null,
+      areiaPraiaSul: map.areiaPraiaSul ?? null,
       trilhaEstacaoPortal: map.trilhaEstacaoPortal ?? [],
       texturaGramaCentral,
     });

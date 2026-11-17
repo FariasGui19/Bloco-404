@@ -5383,7 +5383,7 @@ function drawMapObject(object, state) {
 
   const reducedMotion = typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
   let spriteId = quadroEnseada(object, performance.now() / 1000, reducedMotion);
-  if (!object.quadrosAnimacao && object.spriteB && !reducedMotion) {
+  if (!object.quadrosAnimacao && !object.animacaoFolha && object.spriteB && !reducedMotion) {
     const periodo = object.animPeriodo ?? 0.55;
     const fase = (performance.now() / 1000) / periodo + (object.x + object.y) * 0.27;
     if (Math.floor(fase) % 2 === 1 && getSprite(object.spriteB)) {
@@ -5583,9 +5583,14 @@ function drawCroppedObject(object, image, sheet) {
     ctx.beginPath(); ctx.rect(boca.x - 34, -10000, 20000, 20000); ctx.clip();
   }
   const filtro = filtroObjeto(object);
+  // Folhas com quadros de mesmo tamanho e margem fixa: a base continua no
+  // pivô exato do sprite original. Se a folha ainda não carregou, usa a arte.
+  const anim = object.animacaoFolha;
+  const folha = anim && !movimentoReduzido ? getSprite(anim.sprite) : null;
+  const folhaValida = folha && folha.width === (c.w + 2 * anim.margem) * anim.quadros && folha.height === c.h && !tira && !object.__slice;
   // Cópia 1:1 do sprite já reduzido (ver "SPRITES JÁ NA ESCALA DA TELA").
   const kTela = scale * escaladosZoom;
-  const pronto = escaladosAtivo && !filtro && skewY === 0 && brisaSkewX === 0 && escalaY === 1 && asas === 1 && kTela <= ESCALADOS_MAX_K
+  const pronto = !folhaValida && escaladosAtivo && !filtro && skewY === 0 && brisaSkewX === 0 && escalaY === 1 && asas === 1 && kTela <= ESCALADOS_MAX_K
     ? spriteEscalado(c.canvas, kTela, Boolean(object.espelhar))
     : null;
   if (pronto) {
@@ -5615,8 +5620,15 @@ function drawCroppedObject(object, image, sheet) {
     if (skewY !== 0 || brisaSkewX !== 0 || escalaY !== 1) ctx.transform(1, skewY, brisaSkewX, escalaY, 0, 0);
     if (object.espelhar) ctx.scale(-1, 1);
     if (asas !== 1) ctx.scale(asas, 1);
-    ctx.drawImage(c.canvas, sx, banda.sy, sw, banda.sh,
-      -w * px + sx * scale, -h * py + banda.sy * scale, sw * scale, banda.sh * scale);
+    if (folhaValida) {
+      const fw = c.w + 2 * anim.margem;
+      const quadro = Math.floor((agora + (anim.fase ?? 0)) / anim.periodo) % anim.quadros;
+      ctx.drawImage(folha, quadro * fw, 0, fw, c.h,
+        -w * px - anim.margem * scale, -h * py, fw * scale, h);
+    } else {
+      ctx.drawImage(c.canvas, sx, banda.sy, sw, banda.sh,
+        -w * px + sx * scale, -h * py + banda.sy * scale, sw * scale, banda.sh * scale);
+    }
     ctx.filter = 'none';
   }
   // Queda-d'água: fios animados recortados pela máscara da arte, e o

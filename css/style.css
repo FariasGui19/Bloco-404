@@ -4526,17 +4526,19 @@ body.immersive-active #ui, body.immersive-active #controls, body.immersive-activ
 .immersive-view { position: fixed; inset: 0; overflow: hidden; z-index: 700; opacity: 0; background: #102d33; color: #effff2; touch-action: none; }
 .immersive-effects { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; image-rendering: pixelated; object-fit: cover; }
 .immersive-shade { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
-.immersive-effects { image-rendering: auto; }
 .immersive-shade { background: linear-gradient(180deg,rgba(5,22,27,.52),transparent 28%,transparent 60%,rgba(5,22,27,.82)); }
 .immersive-heading { position: absolute; top: clamp(20px,4vw,52px); left: clamp(20px,5vw,72px); right: clamp(20px,5vw,72px); display: flex; justify-content: space-between; gap: 20px; text-shadow: 0 2px 8px #102f2d; }
 .immersive-heading span { font: 700 10px monospace; letter-spacing: .22em; color: #a4f3d4; }
 .immersive-heading h2 { margin: 8px 0 5px; font: 700 clamp(22px,3vw,38px) Georgia,serif; letter-spacing: .02em; }
 .immersive-heading p { margin: 0; font: 12px monospace; color: #ddf4e9; }
-.immersive-bottom { position: absolute; bottom: clamp(20px,4vw,50px); left: 50%; transform: translateX(-50%); width: min(880px,92vw); text-align: center; }
-.immersive-bottom p { min-height: 1.2em; color: #d6fff1; font: 11px monospace; letter-spacing: .08em; text-shadow: 0 2px 6px #102523; }
-.immersive-bottom nav { display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; }
-.immersive-view button { background: rgba(8,34,38,.84); color: #f0fff6; border: 1px solid rgba(151,232,205,.65); border-radius: 4px; padding: 12px 16px; cursor: pointer; font: 600 12px monospace; }
-.immersive-view button:hover, .immersive-view button:focus-visible { background: #245b55; outline: 2px solid #c9ffdf; outline-offset: 2px; }
-.immersive-view button b { color: #9cf2cc; margin-right: 6px; }
-@media (max-width: 600px) { .immersive-bottom nav { gap: 5px; } .immersive-view button { padding: 10px; font-size: 10px; } .immersive-heading p { font-size: 10px; } }
-@media (prefers-reduced-motion: reduce) { .immersive-background, .immersive-cave-frame, .immersive-capybara { will-change: auto; } }
+/* Os comandos compartilham um único apoio discreto, em vez de três caixas
+   pesadas sobre o cenário. O foco permanece visível para teclado. */
+.immersive-bottom { position: absolute; bottom: clamp(16px,3.5vw,42px); left: 50%; transform: translateX(-50%); width: min(780px,94vw); text-align: center; }
+.immersive-bottom p { margin: 0 0 10px; min-height: 1.3em; color: #e2f4e5; font: 11px monospace; letter-spacing: .04em; text-shadow: 0 1px 5px #0a2224, 0 1px 2px #0a2224; }
+.immersive-bottom nav { display: inline-flex; justify-content: center; align-items: center; flex-wrap: wrap; gap: 0; padding: 4px 7px; border: 1px solid rgba(188,215,190,.24); border-radius: 6px; background: rgba(16,38,37,.83); box-shadow: 0 4px 20px rgba(0,0,0,.2); }
+.immersive-view button { color: #e9f3e8; border: 0; border-radius: 3px; background: transparent; padding: 10px 12px; cursor: pointer; font: 600 11px monospace; }
+.immersive-heading > button { align-self: flex-start; border: 1px solid rgba(188,215,190,.3); background: rgba(16,38,37,.7); padding: 8px 10px; color: #d3e8d8; }
+.immersive-view button:hover, .immersive-view button:focus-visible { background: rgba(119,174,142,.25); outline: 1px solid #c6e8ce; outline-offset: -1px; }
+.immersive-view button[aria-pressed="true"] { color: #b5f4cd; background: rgba(104,165,127,.19); }
+.immersive-view button b { display: inline-block; color: #bfe7c6; border: 1px solid rgba(172,222,186,.38); border-radius: 3px; padding: 2px 4px; margin-right: 5px; font-size: 10px; }
+@media (max-width: 600px) { .immersive-heading p { font-size: 10px; } .immersive-bottom nav { max-width: 96%; padding: 3px; } .immersive-view button { padding: 8px 7px; font-size: 10px; } }

@@ -47,7 +47,8 @@ export function initImmersiveView(manager) {
       sound.setAttribute('aria-pressed', String(immersiveSoundEnabled()));
       lastScene = scene;
     }
-    message.textContent = manager.message || 'MOVA O MOUSE PARA OLHAR AO REDOR';
+    const status = manager.message || 'MOVA O MOUSE PARA OLHAR AO REDOR';
+    if (message.textContent !== status) message.textContent = status;
     two.setAttribute('aria-pressed', String(manager.relaxing));
     const still = reducedMotion(), x = still ? 0 : manager.lookX, y = still ? 0 : manager.lookY;
     const t = still ? 0 : performance.now() / 1000;

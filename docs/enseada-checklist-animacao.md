@@ -144,3 +144,23 @@ Teste: `node --experimental-default-type=module tests/imersao-enseada.mjs`.
   linha d'água, não uma folha de nado dedicada.
 - [ ] Validar desempenho e enquadramento em dispositivos, proporções e zooms
   variados. O FPS de 60 não foi medido em hardware de referência.
+
+## Correção visual dos dioramas — em andamento
+
+- [x] Fonte: mão geométrica retirada; carinho usa pequenas ondulações e
+  reflexos sem cobrir a capivara. UI compartilha uma barra discreta e foco
+  visível, com mensagem estável para leitores de tela.
+- [x] Fonte e gruta: água com textura do tileset da praia, vegetação de folhas
+  do mapa, horizonte e camadas com deslocamentos independentes.
+- [x] Duas novas peças transparentes de primeiro plano, ilustradas a partir
+  das referências visuais da piscina e da concha (não são sprites originais do
+  mapa), mais cópias de folhas de vegetação com franjas magenta reduzidas.
+- [x] Gruta: moldura de madrepérola com abertura real e mar até o primeiro
+  plano, sem a antiga faixa chapada de areia; chuva continua atrás da moldura.
+- [x] Passeio nas duas cenas em Chromium, além de conferência da UI em 375×667
+  com movimento reduzido. Testes de controlador, camadas e estrutura passaram.
+- [ ] Prosseguir com o lote solicitado de dez folhas para a fonte e depois
+  outro para a gruta: esta revisão acrescenta duas peças ilustradas e duas
+  cópias limpas, não dez folhas novas. Substituir também o céu ainda simples,
+  refinar a transição água/capivara e validar o enquadramento da concha em mais telas altas.
+- [ ] Fazer revisão visual humana e medir desempenho em dispositivos reais.

@@ -18,7 +18,7 @@ const draw=createDioramaRenderer({getContext:()=>ctx});
 const manager={state:{clima:{luz:.7,chuva:1}},petTime:1,relaxing:true};
 draw('fonte',manager,1,false,.5,-.5);
 const used = calls.filter(c=>c[0]==='drawImage').map(c=>c[1].path);
-for (const name of ['fauna-costeira','piscina.png','palmeira-baixa','ondulacao','vapor','bolhas','mao','chuva','cascata'])
+for (const name of ['fauna-costeira','piscina.png','palmeira-baixa','ondulacao','vapor','bolhas','moldura-fonte','chuva','cascata'])
   assert(used.some(p=>p.includes(name)),`Fonte deve usar ${name}`);
 assert(calls.some(c=>c[0]==='clip'), 'Capivara submersa precisa de recorte');
 const fauna=calls.find(c=>c[0]==='drawImage' && c[1].path.includes('fauna-costeira'));
@@ -27,9 +27,16 @@ const depths = calls.filter(c=>c[0]==='translate').map(c=>c[1]);
 assert(new Set(depths).size >= 3,'parallax deve deslocar camadas em intensidades distintas');
 calls=[];draw('gruta',manager,2,false,-.7,.6);
 const cave=calls.filter(c=>c[0]==='drawImage').map(c=>c[1].path);
-for (const name of ['gruta-oeste-compacta','mar.png','onda.png','respingo','chuva','rochas-borda'])
+for (const name of ['moldura-gruta','mar.png','onda.png','respingo','chuva','rochas-borda'])
   assert(cave.some(p=>p.includes(name)),`Gruta deve usar ${name}`);
-assert(calls.some(c=>c[0]==='clip' && c[1]==='evenodd'), 'moldura deve deixar abertura para a paisagem');
+assert(!cave.some(p=>p.includes('mao.png')), 'carinho nunca deve usar a mão geométrica');
+assert(!used.some(p=>p.includes('mao.png')), 'fonte não deve desenhar a mão geométrica');
+// A moldura se ajusta ao trecho visível do canvas em telas retrato.
+globalThis.innerWidth=375; globalThis.innerHeight=667; calls=[];
+draw('gruta',manager,0,true,0,0);
+const frame=calls.find(c=>c[0]==='drawImage' && c[1].path.includes('moldura-gruta'));
+assert(frame && frame[4] < 240, 'moldura deve caber na região visível em retrato');
+delete globalThis.innerWidth; delete globalThis.innerHeight;
 const names=['mar','onda','ondulacao','vapor','bolhas','chuva','respingo','mao','brilho','cascata'];
 for (const n of names) {
  const path=`assets/sprites/enseada-fpv-lote1/${n}.png`;

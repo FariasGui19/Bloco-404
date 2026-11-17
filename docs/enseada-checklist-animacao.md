@@ -106,3 +106,23 @@ Teste opcional de renderização no navegador: instale `playwright-core` sem sal
 a dependência e execute `BROWSER_EXECUTABLE=/caminho/para/chromium node
 --experimental-default-type=module tests/enseada-animacao-render-browser.mjs`.
 Ele usa um mapa real e registra as chamadas de desenho; não usa nem altera saves.
+
+## Dioramas e resposta a interações (etapa independente dos lotes de folhas)
+
+- [x] Controlador comum com entrada/saída, pausa do mundo, restauração da
+  câmera e dos controles, e ações por teclado ou botão.
+- [x] Fonte e gruta em camadas 2.5D; partículas limitadas, chuva e luz do
+  estado real do clima. Fonte com capivara, carinho e recuperação gradual;
+  gruta com observação e descanso. Recompensas anteriores preservadas.
+- [x] Carrilhão reage à aproximação e ao uso; som sintetizado opcional (desligado
+  até ser ativado na cena). Marcos suportados têm gesto curto e pulso visual,
+  antes de executar a interação e o progresso já existentes.
+- [ ] Refinar os gestos isométricos em animações próprias por objeto: limpar a
+  estela, empilhar pedras, aquecer mãos, deitar/balançar na rede e reflexão no
+  espelho. Os gestos atuais são aproximações, não folhas dedicadas.
+- [ ] Avaliar tempo/dia e avanço de tempo ao descansar quando existir um
+  relógio de jogo compatível. O clima atual não fornece esse relógio.
+- [ ] Revisar FPS real em dispositivos diversos e gestos em todos os zooms;
+  as cenas FPV de monólito, estela e pedras continuam fora desta etapa.
+
+Teste: `node --experimental-default-type=module tests/imersao-enseada.mjs`.

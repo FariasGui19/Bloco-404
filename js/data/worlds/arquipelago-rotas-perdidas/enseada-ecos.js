@@ -738,6 +738,7 @@ export const map = {
     {
       // Banco acima da escada, entre a bancada e a fogueira.
       id: 'enseada_banco_tronco_camp', tipo: 'decoracao', x: 16.115, y: 36.705,
+      interacao: { label: 'DESCANSAR NO TRONCO', distancia: 1.5, speaker: 'ACAMPAMENTO', dialogue: ['UM INSTANTE DE PAUSA NO TRONCO, PERTO DO FOGO E DO SOM DO MAR.'] },
       sprite: 'enseada_camp_ref_tronco', useCrop: true, larguraPx: 112,
       pivotX: 0.5, pivotY: 0.98, bloqueia: true,
       hitbox: { offsetX: -0.22, offsetY: -0.22, width: 0.44, height: 0.44 },

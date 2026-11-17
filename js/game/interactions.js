@@ -315,6 +315,28 @@ function sintonizarArquetipoEnseada(archetypeId) {
   return true;
 }
 
+// Mesmo progresso, XP e bônus da interação isométrica original. A cena FPV
+// chama isto uma vez ao concluir a entrada; cancelar a transição não premia.
+export function registrarVisitaImersiva(object) {
+  if (!object || !['piscina_mare_viva_enseada', 'gruta_concha_enseada'].includes(object.id)) return null;
+  const flags = state.progress.flags ??= {}, player = state.player;
+  const pool = object.id === 'piscina_mare_viva_enseada';
+  const key = pool ? 'enseada_piscina_visitada' : 'enseada_gruta_visitada';
+  const primeira = !flags[key]; flags[key] = true;
+  const arch = state.progress?.archetype;
+  if (player && pool) {
+    const maxEn = player.maxEnergy ?? 100;
+    player.energy = Math.min(maxEn, (player.energy ?? maxEn) + (arch === 'mare_astral' ? maxEn : Math.round(maxEn * .4)));
+    if (player.nado) player.nado.folego = player.nado.folegoMax ?? 100;
+  } else if (player) {
+    const maxHp = player.maxHealth ?? 100;
+    player.health = Math.min(maxHp, (player.health ?? maxHp) + Math.round(maxHp * .3));
+  }
+  if (primeira && arch) grantArchetypeXp(state.progress, pool ? 12 : 15);
+  saveGame();
+  return { primeira, arch };
+}
+
 function interactWithObject(object) {
   const interaction = object.interacao;
   if (!interaction) return;
@@ -1267,18 +1289,7 @@ function interactWithObject(object) {
 
   // ---- ENSEADA DOS ECOS 2.0 — Lote #6 ----
   if (object.id === 'piscina_mare_viva_enseada') {
-    const flags = state.progress.flags ??= {};
-    const primeira = !flags.enseada_piscina_visitada;
-    flags.enseada_piscina_visitada = true;
-    const arch = state.progress?.archetype;
-    if (state.player) {
-      const maxEn = state.player.maxEnergy ?? 100;
-      const bonus = arch === 'mare_astral' ? maxEn : Math.round(maxEn * 0.4);
-      state.player.energy = Math.min(maxEn, (state.player.energy ?? maxEn) + bonus);
-      if (state.player.nado) state.player.nado.folego = state.player.nado.folegoMax ?? 100;
-    }
-    if (primeira && arch) grantArchetypeXp(state.progress, 12);
-    saveGame();
+    const { primeira, arch } = registrarVisitaImersiva(object);
     openDialogue({
       speaker: 'PISCINA DE MARÉ VIVA',
       dialogue: [
@@ -1405,15 +1416,7 @@ function interactWithObject(object) {
   }
 
   if (object.id === 'gruta_concha_enseada') {
-    const flags = state.progress.flags ??= {};
-    const primeira = !flags.enseada_gruta_visitada;
-    flags.enseada_gruta_visitada = true;
-    if (state.player) {
-      const maxHp = state.player.maxHealth ?? 100;
-      state.player.health = Math.min(maxHp, (state.player.health ?? maxHp) + Math.round(maxHp * 0.3));
-    }
-    if (primeira && state.progress.archetype) grantArchetypeXp(state.progress, 15);
-    saveGame();
+    const { primeira } = registrarVisitaImersiva(object);
     const tempestade = state.clima?.atual === 'chuva' || state.clima?.atual === 'ressaca';
     openDialogue({
       speaker: 'FENDA DA MARÉ',
@@ -1548,7 +1551,7 @@ function interactWithObject(object) {
 // UPDATE PRINCIPAL
 // =====================================================================
 
-export async function checkInteractions(pressedE) {
+export async function checkInteractions(pressedE, { onObject } = {}) {
   if (isDialogueOpen()) {
     state.interaction.active = null;
     state.onElevator = false;
@@ -1565,5 +1568,8 @@ export async function checkInteractions(pressedE) {
   if (nearest.kind === 'collectible') { collectItem(nearest.data); return; }
   if (nearest.kind === 'actor') { interactWithActor(nearest.data); return; }
   if (nearest.kind === 'fauna') { interactWithFauna(nearest.data); return; }
-  if (nearest.kind === 'object') { interactWithObject(nearest.data); }
+  if (nearest.kind === 'object') {
+    if (onObject?.(nearest.data, () => interactWithObject(nearest.data))) return;
+    interactWithObject(nearest.data);
+  }
 } 

@@ -601,6 +601,12 @@ await loadSprites([
   { id: 'enseada_biruta_camp', src: 'assets/sprites/enseada-lote-10/07-biruta.png' },
   { id: 'enseada_bancada_expedicao', src: 'assets/sprites/enseada-lote-10/05-paineis.png' },
   { id: 'enseada_rochedo_portal', src: 'assets/sprites/enseada-lote-10/03-rochedo.png' },
+  // Rochedo orgânico da praia (pedra + musgo), para a base dos arcos de coral.
+  { id: 'enseada_rochedo_organico', src: 'assets/sprites/enseada-lote2/rochedo-praia-sudeste.png' },
+  { id: 'enseada_portal_sudeste_rochedo', src: 'assets/sprites/enseada-lote2/portal-sudeste-rochedo.png' },
+  { id: 'enseada_monolito_vertical', src: 'assets/sprites/enseada-lote2/monolito-eco-vertical.png' },
+  { id: 'enseada_calcada_central', src: 'assets/sprites/enseada-lote2/calcada-central.png' },
+  { id: 'enseada_rede_praia_branca', src: 'assets/sprites/enseada-lote2/rede-praia-branca.png' },
   { id: 'enseada8_portal_ne', src: 'assets/sprites/enseada-8/portal-nordeste-coral-recortado.png' },
   { id: 'enseada8_portal_leste', src: 'assets/sprites/enseada-8/portal-leste-rochedo-recortado.png' },
   { id: 'enseada8_mesa_trabalho', src: 'assets/sprites/enseada-8/mesa-trabalho-madeira-recortado.png' },

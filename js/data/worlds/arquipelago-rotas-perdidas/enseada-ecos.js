@@ -253,16 +253,27 @@ export const map = {
         },
       },
     },
-    { id: 'enseada_caranguejo_2', species: 'caranguejo', x: 53.0, y: 33.0 },
-    { id: 'enseada_gaivota', species: 'gaivota', x: 23.4, y: 37.0 },
+    { id: 'enseada_caranguejo_2', species: 'caranguejo', x: 53, y: 33 },
+    // Caranguejos-vermelhos na areia da enseada sul, como no pôster.
+    { id: 'enseada_caranguejo_areia_1', species: 'caranguejo', x: 37.5, y: 55.4 },
+    { id: 'enseada_caranguejo_areia_2', species: 'caranguejo', x: 40.6, y: 52.6 },
+    { id: 'enseada_caranguejo_areia_3', species: 'caranguejo', x: 43.2, y: 55.8 },
+    { id: 'enseada_gaivota', species: 'gaivota', x: 23.4, y: 37 },
     { id: 'enseada_trinta_reis', species: 'trinta_reis', x: 27.1, y: 35.7 },
     { id: 'enseada_peixes', species: 'peixes', x: 10.9, y: 53.2 },
     { id: 'enseada_tartaruga_1', species: 'tartaruga', x: 4.2, y: 42.5 },
     { id: 'enseada_golfinho_1', species: 'golfinho', x: 50.4, y: 12.4 },
     { id: 'enseada_golfinho_oeste', species: 'golfinho', x: 2.5, y: 30.5 },
     { id: 'enseada_golfinho_leste', species: 'golfinho', x: 60.5, y: 38.5 },
-    {
-      id: 'enseada_capivara', species: 'capivara', x: 28.0, y: 50.0, calma: true,
+    // Golfinhos saltando junto ao píer e à laje das pedras rúnicas, como a
+    // arte desenha no canto sudeste.
+    { id: 'enseada_golfinho_cais', species: 'golfinho', x: 52, y: 57 },
+    { id: 'enseada_golfinho_ponta', species: 'golfinho', x: 55, y: 54 },
+    // Tartaruga cruzando a água rasa do embarcadouro.
+    { id: 'enseada_tartaruga_cais', species: 'tartaruga', x: 53, y: 55 },
+    // Cardume no canto sudeste, girando perto das boias do conduto.
+    { id: 'enseada_cardume_sudeste', species: 'peixes', x: 55, y: 50 },
+    { id: 'enseada_capivara', species: 'capivara', x: 28, y: 50, calma: true,
       interacao: {
         distancia: 1.45, speaker: 'CAPIVARA DA PISCINA',
         dialogue: ['ELA DESCANSA NA ÁGUA MORNA DA PISCINA, COMPLETAMENTE TRANQUILA COM SUA PRESENÇA.'],
@@ -470,7 +481,7 @@ export const map = {
       interacao: { label: 'SINTONIZAR TORRE-ANTENA', distancia: 1.55 },
     },
     {
-      id: 'bancada_campo_enseada', nome: 'BANCADA DE CAMPO', tipo: 'dispositivo', x: 16.47, y: 37.25,
+      id: 'bancada_campo_enseada', nome: 'BANCADA DE CAMPO', tipo: 'dispositivo', x: 15.63, y: 36.72,
       sprite: 'enseada_camp_ref_bancada', animPeriodo: 0.58,
       useCrop: true, larguraPx: 116, pivotX: 0.5, pivotY: 0.98,
       bloqueia: true, hitbox: { offsetX: -0.58, offsetY: -0.38, width: 1.16, height: 0.76 },
@@ -502,7 +513,7 @@ export const map = {
       interacao: { label: 'ABRIR MALETA DA EXPEDIÇÃO', distancia: 1.55 },
     },
     {
-      id: 'bandeirola_vento_enseada', nome: 'BIRUTA DA EXPEDIÇÃO', tipo: 'decoracao', x: 23.63, y: 32.72,
+      id: 'bandeirola_vento_enseada', nome: 'BIRUTA DA EXPEDIÇÃO', tipo: 'decoracao', x: 25.06, y: 35.53,
       sprite: 'enseada_biruta_camp',
       useCrop: true, larguraPx: 75, pivotX: 0.5, pivotY: 0.94,
       depthOffset: 3, bloqueia: false, oscilaBrisa: true,
@@ -576,30 +587,52 @@ export const map = {
       bloqueia: false, oscilaBrisa: true, brilho: { cor: '#ffb86b', raio: 1.0, forca: 0.16 },
     },
     {
-      id: 'carrilhao_vento_enseada', nome: 'CARRILHÃO DE VENTO', tipo: 'decoracao', x: 16.0, y: 40.0,
+      // Movido para a borda oeste do platô. Em (16.0, 40.0) os dois tubos
+      // cruzados do carrilhão caíam exatamente sobre o tronco e liam como
+      // "duas toras em X".
+      id: 'carrilhao_vento_enseada', nome: 'CARRILHÃO DE VENTO', tipo: 'decoracao', x: 16.56, y: 46.28,
       sprite: 'enseada_carrilhao_vento', spriteB: 'enseada_carrilhao_vento_b', animPeriodo: 0.58,
       useCrop: true, larguraPx: 60, pivotX: 0.5, pivotY: 0.96,
       bloqueia: false, oscilaBrisa: true,
       interacao: { label: 'OUVIR O CARRILHÃO', distancia: 1.55 },
     },
 
+    // ---- Calçada do Pórtico Oeste até a clareira central ----
+    // Medida no pôster: a faixa de pedra sai do pórtico na praia oeste
+    // (170,405), desce em curva fechada em (395,410) e sobe até a clareira
+    // do monólito em (660,348). É a ligação que a arte desenha entre a
+    // saída oeste e o centro — antes só existiam as pedras soltas da trilha.
+    {
+      // O sprite já é a faixa inteira (curva incluída), desenhada na mesma
+      // perspectiva do pôster: pórtico (166,407) → curva (441,410) →
+      // clareira (662,347). A âncora é o meio da curva.
+      id: 'calcada_central_enseada', tipo: 'decoracao', x: 23.51, y: 43.72,
+      sprite: 'enseada_calcada_central', useCrop: true,
+      larguraPx: 1100, pivotX: 0.5, pivotY: 0.5,
+      depthOffset: -6, bloqueia: false,
+    },
+
     // ---- SETOR 4 (Centro): Monólito + estela + cairn ----
     {
-      id: 'totem_eco_enseada', nome: 'MONÓLITO DE ECO', tipo: 'decoracao', x: 31.72, y: 34.25,
-      sprite: 'enseada3_monolito', spriteB: 'enseada3_monolito', animPeriodo: 0.52,
-      useCrop: true, larguraPx: 220, pivotX: 0.5, pivotY: 0.98,
-      bloqueia: false, pulsoTotem: true, brilho: { cor: '#52f6ff', raio: 1.4, forca: 0.32 },
+      // A referência desenha o monólito como laje alta plantada na clareira,
+      // não sobre a base/pedestal largo do sprite antigo. O recorte vem da
+      // própria arte (`monolito-eco-vertical.png`).
+      id: 'totem_eco_enseada', nome: 'MONÓLITO DE ECO', tipo: 'decoracao', x: 34.63, y: 35.59,
+      sprite: 'enseada_monolito_vertical', spriteB: 'enseada_monolito_vertical', animPeriodo: 0.52,
+      useCrop: true, larguraPx: 150, pivotX: 0.5, pivotY: 0.98,
+      bloqueia: true, hitbox: { offsetX: -0.26, offsetY: -0.22, width: 0.52, height: 0.44 },
+      pulsoTotem: true, brilho: { cor: '#52f6ff', raio: 1.4, forca: 0.32 },
       interacao: { label: 'EXAMINAR MONÓLITO DE ECO', distancia: 1.5 },
     },
     {
-      id: 'estela_navegadores_enseada', nome: 'ESTELA DOS NAVEGADORES', tipo: 'decoracao', x: 29.62, y: 34.47,
+      id: 'estela_navegadores_enseada', nome: 'ESTELA DOS NAVEGADORES', tipo: 'decoracao', x: 33.13, y: 38.09,
       sprite: 'enseada8_estela', spriteB: 'enseada8_estela', animPeriodo: 0.62,
-      useCrop: true, larguraPx: 70, pivotX: 0.5, pivotY: 0.92,
+      useCrop: true, larguraPx: 62, pivotX: 0.5, pivotY: 0.94,
       bloqueia: false, pulsoBiolum: '#6cf7ff', brilho: { cor: '#6cf7ff', raio: 1.35, forca: 0.3 },
       interacao: { label: 'DECIFRAR A ESTELA DOS NAVEGADORES', distancia: 1.6 },
     },
     {
-      id: 'jardim_pedras_enseada', nome: 'PEDRAS DO EQUILÍBRIO', tipo: 'decoracao', x: 33.38, y: 30.09,
+      id: 'jardim_pedras_enseada', nome: 'PEDRAS DO EQUILÍBRIO', tipo: 'decoracao', x: 35.19, y: 30.78,
       sprite: 'enseada4_cairn', spriteB: 'enseada4_cairn', animPeriodo: 0.64,
       useCrop: true, larguraPx: 80, pivotX: 0.5, pivotY: 0.98,
       bloqueia: true, hitbox: { offsetX: -0.30, offsetY: -0.24, width: 0.60, height: 0.48 },
@@ -607,7 +640,7 @@ export const map = {
       interacao: { label: 'MEDITAR NAS PEDRAS DO EQUILÍBRIO', distancia: 1.55 },
     },
     {
-      id: 'borboletas_fonte_enseada', nome: 'BORBOLETAS DO CENTRO', tipo: 'decoracao', x: 29.31, y: 32.28,
+      id: 'borboletas_fonte_enseada', nome: 'BORBOLETAS DO CENTRO', tipo: 'decoracao', x: 36.28, y: 33.55,
       sprite: 'enseada_borboletas_vivas', spriteB: 'enseada_borboletas_vivas_b', animPeriodo: 0.34,
       useCrop: true, larguraPx: 50, pivotX: 0.5, pivotY: 0.5,
       bloqueia: false, flutuacaoSuave: true, nadoCardume: true,
@@ -673,8 +706,11 @@ export const map = {
       interacao: { label: 'EXAMINAR A GRUTA DE PEDRA', distancia: 1.6 },
     },
     {
-      id: 'rede_treino_praia_enseada', nome: 'REDE DE TREINO DA PRAIA', tipo: 'decoracao', x: 42.75, y: 51.34,
-      sprite: 'enseada4_rede', useCrop: true, larguraPx: 150,
+      // A referência desenha esta rede em branco-azulado, pendurada entre dois
+      // mourões na areia logo abaixo da praça do espelho (600,600 no pôster).
+      // É a mesma peça do sprite de treino, com a malha clareada.
+      id: 'rede_treino_praia_enseada', nome: 'REDE DE DESCANSO DA PRAIA', tipo: 'decoracao', x: 42.75, y: 51.34,
+      sprite: 'enseada_rede_praia_branca', useCrop: true, larguraPx: 220,
       pivotX: 0.5, pivotY: 0.98, depthOffset: 0.2,
       bloqueia: true, hitboxes: [
         { offsetX: -1.28, offsetY: -0.24, width: 0.30, height: 0.48 },
@@ -724,16 +760,22 @@ export const map = {
       bloqueia: false, flutuacaoSuave: true, sombra: [8, 3],
     })),
     {
-      id: 'travessia_pedras_agua', tipo: 'decoracao', x: 52.0, y: 56.0,
-      sprite: 'enseada4_travessia_pedras', useCrop: true, larguraPx: 110,
-      pivotX: 0.5, pivotY: 0.8, depthOffset: -0.2, bloqueia: false,
+      // As quatro lajes com runas submersas à esquerda do píer, como no
+      // pôster (x 705–790, y 560–645). A peça de arte já é a fileira inteira.
+      id: 'travessia_pedras_agua', nome: 'PEDRAS RÚNICAS DO EMBARCADOURO', tipo: 'decoracao', x: 47.6, y: 47.5,
+      sprite: 'enseada4_travessia_pedras', useCrop: true, larguraPx: 150,
+      pivotX: 0.5, pivotY: 0.55, depthOffset: -0.2, bloqueia: false,
+      interacao: { label: 'LER AS PEDRAS RÚNICAS', distancia: 1.7 },
     },
 
     // ---- SETOR 6 (Sul): Cais + embarcadouro ----
     // Arte do cais separada do ponto de interação em terra: a ponta fica no mar.
     {
-      id: 'cais_enseada_visual', tipo: 'decoracao', x: 56.5, y: 51.0,
-      sprite: 'enseada8_cais_barco_ref', useCrop: true, larguraPx: 280, skewY: -0.10,
+      // Medido no pôster: a cabeceira do píer encosta na areia em (712,570) e
+      // a ponta, com o veleiro, termina em (900,675). A âncora é o centro do
+      // tabuleiro; `skewY` acompanha a inclinação da arte.
+      id: 'cais_enseada_visual', tipo: 'decoracao', x: 50.0, y: 48.3,
+      sprite: 'enseada8_cais_barco_ref', useCrop: true, larguraPx: 410, skewY: -0.10,
       pivotX: 0.5, pivotY: 0.97, camada: 'fundo', ordem: -1, bloqueia: false,
     },
     {
@@ -758,31 +800,39 @@ export const map = {
       interacao: { label: 'EXAMINAR O CAIS DA MARÉ', distancia: 1.75 },
     },
     {
+      // Removido a pedido: era o farolete cinza solto na borda da praia, logo
+      // à esquerda do portal sudeste, que a referência não tem.
       id: 'farolete_baia_enseada', nome: 'FAROLETE DA BAÍA', tipo: 'decoracao', x: 51.5, y: 22.5,
       sprite: 'enseada_farolete_baia', spriteB: 'enseada_farolete_baia_b', animPeriodo: 0.65,
       useCrop: true, larguraPx: 80, pivotX: 0.5, pivotY: 0.96,
       bloqueia: false, feixeFarolete: true, brilho: { cor: '#5cf7eb', raio: 1.8, forca: 0.4 },
       interacao: { label: 'OBSERVAR DO FAROLETE', distancia: 1.65 },
+      renderizar: false,
     },
 
     // ---- SETOR 7 (Leste): Portal + jardim + baú + recife ----
     {
-      // Base rochosa do promontório do conduto. Fica ACIMA do arco no
-      // desenho (y menor) para os dois aparecerem: o rochedo é o chão da
-      // plataforma, não um adesivo atrás dela.
-      id: 'enseada_base_rochosa_portal_leste', tipo: 'decoracao', x: 58.4, y: 25.3,
-      sprite: 'enseada_rochedo_portal', useCrop: true, larguraPx: 360, espelhar: true,
-      pivotX: 0.5, pivotY: 1, ajusteX: 0, ajusteY: 0,
+      // Base rochosa do promontório do conduto.
+      // A arte de referência é um rochedo orgânico de pedra e musgo; a peça
+      // antiga (`03-rochedo.png`) desenhava uma laje chanfrada com uma rampa
+      // reta que lia como bloco de pedra artificial sob o arco.
+      id: 'enseada_base_rochosa_portal_leste', tipo: 'decoracao', x: 53.84, y: 27.46,
+      sprite: 'enseada_rochedo_organico', useCrop: true, larguraPx: 340, espelhar: true,
+      pivotX: 0.5, pivotY: 0.90, ajusteX: 0, ajusteY: 0,
       camada: 'fundo', ordem: -1, bloqueia: false,
+      // O arco e o rochedo são hoje um sprite único (ver
+      // `arco_conduto_retorno_mare`): desenhar a pedra solta duplicaria o
+      // maciço. O objeto fica na lista por causa das interações e dos testes.
+      renderizar: false,
     },
     {
       // Arco do conduto no promontório leste: mesma arte de coral da
       // referência. O sprite antigo (pedra cinza + cristais azuis) não existe
       // na arte e destoava da paleta do resto da costa.
-      id: 'arco_conduto_retorno_mare', tipo: 'decoracao', x: 57.5, y: 24.0,
-      sprite: 'enseada3_portal_recife', spriteB: 'enseada3_portal_recife', animPeriodo: 0.7,
-      useCrop: true, espelhar: true, larguraPx: 210, pivotX: 0.5, pivotY: 0.96, ajusteY: -40,
-      vorticidadeCorrentes: { y: -116, rx: 16, ry: 38 },
+      id: 'arco_conduto_retorno_mare', tipo: 'decoracao', x: 55.75, y: 27.34,
+      sprite: 'enseada_portal_sudeste_rochedo', useCrop: true, espelhar: true,
+      larguraPx: 400, pivotX: 0.5, pivotY: 0.90, ajusteY: 0,
+      vorticidadeCorrentes: { x: 0, y: -356, rx: 31, ry: 78 },
       bloqueia: false, brilho: { cor: '#5cf7eb', raio: 2.2, forca: 0.44 },
     },
     {
@@ -859,6 +909,17 @@ export const map = {
       useCrop: true, larguraPx: 90, pivotX: 0.5, pivotY: 0.9,
       bloqueia: false, vaporTermal: true, brilho: { cor: '#7efce0', raio: 1.4, forca: 0.28 },
       interacao: { label: 'DESCANSAR NA FONTE TERMAL', distancia: 1.7 },
+    },
+    {
+      // O segundo concha da faixa de areia, à direita do Espelho e abaixo dos
+      // coqueiros centrais (630,490 no pôster). A referência tem DOIS conchas
+      // grandes na praia; antes só a da piscina existia.
+      id: 'concha_praia_central_enseada', nome: 'CONCHA DA PRAIA CENTRAL', tipo: 'decoracao',
+      x: 37.88, y: 43.97,
+      sprite: 'beach_props', frame: { col: 1, row: 3 },
+      useCrop: true, larguraPx: 92, pivotX: 0.5, pivotY: 0.98,
+      bloqueia: false,
+      interacao: { label: 'EXAMINAR A CONCHA DA PRAIA', distancia: 1.4 },
     },
     {
       id: 'banco_conchas_enseada', nome: 'BANCO DE CONCHAS', tipo: 'decoracao', x: 38.5, y: 45.5,
@@ -1046,7 +1107,7 @@ export const map = {
       interactionDistance: 1.4, destino: { mapId: 'mar_caminho_das_correntes', spawnId: 'vindo_da_enseada' }, transition: 'fade',
     },
     {
-      id: 'retorno_darsena_mare', tipo: 'door', x: 59.0, y: 24.0, automaticoNado: true, raioAutomatico: 0.8,
+      id: 'retorno_darsena_mare', tipo: 'door', x: 56.5, y: 28.3, automaticoNado: true, raioAutomatico: 0.8,
       requiresFlag: 'rota_livre_enseada_aberta', lockedLabel: 'CONDUTO ABISSAL INATIVO',
       mensagemBloqueado: ['UM VÓRTICE PROFUNDO RESSOA COM A DÁRSENA DA MARÉ ASTRAL, MAS PERMANECE SELADO DO OUTRO LADO.'],
       label: 'NADAR: ROTA DAS MARÉS ATÉ A DÁRSENA', requiresArchetype: 'mare_astral',

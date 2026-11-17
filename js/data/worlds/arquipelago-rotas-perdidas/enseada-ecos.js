@@ -295,7 +295,7 @@ export const map = {
     })),
     // ---- Terminal (função preservada) ----
     {
-      id: 'terminal_frequencia_666', nome: 'TERMINAL DE MANUTENÇÃO', tipo: 'painel', x: 24.0, y: 17.5,
+      id: 'terminal_frequencia_666', nome: 'TERMINAL DE MANUTENÇÃO', tipo: 'painel', x: 15.2, y: 36.8,
       sprite: 'freq666_receptor', useCrop: true, larguraPx: 58, pivotX: 0.5, pivotY: 0.88,
       sombra: [16, 7], bloqueia: true, hitbox: { offsetX: -0.28, offsetY: -0.28, width: 0.56, height: 0.56 },
       brilho: { cor: '#ff7e71', raio: 0.7, forca: 0.2 },
@@ -317,6 +317,13 @@ export const map = {
       pivotX: 0.5, pivotY: 0.98, camada: 'fundo', ordem: -1,
       bloqueia: false,
     },
+
+    // Fragmentos baixos quebram a borda reta do maciço, sem tocar a porta.
+    ...[[8.9, 26.8, 65], [10.0, 25.8, 48], [11.2, 24.9, 55]].map(([x, y, larguraPx], i) => ({
+      id: `enseada_base_estacao_rochas_${i + 1}`, tipo: 'decoracao', x, y,
+      sprite: 'enseada_estacao_pedras_degrau', useCrop: true, larguraPx,
+      pivotX: 0.5, pivotY: 0.95, camada: 'fundo', ordem: 0, bloqueia: false,
+    })),
 
     // Vegetação da junção tem pé próprio para entrar no depth sorting.
     {
@@ -540,7 +547,7 @@ export const map = {
       // Degraus de pedra EMBUTIDOS no paredão do platô, logo abaixo da
       // fogueira e do tronco, sobre a borda frontal do terraço.
       id: 'enseada_escada_camp', tipo: 'decoracao', x: 11.24, y: 41.30,
-      sprite: 'enseada_parede_escada', useCrop: true, larguraPx: 826, escalaY: 0.42,
+      sprite: 'enseada_parede_escada', useCrop: true, larguraPx: 826, escalaY: 0.62,
       pivotX: 0.04, pivotY: 0.04, camada: 'fundo', ordem: 0, bloqueia: false,
     },
     {
@@ -654,6 +661,12 @@ export const map = {
       pulsoBiolum: '#7fe3ff', brilho: { cor: '#7fe3ff', raio: 0.9, forca: 0.22 },
     },
     {
+      // Rochas discretas à esquerda da fonte de cristal.
+      id: 'pedras_fonte_cristal_enseada', tipo: 'decoracao', x: 36.2, y: 56.65,
+      sprite: 'enseada_estacao_pedras_degrau', useCrop: true, larguraPx: 65,
+      pivotX: 0.5, pivotY: 0.95, bloqueia: false,
+    },
+    {
       // A laje `enseada3_calcada` era a praça antiga do espelho. O sprite novo
       // (recortado da própria referência) já traz a praça de losangos e o
       // medalhão — manter as duas duplicava o piso e desalinhava a borda.
@@ -675,14 +688,9 @@ export const map = {
       interacao: { label: 'SINTONIZAR ARQUÉTIPO', distancia: 1.65 },
     },
     {
-      // A referência desenha a Concha Gigante como monumento da praia oeste,
-      // com a boca de cristais na altura de um personagem — não como toca.
-      // A Concha Gigante da arte é a caramujeira bege com a boca escura,
-      // encostada logo ACIMA (nordeste) do Espelho, sob a curva da calçada.
-      // As peças antigas (gruta rosa de cristais / caverna de pedra) não
-      // existem no pôster; o sprite agora é recorte da própria referência.
-      id: 'gruta_concha_enseada', nome: 'CONCHA GIGANTE', tipo: 'decoracao', x: 29.53, y: 45.44,
-      sprite: 'enseada_concha_gigante', useCrop: true, larguraPx: 260, pivotX: 0.5, pivotY: 0.97,
+      // Gruta nítida, proporcional ao espelho e junto à borda da calçada.
+      id: 'gruta_concha_enseada', nome: 'CONCHA GIGANTE', tipo: 'decoracao', x: 29.2, y: 43.1,
+      sprite: 'enseada_concha_gigante', useCrop: true, larguraPx: 145, pivotX: 0.5, pivotY: 0.97,
       bloqueia: true, hitbox: { offsetX: -0.45, offsetY: -0.28, width: 0.9, height: 0.56 },
       interacao: { label: 'ABRIGAR-SE NA GRUTA-CONCHA', distancia: 1.7 },
     },
@@ -873,7 +881,7 @@ export const map = {
       interacao: { label: 'SINTONIZAR CAPTADOR DE ECOS', distancia: 1.65 },
     },
     {
-      id: 'santuario_lumeo_enseada', nome: 'SANTUÁRIO DE LÚMEO', tipo: 'decoracao', x: 39.0, y: 26.0,
+      id: 'santuario_lumeo_enseada', nome: 'SANTUÁRIO DE LÚMEO', tipo: 'decoracao', x: 39.0, y: 26.0, renderizar: false,
       sprite: 'enseada_santuario_lumeo', spriteB: 'enseada_santuario_lumeo_b', animPeriodo: 0.58,
       useCrop: true, larguraPx: 80, pivotX: 0.5, pivotY: 0.92,
       bloqueia: false, pulsoBiolum: '#70f3ff', brilho: { cor: '#70f3ff', raio: 1.35, forca: 0.32 },
@@ -1014,9 +1022,9 @@ export const map = {
       pivotX: 0.5, pivotY: 0.96, depthOffset: -0.3, bloqueia: false,
     },
     {
-      // Mantém o identificador legado, mas não desenha o poste sobre o píer.
-      id: 'poste_lanterna_madeira', tipo: 'decoracao', x: 42.75, y: 39.47, renderizar: false,
-      sprite: 'enseada6_poste', useCrop: true, larguraPx: 50,
+      // Lanterna na areia à esquerda da entrada, sem cruzar o tabuleiro.
+      id: 'poste_lanterna_madeira', tipo: 'decoracao', x: 39.5, y: 46.3,
+      sprite: 'enseada6_poste', useCrop: true, larguraPx: 30,
       pivotX: 0.5, pivotY: 0.96, depthOffset: -0.3, bloqueia: false,
     },
     {

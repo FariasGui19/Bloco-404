@@ -25,6 +25,13 @@ const PALMEIRAS_ANIMADAS = new Map([
   ['16.6,46.7', 'enseada_folha_palmeira_media'],
 ]);
 const folhaViva = (sprite, periodo = .18, fase = 0, margem = 8) => ({ sprite, quadros: 8, margem, periodo, fase });
+// Reaproveita as folhas já aprovadas para as demais instâncias da mesma arte.
+const FOLHAS_VEGETACAO = {
+  P: ['enseada_folha_palmeira_alta', 8], M: ['enseada_folha_palmeira_media', 8],
+  B: ['enseada_folha_palmeira_baixa', 8], J: ['enseada_folha_palmeira_jovem', 8],
+  C: ['enseada_folha_arvore', 8], T: ['enseada_folha6_arvores_redondas', 8],
+  D: ['enseada_folha4_arbustos', 24], F: ['enseada_folha4_arbusto_florido', 24],
+};
 
 const COLS = 72;
 const ROWS = 64;
@@ -447,7 +454,7 @@ export const map = {
     ...VEGETACAO.map(([tipo, x, y, largura], i) => ({
       id: `enseada_vegetacao_${i + 1}`, tipo: 'decoracao', x, y,
       sprite: SPRITES_VEGETACAO[tipo], useCrop: true, larguraPx: largura,
-      ...(PALMEIRAS_ANIMADAS.has(`${x},${y}`) ? { animacaoFolha: folhaViva(PALMEIRAS_ANIMADAS.get(`${x},${y}`), .19, i * .19) } : {}),
+      ...(PALMEIRAS_ANIMADAS.has(`${x},${y}`) ? { animacaoFolha: folhaViva(PALMEIRAS_ANIMADAS.get(`${x},${y}`), .19, i * .19) } : FOLHAS_VEGETACAO[tipo] ? { animacaoFolha: folhaViva(FOLHAS_VEGETACAO[tipo][0], .19 + (i % 4) * .015, i * .19, FOLHAS_VEGETACAO[tipo][1]) } : {}),
       pivotX: 0.5, pivotY: 0.96, bloqueia: !(x === 14.4 && y === 30.8) && ['P', 'M', 'B', 'J', 'C', 'T', 'G'].includes(tipo),
       hitbox: { offsetX: -0.18, offsetY: -0.18, width: 0.36, height: 0.36 },
       // Palmeira e árvore de tronco: ordena pelo pé (a copa pode passar na
@@ -515,6 +522,7 @@ export const map = {
     },
     {
       id: 'enseada_planta_margem_cascata', tipo: 'decoracao', x: 19.8, y: 17.6,
+      animacaoFolha: folhaViva('enseada_folha6_planta_cascata', 0.22, 0.00),
       sprite: 'enseada_estacao_planta_piscina', useCrop: true, larguraPx: 54,
       pivotX: 0.5, pivotY: 0.95, bloqueia: false,
     },
@@ -566,6 +574,7 @@ export const map = {
       [41.6, 26.6, 'enseada_ne_arbusto_florido', 80, true],
     ].map(([x, y, sprite, larguraPx, espelhar], i) => ({
       id: `enseada_ne_mata_${i + 1}`, tipo: 'decoracao', x, y,
+      ...(sprite === 'enseada_ne_mata_densa' ? { animacaoFolha: folhaViva('enseada_folha6_mata_densa', .23, i * .3) } : {}),
       sprite, useCrop: true, larguraPx, espelhar,
       pivotX: 0.5, pivotY: 0.96, depthOffset: -4, bloqueia: false,
     })),
@@ -623,6 +632,7 @@ export const map = {
     },
     {
       id: 'relogio_mare_enseada', nome: 'RELÓGIO DE MARÉ SOLAR', tipo: 'dispositivo', x: 11.84, y: 37.81,
+      animacaoFolha: folhaViva('enseada_folha5_relogio', 0.23, 0.00),
       sprite: 'enseada_camp_ref_relogio', espelhar: true, animPeriodo: 0.6,
       useCrop: true, larguraPx: 64, pivotX: 0.5, pivotY: 0.98,
       bloqueia: true, hitbox: { offsetX: -0.22, offsetY: -0.22, width: 0.44, height: 0.44 },
@@ -631,6 +641,7 @@ export const map = {
     },
     {
       id: 'torre_antena_enseada', nome: 'TORRE-ANTENA DE ESCUTA', tipo: 'dispositivo', x: 14.74, y: 32.78,
+      animacaoFolha: folhaViva('enseada_folha5_antena', 0.14, 0.17),
       sprite: 'enseada_camp_ref_torre_radio', animPeriodo: 0.5,
       useCrop: true, larguraPx: 100, pivotX: 0.5, pivotY: 0.98,
       bloqueia: true, hitbox: { offsetX: -0.30, offsetY: -0.28, width: 0.6, height: 0.56 },
@@ -639,6 +650,7 @@ export const map = {
     },
     {
       id: 'bancada_campo_enseada', nome: 'BANCADA DE CAMPO', tipo: 'dispositivo', x: 14.4, y: 35.49,
+      animacaoFolha: folhaViva('enseada_folha5_bancada', 0.25, 0.34),
       sprite: 'enseada_camp_ref_bancada', animPeriodo: 0.58,
       useCrop: true, larguraPx: 116, pivotX: 0.5, pivotY: 0.98,
       bloqueia: true, hitbox: { offsetX: -0.58, offsetY: -0.38, width: 1.16, height: 0.76 },
@@ -786,6 +798,7 @@ export const map = {
       // não sobre a base/pedestal largo do sprite antigo. O recorte vem da
       // própria arte (`monolito-eco-vertical.png`).
       id: 'totem_eco_enseada', nome: 'MONÓLITO DE ECO', tipo: 'decoracao', x: 32.59, y: 35.75,
+      animacaoFolha: folhaViva('enseada_folha5_monolito', 0.18, 0.51),
       sprite: 'enseada_monolito_vertical', spriteB: 'enseada_monolito_vertical', animPeriodo: 0.52,
       useCrop: true, larguraPx: 67, pivotX: 0.5, pivotY: 0.98,
       bloqueia: true, hitbox: { offsetX: -0.26, offsetY: -0.22, width: 0.52, height: 0.44 },
@@ -794,6 +807,7 @@ export const map = {
     },
     {
       id: 'estela_navegadores_enseada', nome: 'ESTELA DOS NAVEGADORES', tipo: 'decoracao', x: 31.345, y: 36.875,
+      animacaoFolha: folhaViva('enseada_folha5_estela', 0.22, 0.68),
       sprite: 'enseada8_estela', spriteB: 'enseada8_estela', animPeriodo: 0.62,
       useCrop: true, larguraPx: 35, pivotX: 0.5, pivotY: 0.94,
       bloqueia: true, hitbox: { offsetX: -0.16, offsetY: -0.16, width: 0.32, height: 0.32 }, pulsoBiolum: '#6cf7ff', brilho: { cor: '#6cf7ff', raio: 1.35, forca: 0.3 },
@@ -822,6 +836,7 @@ export const map = {
       // A piscina da capivara da arte é a bacia de pedras redonda com
       // cascatinha e juncos no canto — não a tina termal retangular cinza.
       id: 'piscina_mare_viva_enseada', nome: 'PISCINA TERMAL', tipo: 'decoracao', x: 28.3, y: 51.65,
+      animacaoFolha: folhaViva('enseada_folha5_piscina', 0.16, 0.85),
       sprite: 'enseada3_piscina', useCrop: true, larguraPx: 220,
       pivotX: 0.5, pivotY: 0.92, depthOffset: -4,
       bloqueia: true, hitbox: { offsetX: -2.2, offsetY: -2.2, width: 1.35, height: 1.35 },
@@ -837,6 +852,7 @@ export const map = {
     {
       // Altar de cristal compacto, preservando a colisão e o brilho originais.
       id: 'fonte_cristal_enseada', nome: 'FONTE DE CRISTAL', tipo: 'decoracao', x: 37.44, y: 55.41,
+      animacaoFolha: folhaViva('enseada_folha5_altar', 0.19, 1.02),
       sprite: 'enseada_altar_revisado', useCrop: true, larguraPx: 52,
       pivotX: 0.5, pivotY: 0.95, bloqueia: true,
       hitbox: { offsetX: -0.26, offsetY: -0.26, width: 0.52, height: 0.52 },
@@ -862,6 +878,7 @@ export const map = {
       // Composição única: espelho oval, medalhão e praça de pedra; a âncora
       // coincide com o pé do espelho para preservar a interação de sintonia.
       id: 'espelho_arquetipos_enseada', nome: 'ESPELHO DE RESSONÂNCIA', tipo: 'dispositivo', x: 36.35, y: 50.25,
+      animacaoFolha: folhaViva('enseada_folha5_espelho', 0.21, 1.19),
       sprite: 'enseada_espelho_revisado',
       useCrop: true, larguraPx: 296, pivotX: 0.5, pivotY: 0.53,
       bloqueia: true, hitbox: { offsetX: -0.28, offsetY: -0.28, width: 0.56, height: 0.56 }, brilho: { cor: '#6ff7ff', raio: 1.5, forca: 0.34 },
@@ -876,6 +893,7 @@ export const map = {
     },
     {
       id: 'cristais_corais_gruta_oeste', tipo: 'decoracao', x: 30.9, y: 44.5,
+      animacaoFolha: folhaViva('enseada_folha5_cristais', 0.24, 1.36),
       sprite: 'enseada_cristais_oeste', useCrop: true, larguraPx: 67,
       pivotX: 0.5, pivotY: 0.97, bloqueia: false,
     },
@@ -993,6 +1011,7 @@ export const map = {
     {
       // Cinco lajes rúnicas à esquerda do píer, avançando pela água rasa.
       id: 'travessia_pedras_agua', nome: 'PEDRAS RÚNICAS DO EMBARCADOURO', tipo: 'decoracao', x: 46.04, y: 50.94,
+      animacaoFolha: folhaViva('enseada_folha6_pedras_runicas', 0.25, 1.15),
       sprite: 'enseada_cais_pedras', useCrop: true, larguraPx: 150,
       pivotX: 0.5, pivotY: 0.55, depthOffset: -0.2, bloqueia: false,
       interacao: { label: 'LER AS PEDRAS RÚNICAS', distancia: 1.7 },
@@ -1003,6 +1022,7 @@ export const map = {
     {
       // A cabeceira encontra a praia; a corda liga o veleiro à ponta no mar.
       id: 'cais_enseada_visual', tipo: 'decoracao', x: 50.3125, y: 44.05,
+      animacaoFolha: folhaViva('enseada_folha6_cais_barco', 0.25, 0.23),
       sprite: 'enseada_cais_barco', useCrop: true, larguraPx: 370,
       pivotX: 0.5, pivotY: 0.97, camada: 'fundo', ordem: -1, bloqueia: false,
     },
@@ -1062,6 +1082,7 @@ export const map = {
       sprite: 'enseada_sudeste_conchas', useCrop: true, larguraPx: 57,
       pivotX: 0.5, pivotY: 0.98, bloqueia: false },
     { id: 'lanterna_coral_sudeste', tipo: 'decoracao', x: 55.8, y: 27.85,
+      animacaoFolha: folhaViva('enseada_folha5_lanterna', 0.16, 1.53),
       sprite: 'enseada_sudeste_lanterna', useCrop: true, larguraPx: 27,
       pivotX: 0.5, pivotY: 0.98, bloqueia: false, flutuacaoSuave: true,
       brilho: { cor: '#ffd37a', raio: 0.8, forca: 0.23 } },
@@ -1182,6 +1203,7 @@ export const map = {
       // coqueiros centrais (630,490 no pôster). A referência tem DOIS conchas
       // grandes na praia; antes só a da piscina existia.
       id: 'concha_praia_central_enseada', nome: 'CONCHA DA PRAIA CENTRAL', tipo: 'decoracao',
+      animacaoFolha: folhaViva('enseada_folha6_concha', .24, 1.38),
       x: 39.25, y: 47.65,
       sprite: 'enseada_concha_perola_oeste',
       espelhar: true, useCrop: true, larguraPx: 80, pivotX: 0.5, pivotY: 0.98,
@@ -1212,6 +1234,7 @@ export const map = {
     // ---- SETOR 8 (Mar): Portal NE + boias + fauna marinha ----
     {
       id: 'portal_caminho_correntes', nome: 'PORTAL DAS CORRENTES', tipo: 'decoracao', x: 28.0, y: 10.0,
+      animacaoFolha: folhaViva('enseada_folha6_portal_correntes', 0.18, 0.92),
       sprite: 'enseada_correntes_portal_ref', vorticidadeCorrentes: true,
       useCrop: true, larguraPx: 190, pivotX: 0.5, pivotY: 0.94,
       bloqueia: false, brilho: { cor: '#5cf7eb', raio: 1.5, forca: 0.34 },
@@ -1245,16 +1268,19 @@ export const map = {
     },
     {
       id: 'tartaruga_marinha', tipo: 'decoracao', x: 60.0, y: 42.0,
+      animacaoFolha: folhaViva('enseada_folha6_tartaruga', 0.22, 1.61),
       sprite: 'enseada5_tartaruga', spriteB: 'enseada5_tartaruga_b', animPeriodo: 0.6, useCrop: true, larguraPx: 90,
       pivotX: 0.5, pivotY: 0.96, depthOffset: -0.3, bloqueia: false,
     },
     {
       id: 'corais_amarelos', tipo: 'decoracao', x: 56.0, y: 44.0,
+      animacaoFolha: folhaViva('enseada_folha6_corais_amarelos', 0.22, 0.46),
       sprite: 'enseada5_corais', spriteB: 'enseada5_corais_b', animPeriodo: 0.6, useCrop: true, larguraPx: 80,
       pivotX: 0.5, pivotY: 0.96, depthOffset: -0.3, bloqueia: false,
     },
     {
       id: 'coral_rosa', tipo: 'decoracao', x: 58.0, y: 36.0,
+      animacaoFolha: folhaViva('enseada_folha6_coral_rosa', 0.24, 0.69),
       sprite: 'enseada6_coral_rosa', useCrop: true, larguraPx: 70,
       pivotX: 0.5, pivotY: 0.96, depthOffset: -0.3, bloqueia: false,
     },

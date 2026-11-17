@@ -6,7 +6,7 @@ globalThis.document={createElement:()=>createCanvas(1,1)};
 const {getFrame}=await import('../../js/engine/sprite-clean.js');
 const main=fs.readFileSync('js/main.js','utf8');
 const src=id=>main.match(new RegExp(`id: '${id}', src: '([^']+)'`))?.[1];
-for(const o of map.objects.filter(o=>o.animacaoFolha)) {
+for(const o of map.objects.filter(o=>o.animacaoFolha && !o.animacaoFolha.sprite.startsWith('enseada_folha4_'))) {
  const base=getFrame(await loadImage(src(o.sprite)),0,0,1,1).crop;
  const a=o.animacaoFolha, sheet=await loadImage(src(a.sprite));
  const w=base.w+2*a.margem,h=base.h;

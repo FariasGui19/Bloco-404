@@ -17,12 +17,14 @@ function contornoIso(pontos, origemX, origemY, escala = 1) {
 // Lote de animações: só instâncias existentes da vegetação manual; nenhuma
 // árvore é criada ou reposicionada e a âncora do tronco permanece fixa.
 const PALMEIRAS_ANIMADAS = new Map([
+  ['12.51,43.11', 'enseada_folha_palmeira_alta'],
+  ['16.1,47.9', 'enseada_folha_palmeira_baixa'],
   ['20.9,53.4', 'enseada_folha_palmeira_alta'],
   ['16.76,45.57', 'enseada_folha_palmeira_baixa'],
   ['18.24,45.2', 'enseada_folha_palmeira_jovem'],
   ['16.6,46.7', 'enseada_folha_palmeira_media'],
 ]);
-const folhaViva = (sprite, periodo = .18, fase = 0) => ({ sprite, quadros: 8, margem: 8, periodo, fase });
+const folhaViva = (sprite, periodo = .18, fase = 0, margem = 8) => ({ sprite, quadros: 8, margem, periodo, fase });
 
 const COLS = 72;
 const ROWS = 64;
@@ -751,8 +753,9 @@ export const map = {
       // "duas toras em X".
       id: 'carrilhao_vento_enseada', nome: 'CARRILHÃO DE VENTO', tipo: 'decoracao', x: 16.2, y: 50.4,
       sprite: 'enseada_sino_oeste_frontal', spriteB: 'enseada_sino_oeste_frontal', animPeriodo: 0.58,
+      animacaoFolha: folhaViva('enseada_folha4_carrilhao', .16, 0, 24),
       useCrop: true, larguraPx: 90, pivotX: 0.5, pivotY: 0.96,
-      bloqueia: false, oscilaBrisa: true,
+      bloqueia: false,
       interacao: { label: 'OUVIR O CARRILHÃO', distancia: 1.55 },
     },
 
@@ -879,6 +882,7 @@ export const map = {
     {
       id: 'bambus_portico_oeste', tipo: 'decoracao', x: 17.9, y: 52.1,
       sprite: 'enseada_bambus_oeste', useCrop: true, larguraPx: 65,
+      animacaoFolha: folhaViva('enseada_folha4_bambu', .2, .3, 24),
       pivotX: 0.5, pivotY: 0.97, bloqueia: false,
     },
     // Arbustos individuais, alinhados aos círculos da referência anotada.
@@ -891,6 +895,7 @@ export const map = {
       [27.01, 42.57, 'enseada_ne_arbustos', 48],
     ].map(([x, y, sprite, larguraPx], i) => ({
       id: `arbusto_anotado_oeste_${i + 1}`, tipo: 'decoracao', x, y, sprite,
+      animacaoFolha: folhaViva(sprite === 'enseada_ne_arbusto_florido' ? 'enseada_folha4_arbusto_florido' : 'enseada_folha4_arbustos', .2 + (i % 3) * .025, i * .31, 24),
       useCrop: true, larguraPx, pivotX: 0.5, pivotY: 0.97,
       bloqueia: false, espelhar: i % 2 === 1,
     })),

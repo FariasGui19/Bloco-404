@@ -1,0 +1,15 @@
+import assert from 'node:assert/strict';
+import { map } from '../js/data/worlds/arquipelago-rotas-perdidas/enseada-ecos.js';
+import { VEGETACAO } from '../js/data/enseada-vegetacao.js';
+const obj = id => { const o = map.objects.find(o => o.id === id); assert(o, id); return o; };
+const palmeirasDoSino = VEGETACAO.filter(([tipo,x,y]) => ['P','M','B','J'].includes(tipo) && x >= 15 && x < 17 && y >= 45 && y < 49);
+assert.equal(palmeirasDoSino.length, 5, 'cinco palmeiras no agrupamento junto ao sino');
+const estrada = obj('calcada_central_enseada');
+assert.equal(estrada.sprite, 'enseada_calcada_oeste_escada');
+assert.equal(estrada.larguraPx, 618);
+assert.equal(obj('portico_trilha_praia').sprite, 'enseada_portico_lateral');
+const grama = map.objects.filter(o => o.id.startsWith('grama_alta_oeste_'));
+assert.equal(grama.length, 9);
+assert(grama.every(o => o.oscilaBrisa && !o.bloqueia && o.sprite === 'enseada_grama_alta_vento'));
+assert(map.fauna.some(a => a.species === 'capivara' && a.submersa));
+console.log('Oeste: cinco palmeiras, calçada até a escada e grama ao vento OK.');

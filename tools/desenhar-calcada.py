@@ -99,6 +99,10 @@ def main():
 
     im = im.resize((W, H), Image.LANCZOS)
     im.save(f'{RAIZ}/assets/sprites/enseada-lote2/calcada-central.png')
+    # A variante oeste termina na escada; o trecho seguinte é areia.
+    oeste = im.copy()
+    oeste.paste((0, 0, 0, 0), (320, 0, W, H))
+    oeste.save(f'{RAIZ}/assets/sprites/enseada-lote2/calcada-oeste-escada.png')
 
     bg = Image.new('RGBA', im.size, (86, 158, 96, 255))
     bg.alpha_composite(im)

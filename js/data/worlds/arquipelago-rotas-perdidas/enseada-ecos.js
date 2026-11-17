@@ -189,6 +189,8 @@ export const map = {
       [[156, 378], [222, 372], [300, 376], [370, 378], [435, 365], [500, 363],
        [530, 388], [535, 434], [515, 449], [490, 455], [466, 456], [438, 450], [414, 440],
        [390, 452], [365, 448], [337, 445], [307, 448], [267, 465], [219, 467], [171, 453]],
+      // Grama apenas ao redor do piso do espelho, não sobre a praia.
+      [[455, 518], [472, 501], [510, 496], [542, 507], [560, 524], [555, 548], [538, 564], [485, 562], [455, 546]],
       // Pequeno canteiro junto à ostra, sem avançar sobre o píer.
       [[615, 520], [632, 515], [651, 526], [654, 545], [643, 558], [623, 558], [612, 544]],
       // Vegetação encostada à face ocidental do paredão e junto ao sino.
@@ -581,9 +583,9 @@ export const map = {
 
     // ---- SETOR 3 (Oeste): Pórtico + bosques ----
     {
-      id: 'portico_trilha_praia', nome: 'PÓRTICO DA TRILHA', tipo: 'decoracao', x: 16.45, y: 54.45,
-      sprite: 'enseada3_portico_oeste', spriteB: 'enseada3_portico_oeste', animPeriodo: 0.54,
-      useCrop: true, larguraPx: 150, pivotX: 0.5, pivotY: 0.98,
+      id: 'portico_trilha_praia', nome: 'PÓRTICO DA TRILHA', tipo: 'decoracao', x: 16.94, y: 53.96,
+      sprite: 'enseada_portico_lateral',
+      useCrop: true, larguraPx: 144, escalaY: 0.52, pivotX: 0.5, pivotY: 0.98,
       bloqueia: false, oscilaBrisa: true, brilho: { cor: '#ffb86b', raio: 1.0, forca: 0.16 },
     },
     {
@@ -597,18 +599,13 @@ export const map = {
       interacao: { label: 'OUVIR O CARRILHÃO', distancia: 1.55 },
     },
 
-    // ---- Calçada do Pórtico Oeste até a clareira central ----
-    // Medida no pôster: a faixa de pedra sai do pórtico na praia oeste
-    // (170,405), desce em curva fechada em (395,410) e sobe até a clareira
-    // do monólito em (660,348). É a ligação que a arte desenha entre a
-    // saída oeste e o centro — antes só existiam as pedras soltas da trilha.
+    // Calçada do pórtico até a escada; depois continua em areia.
     {
-      // O sprite já é a faixa inteira (curva incluída), desenhada na mesma
-      // perspectiva do pôster: pórtico (166,407) → curva (441,410) →
-      // clareira (662,347). A âncora é o meio da curva.
-      id: 'calcada_central_enseada', tipo: 'decoracao', x: 23.51, y: 43.72,
-      sprite: 'enseada_calcada_central', useCrop: true,
-      larguraPx: 1100, pivotX: 0.5, pivotY: 0.5,
+      // Variante recortada com escala e âncora compensadas para preservar
+      // o encaixe original no pórtico e terminar ao pé da escada.
+      id: 'calcada_central_enseada', tipo: 'decoracao', x: 20.44, y: 48.19,
+      sprite: 'enseada_calcada_oeste_escada', useCrop: true,
+      larguraPx: 618, pivotX: 0.5, pivotY: 0.5,
       depthOffset: -6, bloqueia: false,
     },
 
@@ -711,10 +708,21 @@ export const map = {
       pivotX: 0.5, pivotY: 0.97, bloqueia: false,
     },
     {
-      id: 'bambus_portico_oeste', tipo: 'decoracao', x: 17.0, y: 53.0,
+      id: 'bambus_portico_oeste', tipo: 'decoracao', x: 17.9, y: 52.1,
       sprite: 'enseada_bambus_oeste', useCrop: true, larguraPx: 65,
       pivotX: 0.5, pivotY: 0.97, bloqueia: false,
     },
+    // Touceiras feitas à mão: balanço contínuo da brisa, sem colisão.
+    ...[
+      [19.2, 52.0, 26], [21.6, 51.1, 23], [23.6, 49.8, 27],
+      [25.9, 48.2, 24], [27.4, 46.2, 25], [30.2, 44.1, 25],
+      [25.0, 49.3, 24], [35.2, 48.9, 22], [35.1, 46.9, 24],
+    ].map(([x, y, larguraPx], i) => ({
+      id: `grama_alta_oeste_${i + 1}`, tipo: 'decoracao', x, y,
+      sprite: 'enseada_grama_alta_vento', useCrop: true, larguraPx,
+      pivotX: 0.5, pivotY: 0.98, bloqueia: false, oscilaBrisa: true,
+      espelhar: i % 2 === 1,
+    })),
     // Vegetação baixa quebra a silhueta da base, sem fechar a escada.
     ...[[17.4, 44.3, 48], [19.3, 43.2, 38], [20.3, 42.4, 48], [24.8, 38.3, 38]].map(([x, y, larguraPx], i) => ({
       id: `tufos_encosta_oeste_${i + 1}`, tipo: 'decoracao', x, y,

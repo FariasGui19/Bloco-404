@@ -90,6 +90,14 @@ export function endInputFrame() {
   input.pressed.clear();
 }
 
+// Fecha menus/imersões sem deixar teclas ou arrastos presos no retorno.
+export function resetInput() {
+  for (const key in input.keys) input.keys[key] = false;
+  input.pressed.clear(); input.click = null; input.attackClick = null;
+  input.fpsFire = false; input.fpsFireHeld = false; input.mouseDeltaX = 0;
+  drag.left = false; drag.pan = false; drag.moveClick = false;
+}
+
 export function initInput(canvas) {
   // -------------------------------------------------------------------
   // Teclado
@@ -99,6 +107,10 @@ export function initInput(canvas) {
 
     const key = normalizeKey(event);
     const code = normalizeCode(event);
+    if (state.world.immersiveActive) {
+      if ([' ', 'escape', 'arrowup', 'arrowdown', 'arrowleft', 'arrowright'].includes(key)) event.preventDefault();
+      return;
+    }
 
     // Evita comportamento padrão do navegador para espaço/setas
     // quando o jogo está recebendo foco.
@@ -158,7 +170,7 @@ export function initInput(canvas) {
   // -------------------------------------------------------------------
   canvas.addEventListener('wheel', event => {
     event.preventDefault();
-    if (state.world.currentMap?.meta?.camera === 'retro-fps') return;
+    if (state.world.immersiveActive || state.world.currentMap?.meta?.camera === 'retro-fps') return;
 
     setZoom(
       camera.targetZoom *
@@ -170,6 +182,7 @@ export function initInput(canvas) {
   // Mouse
   // -------------------------------------------------------------------
   canvas.addEventListener('mousedown', event => {
+    if (state.world.immersiveActive) return;
     if (state.world.currentMap?.meta?.camera === 'retro-fps') {
       if (event.button === 0 && !state.world.fpsPaused) { input.fpsFire = true; input.fpsFireHeld = true; if (document.pointerLockElement !== canvas) { const request=canvas.requestPointerLock?.(); request?.catch?.(() => {}); } }
       return;
@@ -197,6 +210,7 @@ export function initInput(canvas) {
   });
 
   window.addEventListener('mousemove', event => {
+    if (state.world.immersiveActive) return;
     if (state.world.currentMap?.meta?.camera === 'retro-fps') {
       if (document.pointerLockElement === canvas) input.mouseDeltaX += event.movementX || 0;
       return;
@@ -213,6 +227,7 @@ export function initInput(canvas) {
   });
 
   window.addEventListener('mouseup', event => {
+    if (state.world.immersiveActive) { drag.left = false; drag.pan = false; return; }
     if (event.button === 0) input.fpsFireHeld=false;
     // Clique esquerdo.
     if (event.button === 0 && drag.left) {

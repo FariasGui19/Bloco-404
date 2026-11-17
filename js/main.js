@@ -42,9 +42,12 @@ import { updateAbilities, showAbilityMessage } from './game/abilities.js';
 import { beginUltimate, updateUltimate } from './game/ultimate.js';
 import { toggleArchetypeSuit } from './game/ability-context.js';
 import { openNucleoWheel, isNucleoWheelOpen, updateNucleoWheel } from './ui/nucleo-wheel.js';
-import { updateCamera } from './engine/camera.js';
+import { updateCamera, camera } from './engine/camera.js';
+import { ImmersiveViewManager, IMMERSIVE_MODE } from './game/immersive-view-manager.js';
+import { initImmersiveView } from './ui/immersive-view.js';
+import { playImmersiveSound } from './ui/immersive-audio.js';
 
-import { input, initInput, endInputFrame } from './engine/input.js';
+import { input, initInput, endInputFrame, resetInput } from './engine/input.js';
 import { initRenderer, render } from './engine/renderer.js';
 import { loadSprites, getSprite } from './engine/sprites.js';
 
@@ -52,7 +55,7 @@ import { initHud, updateHud } from './ui/hud.js';
 import { initTitleScreen } from './ui/menu.js';
 import { initTransition } from './ui/transition.js';
 
-import { checkInteractions } from './game/interactions.js';
+import { checkInteractions, registrarVisitaImersiva } from './game/interactions.js';
 
 import { updateDebugInput } from './game/debug.js';
 import {
@@ -104,6 +107,10 @@ initTransition();
 initSaveMenu();
 initArchetypeCards();
 initDialogue();
+const immersive = new ImmersiveViewManager({
+  state, camera, clearInput: resetInput, visit: registrarVisitaImersiva, sound: playImmersiveSound,
+});
+const renderImmersive = initImmersiveView(immersive);
 
 await loadSprites([
   {
@@ -844,6 +851,11 @@ if (bioMissing.length) {
 // =====================================================================
 
 async function update(dt) {
+  if (immersive.active) {
+    if (state.world.currentMapId !== 'ilha_enseada_ecos') immersive.finish();
+    else immersive.update(dt, input);
+    return;
+  }
   if (state.world.currentMap?.meta?.camera === 'retro-fps') {
     if (!isCutsceneOpen() && !isDialogueOpen() && !state.world.isLoading) updateCitadel(dt, state, input);
     return;
@@ -1198,6 +1210,8 @@ async function update(dt) {
     }
   }
 
+  if (mapaAtual?.id === 'ilha_enseada_ecos') immersive.updateProximity(dt, state.objects, player);
+
   // Interações (portais, NPCs, objetos) correm DEPOIS da fauna: assim o
   // socorro tem a primeira chance no E, e um E perto de bicho não abre
   // a placa atrás dele ao mesmo tempo.
@@ -1205,8 +1219,9 @@ async function update(dt) {
     const pressedE =
       input.pressed.has('e') ||
       input.pressed.has('keye');
-    await checkInteractions(pressedE && !state.interaction.socorroConsumiuE);
+    await checkInteractions(pressedE && !state.interaction.socorroConsumiuE, { onObject: (object, callback) => immersive.begin(object, callback) });
     state.interaction.socorroConsumiuE = false;
+    if (immersive.active) return;
   }
 
   updateOwnedCompanion(getFloor(), dt, canStandAt);
@@ -1267,6 +1282,13 @@ async function frame(now) {
   clearCitadelRuntime();
   if (document.pointerLockElement === canvas) document.exitPointerLock?.();
 
+  // No diorama estabilizado o mundo fica congelado e não é redesenhado:
+  // transições ainda desenham o mapa para o cross-fade de ida/volta.
+  if (immersive.mode === IMMERSIVE_MODE.FIRST_PERSON_DIORAMA) {
+    renderImmersive(dt, canvas);
+    endInputFrame();
+    return;
+  }
   render(map, state);
   updateHud(map, state);
   // Fôlego só aparece quando importa (nadando); em terra não ocupa tela.
@@ -1298,6 +1320,7 @@ async function frame(now) {
   // Degrau do nado + prova em curso: perto d'água, ou comemorando.
   if (map?.aguaPraia) desenharDegrauNado(state, map);
 
+  renderImmersive(dt, canvas);
   endInputFrame();
 }
 

@@ -205,6 +205,23 @@
       </footer>
     </section>
   </div>
+  <!-- Dioramas da Enseada: UI sobreposta sem interferir na câmera do mapa. -->
+  <section id="immersiveView" class="immersive-view" hidden aria-label="Visão imersiva da Enseada">
+    <div id="immersiveBackground" class="immersive-background"></div>
+    <div id="immersiveCaveFrame" class="immersive-cave-frame"></div>
+    <img id="immersiveCapybara" class="immersive-capybara" src="assets/sprites/enseada-imersiva/capivara.png" alt="Capivara boiando na fonte">
+    <canvas id="immersiveEffects" class="immersive-effects" aria-hidden="true" width="640" height="360"></canvas>
+    <div class="immersive-shade" aria-hidden="true"></div>
+    <header class="immersive-heading"><div><span>ENSEADA DOS ECOS · DIORAMA</span><h2 id="immersiveTitle"></h2><p id="immersiveSubtitle"></p></div><button id="immersiveSound" type="button" aria-pressed="false">SOM DESLIGADO</button></header>
+    <div class="immersive-bottom">
+      <p id="immersiveMessage" aria-live="polite">MOVA O MOUSE PARA OLHAR AO REDOR</p>
+      <nav aria-label="Ações da cena">
+        <button id="immersiveAction1" type="button"></button>
+        <button id="immersiveAction2" type="button"></button>
+        <button id="immersiveExit" type="button"><b>ESC / E</b> Levantar e sair</button>
+      </nav>
+    </div>
+  </section>
   <script type="module" src="js/main.js"></script>
 </body>
 

@@ -5627,7 +5627,8 @@ function drawCroppedObject(object, image, sheet) {
     if (asas !== 1) ctx.scale(asas, 1);
     if (folhaValida) {
       const fw = c.w + 2 * anim.margem;
-      const quadro = Math.floor((agora + (anim.fase ?? 0)) / anim.periodo) % anim.quadros;
+      const impulso = object.id === 'carrilhao_vento_enseada' && agora < (object.immersiveChimeUntil ?? 0) ? 2.6 : 1;
+      const quadro = Math.floor((agora * impulso + (anim.fase ?? 0)) / anim.periodo) % anim.quadros;
       ctx.drawImage(folha, quadro * fw, 0, fw, c.h,
         -w * px - anim.margem * scale, -h * py, fw * scale, h);
     } else {
@@ -7063,7 +7064,19 @@ function drawEntity(entity, state) {
       ? 1 - entity.ultimate.charge / (entity.ultimate.chargeDuration || .42)
       : 0;
     const afundar = carga > 0 ? Math.sin(Math.PI * Math.min(1, carga)) * 3 : 0;
-    if (drawPlayerSprite(entity, ix + dx / length * push, iy + dy / length * push + afundar)) return;
+    // Preparação curta sem teleporte ou alteração de colisão. Agachar é uma
+    // deformação do sprite existente, não uma folha nova de personagem.
+    const gesto = entity.immersivePose;
+    ctx.save();
+    if (gesto?.amount > 0) {
+      const agacha = ['gruta_concha_enseada','piscina_mare_viva_enseada','jardim_pedras_enseada','acampamento_vigilia_enseada','enseada_banco_tronco_camp'].includes(gesto.id);
+      ctx.translate(ix, iy);
+      ctx.transform(1, 0, gesto.side * gesto.amount * (agacha ? .025 : .11), 1 - gesto.amount * (agacha ? .18 : .03), 0, 0);
+      ctx.translate(-ix, -iy);
+    }
+    const desenhado = drawPlayerSprite(entity, ix + dx / length * push, iy + dy / length * push + afundar);
+    ctx.restore();
+    if (desenhado) return;
 
     ctx.beginPath();
     ctx.arc(ix, iy - 14, 9, 0, Math.PI * 2);

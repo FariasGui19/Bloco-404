@@ -227,6 +227,14 @@ export const map = {
     area: contornoSuave([[967,395],[1015,385],[1060,389],[1095,396],[1126,412],[1139,443],[1120,476],[1090,486],[1047,476],[1001,466],[969,445]]),
     grama: contornoSuave([[974,396],[1000,393],[1030,394],[1057,399],[1083,409],[1094,422],[1082,433],[1061,435],[1040,432],[1022,430],[1000,428],[981,422],[972,411]]),
   },
+  // Trilha orgânica de areia, em trechos medidos: Estação até o pé da rampa.
+  trilhaEstacaoPortal: [
+    [16.36, 17.57, 16.5, 18.65], [16.5, 18.65, 19.5, 18.65],
+    [19.5, 18.65, 24, 18.2],
+    [24, 18.2, 27.7, 19.3], [27.7, 19.3, 31.2, 21.2],
+    [31.2, 21.2, 35, 22.6], [35, 22.6, 39, 24.2],
+    [39, 24.2, 43, 25.1], [43, 25.1, 44.0, 28.35], [44.0, 28.35, 47.6, 30.7],
+  ],
   passarelaSobreAgua: [...passarelaCorrentes],
   // A grama não vem de mancha elíptica: vem de `celulasGrama`, traçada da
   // referência. A elipse antiga era um retângulo verde por cima da arte.
@@ -899,8 +907,19 @@ export const map = {
     },
 
     // ---- SETOR 7 (Leste): Portal + jardim + baú + recife ----
-    // Prolongamento independente: a rampa se encaixa atrás do arco existente.
-    { id: 'encosta_portal_sudeste', tipo: 'decoracao', x: 49.275, y: 28.025,
+    // Touceiras não bloqueantes na vegetação junto ao caminho, com a brisa existente.
+    ...[
+      [42.7, 28.0, 27], [44.0, 27.7, 25], [45.15, 27.0, 28],
+      [46.0, 25.7, 26], [40.3, 29.1, 26], [38.7, 28.2, 24],
+      [35.1, 24.4, 27], [32.0, 22.9, 24], [28.3, 20.8, 23],
+    ].map(([x,y,larguraPx], i) => ({
+      id: `grama_trilha_sudeste_${i+1}`, tipo: 'decoracao', x, y,
+      sprite: 'enseada_grama_orla_animada', useCrop: true, larguraPx,
+      pivotX: 0.5, pivotY: 0.98, bloqueia: false, oscilaBrisa: true,
+      espelhar: i % 2 === 1,
+    })),
+    // Antiga extensão fica oculta: a nova arte já inclui a rampa completa.
+    { id: 'encosta_portal_sudeste', tipo: 'decoracao', x: 49.275, y: 28.025, renderizar: false,
       sprite: 'enseada_sudeste_encosta', useCrop: true, larguraPx: 190,
       pivotX: 0.5, pivotY: 0.98, camada: 'fundo', ordem: 0, bloqueia: false },
     { id: 'conchas_fosseis_sudeste', tipo: 'decoracao', x: 49.6, y: 32.8,
@@ -926,20 +945,12 @@ export const map = {
       renderizar: false,
     },
     {
-      // Arco do conduto no promontório leste: mesma arte de coral da
-      // referência. O sprite antigo (pedra cinza + cristais azuis) não existe
-      // na arte e destoava da paleta do resto da costa.
-      // Peça ÚNICA: o promontório recortado da arte já traz o arco do conduto,
-      // o lajeado, a grama do topo e os corais da base rochosa. Antes havia
-      // duas peças sobrepostas aqui (o arco antigo de pedra cinza aparecia
-      // encavalado atrás do novo) e a base parecia pilha solta de pedras.
-      // Pé no pôster: a ponta leste do lajeado, em (1233,497). O recorte tem
-      // 140 px de largura na arte, então 140 é a largura em tela (antes estava
-      // em 410 e o promontório saía três vezes maior que o da referência).
+      // Peça íntegra do promontório: arco, rocha, acesso de areia e coral.
+      // O objeto lógico do conduto e o acesso por nado permanecem independentes.
       id: 'arco_conduto_retorno_mare', tipo: 'decoracao', x: 51.6, y: 28.2,
-      sprite: 'enseada_promontorio_sudeste', useCrop: true,
-      larguraPx: 152, pivotX: 0.5, pivotY: 0.985,
-      vorticidadeCorrentes: { x: 0, y: -136, rx: 12, ry: 28 },
+      sprite: 'enseada_sudeste_portal_completo', useCrop: true,
+      larguraPx: 320, pivotX: 0.66, pivotY: 0.985,
+      vorticidadeCorrentes: { x: 15, y: -139, rx: 14, ry: 27, intensidade: 0.35 },
       bloqueia: false, brilho: { cor: '#5cf7eb', raio: 2.2, forca: 0.44 },
     },
     {
@@ -1004,7 +1015,7 @@ export const map = {
       interacao: { label: 'COLHER ESSÊNCIA DE ALGAS DOURADAS', distancia: 1.55 },
     },
     {
-      id: 'poleiro_aves_enseada', nome: 'POLEIRO DAS AVES', tipo: 'decoracao', x: 49.4, y: 30.65,
+      id: 'poleiro_aves_enseada', nome: 'POLEIRO DAS AVES', tipo: 'decoracao', x: 50.65, y: 31.9,
       sprite: 'enseada_sudeste_gaivotas',
       useCrop: true, larguraPx: 100, pivotX: 0.5, pivotY: 0.94,
       bloqueia: false,

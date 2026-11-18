@@ -344,6 +344,15 @@ function interactWithObject(object) {
   const interaction = object.interacao;
   if (!interaction) return;
 
+  const diariosDocas={
+    docas_diario_pier:['DIÁRIO DO PÍER','A NÉVOA VEIO ANTES DA FALHA. DEIXAMOS UMA LUZ NO PÍER PARA QUEM CONSEGUISSE VOLTAR.','AS CRIATURAS SE APROXIMAM DA LUZ: APAGUE O FAROL SE PRECISAR PASSAR EM SILÊNCIO.'],
+    docas_diario_trilha:['AVISO DOS VIGIAS','A CHAVE FICOU NA CABANA OESTE; O FUSÍVEL, NA CABANA LESTE. NÃO LEVE OS DOIS PELO MAR.','RECOMPILE OS FRAGMENTOS NO GALPÃO ANTES DE TENTAR O SELO NA SUBIDA.'],
+  }[object.id];
+  if(diariosDocas){
+    const flags=state.progress.flags??={},key=object.id+'_lido';
+    if(!flags[key]){flags[key]=true;saveGame();}
+    openDialogue({speaker:diariosDocas[0],dialogue:diariosDocas.slice(1)});return;
+  }
   if (object.id === 'docas_barco') {
     openDialogue({speaker:'BARCO DE EXPEDIÇÃO',dialogue:['PÍER SUL • PONTO DE APOIO E RETORNO À ENSEADA.'],choices:[
       {text:'DESCANSAR E SALVAR',onSelect:()=>{healPlayer(state.player,state.progress,35);state.player.energy=Math.min(state.player.maxEnergy??100,(state.player.energy??0)+35);state.world.currentSpawnId='inicio';saveGame();openDialogue({speaker:'BARCO',dialogue:['VIDA E ENERGIA PARCIALMENTE RECUPERADAS. REGISTRO DE EMERGÊNCIA SALVO NO PÍER.']});}},

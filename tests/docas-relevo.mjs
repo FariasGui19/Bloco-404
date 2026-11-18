@@ -28,6 +28,11 @@ for(const [x,y] of route.slice(1)){
  moveWithCollision(docas,player,x+.5-player.x,y+.5-player.y,.25);
  assert(Math.hypot(player.x-x-.5,player.y-y-.5)<.01,'percurso com movimento real não deve ficar preso');
 }
+// Retorno usa as mesmas restrições físicas, em vez de apenas teleporte.
+for(const [x,y] of route.slice(0,-1).reverse()){
+ moveWithCollision(docas,player,x+.5-player.x,y+.5-player.y,.25);
+ assert(Math.hypot(player.x-x-.5,player.y-y-.5)<.01,'retorno ao píer não deve ficar preso');
+}
 // Fora da faixa de piso não se atravessa a borda.
 const outside={x:docas.spawnPoints.inicio.x,y:docas.spawnPoints.inicio.y};
 moveWithCollision(docas,outside,0,40,.25);

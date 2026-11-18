@@ -16,23 +16,50 @@ const bloqueios=[
  [[590,333],[695,312],[745,350],[715,380],[610,392]],
  [[800,390],[905,375],[960,415],[930,460],[830,460]],
  [[1100,460],[1210,440],[1300,475],[1280,510],[1130,510]],
+ [[1328,465],[1360,465],[1368,489],[1330,489]],
+ [[900,190],[925,190],[930,215],[900,215]],
+ [[1220,205],[1270,200],[1280,230],[1220,230]],
 ];
-const W=25,H=40;
+// Ampliação em espaço de jogo, preservando a planta e os IDs de progresso.
+export const ESCALA_DOCAS=2.5;
+const W=Math.ceil(25*ESCALA_DOCAS),H=Math.ceil(40*ESCALA_DOCAS);
 const layout=Array.from({length:H},(_,y)=>Array.from({length:W},(_,x)=>{
- const px=(x+.5)*64,py=(y+.5)*22;
+ const px=(x+.5)*64/ESCALA_DOCAS,py=(y+.5)*22/ESCALA_DOCAS;
  return polys.some(p=>inside(px,py,p)) && !bloqueios.some(p=>inside(px,py,p)) ? 0 : 1;
 }));
-const marker=(id,px,py,label)=>({id,nome:label,tipo:'painel',x:px/64-.5,y:py/22-.5,renderizar:false,bloqueia:false,interacao:{label,distancia:1.25}});
-const portal=(id,px,py,label,mapId,spawn='inicio',extra={})=>({id,tipo:'door',x:px/64-.5,y:py/22-.5,label,interactionDistance:1.05,destino:{mapId,spawnId:spawn},transition:'fade',...extra});
-export const docas={id:'mare_cromatica_docas',meta:{nome:'DOCAS DA NEBLINA',tipo:'exterior',dimensao:'mare_cromatica',sideView:true,docasReferencia:true,cromatica:true,initialZoom:.9,corFundo:'#090f20'},layout,
- spawnPoints:{inicio:{x:620/64,y:650/22},cabana_esq:{x:610/64,y:535/22},cabana_dir:{x:1190/64,y:535/22},galpao:{x:875/64,y:490/22},torre:{x:1320/64,y:510/22}},actors:[],fauna:[],collectibles:[],hazards:[],
+const marker=(id,px,py,label)=>({id,nome:label,tipo:'painel',x:px*ESCALA_DOCAS/64-.5,y:py*ESCALA_DOCAS/22-.5,renderizar:false,bloqueia:false,interacao:{label,distancia:1.6}});
+const portal=(id,px,py,label,mapId,spawn='inicio',extra={})=>({id,tipo:'door',x:px*ESCALA_DOCAS/64-.5,y:py*ESCALA_DOCAS/22-.5,label,interactionDistance:1.5,destino:{mapId,spawnId:spawn},transition:'fade',...extra});
+const ponto=(x,y)=>({x:x*ESCALA_DOCAS/64,y:y*ESCALA_DOCAS/22});
+// Pés/âncoras ordenados em profundidade, independentes da imagem de referência.
+const estrutura=(id,x,y,largura,camada='objeto')=>({id,x:x*ESCALA_DOCAS,y:y*ESCALA_DOCAS,largura:largura*ESCALA_DOCAS,camada});
+export const docas={id:'mare_cromatica_docas',meta:{nome:'DOCAS DA NEBLINA',tipo:'exterior',dimensao:'mare_cromatica',sideView:true,docasCamadas:true,cromatica:true,initialZoom:.9,corFundo:'#090f20'},layout,
+ geometriaDocas:{polys,bloqueios,escala:ESCALA_DOCAS},
+ marDocas:[
+  {id:'tentaculo',x:170,y:550,tamanho:70},{id:'redemoinho',x:165,y:550,tamanho:92},
+  {id:'tentaculo',x:1400,y:600,tamanho:65},{id:'redemoinho',x:1400,y:600,tamanho:82},
+  {id:'boia',x:1450,y:600,tamanho:35},{id:'boia',x:1430,y:700,tamanho:35},
+  {id:'oleo',x:200,y:350,tamanho:72},{id:'olhos',x:1470,y:500,tamanho:30},
+  {id:'rocha',x:1500,y:730,tamanho:58},
+ ],
+ estruturasDocas:[
+  estrutura('pier',600,690,210,'chao'),estrutura('barco',360,735,160),
+  estrutura('cabana-oeste',585,478,150),estrutura('cabana-leste',1200,510,160),estrutura('galpao',875,468,145),
+  estrutura('escada',1080,403,100,'chao'),estrutura('torre',1350,500,75),estrutura('farol',915,220,80),
+  estrutura('camara',1250,240,135),estrutura('porta',975,225,35),
+  // Flora reutilizada em volta da vila; não é o novo lote de fauna.
+  ...[[310,475,65],[375,420,75],[455,365,68],[730,400,70],[770,355,58],[1030,410,72],[1300,445,65],[1350,535,62],[395,525,50],[520,565,55],[950,500,45],[1090,555,58],[1150,405,58]].map(([x,y,w])=>estrutura('palmeira',x,y,w)),
+  ...[[690,585,23],[820,535,20],[980,545,22],[1150,555,22]].map(([x,y,w])=>estrutura('caixas',x,y,w)),
+  ...[[340,440,95],[745,395,100],[1020,365,90],[1320,475,100]].map(([x,y,w])=>estrutura('mata',x,y,w)),
+ ],
+ spawnPoints:{inicio:ponto(620,650),cabana_esq:ponto(610,535),cabana_dir:ponto(1190,535),galpao:ponto(875,490),torre:ponto(1320,510)},actors:[],fauna:[],collectibles:[],hazards:[],
  objects:[marker('docas_barco',630,660,'DESCANSAR / SALVAR NO BARCO'),
  marker('cromatica_fragmento_estacao',1050,365,'RECOLHER FRAGMENTO • TRILHA'),marker('cromatica_selo',1110,275,'ESTABILIZAR O ACESSO AO NÚCLEO'),
  marker('cromatica_painel_origem',1190,220,'ALINHAR ORIGEM'),marker('cromatica_painel_retorno',1240,250,'ALINHAR RETORNO'),marker('cromatica_painel_memoria',1300,210,'ALINHAR MEMÓRIA'),marker('cromatica_ancora',1250,185,'ESTABILIZAR ÂNCORA'),
  marker('docas_torre',1330,500,'SUBIR À TORRE DE VIGIA'),marker('docas_resina',720,565,'RASTREAR RESINA • MARÉ ASTRAL'),marker('docas_eletrico',910,545,'PAINEL ELÉTRICO • NÚCLEO X10'),marker('docas_selo',1020,420,'SELO DE NÉVOA • DOMÍNIO ANCIÃO'),marker('docas_biomassa',1120,565,'BIOMASSA • BIO-FORJA')],
- trainingTargets:[{id:'docas_infectado_1',x:18,y:12,maxHealth:65,cromaticaEnemy:true},{id:'docas_infectado_2',x:19,y:10,maxHealth:65,cromaticaEnemy:true}],
- portals:[portal('docas_galpao',865,490,'ENTRAR NO GALPÃO CRT','mare_cromatica_galpao'),portal('docas_cabana_esq',575,500,'ENTRAR NA CABANA OESTE','mare_cromatica_cabana_oeste'),portal('docas_cabana_dir',1190,500,'ENTRAR NA CABANA LESTE','mare_cromatica_cabana_leste')],
+ trainingTargets:[{id:'docas_infectado_1',x:Math.floor(18*ESCALA_DOCAS),y:Math.floor(12*ESCALA_DOCAS),maxHealth:65,cromaticaEnemy:true},{id:'docas_infectado_2',x:Math.floor(19*ESCALA_DOCAS),y:Math.floor(10*ESCALA_DOCAS),maxHealth:65,cromaticaEnemy:true}],
+ portals:[portal('docas_galpao',865,490,'ENTRAR NO GALPÃO CRT','mare_cromatica_galpao'),portal('docas_cabana_esq',575,500,'ENTRAR NA CABANA OESTE','mare_cromatica_cabana_oeste'),portal('docas_cabana_dir',1190,525,'ENTRAR NA CABANA LESTE','mare_cromatica_cabana_leste')],
 };
+
 function sala(id,nome,fragmento,fita,volta,spawn) {
  const w=13,h=10,layout=Array.from({length:h},(_,y)=>Array.from({length:w},(_,x)=>x===0||y===0||x===w-1||y===h-1?1:0));
  const obj=(id,x,y,label,sprite)=>({id,nome:label,tipo:'painel',x,y,sprite,useCrop:true,larguraPx:48,pivotX:.5,pivotY:.95,bloqueia:false,interacao:{label,distancia:1.4}});

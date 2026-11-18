@@ -3,7 +3,7 @@ import { damagePlayer } from './health.js';
 
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 export function criarAmeacaCromatica(map) {
-  const ponto = map?.id==='mare_cromatica_docas' ? {x:965/64,y:215/22,raio:8} : map?.meta?.docasInterior ? {x:6.5,y:4.5,raio:3} : map?.id==='mare_cromatica_superficie' ? {x:25.5,y:44.5,raio:6} : map?.id==='mare_cromatica_contencao' ? {x:15.5,y:3.5,raio:7} : null;
+  const ponto = map?.id==='mare_cromatica_docas' ? {x:965*2.5/64,y:215*2.5/22,raio:10} : map?.meta?.docasInterior ? {x:6.5,y:4.5,raio:3} : map?.id==='mare_cromatica_superficie' ? {x:25.5,y:44.5,raio:6} : map?.id==='mare_cromatica_contencao' ? {x:15.5,y:3.5,raio:7} : null;
   return ponto ? { ponto, visto:false, visao:null } : null;
 }
 // Telegráfico e limitado: dois inimigos colocados no mapa, sem spawns

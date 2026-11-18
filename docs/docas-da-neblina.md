@@ -1,15 +1,29 @@
-# Docas da Neblina — primeira construção jogável
+# Docas da Neblina — reconstrução em andamento
 
-## O que existe
-A chegada da travessia carrega o píer sul do mapa `mare_cromatica_docas`. O fundo usa a **imagem original fornecida** em `assets/sprites/docas-neblina/referencia.png`; a máscara de colisão, os marcos e as portas usam coordenadas dessa mesma imagem. A carta, o letreiro e a moldura fazem parte da imagem original. Há luz móvel discreta do farol, neblina e linhas analógicas, respeitando movimento reduzido. A arte de fundo é plana: **não é uma reconstrução em peças 2.5D** e não oferece oclusão verdadeira atrás de todos os elementos. A imagem é preservada como referência exata, não uma garantia de geometria 1:1.
+## Base jogável e navegação
+A travessia leva ao mapa `mare_cromatica_docas`. A imagem `assets/sprites/docas-neblina/referencia.png` é mantida **somente como referência de produção**: não é carregada nem desenhada no cenário. O mapa usa a planta ampliada em 2,5 vezes, piso gerado separadamente, mar texturizado, margens rochosas, máscara de colisão e peças de arquitetura individuais. As peças principais, o personagem e os infectados são ordenados pela profundidade de seus pés. A máscara de colisão continua baseada em células; peças decorativas reaproveitadas não têm colisão individual. A reconstrução não é uma cópia perfeita da referência e ainda precisa de acabamento de relevo e paisagismo.
 
-- No barco, descanse/salve ou retorne à Enseada. O save registra o spawn, não a posição exata; o descanso registra o píer como ponto de emergência.
-- Duas cabanas são salas separadas com câmera fixa isométrica, um infectado cada, fragmentos, fitas, chave e fusível. O galpão CRT tem um terminal e gravadores para as fitas já encontradas.
-- O terceiro fragmento está na trilha; recompilar, obter chave e fusível e interagir com o selo abre a lógica do núcleo. No platô, alinhe os três painéis, derrote os dois infectados locais e estabilize a âncora. Os dados de fragmentos, fitas, tempo e desfecho são os mesmos de Maré Cromática, compatíveis com os saves anteriores.
-- Os quatro pontos de arquétipo registram sua ressonância e concedem uma única recuperação de energia; não são ainda os sistemas especializados de hack, rastreamento, purificação e biomassa.
-- O ambiente sonoro sintético anterior continua opcional no HUD; a contagem usa tempo de exploração como antes. Ao colapsar, o retorno ainda é para o Limiar 66.6.
+A travessia mantém inércia, sonar [R] e adiciona farol alternável [L]: peixes e sombras no cone de luz são atraídos, mas ainda podem atacar por proximidade com o farol apagado. Há rastro de espuma limitado, bancos de névoa e botão de farol para toque. O sonar tem recarga. Movimento reduzido congela o deslocamento decorativo da névoa.
 
-## Limites e pendências
-Isto **não conclui a reprodução 1:1 estrutural pedida**. A vista da torre está interditada: ainda não existe o diorama FPV com varredura de boias e Nulo. As cabanas usam cenários internos existentes, não arte própria fiel nem corredores com ângulos cinematográficos múltiplos; as fitas são texto, não gravações faladas. Não há ondas dinâmicas de inimigos, câmera de aproximação dedicada no galpão, rangido/ondas mixados, redemoinhos e tentáculos animados como camadas individuais, nem distorção progressiva da interface junto ao penhasco. O vulto de Nulo é uma aparição breve existente, não uma animação específica na porta do farol. O mascaramento do terreno e da arquitetura é aproximado, com colisão em células. A imagem de referência não contém informações suficientes para reconstruir automaticamente as partes ocultas e seus interiores; essas partes precisam de arte e testes próprios. A velha superfície/contenção continuam registradas para saves anteriores, mas a nova rota usa os painéis no platô.
+## Checklist dos lotes
+### Lote 1 — navegação
+- [x] Farol alternável e atração pelo cone; o risco não some no escuro.
+- [x] Sonar, espuma e névoa em camadas com custo limitado.
+- [x] **Dez artes marítimas dedicadas**: rocha, naufrágio, boia, óleo, redemoinho, tentáculo, olhos, sombra, espuma e peixe. Estão integradas à travessia; seis delas também aparecem junto à costa das Docas. Os marcos decorativos não têm colisão própria.
+- [x] Dez folhas de oito quadros leves e animação no jogo. **São transformações procedurais das imagens únicas**, não quadros desenhados manualmente: as boias oscilam, o vórtice gira, os tentáculos balançam e as demais peças se movimentam suavemente. `tools/preparar-travessia-lote1.py` reproduz o processamento. O movimento decorativo para com `prefers-reduced-motion`.
+- [ ] Polimento artístico dos quadros e colisões de naufrágios/rochas caso devam funcionar como obstáculos; ainda não há animação de deformação orgânica real nem sprites direcionais do peixe.
 
-A automatização de `tests/docas-neblina.mjs` verifica a acessibilidade com a prioridade real de interação, spawns e progressão lógica. Para avaliar o resultado artístico e a fluidez, ainda é necessária revisão visual em hardware e diferentes tamanhos de tela; não foi medido 60 FPS.
+### Lote 2 — terreno e estruturas
+- [x] Referência integral removida do renderizador e do carregamento de sprites.
+- [x] Planta expandida, terreno, água, margens, colisões de área e ordenação em profundidade.
+- [x] Dez artes geradas, processadas e integradas: barco, píer, cabana oeste, cabana leste, galpão, escada, torre, farol, câmara e porta. Fontes e arquivos preparados estão em `assets/sprites/docas-reconstrucao/`; `tools/preparar-docas-estruturas.py` recria as versões transparentes.
+- [x] Farol com feixe móvel; luzes da torre e câmara pulsam. O desenho de barcos, monitores, fumaça, ondas e cristais não tem animação própria quadro a quadro; o cristal não gira ainda.
+- [ ] Integrar melhor as junções, relevo escalonado, portas e pisos com arte/colisões específicas, incluindo revisão manual de oclusão e proporcionalidade em todo o percurso. A escadaria e o píer são camadas de chão; a altura física não é simulada.
+
+### Lote 3 — fauna, vegetação e props
+- [ ] Não foi gerado nesta etapa. Algumas palmeiras, caixas e conjuntos de mata existentes foram escurecidos e reutilizados provisoriamente; não contam como lote novo.
+
+## Missão e limitações anteriores
+No barco é possível descansar/salvar ou retornar à Enseada. As cabanas mantêm seus interiores fixos, infectados, fragmentos, fitas, chave e fusível; o galpão mantém terminal e gravadores. Os três painéis e a âncora no platô reutilizam o estado e os desfechos persistentes da Maré Cromática. O save registra o spawn, não a posição exata. Os quatro pontos de arquétipo ainda concedem apenas ressonância/energia, não seus sistemas completos. A torre FPV permanece interditada e o áudio de fitas, ondas de combate e sabotagem ainda não foram implementados. Ao colapsar, o retorno continua no Limiar 66.6.
+
+`tests/docas-neblina.mjs` verifica a acessibilidade com prioridade real de interação, spawns e progressão; `tests/travessia-neblina.mjs` cobre movimento, farol, ameaças, sonar, rastro e rota vencível; `tests/travessia-artes.mjs` valida as dez folhas e peças. Não há medição comprovada de 60 FPS; revisão visual em diferentes telas e em hardware real continua necessária.

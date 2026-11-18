@@ -16,3 +16,18 @@ console.log('Travessia: inércia, nado, sonar, ameaças, chegada e física-base 
 const {iniciarVooAereo}=await import('../js/game/player.js');
 const hero={x:2,y:2},p={archetype:'nucleo_dez_forma',flags:{voo_livre_habilitado:true},mareCromatica:{sincronizacao:1}},m={meta:{vooLivre:true,cromatica:true}};
 assert(!iniciarVooAereo(hero,p,m),'sincronização inicial bloqueia voo');p.mareCromatica.sincronizacao=4;assert(iniciarVooAereo(hero,p,m));assert.equal(hero.vooLivre.altura,0);assert(!iniciarVooAereo(hero,p,{meta:{cromatica:true}}),'mapa precisa autorizar voo');
+// Luz atrai criaturas apenas dentro do cone; luz apagada não as magnetiza.
+const luz=criarTravessia(false);luz.ameacas=[{x:70,y:0,tipo:'peixe',fase:'espera',timer:0}];
+for(let i=0;i<20;i++)atualizarTravessia(luz,{},.05);assert(luz.ameacas[0].x<70);
+const escuro=criarTravessia(false);escuro.ameacas=[{x:70,y:0,tipo:'peixe',fase:'espera',timer:0}];atualizarTravessia(escuro,{luz:true},.05);assert(!escuro.luz);for(let i=0;i<20;i++)atualizarTravessia(escuro,{},.05);assert.equal(escuro.ameacas[0].x,70);
+const acordado=criarTravessia(false);acordado.ameacas=[{x:8,y:0,tipo:'peixe',fase:'espera',timer:0}];acordado.luz=false;let sinais=[];for(let i=0;i<60;i++)sinais.push(...atualizarTravessia(acordado,{},.05));assert(sinais.includes('dano_casco'),'perigo permanece mesmo no escuro');
+const wake=criarTravessia(false);wake.ameacas=[];for(let i=0;i<100;i++)atualizarTravessia(wake,{frente:true,acelerar:true},.05);assert(wake.rastro.length>0&&wake.rastro.length<=24);for(let i=0;i<160;i++)atualizarTravessia(wake,{},.05);assert(wake.rastro.every(p=>p.idade<=4));
+console.log('Travessia: farol atrai criaturas, sonar alternativo e rastro limitado OK.');
+// Percurso seguro é possível em um tempo razoável sem desativar o risco:
+// apagar a luz e buscar a borda mantém separação dos predadores centrais.
+const percurso=criarTravessia(false);
+for(let i=0;i<3000&&!percurso.chegou&&!percurso.perdeu;i++){
+ const alvo=Math.max(-.8,Math.min(.8,(70-percurso.y)*.035));
+ atualizarTravessia(percurso,{frente:true,acelerar:true,luz:i===0,direita:percurso.heading<alvo-.04,esquerda:percurso.heading>alvo+.04},.05);
+}
+assert(percurso.chegou && percurso.casco>0,'travessia deve ser vencível ao navegar/desviar');

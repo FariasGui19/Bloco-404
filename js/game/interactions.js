@@ -1,3 +1,4 @@
+import { iniciarTravessiaNeblina } from '../ui/travessia-neblina.js';
 // js/game/interactions.js
 // =====================================================================
 // INTERACTIONS
@@ -345,15 +346,10 @@ function interactWithObject(object) {
   if (object.id === 'cromatica_alerta') {
     const data=lerMareCromatica(state.progress);
     openDialogue({speaker:'METRÔ // ALERTA CRÍTICO',dialogue:[
-      'UMA ÂNCORA PRIMÁRIA DO HUB FOI ARRASTADA PARA UM ECO CORROMPIDO DA ENSEADA, SOB A ESTAÇÃO 66.6.',
-      'SE ELA COLAPSAR, O AEROPORTO CENTRAL PERDERÁ ESTABILIDADE. O NÚCLEO X10 E O PRÓPRIO HUB ESTÃO EM RISCO.',
-      'NULO INTERCEPTA O SINAL. A ENSEADA ORIGINAL PERMANECE SEGURA: CRUZAREMOS PARA UMA PROJEÇÃO CONTAMINADA.',
-      data.desfecho==='colapso' ? 'A LINHA FOI PERDIDA. PODEMOS TENTAR UMA REDENÇÃO; O REGISTRO DA FALHA PERMANECE NO SAVE.' : 'A DESCOMPRESSÃO DO TRAJE AFETA ESTA REALIDADE, NÃO SEU PROGRESSO GLOBAL.',
-    ],choicesAfterDialogue:true,choices:[{text:data.desfecho==='colapso'?'INICIAR NOVA TENTATIVA':'ENTRAR NA MARÉ CROMÁTICA',onSelect:()=>{
-      if(!state.progress.archetype) {openDialogue({speaker:'NEXO-04',dialogue:['CALIBRE PRIMEIRO UM MÓDULO DE ECO.']});return;}
-      iniciarMareCromatica(state.progress);startQuest(state.progress,'mare_cromatica_ancora');saveGame();
-      void usePortal({id:'cromatica_entrada',label:'MARÉ CROMÁTICA',destino:{mapId:'mare_cromatica_superficie',spawnId:'inicio'}});
-    }},{text:'AINDA NÃO',onSelect:()=>{}}]});return;
+      'A ÂNCORA DO HUB FOI ARRASTADA PARA ALÉM DAS CORRENTES. O AEROPORTO CENTRAL ESTÁ EM RISCO.',
+      'NULO INTERCEPTA O SINAL. BUSQUE A ORIGEM DO SOCORRO NO PÍER SUL DA ENSEADA DOS ECOS.',
+      data.desfecho==='colapso' ? 'O REGISTRO DA FALHA PERMANECE. A NOVA ROTA DE REDENÇÃO PARTE DA ENSEADA.' : 'A ROTA DIRETA FOI INTERROMPIDA. PROSSIGA PELO MAR.'
+    ]});return;
   }
   if (object.id?.startsWith('cromatica_')) {
     const d=lerMareCromatica(state.progress), id=object.id;
@@ -1225,6 +1221,10 @@ function interactWithObject(object) {
         },
       },
     ];
+    if (flags.docas_sinal_interceptado) choices.unshift({
+      text: 'ZARPAR: DOCAS DA NEBLINA',
+      onSelect: () => { if (!state.progress.archetype) openDialogue({speaker:'NEXO-04',dialogue:['CALIBRE UM MÓDULO DE ECO ANTES DE ZARPAR.']}); else iniciarTravessiaNeblina(state); },
+    });
     if (flags.conduto_enseada_mare) {
       choices.push({
         text: 'NAVEGAR: ROTA DA MARÉ ASTRAL',

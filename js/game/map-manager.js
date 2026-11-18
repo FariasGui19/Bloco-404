@@ -64,6 +64,7 @@ export async function loadMap(mapId, spawnId = 'inicio') {
     state.cromaticaRuntime = criarAmeacaCromatica(mapData);
     state.hazards = createHazards(mapData);
     state.player.combat = null;
+    state.player.vooLivre = null;
     // Uma ação não atravessa a eclusa: nada de marretada pendente disparar
     // no mapa seguinte depois de um Q dado durante a transformação.
     if (state.player.ability) {

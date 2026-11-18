@@ -109,7 +109,7 @@ export function render(map, state) {
   }
 
   // A planta das Docas usa a mesma projeção lateral de câmera e input.
-  if (map.meta?.docasReferencia) {
+  if (map.meta?.docasCamadas) {
     renderDocas(ctx,map,state,camera.x,camera.y,view.w,view.h,camera.zoom,dpr,performance.now(),(p,x,y)=>{
       drawShadow(x,y,.28);drawPlayerSprite(p,x,y);
     });

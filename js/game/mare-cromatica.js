@@ -1,6 +1,6 @@
 // Estado local da incursão. Nunca reduz o nível global nem modifica outras
 // dimensões; leitura é pura e só ações explícitas criam dados no save.
-export const CROMATICA_MAPS = Object.freeze(['mare_cromatica_superficie','mare_cromatica_contencao','mare_cromatica_fenda']);
+export const CROMATICA_MAPS = Object.freeze(['mare_cromatica_superficie','mare_cromatica_contencao','mare_cromatica_fenda','mare_cromatica_docas','mare_cromatica_cabana_oeste','mare_cromatica_cabana_leste','mare_cromatica_galpao']);
 export const CROMATICA_LIMIT = 600;
 export const FRAGMENTOS = Object.freeze(['costa','acampamento','estacao']);
 export const FITAS = Object.freeze(['casa','vigilia']);
@@ -82,7 +82,11 @@ export function objetivoCromatico(progress) {
   if(!d.iniciada) return 'INVESTIGUE O ALERTA NO LIMIAR 66.6';
   if(d.desfecho==='colapso') return 'COLAPSO • RETORNE AO LIMIAR PARA UMA NOVA TENTATIVA';
   if(d.desfecho) return 'ÂNCORA ESTÁVEL • A FENDA AGUARDA';
-  if(!d.estacaoAberta) return d.sincronizacao<2 ? `FRAGMENTOS ${d.fragmentos.length}/3 • RECOMPILE NO TERMINAL` : 'ABRA O SELO DA ESTAÇÃO NA SUPERFÍCIE';
+  if(!d.estacaoAberta) {
+    if(d.sincronizacao<2) return `FRAGMENTOS ${d.fragmentos.length}/3 • RECOMPILE NO GALPÃO CRT`;
+    if(progress?.flags?.docas_neblina_alcancada && (!progress.flags.docas_chave || !progress.flags.docas_fusivel)) return 'BUSQUE A CHAVE E O FUSÍVEL NAS CABANAS';
+    return 'ABRA O SELO NO CAMINHO DO NÚCLEO';
+  }
   if(d.paineis.length<3) return `CONTENÇÃO • PAINÉIS ${d.paineis.length}/3`;
   return 'ESTABILIZE O NÚCLEO DE ÂNCORA';
 }

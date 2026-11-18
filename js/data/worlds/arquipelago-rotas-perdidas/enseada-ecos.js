@@ -368,6 +368,7 @@ export const map = {
     vindo_da_praia: { x: 19.9, y: 51.7 },
     vindo_da_estacao_666: { x: 19.3, y: 19.3 },
     vindo_do_mar: { x: 28.5, y: 11.5 },
+    vindo_das_docas: { x: 43.6, y: 41.8 },
     vindo_da_darsena_mare: { x: 57.0, y: 24.0 },
   },
 

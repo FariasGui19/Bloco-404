@@ -1,0 +1,15 @@
+# Docas da Neblina — primeira construção jogável
+
+## O que existe
+A chegada da travessia carrega o píer sul do mapa `mare_cromatica_docas`. O fundo usa a **imagem original fornecida** em `assets/sprites/docas-neblina/referencia.png`; a máscara de colisão, os marcos e as portas usam coordenadas dessa mesma imagem. A carta, o letreiro e a moldura fazem parte da imagem original. Há luz móvel discreta do farol, neblina e linhas analógicas, respeitando movimento reduzido. A arte de fundo é plana: **não é uma reconstrução em peças 2.5D** e não oferece oclusão verdadeira atrás de todos os elementos. A imagem é preservada como referência exata, não uma garantia de geometria 1:1.
+
+- No barco, descanse/salve ou retorne à Enseada. O save registra o spawn, não a posição exata; o descanso registra o píer como ponto de emergência.
+- Duas cabanas são salas separadas com câmera fixa isométrica, um infectado cada, fragmentos, fitas, chave e fusível. O galpão CRT tem um terminal e gravadores para as fitas já encontradas.
+- O terceiro fragmento está na trilha; recompilar, obter chave e fusível e interagir com o selo abre a lógica do núcleo. No platô, alinhe os três painéis, derrote os dois infectados locais e estabilize a âncora. Os dados de fragmentos, fitas, tempo e desfecho são os mesmos de Maré Cromática, compatíveis com os saves anteriores.
+- Os quatro pontos de arquétipo registram sua ressonância e concedem uma única recuperação de energia; não são ainda os sistemas especializados de hack, rastreamento, purificação e biomassa.
+- O ambiente sonoro sintético anterior continua opcional no HUD; a contagem usa tempo de exploração como antes. Ao colapsar, o retorno ainda é para o Limiar 66.6.
+
+## Limites e pendências
+Isto **não conclui a reprodução 1:1 estrutural pedida**. A vista da torre está interditada: ainda não existe o diorama FPV com varredura de boias e Nulo. As cabanas usam cenários internos existentes, não arte própria fiel nem corredores com ângulos cinematográficos múltiplos; as fitas são texto, não gravações faladas. Não há ondas dinâmicas de inimigos, câmera de aproximação dedicada no galpão, rangido/ondas mixados, redemoinhos e tentáculos animados como camadas individuais, nem distorção progressiva da interface junto ao penhasco. O vulto de Nulo é uma aparição breve existente, não uma animação específica na porta do farol. O mascaramento do terreno e da arquitetura é aproximado, com colisão em células. A imagem de referência não contém informações suficientes para reconstruir automaticamente as partes ocultas e seus interiores; essas partes precisam de arte e testes próprios. A velha superfície/contenção continuam registradas para saves anteriores, mas a nova rota usa os painéis no platô.
+
+A automatização de `tests/docas-neblina.mjs` verifica a acessibilidade com a prioridade real de interação, spawns e progressão lógica. Para avaliar o resultado artístico e a fluidez, ainda é necessária revisão visual em hardware e diferentes tamanhos de tela; não foi medido 60 FPS.

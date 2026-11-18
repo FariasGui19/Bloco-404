@@ -209,6 +209,7 @@ await loadSprites([
   // Estação 66.6: artes próprias, recortadas com transparência real.
   { id: 'freq666_entrada', src: 'assets/sprites/frequencia-666/abrigo-ampliado.png' },
   { id: 'freq666_receptor', src: 'assets/sprites/frequencia-666/receptor-costeiro.png' },
+  { id: 'docas_referencia', src: 'assets/sprites/docas-neblina/referencia.png' },
   { id: 'cromatica_ancora', src: 'assets/sprites/mare-cromatica/ancora.png' },
   { id: 'cromatica_infectado', src: 'assets/sprites/mare-cromatica/infectado-folha.png' },
   { id: 'cromatica_nulo', src: 'assets/sprites/mare-cromatica/nulo.png' },

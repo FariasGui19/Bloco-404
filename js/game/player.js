@@ -1,3 +1,5 @@
+import { podeVoarLivre, atualizarVooLivre } from './voo-livre.js';
+import { lerMareCromatica } from './mare-cromatica.js';
 import { iniciarVoo, atualizarVoo, controlarSolturaAposSubida, frearSubida } from './nado-voo.js';
 // js/game/player.js
 // =====================================================================
@@ -136,11 +138,28 @@ function updateFacing(dx, dy, map) {
   }
 }
 
+// O mapa precisa autorizar explicitamente e o módulo precisa ter adquirido
+// capacidade aérea. Nenhum mapa atual habilita voo até ter arte e colisão Z.
+export function iniciarVooAereo(player, progress, map) {
+  if (!map?.meta?.vooLivre || progress?.archetype !== 'nucleo_dez_forma' || !podeVoarLivre({
+    capacidadeAerea: progress.flags?.voo_livre_habilitado === true,
+    exigeSincronizacao: !!map.meta.cromatica,
+    sincronizacao: lerMareCromatica(progress).sincronizacao,
+  })) return false;
+  player.vooLivre={x:player.x,y:player.y,altura:0,vx:0,vy:0,vz:0,roll:0,pitch:0};
+  return true;
+}
 export function updatePlayer(dt) {
   const player = state.player;
   const map = getFloor();
 
   if (!map) return;
+  if (player.vooLivre && map.meta?.vooLivre) {
+    const v=player.vooLivre;v.x=player.x;v.y=player.y;
+    atualizarVooLivre(v,{frente:keyHeld('w','arrowup'),tras:keyHeld('s','arrowdown'),esquerda:keyHeld('a','arrowleft'),direita:keyHeld('d','arrowright'),subir:keyHeld(' '),descer:keyHeld('control','controlleft'),propulsao:keyHeld('shift','shiftleft')},dt);
+    moveWithCollision(map,player,v.x-player.x,v.y-player.y,CONFIG.PLAYER_RADIUS);
+    v.x=player.x;v.y=player.y;player.moving=Math.hypot(v.vx,v.vy)>.1;player.target=null;return;
+  }
 
   // ---- NADO ----
   // `nado` vive no player (e não no mapa) porque o fôlego e a propulsão

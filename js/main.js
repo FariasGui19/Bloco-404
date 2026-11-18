@@ -1,3 +1,4 @@
+import { initTravessiaNeblina, atualizarRadioNeblina, atualizarViagemNeblina, desenharViagemNeblina, travessiaAtiva, mapaTaticoAberto, alternarMapa } from './ui/travessia-neblina.js';
 // js/main.js
 // =====================================================================
 // MAIN
@@ -113,6 +114,7 @@ initSaveMenu();
 initArchetypeCards();
 initDialogue();
 initHudCromatico();
+initTravessiaNeblina(state);
 const immersive = new ImmersiveViewManager({
   state, camera, clearInput: resetInput, visit: registrarVisitaImersiva, sound: playImmersiveSound,
 });
@@ -862,6 +864,8 @@ if (bioMissing.length) {
 let cromaticaSaveClock = 0, cromaticaReturning = false;
 
 async function update(dt) {
+  if (mapaTaticoAberto()) { if(input.pressed.has('escape')) alternarMapa(false); return; }
+  if (travessiaAtiva()) { atualizarViagemNeblina(dt,input); return; }
   if (immersive.active) {
     if (state.world.currentMapId !== 'ilha_enseada_ecos') immersive.finish();
     else immersive.update(dt, input);
@@ -1306,7 +1310,9 @@ async function frame(now) {
 
   atualizarClima(state.clima, dt);
   await update(dt);
+  atualizarRadioNeblina(dt, mapaTaticoAberto() || isDialogueOpen() || isCutsceneOpen() || state.world.isLoading || isCodexOpen() || isArchetypeCardsOpen() || isNucleoWheelOpen() || isElevatorMenuOpen());
 
+  if (travessiaAtiva()) { desenharViagemNeblina(); endInputFrame(); return; }
   const map = getFloor();
   atualizarHudCromatico(state, isDialogueOpen() || isCutsceneOpen() || state.world.isLoading || isCodexOpen() || isArchetypeCardsOpen() || isNucleoWheelOpen() || isElevatorMenuOpen());
   const fpsWorld = map?.meta?.camera === 'retro-fps';

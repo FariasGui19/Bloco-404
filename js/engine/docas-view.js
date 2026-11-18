@@ -30,11 +30,15 @@ function construirTerreno(map) {
   return out;
 }
 function desenharEstrutura(ctx,st,t,reduced){
- const img=getSprite('docas_'+st.id);if(!img)return;const w=st.largura,h=w*img.height/img.width,x=st.x-w/2,y=st.y-h;
+ const img=getSprite('docas_'+st.id);if(!img)return;const folha=st.id.startsWith('lote3_'),w=st.largura,h=folha?w:w*img.height/img.width,x=st.x-w/2,y=st.y-h;
  if(st.camada!=='chao'){ctx.save();ctx.fillStyle='rgba(7,8,15,.42)';ctx.beginPath();ctx.ellipse(st.x,st.y-3,w*.37,Math.max(5,w*.07),0,0,Math.PI*2);ctx.fill();ctx.restore();}
  ctx.save();
  if(st.id==='barco' && !reduced){ctx.translate(st.x,st.y);ctx.rotate(Math.sin(t*.65)*.012);ctx.translate(-st.x,-st.y);}
- ctx.drawImage(img,x,y,w,h);ctx.restore();
+ if(folha){
+   const frame=reduced?0:Math.floor(t*4+(st.x%7)/7)%8;
+   ctx.drawImage(img,frame*256,0,256,256,x,y,w,h);
+ } else ctx.drawImage(img,x,y,w,h);
+ ctx.restore();
  if(st.id==='barco'){
    // Fumaça leve e bounded: três partículas procedurais, sem alocação em runtime.
    if(!reduced)for(let i=0;i<3;i++){const phase=(t*.28+i/3)%1;ctx.fillStyle=`rgba(166,174,176,${(1-phase)*.16})`;ctx.beginPath();ctx.arc(x+w*.53+phase*12,y+h*.23-phase*35,3+phase*5,0,Math.PI*2);ctx.fill();}
@@ -49,6 +53,8 @@ function desenharEstrutura(ctx,st,t,reduced){
  if(st.id==='farol')glow(st.x,y+h*.08,25,'#fff1b8',pulso*.6);
  if(st.id==='camara')glow(st.x,y+h*.47,w*.16,'#76fff0',pulso*.34);
  if(st.id==='porta')glow(st.x,y+h*.5,w*.18,'#bd88db',pulso*.24);
+ if(st.id==='lote3_cristal'||st.id==='lote3_resina'||st.id==='lote3_esporos')glow(st.x,y+h*.62,w*.18,st.id==='lote3_resina'?'#f8c67a':'#7af6e3',pulso*.28);
+ if(st.id==='lote3_esporos'&&!reduced){for(let i=0;i<3;i++){const phase=(t*.13+i/3+(st.x%13)*.01)%1;ctx.fillStyle=`rgba(143,255,231,${(1-phase)*.5})`;ctx.fillRect(st.x+Math.sin(i*3+phase*4)*w*.12,y+h*.6-phase*h*.38,2,2);}}
 }
 
 export function renderDocas(ctx,map,state,camX,camY,w,h,zoom,dpr,now,drawPlayer) {
@@ -74,7 +80,7 @@ export function renderDocas(ctx,map,state,camX,camY,w,h,zoom,dpr,now,drawPlayer)
   for(const st of map.estruturasDocas)if(st.camada==='chao')desenharEstrutura(ctx,st,t,reduced);
   const objs=[...map.estruturasDocas.filter(st=>st.camada!=='chao').map(st=>({estrutura:st,y:st.y})),...(state.trainingTargets??[]).filter(e=>e.health>0).map(e=>({entidade:e,y:e.y*SIDE_DEPTH_STEP})),...(state.cromaticaRuntime?.visao?[{entidade:state.cromaticaRuntime.visao,y:state.cromaticaRuntime.visao.y*SIDE_DEPTH_STEP}]:[]),{entidade:state.player,y:state.player.y*SIDE_DEPTH_STEP}].sort((a,b)=>a.y-b.y);
   for(const item of objs){
-    if(item.estrutura){desenharEstrutura(ctx,item.estrutura,t,reduced);continue;}
+    if(item.estrutura){const st=item.estrutura,margin=st.largura*4;if(Math.abs(st.x-camX)<w/(2*zoom)+margin&&Math.abs(st.y-camY)<h/zoom+margin)desenharEstrutura(ctx,st,t,reduced);continue;}
     const e=item.entidade,x=e.x*CONFIG.TILE_W,y=e.y*SIDE_DEPTH_STEP;
     if(e===state.player){drawPlayer(e,x,y);continue;}
     if(e.renderType==='cromaticaVisao'){const img=getSprite('cromatica_nulo');if(img){ctx.save();ctx.globalAlpha=Math.min(.75,e.tempo/1.2);ctx.drawImage(img,x-18,y-65,36,65);ctx.restore();}continue;}

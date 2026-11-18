@@ -1,3 +1,4 @@
+import { renderDocas } from './docas-view.js';
 import { perspectivaSubmersa } from './perspectiva-submersa.js';
 import { posicaoVidaRota } from '../game/vida-rota-mare.js';
 import { animacaoMar, detalhesDoMar } from '../game/mar-vivo.js';
@@ -107,6 +108,13 @@ export function render(map, state) {
     return;
   }
 
+  // A planta das Docas usa a mesma projeção lateral de câmera e input.
+  if (map.meta?.docasReferencia) {
+    renderDocas(ctx,map,state,camera.x,camera.y,view.w,view.h,camera.zoom,dpr,performance.now(),(p,x,y)=>{
+      drawShadow(x,y,.28);drawPlayerSprite(p,x,y);
+    });
+    ctx.setTransform(dpr,0,0,dpr,0,0);drawLabels(state);drawBubbles(state);return;
+  }
   // SIDE-VIEW: Aeroporto Central usa perspectiva frontal/lateral profunda
   if (map.meta?.sideView) {
     const renderSide = map.meta?.estiloSala === 'viaduto_vetores' ? renderViadutoVetores : renderSideViewMap;

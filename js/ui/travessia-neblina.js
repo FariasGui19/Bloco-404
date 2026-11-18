@@ -1,3 +1,4 @@
+import { usePortal } from '../game/portals.js';
 import { criarTravessia, atualizarTravessia, DISTANCIA_DOCAS } from '../game/travessia-neblina.js';
 import { iniciarMareCromatica } from '../game/mare-cromatica.js';
 import { startQuest } from '../game/quests.js';
@@ -7,7 +8,7 @@ import { resetInput } from '../engine/input.js';
 
 let jogo, viagem=null, mapaAberto=false, camada='maritimo', mensagem='', tempoMensagem=0, avisoTempo=0, radioTexto='', radioSomPendente=false;
 let canvas, ctx, tela, mapa, radio, sinal, btnMapa, toque={}, audio=null;
-let texturaMar, imagemBarco;
+let texturaMar, imagemBarco, entrandoDocas=false;
 const chamada='MAYDAY... AQUI DOCAS DA NEBLINA. ÂNCORA DO HUB À DERIVA. SIGAM PELO CAMINHO DAS CORRENTES. COORDENADAS REGISTRADAS NA CARTA NÁUTICA.';
 const $=id=>document.getElementById(id);
 function somRadio() {
@@ -74,9 +75,14 @@ export function atualizarViagemNeblina(dt,input){
   if(viagem.chegou) {
     viagem.atracacao=(viagem.atracacao??0)+Math.min(dt,.05);
     if(viagem.atracacao>=3 && !viagem.atracado) {
-      viagem.atracado=true;jogo.progress.flags ??= {};jogo.progress.flags.docas_neblina_alcancada=true;
-      iniciarMareCromatica(jogo.progress);startQuest(jogo.progress,'mare_cromatica_ancora');saveGame();
-      $('comandosTravessia').hidden=true;$('chegadaDocas').hidden=false;$('retornarDocas').focus();
+      viagem.atracado=true;
+      if(!entrandoDocas) {
+        entrandoDocas=true;
+        void usePortal({id:'chegada_docas',label:'DOCAS DA NEBLINA • PÍER SUL',destino:{mapId:'mare_cromatica_docas',spawnId:'inicio'}}).then(ok=>{
+          if(ok) {jogo.progress.flags ??= {};jogo.progress.flags.docas_neblina_alcancada=true;iniciarMareCromatica(jogo.progress);startQuest(jogo.progress,'mare_cromatica_ancora');encerrar();}
+          else if(viagem) {viagem.atracado=false;viagem.atracacao=2;mensagem='NÃO FOI POSSÍVEL ATRACAR • TENTANDO NOVAMENTE';}
+        }).finally(()=>{entrandoDocas=false;});
+      }
     }
     $('travessiaMensagem').textContent='NEBLINA DENSA • ATRACAÇÃO AUTOMÁTICA';return;
   }

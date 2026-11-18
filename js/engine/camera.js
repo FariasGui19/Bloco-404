@@ -213,7 +213,10 @@ export function updateCamera(dt, targetWx, targetWy, nado = null, map = null, ca
     }
   }
 
-  if (camera.follow) {
+  if (map?.meta?.docasInterior) {
+    // Enquadramento fixo: o operador cruza a sala sem a câmera segui-lo.
+    const ponto=worldToIso((map.layout[0]?.length??13)/2,(map.layout.length??10)/2);camera.x=ponto.x;camera.y=ponto.y;
+  } else if (camera.follow) {
     if (sideViewActive) {
       // Side-view: câmera acompanha o eixo horizontal X com precisão
       // e amortiza suavemente a profundidade Y para manter o janelão espacial estável.

@@ -1,3 +1,4 @@
+import { healPlayer } from './health.js';
 import { iniciarTravessiaNeblina } from '../ui/travessia-neblina.js';
 // js/game/interactions.js
 // =====================================================================
@@ -343,6 +344,27 @@ function interactWithObject(object) {
   const interaction = object.interacao;
   if (!interaction) return;
 
+  if (object.id === 'docas_barco') {
+    openDialogue({speaker:'BARCO DE EXPEDIÇÃO',dialogue:['PÍER SUL • PONTO DE APOIO E RETORNO À ENSEADA.'],choices:[
+      {text:'DESCANSAR E SALVAR',onSelect:()=>{healPlayer(state.player,state.progress,35);state.player.energy=Math.min(state.player.maxEnergy??100,(state.player.energy??0)+35);state.world.currentSpawnId='inicio';saveGame();openDialogue({speaker:'BARCO',dialogue:['VIDA E ENERGIA PARCIALMENTE RECUPERADAS. REGISTRO DE EMERGÊNCIA SALVO NO PÍER.']});}},
+      {text:'RETORNAR À ENSEADA',onSelect:()=>{void usePortal({id:'docas_retorno',label:'ENSEADA DOS ECOS',destino:{mapId:'ilha_enseada_ecos',spawnId:'vindo_das_docas'}});}},
+      {text:'CONTINUAR A INCURSÃO',onSelect:()=>{}}
+    ]});return;
+  }
+  if (object.id === 'docas_chave' || object.id === 'docas_fusivel') {
+    const flags=state.progress.flags ??= {},key=object.id,first=!flags[key];flags[key]=true;if(first)saveGame();
+    openDialogue({speaker:'SUPRIMENTOS // DOCAS',dialogue:[first?(key==='docas_chave'?'CHAVE DA TRILHA RECOLHIDA.':'FUSÍVEL DO NÚCLEO RECOLHIDO.'):'ESTE ITEM JÁ ESTÁ NO INVENTÁRIO DE MISSÃO.', 'A CHAVE E O FUSÍVEL LIBERAM O SELO DE ACESSO AO NÚCLEO.']});return;
+  }
+  if (object.id === 'docas_torre') {
+    openDialogue({speaker:'TORRE DE VIGIA',dialogue:['A ESCADA ESTÁ INTERDITADA PELA NÉVOA.', 'A OBSERVAÇÃO EM PRIMEIRA PESSOA AINDA PRECISA SER CONSTRUÍDA.']});return;
+  }
+  const docasEspecial={docas_resina:['mare_astral','A RESINA RESPONDE AO MARÉ. A TRILHA PARA O NÚCLEO FICA REGISTRADA.'],docas_eletrico:['nucleo_dez_forma','O NÚCLEO X10 ISOLOU A LINHA ELÉTRICA DO GALPÃO.'],docas_selo:['lamina_dominio_anciao','O DOMÍNIO PURIFICA UM FOCO DE NÉVOA JUNTO À TRILHA.'],docas_biomassa:['motor_bio_forja','A BIO-FORJA RECUPERA ENERGIA DA BIOMASSA CRISTALIZADA.']}[object.id];
+  if(docasEspecial){
+    if(state.progress.archetype!==docasEspecial[0]){openDialogue({speaker:'RESSONÂNCIA INCOMPATÍVEL',dialogue:['ESTE PONTO RESPONDE A OUTRO ARQUÉTIPO.']});return;}
+    const flags=state.progress.flags ??= {},key=object.id+'_ativado',first=!flags[key];flags[key]=true;
+    if(first){state.player.energy=Math.min(state.player.maxEnergy??100,(state.player.energy??0)+20);saveGame();}
+    openDialogue({speaker:'RESSONÂNCIA // DOCAS',dialogue:[docasEspecial[1],first?'RESSONÂNCIA REGISTRADA • ENERGIA +20.':'RESSONÂNCIA JÁ REGISTRADA.']});return;
+  }
   if (object.id === 'cromatica_alerta') {
     const data=lerMareCromatica(state.progress);
     openDialogue({speaker:'METRÔ // ALERTA CRÍTICO',dialogue:[
@@ -356,10 +378,12 @@ function interactWithObject(object) {
     if(id.startsWith('cromatica_fragmento_')) {
       const part=id.slice('cromatica_fragmento_'.length), fresh=registrarMareCromatica(state.progress,'fragmentos',part);
       if(fresh) saveGame();
-      openDialogue({speaker:'FRAGMENTO MNEMÔNICO',dialogue:[fresh?'UM FRAGMENTO DE FÍSICA LOCAL RESPONDE AO TRAJE.':'ESTE FRAGMENTO JÁ FOI REGISTRADO.', 'LEVE OS FRAGMENTOS AO TERMINAL SEGURO JUNTO AO ACAMPAMENTO PARA RECOMPILAR.']});return;
+      openDialogue({speaker:'FRAGMENTO MNEMÔNICO',dialogue:[fresh?'UM FRAGMENTO DE FÍSICA LOCAL RESPONDE AO TRAJE.':'ESTE FRAGMENTO JÁ FOI REGISTRADO.', 'LEVE OS FRAGMENTOS AO TERMINAL SEGURO PARA RECOMPILAR.']});return;
     }
     if(id.startsWith('cromatica_fita_')) {
-      const part=id.slice('cromatica_fita_'.length),fresh=registrarMareCromatica(state.progress,'fitas',part);if(fresh) saveGame();
+      const part=id.slice('cromatica_fita_'.length);
+      if(state.world.currentMapId==='mare_cromatica_galpao' && !d.fitas.includes(part)){openDialogue({speaker:'GRAVADOR // CRT',dialogue:['ESTE GRAVADOR ESTÁ VAZIO. PROCURE A FITA NA CABANA.']});return;}
+      const fresh=registrarMareCromatica(state.progress,'fitas',part);if(fresh) saveGame();
       const record=part==='casa'?'FITA 01: A ÁGUA MUDOU DE COR ANTES DE A CHUVA CHEGAR. NÃO OLHEM PARA O REFLEXO.':'FITA 02: NULO USOU O SINAL DE RESGATE. MANTENHAM A ÂNCORA DE RETORNO VIVA.';
       openDialogue({speaker:'GRAVADOR // ESTÁTICA',dialogue:[record,'NEXO-04: O REGISTRO PODE AJUDAR A PURIFICAR A INCURSÃO.']});return;
     }
@@ -368,6 +392,9 @@ function interactWithObject(object) {
       openDialogue({speaker:'TERMINAL SEGURO',dialogue:[`SINCRONIZAÇÃO LOCAL ${now.sincronizacao}/4 • FRAGMENTOS ${now.fragmentos.length}/3.`,changed?'RECOMPILAÇÃO CONCLUÍDA. O MÓDULO RECUPEROU PARTE DA SUA RESPOSTA.':'TRAGA NOVOS FRAGMENTOS PARA RECOMPILAR.','SUAS HABILIDADES E SEU NÍVEL GLOBAL NÃO FORAM APAGADOS.']});return;
     }
     if(id==='cromatica_selo') {
+      if(state.world.currentMapId==='mare_cromatica_docas' && !d.estacaoAberta && (!state.progress.flags?.docas_chave || !state.progress.flags?.docas_fusivel)) {
+        openDialogue({speaker:'SELO DO NÚCLEO',dialogue:['A TRILHA EXIGE A CHAVE E O FUSÍVEL DAS DUAS CABANAS.','RECOMPILE O TRAJE NO GALPÃO CRT ANTES DE ABRIR O SELO.']});return;
+      }
       const opened=abrirEstacaoCromatica(state.progress);if(opened){recordQuestEvent(state.progress,{type:'cromatica',target:'selo'});saveGame();}
       openDialogue({speaker:'SELO // 66.6',dialogue:[opened||d.estacaoAberta?'A TRAVA DA ESTAÇÃO SE ABRE. A DESCIDA À CONTENÇÃO ESTÁ LIBERADA.':'O SELO REJEITA O TRAJE. COLETE UM FRAGMENTO E RECOMPILE NO TERMINAL DO ACAMPAMENTO.', 'NULO: SUA RESSONÂNCIA É UM ERRO DE SINTAXE.']});return;
     }

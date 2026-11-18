@@ -5,6 +5,7 @@ const polys=[
   [[470,605],[700,575],[760,660],[565,716],[470,690]], // píer
   [[255,405],[465,350],[710,390],[860,420],[1110,400],[1310,455],[1355,575],[1120,620],[830,650],[580,620],[380,555],[270,500]],
   [[950,415],[1010,385],[1080,305],[1125,270],[1170,270],[1140,325],[1085,405],[1035,450]],
+  [[865,160],[1075,155],[1100,230],[1055,270],[950,265],[865,245]], // base contínua do farol e da porta
   [[1050,165],[1310,130],[1370,230],[1270,285],[1135,290],[1050,245]],
   [[1240,445],[1380,425],[1400,540],[1280,555]],
 ];
@@ -34,6 +35,20 @@ const ponto=(x,y)=>({x:x*ESCALA_DOCAS/64,y:y*ESCALA_DOCAS/22});
 const estrutura=(id,x,y,largura,camada='objeto')=>({id,x:x*ESCALA_DOCAS,y:y*ESCALA_DOCAS,largura:largura*ESCALA_DOCAS,camada});
 export const docas={id:'mare_cromatica_docas',meta:{nome:'DOCAS DA NEBLINA',tipo:'exterior',dimensao:'mare_cromatica',sideView:true,docasCamadas:true,cromatica:true,initialZoom:.9,corFundo:'#090f20'},layout,
  geometriaDocas:{polys,bloqueios,escala:ESCALA_DOCAS},
+ // Peças do terreno em coordenadas da planta. As peças não criam piso novo:
+ // a máscara geométrica continua sendo a fonte de verdade para colisão.
+ relevoDocas:[
+  {id:'falesia-frente',x:1190,y:292,w:260,h:85,camada:'base'},
+  {id:'falesia-lateral',x:1055,y:340,w:95,h:140,camada:'base'},
+  {id:'plato',x:1260,y:270,w:180,h:75,camada:'base'},
+  {id:'borda',x:550,y:715,w:140,h:38,camada:'base'},
+  {id:'rampa-rocha',x:1060,y:375,w:110,h:135,camada:'piso'},
+  {id:'escada-rocha',x:1090,y:330,w:67,h:110,camada:'piso'},
+  {id:'passarela',x:565,y:670,w:72,h:42,camada:'piso'},
+  {id:'cascalho',x:1015,y:475,w:60,h:28,camada:'piso'},
+  {id:'muro',x:1030,y:405,w:66,h:28,camada:'piso'},
+  {id:'pilar',x:1195,y:515,w:60,h:30,camada:'piso'},
+ ],
  marDocas:[
   {id:'tentaculo',x:170,y:550,tamanho:70},{id:'redemoinho',x:165,y:550,tamanho:92},
   {id:'tentaculo',x:1400,y:600,tamanho:65},{id:'redemoinho',x:1400,y:600,tamanho:82},
@@ -48,7 +63,7 @@ export const docas={id:'mare_cromatica_docas',meta:{nome:'DOCAS DA NEBLINA',tipo
   estrutura('camara',1250,240,135),estrutura('porta',975,225,35),
   // Decoração sem colisão: não altera a malha nem cobre marcadores de missão.
   ...[[310,475,95],[455,365,100],[770,355,90],[1030,380,90],[1300,445,95],[1350,540,88]].map(([x,y,w])=>estrutura('lote3_palmeira',x,y,w)),
-  ...[[375,420,105],[730,400,105],[395,520,90],[1150,405,90]].map(([x,y,w])=>estrutura('lote3_arvore',x,y,w)),
+  ...[[375,420,105],[730,400,105],[395,520,90],[1160,455,90]].map(([x,y,w])=>estrutura('lote3_arvore',x,y,w)),
   ...[[690,590,35],[820,550,30],[1150,565,35]].map(([x,y,w])=>estrutura('lote3_caixotes',x,y,w)),
   ...[[660,585,30],[970,560,32],[1210,565,30]].map(([x,y,w])=>estrutura('lote3_barris',x,y,w)),
   ...[[1070,335,35],[1260,150,42],[1325,270,38]].map(([x,y,w])=>estrutura('lote3_cristal',x,y,w)),

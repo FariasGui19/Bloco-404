@@ -4,34 +4,59 @@ import { CONFIG } from '../config.js';
 // A planta é geometria, não o PNG da referência. O terreno é rasterizado
 // uma vez; entidades e estruturas permanecem ordenadas pela posição do pé.
 let terreno=null,terrenoMap=null;
+// Ordem usa o pé projetado, nunca o topo do sprite. Empates preservam a ordem de entrada.
+export function ordenarProfundidadeDocas(items){return items.sort((a,b)=>a.y-b.y);}
 function construirTerreno(map) {
   const s=map.geometriaDocas.escala,w=map.layout[0].length*64,h=map.layout.length*SIDE_DEPTH_STEP;
   const out=document.createElement('canvas');out.width=w;out.height=h;const g=out.getContext('2d');
   const agua=getSprite('docas_agua'),areia=getSprite('docas_areia');
   g.fillStyle=agua?g.createPattern(agua,'repeat'):'#071d2c';g.fillRect(0,0,w,h);
   const pathAll=()=>{g.beginPath();for(const poly of map.geometriaDocas.polys){poly.forEach(([x,y],i)=>i?g.lineTo(x*s,y*s):g.moveTo(x*s,y*s));g.closePath();}};
+  // Faces sob as margens externas, antes do piso: a superfície continua
+  // na posição usada pela colisão. Segmentos internos nunca viram penhasco.
+  // Padrão rochoso na face, em vez de uma parede lisa ou repetição de
+  // pequenas ilhotas sobre a linha da margem.
+  const face=getSprite('docas_relevo_falesia-frente');let facePattern=null;
+  if(face){const tile=document.createElement('canvas');tile.width=240;tile.height=100;tile.getContext('2d').drawImage(face,0,0,240,100);facePattern=g.createPattern(tile,'repeat');}
+  pathAll();
+  for(const poly of map.geometriaDocas.polys)for(let i=0;i<poly.length;i++){
+    const a=poly[i],b=poly[(i+1)%poly.length],dx=(b[0]-a[0])*s,dy=(b[1]-a[1])*s,len=Math.hypot(dx,dy);if(!len)continue;
+    const count=Math.max(1,Math.ceil(len/35));
+    for(let k=0;k<count;k++){
+      const f0=k/count,f1=(k+1)/count,f=(f0+f1)/2;
+      const mx=(a[0]+(b[0]-a[0])*f)*s,my=(a[1]+(b[1]-a[1])*f)*s;
+      // Apenas a face voltada para a câmera fica visível; amostra abaixo da borda.
+      if(g.isPointInPath(mx,my+8))continue;
+      const x0=(a[0]+(b[0]-a[0])*f0)*s,y0=(a[1]+(b[1]-a[1])*f0)*s;
+      const x1=(a[0]+(b[0]-a[0])*f1)*s,y1=(a[1]+(b[1]-a[1])*f1)*s;
+      const d=24*s;g.fillStyle=facePattern||'#292b35';g.beginPath();g.moveTo(x0,y0);g.lineTo(x1,y1);g.lineTo(x1,y1+d);g.lineTo(x0,y0+d);g.closePath();g.fill();pathAll();
+    }
+  }
+  for(const p of map.relevoDocas??[])if(p.camada==='base'){
+    const img=getSprite('docas_relevo_'+p.id);if(img)g.drawImage(img,(p.x-p.w/2)*s,(p.y-p.h)*s,p.w*s,p.h*s);
+  }
   pathAll();g.fillStyle='#37313a';g.fill();g.save();g.clip();
   g.globalAlpha=.85;g.fillStyle=areia?g.createPattern(areia,'repeat'):'#48404a';g.fillRect(0,0,w,h);g.globalAlpha=1;
   // Caminhos gastos conectam o desembarque às portas e à subida.
   const caminhos=[[[620,650],[690,590],[770,550],[865,520]],[[770,550],[665,520],[575,500]],[[865,520],[1050,535],[1190,525]],[[900,510],[1000,450],[1050,365],[1110,275]]];
   g.lineCap='round';g.lineJoin='round';for(const pts of caminhos){g.beginPath();pts.forEach(([x,y],i)=>i?g.lineTo(x*s,y*s):g.moveTo(x*s,y*s));g.strokeStyle='rgba(146,128,122,.10)';g.lineWidth=7*s;g.stroke();}
-  let seed=404;for(let i=0;i<4200;i++){seed=(1664525*seed+1013904223)>>>0;const x=seed%w;seed=(1664525*seed+1013904223)>>>0;const y=seed%h;g.fillStyle=i%4===0?'rgba(18,17,25,.35)':'rgba(165,146,142,.15)';g.fillRect(x,y,2+i%4,1+i%2);}g.restore();
-  // Rochas seguem somente a margem exposta: contornos internos não criam
-  // bordas falsas quando as zonas de piso se sobrepõem.
-  const rocha=getSprite('relevo_rochas_mar');pathAll();
-  for(const poly of map.geometriaDocas.polys)for(let i=0;i<poly.length;i++) {
-    const a=poly[i],b=poly[(i+1)%poly.length],dx=(b[0]-a[0])*s,dy=(b[1]-a[1])*s,len=Math.hypot(dx,dy),n=Math.max(1,Math.floor(len/100));
-    for(let k=0;k<n;k++){const f=(k+.5)/n,x=(a[0]+(b[0]-a[0])*f)*s,y=(a[1]+(b[1]-a[1])*f)*s;
-      if(g.isPointInPath(x-dy/len*12,y+dx/len*12) && g.isPointInPath(x+dy/len*12,y-dx/len*12))continue;
-      if(rocha){const size=65+((i*17+k*23)%35);g.drawImage(rocha,x-size/2,y-size*.24,size,size*.52);}
-      g.strokeStyle='rgba(210,91,206,.32)';g.lineWidth=2;g.beginPath();g.ellipse(x,y+13,37,9,Math.atan2(dy,dx)*.2,0,Math.PI);g.stroke();pathAll();
-    }
+  // Peças de chão e suportes são recortados ao contorno do terreno;
+  // a passagem e as portas continuam definidas pela máscara, não pela arte.
+  for(const p of map.relevoDocas??[])if(p.camada==='piso'){
+    const img=getSprite('docas_relevo_'+p.id);if(img)g.drawImage(img,(p.x-p.w/2)*s,(p.y-p.h)*s,p.w*s,p.h*s);
   }
+  const suporte=getSprite('docas_relevo_pilar');
+  if(suporte)for(const st of map.estruturasDocas){
+    if(!['cabana-oeste','cabana-leste','galpao','torre','farol','camara','porta'].includes(st.id))continue;
+    const bw=st.largura*.78,bh=Math.min(st.largura*.28,65*s);
+    g.drawImage(suporte,st.x-bw/2,st.y-bh*.68,bw,bh);
+  }
+  let seed=404;for(let i=0;i<4200;i++){seed=(1664525*seed+1013904223)>>>0;const x=seed%w;seed=(1664525*seed+1013904223)>>>0;const y=seed%h;g.fillStyle=i%4===0?'rgba(18,17,25,.35)':'rgba(165,146,142,.15)';g.fillRect(x,y,2+i%4,1+i%2);}g.restore();
   return out;
 }
 function desenharEstrutura(ctx,st,t,reduced){
  const img=getSprite('docas_'+st.id);if(!img)return;const folha=st.id.startsWith('lote3_'),w=st.largura,h=folha?w:w*img.height/img.width,x=st.x-w/2,y=st.y-h;
- if(st.camada!=='chao'){ctx.save();ctx.fillStyle='rgba(7,8,15,.42)';ctx.beginPath();ctx.ellipse(st.x,st.y-3,w*.37,Math.max(5,w*.07),0,0,Math.PI*2);ctx.fill();ctx.restore();}
+ if(st.camada!=='chao'&&!['cabana-oeste','cabana-leste','galpao','torre','farol','camara','porta'].includes(st.id)){ctx.save();ctx.fillStyle='rgba(7,8,15,.24)';ctx.beginPath();ctx.ellipse(st.x,st.y-3,w*.37,Math.max(5,w*.07),0,0,Math.PI*2);ctx.fill();ctx.restore();}
  ctx.save();
  if(st.id==='barco' && !reduced){ctx.translate(st.x,st.y);ctx.rotate(Math.sin(t*.65)*.012);ctx.translate(-st.x,-st.y);}
  if(folha){
@@ -78,7 +103,7 @@ export function renderDocas(ctx,map,state,camX,camY,w,h,zoom,dpr,now,drawPlayer)
     ctx.drawImage(img,frame*160,0,160,160,x-size/2,y-size/2,size,size);ctx.restore();
   }
   for(const st of map.estruturasDocas)if(st.camada==='chao')desenharEstrutura(ctx,st,t,reduced);
-  const objs=[...map.estruturasDocas.filter(st=>st.camada!=='chao').map(st=>({estrutura:st,y:st.y})),...(state.trainingTargets??[]).filter(e=>e.health>0).map(e=>({entidade:e,y:e.y*SIDE_DEPTH_STEP})),...(state.cromaticaRuntime?.visao?[{entidade:state.cromaticaRuntime.visao,y:state.cromaticaRuntime.visao.y*SIDE_DEPTH_STEP}]:[]),{entidade:state.player,y:state.player.y*SIDE_DEPTH_STEP}].sort((a,b)=>a.y-b.y);
+  const objs=ordenarProfundidadeDocas([...map.estruturasDocas.filter(st=>st.camada!=='chao').map(st=>({estrutura:st,y:st.y})),...(state.trainingTargets??[]).filter(e=>e.health>0).map(e=>({entidade:e,y:e.y*SIDE_DEPTH_STEP})),...(state.cromaticaRuntime?.visao?[{entidade:state.cromaticaRuntime.visao,y:state.cromaticaRuntime.visao.y*SIDE_DEPTH_STEP}]:[]),{entidade:state.player,y:state.player.y*SIDE_DEPTH_STEP}]);
   for(const item of objs){
     if(item.estrutura){const st=item.estrutura,margin=st.largura*4;if(Math.abs(st.x-camX)<w/(2*zoom)+margin&&Math.abs(st.y-camY)<h/zoom+margin)desenharEstrutura(ctx,st,t,reduced);continue;}
     const e=item.entidade,x=e.x*CONFIG.TILE_W,y=e.y*SIDE_DEPTH_STEP;

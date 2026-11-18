@@ -2,7 +2,7 @@
 // A máscara é deliberadamente conservadora: água, telhados e rochedos não
 // são transitáveis; conexões estreitas são expressas como polígonos de piso.
 const contornosBase=[
-  [[470,605],[700,575],[760,660],[565,716],[470,690]], // píer
+  [[500,620],[605,585],[705,620],[700,660],[590,685],[515,670]], // deck sobre água
   [[255,405],[465,350],[710,390],[860,420],[1110,400],[1310,455],[1355,575],[1120,620],[830,650],[580,620],[380,555],[270,500]],
   [[950,415],[1010,385],[1080,305],[1125,270],[1170,270],[1140,325],[1085,405],[1035,450]],
   [[865,160],[1075,155],[1100,230],[1055,270],[950,265],[865,245]], // base contínua do farol e da porta
@@ -44,20 +44,28 @@ const ponto=(x,y)=>({x:x*ESCALA_DOCAS/64,y:y*ESCALA_DOCAS/22});
 // Pés/âncoras ordenados em profundidade, independentes da imagem de referência.
 const estrutura=(id,x,y,largura,camada='objeto')=>({id,x:x*ESCALA_DOCAS,y:y*ESCALA_DOCAS,largura:largura*ESCALA_DOCAS,camada});
 export const docas={id:'mare_cromatica_docas',meta:{nome:'DOCAS DA NEBLINA',tipo:'exterior',dimensao:'mare_cromatica',sideView:true,docasCamadas:true,cromatica:true,initialZoom:.9,corFundo:'#090f20'},layout,
- geometriaDocas:{polys,bloqueios,escala:ESCALA_DOCAS},
+ // O primeiro polígono é o deck caminhável, não terra sob o píer.
+ geometriaDocas:{polys,terraPolys:polys.slice(1),deckPoly:polys[0],bloqueios,escala:ESCALA_DOCAS},
  // Peças do terreno em coordenadas da planta. As peças não criam piso novo:
  // a máscara geométrica continua sendo a fonte de verdade para colisão.
  relevoDocas:[
   {id:'falesia-frente',x:1190,y:292,w:260,h:85,camada:'base'},
   {id:'falesia-lateral',x:1055,y:340,w:95,h:140,camada:'base'},
   {id:'plato',x:1260,y:270,w:180,h:75,camada:'base'},
-  {id:'borda',x:550,y:715,w:140,h:38,camada:'base'},
+  {id:'borda',x:550,y:715,w:140,h:38,camada:'reserva'},
   {id:'rampa-rocha',x:1060,y:375,w:110,h:135,camada:'piso'},
   {id:'escada-rocha',x:1090,y:330,w:67,h:110,camada:'piso'},
   {id:'passarela',x:565,y:670,w:72,h:42,camada:'piso'},
   {id:'cascalho',x:1015,y:475,w:60,h:28,camada:'piso'},
   {id:'muro',x:1030,y:405,w:66,h:28,camada:'piso'},
   {id:'pilar',x:1195,y:515,w:60,h:30,camada:'piso'},
+  {id:'margem-areia',sprite:'lote7_margem-areia',x:405,y:555,w:100,h:44,camada:'base'},
+  {id:'margem-rochas',sprite:'lote7_margem-rochas',x:830,y:654,w:90,h:38,camada:'base'},
+  {id:'talude',sprite:'lote7_talude',x:1215,y:293,w:135,h:48,camada:'base'},
+  {id:'estacas',sprite:'lote7_estacas',x:510,y:700,w:62,h:45,camada:'base'},
+  {id:'passagem',sprite:'lote7_passagem',x:650,y:615,w:65,h:45,camada:'piso'},
+  {id:'lajotas',sprite:'lote7_lajotas',x:800,y:570,w:75,h:36,camada:'piso'},
+  {id:'cais-degrau',sprite:'lote7_cais-degrau',x:700,y:600,w:52,h:36,camada:'piso'},
  ],
  marDocas:[
   {id:'tentaculo',x:170,y:550,tamanho:70},{id:'redemoinho',x:165,y:550,tamanho:92},
@@ -67,7 +75,7 @@ export const docas={id:'mare_cromatica_docas',meta:{nome:'DOCAS DA NEBLINA',tipo
   {id:'rocha',x:1500,y:730,tamanho:58},
  ],
  estruturasDocas:[
-  estrutura('pier',600,690,210,'chao'),estrutura('barco',360,735,160),
+  estrutura('pier',600,705,210,'chao'),estrutura('barco',360,735,160),
   estrutura('cabana-oeste',585,478,150),estrutura('cabana-leste',1200,510,160),estrutura('galpao',875,468,145),
   estrutura('escada',1080,403,100,'chao'),estrutura('torre',1350,500,75),estrutura('farol',915,220,80),
   estrutura('camara',1250,240,135),estrutura('porta',975,225,35),
@@ -100,6 +108,9 @@ export const docas={id:'mare_cromatica_docas',meta:{nome:'DOCAS DA NEBLINA',tipo
   ...[[650,610,24],[1250,540,24]].map(([x,y,w])=>estrutura('lote6_armadilha',x,y,w)),
   ...[[290,465,34],[345,515,34],[1290,580,34]].map(([x,y,w])=>estrutura('lote6_rochedos',x,y,w)),
   ...[[570,545,22],[1030,515,22],[1130,320,22]].map(([x,y,w])=>estrutura('lote6_luminaria',x,y,w)),
+  ...[[360,500,36],[1270,550,36]].map(([x,y,w])=>estrutura('lote7_raiz-costa',x,y,w)),
+  ...[[335,480,28],[1290,560,28]].map(([x,y,w])=>estrutura('lote7_coral-pedra',x,y,w)),
+  ...[[315,460,40],[1310,550,40]].map(([x,y,w])=>estrutura('lote7_rocha-alta',x,y,w)),
  ],
  spawnPoints:{inicio:ponto(620,650),cabana_esq:ponto(610,535),cabana_dir:ponto(1190,535),galpao:ponto(875,490),torre:ponto(1320,510)},actors:[],fauna:[],collectibles:[],hazards:[],
  objects:[marker('docas_barco',630,660,'DESCANSAR / SALVAR NO BARCO'),

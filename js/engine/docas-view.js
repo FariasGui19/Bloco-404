@@ -11,7 +11,7 @@ function construirTerreno(map) {
   const out=document.createElement('canvas');out.width=w;out.height=h;const g=out.getContext('2d');
   const agua=getSprite('docas_agua'),areia=getSprite('docas_areia');
   g.fillStyle=agua?g.createPattern(agua,'repeat'):'#071d2c';g.fillRect(0,0,w,h);
-  const pathAll=()=>{g.beginPath();for(const poly of map.geometriaDocas.polys){poly.forEach(([x,y],i)=>i?g.lineTo(x*s,y*s):g.moveTo(x*s,y*s));g.closePath();}};
+  const pathAll=()=>{g.beginPath();for(const poly of map.geometriaDocas.terraPolys??map.geometriaDocas.polys){poly.forEach(([x,y],i)=>i?g.lineTo(x*s,y*s):g.moveTo(x*s,y*s));g.closePath();}};
   // Faces sob as margens externas, antes do piso: a superfície continua
   // na posição usada pela colisão. Segmentos internos nunca viram penhasco.
   // Padrão rochoso na face, em vez de uma parede lisa ou repetição de
@@ -19,7 +19,7 @@ function construirTerreno(map) {
   const face=getSprite('docas_lote5_falesia')||getSprite('docas_relevo_falesia-frente');let facePattern=null;
   if(face){const tile=document.createElement('canvas');tile.width=240;tile.height=100;tile.getContext('2d').drawImage(face,0,0,240,100);facePattern=g.createPattern(tile,'repeat');}
   pathAll();
-  for(const poly of map.geometriaDocas.polys)for(let i=0;i<poly.length;i++){
+  for(const poly of map.geometriaDocas.terraPolys??map.geometriaDocas.polys)for(let i=0;i<poly.length;i++){
     const a=poly[i],b=poly[(i+1)%poly.length],dx=(b[0]-a[0])*s,dy=(b[1]-a[1])*s,len=Math.hypot(dx,dy);if(!len)continue;
     const count=Math.max(1,Math.ceil(len/35));
     for(let k=0;k<count;k++){
@@ -33,7 +33,7 @@ function construirTerreno(map) {
     }
   }
   for(const p of map.relevoDocas??[])if(p.camada==='base'){
-    const img=getSprite('docas_relevo_'+p.id);if(img)g.drawImage(img,(p.x-p.w/2)*s,(p.y-p.h)*s,p.w*s,p.h*s);
+    const img=getSprite(p.sprite?'docas_'+p.sprite:'docas_relevo_'+p.id);if(img)g.drawImage(img,(p.x-p.w/2)*s,(p.y-p.h)*s,p.w*s,p.h*s);
   }
   pathAll();g.fillStyle='#37313a';g.fill();g.save();g.clip();
   const areiaNova=getSprite('docas_lote5_areia'),terra=getSprite('docas_lote5_terra'),pedras=getSprite('docas_lote5_pedras');
@@ -42,7 +42,7 @@ function construirTerreno(map) {
   if(terra){g.save();g.globalAlpha=.32;g.fillStyle=g.createPattern(terra,'repeat');for(const [x,y,rx,ry] of [[585,510,180,95],[910,535,220,90],[1210,515,160,75],[1190,220,160,70]]){g.beginPath();g.ellipse(x*s,y*s,rx*s,ry*s,0,0,Math.PI*2);g.fill();}g.restore();}
   // Textura recortada, levemente irregular, quebra a linha artificial da margem.
   g.save();g.fillStyle='rgba(25,27,30,.44)';
-  for(const poly of map.geometriaDocas.polys)for(let i=0;i<poly.length;i++){
+  for(const poly of map.geometriaDocas.terraPolys??map.geometriaDocas.polys)for(let i=0;i<poly.length;i++){
     const a=poly[i],b=poly[(i+1)%poly.length],len=Math.hypot(b[0]-a[0],b[1]-a[1]),n=Math.max(1,Math.floor(len/12));
     for(let k=0;k<n;k++){const f=(k+.5)/n,x=(a[0]+(b[0]-a[0])*f)*s,y=(a[1]+(b[1]-a[1])*f)*s;
       g.beginPath();g.ellipse(x,y,(3+(i*7+k*13)%8)*s,(2+(i*3+k*7)%4)*s,0,0,Math.PI*2);g.fill();}
@@ -53,7 +53,7 @@ function construirTerreno(map) {
   // Peças de chão e suportes são recortados ao contorno do terreno;
   // a passagem e as portas continuam definidas pela máscara, não pela arte.
   for(const p of map.relevoDocas??[])if(p.camada==='piso'){
-    const img=getSprite('docas_relevo_'+p.id);if(img)g.drawImage(img,(p.x-p.w/2)*s,(p.y-p.h)*s,p.w*s,p.h*s);
+    const img=getSprite(p.sprite?'docas_'+p.sprite:'docas_relevo_'+p.id);if(img)g.drawImage(img,(p.x-p.w/2)*s,(p.y-p.h)*s,p.w*s,p.h*s);
   }
   const suporte=getSprite('docas_relevo_pilar');
   if(suporte)for(const st of map.estruturasDocas){
@@ -66,7 +66,7 @@ function construirTerreno(map) {
 }
 function desenharEstrutura(ctx,st,t,reduced){
  const img=getSprite('docas_'+st.id);if(!img)return;const folha=st.id.startsWith('lote3_'),w=st.largura,h=folha?w:w*img.height/img.width,x=st.x-w/2,y=st.y-h;
- if(st.camada!=='chao'&&!st.id.startsWith('lote5_')&&!st.id.startsWith('lote6_')&&!['cabana-oeste','cabana-leste','galpao','torre','farol','camara','porta'].includes(st.id)){ctx.save();ctx.fillStyle='rgba(7,8,15,.12)';ctx.beginPath();ctx.ellipse(st.x,st.y-3,w*.37,Math.max(5,w*.07),0,0,Math.PI*2);ctx.fill();ctx.restore();}
+ if(st.camada!=='chao'&&!st.id.startsWith('lote5_')&&!st.id.startsWith('lote6_')&&!st.id.startsWith('lote7_')&&!['cabana-oeste','cabana-leste','galpao','torre','farol','camara','porta'].includes(st.id)){ctx.save();ctx.fillStyle='rgba(7,8,15,.12)';ctx.beginPath();ctx.ellipse(st.x,st.y-3,w*.37,Math.max(5,w*.07),0,0,Math.PI*2);ctx.fill();ctx.restore();}
  ctx.save();
  if(st.id==='barco' && !reduced){ctx.translate(st.x,st.y);ctx.rotate(Math.sin(t*.65)*.012);ctx.translate(-st.x,-st.y);}
  if(folha){

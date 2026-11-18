@@ -1,7 +1,7 @@
 // Coordenadas dos marcos derivadas da referência original (1568 × 880).
 // A máscara é deliberadamente conservadora: água, telhados e rochedos não
 // são transitáveis; conexões estreitas são expressas como polígonos de piso.
-const polys=[
+const contornosBase=[
   [[470,605],[700,575],[760,660],[565,716],[470,690]], // píer
   [[255,405],[465,350],[710,390],[860,420],[1110,400],[1310,455],[1355,575],[1120,620],[830,650],[580,620],[380,555],[270,500]],
   [[950,415],[1010,385],[1080,305],[1125,270],[1170,270],[1140,325],[1085,405],[1035,450]],
@@ -9,6 +9,16 @@ const polys=[
   [[1050,165],[1310,130],[1370,230],[1270,285],[1135,290],[1050,245]],
   [[1240,445],[1380,425],[1400,540],[1280,555]],
 ];
+// Subdivide as arestas com pequenas irregularidades determinísticas. O mesmo
+// contorno alimenta o piso visível e a máscara de colisão; não há margem falsa.
+function costaIrregular(poly,indice){
+ const out=[];for(let i=0;i<poly.length;i++){
+  const a=poly[i],b=poly[(i+1)%poly.length],dx=b[0]-a[0],dy=b[1]-a[1],len=Math.hypot(dx,dy),n=Math.max(1,Math.ceil(len/38));
+  for(let j=0;j<n;j++){const f=j/n,offset=j===0?0:((indice*19+i*13+j*17)%13-6);out.push([a[0]+dx*f-dy/len*offset,a[1]+dy*f+dx/len*offset]);}
+ }
+ return out;
+}
+const polys=contornosBase.map(costaIrregular);
 function inside(x,y,p){let yes=false;for(let i=0,j=p.length-1;i<p.length;j=i++){const [xi,yi]=p[i],[xj,yj]=p[j];if((yi>y)!==(yj>y)&&x<(xj-xi)*(y-yi)/(yj-yi)+xi)yes=!yes;}return yes;}
 // Pisos sob construções e obstáculos não são atravessáveis, mesmo que a
 // arte seja uma única referência achatada. As portas ficam nas bordas.
@@ -79,12 +89,23 @@ export const docas={id:'mare_cromatica_docas',meta:{nome:'DOCAS DA NEBLINA',tipo
   estrutura('lote5_ancora',545,590,36),
   ...[[710,605,28],[980,520,28],[1160,270,28]].map(([x,y,w])=>estrutura('lote5_poste',x,y,w)),
   ...[[360,480,35],[480,410,35],[1010,470,35],[1280,545,35]].map(([x,y,w])=>estrutura('lote5_capim',x,y,w)),
+  // Pequenos vestígios inspirados na referência, sem alterar portas/missão.
+  ...[[520,500,44],[675,495,44],[1150,535,44]].map(([x,y,w])=>estrutura('lote6_cerca',x,y,w)),
+  estrutura('lote6_arvore-seca',410,445,75),
+  ...[[325,490,32],[1300,560,32],[1065,405,32]].map(([x,y,w])=>estrutura('lote6_cristal-violeta',x,y,w)),
+  ...[[345,500,28],[1125,590,28],[1280,560,28]].map(([x,y,w])=>estrutura('lote6_corais',x,y,w)),
+  estrutura('lote6_bote',600,610,42),
+  ...[[735,595,25],[1110,555,25]].map(([x,y,w])=>estrutura('lote6_empilhado',x,y,w)),
+  estrutura('lote6_runa',840,580,28),
+  ...[[650,610,24],[1250,540,24]].map(([x,y,w])=>estrutura('lote6_armadilha',x,y,w)),
+  ...[[290,465,34],[345,515,34],[1290,580,34]].map(([x,y,w])=>estrutura('lote6_rochedos',x,y,w)),
+  ...[[570,545,22],[1030,515,22],[1130,320,22]].map(([x,y,w])=>estrutura('lote6_luminaria',x,y,w)),
  ],
  spawnPoints:{inicio:ponto(620,650),cabana_esq:ponto(610,535),cabana_dir:ponto(1190,535),galpao:ponto(875,490),torre:ponto(1320,510)},actors:[],fauna:[],collectibles:[],hazards:[],
  objects:[marker('docas_barco',630,660,'DESCANSAR / SALVAR NO BARCO'),
  marker('cromatica_fragmento_estacao',1050,365,'RECOLHER FRAGMENTO • TRILHA'),marker('cromatica_selo',1110,275,'ESTABILIZAR O ACESSO AO NÚCLEO'),
  marker('cromatica_painel_origem',1190,220,'ALINHAR ORIGEM'),marker('cromatica_painel_retorno',1240,250,'ALINHAR RETORNO'),marker('cromatica_painel_memoria',1300,210,'ALINHAR MEMÓRIA'),marker('cromatica_ancora',1250,185,'ESTABILIZAR ÂNCORA'),
- marker('docas_diario_pier',710,605,'LER DIÁRIO DO PÍER'),marker('docas_diario_trilha',980,520,'LER AVISO DOS VIGIAS'),
+ marker('docas_marca_navegantes',840,580,'EXAMINAR MARCA DOS NAVEGANTES'),marker('docas_diario_pier',710,605,'LER DIÁRIO DO PÍER'),marker('docas_diario_trilha',980,520,'LER AVISO DOS VIGIAS'),
  marker('docas_torre',1330,500,'SUBIR À TORRE DE VIGIA'),marker('docas_resina',720,565,'RASTREAR RESINA • MARÉ ASTRAL'),marker('docas_eletrico',910,545,'PAINEL ELÉTRICO • NÚCLEO X10'),marker('docas_selo',1020,420,'SELO DE NÉVOA • DOMÍNIO ANCIÃO'),marker('docas_biomassa',1120,565,'BIOMASSA • BIO-FORJA')],
  trainingTargets:[{id:'docas_infectado_1',x:Math.floor(18*ESCALA_DOCAS),y:Math.floor(12*ESCALA_DOCAS),maxHealth:65,cromaticaEnemy:true},{id:'docas_infectado_2',x:Math.floor(19*ESCALA_DOCAS),y:Math.floor(10*ESCALA_DOCAS),maxHealth:65,cromaticaEnemy:true}],
  portals:[portal('docas_galpao',865,490,'ENTRAR NO GALPÃO CRT','mare_cromatica_galpao'),portal('docas_cabana_esq',575,500,'ENTRAR NA CABANA OESTE','mare_cromatica_cabana_oeste'),portal('docas_cabana_dir',1190,525,'ENTRAR NA CABANA LESTE','mare_cromatica_cabana_leste')],

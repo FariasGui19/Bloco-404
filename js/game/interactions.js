@@ -345,6 +345,7 @@ function interactWithObject(object) {
   if (!interaction) return;
 
   const diariosDocas={
+    docas_marca_navegantes:['MARCA DOS NAVEGANTES','TRÊS TRAÇOS NA PEDRA APONTAM PARA A COSTA, O ACAMPAMENTO E A ESTAÇÃO.','OS VIGIAS DIZIAM QUE A MEMÓRIA DAS DUAS FITAS E OS TRÊS FRAGMENTOS DEVEM VOLTAR JUNTOS AO NÚCLEO.'],
     docas_diario_pier:['DIÁRIO DO PÍER','A NÉVOA VEIO ANTES DA FALHA. DEIXAMOS UMA LUZ NO PÍER PARA QUEM CONSEGUISSE VOLTAR.','AS CRIATURAS SE APROXIMAM DA LUZ: APAGUE O FAROL SE PRECISAR PASSAR EM SILÊNCIO.'],
     docas_diario_trilha:['AVISO DOS VIGIAS','A CHAVE FICOU NA CABANA OESTE; O FUSÍVEL, NA CABANA LESTE. NÃO LEVE OS DOIS PELO MAR.','RECOMPILE OS FRAGMENTOS NO GALPÃO ANTES DE TENTAR O SELO NA SUBIDA.'],
   }[object.id];
@@ -365,7 +366,7 @@ function interactWithObject(object) {
     openDialogue({speaker:'SUPRIMENTOS // DOCAS',dialogue:[first?(key==='docas_chave'?'CHAVE DA TRILHA RECOLHIDA.':'FUSÍVEL DO NÚCLEO RECOLHIDO.'):'ESTE ITEM JÁ ESTÁ NO INVENTÁRIO DE MISSÃO.', 'A CHAVE E O FUSÍVEL LIBERAM O SELO DE ACESSO AO NÚCLEO.']});return;
   }
   if (object.id === 'docas_torre') {
-    openDialogue({speaker:'TORRE DE VIGIA',dialogue:['A ESCADA ESTÁ INTERDITADA PELA NÉVOA.', 'A OBSERVAÇÃO EM PRIMEIRA PESSOA AINDA PRECISA SER CONSTRUÍDA.']});return;
+    openDialogue({speaker:'TORRE DE VIGIA',dialogue:['A ESCADA DE MADEIRA CEDEU DURANTE A ÚLTIMA TEMPESTADE.', 'A NÉVOA ESCONDE A PLATAFORMA DE VIGIA; POR ENQUANTO NÃO É SEGURO SUBIR.']});return;
   }
   const docasEspecial={docas_resina:['mare_astral','A RESINA RESPONDE AO MARÉ. A TRILHA PARA O NÚCLEO FICA REGISTRADA.'],docas_eletrico:['nucleo_dez_forma','O NÚCLEO X10 ISOLOU A LINHA ELÉTRICA DO GALPÃO.'],docas_selo:['lamina_dominio_anciao','O DOMÍNIO PURIFICA UM FOCO DE NÉVOA JUNTO À TRILHA.'],docas_biomassa:['motor_bio_forja','A BIO-FORJA RECUPERA ENERGIA DA BIOMASSA CRISTALIZADA.']}[object.id];
   if(docasEspecial){

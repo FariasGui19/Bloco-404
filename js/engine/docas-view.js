@@ -2,6 +2,7 @@ import { getSprite } from './sprites.js';
 import { SIDE_DEPTH_STEP } from './camera.js';
 import { CONFIG } from '../config.js';
 import { criarOndasCais } from './docas-mar.js';
+import { desenharReflexosCais, desenharPecaCais } from './docas-cais-view.js';
 // A planta é geometria, não o PNG da referência. O terreno é rasterizado
 // uma vez; entidades e estruturas permanecem ordenadas pela posição do pé.
 let terreno=null,terrenoMap=null,espumaCosta=[],ondasCais=[];
@@ -13,6 +14,7 @@ function construirTerreno(map) {
   const out=document.createElement('canvas');out.width=w;out.height=h;const g=out.getContext('2d');
   const agua=getSprite('docas_agua'),areia=getSprite('docas_areia');
   g.fillStyle=agua?g.createPattern(agua,'repeat'):'#071d2c';g.fillRect(0,0,w,h);
+  if(map.caisSul)desenharReflexosCais(g,map.caisSul,s);
   const pathAll=()=>{g.beginPath();for(const poly of map.geometriaDocas.terraPolys??map.geometriaDocas.polys){poly.forEach(([x,y],i)=>i?g.lineTo(x*s,y*s):g.moveTo(x*s,y*s));g.closePath();}};
   // Faces sob as margens externas, antes do piso: a superfície continua
   // na posição usada pela colisão. Segmentos internos nunca viram penhasco.
@@ -38,12 +40,13 @@ function construirTerreno(map) {
   for(const p of map.relevoDocas??[])if(p.camada==='base'){
     const img=getSprite(p.sprite?'docas_'+p.sprite:'docas_relevo_'+p.id);if(img)g.drawImage(img,(p.x-p.w/2)*s,(p.y-p.h)*s,p.w*s,p.h*s);
   }
+  if(map.caisSul)desenharPecaCais(g,map.caisSul,map.caisSul.rocha,s,null);
   pathAll();g.fillStyle='#37313a';g.fill();g.save();g.clip();
   const areiaNova=getSprite('docas_lote5_areia'),terra=getSprite('docas_lote5_terra'),pedras=getSprite('docas_lote5_pedras');
   const fundo=areiaNova||areia;g.globalAlpha=.88;g.fillStyle=fundo?g.createPattern(fundo,'repeat'):'#48404a';g.fillRect(0,0,w,h);g.globalAlpha=1;
   // Clareamento arenoso localizado na chegada, recortado pelo terreno real.
-  const luzCosta=g.createRadialGradient(745*s,590*s,5*s,745*s,590*s,230*s);
-  luzCosta.addColorStop(0,'rgba(170,135,123,.28)');luzCosta.addColorStop(1,'rgba(170,135,123,0)');
+  const luzCosta=g.createRadialGradient(820*s,549*s,5*s,820*s,549*s,175*s);
+  luzCosta.addColorStop(0,'rgba(190,145,147,.44)');luzCosta.addColorStop(1,'rgba(190,145,147,0)');
   g.fillStyle=luzCosta;g.fillRect(500*s,360*s,490*s,460*s);
   // Áreas de terra gastas, limitadas à superfície e sem mudar colisões.
   if(terra){g.save();g.globalAlpha=.32;g.fillStyle=g.createPattern(terra,'repeat');for(const [x,y,rx,ry] of [[585,510,180,95],[910,535,220,90],[1210,515,160,75],[1190,220,160,70]]){g.beginPath();g.ellipse(x*s,y*s,rx*s,ry*s,0,0,Math.PI*2);g.fill();}g.restore();}
@@ -55,7 +58,7 @@ function construirTerreno(map) {
       g.beginPath();g.ellipse(x,y,(3+(i*7+k*13)%8)*s,(2+(i*3+k*7)%4)*s,0,0,Math.PI*2);g.fill();}
   }g.restore();
   // Caminhos gastos conectam o desembarque às portas e à subida.
-  const caminhos=[[[620,650],[690,590],[770,550],[865,520]],[[770,550],[665,520],[575,500]],[[865,520],[1050,535],[1190,525]],[[900,510],[1000,450],[1050,365],[1110,275]]];
+  const caminhos=[[[854,542],[865,520]],[[854,542],[770,514],[665,510],[575,500]],[[865,520],[1050,535],[1190,525]],[[900,510],[1000,450],[1050,365],[1110,275]]];
   g.lineCap='round';g.lineJoin='round';for(const pts of caminhos){g.beginPath();pts.forEach(([x,y],i)=>i?g.lineTo(x*s,y*s):g.moveTo(x*s,y*s));g.strokeStyle='rgba(22,22,25,.35)';g.lineWidth=31*s;g.stroke();if(pedras){g.strokeStyle=g.createPattern(pedras,'repeat');g.globalAlpha=.32;g.lineWidth=21*s;g.stroke();g.globalAlpha=1;}}
   // Peças de chão e suportes são recortados ao contorno do terreno;
   // a passagem e as portas continuam definidas pela máscara, não pela arte.
@@ -72,40 +75,24 @@ function construirTerreno(map) {
   return out;
 }
 function desenharEstrutura(ctx,st,t,reduced,state){
- const img=getSprite('docas_'+st.id);if(!img)return;const folha=st.id.startsWith('lote3_'),w=st.largura,h=folha?w:w*img.height/img.width,x=st.x-w/2,boatBob=st.id==='barco'&&!reduced?Math.sin(t*.65)*3:0,y=st.y-h+boatBob;
+ const img=getSprite('docas_'+st.id);if(!img)return;const folha=st.id.startsWith('lote3_'),w=st.largura,h=folha?w:w*img.height/img.width,x=st.x-w/2,y=st.y-h;
  if(st.camada!=='chao'&&!st.id.startsWith('lote5_')&&!st.id.startsWith('lote6_')&&!st.id.startsWith('lote7_')&&!st.id.startsWith('lote8_')&&!st.id.startsWith('lote9_')&&!st.id.startsWith('lote10_')&&!st.id.startsWith('lote11_')&&!st.id.startsWith('lote12_')&&!st.id.startsWith('cais_')&&!['cabana-oeste','cabana-leste','galpao','torre','farol','camara','porta'].includes(st.id)){ctx.save();ctx.fillStyle='rgba(7,8,15,.12)';ctx.beginPath();ctx.ellipse(st.x,st.y-3,w*.37,Math.max(5,w*.07),0,0,Math.PI*2);ctx.fill();ctx.restore();}
  ctx.save();
  if((st.id==='lote9_flores'||st.id==='lote11_gramineas'||st.id==='lote12_flora') && !reduced){ctx.translate(st.x,st.y);ctx.rotate(Math.sin(t*.8+st.x)*.012);ctx.translate(-st.x,-st.y);}
- if(st.id==='barco' && !reduced){ctx.translate(st.x,st.y);ctx.rotate(Math.sin(t*.65)*.012);ctx.translate(-st.x,-st.y);}
- // Contraste e cor aplicados somente às artes do píer e do pesqueiro.
- if(st.id==='barco'||st.id==='pier')ctx.filter='saturate(1.32) contrast(1.15) brightness(1.06)';
  if(folha){
    const frame=reduced?0:Math.floor(t*4+(st.x%7)/7)%8;
    ctx.drawImage(img,frame*256,0,256,256,x,y,w,h);
  } else ctx.drawImage(img,x,y,w,h);
  ctx.restore();
- if(st.id==='barco'){
-   // A fumaça nasce na chaminé e mantém-se limitada em tela e em memória.
-   const smoke=getSprite('docas_fx_fumaca');
-   if(smoke){const drift=reduced?0:Math.sin(t*.55)*3;ctx.save();ctx.globalAlpha=.22;ctx.drawImage(smoke,x+w*.67-7+drift,y+h*.02-42,14,44);ctx.restore();}
- }
  const glow=(gx,gy,r,color,alpha)=>{ctx.save();ctx.globalAlpha=alpha;const g=ctx.createRadialGradient(gx,gy,0,gx,gy,r);g.addColorStop(0,color);g.addColorStop(1,'rgba(0,0,0,0)');ctx.fillStyle=g;ctx.fillRect(gx-r,gy-r,r*2,r*2);ctx.restore();};
  const pulso=reduced?.55:.46+.10*Math.sin(t*1.2);
  // Sobreposições discretas acompanham as fontes reais, nunca o chão inteiro.
- if(st.id==='barco'){
-   glow(x+w*.53,y+h*.42,w*.115,'#ff9c32',pulso*.58);
-   // A lâmpada no topo da cabine acompanha o balanço vertical do barco.
-   glow(x+w*.47,y+h*.165,w*.035,'#ff355d',pulso*.85);
-   ctx.save();ctx.fillStyle='#ff6483';ctx.beginPath();ctx.arc(x+w*.47,y+h*.165,Math.max(2,w*.006),0,Math.PI*2);ctx.fill();ctx.restore();
-   const spark=getSprite('docas_fx_brilho-ambar');if(spark){ctx.save();ctx.globalAlpha=.09+pulso*.08;ctx.drawImage(spark,x+w*.43,y+h*.31,w*.20,h*.21);ctx.restore();}
- }
  if(st.id==='galpao'){
    const crt=getSprite('docas_fx_linha-crt');if(crt){ctx.save();ctx.globalAlpha=reduced?.08:.07+.03*Math.sin(t*2.1);for(const [sx,sy,sw,sh] of [[.478,.50,.06,.06],[.50,.583,.06,.055],[.422,.60,.045,.055]])ctx.drawImage(crt,x+w*sx,y+h*sy,w*sw,h*sh);ctx.restore();}
  }
  if(st.id==='camara'){
    const spark=getSprite('docas_fx_brilho-ciano');if(spark){ctx.save();ctx.globalAlpha=reduced?.07:.07+.025*Math.sin(t*1.3);ctx.drawImage(spark,x+w*.37,y+h*.30,w*.25,h*.30);ctx.restore();}
  }
- if(st.id==='pier')glow(x+w*.12,y+h*.37,22,'#ffc17a',pulso*.55);
  if(st.id==='cabana-oeste'||st.id==='cabana-leste')glow(x+w*.51,y+h*.66,w*.10,'#91e9a1',pulso*.25);
  if(st.id==='galpao')glow(x+w*.5,y+h*.62,w*.12,'#60f3ff',pulso*.30);
  if(st.id==='escada')glow(x+w*.7,y+h*.58,w*.08,'#df80f7',pulso*.20);
@@ -178,21 +165,6 @@ export function renderDocas(ctx,map,state,camX,camY,w,h,zoom,dpr,now,drawPlayer)
     ctx.beginPath();ctx.moveTo(p.x-p.dx*8,p.y-p.dy*8+3+wave*3);ctx.lineTo(p.x+p.dx*8,p.y+p.dy*8+3+wave*3);ctx.stroke();
   }
   ctx.restore();
-  // Traços curtos seguem a linha inferior inclinada do casco, por trás da arte.
-  const barco=map.estruturasDocas.find(st=>st.id==='barco'),arteBarco=getSprite('docas_barco');
-  if(barco&&arteBarco){
-    const bw=barco.largura,bh=bw*arteBarco.height/arteBarco.width,bx=barco.x-bw/2,by=barco.y-bh+(reduced?0:Math.sin(t*.65)*3);
-    const casco=[[.08,.76],[.17,.94],[.34,.99],[.56,.92],[.78,.78],[.96,.59]];
-    ctx.save();ctx.lineCap='round';
-    for(let i=0;i<casco.length-1;i++)for(let j=0;j<4;j++){
-      const f=j/4,ff=f+.15,[ax,ay]=casco[i],[cx,cy]=casco[i+1],bob=reduced?0:Math.sin(t*.9+i+j)*2;
-      ctx.strokeStyle=(i+j)%3===0?'rgba(239,83,207,.58)':'rgba(172,229,238,.53)';ctx.lineWidth=2;
-      ctx.beginPath();ctx.moveTo(bx+(ax+(cx-ax)*f)*bw,by+(ay+(cy-ay)*f)*bh+5+bob);ctx.lineTo(bx+(ax+(cx-ax)*ff)*bw,by+(ay+(cy-ay)*ff)*bh+5+bob);ctx.stroke();
-    }
-    ctx.restore();
-  }
-  // Reflexo de maré encosta no casco, mas nunca altera a máscara do píer.
-  {const s=map.geometriaDocas.escala;ctx.save();ctx.strokeStyle='rgba(225,80,198,.30)';ctx.lineWidth=2;for(let i=0;i<4;i++){const x=(380+i*29)*s,y=(742+i%2*8)*s,shift=reduced?0:Math.sin(t*.6+i)*4;ctx.beginPath();ctx.moveTo(x+shift,y);ctx.lineTo(x+12*s+shift,y-3);ctx.lineTo(x+20*s+shift,y);ctx.lineTo(x+27*s+shift,y-3);ctx.stroke();}ctx.restore();}
   // Névoa baixa limitada ao mar do cais; passa atrás do barco e do deck.
   const fogCais=getSprite('docas_fx_faixas-nevoa');
   if(fogCais){const s=map.geometriaDocas.escala;ctx.save();ctx.globalAlpha=.12;for(const [x,y,k] of [[175,730,0],[500,780,1],[780,705,2]]){const dx=reduced?0:Math.sin(t*.12+k)*18;ctx.drawImage(fogCais,x*s+dx,y*s,155*s,28*s);}ctx.restore();}
@@ -212,9 +184,6 @@ export function renderDocas(ctx,map,state,camX,camY,w,h,zoom,dpr,now,drawPlayer)
       for(let i=0;i<n;i++){const sy=Math.floor(i*img.height/n),sy2=Math.floor((i+1)*img.height/n),rel=1-i/n,dx=reduced?0:Math.sin(t*.85+rel*3.5)*size*.045*rel;ctx.drawImage(img,0,sy,img.width,sy2-sy,x-size/2+dx,y-h+sy/img.height*h,size,(sy2-sy)/img.height*h+.5);}
       ctx.restore();continue;
     }
-    if(m.id==='bote-cais'){
-      const img=getSprite('docas_lote6_bote');if(img){const h=size*img.height/img.width,bob=reduced?0:Math.sin(t*.8)*3;ctx.save();ctx.translate(x,y+bob);if(!reduced)ctx.rotate(Math.sin(t*.8)*.015);ctx.drawImage(img,-size/2,-h,size,h);ctx.restore();}continue;
-    }
     const img=getSprite('docas_mar_'+m.id);if(!img)continue;
     const frame=reduced?0:Math.floor(t*4)%8,bob=m.id==='boia'&&!reduced?Math.sin(t*.85+m.x)*4:0;
     ctx.save();ctx.globalAlpha=m.id==='oleo'?.56:.85;
@@ -222,9 +191,22 @@ export function renderDocas(ctx,map,state,camX,camY,w,h,zoom,dpr,now,drawPlayer)
     if(m.id==='boia'){ctx.save();ctx.globalAlpha=reduced?.22:.16+.06*Math.sin(t*1.1+m.x);const g=ctx.createRadialGradient(x,y-size*.23+bob,0,x,y-size*.23+bob,size*.24);g.addColorStop(0,'#ffe1a0');g.addColorStop(1,'rgba(255,215,130,0)');ctx.fillStyle=g;ctx.fillRect(x-size*.24,y-size*.47+bob,size*.48,size*.48);ctx.restore();}
 
   }
+  // Primeiro o piso (deck e degraus); estacas dianteiras usam o Y do ponto
+  // em que atravessam as tábuas, não o Y em que somem na água.
+  const cais=map.caisSul,pecasCais=[];
+  const drawCais=peca=>desenharPecaCais(ctx,cais,peca,sCais,reduced?null:t);
+  if(cais)for(const peca of cais.pecas){
+    const unit=cais.escala*sCais,x=cais.x*sCais+(peca.x+peca.w/2)*unit;
+    const y=cais.y*sCais+(peca.y+peca.h/2)*unit;
+    if(Math.abs(x-camX)>w/(2*zoom)+peca.w*unit/2 ||
+       Math.abs(y-camY)>(h/2+115)/zoom+peca.h*unit/2)continue;
+    if(peca.pe===undefined)drawCais(peca);
+    else pecasCais.push({peca,y:cais.y*sCais+peca.pe*unit});
+  }
   for(const st of map.estruturasDocas)if(st.camada==='chao')desenharEstrutura(ctx,st,t,reduced,state);
-  const objs=ordenarProfundidadeDocas([...map.estruturasDocas.filter(st=>st.camada!=='chao').map(st=>({estrutura:st,y:st.y})),...(state.trainingTargets??[]).filter(e=>e.health>0).map(e=>({entidade:e,y:e.y*SIDE_DEPTH_STEP})),...(state.cromaticaRuntime?.visao?[{entidade:state.cromaticaRuntime.visao,y:state.cromaticaRuntime.visao.y*SIDE_DEPTH_STEP}]:[]),{entidade:state.player,y:state.player.y*SIDE_DEPTH_STEP}]);
+  const objs=ordenarProfundidadeDocas([...pecasCais,...map.estruturasDocas.filter(st=>st.camada!=='chao').map(st=>({estrutura:st,y:st.y})),...(state.trainingTargets??[]).filter(e=>e.health>0).map(e=>({entidade:e,y:e.y*SIDE_DEPTH_STEP})),...(state.cromaticaRuntime?.visao?[{entidade:state.cromaticaRuntime.visao,y:state.cromaticaRuntime.visao.y*SIDE_DEPTH_STEP}]:[]),{entidade:state.player,y:state.player.y*SIDE_DEPTH_STEP}]);
   for(const item of objs){
+    if(item.peca){drawCais(item.peca);continue;}
     if(item.estrutura){const st=item.estrutura,margin=st.largura*4;if(Math.abs(st.x-camX)<w/(2*zoom)+margin&&Math.abs(st.y-camY)<h/zoom+margin)desenharEstrutura(ctx,st,t,reduced,state);continue;}
     const e=item.entidade,x=e.x*CONFIG.TILE_W,y=e.y*SIDE_DEPTH_STEP;
     if(e===state.player){drawPlayer(e,x,y);continue;}

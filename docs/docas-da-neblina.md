@@ -5,7 +5,14 @@ A travessia leva ao mapa `mare_cromatica_docas`. A imagem `assets/sprites/docas-
 
 A travessia mantém inércia, sonar [R] e adiciona farol alternável [L]: peixes e sombras no cone de luz são atraídos, mas ainda podem atacar por proximidade com o farol apagado. Há rastro de espuma limitado, bancos de névoa e botão de farol para toque. O sonar tem recarga. Movimento reduzido congela o deslocamento decorativo da névoa.
 
-## Checklist dos lotes
+## Setor 1 — ancoradouro sul
+- O pesqueiro e o bote são recortes separados da referência do setor. O deck, o guarda de fundo, as estacas dianteiras e a rede também são peças separadas: o jogador anda sobre as tábuas e passa atrás das estacas quando está acima de seus pontos de apoio.
+- A escada de maré é arte nova, texturizada com a rocha da referência. Os degraus mais baixos têm pedra úmida e reflexo, e a base mergulha até a linha d’água. Cais e escada compartilham a transformação da planta com a máscara de piso; a escada é a única ligação a pé até a ilha. A altura dos degraus é visual, não um eixo adicional de física.
+- Reflexos são uma camada de água com transparência; nenhuma imagem completa é usada como piso. Os cascos balançam discretamente sem deslocar as amarras nem a interação do pesqueiro. O balanço e o cintilar param com movimento reduzido.
+- O spawn, o diário do píer e os IDs de progresso continuam válidos. O pesqueiro mantém o início manual da incursão, o descanso e o retorno à Enseada.
+- As peças finais estão em `assets/sprites/docas-cais-sul/`. Para reproduzir os recortes: `python tools/preparar-docas-cais.py /caminho/para/image-1.png` (Pillow e o recorte de referência fornecido para este setor).
+
+## Checklist dos lotes (histórico)
 ### Lote 1 — navegação
 - [x] Farol alternável e atração pelo cone; o risco não some no escuro.
 - [x] Sonar, espuma e névoa em camadas com custo limitado.

@@ -21,7 +21,7 @@ export const COSTA_OESTE = {
     {id:'palmeiras', x:300, y:0, w:217, h:262, pe:248},
     {id:'cristais', x:360, y:143, w:209, h:169, pe:295},
   ],
-  tentaculo: {id:'tentaculo', x:100, y:441, w:177, h:151, base:[170,575], quadros:64, colunas:8, duracao:4.8},
+  tentaculo: {base:[170,575], duracao:6},
   // Borda do trecho de areia, do promontório à rocha junto do guarda-cais.
   margem: [[162,131],[153,158],[160,198],[151,219],[139,238],[129,253],[145,283],
     [153,304],[179,320],[218,328],[263,326],[304,328],[343,341],[378,353],
@@ -39,6 +39,6 @@ export const COSTA_OESTE = {
 export const plantaCosta = ([x,y]) => [COSTA_OESTE.x+x*unidade,COSTA_OESTE.y+y*unidade];
 export const ESCADA_OESTE = {id:'escada-oeste', x:982, y:26, w:182, h:132};
 export const SPRITES_COSTA_OESTE = [COSTA_OESTE.mar,COSTA_OESTE.areia,
-  ...COSTA_OESTE.rochas,...COSTA_OESTE.vegetacao,COSTA_OESTE.tentaculo,ESCADA_OESTE]
+  ...COSTA_OESTE.rochas,...COSTA_OESTE.vegetacao,ESCADA_OESTE]
   .map(({id})=>({id:`docas_costa_${id}`,
     src:`assets/sprites/docas-costa-oeste/${id}.${['mar','areia'].includes(id)?'webp':'png'}`}));

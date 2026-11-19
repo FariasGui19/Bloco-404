@@ -1,3 +1,4 @@
+import { desenharTentaculoRessaca, faseRessaca, progressoImpacto } from './docas-ressaca.js';
 import { faseDocas, fxDocas } from './docas-vivas.js';
 import { getSprite } from './sprites.js';
 
@@ -64,11 +65,6 @@ export function sombrearAreiaOeste(ctx,costa,escala) {
   ctx.restore();
 }
 
-export function quadroTentaculo(peca,t) {
-  if(t===null)return 0;
-  return Math.floor((t%peca.duracao)/peca.duracao*peca.quadros);
-}
-
 // Polylines are broken naturally by their varying segment widths and phase;
 // no straight parallel strokes across the beach or the deck.
 const correntezas=[
@@ -111,31 +107,22 @@ export function desenharMareOeste(ctx,costa,escala,t) {
     const contorno=rastroTentaculo.map(([x,y],j)=>[x*perto+Math.sin(i+j)*3,y*perto+Math.cos(i+j)*2]);
     trilha(ctx,contorno,bx,by,t,i,'235,79,227',translucido,2.1-onda*.9);
   }
-  const img=getSprite('docas_costa_tentaculo');
-  if(img){
-    const frame=quadroTentaculo(p,t);
-    const fw=img.width/p.colunas,fh=img.height/Math.ceil(p.quadros/p.colunas);
-    ctx.drawImage(img,frame%p.colunas*fw,Math.floor(frame/p.colunas)*fh,fw,fh,p.x,p.y,p.w,p.h);
-  }
-  // The isolated ventosa artwork is a tiny surface glint, tracked to the
-  // same bend used by the atlas (rather than spawning free above the water).
-  for(const [x,y,i] of [[180,475,0],[149,492,1],[142,515,2],[219,503,3],[158,554,4]]){
-    const q=faseDocas(t,p.duracao),phase=q*Math.PI*2;
-    const w=Math.max(0,Math.min(1,(571-y)/110))**1.3,tip=Math.max(0,Math.min(1,(x-170)/74))*w;
-    const dx=w*(7*Math.sin(phase)+4*Math.sin(2*phase)*w)-3*tip*Math.sin(phase);
-    const dy=11*tip*Math.sin(phase)+3*w*Math.sin(2*phase)+5*w*(1-Math.cos(phase));
-    const glow=t===null?.22:.25+.30*Math.sin(phase+i*1.48)**2;
-    fxDocas(ctx,'ventosa',x+dx,y+dy,10+i%2*2,7,q,glow,-.4+i*.16);
+  const ciclo=faseDocas(t,p.duracao);
+  desenharTentaculoRessaca(ctx,bx,by,1,ciclo);
+  // The new painted limbs move independently; the tiny ventosa glints are
+  // confined to the shared root instead of floating on old joint coordinates.
+  for(const [x,y,i] of [[154,557,0],[172,572,1]]){
+    const glow=t===null?.24:.30+.20*Math.sin(ciclo*Math.PI*2+i*1.48)**2;
+    fxDocas(ctx,'ventosa',x,y,9+i,7,ciclo,glow,-.36+i*.16);
   }
   // Near lip drawn over the anchored root, plus short spray driven by each swell.
   trilha(ctx,[[-34,-3],[-22,2],[-13,1],[-7,5],[4,4],[11,8],[21,3],[31,1],[38,-4]],bx,by+4,t,3,'193,225,255',.66,2.5);
   if(t!==null){
-    // Um pequeno golpe de espuma coincide com o início da flexão forte.
-    const splash=faseDocas(t,p.duracao,.8);
-    if(splash<.19){
-      const q=splash/.19,e=Math.sin(q*Math.PI);
-      fxDocas(ctx,'respingos',bx+8+18*q,by-10-17*e,45+q*14,27+q*8,q,.47*e,-.11);
-    }
+    const pLocal=faseRessaca(costa.x+bx*costa.escala,costa.y+by*costa.escala,t);
+    const onda=progressoImpacto(pLocal,.035),flex=Math.max(0,1-Math.abs(ciclo-.55)/.1);
+    const q=flex>Math.sin(onda*Math.PI)?flex*.6:onda;
+    const e=Math.max(Math.sin(onda*Math.PI)*.65,flex);
+    fxDocas(ctx,'respingos',bx+8+18*q,by-10-17*e,45+q*14,27+q*8,q,.47*e,-.11);
     for(let i=0;i<11;i++){
       const p=(t*.8+i*.37)%1;
       const x=bx+(i*37%53-26)*(1+.5*p)+Math.sin(i*4.9)*21;

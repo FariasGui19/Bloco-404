@@ -69,3 +69,9 @@ No barco é possível descansar/salvar ou retornar à Enseada. As cabanas mantê
 - Agrupamentos junto ao píer, cabanas e galpão; alguns vestígios foram retirados do centro do caminho. O barco foi aproximado do píer e os redemoinhos circulares destacados foram retirados para dar lugar aos tentáculos costeiros.
 - Espuma procedural discreta é calculada sobre as faces externas da costa e animada junto à água; não modifica a máscara de colisão. A vista continua 2.5D planar: altura física da escada e oclusão independente de corrimãos ainda não foram implementadas.
 - Validação: `tests/docas-lote9.mjs`, testes de rotas e colisão das Docas, progresso e travessia; inspeção em Chromium com save sintético no píer, vila e costa. A inspeção usa teleporte para enquadrar, não substitui percurso manual integral nem benchmark de FPS.
+
+### Lote 10 — vigília na névoa
+- Dez novas artes recortadas e integradas como peças RGBA independentes: algas, ancoradouro, barricada, baú, coral, farolete, fogueira, guincho, mural e tambores. São sprites estáticos, não folhas de quadros desenhados; os efeitos de chama/fumaça, brilho e partículas são procedurais e limitados, com alternativa para movimento reduzido.
+- O mural e a fogueira oferecem relatos opcionais dos vigias. O jogador pode acender ou apagar a fogueira: a escolha e a leitura persistem no save, sem iniciar ou alterar a contagem e sem bloquear a missão.
+- A ancoragem dos dez objetos, ordenação por pé e acessibilidade dos marcadores fazem parte dos testes. Inspeção em Chromium usou save simulado e teleporte para enquadrar píer, fogueira, mural e costa; confirmou interação e persistência da fogueira e do mural, e 10:00 em espera. Não é percurso manual integral nem benchmark de desempenho.
+- Continuam pendentes altura física da escada, oclusão própria de corrimãos e animações desenhadas quadro a quadro para os elementos estáticos. A causa da antiga tela preta de retorno não foi confirmada nesta etapa.

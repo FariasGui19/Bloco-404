@@ -344,7 +344,23 @@ function interactWithObject(object) {
   const interaction = object.interacao;
   if (!interaction) return;
 
+  if(object.id==='docas_fogueira'){
+    const flags=state.progress.flags??={};
+    if(!flags.docas_fogueira_lido){flags.docas_fogueira_lido=true;saveGame();}
+    const acesa=!!flags.docas_fogueira_acesa;
+    openDialogue({speaker:'FOGUEIRA DOS VIGIAS',dialogue:[
+      'NAS CINZAS HÁ UMA CANECA DE SAL E UM BILHETE: NÃO DEIXEM A ÚLTIMA LUZ SE APAGAR.',
+      'ALGUÉM ESPEROU AQUI ATÉ A MARÉ LEVAR OS PASSOS DE VOLTA PARA O PÍER.'
+    ],choicesAfterDialogue:true,choices:[
+      {text:acesa?'APAGAR FOGUEIRA':'ACENDER FOGUEIRA',onSelect:()=>{
+        flags.docas_fogueira_acesa=!acesa;saveGame();
+        openDialogue({speaker:'FOGUEIRA DOS VIGIAS',dialogue:[acesa?'A ÚLTIMA BRASA DESCANSA SOB AS CINZAS.':'UMA PEQUENA LUZ PERMANECE PARA QUEM AINDA PROCURA O CAMINHO DE CASA.']});
+      }},
+      {text:'DEIXAR COMO ESTÁ',onSelect:()=>{}}
+    ]});return;
+  }
   const diariosDocas={
+    docas_mural_vigia:['MURAL DOS VIGIAS','QUANDO A LUZ DO FAROL PISCOU TRÊS VEZES, O MAR DEVOLVEU VOZES QUE NINGUÉM TINHA CHAMADO.','SE A ÂNCORA CEDER, REÚNAM AS MEMÓRIAS DAS CABANAS E DA TRILHA ANTES DE VOLTAR AO NÚCLEO.'],
     docas_marca_navegantes:['MARCA DOS NAVEGANTES','TRÊS TRAÇOS NA PEDRA APONTAM PARA A COSTA, O ACAMPAMENTO E A ESTAÇÃO.','OS VIGIAS DIZIAM QUE A MEMÓRIA DAS DUAS FITAS E OS TRÊS FRAGMENTOS DEVEM VOLTAR JUNTOS AO NÚCLEO.'],
     docas_diario_pier:['DIÁRIO DO PÍER','A NÉVOA VEIO ANTES DA FALHA. DEIXAMOS UMA LUZ NO PÍER PARA QUEM CONSEGUISSE VOLTAR.','AS CRIATURAS SE APROXIMAM DA LUZ: APAGUE O FAROL SE PRECISAR PASSAR EM SILÊNCIO.'],
     docas_diario_trilha:['AVISO DOS VIGIAS','A CHAVE FICOU NA CABANA OESTE; O FUSÍVEL, NA CABANA LESTE. NÃO LEVE OS DOIS PELO MAR.','RECOMPILE OS FRAGMENTOS NO GALPÃO ANTES DE TENTAR O SELO NA SUBIDA.'],

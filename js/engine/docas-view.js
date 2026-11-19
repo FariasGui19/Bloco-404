@@ -3,11 +3,12 @@ import { SIDE_DEPTH_STEP } from './camera.js';
 import { CONFIG } from '../config.js';
 // A planta é geometria, não o PNG da referência. O terreno é rasterizado
 // uma vez; entidades e estruturas permanecem ordenadas pela posição do pé.
-let terreno=null,terrenoMap=null;
+let terreno=null,terrenoMap=null,espumaCosta=[];
 // Ordem usa o pé projetado, nunca o topo do sprite. Empates preservam a ordem de entrada.
 export function ordenarProfundidadeDocas(items){return items.sort((a,b)=>a.y-b.y);}
 function construirTerreno(map) {
   const s=map.geometriaDocas.escala,w=map.layout[0].length*64,h=map.layout.length*SIDE_DEPTH_STEP;
+  espumaCosta=[];
   const out=document.createElement('canvas');out.width=w;out.height=h;const g=out.getContext('2d');
   const agua=getSprite('docas_agua'),areia=getSprite('docas_areia');
   g.fillStyle=agua?g.createPattern(agua,'repeat'):'#071d2c';g.fillRect(0,0,w,h);
@@ -29,6 +30,7 @@ function construirTerreno(map) {
       if(g.isPointInPath(mx,my+8))continue;
       const x0=(a[0]+(b[0]-a[0])*f0)*s,y0=(a[1]+(b[1]-a[1])*f0)*s;
       const x1=(a[0]+(b[0]-a[0])*f1)*s,y1=(a[1]+(b[1]-a[1])*f1)*s;
+      espumaCosta.push({x:mx,y:my+24*s,dx:dx/len,dy:dy/len,phase:(i*13+k*7)%19});
       const d=24*s;g.fillStyle=facePattern||'#292b35';g.beginPath();g.moveTo(x0,y0);g.lineTo(x1,y1);g.lineTo(x1,y1+d);g.lineTo(x0,y0+d);g.closePath();g.fill();pathAll();
     }
   }
@@ -66,8 +68,9 @@ function construirTerreno(map) {
 }
 function desenharEstrutura(ctx,st,t,reduced){
  const img=getSprite('docas_'+st.id);if(!img)return;const folha=st.id.startsWith('lote3_'),w=st.largura,h=folha?w:w*img.height/img.width,x=st.x-w/2,y=st.y-h;
- if(st.camada!=='chao'&&!st.id.startsWith('lote5_')&&!st.id.startsWith('lote6_')&&!st.id.startsWith('lote7_')&&!st.id.startsWith('lote8_')&&!['cabana-oeste','cabana-leste','galpao','torre','farol','camara','porta'].includes(st.id)){ctx.save();ctx.fillStyle='rgba(7,8,15,.12)';ctx.beginPath();ctx.ellipse(st.x,st.y-3,w*.37,Math.max(5,w*.07),0,0,Math.PI*2);ctx.fill();ctx.restore();}
+ if(st.camada!=='chao'&&!st.id.startsWith('lote5_')&&!st.id.startsWith('lote6_')&&!st.id.startsWith('lote7_')&&!st.id.startsWith('lote8_')&&!st.id.startsWith('lote9_')&&!['cabana-oeste','cabana-leste','galpao','torre','farol','camara','porta'].includes(st.id)){ctx.save();ctx.fillStyle='rgba(7,8,15,.12)';ctx.beginPath();ctx.ellipse(st.x,st.y-3,w*.37,Math.max(5,w*.07),0,0,Math.PI*2);ctx.fill();ctx.restore();}
  ctx.save();
+ if(st.id==='lote9_flores' && !reduced){ctx.translate(st.x,st.y);ctx.rotate(Math.sin(t*.8+st.x)*.012);ctx.translate(-st.x,-st.y);}
  if(st.id==='barco' && !reduced){ctx.translate(st.x,st.y);ctx.rotate(Math.sin(t*.65)*.012);ctx.translate(-st.x,-st.y);}
  if(folha){
    const frame=reduced?0:Math.floor(t*4+(st.x%7)/7)%8;
@@ -113,6 +116,16 @@ export function renderDocas(ctx,map,state,camX,camY,w,h,zoom,dpr,now,drawPlayer)
   // Sulcos de água e espuma deslocam-se pelo mar sem efeito estroboscópico.
   ctx.strokeStyle='rgba(87,183,192,.16)';ctx.lineWidth=2;
   for(let i=0;i<90;i++){const x=(i*137+t*(3+i%3))%(terreno.width+100),y=(i*191)%terreno.height;ctx.beginPath();ctx.arc(x,y,7+i%10,.15,2.5);ctx.stroke();}
+  // Espuma baixa junto à base da falésia, não sobre o piso transitável.
+  // A lista é calculada uma vez com o mesmo contorno do terreno.
+  ctx.save();ctx.lineWidth=2;
+  for(const p of espumaCosta){
+    if(Math.abs(p.x-camX)>w/(2*zoom)+30||Math.abs(p.y-camY)>h/zoom+30)continue;
+    const wave=reduced?0:Math.sin(t*.9+p.phase*.6);
+    ctx.strokeStyle=`rgba(138,218,221,${.10+.04*wave})`;
+    ctx.beginPath();ctx.moveTo(p.x-p.dx*8,p.y-p.dy*8+3+wave*3);ctx.lineTo(p.x+p.dx*8,p.y+p.dy*8+3+wave*3);ctx.stroke();
+  }
+  ctx.restore();
   for(const m of map.marDocas??[]){
     const img=getSprite('docas_mar_'+m.id);if(!img)continue;
     const x=m.x*map.geometriaDocas.escala,y=m.y*map.geometriaDocas.escala,size=m.tamanho*map.geometriaDocas.escala;

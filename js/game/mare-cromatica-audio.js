@@ -1,6 +1,6 @@
 // Ambiente opcional, sem downloads ou autoplay. Só cria o AudioContext depois
 // do clique no botão; fontes fixas são reutilizadas durante a sessão.
-let context=null, mix=null, drone=null, hiss=null, tension=null, enabled=false, last=-1;
+let context=null, mix=null, drone=null, hiss=null, tension=null, fogo=null, enabled=false, last=-1, lastFogo=-1;
 export function ativarAudioCromatico() {
   if(enabled){enabled=false;context?.suspend?.().catch(()=>{});return false;}
   const Audio=globalThis.AudioContext ?? globalThis.webkitAudioContext;if(!Audio)return false;
@@ -13,6 +13,8 @@ export function ativarAudioCromatico() {
       // Ruído determinístico e suavizado, sem alocações por quadro.
       let seed=403,prev=0;for(let i=0;i<data.length;i++){seed=(seed*1664525+1013904223)>>>0;prev=.88*prev+.12*(seed/2147483648-1);data[i]=prev;}
       const source=context.createBufferSource();source.buffer=buffer;source.loop=true;hiss=context.createGain();hiss.gain.value=.045;source.connect(hiss);hiss.connect(mix);source.start();
+      // Fogo usa o mesmo ruído em um filtro; só aparece quando aceso e próximo.
+      const filtroFogo=context.createBiquadFilter();filtroFogo.type='highpass';filtroFogo.frequency.value=900;fogo=context.createGain();fogo.gain.value=0;source.connect(filtroFogo);filtroFogo.connect(fogo);fogo.connect(mix);
       // Dois harmônicos suaves sustentam uma nota de vigília sob o ruído do mar.
       // Osciladores contínuos e LFO lento: sem sequenciadores nem alocações por quadro.
       const harmony=context.createGain();harmony.gain.value=.008;harmony.connect(mix);
@@ -26,11 +28,12 @@ export function ativarAudioCromatico() {
     enabled=true;context.resume().catch(()=>{});return true;
   } catch {enabled=false;return false;}
 }
-export function atualizarAudioCromatico(active, danger) {
+export function atualizarAudioCromatico(active, danger, proximidadeFogo=0) {
   if(!context||!enabled)return;
   const desired=active? (danger?2:1):0;
-  if(desired===last)return;
-  last=desired;
-  try {const now=context.currentTime;mix.gain.setTargetAtTime(active?.22:0,now,.45);tension.gain.setTargetAtTime(danger?.035:0,now,.4);}
+  const fire=active && Number.isFinite(proximidadeFogo)?Math.round(Math.max(0,Math.min(1,proximidadeFogo))*10)/10:0;
+  if(desired===last && fire===lastFogo)return;
+  last=desired;lastFogo=fire;
+  try {const now=context.currentTime;mix.gain.setTargetAtTime(active?.22:0,now,.45);tension.gain.setTargetAtTime(active && danger?.035:0,now,.4);fogo.gain.setTargetAtTime(fire*.045,now,.3);}
   catch { /* O áudio não pode interromper a missão. */ }
 }

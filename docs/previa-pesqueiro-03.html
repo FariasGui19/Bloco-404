@@ -1,0 +1,31 @@
+<!doctype html><html lang="pt-BR"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Docas · Pesqueiro 03</title>
+<style>*{box-sizing:border-box}body{background:#0a101d;color:#d3dced;font:15px system-ui;margin:0}main{max-width:1280px;padding:28px 20px;margin:auto}small{color:#b69bdf;letter-spacing:.16em}h1{font-size:32px;margin:12px 0}p{color:#99abc3;line-height:1.6;max-width:900px}button,label{display:inline-block;color:#e2dded;background:#212638;border:1px solid #44445b;border-radius:6px;padding:10px;margin:4px 8px 16px 0}canvas{width:100%;background:#101c30;border:1px solid #343f57;border-radius:10px}a{color:#c3a3f5}#status{color:#a3c0ad}</style>
+<main><small>DOCAS DA NEBLINA / LOTE 03</small><h1>Um casco. Uma maré.</h1><p>Proa antiga removida do deck e resíduos retirados da camada de reflexos. Dez folhas exclusivas do pesqueiro e da água: quatro capítulos do casco e seis efeitos, 192 quadros. Pintura aprovada reutilizada, com cordame, luz, fumaça e água procedurais. O cais permanece fixo; o tentáculo não foi alterado.</p><button id="pause">Pausar</button><label><input id="reduced" type="checkbox"> Movimento reduzido</label><label><input id="detail" type="checkbox"> Detalhe do encaixe</label><span id="status">Carregando…</span><canvas id="scene" width="1568" height="780"></canvas><p>Prévia setorial: usa as mesmas funções de desenho do jogo; fundo de água demonstrativo, sem personagem nem demais setores. <a href="../index.html">Jogo</a> · <a href="../assets/sprites/docas-pesqueiro-03/manifest.json">Manifesto das dez folhas</a></p></main>
+<script type="module">
+import {loadSprites,getSprite} from '../js/engine/sprites.js';
+import {CAIS_SUL,SPRITES_CAIS_SUL} from '../js/data/worlds/arquipelago-rotas-perdidas/cais-sul.js';
+import {SPRITES_CASCOS} from '../js/engine/docas-cascos.js';
+import {SPRITES_PESQUEIRO_03} from '../js/engine/docas-pesqueiro-03.js';
+import {SPRITES_DOCAS_VIVAS,desenharMarCais} from '../js/engine/docas-vivas.js';
+import {SPRITES_RESSACA} from '../js/engine/docas-ressaca.js';
+import {desenharPecaCais,desenharReflexosCais} from '../js/engine/docas-cais-view.js';
+const canvas=document.querySelector('canvas'),ctx=canvas.getContext('2d');
+const reduced=document.querySelector('#reduced'),detail=document.querySelector('#detail'),pause=document.querySelector('#pause');
+reduced.checked=matchMedia('(prefers-reduced-motion: reduce)').matches;
+let paused=false,time=0,last=performance.now();pause.onclick=()=>{paused=!paused;pause.textContent=paused?'Retomar':'Pausar';};
+const loaded=await loadSprites([...SPRITES_CAIS_SUL,...SPRITES_CASCOS,...SPRITES_PESQUEIRO_03,...SPRITES_DOCAS_VIVAS,...SPRITES_RESSACA,{id:'preview_sea',src:'assets/sprites/travessia-neblina/mar.png'}].map(s=>({...s,src:'../'+s.src})));
+document.querySelector('#status').textContent=loaded.every(Boolean)?'10 folhas novas carregadas':'Falha no carregamento';
+const cais={...CAIS_SUL,x:0,y:50,escala:1};
+window.sample=(seconds,still=reduced.checked)=>{
+ const t=still?null:seconds;
+ ctx.resetTransform();ctx.clearRect(0,0,1568,780);ctx.fillStyle='#101c30';ctx.fillRect(0,0,1568,780);
+ if(detail.checked){ctx.scale(1.5,1.5);ctx.translate(-260,-65);}
+ const sea=getSprite('preview_sea');if(sea){ctx.save();ctx.globalAlpha=.7;ctx.drawImage(sea,0,0,1568,780);ctx.restore();}
+ desenharReflexosCais(ctx,cais,1);desenharMarCais(ctx,cais,1,t);
+ for(const p of cais.pecas.filter(p=>p.pe===undefined))desenharPecaCais(ctx,cais,p,1,t);
+ for(const p of cais.pecas.filter(p=>p.pe!==undefined).sort((a,b)=>a.pe-b.pe))desenharPecaCais(ctx,cais,p,1,t);
+ ctx.resetTransform();
+};
+function loop(now){const dt=Math.min((now-last)/1000,.05);last=now;if(!paused)time+=dt;window.sample(time);requestAnimationFrame(loop);}
+window.ready=true;requestAnimationFrame(loop);
+</script></html>

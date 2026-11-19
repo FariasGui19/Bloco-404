@@ -1,3 +1,4 @@
+import { SPRITES_PESQUEIRO_03 } from './engine/docas-pesqueiro-03.js';
 import { SPRITES_TENTACULO_02 } from './engine/docas-tentaculo-02.js';
 import { SPRITES_CASCOS } from './engine/docas-cascos.js';
 import { SPRITES_RESSACA } from './engine/docas-ressaca.js';
@@ -336,6 +337,7 @@ await loadSprites([
   ...SPRITES_DOCAS_VIVAS,
   ...SPRITES_RESSACA,
   ...SPRITES_CASCOS,
+  ...SPRITES_PESQUEIRO_03,
   ...SPRITES_TENTACULO_02,
   { id: 'docas_cabana-oeste', src: 'assets/sprites/docas-reconstrucao/cabana-oeste.png' },
   { id: 'docas_cabana-leste', src: 'assets/sprites/docas-reconstrucao/cabana-leste.png' },

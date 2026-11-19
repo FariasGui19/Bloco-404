@@ -1,3 +1,4 @@
+import { avancarAnimacaoDocas } from './engine/docas-animation.js';
 import { SPRITES_PESQUEIRO_03 } from './engine/docas-pesqueiro-03.js';
 import { SPRITES_TENTACULO_02 } from './engine/docas-tentaculo-02.js';
 import { SPRITES_CASCOS } from './engine/docas-cascos.js';
@@ -1446,6 +1447,10 @@ async function frame(now) {
     Math.min(0.033, (now - last) / 1000)
   );
 
+  // Visual time uses the RAF delta, not the clamped physics/mission delta.
+  // Keep it outside update(): waiting missions, dialogs and calibration may
+  // stop simulation, but must not freeze the dock's sea, hull or tentacle.
+  avancarAnimacaoDocas(state, (now-last)/1000, document.hidden);
   last = now;
 
   atualizarClima(state.clima, dt);
@@ -1472,7 +1477,7 @@ async function frame(now) {
     endInputFrame();
     return;
   }
-  render(map, state);
+  render(map, state, now);
   desenharAtmosferaCromatica(canvas,state);
   updateHud(map, state);
   // Fôlego só aparece quando importa (nadando); em terra não ocupa tela.

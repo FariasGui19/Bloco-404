@@ -80,7 +80,7 @@ export const docas={id:'mare_cromatica_docas',meta:{nome:'DOCAS DA NEBLINA',tipo
   estrutura('cabana-oeste',585,478,150),estrutura('cabana-leste',1200,510,160),estrutura('galpao',875,468,145),
   estrutura('escada',1080,403,100,'chao'),estrutura('torre',1350,500,75),estrutura('farol',915,220,80),
   estrutura('camara',1250,240,135),estrutura('porta',975,225,35),
-  estrutura('cais_rochas',760,640,55),estrutura('cais_cristais',790,635,33),
+  estrutura('cais_rochas',760,640,55),
   // Decoração sem colisão: não altera a malha nem cobre marcadores de missão.
   ...[[310,475,95],[455,365,100],[770,410,90],[1030,380,90],[1300,445,95],[1350,540,88]].map(([x,y,w])=>estrutura('lote3_palmeira',x,y,w)),
   ...[[375,420,105],[730,400,105],[395,520,90],[1160,455,90]].map(([x,y,w])=>estrutura('lote3_arvore',x,y,w)),

@@ -77,6 +77,8 @@ function desenharEstrutura(ctx,st,t,reduced,state){
  ctx.save();
  if((st.id==='lote9_flores'||st.id==='lote11_gramineas'||st.id==='lote12_flora') && !reduced){ctx.translate(st.x,st.y);ctx.rotate(Math.sin(t*.8+st.x)*.012);ctx.translate(-st.x,-st.y);}
  if(st.id==='barco' && !reduced){ctx.translate(st.x,st.y);ctx.rotate(Math.sin(t*.65)*.012);ctx.translate(-st.x,-st.y);}
+ // Contraste e cor aplicados somente às artes do píer e do pesqueiro.
+ if(st.id==='barco'||st.id==='pier')ctx.filter='saturate(1.32) contrast(1.15) brightness(1.06)';
  if(folha){
    const frame=reduced?0:Math.floor(t*4+(st.x%7)/7)%8;
    ctx.drawImage(img,frame*256,0,256,256,x,y,w,h);
@@ -91,8 +93,10 @@ function desenharEstrutura(ctx,st,t,reduced,state){
  const pulso=reduced?.55:.46+.10*Math.sin(t*1.2);
  // Sobreposições discretas acompanham as fontes reais, nunca o chão inteiro.
  if(st.id==='barco'){
-   glow(x+w*.54,y+h*.42,w*.14,'#ffc879',pulso*.32);
-   glow(x+w*.28,y+h*.10,w*.035,'#ff749d',pulso*.5);
+   glow(x+w*.53,y+h*.42,w*.115,'#ff9c32',pulso*.58);
+   // A lâmpada no topo da cabine acompanha o balanço vertical do barco.
+   glow(x+w*.47,y+h*.165,w*.035,'#ff355d',pulso*.85);
+   ctx.save();ctx.fillStyle='#ff6483';ctx.beginPath();ctx.arc(x+w*.47,y+h*.165,Math.max(2,w*.006),0,Math.PI*2);ctx.fill();ctx.restore();
    const spark=getSprite('docas_fx_brilho-ambar');if(spark){ctx.save();ctx.globalAlpha=.09+pulso*.08;ctx.drawImage(spark,x+w*.43,y+h*.31,w*.20,h*.21);ctx.restore();}
  }
  if(st.id==='galpao'){
@@ -169,17 +173,31 @@ export function renderDocas(ctx,map,state,camX,camY,w,h,zoom,dpr,now,drawPlayer)
   for(const p of espumaCosta){
     if(Math.abs(p.x-camX)>w/(2*zoom)+30||Math.abs(p.y-camY)>h/zoom+30)continue;
     const wave=reduced?0:Math.sin(t*.9+p.phase*.6);
-    ctx.strokeStyle=`rgba(138,218,221,${.10+.04*wave})`;
+    const local=p.x>700*sCais&&p.x<830*sCais&&p.y>590*sCais&&p.y<700*sCais;
+    ctx.strokeStyle=local?`rgba(173,229,239,${.32+.06*wave})`:`rgba(138,218,221,${.10+.04*wave})`;
     ctx.beginPath();ctx.moveTo(p.x-p.dx*8,p.y-p.dy*8+3+wave*3);ctx.lineTo(p.x+p.dx*8,p.y+p.dy*8+3+wave*3);ctx.stroke();
   }
   ctx.restore();
+  // Traços curtos seguem a linha inferior inclinada do casco, por trás da arte.
+  const barco=map.estruturasDocas.find(st=>st.id==='barco'),arteBarco=getSprite('docas_barco');
+  if(barco&&arteBarco){
+    const bw=barco.largura,bh=bw*arteBarco.height/arteBarco.width,bx=barco.x-bw/2,by=barco.y-bh+(reduced?0:Math.sin(t*.65)*3);
+    const casco=[[.08,.76],[.17,.94],[.34,.99],[.56,.92],[.78,.78],[.96,.59]];
+    ctx.save();ctx.lineCap='round';
+    for(let i=0;i<casco.length-1;i++)for(let j=0;j<4;j++){
+      const f=j/4,ff=f+.15,[ax,ay]=casco[i],[cx,cy]=casco[i+1],bob=reduced?0:Math.sin(t*.9+i+j)*2;
+      ctx.strokeStyle=(i+j)%3===0?'rgba(239,83,207,.58)':'rgba(172,229,238,.53)';ctx.lineWidth=2;
+      ctx.beginPath();ctx.moveTo(bx+(ax+(cx-ax)*f)*bw,by+(ay+(cy-ay)*f)*bh+5+bob);ctx.lineTo(bx+(ax+(cx-ax)*ff)*bw,by+(ay+(cy-ay)*ff)*bh+5+bob);ctx.stroke();
+    }
+    ctx.restore();
+  }
   // Reflexo de maré encosta no casco, mas nunca altera a máscara do píer.
   {const s=map.geometriaDocas.escala;ctx.save();ctx.strokeStyle='rgba(225,80,198,.30)';ctx.lineWidth=2;for(let i=0;i<4;i++){const x=(380+i*29)*s,y=(742+i%2*8)*s,shift=reduced?0:Math.sin(t*.6+i)*4;ctx.beginPath();ctx.moveTo(x+shift,y);ctx.lineTo(x+12*s+shift,y-3);ctx.lineTo(x+20*s+shift,y);ctx.lineTo(x+27*s+shift,y-3);ctx.stroke();}ctx.restore();}
   // Névoa baixa limitada ao mar do cais; passa atrás do barco e do deck.
   const fogCais=getSprite('docas_fx_faixas-nevoa');
   if(fogCais){const s=map.geometriaDocas.escala;ctx.save();ctx.globalAlpha=.12;for(const [x,y,k] of [[175,730,0],[500,780,1],[780,705,2]]){const dx=reduced?0:Math.sin(t*.12+k)*18;ctx.drawImage(fogCais,x*s+dx,y*s,155*s,28*s);}ctx.restore();}
   // Pequenos reflexos afastados da máscara de terra, sem substituir o mar.
-  for(const [id,mx,my,size,phase] of [['onda-ciano',475,745,64,0],['onda-magenta',205,555,54,1],['redemoinho',1400,590,62,2]]){
+  for(const [id,mx,my,size,phase] of [['onda-magenta',205,555,54,1],['redemoinho',1400,590,62,2]]){
     const img=getSprite('docas_fx_'+id),s=map.geometriaDocas.escala;if(!img)continue;
     const px=mx*s,py=my*s,sz=size*s;if(Math.abs(px-camX)>w/(2*zoom)+sz||Math.abs(py-camY)>h/zoom+sz)continue;
     ctx.save();ctx.globalAlpha=reduced?.18:.17+.035*Math.sin(t*.8+phase);ctx.drawImage(img,px-sz/2,py-sz*.20,sz,sz*.40);ctx.restore();
@@ -189,7 +207,7 @@ export function renderDocas(ctx,map,state,camX,camY,w,h,zoom,dpr,now,drawPlayer)
     if(Math.abs(x-camX)>w/(2*zoom)+size*2||Math.abs(y-camY)>h/zoom+size*2)continue;
     if(m.id==='tentaculo-cais'){
       const img=getSprite('docas_cais_tentaculo');if(!img)continue;
-      ctx.save();for(let i=0;i<3;i++){const p=reduced?(i+1)/3:(t*.16+i/3)%1;ctx.strokeStyle=`rgba(239,71,209,${.36*(1-p)})`;ctx.lineWidth=2+2*(1-p);ctx.beginPath();ctx.ellipse(x,y,size*(.17+p*.53),size*(.07+p*.17),0,0,Math.PI*2);ctx.stroke();}ctx.restore();
+      ctx.save();for(let i=0;i<3;i++){const p=reduced?(i+1)/3:(t*.16+i/3)%1;ctx.strokeStyle=`rgba(245,72,215,${.55*(1-p)})`;ctx.lineWidth=2+2*(1-p);for(let j=0;j<5;j++){ctx.beginPath();ctx.ellipse(x,y,size*(.17+p*.53),size*(.07+p*.17),0,j*Math.PI*2/5,j*Math.PI*2/5+.85);ctx.stroke();}}ctx.restore();
       const h=size*img.height/img.width,n=16;ctx.save();ctx.imageSmoothingEnabled=false;
       for(let i=0;i<n;i++){const sy=Math.floor(i*img.height/n),sy2=Math.floor((i+1)*img.height/n),rel=1-i/n,dx=reduced?0:Math.sin(t*.85+rel*3.5)*size*.045*rel;ctx.drawImage(img,0,sy,img.width,sy2-sy,x-size/2+dx,y-h+sy/img.height*h,size,(sy2-sy)/img.height*h+.5);}
       ctx.restore();continue;

@@ -111,6 +111,12 @@ export const docas={id:'mare_cromatica_docas',meta:{nome:'DOCAS DA NEBLINA',tipo
   ...[[360,500,36],[1270,550,36]].map(([x,y,w])=>estrutura('lote7_raiz-costa',x,y,w)),
   ...[[335,480,28],[1290,560,28]].map(([x,y,w])=>estrutura('lote7_coral-pedra',x,y,w)),
   ...[[315,460,40],[1310,550,40]].map(([x,y,w])=>estrutura('lote7_rocha-alta',x,y,w)),
+  // Vestígios próximos a pontos de uso: cais, abrigo, vigia e margem.
+  estrutura('lote10_ancoradouro',540,625,22),estrutura('lote10_guincho',670,590,30),
+  estrutura('lote10_tambores',740,575,22),estrutura('lote10_bau',645,520,26),
+  estrutura('lote10_barricada',760,465,42),estrutura('lote10_placa-lore',780,490,28),
+  estrutura('lote10_fogueira',440,540,35),estrutura('lote10_farolete',1300,505,20),
+  estrutura('lote10_algas',335,520,38),estrutura('lote10_coral',1250,580,33),
   // Lote 9: agrupamentos junto às atividades, não espalhados pelo caminho.
   estrutura('lote9_banco',490,530,32),estrutura('lote9_vasos',540,492,25),
   estrutura('lote9_flores',485,510,33),estrutura('lote9_tronco',375,500,39),
@@ -129,6 +135,7 @@ export const docas={id:'mare_cromatica_docas',meta:{nome:'DOCAS DA NEBLINA',tipo
  objects:[marker('docas_barco',630,660,'BARCO • INICIAR / DESCANSAR'),
  marker('cromatica_fragmento_estacao',1050,365,'RECOLHER FRAGMENTO • TRILHA'),marker('cromatica_selo',1110,275,'ESTABILIZAR O ACESSO AO NÚCLEO'),
  marker('cromatica_painel_origem',1190,220,'ALINHAR ORIGEM'),marker('cromatica_painel_retorno',1240,250,'ALINHAR RETORNO'),marker('cromatica_painel_memoria',1300,210,'ALINHAR MEMÓRIA'),marker('cromatica_ancora',1250,185,'ESTABILIZAR ÂNCORA'),
+ marker('docas_mural_vigia',780,490,'LER MURAL DOS VIGIAS'),marker('docas_fogueira',440,540,'EXAMINAR FOGUEIRA DOS VIGIAS'),
  marker('docas_marca_navegantes',840,580,'EXAMINAR MARCA DOS NAVEGANTES'),marker('docas_diario_pier',710,605,'LER DIÁRIO DO PÍER'),marker('docas_diario_trilha',980,520,'LER AVISO DOS VIGIAS'),
  marker('docas_torre',1330,500,'SUBIR À TORRE DE VIGIA'),marker('docas_resina',720,565,'RASTREAR RESINA • MARÉ ASTRAL'),marker('docas_eletrico',910,545,'PAINEL ELÉTRICO • NÚCLEO X10'),marker('docas_selo',1020,420,'SELO DE NÉVOA • DOMÍNIO ANCIÃO'),marker('docas_biomassa',1120,565,'BIOMASSA • BIO-FORJA')],
  trainingTargets:[{id:'docas_infectado_1',x:Math.floor(18*ESCALA_DOCAS),y:Math.floor(12*ESCALA_DOCAS),maxHealth:65,cromaticaEnemy:true},{id:'docas_infectado_2',x:Math.floor(19*ESCALA_DOCAS),y:Math.floor(10*ESCALA_DOCAS),maxHealth:65,cromaticaEnemy:true}],

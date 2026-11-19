@@ -1,9 +1,35 @@
+import { faseDocas, fxDocas } from './docas-vivas.js';
 import { getSprite } from './sprites.js';
 
-export function desenharPecaCosta(ctx, origem, peca, escala) {
+export function desenharPecaCosta(ctx, origem, peca, escala,t=null) {
   const img=getSprite(`docas_costa_${peca.id}`);
+  if(!img)return;
   const u=origem.escala*escala;
-  if(img)ctx.drawImage(img,origem.x*escala+peca.x*u,origem.y*escala+peca.y*u,peca.w*u,peca.h*u);
+  const x=origem.x*escala+peca.x*u,y=origem.y*escala+peca.y*u;
+  ctx.save();ctx.translate(x,y);ctx.scale(u,u);
+  if(peca.id==='palmeiras' && t!==null){
+    // Distinct heights bend into the wind while the two trunks stay rooted.
+    const n=9;
+    const sway=y=>Math.sin(t*.94+y/62)*4.8*(1-y/peca.h)**1.7;
+    const matrix=ctx.getTransform();
+    const snap=y=>(Math.round(y*matrix.d+matrix.f)-matrix.f)/matrix.d;
+    let dx=sway(0);
+    for(let i=0;i<n;i++){
+      const a=Math.floor(i*img.height/n),b=Math.floor((i+1)*img.height/n);
+      const y0=snap(a*peca.h/img.height),y1=snap(b*peca.h/img.height),dy=y1-y0,next=sway(b*peca.h/img.height);
+      if(dy<=0){dx=next;continue;}
+      ctx.save();ctx.transform(1,0,(next-dx)/dy,1,dx,y0);
+      ctx.drawImage(img,0,a,img.width,b-a,0,0,peca.w,dy);ctx.restore();dx=next;
+    }
+  } else ctx.drawImage(img,0,0,peca.w,peca.h);
+  if(peca.id==='cristais'){
+    for(const [sx,sy,off] of [[71,23,.13],[122,54,.49],[82,101,.79],[157,109,.29]]){
+      const p=faseDocas(t,4.7,off);
+      const a=t===null?.27:.55*Math.sin(p*Math.PI)**4;
+      fxDocas(ctx,'cintila',sx+(t===null?0:Math.sin(t+off*7)*5),sy-9*p,27,23,p,a);
+    }
+  }
+  ctx.restore();
 }
 
 // Underpainting keeps the foam's blue-violet depths continuous through
@@ -91,24 +117,31 @@ export function desenharMareOeste(ctx,costa,escala,t) {
     const fw=img.width/p.colunas,fh=img.height/Math.ceil(p.quadros/p.colunas);
     ctx.drawImage(img,frame%p.colunas*fw,Math.floor(frame/p.colunas)*fh,fw,fh,p.x,p.y,p.w,p.h);
   }
+  // The isolated ventosa artwork is a tiny surface glint, tracked to the
+  // same bend used by the atlas (rather than spawning free above the water).
+  for(const [x,y,i] of [[180,475,0],[149,492,1],[142,515,2],[219,503,3],[158,554,4]]){
+    const q=faseDocas(t,p.duracao),phase=q*Math.PI*2;
+    const w=Math.max(0,Math.min(1,(571-y)/110))**1.3,tip=Math.max(0,Math.min(1,(x-170)/74))*w;
+    const dx=w*(7*Math.sin(phase)+4*Math.sin(2*phase)*w)-3*tip*Math.sin(phase);
+    const dy=11*tip*Math.sin(phase)+3*w*Math.sin(2*phase)+5*w*(1-Math.cos(phase));
+    const glow=t===null?.22:.25+.30*Math.sin(phase+i*1.48)**2;
+    fxDocas(ctx,'ventosa',x+dx,y+dy,10+i%2*2,7,q,glow,-.4+i*.16);
+  }
   // Near lip drawn over the anchored root, plus short spray driven by each swell.
   trilha(ctx,[[-34,-3],[-22,2],[-13,1],[-7,5],[4,4],[11,8],[21,3],[31,1],[38,-4]],bx,by+4,t,3,'193,225,255',.66,2.5);
   if(t!==null){
+    // Um pequeno golpe de espuma coincide com o início da flexão forte.
+    const splash=faseDocas(t,p.duracao,.8);
+    if(splash<.19){
+      const q=splash/.19,e=Math.sin(q*Math.PI);
+      fxDocas(ctx,'respingos',bx+8+18*q,by-10-17*e,45+q*14,27+q*8,q,.47*e,-.11);
+    }
     for(let i=0;i<11;i++){
       const p=(t*.8+i*.37)%1;
       const x=bx+(i*37%53-26)*(1+.5*p)+Math.sin(i*4.9)*21;
       const y=by-3-p*(1-p)*(14+i%5*4);
       ctx.fillStyle=`rgba(187,209,255,${.32*(1-p)})`;
       ctx.fillRect(x,y,1.2+i%3*.42,1.1+i%3*.36);
-    }
-  }
-  const fog=getSprite('docas_fx_faixas-nevoa');
-  if(fog){
-    // Low bank stays under the props and stops well short of the staircase.
-    for(const [x,y,w,h,alpha,phase] of [[14,275,308,90,.17,0],[359,339,390,87,.30,2],[25,651,311,94,.16,5]]){
-      const drift=t===null?0:Math.sin(t*.26+phase)*28;
-      ctx.globalAlpha=t===null?alpha:alpha*(.88+.12*Math.sin(t*.46+phase));
-      ctx.drawImage(fog,x+drift,y,w,h);
     }
   }
   ctx.restore();

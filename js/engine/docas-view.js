@@ -1,3 +1,4 @@
+import { desenharSuperficieOeste, desenharCorrentesOeste, desenharMarCais } from './docas-vivas.js';
 import { getSprite } from './sprites.js';
 import { SIDE_DEPTH_STEP } from './camera.js';
 import { CONFIG } from '../config.js';
@@ -14,15 +15,8 @@ function construirTerreno(map) {
   const s=map.geometriaDocas.escala,w=map.layout[0].length*64,h=map.layout.length*SIDE_DEPTH_STEP;
   espumaCosta=[];ondasCais=criarOndasCais(map.geometriaDocas.terraPolys??map.geometriaDocas.polys);
   const out=document.createElement('canvas');out.width=w;out.height=h;const g=out.getContext('2d');
-  const agua=getSprite('docas_agua'),areia=getSprite('docas_areia');
-  g.fillStyle=agua?g.createPattern(agua,'repeat'):'#071d2c';g.fillRect(0,0,w,h);
-  if(map.caisSul)desenharReflexosCais(g,map.caisSul,s);
-  const costa=map.costaOeste;
+  const areia=getSprite('docas_areia'),costa=map.costaOeste;
   const naPraia=(x,y)=>costa && x<650*s && y>(costa.y+85*costa.escala)*s;
-  if(costa){
-    iluminarAguaOeste(g,costa,s);
-    desenharPecaCosta(g,costa,costa.mar,s);
-  }
   const pathAll=()=>{g.beginPath();for(const poly of map.geometriaDocas.terraPolys??map.geometriaDocas.polys){poly.forEach(([x,y],i)=>i?g.lineTo(x*s,y*s):g.moveTo(x*s,y*s));g.closePath();}};
   // Faces sob as margens externas, antes do piso: a superfície continua
   // na posição usada pela colisão. Segmentos internos nunca viram penhasco.
@@ -153,17 +147,30 @@ export function renderDocas(ctx,map,state,camX,camY,w,h,zoom,dpr,now,drawPlayer)
   // Mar preenche também além do limite do canvas cacheado, evitando uma
   // faixa chapada no zoom afastado ou próximo das bordas do mapa.
   const mar=getSprite('docas_agua');if(mar){ctx.fillStyle=ctx.createPattern(mar,'repeat');ctx.fillRect(camX-w/(2*zoom)-8,camY-(h/2+115)/zoom-8,w/zoom+16,h/zoom+16);}
+  const reduced=!!globalThis.matchMedia?.('(prefers-reduced-motion: reduce)').matches,t=reduced?0:now/1000;
+  const clock=reduced?null:t,sCais=map.geometriaDocas.escala,oeste=map.costaOeste;
+  const esquerda=camX-w/(2*zoom),direita=camX+w/(2*zoom),topo=camY-(h/2+115)/zoom,base=camY+(h/2-115)/zoom;
+  const costaVisivel=oeste && esquerda<(oeste.x+oeste.mar.w*oeste.escala)*sCais && direita>oeste.x*sCais
+    && base>oeste.y*sCais && topo<(oeste.y+oeste.mar.h*oeste.escala)*sCais;
+  const cais=map.caisSul,pecasCais=[];
+  if(cais && esquerda<(cais.x+cais.largura*cais.escala)*sCais && base>cais.y*sCais){
+    desenharReflexosCais(ctx,cais,sCais);
+    desenharMarCais(ctx,cais,sCais,clock);
+  }
+  if(costaVisivel){
+    iluminarAguaOeste(ctx,oeste,sCais);
+    desenharSuperficieOeste(ctx,oeste,sCais,clock);
+    desenharCorrentesOeste(ctx,oeste,sCais,clock);
+  }
   if(terreno){
     const x=Math.max(0,Math.floor(camX-w/(2*zoom)-4)),y=Math.max(0,Math.floor(camY-(h/2+115)/zoom-4));
     const x1=Math.min(terreno.width,Math.ceil(camX+w/(2*zoom)+4)),y1=Math.min(terreno.height,Math.ceil(camY+(h/2-115)/zoom+4));
     if(x1>x && y1>y)ctx.drawImage(terreno,x,y,x1-x,y1-y,x,y,x1-x,y1-y);
   }
-  const reduced=!!globalThis.matchMedia?.('(prefers-reduced-motion: reduce)').matches,t=reduced?0:now/1000;
   // Sulcos de água e espuma deslocam-se pelo mar sem efeito estroboscópico.
   ctx.strokeStyle='rgba(87,183,192,.16)';ctx.lineWidth=2;
   for(let i=0;i<90;i++){const x=(i*137+t*(3+i%3))%(terreno.width+100),y=(i*191)%terreno.height;ctx.beginPath();ctx.arc(x,y,7+i%10,.15,2.5);ctx.stroke();}
   // Ondulações quebradas no mar do cais, com geometria e quantidade fixas.
-  const sCais=map.geometriaDocas.escala;
   for(const wave of ondasCais){
     const x=wave.x*sCais,y=wave.y*sCais;if(Math.abs(x-camX)>w/(2*zoom)+100||Math.abs(y-camY)>h/zoom+100)continue;
     const drift=reduced?0:Math.sin(t*.65+wave.fase)*5,alpha=reduced?.25:.24+.06*Math.sin(t*.8+wave.fase);
@@ -200,14 +207,10 @@ export function renderDocas(ctx,map,state,camX,camY,w,h,zoom,dpr,now,drawPlayer)
     if(m.id==='boia'){ctx.save();ctx.globalAlpha=reduced?.22:.16+.06*Math.sin(t*1.1+m.x);const g=ctx.createRadialGradient(x,y-size*.23+bob,0,x,y-size*.23+bob,size*.24);g.addColorStop(0,'#ffe1a0');g.addColorStop(1,'rgba(255,215,130,0)');ctx.fillStyle=g;ctx.fillRect(x-size*.24,y-size*.47+bob,size*.48,size*.48);ctx.restore();}
 
   }
-  const oeste=map.costaOeste;
-  const costaVisivel=oeste && camX-w/(2*zoom)<(oeste.x+oeste.mar.w*oeste.escala)*sCais
-    && camY+(h/2-115)/zoom>oeste.y*sCais;
-  if(costaVisivel)desenharMareOeste(ctx,oeste,sCais,reduced?null:t);
+  if(costaVisivel)desenharMareOeste(ctx,oeste,sCais,clock);
   // Primeiro o piso (deck e degraus); estacas dianteiras usam o Y do ponto
   // em que atravessam as tábuas, não o Y em que somem na água.
-  const cais=map.caisSul,pecasCais=[];
-  const drawCais=peca=>desenharPecaCais(ctx,cais,peca,sCais,reduced?null:t);
+  const drawCais=peca=>desenharPecaCais(ctx,cais,peca,sCais,clock);
   if(cais)for(const peca of cais.pecas){
     const unit=cais.escala*sCais,x=cais.x*sCais+(peca.x+peca.w/2)*unit;
     const y=cais.y*sCais+(peca.y+peca.h/2)*unit;
@@ -223,7 +226,7 @@ export function renderDocas(ctx,map,state,camX,camY,w,h,zoom,dpr,now,drawPlayer)
   const pecasOeste=costaVisivel?[...oeste.rochas,...oeste.vegetacao].map(peca=>({pecaOeste:peca,y:(oeste.y+peca.pe*oeste.escala)*sCais})):[];
   const objs=ordenarProfundidadeDocas([...pecasCais,...pecasOeste,...map.estruturasDocas.filter(st=>st.camada!=='chao').map(st=>({estrutura:st,y:st.y})),...(state.trainingTargets??[]).filter(e=>e.health>0).map(e=>({entidade:e,y:e.y*SIDE_DEPTH_STEP})),...(state.cromaticaRuntime?.visao?[{entidade:state.cromaticaRuntime.visao,y:state.cromaticaRuntime.visao.y*SIDE_DEPTH_STEP}]:[]),{entidade:state.player,y:state.player.y*SIDE_DEPTH_STEP}]);
   for(const item of objs){
-    if(item.pecaOeste){desenharPecaCosta(ctx,oeste,item.pecaOeste,sCais);continue;}
+    if(item.pecaOeste){desenharPecaCosta(ctx,oeste,item.pecaOeste,sCais,clock);continue;}
     if(item.peca){drawCais(item.peca);continue;}
     if(item.estrutura){const st=item.estrutura,margin=st.largura*4;if(Math.abs(st.x-camX)<w/(2*zoom)+margin&&Math.abs(st.y-camY)<h/zoom+margin)desenharEstrutura(ctx,st,t,reduced,state);continue;}
     const e=item.entidade,x=e.x*CONFIG.TILE_W,y=e.y*SIDE_DEPTH_STEP;

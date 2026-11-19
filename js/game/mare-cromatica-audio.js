@@ -1,5 +1,8 @@
+import { criarPaisagemDocas, atualizarPaisagemDocas } from './docas-paisagem-sonora.js';
+
 // Ambiente opcional, sem downloads ou autoplay. Só cria o AudioContext depois
 // do clique no botão; fontes fixas são reutilizadas durante a sessão.
+let paisagem=null;
 let context=null, mix=null, drone=null, hiss=null, tension=null, fogo=null, enabled=false, last=-1, lastFogo=-1;
 export function ativarAudioCromatico() {
   if(enabled){enabled=false;context?.suspend?.().catch(()=>{});return false;}
@@ -25,13 +28,16 @@ export function ativarAudioCromatico() {
       const wood=context.createOscillator(),woodGain=context.createGain(),woodLfo=context.createOscillator(),woodDepth=context.createGain();
       wood.type='triangle';wood.frequency.value=92;woodGain.gain.value=.005;woodLfo.frequency.value=.055;woodDepth.gain.value=.003;woodLfo.connect(woodDepth);woodDepth.connect(woodGain.gain);wood.connect(woodGain);woodGain.connect(mix);wood.start();woodLfo.start();
     }
+    if(!paisagem)paisagem=criarPaisagemDocas(context,mix);
     enabled=true;context.resume().catch(()=>{});return true;
   } catch {enabled=false;return false;}
 }
-export function atualizarAudioCromatico(active, danger, proximidadeFogo=0) {
+export function atualizarAudioCromatico(active, danger, proximidadeFogo=0, docas=null) {
   if(!context||!enabled)return;
   const desired=active? (danger?2:1):0;
   const fire=active && Number.isFinite(proximidadeFogo)?Math.round(Math.max(0,Math.min(1,proximidadeFogo))*10)/10:0;
+  try {atualizarPaisagemDocas(paisagem,context.currentTime,active?docas:null,danger);}
+  catch { /* A mixagem não bloqueia o HUD. */ }
   if(desired===last && fire===lastFogo)return;
   last=desired;lastFogo=fire;
   try {const now=context.currentTime;mix.gain.setTargetAtTime(active?.22:0,now,.45);tension.gain.setTargetAtTime(active && danger?.035:0,now,.4);fogo.gain.setTargetAtTime(fire*.045,now,.3);}

@@ -1,3 +1,4 @@
+import { SPRITES_DOCAS_VIVAS } from './engine/docas-vivas.js';
 import { SPRITES_COSTA_OESTE } from './data/worlds/arquipelago-rotas-perdidas/costa-oeste-docas.js';
 import { SPRITES_CAIS_SUL } from './data/worlds/arquipelago-rotas-perdidas/cais-sul.js';
 import { initTravessiaNeblina, atualizarRadioNeblina, atualizarViagemNeblina, desenharViagemNeblina, travessiaAtiva, mapaTaticoAberto, alternarMapa } from './ui/travessia-neblina.js';
@@ -329,6 +330,7 @@ await loadSprites([
   { id: 'docas_agua', src: 'assets/sprites/travessia-neblina/mar.png' },
   ...SPRITES_CAIS_SUL,
   ...SPRITES_COSTA_OESTE,
+  ...SPRITES_DOCAS_VIVAS,
   { id: 'docas_cabana-oeste', src: 'assets/sprites/docas-reconstrucao/cabana-oeste.png' },
   { id: 'docas_cabana-leste', src: 'assets/sprites/docas-reconstrucao/cabana-leste.png' },
   { id: 'docas_galpao', src: 'assets/sprites/docas-reconstrucao/galpao.png' },

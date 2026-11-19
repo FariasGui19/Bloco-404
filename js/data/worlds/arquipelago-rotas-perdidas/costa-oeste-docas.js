@@ -21,7 +21,7 @@ export const COSTA_OESTE = {
     {id:'palmeiras', x:300, y:0, w:217, h:262, pe:248},
     {id:'cristais', x:360, y:143, w:209, h:169, pe:295},
   ],
-  tentaculo: {id:'tentaculo', x:100, y:441, w:177, h:151, base:[170,575], quadros:32, colunas:8, duracao:2.9},
+  tentaculo: {id:'tentaculo', x:100, y:441, w:177, h:151, base:[170,575], quadros:64, colunas:8, duracao:4.8},
   // Borda do trecho de areia, do promontório à rocha junto do guarda-cais.
   margem: [[162,131],[153,158],[160,198],[151,219],[139,238],[129,253],[145,283],
     [153,304],[179,320],[218,328],[263,326],[304,328],[343,341],[378,353],

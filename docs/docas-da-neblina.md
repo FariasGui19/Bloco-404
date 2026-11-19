@@ -14,11 +14,17 @@ A travessia mantém inércia, sonar [R] e adiciona farol alternável [L]: peixes
 
 ## Setor 2 — costa oeste e lado oposto da escada
 - O segundo recorte é registrado pelos mastros e pela lanterna do pesqueiro. O mar azul-violeta, os reflexos magenta, a espuma e os bancos de névoa são independentes da areia e dos recortes de rochas, palmeiras e cristais. Não se carrega a prancha completa.
-- O tentáculo é uma presença ambiental na água, sem combate: 32 poses deformam o corpo e a ponta por malha, sem deslocar a raiz. Espuma, rastros e respingos são desenhados à parte. Com movimento reduzido, a pose inicial e a espuma estática continuam visíveis.
+- O tentáculo é uma presença ambiental na água, sem combate: 64 poses deformam o corpo e a ponta por malha, sem deslocar a raiz. Espuma, rastros e respingos são desenhados à parte. Com movimento reduzido, a pose inicial e a espuma estática continuam visíveis.
 - A margem agora tem uma faixa de areia transitável entre o promontório e a vila. Rochas e água bloqueiam passagem; a saída do cais segue pela escada, que ganhou alvenaria na face oeste e pedras gastas na chegada ao solo. A poça de maré e a fogueira conservam os IDs e foram reancoradas no novo terreno.
-- Peças finais: `assets/sprites/docas-costa-oeste/`. A versão remasterizada repinta as 11 peças em densidade 2×, mantendo os recortes e as dimensões no mapa. Usa repintura registrada, microtextura de água e grão de areia; mar e areia usam WebP com alfa. A folha do tentáculo mantém as 32 poses e a raiz fixa.
+- Peças finais: `assets/sprites/docas-costa-oeste/`. A versão remasterizada repinta as 11 peças em densidade 2×, mantendo os recortes e as dimensões no mapa. Usa repintura registrada, microtextura de água e grão de areia; mar e areia usam WebP com alfa. A folha do tentáculo usa 64 poses e mantém a raiz fixa.
 - Para recriar com Pillow e NumPy: `python tools/remasterizar-docas-costa-oeste.py /caminho/para/image-2.png`. Os dois doadores de textura ficam em `assets/source-art/docas-costa-oeste/` e não são carregados pelo jogo. O remaster usa `preparar-docas-costa-oeste.py` internamente para gerar as máscaras originais, incluindo as exclusões de barcos e estacas. Esses arquivos de origem não substituem a planta.
 - `node tests/docas-costa-oeste.mjs` verifica encaixe, sprites, laço de movimento reduzido e ida e volta com colisão. A rota do cais até a areia também foi percorrida no Chromium usando o movimento normal do jogo.
+
+## Passada de movimento — Docas Vivas
+- Dez artes geradas foram preparadas como **dez atlas transparentes de 16 poses**: ondulação, espuma, caústica magenta, névoa, respingo, ventosa, fumaça, reflexo âmbar, bandeirola e cintilações. São poses deformadas por malha a partir de cada pintura, não dez filmes nem 160 desenhos manuais. As fontes otimizadas ficam em `assets/source-art/docas-vivas/`; `python tools/preparar-docas-vivas.py` (Pillow e NumPy) gera os atlas finais.
+- A superfície do mar se desloca sob o terreno; cristas quebram junto às pedras e ao casco. O pesqueiro e o bote inclinam e sobem com o balanço, enquanto bandeirola, fumaça e luzes acompanham a pose do pesqueiro. O cais continua fixo. Palmas dobram com o vento e cristais cintilam. O tentáculo tem 64 poses, com raiz fixa, brilho que acompanha o corpo e respingos na base.
+- **Som e trilha** habilita uma partitura ambiente original de 32 segundos e quatro sons de cena sintetizados em Web Audio: ondas, madeira, sino de boia e chamado submerso. Os sons têm posição estéreo e atenuação por distância; o trecho fica silencioso durante pausa ou fora das Docas. Não há autoplay nem downloads de áudio.
+- A preferência de movimento reduzido mantém a pose e os efeitos visíveis, sem deslocamento contínuo. A animação não altera área jogável, spawn, velocidade ou colisões. `node tests/docas-vivas.mjs` verifica atlas, ancoragem e mixagem.
 
 ## Checklist dos lotes (histórico)
 ### Lote 1 — navegação

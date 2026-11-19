@@ -1,18 +1,41 @@
 import { ativarAudioCromatico, atualizarAudioCromatico } from '../game/mare-cromatica-audio.js';
 import { CROMATICA_MAPS, lerMareCromatica, objetivoCromatico } from '../game/mare-cromatica.js';
+import { CONFIG } from '../config.js';
+import { SIDE_DEPTH_STEP } from '../engine/camera.js';
+import { plantaCais } from '../data/worlds/arquipelago-rotas-perdidas/cais-sul.js';
+import { plantaCosta, COSTA_OESTE } from '../data/worlds/arquipelago-rotas-perdidas/costa-oeste-docas.js';
+
+const FONTES_DOCAS={ondas:plantaCosta([443,388]),madeira:plantaCais([541,348]),
+  sino:plantaCais([587,488]),abismo:plantaCosta(COSTA_OESTE.tentaculo.base)};
+const AUDIO_DOCAS=Object.fromEntries(Object.keys(FONTES_DOCAS).map(id=>[id,{gain:0,pan:0}]));
+function audioNaCosta(p,escala){
+  const x=p.x*CONFIG.TILE_W/escala,y=p.y*SIDE_DEPTH_STEP/escala;
+  for(const id in FONTES_DOCAS){
+    const [sx,sy]=FONTES_DOCAS[id],dx=sx-x,dy=sy-y;
+    // Submarine low frequencies carry up the shore; creaks stay near deck.
+    const range=id==='ondas'?535:id==='abismo'?425:290;
+    const gain=Math.max(0,1-Math.hypot(dx,dy*1.14)/range);
+    AUDIO_DOCAS[id].gain=gain*gain;
+    AUDIO_DOCAS[id].pan=Math.max(-.76,Math.min(.76,dx/260));
+  }
+  return AUDIO_DOCAS;
+}
 export function initHudCromatico() {
   const button=document.getElementById('cromaticaSound');if(!button)return;
   button.addEventListener('click',()=>{
-    const on=ativarAudioCromatico();button.textContent=on?'SOM AMBIENTE: LIGADO':'SOM AMBIENTE: DESLIGADO';button.setAttribute('aria-pressed',String(on));
+    const on=ativarAudioCromatico();button.textContent=on?'SOM E TRILHA: LIGADO':'SOM E TRILHA: DESLIGADO';button.setAttribute('aria-pressed',String(on));
   });
 }
 export function atualizarHudCromatico(state, paused=false) {
   const root=document.getElementById('cromaticaHud');if(!root)return;
   const active=CROMATICA_MAPS.includes(state.world.currentMapId);root.hidden=!active;
   // Som local acompanha a fogueira persistente, nunca inicia o áudio sozinho.
-  const p=state.player, pertoFogo=state.world.currentMapId==='mare_cromatica_docas' && state.progress?.flags?.docas_fogueira_acesa && p
-    ? Math.max(0,1-Math.hypot(p.x-440*2.5/64,p.y-540*2.5/22)/4) : 0;
-  atualizarAudioCromatico(active && !paused && !document.hidden, !!state.cromaticaRuntime?.perigo, pertoFogo);
+  const p=state.player, noCais=state.world.currentMapId==='mare_cromatica_docas' && p;
+  const fogueira=noCais && state.progress?.flags?.docas_fogueira_acesa
+    ? state.objects?.find(o=>o.id==='docas_fogueira') : null;
+  const pertoFogo=fogueira?Math.max(0,1-Math.hypot(p.x-fogueira.x,p.y-fogueira.y)/4):0;
+  const tocando=active && !paused && !document.hidden;
+  atualizarAudioCromatico(tocando, !!state.cromaticaRuntime?.perigo, pertoFogo,tocando&&noCais?audioNaCosta(p,state.world.currentMap?.geometriaDocas?.escala??2.5):null);
   if(!active)return;
   const d=lerMareCromatica(state.progress), sec=Math.ceil(d.restante);
   document.getElementById('cromaticaTimer').textContent=d.desfecho ? '• '+d.desfecho.toUpperCase() : `${d.iniciada?'•':'• AGUARDANDO'} ${String(Math.floor(sec/60)).padStart(2,'0')}:${String(sec%60).padStart(2,'0')}`;

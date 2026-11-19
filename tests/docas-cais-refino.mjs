@@ -13,5 +13,6 @@ for(const id of ['tentaculo-cais','bote-cais']){
  assert.equal(canStandAt(docas,m.x*ESCALA_DOCAS/64,m.y*ESCALA_DOCAS/22,.25),false,`${id} deve estar fora do piso`);
 }
 assert(!docas.estruturasDocas.some(x=>x.id==='lote6_bote'));
-for(const id of ['cais_rochas','cais_cristais'])assert(docas.estruturasDocas.some(x=>x.id===id));
+assert(docas.estruturasDocas.some(x=>x.id==='cais_rochas'));
+assert(!docas.estruturasDocas.some(x=>x.id==='cais_cristais'), 'cristal junto ao bote removido');
 console.log('Cais: ondas determinísticas, bote e tentáculo no mar e peças costeiras OK.');

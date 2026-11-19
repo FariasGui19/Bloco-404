@@ -104,3 +104,10 @@ No barco é possível descansar/salvar ou retornar à Enseada. As cabanas mantê
 - [x] Rochas e cristais novos na margem, pulso de luz e ajuste de rede/boias; iluminação adicional no barco existente. Peças de terra continuam na ordenação pelo pé; não alteram a malha física.
 - [x] Testes `docas-*`, `mare-cromatica*`, `travessia-neblina` e `boot`, mais `docas-cais-refino`: passaram. Verificação Chromium com save sintético, posições por teleporte e movimento reduzido: HUD aguardando 10:00, sem erros de página ou respostas HTTP com erro.
 - [ ] Revisar com percurso manual e save real; não foi feito benchmark de 60 FPS. A costa continua usando relevo e colisão planar preexistentes, e barco/píer são as artes anteriores, portanto a composição não é uma reprodução exata da referência. Os testes de navegador não comprovam fluxo manual completo ou recuperação de um save específico.
+
+### Ajuste cirúrgico de cor no cais
+
+- [x] Removido o aglomerado de cristais junto ao bote, sem deslocar as demais estruturas.
+- [x] Contraste e saturação limitados às artes do píer e pesqueiro; luz quente da cabine e lâmpada vermelha reforçadas.
+- [x] Espuma segmentada junto ao casco e à margem próxima, anéis magenta interrompidos e balanço contínuo do tentáculo mantido. Movimento reduzido conserva os efeitos estáticos.
+- [x] Testes de Docas, Maré, travessia e boot passaram; Chromium com save sintético e teleporte conferiu cais e margem, HUD aguardando 10:00 e sem erros de página/HTTP. Não é teste de percurso manual nem benchmark de desempenho.

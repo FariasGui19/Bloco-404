@@ -1,11 +1,15 @@
 import { CAIS_SUL, plantaCais } from './cais-sul.js';
+import { COSTA_OESTE, plantaCosta } from './costa-oeste-docas.js';
 
 // Coordenadas dos marcos derivadas da referência original (1568 × 880).
 // A máscara é deliberadamente conservadora: água, telhados e rochedos não
 // são transitáveis; conexões estreitas são expressas como polígonos de piso.
 const contornosBase=[
   CAIS_SUL.deck.map(plantaCais), // deck sobre água
-  [[255,405],[465,350],[710,390],[860,420],[1110,400],[1310,455],[1355,575],[1120,620],[1012,601],[983,593],[958,603],[932,615],[904,620],[882,614],[863,586],[847,559],[819,543],[779,528],[748,537],[720,546],[685,548],[650,554],[610,552],[568,566],[530,572],[380,555],[270,500]],
+  [[242,315],[343,320],[465,350],[710,390],[860,420],[1110,400],[1310,455],
+   [1355,575],[1120,620],[1012,601],[983,593],[958,603],[932,615],[904,620],[882,614],
+   [863,586],[847,559],[819,543],[779,528],[748,537],[720,546],[685,548],
+   ...COSTA_OESTE.margem.map(plantaCosta).reverse(),[211,327],[221,320]],
   [[950,415],[1010,385],[1080,305],[1125,270],[1170,270],[1140,325],[1085,405],[1035,450]],
   [[865,160],[1075,155],[1100,230],[1055,270],[950,265],[865,245]], // base contínua do farol e da porta
   [[1050,165],[1310,130],[1370,230],[1270,285],[1135,290],[1050,245]],
@@ -27,6 +31,7 @@ function inside(x,y,p){let yes=false;for(let i=0,j=p.length-1;i<p.length;j=i++){
 // Pisos sob construções e obstáculos não são atravessáveis, mesmo que a
 // arte seja uma única referência achatada. As portas ficam nas bordas.
 const bloqueios=[
+ ...COSTA_OESTE.blocos.map(p=>p.map(plantaCosta)),
  [[490,418],[610,410],[690,455],[675,488],[520,480]],
  [[590,333],[695,312],[745,350],[715,380],[610,392]],
  [[800,390],[905,375],[960,415],[930,460],[830,460]],
@@ -50,7 +55,7 @@ const estrutura=(id,x,y,largura,camada='objeto')=>({id,x:x*ESCALA_DOCAS,y:y*ESCA
 export const docas={id:'mare_cromatica_docas',meta:{nome:'DOCAS DA NEBLINA',tipo:'exterior',dimensao:'mare_cromatica',sideView:true,docasCamadas:true,cromatica:true,initialZoom:.8,corFundo:'#090f20'},layout,
  // O primeiro polígono é o deck caminhável, não terra sob o píer.
  geometriaDocas:{polys,terraPolys,deckPoly,escadaPoly,bloqueios,escala:ESCALA_DOCAS},
- caisSul:CAIS_SUL,
+ caisSul:CAIS_SUL,costaOeste:COSTA_OESTE,
  // Peças do terreno em coordenadas da planta. As peças não criam piso novo:
  // a máscara geométrica continua sendo a fonte de verdade para colisão.
  relevoDocas:[
@@ -63,13 +68,11 @@ export const docas={id:'mare_cromatica_docas',meta:{nome:'DOCAS DA NEBLINA',tipo
   {id:'cascalho',x:1015,y:475,w:60,h:28,camada:'piso'},
   {id:'muro',x:1030,y:405,w:66,h:28,camada:'piso'},
   {id:'pilar',x:1195,y:515,w:60,h:30,camada:'piso'},
-  {id:'margem-areia',sprite:'lote7_margem-areia',x:405,y:555,w:100,h:44,camada:'base'},
   {id:'margem-rochas',sprite:'lote7_margem-rochas',x:1070,y:650,w:90,h:38,camada:'base'},
   {id:'talude',sprite:'lote7_talude',x:1215,y:293,w:135,h:48,camada:'base'},
   {id:'lajotas',sprite:'lote7_lajotas',x:800,y:570,w:75,h:36,camada:'piso'},
  ],
  marDocas:[
-  {id:'tentaculo-cais',x:218,y:705,tamanho:52},
   {id:'tentaculo',x:1400,y:590,tamanho:60},
   {id:'boia',x:1450,y:600,tamanho:35},{id:'boia',x:1430,y:700,tamanho:35},
   {id:'olhos',x:1450,y:515,tamanho:22},
@@ -80,68 +83,68 @@ export const docas={id:'mare_cromatica_docas',meta:{nome:'DOCAS DA NEBLINA',tipo
   estrutura('escada',1080,403,100,'chao'),estrutura('torre',1350,500,75),estrutura('farol',915,220,80),
   estrutura('camara',1250,240,135),estrutura('porta',975,225,35),
   // Decoração sem colisão: não altera a malha nem cobre marcadores de missão.
-  ...[[310,475,95],[455,365,100],[770,410,90],[1030,380,90],[1300,445,95],[1350,540,88]].map(([x,y,w])=>estrutura('lote3_palmeira',x,y,w)),
-  ...[[375,420,105],[730,400,105],[395,520,90],[1160,455,90]].map(([x,y,w])=>estrutura('lote3_arvore',x,y,w)),
+  ...[[770,410,90],[1030,380,90],[1300,445,95],[1350,540,88]].map(([x,y,w])=>estrutura('lote3_palmeira',x,y,w)),
+  ...[[730,400,105],[1160,455,90]].map(([x,y,w])=>estrutura('lote3_arvore',x,y,w)),
   ...[[700,525,35],[820,516,30],[1150,565,35]].map(([x,y,w])=>estrutura('lote3_caixotes',x,y,w)),
   ...[[675,530,30],[970,560,32],[1210,565,30]].map(([x,y,w])=>estrutura('lote3_barris',x,y,w)),
   ...[[1070,335,35],[1260,150,42],[1325,240,38]].map(([x,y,w])=>estrutura('lote3_cristal',x,y,w)),
-  ...[[350,500,28],[1300,570,30]].map(([x,y,w])=>estrutura('lote3_resina',x,y,w)),
+  ...[[1300,570,30]].map(([x,y,w])=>estrutura('lote3_resina',x,y,w)),
   ...[[805,505,22],[1200,540,22]].map(([x,y,w])=>estrutura('lote3_fitas',x,y,w)),
-  ...[[300,510,42],[1335,570,40]].map(([x,y,w])=>estrutura('lote3_tentaculo',x,y,w)),
+  ...[[1335,570,40]].map(([x,y,w])=>estrutura('lote3_tentaculo',x,y,w)),
   ...[[500,410,32],[1060,390,30],[1285,260,30]].map(([x,y,w])=>estrutura('lote3_esporos',x,y,w)),
   ...[[1230,555,42]].map(([x,y,w])=>estrutura('lote3_rede',x,y,w)),
-  ...[[340,440,95],[745,420,100],[1020,415,90],[1320,475,100]].map(([x,y,w])=>estrutura('mata',x,y,w)),
+  ...[[745,420,100],[1020,415,90],[1320,475,100]].map(([x,y,w])=>estrutura('mata',x,y,w)),
   ...[[1270,570,20]].map(([x,y,w])=>estrutura('lote5_conchas',x,y,w)),
   ...[[450,520,38],[1010,570,36]].map(([x,y,w])=>estrutura('lote5_destrocos',x,y,w)),
   ...[[1090,540,24]].map(([x,y,w])=>estrutura('lote5_cordas',x,y,w)),
   ...[[980,520,28],[1160,270,28]].map(([x,y,w])=>estrutura('lote5_poste',x,y,w)),
-  ...[[360,480,35],[480,410,35],[1010,470,35],[1280,545,35]].map(([x,y,w])=>estrutura('lote5_capim',x,y,w)),
+  ...[[480,410,35],[1010,470,35],[1280,545,35]].map(([x,y,w])=>estrutura('lote5_capim',x,y,w)),
   // Pequenos vestígios inspirados na referência, sem alterar portas/missão.
   ...[[520,500,44],[675,495,44],[1150,535,44]].map(([x,y,w])=>estrutura('lote6_cerca',x,y,w)),
   estrutura('lote6_arvore-seca',410,445,75),
-  ...[[325,490,32],[1300,560,32],[1065,405,32]].map(([x,y,w])=>estrutura('lote6_cristal-violeta',x,y,w)),
-  ...[[345,500,28],[1125,590,28],[1280,560,28]].map(([x,y,w])=>estrutura('lote6_corais',x,y,w)),
+  ...[[1300,560,32],[1065,405,32]].map(([x,y,w])=>estrutura('lote6_cristal-violeta',x,y,w)),
+  ...[[1125,590,28],[1280,560,28]].map(([x,y,w])=>estrutura('lote6_corais',x,y,w)),
   ...[[1110,555,25]].map(([x,y,w])=>estrutura('lote6_empilhado',x,y,w)),
   estrutura('lote6_runa',952,553,28),
   ...[[1250,540,24]].map(([x,y,w])=>estrutura('lote6_armadilha',x,y,w)),
-  ...[[290,465,34],[345,515,34],[1290,580,34]].map(([x,y,w])=>estrutura('lote6_rochedos',x,y,w)),
+  ...[[1290,580,34]].map(([x,y,w])=>estrutura('lote6_rochedos',x,y,w)),
   ...[[570,535,22],[1030,515,22],[1130,320,22]].map(([x,y,w])=>estrutura('lote6_luminaria',x,y,w)),
-  ...[[360,500,36],[1270,550,36]].map(([x,y,w])=>estrutura('lote7_raiz-costa',x,y,w)),
-  ...[[335,480,28],[1290,560,28]].map(([x,y,w])=>estrutura('lote7_coral-pedra',x,y,w)),
-  ...[[315,460,40],[1310,550,40]].map(([x,y,w])=>estrutura('lote7_rocha-alta',x,y,w)),
+  ...[[1270,550,36]].map(([x,y,w])=>estrutura('lote7_raiz-costa',x,y,w)),
+  ...[[1290,560,28]].map(([x,y,w])=>estrutura('lote7_coral-pedra',x,y,w)),
+  ...[[1310,550,40]].map(([x,y,w])=>estrutura('lote7_rocha-alta',x,y,w)),
   // Detalhes junto à costa e aos depósitos existentes, sem criar piso novo.
-  estrutura('lote12_rocha-musgo',315,485,38),estrutura('lote12_raizes',365,490,38),
+  estrutura('lote12_raizes',432,438,33),
   estrutura('lote12_flora',470,410,31),estrutura('lote12_corais',1290,555,24),
-  estrutura('lote12_residuos',405,555,28),
+  estrutura('lote12_residuos',329,449,28),
   estrutura('lote12_vasilhame',1230,540,22),estrutura('lote12_lampiao',535,545,7),
   // Lote 11: reforços costeiros e sinais de navegação, próximos dos conjuntos existentes.
-  estrutura('lote11_rocha-costeira',305,490,44),estrutura('lote11_arbusto-costeiro',460,400,43),
+  estrutura('lote11_arbusto-costeiro',460,400,43),
   estrutura('lote11_gramineas',1130,440,34),estrutura('lote11_cogumelos',1275,560,26),
   estrutura('lote11_sucata',1080,555,31),estrutura('lote11_bandeirola',1340,505,20),
   estrutura('lote11_lanterna-chao',750,500,14),estrutura('lote11_totem',960,465,24),
   // Vestígios próximos a pontos de uso: cais, abrigo, vigia e margem.
   estrutura('lote10_bau',645,520,26),
   estrutura('lote10_barricada',760,465,42),estrutura('lote10_placa-lore',780,490,28),
-  estrutura('lote10_fogueira',440,540,35),estrutura('lote10_farolete',1300,505,20),
-  estrutura('lote10_algas',335,520,38),estrutura('lote10_coral',1250,580,33),
+  estrutura('lote10_fogueira',464,497,35),estrutura('lote10_farolete',1300,505,20),
+  estrutura('lote10_coral',1250,580,33),
   // Lote 9: agrupamentos junto às atividades, não espalhados pelo caminho.
-  estrutura('lote9_banco',490,530,32),estrutura('lote9_vasos',540,492,25),
-  estrutura('lote9_flores',485,510,33),estrutura('lote9_tronco',375,500,39),
+  estrutura('lote9_banco',513,522,32),estrutura('lote9_vasos',540,492,25),
+  estrutura('lote9_flores',485,510,33),estrutura('lote9_tronco',390,469,39),
   estrutura('lote9_anfora',1180,535,24),
   estrutura('lote9_engrenagem',910,490,30),estrutura('lote9_placa',1010,465,22),
   // Vestígios discretos, ancorados no piso e fora dos corredores centrais.
   estrutura('lote8_mastro',490,460,25),
   estrutura('lote8_madeiras',1115,550,25),estrutura('lote8_ampola',940,510,14),
   ...[[435,480,26],[1250,540,26]].map(([x,y,w])=>estrutura('lote8_arbusto',x,y,w)),
-  ...[[320,475,24],[1280,575,24]].map(([x,y,w])=>estrutura('lote8_corais',x,y,w)),
+  ...[[1280,575,24]].map(([x,y,w])=>estrutura('lote8_corais',x,y,w)),
  ],
  spawnPoints:{inicio:ponto(620,650),cabana_esq:ponto(610,535),cabana_dir:ponto(1190,535),galpao:ponto(875,490),torre:ponto(1320,510)},actors:[],fauna:[],collectibles:[],hazards:[],
  objects:[marker('docas_barco',586,656,'BARCO • INICIAR / DESCANSAR'),
  marker('cromatica_fragmento_estacao',1050,365,'RECOLHER FRAGMENTO • TRILHA'),marker('cromatica_selo',1110,275,'ESTABILIZAR O ACESSO AO NÚCLEO'),
  marker('cromatica_painel_origem',1190,220,'ALINHAR ORIGEM'),marker('cromatica_painel_retorno',1240,250,'ALINHAR RETORNO'),marker('cromatica_painel_memoria',1300,210,'ALINHAR MEMÓRIA'),marker('cromatica_ancora',1250,185,'ESTABILIZAR ÂNCORA'),
- marker('docas_poca_mare',405,555,'EXAMINAR POÇA DE MARÉ'),
+ marker('docas_poca_mare',329,449,'EXAMINAR POÇA DE MARÉ'),
  marker('docas_totem_mares',960,465,'EXAMINAR MARCA DAS MARÉS'),
- marker('docas_mural_vigia',780,490,'LER MURAL DOS VIGIAS'),marker('docas_fogueira',440,540,'EXAMINAR FOGUEIRA DOS VIGIAS'),
+ marker('docas_mural_vigia',780,490,'LER MURAL DOS VIGIAS'),marker('docas_fogueira',464,497,'EXAMINAR FOGUEIRA DOS VIGIAS'),
  marker('docas_marca_navegantes',952,553,'EXAMINAR MARCA DOS NAVEGANTES'),marker('docas_diario_pier',710,605,'LER DIÁRIO DO PÍER'),marker('docas_diario_trilha',980,520,'LER AVISO DOS VIGIAS'),
  marker('docas_torre',1330,500,'SUBIR À TORRE DE VIGIA'),marker('docas_resina',720,565,'RASTREAR RESINA • MARÉ ASTRAL'),marker('docas_eletrico',910,545,'PAINEL ELÉTRICO • NÚCLEO X10'),marker('docas_selo',1020,420,'SELO DE NÉVOA • DOMÍNIO ANCIÃO'),marker('docas_biomassa',1120,565,'BIOMASSA • BIO-FORJA')],
  trainingTargets:[{id:'docas_infectado_1',x:Math.floor(18*ESCALA_DOCAS),y:Math.floor(12*ESCALA_DOCAS),maxHealth:65,cromaticaEnemy:true},{id:'docas_infectado_2',x:Math.floor(19*ESCALA_DOCAS),y:Math.floor(10*ESCALA_DOCAS),maxHealth:65,cromaticaEnemy:true}],

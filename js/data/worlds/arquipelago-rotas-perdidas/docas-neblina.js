@@ -85,7 +85,8 @@ export const docas={id:'mare_cromatica_docas',meta:{nome:'DOCAS DA NEBLINA',tipo
   // Decoração sem colisão: não altera a malha nem cobre marcadores de missão.
   ...[[770,410,90],[1030,380,90],[1300,445,95],[1350,540,88]].map(([x,y,w])=>estrutura('lote3_palmeira',x,y,w)),
   ...[[730,400,105],[1160,455,90]].map(([x,y,w])=>estrutura('lote3_arvore',x,y,w)),
-  ...[[700,525,35],[820,516,30],[1150,565,35]].map(([x,y,w])=>estrutura('lote3_caixotes',x,y,w)),
+  // Peças únicas com alfa: não passam pelo recorte de oito frames do lote 3.
+  ...[[700,525,35],[820,516,30],[1150,565,35]].map(([x,y,w])=>estrutura('vila04_carga',x,y,w)),
   ...[[675,530,30],[970,560,32],[1210,565,30]].map(([x,y,w])=>estrutura('lote3_barris',x,y,w)),
   ...[[1070,335,35],[1260,150,42],[1325,240,38]].map(([x,y,w])=>estrutura('lote3_cristal',x,y,w)),
   ...[[1300,570,30]].map(([x,y,w])=>estrutura('lote3_resina',x,y,w)),
@@ -101,7 +102,7 @@ export const docas={id:'mare_cromatica_docas',meta:{nome:'DOCAS DA NEBLINA',tipo
   ...[[480,410,35],[1010,470,35],[1280,545,35]].map(([x,y,w])=>estrutura('lote5_capim',x,y,w)),
   // Pequenos vestígios inspirados na referência, sem alterar portas/missão.
   ...[[520,500,44],[675,495,44],[1150,535,44]].map(([x,y,w])=>estrutura('lote6_cerca',x,y,w)),
-  estrutura('lote6_arvore-seca',410,445,75),
+  estrutura('lote6_arvore-seca',575,408,95),
   ...[[1300,560,32],[1065,405,32]].map(([x,y,w])=>estrutura('lote6_cristal-violeta',x,y,w)),
   ...[[1125,590,28],[1280,560,28]].map(([x,y,w])=>estrutura('lote6_corais',x,y,w)),
   ...[[1110,555,25]].map(([x,y,w])=>estrutura('lote6_empilhado',x,y,w)),

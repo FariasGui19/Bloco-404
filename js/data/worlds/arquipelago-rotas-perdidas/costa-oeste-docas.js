@@ -41,4 +41,4 @@ export const ESCADA_OESTE = {id:'escada-oeste', x:982, y:26, w:182, h:132};
 export const SPRITES_COSTA_OESTE = [COSTA_OESTE.mar,COSTA_OESTE.areia,
   ...COSTA_OESTE.rochas,...COSTA_OESTE.vegetacao,ESCADA_OESTE]
   .map(({id})=>({id:`docas_costa_${id}`,
-    src:`assets/sprites/docas-costa-oeste/${id}.${['mar','areia'].includes(id)?'webp':'png'}`}));
+    src:`assets/sprites/${['palmeiras','cristais','promontorio','quebra-mar'].includes(id)?'docas-vila-04':'docas-costa-oeste'}/${id}.${['mar','areia'].includes(id)?'webp':'png'}`}));

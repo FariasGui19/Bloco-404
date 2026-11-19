@@ -1,3 +1,4 @@
+import { tempoVisualDocas } from './docas-animation.js';
 import { desenharTentaculoRessaca, volta } from './docas-ressaca.js';
 import { desenharSuperficieOeste, desenharCorrentesOeste, desenharMarCais } from './docas-vivas.js';
 import { getSprite } from './sprites.js';
@@ -149,8 +150,8 @@ export function renderDocas(ctx,map,state,camX,camY,w,h,zoom,dpr,now,drawPlayer)
   // Mar preenche também além do limite do canvas cacheado, evitando uma
   // faixa chapada no zoom afastado ou próximo das bordas do mapa.
   const mar=getSprite('docas_agua');if(mar){ctx.fillStyle=ctx.createPattern(mar,'repeat');ctx.fillRect(camX-w/(2*zoom)-8,camY-(h/2+115)/zoom-8,w/zoom+16,h/zoom+16);}
-  const reduced=!!globalThis.matchMedia?.('(prefers-reduced-motion: reduce)').matches,t=reduced?0:now/1000;
-  const clock=reduced?null:t,sCais=map.geometriaDocas.escala,oeste=map.costaOeste;
+  const {reduced,t,clock}=tempoVisualDocas(state,now);
+  const sCais=map.geometriaDocas.escala,oeste=map.costaOeste;
   const esquerda=camX-w/(2*zoom),direita=camX+w/(2*zoom),topo=camY-(h/2+115)/zoom,base=camY+(h/2-115)/zoom;
   const costaVisivel=oeste && esquerda<(oeste.x+oeste.mar.w*oeste.escala)*sCais && direita>oeste.x*sCais
     && base>oeste.y*sCais && topo<(oeste.y+oeste.mar.h*oeste.escala)*sCais;

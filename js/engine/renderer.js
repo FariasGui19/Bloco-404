@@ -89,7 +89,7 @@ function resize() {
 // =====================================================================
 //  FRAME
 // =====================================================================
-export function render(map, state) {
+export function render(map, state, frameNow = performance.now()) {
   if (!map) return;
   const { dpr } = view;
   const estavaEm3d = !!state.player?.nado?.perspectiva3d;
@@ -111,7 +111,7 @@ export function render(map, state) {
 
   // A planta das Docas usa a mesma projeção lateral de câmera e input.
   if (map.meta?.docasCamadas) {
-    renderDocas(ctx,map,state,camera.x,camera.y,view.w,view.h,camera.zoom,dpr,performance.now(),(p,x,y)=>{
+    renderDocas(ctx,map,state,camera.x,camera.y,view.w,view.h,camera.zoom,dpr,frameNow,(p,x,y)=>{
       drawShadow(x,y,.28);drawPlayerSprite(p,x,y);
     });
     ctx.setTransform(dpr,0,0,dpr,0,0);drawLabels(state);drawBubbles(state);return;

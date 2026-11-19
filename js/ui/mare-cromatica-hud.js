@@ -1,3 +1,4 @@
+import { movimentoDocas, definirMovimentoDocas, tempoVisualDocas } from '../engine/docas-animation.js';
 import { ativarAudioCromatico, atualizarAudioCromatico } from '../game/mare-cromatica-audio.js';
 import { CROMATICA_MAPS, lerMareCromatica, objetivoCromatico } from '../game/mare-cromatica.js';
 import { CONFIG } from '../config.js';
@@ -21,6 +22,11 @@ function audioNaCosta(p,escala){
   return AUDIO_DOCAS;
 }
 export function initHudCromatico() {
+  const motion=document.getElementById('docasMotion');
+  if(motion){
+    motion.value=movimentoDocas();
+    motion.addEventListener('change',()=>definirMovimentoDocas(motion.value));
+  }
   const button=document.getElementById('cromaticaSound');if(!button)return;
   button.addEventListener('click',()=>{
     const on=ativarAudioCromatico();button.textContent=on?'SOM E TRILHA: LIGADO':'SOM E TRILHA: DESLIGADO';button.setAttribute('aria-pressed',String(on));
@@ -36,6 +42,8 @@ export function atualizarHudCromatico(state, paused=false) {
   const pertoFogo=fogueira?Math.max(0,1-Math.hypot(p.x-fogueira.x,p.y-fogueira.y)/4):0;
   const tocando=active && !paused && !document.hidden;
   atualizarAudioCromatico(tocando, !!state.cromaticaRuntime?.perigo, pertoFogo,tocando&&noCais?audioNaCosta(p,state.world.currentMap?.geometriaDocas?.escala??2.5):null);
+  const motionControl=document.getElementById('docasMotionControl');
+  if(motionControl)motionControl.hidden=!noCais;
   if(!active)return;
   const d=lerMareCromatica(state.progress), sec=Math.ceil(d.restante);
   document.getElementById('cromaticaTimer').textContent=d.desfecho ? '• '+d.desfecho.toUpperCase() : `${d.iniciada?'•':'• AGUARDANDO'} ${String(Math.floor(sec/60)).padStart(2,'0')}:${String(sec%60).padStart(2,'0')}`;
@@ -53,8 +61,11 @@ export function desenharAtmosferaCromatica(canvas,state) {
   ctx.fillStyle=d.desfecho==='colapso'?'rgba(86,15,78,.24)':'rgba(53,19,64,.17)';ctx.fillRect(0,0,w,h);
   // Névoa leve com quantidade fixa de elementos; movimento reduzido para
   // usuários que o solicitam, sem flash nem efeito estroboscópico.
-  const still=!!globalThis.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
-  const t=still?0:(globalThis.performance?.now?.()??0)/1000;
+  const now=globalThis.performance?.now?.()??0;
+  const docas=state.world.currentMapId==='mare_cromatica_docas';
+  const visual=docas?tempoVisualDocas(state,now):null;
+  const still=visual?visual.reduced:!!globalThis.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches;
+  const t=visual?visual.t:still?0:now/1000;
   ctx.fillStyle='rgba(185,110,171,.045)';
   for(let i=0;i<6;i++) {const x=((i*199+t*(5+i%3))%(w+260))-130, y=h*(.2+i*.13);ctx.beginPath();ctx.ellipse(x,y,w*.19,Math.max(6,h*.035),0,0,Math.PI*2);ctx.fill();}
   if (!vignette || vignetteW!==w || vignetteH!==h) {

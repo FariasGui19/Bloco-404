@@ -1,3 +1,4 @@
+import { desenharEmbarquePesqueiro } from './docas-cascos.js';
 import { renderDocas } from './docas-view.js';
 import { perspectivaSubmersa } from './perspectiva-submersa.js';
 import { posicaoVidaRota } from '../game/vida-rota-mare.js';
@@ -5429,6 +5430,10 @@ function drawMapObject(object, state) {
   const sheet = getObjectSpriteConfig(spriteId);
   const image = getSprite(spriteId ?? sheet.ID);
   if (!image || !sheet) return;
+
+  if(object.id==='cais_enseada_visual' && desenharEmbarquePesqueiro(ctx,object,
+    (object.x-object.y)*HW+(object.ajusteX??0),(object.x+object.y)*HH+(object.ajusteY??0),
+    reducedMotion?null:performance.now()/1000))return;
 
   // Estado ligado a uma flag de progresso (ex.: válvula da estufa aberta).
   const filtro = filtroObjeto(object);

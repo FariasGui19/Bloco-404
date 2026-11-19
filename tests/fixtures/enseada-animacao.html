@@ -12,7 +12,7 @@ const source=await (await fetch('../../js/main.js')).text();
 const defs=Array.from(source.matchAll(/\{ id: '([^']+)', src: '([^']+)' \}/g),m=>({id:m[1],src:'/'+m[2]}));
 const names=new Set(selected.flatMap(o=>[o.sprite,o.animacaoFolha.sprite]));
 await loadSprites(defs.filter(d=>names.has(d.id)));
-const verify=selected.map(o=>{const image=getSprite(o.sprite),f=getSprite(o.animacaoFolha.sprite);const crop=getFrame(image,0,0,1,1).crop;return {id:o.id, sprite:o.animacaoFolha.sprite, file:f?.src.split('/').pop(), period:o.animacaoFolha.periodo, phase:o.animacaoFolha.fase, margin:o.animacaoFolha.margem, loaded:!!f, crop:[crop.w,crop.h],sheet:[f?.width,f?.height],valid:!!f&&f.width===(crop.w+2*o.animacaoFolha.margem)*8&&f.height===crop.h}});
+const verify=selected.map(o=>{const image=getSprite(o.sprite),f=getSprite(o.animacaoFolha.sprite);const crop=o.id==='cais_enseada_visual'?{w:image.width,h:image.height}:getFrame(image,0,0,1,1).crop;return {id:o.id, sprite:o.animacaoFolha.sprite, file:f?.src.split('/').pop(), period:o.animacaoFolha.periodo, phase:o.animacaoFolha.fase, margin:o.animacaoFolha.margem, loaded:!!f, crop:[crop.w,crop.h],sheet:[f?.width,f?.height],valid:!!f&&f.width===(crop.w+2*o.animacaoFolha.margem)*8&&f.height===crop.h}});
 state.world.currentMapId=map.id;state.world.currentMap=map;state.objects=selected.map(o=>({...o,x:o.x+.5,y:o.y+.5,renderType:'object'}));state.actors=[];state.fauna=[];state.collectibles=[];state.trainingTargets=[];
 initRenderer(document.getElementById('game'));camera.zoom=1;camera.targetZoom=1;
 window.results=verify; window.getSprite=getSprite; window.seaCanvas=()=>getSeaCanvas(map).causticas;

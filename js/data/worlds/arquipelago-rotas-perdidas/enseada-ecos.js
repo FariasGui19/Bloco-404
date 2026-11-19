@@ -1025,7 +1025,7 @@ export const map = {
     {
       // A cabeceira encontra a praia; a corda liga o veleiro à ponta no mar.
       id: 'cais_enseada_visual', tipo: 'decoracao', x: 50.3125, y: 44.05,
-      animacaoFolha: folhaViva('enseada_folha7_barco', .22, .23, 24),
+      animacaoFolha: folhaViva('enseada_cais_pesqueiro_folha', .8, 0, 0),
       sprite: 'enseada_cais_barco', useCrop: true, larguraPx: 370,
       pivotX: 0.5, pivotY: 0.97, camada: 'fundo', ordem: -1, bloqueia: false,
     },

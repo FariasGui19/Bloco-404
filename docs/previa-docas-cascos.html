@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="pt-BR"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Docas · Cascos 01</title>
+<style>*{box-sizing:border-box}body{margin:0;background:#0b101e;color:#c8d4e8;font:15px system-ui}main{max-width:1160px;margin:auto;padding:32px 22px}small{color:#9d89c9;letter-spacing:.18em}h1{font-size:32px;margin:12px 0}p{max-width:850px;color:#99aac1;line-height:1.6}button,label{background:#202739;color:#e3e9f4;border:1px solid #444460;border-radius:6px;padding:10px 16px;display:inline-block;margin:8px 12px 16px 0}canvas{width:100%;border:1px solid #343650;border-radius:10px;background:#0f1b30}a{color:#c3a2ff}#status{color:#b8caaa}</style>
+<main><small>DOCAS DA NEBLINA / CASCOS 01 + TENTÁCULO 02</small><h1>Madeira, luz e ressaca.</h1><p>Prévia isolada com o mesmo renderizador do jogo. Cais fixo, embarcações na maré. Três repinturas geradas e efeitos procedurais; dois lotes de dez folhas (316 quadros), mais oito poses de embarque. Não é uma captura da partida nem uma reconstrução completa da referência.</p><button id="pause">Pausar</button><label><input id="reduced" type="checkbox"> Movimento reduzido</label><label><input id="old" type="checkbox"> Comparar com arte anterior</label><span id="status">Carregando artes…</span><canvas id="scene" width="1568" height="720"></canvas><h2>Tentáculo · malha ancorada e água em camadas</h2><canvas id="tentacle" width="768" height="360"></canvas><h2>Embarque na Enseada · cais fixo</h2><canvas id="boarding" width="1180" height="702"></canvas><p>O mesmo pesqueiro aparece no embarque e na travessia. A comparação também mostra o tentáculo anterior. <a href="../index.html">Abrir o jogo</a> · <a href="../assets/sprites/docas-cascos/manifest.json">Manifesto das folhas</a></p></main>
+<script type="module">
+import {CAIS_SUL,SPRITES_CAIS_SUL} from '../js/data/worlds/arquipelago-rotas-perdidas/cais-sul.js';
+import {loadSprites,getSprite} from '../js/engine/sprites.js';
+import {SPRITES_CASCOS} from '../js/engine/docas-cascos.js';
+import {SPRITES_DOCAS_VIVAS,poseNavio} from '../js/engine/docas-vivas.js';
+import {SPRITES_RESSACA,desenharTentaculoRessaca,desenharFolhaRessaca} from '../js/engine/docas-ressaca.js';
+import {SPRITES_TENTACULO_02} from '../js/engine/docas-tentaculo-02.js';
+import {desenharPecaCais} from '../js/engine/docas-cais-view.js';
+const canvas=document.querySelector('canvas'),ctx=canvas.getContext('2d');
+const pause=document.querySelector('#pause'),reduced=document.querySelector('#reduced'),old=document.querySelector('#old');
+reduced.checked=matchMedia('(prefers-reduced-motion: reduce)').matches;
+let paused=false,clock=0,last=performance.now();
+pause.onclick=()=>{paused=!paused;pause.textContent=paused?'Retomar':'Pausar';};
+const loaded=await loadSprites([...SPRITES_CAIS_SUL,...SPRITES_CASCOS,...SPRITES_DOCAS_VIVAS,...SPRITES_RESSACA,...SPRITES_TENTACULO_02,{id:'embarque',src:'assets/sprites/docas-cascos/enseada-cais-pesqueiro-folha.png'}].map(s=>({...s,src:'../'+s.src})));
+document.querySelector('#status').textContent=loaded.every(Boolean)?'Artes carregadas':'Falha ao carregar uma arte';
+const cais={...CAIS_SUL,x:0,y:20,escala:1};
+function render(now){
+ const dt=Math.min((now-last)/1000,.05);last=now;if(!paused)clock+=dt;
+ const t=reduced.checked?null:clock;
+ ctx.fillStyle='#101c30';ctx.fillRect(0,0,canvas.width,canvas.height);
+ // Preview-only sea guide: the game retains its own terrain/water masks.
+ for(let j=0;j<38;j++){
+  ctx.beginPath();ctx.strokeStyle=j%3?'#1b3048':'#352845';ctx.lineWidth=2;
+  for(let x=0;x<=1568;x+=12){const y=40+j*18+Math.sin(x/50+j+(t??0)*.55)*4;x?ctx.lineTo(x,y):ctx.moveTo(x,y);}ctx.stroke();
+ }
+ const tc=document.querySelector('#tentacle').getContext('2d');tc.fillStyle='#101c30';tc.fillRect(0,0,768,360);
+ const q=t===null?0:(t/6.4)%1;
+ if(old.checked)desenharFolhaRessaca(tc,'tentaculo',300,300,345.6,288,q);
+ else desenharTentaculoRessaca(tc,300,300,1.8,q);
+ const bc=document.querySelector('#boarding').getContext('2d');bc.fillStyle='#101c30';bc.fillRect(0,0,1180,702);
+ const bi=getSprite('embarque');if(bi){const f=t===null?0:Math.floor(t/.8)%8;bc.drawImage(bi,f*1180,0,1180,702,0,0,1180,702);}
+ const pieces=[...cais.pecas].sort((a,b)=>(a.pe??a.y+a.h)-(b.pe??b.y+b.h));
+ for(const p of pieces){
+  if(old.checked&&['pesqueiro','bote'].includes(p.id)){
+   const img=getSprite(`docas_cais_sul_${p.id}`),{bob,lean,drift}=poseNavio(p,t);
+   const px=p.x+p.w*.53,py=p.pe;ctx.save();ctx.translate(px+drift,py+bob+20);ctx.rotate(lean);ctx.drawImage(img,p.x-px,p.y-py,p.w,p.h);ctx.restore();
+  }else desenharPecaCais(ctx,cais,p,1,t);
+ }
+ requestAnimationFrame(render);
+}
+window.ready=true;
+requestAnimationFrame(render);
+</script></html>

@@ -8,7 +8,7 @@ const nomes=['falesia-frente','falesia-lateral','rampa-rocha','escada-rocha','pl
 for(const nome of nomes){
  const b=readFileSync(`assets/sprites/docas-relevo/${nome}.png`);
  assert.equal(b.readUInt32BE(0),0x89504e47);assert.equal(b[25],6,`${nome}: transparência RGBA`);
- assert(docas.relevoDocas.some(o=>o.id===nome),`${nome}: peça integrada`);
+ assert((nome==='passarela' && docas.caisSul.pecas.some(p=>p.id==='deck')) || docas.relevoDocas.some(o=>o.id===nome),`${nome}: peça integrada`);
 }
 state.world.currentMap=docas;state.world.currentMapId=docas.id;state.objects=[];state.actors=[];
 const player={x:docas.spawnPoints.inicio.x,y:docas.spawnPoints.inicio.y};

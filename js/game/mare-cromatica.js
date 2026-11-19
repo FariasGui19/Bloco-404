@@ -34,6 +34,15 @@ export function prepararMareCromatica(progress) {
   }
   return true;
 }
+// Uma nova tentativa após colapso volta ao reconhecimento sem cronômetro;
+// descobertas e contador histórico são preservados, painéis são da tentativa.
+export function prepararRetornoDocas(progress) {
+  if(!progress?.archetype || lerMareCromatica(progress).desfecho!=='colapso')return false;
+  const data=edit(progress);data.versaoCronometro=1;data.iniciada=false;
+  data.desfecho=null;data.restante=CROMATICA_LIMIT;data.ancoraEstavel=false;data.paineis=[];
+  progress.flags ??= {};delete progress.flags.cromatica_desfecho;progress.flags.cromatica_ancora_estavel=false;
+  return true;
+}
 export function iniciarMareCromatica(progress) {
   if (!progress || !progress.archetype) return false;
   prepararMareCromatica(progress);

@@ -1,7 +1,7 @@
 import { SPRITES_TRAVESSIA, MARCOS_TRAVESSIA } from '../data/travessia-lote1.js';
 import { usePortal } from '../game/portals.js';
 import { criarTravessia, atualizarTravessia, DISTANCIA_DOCAS } from '../game/travessia-neblina.js';
-import { prepararMareCromatica } from '../game/mare-cromatica.js';
+import { prepararMareCromatica, prepararRetornoDocas } from '../game/mare-cromatica.js';
 import { damagePlayer, ensureHealth, respawnPlayer } from '../game/health.js';
 import { saveGame } from '../game/save.js';
 import { resetInput } from '../engine/input.js';
@@ -82,9 +82,14 @@ export function atualizarViagemNeblina(dt,input){
       viagem.atracado=true;
       if(!entrandoDocas) {
         entrandoDocas=true;
+        // Evita que um colapso antigo force retorno imediato na chegada.
+        if(prepararRetornoDocas(jogo.progress))saveGame();
         void usePortal({id:'chegada_docas',label:'DOCAS DA NEBLINA • PÍER SUL',destino:{mapId:'mare_cromatica_docas',spawnId:'inicio'}}).then(ok=>{
           if(ok) {jogo.progress.flags ??= {};jogo.progress.flags.docas_neblina_alcancada=true;prepararMareCromatica(jogo.progress);saveGame();encerrar();}
           else if(viagem) {viagem.atracado=false;viagem.atracacao=2;mensagem='NÃO FOI POSSÍVEL ATRACAR • TENTANDO NOVAMENTE';}
+        }).catch(error=>{
+          console.error('[TRAVESSIA] Falha ao atracar:',error);
+          if(viagem){viagem.atracado=false;viagem.atracacao=2;mensagem='NÃO FOI POSSÍVEL ATRACAR • TENTANDO NOVAMENTE';}
         }).finally(()=>{entrandoDocas=false;});
       }
     }

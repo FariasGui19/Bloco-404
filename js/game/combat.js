@@ -64,6 +64,9 @@ function clearLine(map, player, target) {
 // o que aconteceu. Alvo derrotado fica fora de combate por alguns segundos.
 export function applyAttackDamage(target, roll) {
   if (!target || !roll) return null;
+  // Durante reconhecimento das Docas as ameaças ficam inativas e não podem
+  // ser eliminadas antes da confirmação da incursão.
+  if(target.cromaticaEnemy && state.world?.currentMap?.meta?.cromatica && state.progress?.mareCromatica?.versaoCronometro===1 && state.progress.mareCromatica.iniciada===false) return {dealt:0,defeated:false};
   const before = target.health;
   target.health = Math.max(0, target.health - roll.total);
   target.hitTimer = .2;

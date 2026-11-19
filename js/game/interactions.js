@@ -355,13 +355,19 @@ function interactWithObject(object) {
     openDialogue({speaker:diariosDocas[0],dialogue:diariosDocas.slice(1)});return;
   }
   if (object.id === 'docas_barco') {
-    openDialogue({speaker:'BARCO DE EXPEDIÇÃO',dialogue:['PÍER SUL • PONTO DE APOIO E RETORNO À ENSEADA.'],choices:[
-      {text:'DESCANSAR E SALVAR',onSelect:()=>{healPlayer(state.player,state.progress,35);state.player.energy=Math.min(state.player.maxEnergy??100,(state.player.energy??0)+35);state.world.currentSpawnId='inicio';saveGame();openDialogue({speaker:'BARCO',dialogue:['VIDA E ENERGIA PARCIALMENTE RECUPERADAS. REGISTRO DE EMERGÊNCIA SALVO NO PÍER.']});}},
+    const d=lerMareCromatica(state.progress),aguarda=!d.iniciada&&!d.desfecho;
+    const choices=[];
+    if(aguarda)choices.push({text:'INICIAR INCURSÃO • 10 MINUTOS',onSelect:()=>{
+      if(iniciarMareCromatica(state.progress)){startQuest(state.progress,'mare_cromatica_ancora');saveGame();}
+      openDialogue({speaker:'NEXO-04 // INCURSÃO',dialogue:['A CONTAGEM DE DEZ MINUTOS FOI INICIADA. A NÉVOA AGORA REAGE À SUA PRESENÇA.','ENCONTRE OS FRAGMENTOS E AS FITAS, E RECOMPILE NO GALPÃO.']});
+    }});
+    choices.push({text:'DESCANSAR E SALVAR',onSelect:()=>{healPlayer(state.player,state.progress,35);state.player.energy=Math.min(state.player.maxEnergy??100,(state.player.energy??0)+35);state.world.currentSpawnId='inicio';saveGame();openDialogue({speaker:'BARCO',dialogue:['VIDA E ENERGIA PARCIALMENTE RECUPERADAS. REGISTRO DE EMERGÊNCIA SALVO NO PÍER.']});}},
       {text:'RETORNAR À ENSEADA',onSelect:()=>{void usePortal({id:'docas_retorno',label:'ENSEADA DOS ECOS',destino:{mapId:'ilha_enseada_ecos',spawnId:'vindo_das_docas'}});}},
-      {text:'CONTINUAR A INCURSÃO',onSelect:()=>{}}
-    ]});return;
+      {text:aguarda?'CONTINUAR EXPLORANDO':'CONTINUAR A INCURSÃO',onSelect:()=>{}});
+    openDialogue({speaker:'BARCO DE EXPEDIÇÃO',dialogue:[aguarda?'A ILHA PODE SER EXPLORADA SEM CONTAGEM. INICIE A INCURSÃO AQUI QUANDO ESTIVER PRONTO.':'PÍER SUL • PONTO DE APOIO E RETORNO À ENSEADA.'],choices});return;
   }
   if (object.id === 'docas_chave' || object.id === 'docas_fusivel') {
+    if(!lerMareCromatica(state.progress).iniciada){openDialogue({speaker:'SUPRIMENTOS // DOCAS',dialogue:['INICIE A INCURSÃO NO BARCO PARA REGISTRAR OS SUPRIMENTOS.']});return;}
     const flags=state.progress.flags ??= {},key=object.id,first=!flags[key];flags[key]=true;if(first)saveGame();
     openDialogue({speaker:'SUPRIMENTOS // DOCAS',dialogue:[first?(key==='docas_chave'?'CHAVE DA TRILHA RECOLHIDA.':'FUSÍVEL DO NÚCLEO RECOLHIDO.'):'ESTE ITEM JÁ ESTÁ NO INVENTÁRIO DE MISSÃO.', 'A CHAVE E O FUSÍVEL LIBERAM O SELO DE ACESSO AO NÚCLEO.']});return;
   }
@@ -385,6 +391,7 @@ function interactWithObject(object) {
   }
   if (object.id?.startsWith('cromatica_')) {
     const d=lerMareCromatica(state.progress), id=object.id;
+    if(!d.iniciada && !d.desfecho){openDialogue({speaker:'NEXO-04 // INCURSÃO',dialogue:['O REGISTRO DE MISSÃO ESTÁ EM ESPERA.','INICIE A INCURSÃO NO BARCO DO PÍER QUANDO ESTIVER PRONTO.']});return;}
     if(id.startsWith('cromatica_fragmento_')) {
       const part=id.slice('cromatica_fragmento_'.length), fresh=registrarMareCromatica(state.progress,'fragmentos',part);
       if(fresh) saveGame();

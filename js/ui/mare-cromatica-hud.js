@@ -12,9 +12,9 @@ export function atualizarHudCromatico(state, paused=false) {
   atualizarAudioCromatico(active && !paused && !document.hidden, !!state.cromaticaRuntime?.perigo);
   if(!active)return;
   const d=lerMareCromatica(state.progress), sec=Math.ceil(d.restante);
-  document.getElementById('cromaticaTimer').textContent=d.desfecho ? '• '+d.desfecho.toUpperCase() : `• ${String(Math.floor(sec/60)).padStart(2,'0')}:${String(sec%60).padStart(2,'0')}`;
-  document.getElementById('cromaticaObjective').textContent=objetivoCromatico(state.progress);
-  document.getElementById('cromaticaThreat').textContent=d.desfecho ? '' : state.cromaticaRuntime?.perigo ? 'AMEAÇA PRÓXIMA · CLIQUE PARA ATACAR' : 'NULO // SUA RESSONÂNCIA É UM ERRO DE SINTAXE.';
+  document.getElementById('cromaticaTimer').textContent=d.desfecho ? '• '+d.desfecho.toUpperCase() : `${d.iniciada?'•':'• AGUARDANDO'} ${String(Math.floor(sec/60)).padStart(2,'0')}:${String(sec%60).padStart(2,'0')}`;
+  document.getElementById('cromaticaObjective').textContent=!d.iniciada&&!d.desfecho ? 'EXPLORAÇÃO LIVRE • INICIE A INCURSÃO NO BARCO' : objetivoCromatico(state.progress);
+  document.getElementById('cromaticaThreat').textContent=d.desfecho ? '' : !d.iniciada ? 'EXPLORAÇÃO LIVRE • SEM CONTAGEM' : state.cromaticaRuntime?.perigo ? 'AMEAÇA PRÓXIMA · CLIQUE PARA ATACAR' : 'NULO // SUA RESSONÂNCIA É UM ERRO DE SINTAXE.';
   document.getElementById('cromaticaSync').textContent=`SINCRONIZAÇÃO ${d.sincronizacao}/4 · FITAS ${d.fitas.length}/2`;
 }
 let vignette=null, vignetteW=0, vignetteH=0;

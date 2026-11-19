@@ -45,7 +45,7 @@ import { toggleArchetypeSuit } from './game/ability-context.js';
 import { openNucleoWheel, isNucleoWheelOpen, updateNucleoWheel } from './ui/nucleo-wheel.js';
 import { updateCamera, camera } from './engine/camera.js';
 import { atualizarAmeacasCromaticas } from './game/mare-cromatica-ameacas.js';
-import { CROMATICA_MAPS, lerMareCromatica, avancarMareCromatica, colapsarMareCromatica } from './game/mare-cromatica.js';
+import { CROMATICA_MAPS, lerMareCromatica, prepararMareCromatica, avancarMareCromatica, colapsarMareCromatica } from './game/mare-cromatica.js';
 import { initHudCromatico, atualizarHudCromatico, desenharAtmosferaCromatica } from './ui/mare-cromatica-hud.js';
 import { usePortal, isPortalLocked } from './game/portals.js';
 import { ImmersiveViewManager, IMMERSIVE_MODE } from './game/immersive-view-manager.js';
@@ -265,6 +265,16 @@ await loadSprites([
   { id: 'docas_lote7_talude', src: 'assets/sprites/docas-lote7/talude.png' },
   { id: 'docas_lote7_cais-degrau', src: 'assets/sprites/docas-lote7/cais-degrau.png' },
   { id: 'docas_lote7_rocha-alta', src: 'assets/sprites/docas-lote7/rocha-alta.png' },
+  { id: 'docas_lote8_boia-antiga', src: 'assets/sprites/docas-lote8/boia-antiga.png' },
+  { id: 'docas_lote8_rede-pesca', src: 'assets/sprites/docas-lote8/rede-pesca.png' },
+  { id: 'docas_lote8_mastro', src: 'assets/sprites/docas-lote8/mastro.png' },
+  { id: 'docas_lote8_cesto', src: 'assets/sprites/docas-lote8/cesto.png' },
+  { id: 'docas_lote8_madeiras', src: 'assets/sprites/docas-lote8/madeiras.png' },
+  { id: 'docas_lote8_arbusto', src: 'assets/sprites/docas-lote8/arbusto.png' },
+  { id: 'docas_lote8_placa', src: 'assets/sprites/docas-lote8/placa.png' },
+  { id: 'docas_lote8_ampola', src: 'assets/sprites/docas-lote8/ampola.png' },
+  { id: 'docas_lote8_corais', src: 'assets/sprites/docas-lote8/corais.png' },
+  { id: 'docas_lote8_lampiao', src: 'assets/sprites/docas-lote8/lampiao.png' },
   { id: 'docas_caixas', src: 'assets/sprites/docas-reconstrucao/caixas.png' },
   { id: 'docas_palmeira', src: 'assets/sprites/docas-reconstrucao/palmeira.png' },
   { id: 'docas_mata', src: 'assets/sprites/docas-reconstrucao/mata.png' },
@@ -1037,8 +1047,9 @@ async function update(dt) {
     state.onElevator = false;
   } else {
     if (CROMATICA_MAPS.includes(mapaAtual?.id) && !state.world.isLoading) {
+      if (prepararMareCromatica(state.progress)) saveGame();
       let data = lerMareCromatica(state.progress);
-      if (!data.desfecho && (player.health ?? 1) <= 0) {
+      if (data.iniciada && !data.desfecho && (player.health ?? 1) <= 0) {
         colapsarMareCromatica(state.progress); saveGame(); data = lerMareCromatica(state.progress);
       }
       if (!data.desfecho && avancarMareCromatica(state.progress,dt)) { saveGame(); data=lerMareCromatica(state.progress); }
@@ -1138,7 +1149,7 @@ async function update(dt) {
     // nem durante uma habilidade que trava o movimento.
     if (!abilityLocksMovement) updateHazards(state.hazards, player, state.progress, dt);
     updateHealth(player, state.progress, dt, { onRespawn: () => getSafeSpawn() });
-    if (mapaAtual?.meta?.cromatica && state.cromaticaRuntime && !state.world.isLoading) {
+    if (mapaAtual?.meta?.cromatica && state.cromaticaRuntime && !state.world.isLoading && lerMareCromatica(state.progress).iniciada) {
       state.cromaticaRuntime.perigo=atualizarAmeacasCromaticas(mapaAtual, state.cromaticaRuntime, state.trainingTargets, player, state.progress, dt).perto;
     }
 

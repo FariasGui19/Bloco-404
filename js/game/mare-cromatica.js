@@ -10,7 +10,7 @@ const keys = (list, allowed) => [...new Set(Array.isArray(list) ? list.filter(x 
 
 export function lerMareCromatica(progress) {
   const raw = valid(progress?.mareCromatica) ? progress.mareCromatica : {};
-  return { iniciada: raw.iniciada === true, fragmentos: keys(raw.fragmentos,FRAGMENTOS), fitas: keys(raw.fitas,FITAS),
+  return { versaoCronometro: Number.isInteger(raw.versaoCronometro) ? raw.versaoCronometro : 0, iniciada: raw.iniciada === true, fragmentos: keys(raw.fragmentos,FRAGMENTOS), fitas: keys(raw.fitas,FITAS),
     paineis: keys(raw.paineis,PAINEIS), sincronizacao: Math.max(1,Math.min(4,Number.isInteger(raw.sincronizacao) ? raw.sincronizacao : 1)),
     restante: Number.isFinite(raw.restante) ? Math.max(0,Math.min(CROMATICA_LIMIT,raw.restante)) : CROMATICA_LIMIT,
     desfecho: ['total','parcial','colapso'].includes(raw.desfecho) ? raw.desfecho : null,
@@ -18,13 +18,30 @@ export function lerMareCromatica(progress) {
     colapsos: Number.isSafeInteger(raw.colapsos) && raw.colapsos>=0 ? raw.colapsos : 0 };
 }
 function edit(progress) { const normalized=lerMareCromatica(progress); progress.mareCromatica=normalized; return normalized; }
+// Migração única: a incursão antiga começou ao atracar. Devolve o tempo e
+// aguarda confirmação, preservando descobertas e finais já concluídos.
+export function prepararMareCromatica(progress) {
+  if (!progress || !progress.archetype) return false;
+  const atual=lerMareCromatica(progress);
+  if(atual.versaoCronometro>=1)return false;
+  const data=edit(progress);data.versaoCronometro=1;
+  if(data.desfecho!=='total' && data.desfecho!=='parcial'){
+    data.iniciada=false;data.restante=CROMATICA_LIMIT;
+    if(data.desfecho==='colapso'){
+      data.desfecho=null;data.ancoraEstavel=false;data.paineis=[];
+      progress.flags ??= {};delete progress.flags.cromatica_desfecho;progress.flags.cromatica_ancora_estavel=false;
+    }
+  }
+  return true;
+}
 export function iniciarMareCromatica(progress) {
   if (!progress || !progress.archetype) return false;
+  prepararMareCromatica(progress);
   const data=edit(progress);
-  if (!data.iniciada || data.desfecho==='colapso') {
-    // Redenção mantém descobertas, mas a tentativa e a âncora são novas.
-    data.iniciada=true;data.restante=CROMATICA_LIMIT;data.desfecho=null;data.ancoraEstavel=false;data.paineis=[];
-    progress.flags ??= {}; progress.flags.cromatica_ancora_estavel=false;
+  if ((!data.iniciada && !data.desfecho) || data.desfecho==='colapso') {
+    if(data.desfecho==='colapso'){data.ancoraEstavel=false;data.paineis=[];}
+    data.iniciada=true;data.restante=CROMATICA_LIMIT;data.desfecho=null;
+    progress.flags ??= {};progress.flags.cromatica_ancora_estavel=false;delete progress.flags.cromatica_desfecho;
     return true;
   }
   return false;
@@ -79,7 +96,7 @@ export function perfilSincronizacao(progress,mapId) {
 }
 export function objetivoCromatico(progress) {
   const d=lerMareCromatica(progress);
-  if(!d.iniciada) return 'INVESTIGUE O ALERTA NO LIMIAR 66.6';
+  if(!d.iniciada) return progress?.flags?.docas_neblina_alcancada ? 'EXPLORAÇÃO LIVRE • INICIE A INCURSÃO NO BARCO' : 'INVESTIGUE O ALERTA NO LIMIAR 66.6';
   if(d.desfecho==='colapso') return 'COLAPSO • RETORNE AO LIMIAR PARA UMA NOVA TENTATIVA';
   if(d.desfecho) return 'ÂNCORA ESTÁVEL • A FENDA AGUARDA';
   if(!d.estacaoAberta) {

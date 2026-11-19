@@ -12,6 +12,13 @@ A travessia mantém inércia, sonar [R] e adiciona farol alternável [L]: peixes
 - O spawn, o diário do píer e os IDs de progresso continuam válidos. O pesqueiro mantém o início manual da incursão, o descanso e o retorno à Enseada.
 - As peças finais estão em `assets/sprites/docas-cais-sul/`. Para reproduzir os recortes: `python tools/preparar-docas-cais.py /caminho/para/image-1.png` (Pillow e o recorte de referência fornecido para este setor).
 
+## Setor 2 — costa oeste e lado oposto da escada
+- O segundo recorte é registrado pelos mastros e pela lanterna do pesqueiro. O mar azul-violeta, os reflexos magenta, a espuma e os bancos de névoa são independentes da areia e dos recortes de rochas, palmeiras e cristais. Não se carrega a prancha completa.
+- O tentáculo é uma presença ambiental na água, sem combate: 32 poses deformam o corpo e a ponta por malha, sem deslocar a raiz. Espuma, rastros e respingos são desenhados à parte. Com movimento reduzido, a pose inicial e a espuma estática continuam visíveis.
+- A margem agora tem uma faixa de areia transitável entre o promontório e a vila. Rochas e água bloqueiam passagem; a saída do cais segue pela escada, que ganhou alvenaria na face oeste e pedras gastas na chegada ao solo. A poça de maré e a fogueira conservam os IDs e foram reancoradas no novo terreno.
+- Peças finais: `assets/sprites/docas-costa-oeste/`. Para recriar com Pillow: `python tools/preparar-docas-costa-oeste.py /caminho/para/image-2.png`. O preparador usa também os recortes do cais sul como máscaras para não duplicar barco e estacas na camada de água.
+- `node tests/docas-costa-oeste.mjs` verifica encaixe, sprites, laço de movimento reduzido e ida e volta com colisão. A rota do cais até a areia também foi percorrida no Chromium usando o movimento normal do jogo.
+
 ## Checklist dos lotes (histórico)
 ### Lote 1 — navegação
 - [x] Farol alternável e atração pelo cone; o risco não some no escuro.

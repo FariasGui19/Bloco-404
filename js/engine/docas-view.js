@@ -2,6 +2,8 @@ import { getSprite } from './sprites.js';
 import { SIDE_DEPTH_STEP } from './camera.js';
 import { CONFIG } from '../config.js';
 import { criarOndasCais } from './docas-mar.js';
+import { desenharPecaCosta, desenharMareOeste, iluminarAguaOeste, sombrearAreiaOeste } from './docas-costa-view.js';
+import { ESCADA_OESTE } from '../data/worlds/arquipelago-rotas-perdidas/costa-oeste-docas.js';
 import { desenharReflexosCais, desenharPecaCais } from './docas-cais-view.js';
 // A planta é geometria, não o PNG da referência. O terreno é rasterizado
 // uma vez; entidades e estruturas permanecem ordenadas pela posição do pé.
@@ -15,6 +17,12 @@ function construirTerreno(map) {
   const agua=getSprite('docas_agua'),areia=getSprite('docas_areia');
   g.fillStyle=agua?g.createPattern(agua,'repeat'):'#071d2c';g.fillRect(0,0,w,h);
   if(map.caisSul)desenharReflexosCais(g,map.caisSul,s);
+  const costa=map.costaOeste;
+  const naPraia=(x,y)=>costa && x<650*s && y>(costa.y+85*costa.escala)*s;
+  if(costa){
+    iluminarAguaOeste(g,costa,s);
+    desenharPecaCosta(g,costa,costa.mar,s);
+  }
   const pathAll=()=>{g.beginPath();for(const poly of map.geometriaDocas.terraPolys??map.geometriaDocas.polys){poly.forEach(([x,y],i)=>i?g.lineTo(x*s,y*s):g.moveTo(x*s,y*s));g.closePath();}};
   // Faces sob as margens externas, antes do piso: a superfície continua
   // na posição usada pela colisão. Segmentos internos nunca viram penhasco.
@@ -29,6 +37,9 @@ function construirTerreno(map) {
     for(let k=0;k<count;k++){
       const f0=k/count,f1=(k+1)/count,f=(f0+f1)/2;
       const mx=(a[0]+(b[0]-a[0])*f)*s,my=(a[1]+(b[1]-a[1])*f)*s;
+      // A praia oeste tem declive raso, espuma e rochas próprias, nunca a
+      // parede vertical usada nos platôs. Só pulamos os seus segmentos.
+      if(naPraia(mx,my))continue;
       // Apenas a face voltada para a câmera fica visível; amostra abaixo da borda.
       if(g.isPointInPath(mx,my+8))continue;
       const x0=(a[0]+(b[0]-a[0])*f0)*s,y0=(a[1]+(b[1]-a[1])*f0)*s;
@@ -50,11 +61,16 @@ function construirTerreno(map) {
   g.fillStyle=luzCosta;g.fillRect(500*s,360*s,490*s,460*s);
   // Áreas de terra gastas, limitadas à superfície e sem mudar colisões.
   if(terra){g.save();g.globalAlpha=.32;g.fillStyle=g.createPattern(terra,'repeat');for(const [x,y,rx,ry] of [[585,510,180,95],[910,535,220,90],[1210,515,160,75],[1190,220,160,70]]){g.beginPath();g.ellipse(x*s,y*s,rx*s,ry*s,0,0,Math.PI*2);g.fill();}g.restore();}
+  if(costa){
+    desenharPecaCosta(g,costa,costa.areia,s);
+    sombrearAreiaOeste(g,costa,s);
+  }
   // Textura recortada, levemente irregular, quebra a linha artificial da margem.
   g.save();g.fillStyle='rgba(25,27,30,.44)';
   for(const poly of map.geometriaDocas.terraPolys??map.geometriaDocas.polys)for(let i=0;i<poly.length;i++){
     const a=poly[i],b=poly[(i+1)%poly.length],len=Math.hypot(b[0]-a[0],b[1]-a[1]),n=Math.max(1,Math.floor(len/12));
     for(let k=0;k<n;k++){const f=(k+.5)/n,x=(a[0]+(b[0]-a[0])*f)*s,y=(a[1]+(b[1]-a[1])*f)*s;
+      if(naPraia(x,y))continue;
       g.beginPath();g.ellipse(x,y,(3+(i*7+k*13)%8)*s,(2+(i*3+k*7)%4)*s,0,0,Math.PI*2);g.fill();}
   }g.restore();
   // Caminhos gastos conectam o desembarque às portas e à subida.
@@ -169,7 +185,7 @@ export function renderDocas(ctx,map,state,camX,camY,w,h,zoom,dpr,now,drawPlayer)
   const fogCais=getSprite('docas_fx_faixas-nevoa');
   if(fogCais){const s=map.geometriaDocas.escala;ctx.save();ctx.globalAlpha=.12;for(const [x,y,k] of [[175,730,0],[500,780,1],[780,705,2]]){const dx=reduced?0:Math.sin(t*.12+k)*18;ctx.drawImage(fogCais,x*s+dx,y*s,155*s,28*s);}ctx.restore();}
   // Pequenos reflexos afastados da máscara de terra, sem substituir o mar.
-  for(const [id,mx,my,size,phase] of [['onda-magenta',205,555,54,1],['redemoinho',1400,590,62,2]]){
+  for(const [id,mx,my,size,phase] of [...(map.costaOeste?[]:[['onda-magenta',205,555,54,1]]),['redemoinho',1400,590,62,2]]){
     const img=getSprite('docas_fx_'+id),s=map.geometriaDocas.escala;if(!img)continue;
     const px=mx*s,py=my*s,sz=size*s;if(Math.abs(px-camX)>w/(2*zoom)+sz||Math.abs(py-camY)>h/zoom+sz)continue;
     ctx.save();ctx.globalAlpha=reduced?.18:.17+.035*Math.sin(t*.8+phase);ctx.drawImage(img,px-sz/2,py-sz*.20,sz,sz*.40);ctx.restore();
@@ -177,13 +193,6 @@ export function renderDocas(ctx,map,state,camX,camY,w,h,zoom,dpr,now,drawPlayer)
   for(const m of map.marDocas??[]){
     const x=m.x*map.geometriaDocas.escala,y=m.y*map.geometriaDocas.escala,size=m.tamanho*map.geometriaDocas.escala;
     if(Math.abs(x-camX)>w/(2*zoom)+size*2||Math.abs(y-camY)>h/zoom+size*2)continue;
-    if(m.id==='tentaculo-cais'){
-      const img=getSprite('docas_cais_tentaculo');if(!img)continue;
-      ctx.save();for(let i=0;i<3;i++){const p=reduced?(i+1)/3:(t*.16+i/3)%1;ctx.strokeStyle=`rgba(245,72,215,${.55*(1-p)})`;ctx.lineWidth=2+2*(1-p);for(let j=0;j<5;j++){ctx.beginPath();ctx.ellipse(x,y,size*(.17+p*.53),size*(.07+p*.17),0,j*Math.PI*2/5,j*Math.PI*2/5+.85);ctx.stroke();}}ctx.restore();
-      const h=size*img.height/img.width,n=16;ctx.save();ctx.imageSmoothingEnabled=false;
-      for(let i=0;i<n;i++){const sy=Math.floor(i*img.height/n),sy2=Math.floor((i+1)*img.height/n),rel=1-i/n,dx=reduced?0:Math.sin(t*.85+rel*3.5)*size*.045*rel;ctx.drawImage(img,0,sy,img.width,sy2-sy,x-size/2+dx,y-h+sy/img.height*h,size,(sy2-sy)/img.height*h+.5);}
-      ctx.restore();continue;
-    }
     const img=getSprite('docas_mar_'+m.id);if(!img)continue;
     const frame=reduced?0:Math.floor(t*4)%8,bob=m.id==='boia'&&!reduced?Math.sin(t*.85+m.x)*4:0;
     ctx.save();ctx.globalAlpha=m.id==='oleo'?.56:.85;
@@ -191,6 +200,10 @@ export function renderDocas(ctx,map,state,camX,camY,w,h,zoom,dpr,now,drawPlayer)
     if(m.id==='boia'){ctx.save();ctx.globalAlpha=reduced?.22:.16+.06*Math.sin(t*1.1+m.x);const g=ctx.createRadialGradient(x,y-size*.23+bob,0,x,y-size*.23+bob,size*.24);g.addColorStop(0,'#ffe1a0');g.addColorStop(1,'rgba(255,215,130,0)');ctx.fillStyle=g;ctx.fillRect(x-size*.24,y-size*.47+bob,size*.48,size*.48);ctx.restore();}
 
   }
+  const oeste=map.costaOeste;
+  const costaVisivel=oeste && camX-w/(2*zoom)<(oeste.x+oeste.mar.w*oeste.escala)*sCais
+    && camY+(h/2-115)/zoom>oeste.y*sCais;
+  if(costaVisivel)desenharMareOeste(ctx,oeste,sCais,reduced?null:t);
   // Primeiro o piso (deck e degraus); estacas dianteiras usam o Y do ponto
   // em que atravessam as tábuas, não o Y em que somem na água.
   const cais=map.caisSul,pecasCais=[];
@@ -200,12 +213,17 @@ export function renderDocas(ctx,map,state,camX,camY,w,h,zoom,dpr,now,drawPlayer)
     const y=cais.y*sCais+(peca.y+peca.h/2)*unit;
     if(Math.abs(x-camX)>w/(2*zoom)+peca.w*unit/2 ||
        Math.abs(y-camY)>(h/2+115)/zoom+peca.h*unit/2)continue;
-    if(peca.pe===undefined)drawCais(peca);
+    if(peca.pe===undefined){
+      if(oeste && peca.id==='escada-mare')desenharPecaCosta(ctx,cais,ESCADA_OESTE,sCais);
+      drawCais(peca);
+    }
     else pecasCais.push({peca,y:cais.y*sCais+peca.pe*unit});
   }
   for(const st of map.estruturasDocas)if(st.camada==='chao')desenharEstrutura(ctx,st,t,reduced,state);
-  const objs=ordenarProfundidadeDocas([...pecasCais,...map.estruturasDocas.filter(st=>st.camada!=='chao').map(st=>({estrutura:st,y:st.y})),...(state.trainingTargets??[]).filter(e=>e.health>0).map(e=>({entidade:e,y:e.y*SIDE_DEPTH_STEP})),...(state.cromaticaRuntime?.visao?[{entidade:state.cromaticaRuntime.visao,y:state.cromaticaRuntime.visao.y*SIDE_DEPTH_STEP}]:[]),{entidade:state.player,y:state.player.y*SIDE_DEPTH_STEP}]);
+  const pecasOeste=costaVisivel?[...oeste.rochas,...oeste.vegetacao].map(peca=>({pecaOeste:peca,y:(oeste.y+peca.pe*oeste.escala)*sCais})):[];
+  const objs=ordenarProfundidadeDocas([...pecasCais,...pecasOeste,...map.estruturasDocas.filter(st=>st.camada!=='chao').map(st=>({estrutura:st,y:st.y})),...(state.trainingTargets??[]).filter(e=>e.health>0).map(e=>({entidade:e,y:e.y*SIDE_DEPTH_STEP})),...(state.cromaticaRuntime?.visao?[{entidade:state.cromaticaRuntime.visao,y:state.cromaticaRuntime.visao.y*SIDE_DEPTH_STEP}]:[]),{entidade:state.player,y:state.player.y*SIDE_DEPTH_STEP}]);
   for(const item of objs){
+    if(item.pecaOeste){desenharPecaCosta(ctx,oeste,item.pecaOeste,sCais);continue;}
     if(item.peca){drawCais(item.peca);continue;}
     if(item.estrutura){const st=item.estrutura,margin=st.largura*4;if(Math.abs(st.x-camX)<w/(2*zoom)+margin&&Math.abs(st.y-camY)<h/zoom+margin)desenharEstrutura(ctx,st,t,reduced,state);continue;}
     const e=item.entidade,x=e.x*CONFIG.TILE_W,y=e.y*SIDE_DEPTH_STEP;

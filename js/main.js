@@ -1,3 +1,4 @@
+import { SPRITES_COSTA_OESTE } from './data/worlds/arquipelago-rotas-perdidas/costa-oeste-docas.js';
 import { SPRITES_CAIS_SUL } from './data/worlds/arquipelago-rotas-perdidas/cais-sul.js';
 import { initTravessiaNeblina, atualizarRadioNeblina, atualizarViagemNeblina, desenharViagemNeblina, travessiaAtiva, mapaTaticoAberto, alternarMapa } from './ui/travessia-neblina.js';
 // js/main.js
@@ -254,7 +255,6 @@ await loadSprites([
   { id: 'docas_lote6_armadilha', src: 'assets/sprites/docas-lote6/armadilha.png' },
   { id: 'docas_lote6_rochedos', src: 'assets/sprites/docas-lote6/rochedos.png' },
   { id: 'docas_lote6_luminaria', src: 'assets/sprites/docas-lote6/luminaria.png' },
-  { id: 'docas_lote7_margem-areia', src: 'assets/sprites/docas-lote7/margem-areia.png' },
   { id: 'docas_lote7_margem-rochas', src: 'assets/sprites/docas-lote7/margem-rochas.png' },
   { id: 'docas_lote7_raiz-costa', src: 'assets/sprites/docas-lote7/raiz-costa.png' },
   { id: 'docas_lote7_coral-pedra', src: 'assets/sprites/docas-lote7/coral-pedra.png' },
@@ -321,7 +321,6 @@ await loadSprites([
   { id: 'docas_fx_onda-magenta', src: 'assets/sprites/docas-lote13/onda-magenta.png' },
   { id: 'docas_fx_redemoinho', src: 'assets/sprites/docas-lote13/redemoinho.png' },
   { id: 'docas_fx_chama', src: 'assets/sprites/docas-lote13/chama-folha.png' },
-  { id: 'docas_cais_tentaculo', src: 'assets/sprites/docas-cais-refino/tentaculo.png' },
   { id: 'docas_cais_cristais', src: 'assets/sprites/docas-cais-refino/cristais.png' },
   { id: 'docas_caixas', src: 'assets/sprites/docas-reconstrucao/caixas.png' },
   { id: 'docas_palmeira', src: 'assets/sprites/docas-reconstrucao/palmeira.png' },
@@ -329,6 +328,7 @@ await loadSprites([
   { id: 'docas_areia', src: 'assets/sprites/docas-reconstrucao/piso-areia.png' },
   { id: 'docas_agua', src: 'assets/sprites/travessia-neblina/mar.png' },
   ...SPRITES_CAIS_SUL,
+  ...SPRITES_COSTA_OESTE,
   { id: 'docas_cabana-oeste', src: 'assets/sprites/docas-reconstrucao/cabana-oeste.png' },
   { id: 'docas_cabana-leste', src: 'assets/sprites/docas-reconstrucao/cabana-leste.png' },
   { id: 'docas_galpao', src: 'assets/sprites/docas-reconstrucao/galpao.png' },

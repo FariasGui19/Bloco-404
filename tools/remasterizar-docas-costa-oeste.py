@@ -136,7 +136,7 @@ def main(reference):
         for name,sprite in sprites.items():
             painted = paint(name,sprite,donor,detail)
             if name == 'tentaculo':
-                painted = base.tentacle_atlas(painted,DENSITY)
+                painted = base.tentacle_atlas(painted,DENSITY,frames=64)
             if name in ('mar','areia'):
                 painted.save(base.OUT/(name+'.webp'),quality=94,alpha_quality=100,method=6)
             else:

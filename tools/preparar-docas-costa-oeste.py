@@ -153,12 +153,12 @@ def tentacle_pose():
     return rgba(art.crop(box),mask(box,[outline]))
 
 
-def tentacle_atlas(img, density=1):
+def tentacle_atlas(img, density=1, frames=32, columns=8):
     w,h=img.size
     step=6*density
-    atlas=Image.new('RGBA',(w*8,h*4))
-    for frame in range(32):
-        phase=math.tau*frame/32
+    atlas=Image.new('RGBA',(w*columns,h*math.ceil(frames/columns)))
+    for frame in range(frames):
+        phase=math.tau*frame/frames
         def inverse(x,y):
             x,y=x/density,y/density
             weight=max(0,min(1,(130-y)/110))**1.3
@@ -173,7 +173,7 @@ def tentacle_atlas(img, density=1):
                 r,b=min(w,x+step),min(h,y+step)
                 cells.append(((x,y,r,b),sum((inverse(u,v) for u,v in [(x,y),(x,b),(r,b),(r,y)]),())))
         frame_img=img.transform((w,h),Image.Transform.MESH,cells,Image.Resampling.BICUBIC)
-        atlas.paste(frame_img,(frame%8*w,frame//8*h))
+        atlas.paste(frame_img,(frame%columns*w,frame//columns*h))
     return atlas
 
 

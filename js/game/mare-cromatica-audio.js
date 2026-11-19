@@ -1,5 +1,5 @@
 // Ambiente opcional, sem downloads ou autoplay. Só cria o AudioContext depois
-// do clique no botão; três fontes fixas são reutilizadas durante a sessão.
+// do clique no botão; fontes fixas são reutilizadas durante a sessão.
 let context=null, mix=null, drone=null, hiss=null, tension=null, enabled=false, last=-1;
 export function ativarAudioCromatico() {
   if(enabled){enabled=false;context?.suspend?.().catch(()=>{});return false;}
@@ -13,6 +13,11 @@ export function ativarAudioCromatico() {
       // Ruído determinístico e suavizado, sem alocações por quadro.
       let seed=403,prev=0;for(let i=0;i<data.length;i++){seed=(seed*1664525+1013904223)>>>0;prev=.88*prev+.12*(seed/2147483648-1);data[i]=prev;}
       const source=context.createBufferSource();source.buffer=buffer;source.loop=true;hiss=context.createGain();hiss.gain.value=.045;source.connect(hiss);hiss.connect(mix);source.start();
+      // Dois harmônicos suaves sustentam uma nota de vigília sob o ruído do mar.
+      // Osciladores contínuos e LFO lento: sem sequenciadores nem alocações por quadro.
+      const harmony=context.createGain();harmony.gain.value=.008;harmony.connect(mix);
+      for(const hz of [164.81,220]){const note=context.createOscillator();note.type='sine';note.frequency.value=hz;note.connect(harmony);note.start();}
+      const breath=context.createOscillator(),depth=context.createGain();breath.type='sine';breath.frequency.value=.04;depth.gain.value=.003;breath.connect(depth);depth.connect(harmony.gain);breath.start();
       // Maré grave e rangido: modulações fixas, sem buffers por quadro.
       const swell=context.createOscillator(),swellDepth=context.createGain();swell.type='sine';swell.frequency.value=.085;swellDepth.gain.value=.016;swell.connect(swellDepth);swellDepth.connect(hiss.gain);swell.start();
       const wood=context.createOscillator(),woodGain=context.createGain(),woodLfo=context.createOscillator(),woodDepth=context.createGain();

@@ -26,9 +26,10 @@ export function atualizarAmeacasCromaticas(map, runtime, targets, player, progre
   for(const e of targets ?? []) {
     if(!e.cromaticaEnemy || e.health<=0) continue;
     if(progress?.mareCromatica?.desfecho==='total') {e.health=0;continue;}
+    e.cromaticaMovendo=false;
     e.clock=(e.clock??0)+dt;e.cooldown=Math.max(0,(e.cooldown??0)-dt);
     const dx=player.x-e.x,dy=player.y-e.y,dist=Math.hypot(dx,dy);
-    if(dist<6) perto=true;
+    if(dist<6) {perto=true;if(Math.abs(dx)>.05)e.cromaticaFaceDireita=dx>0;}
     // A entrada da contenção é um respiro seguro e evita dano durante a transição.
     if(map.id==='mare_cromatica_contencao' && player.x<3.4) {e.windup=0;continue;}
     if(e.windup>0) {
@@ -39,8 +40,10 @@ export function atualizarAmeacasCromaticas(map, runtime, targets, player, progre
     if(dist<1.1 && e.cooldown<=0 && lineClear(e)) {e.windup=.65;continue;}
     if(dist>6 || dist<.95 || dist<.001) continue;
     const speed=.78, vx=dx/dist*speed*dt,vy=dy/dist*speed*dt;
+    const xAnterior=e.x,yAnterior=e.y;
     if(stand(map,e.x+vx,e.y,.22,e)) e.x+=vx;
     if(stand(map,e.x,e.y+vy,.22,e)) e.y+=vy;
+    e.cromaticaMovendo=Math.hypot(e.x-xAnterior,e.y-yAnterior)>.00001;
     e.flip=dx-dy>0;
   }
   return {perto};

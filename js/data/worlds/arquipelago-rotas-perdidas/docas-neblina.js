@@ -111,6 +111,12 @@ export const docas={id:'mare_cromatica_docas',meta:{nome:'DOCAS DA NEBLINA',tipo
   ...[[360,500,36],[1270,550,36]].map(([x,y,w])=>estrutura('lote7_raiz-costa',x,y,w)),
   ...[[335,480,28],[1290,560,28]].map(([x,y,w])=>estrutura('lote7_coral-pedra',x,y,w)),
   ...[[315,460,40],[1310,550,40]].map(([x,y,w])=>estrutura('lote7_rocha-alta',x,y,w)),
+  // Lote 11: reforços costeiros e sinais de navegação, próximos dos conjuntos existentes.
+  estrutura('lote11_rocha-costeira',305,490,44),estrutura('lote11_arbusto-costeiro',460,400,43),
+  estrutura('lote11_gramineas',1130,440,34),estrutura('lote11_cogumelos',1275,560,26),
+  estrutura('lote11_cais-lateral',665,615,45,'chao'),estrutura('lote11_correntes',705,595,26),
+  estrutura('lote11_sucata',1080,555,31),estrutura('lote11_bandeirola',1340,505,20),
+  estrutura('lote11_lanterna-chao',750,500,14),estrutura('lote11_totem',960,465,24),
   // Vestígios próximos a pontos de uso: cais, abrigo, vigia e margem.
   estrutura('lote10_ancoradouro',540,625,22),estrutura('lote10_guincho',670,590,30),
   estrutura('lote10_tambores',740,575,22),estrutura('lote10_bau',645,520,26),
@@ -135,6 +141,7 @@ export const docas={id:'mare_cromatica_docas',meta:{nome:'DOCAS DA NEBLINA',tipo
  objects:[marker('docas_barco',630,660,'BARCO • INICIAR / DESCANSAR'),
  marker('cromatica_fragmento_estacao',1050,365,'RECOLHER FRAGMENTO • TRILHA'),marker('cromatica_selo',1110,275,'ESTABILIZAR O ACESSO AO NÚCLEO'),
  marker('cromatica_painel_origem',1190,220,'ALINHAR ORIGEM'),marker('cromatica_painel_retorno',1240,250,'ALINHAR RETORNO'),marker('cromatica_painel_memoria',1300,210,'ALINHAR MEMÓRIA'),marker('cromatica_ancora',1250,185,'ESTABILIZAR ÂNCORA'),
+ marker('docas_totem_mares',960,465,'EXAMINAR MARCA DAS MARÉS'),
  marker('docas_mural_vigia',780,490,'LER MURAL DOS VIGIAS'),marker('docas_fogueira',440,540,'EXAMINAR FOGUEIRA DOS VIGIAS'),
  marker('docas_marca_navegantes',840,580,'EXAMINAR MARCA DOS NAVEGANTES'),marker('docas_diario_pier',710,605,'LER DIÁRIO DO PÍER'),marker('docas_diario_trilha',980,520,'LER AVISO DOS VIGIAS'),
  marker('docas_torre',1330,500,'SUBIR À TORRE DE VIGIA'),marker('docas_resina',720,565,'RASTREAR RESINA • MARÉ ASTRAL'),marker('docas_eletrico',910,545,'PAINEL ELÉTRICO • NÚCLEO X10'),marker('docas_selo',1020,420,'SELO DE NÉVOA • DOMÍNIO ANCIÃO'),marker('docas_biomassa',1120,565,'BIOMASSA • BIO-FORJA')],

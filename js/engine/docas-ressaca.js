@@ -1,4 +1,5 @@
 import { getSprite } from './sprites.js';
+import { desenharTentaculo02 } from './docas-tentaculo-02.js';
 
 export const FOLHAS_RESSACA={
   onda:{w:224,h:104,quadros:12,colunas:6,base:[114,78],partes:['onda-forma','onda-crista','onda-quebra','onda-refluxo']},
@@ -43,6 +44,7 @@ export function desenharFolhaRessaca(ctx,id,x,y,w,h,p,alpha=1,angulo=0){
 // Same footprint contract on the shore, at sea or in a future map: x/y are
 // the insertion in the water, not the center of the frame.
 export function desenharTentaculoRessaca(ctx,x,y,escala,progresso,alpha=1){
+  if(desenharTentaculo02(ctx,x,y,escala,progresso,alpha))return true;
   const {w,h}=FOLHAS_RESSACA.tentaculo;
   return desenharFolhaRessaca(ctx,'tentaculo',x,y,w*escala,h*escala,progresso,alpha);
 }

@@ -36,7 +36,7 @@ if (!process.env.BROWSER_EXECUTABLE) {
       let draws = [], now = 1000;
       Object.defineProperty(performance, 'now', { configurable: true, value: () => now });
       CanvasRenderingContext2D.prototype.drawImage = function (image, ...args) {
-        if (image instanceof HTMLImageElement && image.src.includes('/enseada-animacao-lote7/')) draws.push([image.src.split('/').pop(), args[0]]);
+        if (image instanceof HTMLImageElement && (image.src.includes('/enseada-animacao-lote7/') || image.src.endsWith('/docas-cascos/enseada-cais-pesqueiro-folha.png'))) draws.push([image.src.split('/').pop(), args[0]]);
         return originalDraw.call(this, image, ...args);
       };
       const checked = [];

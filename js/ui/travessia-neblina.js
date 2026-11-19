@@ -1,3 +1,4 @@
+import { desenharCascoNovo } from '../engine/docas-cascos.js';
 import { desenharTentaculoRessaca } from '../engine/docas-ressaca.js';
 import { SPRITES_TRAVESSIA, MARCOS_TRAVESSIA } from '../data/travessia-lote1.js';
 import { usePortal } from '../game/portals.js';
@@ -29,7 +30,7 @@ function somRadio() {
   } catch { /* texto é a alternativa quando áudio não está disponível */ }
 }
 export function initTravessiaNeblina(state) {
-  texturaMar=new Image();texturaMar.src='assets/sprites/travessia-neblina/mar.png';imagemBarco=new Image();imagemBarco.src='assets/sprites/travessia-neblina/barco.png';
+  texturaMar=new Image();texturaMar.src='assets/sprites/travessia-neblina/mar.png';imagemBarco=new Image();imagemBarco.src='assets/sprites/docas-cascos/pesqueiro-repouso.png';
   jogo=state;tela=$('travessiaNeblina');canvas=$('travessiaCanvas');ctx=canvas.getContext('2d');mapa=$('mapaTatico');radio=$('radioNeblina');sinal=$('radioTexto');btnMapa=$('abrirMapaTatico');
   btnMapa.addEventListener('click',()=>alternarMapa());$('fecharMapaTatico').addEventListener('click',()=>alternarMapa(false));
   document.querySelectorAll('[data-camada-tatica]').forEach(b=>b.addEventListener('click',()=>{camada=b.dataset.camadaTatica;desenharMapa();}));
@@ -149,7 +150,7 @@ export function desenharViagemNeblina(){
   }
   for(const a of v.ameacas) if(a.fase==='aviso'||a.fase==='ataque') {const mark=proj(a.tx,a.ty);ctx.strokeStyle=a.fase==='ataque'?'#ffc7d5':'#f8b4dc';ctx.lineWidth=2;ctx.beginPath();ctx.ellipse(mark.x,mark.y,a.tipo==='redemoinho'?30:20,14,0,0,Math.PI*2);ctx.stroke();}
   const p=proj(v.x,v.y);if(v.chegou)p.x+=Math.min(1,(v.atracacao??0)/3)*22;ctx.save();ctx.translate(p.x,p.y);ctx.rotate(v.heading*(v.chegou?Math.max(0,1-(v.atracacao??0)/3):1));
-  if(!v.nadando){if(v.luz){const light=ctx.createLinearGradient(12,0,170,0);light.addColorStop(0,'rgba(223,243,210,.27)');light.addColorStop(1,'rgba(210,238,226,0)');ctx.fillStyle=light;ctx.beginPath();ctx.moveTo(10,-4);ctx.lineTo(170,-65);ctx.lineTo(170,65);ctx.lineTo(10,4);ctx.fill();}if(imagemBarco?.complete && imagemBarco.naturalWidth){ctx.imageSmoothingEnabled=true;ctx.drawImage(imagemBarco,-39,-17,78,34);}else{ctx.fillStyle='#b4a695';ctx.beginPath();ctx.moveTo(24,0);ctx.lineTo(4,12);ctx.lineTo(-25,9);ctx.lineTo(-29,0);ctx.lineTo(-25,-9);ctx.lineTo(4,-12);ctx.closePath();ctx.fill();}}else{ctx.fillStyle='#b4eae3';ctx.beginPath();ctx.arc(0,0,7,0,Math.PI*2);ctx.fill();ctx.fillStyle='#b4a695';ctx.fillRect(-38,-8,24,16);}
+  if(!v.nadando){if(v.luz){const light=ctx.createLinearGradient(12,0,170,0);light.addColorStop(0,'rgba(223,243,210,.27)');light.addColorStop(1,'rgba(210,238,226,0)');ctx.fillStyle=light;ctx.beginPath();ctx.moveTo(10,-4);ctx.lineTo(170,-65);ctx.lineTo(170,65);ctx.lineTo(10,4);ctx.fill();}if(imagemBarco?.complete && imagemBarco.naturalWidth){ctx.imageSmoothingEnabled=true;const bob=still?0:Math.sin(v.tempo*1.1)*1.8;const casco={id:'pesqueiro',x:-56,y:-92+bob,w:112,h:112*568/610,pe:0};if(!desenharCascoNovo(ctx,casco,still?null:v.tempo))ctx.drawImage(imagemBarco,casco.x,casco.y,casco.w,casco.h);}else{ctx.fillStyle='#b4a695';ctx.beginPath();ctx.moveTo(24,0);ctx.lineTo(4,12);ctx.lineTo(-25,9);ctx.lineTo(-29,0);ctx.lineTo(-25,-9);ctx.lineTo(4,-12);ctx.closePath();ctx.fill();}}else{ctx.fillStyle='#b4eae3';ctx.beginPath();ctx.arc(0,0,7,0,Math.PI*2);ctx.fill();ctx.fillStyle='#b4a695';ctx.fillRect(-38,-8,24,16);}
   ctx.restore();if(v.sonar>0){ctx.strokeStyle='rgba(129,244,220,.65)';ctx.lineWidth=2;ctx.beginPath();ctx.arc(p.x,p.y,(3-v.sonar)*42,0,Math.PI*2);ctx.stroke();}
   for(let i=0;i<7;i++){let x=((i*227+(still?0:v.tempo*(4+i%3)))%(w+500))-250;ctx.fillStyle=`rgba(181,193,210,${.025+i%2*.012})`;ctx.beginPath();ctx.ellipse(x,(i*83)%h,200,18+i%3*5,0,0,Math.PI*2);ctx.fill();}
   const fog=ctx.createLinearGradient(w*.55,0,w,0);fog.addColorStop(0,'rgba(172,183,193,0)');fog.addColorStop(1,'rgba(175,180,199,.35)');ctx.fillStyle=fog;ctx.fillRect(0,0,w,h);if(v.chegou){ctx.fillStyle=`rgba(205,211,220,${Math.sin(Math.min(1,(v.atracacao??0)/3)*Math.PI)*.4})`;ctx.fillRect(0,0,w,h);}

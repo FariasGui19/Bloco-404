@@ -20,9 +20,11 @@ for (const [id, name, w, h] of items) {
   const o = map.objects.find(o => o.id === id);
   assert(o && o.renderizar !== false && o.useCrop, `${id} visível`);
   const atualizado = { cais_enseada_visual: 'barco', portal_caminho_correntes: 'portal' };
-  assert.equal(o.animacaoFolha.sprite, atualizado[id] ? `enseada_folha7_${atualizado[id]}` : `enseada_folha6_${name.replaceAll('-', '_')}`);
+  // The dock now uses the approved fishing vessel; other historical sheets stay unchanged.
+  const pesqueiro = id === 'cais_enseada_visual';
+  assert.equal(o.animacaoFolha.sprite, pesqueiro ? 'enseada_cais_pesqueiro_folha' : atualizado[id] ? `enseada_folha7_${atualizado[id]}` : `enseada_folha6_${name.replaceAll('-', '_')}`);
   assert.equal(o.animacaoFolha.quadros, 8);
-  assert.equal(o.animacaoFolha.margem, atualizado[id] ? 24 : 8);
+  assert.equal(o.animacaoFolha.margem, pesqueiro ? 0 : atualizado[id] ? 24 : 8);
   assert(o.animacaoFolha.periodo > 0);
   const path = `assets/sprites/enseada-animacao-lote6/${name}.png`;
   if (!atualizado[id]) assert(main.includes(`src: '${path}'`));

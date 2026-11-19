@@ -1,3 +1,5 @@
+import { SPRITES_TENTACULO_02 } from './engine/docas-tentaculo-02.js';
+import { SPRITES_CASCOS } from './engine/docas-cascos.js';
 import { SPRITES_RESSACA } from './engine/docas-ressaca.js';
 import { SPRITES_DOCAS_VIVAS } from './engine/docas-vivas.js';
 import { SPRITES_COSTA_OESTE } from './data/worlds/arquipelago-rotas-perdidas/costa-oeste-docas.js';
@@ -333,6 +335,8 @@ await loadSprites([
   ...SPRITES_COSTA_OESTE,
   ...SPRITES_DOCAS_VIVAS,
   ...SPRITES_RESSACA,
+  ...SPRITES_CASCOS,
+  ...SPRITES_TENTACULO_02,
   { id: 'docas_cabana-oeste', src: 'assets/sprites/docas-reconstrucao/cabana-oeste.png' },
   { id: 'docas_cabana-leste', src: 'assets/sprites/docas-reconstrucao/cabana-leste.png' },
   { id: 'docas_galpao', src: 'assets/sprites/docas-reconstrucao/galpao.png' },
@@ -651,7 +655,7 @@ await loadSprites([
   // ---- ENSEADA DOS ECOS 2.0 — Lote #5 (tools/preparar-enseada-2.py) ----
   { id: 'enseada_portal_correntes', src: 'assets/sprites/enseada-2/portal-caminho-correntes.png' },
   { id: 'enseada_portico_praia', src: 'assets/sprites/enseada-2/portico-trilha-praia.png' },
-  { id: 'enseada_barco_expedicao', src: 'assets/sprites/enseada-2/barco-expedicao-enseada.png' },
+  { id: 'enseada_barco_expedicao', src: 'assets/sprites/docas-cascos/pesqueiro-repouso.png' },
   { id: 'enseada_santuario_lumeo', src: 'assets/sprites/enseada-2/santuario-lumeo-pedra.png' },
   { id: 'enseada_acampamento_vigilia', src: 'assets/sprites/enseada-2/acampamento-vigilia-fogueira.png' },
   { id: 'enseada_torre_antena', src: 'assets/sprites/enseada-2/torre-antena-escuta.png' },
@@ -677,7 +681,7 @@ await loadSprites([
   { id: 'enseada_totem_eco_b', src: 'assets/sprites/enseada-2/totem-eco-instavel-b.png' },
   { id: 'enseada_carrilhao_vento_b', src: 'assets/sprites/enseada-2/carrilhao-vento-bambu-b.png' },
   { id: 'enseada_algas_douradas_b', src: 'assets/sprites/enseada-2/banco-algas-douradas-b.png' },
-  { id: 'enseada_barco_expedicao_b', src: 'assets/sprites/enseada-2/barco-expedicao-enseada-b.png' },
+  { id: 'enseada_barco_expedicao_b', src: 'assets/sprites/docas-cascos/pesqueiro-repouso.png' },
   { id: 'enseada_trilha_pedras', src: 'assets/sprites/enseada-2/trilha-pedras-costa.png' },
   { id: 'enseada_cardume_vivo', src: 'assets/sprites/enseada-2/cardume-orla-vivo.png' },
   { id: 'enseada_bandeirola_vento', src: 'assets/sprites/enseada-2/bandeirola-vento-expedicao.png' },
@@ -738,7 +742,8 @@ await loadSprites([
   { id: 'enseada3_cais_barco', src: 'assets/sprites/enseada-3/wooden-pier-sailboat.png' },
   { id: 'enseada3_calcada', src: 'assets/sprites/enseada-3/stone-path-cobble.png' },
   { id: 'enseada8_cais_barco_ref', src: 'assets/sprites/enseada-8/cais-barco-sem-areia-recortado.png' },
-  { id: 'enseada_cais_barco', src: 'assets/sprites/enseada-cais-revisao/cais-barco.png' },
+  { id: 'enseada_cais_barco', src: 'assets/sprites/docas-cascos/enseada-cais-pesqueiro.png' },
+  { id: 'enseada_cais_pesqueiro_folha', src: 'assets/sprites/docas-cascos/enseada-cais-pesqueiro-folha.png' },
   // Enseada: movimentos ambientais visíveis, lote 7.
   { id: 'enseada_folha7_cachoeira', src: 'assets/sprites/enseada-animacao-lote7/cachoeira.png' },
   { id: 'enseada_folha7_piscina', src: 'assets/sprites/enseada-animacao-lote7/piscina.png' },

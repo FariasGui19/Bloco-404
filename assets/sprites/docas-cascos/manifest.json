@@ -1,0 +1,59 @@
+{
+  "version": 1,
+  "frames": 16,
+  "columns": 4,
+  "cycleSeconds": 6.4,
+  "provenance": "Duas repinturas geradas; caústica/cordame e oito folhas de efeitos procedurais. Balanço rígido no runtime.",
+  "sheets": {
+    "pesqueiro": {
+      "w": 610,
+      "h": 568,
+      "file": "pesqueiro.webp"
+    },
+    "bote": {
+      "w": 254,
+      "h": 148,
+      "file": "bote.webp"
+    },
+    "proa-pesqueiro": {
+      "w": 192,
+      "h": 80,
+      "file": "proa-pesqueiro.webp"
+    },
+    "proa-bote": {
+      "w": 192,
+      "h": 80,
+      "file": "proa-bote.webp"
+    },
+    "popa-pesqueiro": {
+      "w": 192,
+      "h": 80,
+      "file": "popa-pesqueiro.webp"
+    },
+    "popa-bote": {
+      "w": 192,
+      "h": 80,
+      "file": "popa-bote.webp"
+    },
+    "reflexo-pesqueiro": {
+      "w": 192,
+      "h": 80,
+      "file": "reflexo-pesqueiro.webp"
+    },
+    "reflexo-bote": {
+      "w": 192,
+      "h": 80,
+      "file": "reflexo-bote.webp"
+    },
+    "mar-pesqueiro": {
+      "w": 192,
+      "h": 80,
+      "file": "mar-pesqueiro.webp"
+    },
+    "mar-bote": {
+      "w": 192,
+      "h": 80,
+      "file": "mar-bote.webp"
+    }
+  }
+}

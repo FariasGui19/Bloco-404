@@ -242,3 +242,6 @@ if __name__ == '__main__':
     OUT.mkdir(parents=True, exist_ok=True)
     art = Image.open(sys.argv[1]).convert('RGB').resize(SIZE, LANCZOS)
     main()
+    # Keep the old bow out of the deck/reflection cuts on regeneration too.
+    import runpy
+    runpy.run_path(str(ROOT/'tools/limpar-residuo-cais.py'))['limpar']()

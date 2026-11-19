@@ -169,3 +169,26 @@ No barco é possível descansar/salvar ou retornar à Enseada. As cabanas mantê
 - Chromium real via Playwright: prévia com todos os recursos carregados, sem erros de página/HTTP, tentáculo mudando de quadro e imóvel com movimento reduzido; amostragem do **renderizador real do mapa da Enseada** confirmou o novo atlas de embarque. Teste opcional reproduzível em `tests/docas-lotes-browser.mjs` (servidor HTTP, Chromium e Playwright necessários).
 - As sete falhas históricas das Docas citadas no lote anterior continuam fora do escopo. `enseada-ecos.mjs` também falha numa lista histórica de bloqueadores; essa falha foi reproduzida em `HEAD` anterior às alterações. Os caminhos e interações efetivos da Enseada passaram.
 - Limites: não houve jornada integral com save real, avaliação auditiva, benchmark de GPU/FPS nem revisão de toda a ilha. O restante da costa/vila/platô não foi redesenhado. A mudança do barco da navegação foi verificada por teste de integração de arte/código e regressão de física; o teste Chromium não percorreu a viagem inteira.
+
+## Pesqueiro 03 — remover casco duplicado e animar só navio/mar
+
+### Correção do recorte
+- A proa vinho e o caixote do navio antigo estavam **embutidos em `docas-cais-sul/deck.png`**. A máscara agora os remove e recompõe somente o piso já existente, usando tábuas do mesmo deck, com transição suavizada. A planta, a área caminhável, os pés e as colisões não mudaram.
+- A origem do reparo do deck é `assets/source-art/docas-pesqueiro-03/deck-antes.png`; não é carregada pelo jogo. `tools/limpar-residuo-cais.py` aplica o reparo de forma idempotente e também limpa fragmentos de estrutura em `reflexos.png`. O preparador original do cais chama essa limpeza ao regenerar os recortes.
+- Quando o lote 03 está carregado, o retalho estático de água/reflexos da referência não é mais desenhado: as camadas independentes o substituem. O fallback usa o retalho já limpo, não a imagem com resíduos.
+
+### Dez folhas novas / 192 quadros
+- **Quatro folhas do pesqueiro, 12 poses cada:** subida, crista, descida e cavado de um ciclo contínuo de 6,4 s. Reutilizam a pintura aprovada, com flexão discreta do cordame, caústica no casco, luz da cabine e fumaça ancorada na chaminé. São deformações/efeitos procedurais, não 48 repinturas independentes.
+- **Seis folhas de água, 24 poses cada:** mar de proa, mar de popa, espuma do costado, reflexo âmbar, reflexo violeta e spray de proa. A espuma do costado segue a borda inferior real da pintura, em vez de um anel genérico.
+- `poseNavio` continua aplicando o balanço rígido uma única vez. Os quadros não contêm uma segunda subida/inclinação do casco. Reflexos e ondulação ficam no plano fixo da água; só o spray de contato acompanha a transformação do casco.
+- Os efeitos anteriores específicos do pesqueiro são suspensos quando o novo conjunto está completo, evitando espuma/fumaça/reflexos duplicados. As luzes foram reancoradas nas janelas e na lanterna da pintura atual.
+- A água do cais agora é desenhada **depois da superfície oeste e antes de terreno/deck/personagens**; a pintura opaca da costa não pode mais cobrir os novos efeitos. O carregamento parcial conserva o caminho antigo inteiro. Movimento reduzido fixa todas as folhas e o balanço.
+- Não alterados: tentáculo, posição dele, atlas do bote, navegação/embarque da Enseada, missões, física e demais setores. A posição e a animação do tentáculo relatadas pelo usuário ficam para o próximo lote.
+
+### Reprodução e revisão
+- `.venv/bin/python tools/limpar-residuo-cais.py`
+- `.venv/bin/python tools/preparar-docas-pesqueiro-03.py` (Pillow e NumPy). Dez WebP lossless e manifesto em `assets/sprites/docas-pesqueiro-03/`, cerca de 5,3 MB em disco e ~90 MiB de pixels RGBA decodificados para este conjunto; não houve benchmark de GPU/FPS.
+- Prévia focada: `/docs/previa-pesqueiro-03.html`, com pausa, movimento reduzido e zoom no encaixe. `docs/docas-pesqueiro-03.gif` é uma captura de 48 instantes dessa prévia setorial, não uma gravação de uma partida completa.
+- Testes Node/pixels novos: `tests/docas-pesqueiro-03.mjs` e `.py`. Verificam dez atlas/192 quadros, alfa, quadros distintos, laço, margens, reparo idempotente, tábuas, ausência da proa velha, fallback atômico, não duplicação do casco e um só balanço.
+- Chromium: `tests/docas-pesqueiro-03-browser.mjs` percorre o ciclo e confirma que **todas as dez folhas são desenhadas**, repouso estável e ausência de erros de página/HTTP. A fixture `tests/fixtures/docas-pesqueiro-03.html` chama o renderizador real das Docas e verifica a ordem costa → água do pesqueiro → deck e o novo casco. Capturas em `.qa/` são locais/ignoradas. O GIF pode ser refeito com `CAPTURE_ART=1` e `tools/qa/montar-previa-pesqueiro-03.py`.
+- Passaram também os testes de Cascos 01, Tentáculo 02, pixels do lote 02, cais-refino, costa-oeste, início, neblina, recuperação, relevo, ressaca, vivas, Maré (3), travessia e boot. Não houve jornada completa com save real, avaliação do som ou benchmark; os limites e falhas históricas documentados acima não foram reclassificados como resolvidos.

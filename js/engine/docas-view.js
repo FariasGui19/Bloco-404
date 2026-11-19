@@ -155,14 +155,16 @@ export function renderDocas(ctx,map,state,camX,camY,w,h,zoom,dpr,now,drawPlayer)
   const costaVisivel=oeste && esquerda<(oeste.x+oeste.mar.w*oeste.escala)*sCais && direita>oeste.x*sCais
     && base>oeste.y*sCais && topo<(oeste.y+oeste.mar.h*oeste.escala)*sCais;
   const cais=map.caisSul,pecasCais=[];
-  if(cais && esquerda<(cais.x+cais.largura*cais.escala)*sCais && base>cais.y*sCais){
-    desenharReflexosCais(ctx,cais,sCais);
-    desenharMarCais(ctx,cais,sCais,clock);
-  }
   if(costaVisivel){
     iluminarAguaOeste(ctx,oeste,sCais);
     desenharSuperficieOeste(ctx,oeste,sCais,clock);
     desenharCorrentesOeste(ctx,oeste,sCais,clock);
+  }
+  // Ship-water FX must sit above the opaque west sea paint, but below land,
+  // deck and depth-sorted entities. Otherwise the new swell is hidden.
+  if(cais && esquerda<(cais.x+cais.largura*cais.escala)*sCais && base>cais.y*sCais){
+    desenharReflexosCais(ctx,cais,sCais);
+    desenharMarCais(ctx,cais,sCais,clock);
   }
   if(terreno){
     const x=Math.max(0,Math.floor(camX-w/(2*zoom)-4)),y=Math.max(0,Math.floor(camY-(h/2+115)/zoom-4));

@@ -1,0 +1,45 @@
+import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
+import {loadSprites} from '../js/engine/sprites.js';
+import {CAIS_SUL,SPRITES_CAIS_SUL} from '../js/data/worlds/arquipelago-rotas-perdidas/cais-sul.js';
+import {SPRITES_PESQUEIRO_03,FOLHAS_PESQUEIRO_03,pesqueiro03Pronto,poseFolhaPesqueiro03,desenharCascoPesqueiro03,desenharMarPesqueiro03} from '../js/engine/docas-pesqueiro-03.js';
+import {SPRITES_CASCOS} from '../js/engine/docas-cascos.js';
+import {SPRITES_DOCAS_VIVAS,poseNavio} from '../js/engine/docas-vivas.js';
+import {desenharPecaCais} from '../js/engine/docas-cais-view.js';
+
+assert.equal(SPRITES_PESQUEIRO_03.length,10);
+let count=0;
+for(const {id,src} of SPRITES_PESQUEIRO_03){
+ const info=FOLHAS_PESQUEIRO_03[id.replace('docas_p03_','')];
+ const b=readFileSync(src);assert.equal(b.toString('ascii',8,16),'WEBPVP8L');
+ const flags=b.readUInt32LE(21);assert(flags&(1<<28),'transparent sheet');
+ assert.equal((flags&0x3fff)+1,info.w*info.columns);
+ assert.equal(((flags>>>14)&0x3fff)+1,info.h*Math.ceil(info.frames/info.columns));count+=info.frames;
+}
+assert.equal(count,192);
+for(const [p,id,f] of [[0,'subida',0],[.25,'crista',0],[.5,'descida',0],[.75,'cavado',0],[1,'cavado',11]])assert.deepEqual(poseFolhaPesqueiro03(p),{id:`casco-${id}`,frame:f});
+const calls=[],rotations=[];
+const ctx={globalAlpha:1,save(){},restore(){this.globalAlpha=1;},translate(){},scale(){},rotate(a){rotations.push(a);},drawImage(img,...args){calls.push([img.src,...args]);},createRadialGradient(){return {addColorStop(){}};},fillRect(){}};
+const boat=CAIS_SUL.pecas.find(p=>p.id==='pesqueiro'),before=JSON.stringify(CAIS_SUL);
+assert.equal(pesqueiro03Pronto(),false);
+assert.equal(desenharCascoPesqueiro03(ctx,boat,1),false);
+globalThis.Image=class{set src(src){this._src=src;this.onload();}get src(){return this._src;}};
+await loadSprites([...SPRITES_CAIS_SUL,...SPRITES_CASCOS,...SPRITES_DOCAS_VIVAS]);
+await loadSprites(SPRITES_PESQUEIRO_03.slice(0,9));assert.equal(pesqueiro03Pronto(),false,'partial loading keeps complete old path');
+await loadSprites(SPRITES_PESQUEIRO_03.slice(9));assert(pesqueiro03Pronto());
+desenharPecaCais(ctx,CAIS_SUL,boat,1,2);
+assert.equal(rotations.length,1,'only one rigid-body roll');
+assert.equal(rotations[0],poseNavio(boat,2).lean);
+assert.equal(calls.filter(d=>d[0].includes('/docas-pesqueiro-03/casco-')).length,1);
+assert.equal(calls.filter(d=>d[0].includes('/docas-pesqueiro-03/spray-proa')).length,1);
+assert(!calls.some(d=>d[0].includes('/docas-cascos/')||d[0].includes('/docas-vivas/')),'no old hull/foam/rigging stacked on top');
+const n=rotations.length;calls.length=0;
+assert(desenharMarPesqueiro03(ctx,null));
+assert.equal(rotations.length,n,'water remains in fixed world plane');
+assert.equal(calls.length,5);
+assert(calls.every(d=>d[1]===0&&d[2]===0),'all water uses still frame');
+calls.length=0;desenharPecaCais(ctx,CAIS_SUL,boat,1,null);
+assert(calls.filter(d=>d[0].includes('/docas-pesqueiro-03/')).every(d=>d[1]===0&&d[2]===0));
+assert.equal(desenharCascoPesqueiro03(ctx,{id:'bote'},1),false,'dinghy untouched');
+assert.equal(JSON.stringify(CAIS_SUL),before,'collision/feet/layout unchanged');
+console.log('Pesqueiro 03: dez folhas / 192 quadros, fallback atômico, repouso e balanço único; mar sem rotação e cais intacto.');

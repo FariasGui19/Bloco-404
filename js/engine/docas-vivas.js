@@ -1,6 +1,7 @@
 import { plantaCais } from '../data/worlds/arquipelago-rotas-perdidas/cais-sul.js';
 import { desenharFolhaRessaca, faseRessaca, nivelRessaca, progressoImpacto } from './docas-ressaca.js';
 import { getSprite } from './sprites.js';
+import { desenharMarPesqueiro03 } from './docas-pesqueiro-03.js';
 
 const IDS=['ondulacao','espuma','caustica','nevoa','respingos','ventosa','fumaca','reflexo-ambar','bandeirola','cintila'];
 const COLS=4, FRAMES=16, FW=160, FH=96;
@@ -115,19 +116,22 @@ export function desenharContatoCasco(ctx,peca,t,frente){
 
 export function desenharMarCais(ctx,cais,s,t) {
   const u=cais.escala*s;ctx.save();ctx.translate(cais.x*s,cais.y*s);ctx.scale(u,u);
-  for(const peca of cais.pecas)if(peca.balanco)desenharContatoCasco(ctx,peca,t,false);
+  const pesqueiro03=desenharMarPesqueiro03(ctx,t);
+  for(const peca of cais.pecas)if(peca.balanco&&(!pesqueiro03||peca.id!=='pesqueiro'))desenharContatoCasco(ctx,peca,t,false);
   const casco=cais.pecas.find(peca=>peca.id==='pesqueiro');
   const reflexo=casco?poseNavio(casco,t):{lean:0,drift:0,bob:0};
-  for(let i=0;i<3;i++){
+  for(let i=0;i<(pesqueiro03?0:3);i++){
     const [x,y]=plantaCais([206+i*99,586-i*19]);
     const step=faseRessaca(x,y,t);
     fxDocas(ctx,'reflexo-ambar',206+i*99+Math.sin(step*6.28)*7+reflexo.drift,586-i*19-reflexo.bob*.4,99-i*8,51+i*3,step,.27*Math.sin(step*Math.PI),-.12-reflexo.lean);
   }
   for(const [x,y,w,ang,i] of [[153,578,144,.16,0],[320,570,161,-.16,1],[510,504,132,-.42,2],[1071,436,108,-.43,3],[1189,295,59,-.28,4]]){
+    if(pesqueiro03&&i<3)continue;
     const [mx,my]=plantaCais([x,y]);const p=faseRessaca(mx,my,t);
     fxDocas(ctx,i===1?'caustica':'espuma',x-4*p,y+7*p,w,w*.24,p,.35*Math.sin(p*Math.PI),ang);
   }
   for(const [x,y,w,ang] of [[228,599,155,.05],[436,552,146,-.24],[924,477,105,-.22],[1126,400,113,.13],[1228,307,125,-.18]]){
+    if(pesqueiro03&&x<600)continue;
     const [mx,my]=plantaCais([x,y]);const p=faseRessaca(mx,my,t);
     desenharFolhaRessaca(ctx,'onda',x+p*10,y-p*7,w,w*.32,p,.55*Math.sin(p*Math.PI),ang);
   }

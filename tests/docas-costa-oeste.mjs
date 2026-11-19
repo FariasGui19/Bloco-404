@@ -15,11 +15,20 @@ for(const [referencia,primeiroLote] of [[[416,550],[201,232]],[[544,410],[386,24
 }
 const camadas=[costa.mar,costa.areia,...costa.rochas,...costa.vegetacao,costa.tentaculo,ESCADA_OESTE];
 for(const {id,src} of SPRITES_COSTA_OESTE){
-  const png=readFileSync(src),d=camadas.find(p=>`docas_costa_${p.id}`===id);
-  assert(png.subarray(0,8).equals(Buffer.from([137,80,78,71,13,10,26,10])));
-  assert.equal(png[25],6);
-  assert.equal(png.readUInt32BE(16),d.w*(d.colunas??1));
-  assert.equal(png.readUInt32BE(20),d.h*(d.quadros?Math.ceil(d.quadros/d.colunas):1));
+  const asset=readFileSync(src),d=camadas.find(p=>`docas_costa_${p.id}`===id);
+  let largura,altura;
+  if(src.endsWith('.webp')){
+    assert.equal(asset.toString('ascii',0,4),'RIFF');
+    assert.equal(asset.toString('ascii',8,16),'WEBPVP8X');
+    assert(asset[20]&0x10,'WebP preserva alfa');
+    largura=asset.readUIntLE(24,3)+1;altura=asset.readUIntLE(27,3)+1;
+  }else{
+    assert(asset.subarray(0,8).equals(Buffer.from([137,80,78,71,13,10,26,10])));
+    assert.equal(asset[25],6);
+    largura=asset.readUInt32BE(16);altura=asset.readUInt32BE(20);
+  }
+  assert.equal(largura,2*d.w*(d.colunas??1));
+  assert.equal(altura,2*d.h*(d.quadros?Math.ceil(d.quadros/d.colunas):1));
 }
 assert.equal(quadroTentaculo(costa.tentaculo,null),0,'movimento reduzido mantém a pose de repouso');
 const p=costa.tentaculo,quadro=i=>quadroTentaculo(p,p.duracao*(i+.1)/p.quadros);

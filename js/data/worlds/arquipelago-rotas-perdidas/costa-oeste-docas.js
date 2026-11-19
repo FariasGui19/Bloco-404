@@ -40,4 +40,5 @@ export const plantaCosta = ([x,y]) => [COSTA_OESTE.x+x*unidade,COSTA_OESTE.y+y*u
 export const ESCADA_OESTE = {id:'escada-oeste', x:982, y:26, w:182, h:132};
 export const SPRITES_COSTA_OESTE = [COSTA_OESTE.mar,COSTA_OESTE.areia,
   ...COSTA_OESTE.rochas,...COSTA_OESTE.vegetacao,COSTA_OESTE.tentaculo,ESCADA_OESTE]
-  .map(({id})=>({id:`docas_costa_${id}`,src:`assets/sprites/docas-costa-oeste/${id}.png`}));
+  .map(({id})=>({id:`docas_costa_${id}`,
+    src:`assets/sprites/docas-costa-oeste/${id}.${['mar','areia'].includes(id)?'webp':'png'}`}));

@@ -88,7 +88,8 @@ export function desenharMareOeste(ctx,costa,escala,t) {
   const img=getSprite('docas_costa_tentaculo');
   if(img){
     const frame=quadroTentaculo(p,t);
-    ctx.drawImage(img,frame%p.colunas*p.w,Math.floor(frame/p.colunas)*p.h,p.w,p.h,p.x,p.y,p.w,p.h);
+    const fw=img.width/p.colunas,fh=img.height/Math.ceil(p.quadros/p.colunas);
+    ctx.drawImage(img,frame%p.colunas*fw,Math.floor(frame/p.colunas)*fh,fw,fh,p.x,p.y,p.w,p.h);
   }
   // Near lip drawn over the anchored root, plus short spray driven by each swell.
   trilha(ctx,[[-34,-3],[-22,2],[-13,1],[-7,5],[4,4],[11,8],[21,3],[31,1],[38,-4]],bx,by+4,t,3,'193,225,255',.66,2.5);

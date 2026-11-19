@@ -147,29 +147,34 @@ def sand():
     save('areia',rgba(sand,alpha))
 
 
-def creature():
+def tentacle_pose():
     box=(100,441,277,592)
     outline='123,509 126,497 130,489 137,480 145,472 157,466 170,463 186,463 200,466 213,474 223,485 228,497 229,507 226,518 228,525 234,527 242,522 247,514 251,513 254,519 250,530 241,537 231,539 222,535 214,528 210,518 210,507 207,498 201,492 193,489 184,490 176,495 169,503 167,514 170,524 180,534 191,544 203,554 214,568 214,579 201,585 188,583 179,589 169,586 159,587 149,583 145,575 139,569 134,559 129,547 125,536'
-    img=rgba(art.crop(box),mask(box,[outline]))
+    return rgba(art.crop(box),mask(box,[outline]))
+
+
+def tentacle_atlas(img, density=1):
     w,h=img.size
+    step=6*density
     atlas=Image.new('RGBA',(w*8,h*4))
     for frame in range(32):
         phase=math.tau*frame/32
         def inverse(x,y):
+            x,y=x/density,y/density
             weight=max(0,min(1,(130-y)/110))**1.3
             tip=max(0,min(1,(x-70)/74))*weight
             # Two traveling bends, independent lift of the curled tip, and
             # a root held completely still across the entire loop.
-            return (x-weight*(7*math.sin(phase)+4*math.sin(phase*2)*weight)+3*tip*math.sin(phase),
-                    y-11*tip*math.sin(phase)-3*weight*math.sin(2*phase)-5*weight*(1-math.cos(phase)))
+            return ((x-weight*(7*math.sin(phase)+4*math.sin(phase*2)*weight)+3*tip*math.sin(phase))*density,
+                    (y-11*tip*math.sin(phase)-3*weight*math.sin(2*phase)-5*weight*(1-math.cos(phase)))*density)
         cells=[]
-        for y in range(0,h,6):
-            for x in range(0,w,6):
-                r,b=min(w,x+6),min(h,y+6)
+        for y in range(0,h,step):
+            for x in range(0,w,step):
+                r,b=min(w,x+step),min(h,y+step)
                 cells.append(((x,y,r,b),sum((inverse(u,v) for u,v in [(x,y),(x,b),(r,b),(r,y)]),())))
         frame_img=img.transform((w,h),Image.Transform.MESH,cells,Image.Resampling.BICUBIC)
         atlas.paste(frame_img,(frame%8*w,frame//8*h))
-    save('tentaculo',atlas)
+    return atlas
 
 
 def stair():
@@ -204,5 +209,5 @@ if __name__=='__main__':
     scenery()
     sea()
     sand()
-    creature()
+    save('tentaculo',tentacle_atlas(tentacle_pose()))
     stair()

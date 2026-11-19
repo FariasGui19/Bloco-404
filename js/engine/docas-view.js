@@ -1,3 +1,4 @@
+import { desenharTentaculoRessaca, volta } from './docas-ressaca.js';
 import { desenharSuperficieOeste, desenharCorrentesOeste, desenharMarCais } from './docas-vivas.js';
 import { getSprite } from './sprites.js';
 import { SIDE_DEPTH_STEP } from './camera.js';
@@ -85,6 +86,7 @@ function construirTerreno(map) {
   return out;
 }
 function desenharEstrutura(ctx,st,t,reduced,state){
+ if(st.id==='lote3_tentaculo'&&desenharTentaculoRessaca(ctx,st.x,st.y,st.largura/192,reduced?0:volta(t/6+st.x*.004)))return;
  const img=getSprite('docas_'+st.id);if(!img)return;const folha=st.id.startsWith('lote3_'),w=st.largura,h=folha?w:w*img.height/img.width,x=st.x-w/2,y=st.y-h;
  if(st.camada!=='chao'&&!st.id.startsWith('lote5_')&&!st.id.startsWith('lote6_')&&!st.id.startsWith('lote7_')&&!st.id.startsWith('lote8_')&&!st.id.startsWith('lote9_')&&!st.id.startsWith('lote10_')&&!st.id.startsWith('lote11_')&&!st.id.startsWith('lote12_')&&!st.id.startsWith('cais_')&&!['cabana-oeste','cabana-leste','galpao','torre','farol','camara','porta'].includes(st.id)){ctx.save();ctx.fillStyle='rgba(7,8,15,.12)';ctx.beginPath();ctx.ellipse(st.x,st.y-3,w*.37,Math.max(5,w*.07),0,0,Math.PI*2);ctx.fill();ctx.restore();}
  ctx.save();
@@ -200,6 +202,7 @@ export function renderDocas(ctx,map,state,camX,camY,w,h,zoom,dpr,now,drawPlayer)
   for(const m of map.marDocas??[]){
     const x=m.x*map.geometriaDocas.escala,y=m.y*map.geometriaDocas.escala,size=m.tamanho*map.geometriaDocas.escala;
     if(Math.abs(x-camX)>w/(2*zoom)+size*2||Math.abs(y-camY)>h/zoom+size*2)continue;
+    if(m.id==='tentaculo'&&desenharTentaculoRessaca(ctx,x,y+size*.21,size/192,reduced?0:volta(t/6+m.x*.003),.91))continue;
     const img=getSprite('docas_mar_'+m.id);if(!img)continue;
     const frame=reduced?0:Math.floor(t*4)%8,bob=m.id==='boia'&&!reduced?Math.sin(t*.85+m.x)*4:0;
     ctx.save();ctx.globalAlpha=m.id==='oleo'?.56:.85;

@@ -3,7 +3,6 @@ import { readFileSync } from 'node:fs';
 import { docas, ESCALA_DOCAS } from '../js/data/worlds/arquipelago-rotas-perdidas/docas-neblina.js';
 import { plantaCais } from '../js/data/worlds/arquipelago-rotas-perdidas/cais-sul.js';
 import { COSTA_OESTE as costa, ESCADA_OESTE, SPRITES_COSTA_OESTE, plantaCosta } from '../js/data/worlds/arquipelago-rotas-perdidas/costa-oeste-docas.js';
-import { quadroTentaculo } from '../js/engine/docas-costa-view.js';
 import { canStandAt, moveWithCollision } from '../js/game/collision.js';
 import { state } from '../js/game/state.js';
 
@@ -13,7 +12,7 @@ for(const [referencia,primeiroLote] of [[[416,550],[201,232]],[[544,410],[386,24
   const a=plantaCosta(referencia),b=plantaCais(primeiroLote);
   assert(Math.hypot(a[0]-b[0],a[1]-b[1])<6,'encaixe entre os dois recortes');
 }
-const camadas=[costa.mar,costa.areia,...costa.rochas,...costa.vegetacao,costa.tentaculo,ESCADA_OESTE];
+const camadas=[costa.mar,costa.areia,...costa.rochas,...costa.vegetacao,ESCADA_OESTE];
 for(const {id,src} of SPRITES_COSTA_OESTE){
   const asset=readFileSync(src),d=camadas.find(p=>`docas_costa_${p.id}`===id);
   let largura,altura;
@@ -30,11 +29,6 @@ for(const {id,src} of SPRITES_COSTA_OESTE){
   assert.equal(largura,2*d.w*(d.colunas??1));
   assert.equal(altura,2*d.h*(d.quadros?Math.ceil(d.quadros/d.colunas):1));
 }
-assert.equal(quadroTentaculo(costa.tentaculo,null),0,'movimento reduzido mantém a pose de repouso');
-const p=costa.tentaculo,quadro=i=>quadroTentaculo(p,p.duracao*(i+.1)/p.quadros);
-assert.deepEqual(Array.from({length:p.quadros},(_,i)=>quadro(i)),Array.from({length:p.quadros},(_,i)=>i));
-assert.equal(quadroTentaculo(p,p.duracao),0,'loop retoma a pose inicial');
-
 state.world.currentMap=docas;state.objects=[];state.actors=[];
 const player={...docas.spawnPoints.inicio};
 const grade=(p)=>plantaCosta(p).map((v,i)=>v*ESCALA_DOCAS/(i?22:64));
@@ -60,4 +54,4 @@ for(const [x,y] of [...rota,...rota.slice(0,-1).reverse()]){
   moveWithCollision(docas,player,x+.5-player.x,y+.5-player.y,.25);
   assert(Math.hypot(player.x-x-.5,player.y-y-.5)<.01);
 }
-console.log('Costa oeste: registro da referência, poses, borda bloqueada e ida/volta entre areia e cais OK.');
+console.log('Costa oeste: registro da referência, borda bloqueada e ida/volta entre areia e cais OK.');

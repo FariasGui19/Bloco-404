@@ -1,4 +1,4 @@
-import { poseNavio, desenharRigging } from './docas-vivas.js';
+import { poseNavio, desenharRigging, desenharContatoCasco } from './docas-vivas.js';
 import { getSprite } from './sprites.js';
 
 export function desenharReflexosCais(ctx, cais, escala) {
@@ -19,6 +19,7 @@ export function desenharPecaCais(ctx, cais, peca, escala, t) {
   }
   if(peca.id==='pesqueiro')desenharRigging(ctx,t);
   ctx.drawImage(img,peca.x,peca.y,peca.w,peca.h);
+  if(peca.balanco)desenharContatoCasco(ctx,peca,t,true);
   if (peca.id === 'pesqueiro') {
     const pulse = t === null ? .2 : .20 + Math.sin(t*1.2)*.04 + Math.sin(t*2.2)*.017;
     for (const [lx,ly,r,rgb] of [[407,258,29,'255,151,77'],[408,356,28,'255,151,77'],[201,232,16,'255,69,140']]) {

@@ -1,3 +1,4 @@
+import { desenharTentaculoRessaca } from '../engine/docas-ressaca.js';
 import { SPRITES_TRAVESSIA, MARCOS_TRAVESSIA } from '../data/travessia-lote1.js';
 import { usePortal } from '../game/portals.js';
 import { criarTravessia, atualizarTravessia, DISTANCIA_DOCAS } from '../game/travessia-neblina.js';
@@ -127,7 +128,14 @@ export function desenharViagemNeblina(){
     const alerta=a.fase==='aviso'||a.fase==='ataque';
     if(a.tipo==='redemoinho'){
       folhaMar('redemoinho',p.x,p.y,76,v.tempo,still,.65);
-      if(alerta)folhaMar('tentaculo',p.x,p.y-5,70,v.tempo,still,a.fase==='ataque'?.9:.55);
+      if(alerta){
+        // Show the curl during the existing warning, then release it during
+        // attack; the visual does not change the threat's original timer.
+        const ataque=a.fase==='ataque',q=still?0:ataque?.48+(1-Math.max(0,a.timer))*.5:(1-Math.max(0,a.timer)/2)*.48;
+        if(!desenharTentaculoRessaca(ctx,p.x,p.y+19,.40,q,ataque?.94:.63)){
+          folhaMar('tentaculo',p.x,p.y-5,70,v.tempo,still,ataque?.9:.55);
+        }
+      }
     } else {
       folhaMar('sombra',p.x,p.y,64,v.tempo,still,.62);
       if(alerta||v.sonar>0)folhaMar('olhos',p.x,p.y,34,v.tempo,still,.75);

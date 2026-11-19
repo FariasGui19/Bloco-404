@@ -68,9 +68,9 @@ function construirTerreno(map) {
 }
 function desenharEstrutura(ctx,st,t,reduced,state){
  const img=getSprite('docas_'+st.id);if(!img)return;const folha=st.id.startsWith('lote3_'),w=st.largura,h=folha?w:w*img.height/img.width,x=st.x-w/2,y=st.y-h;
- if(st.camada!=='chao'&&!st.id.startsWith('lote5_')&&!st.id.startsWith('lote6_')&&!st.id.startsWith('lote7_')&&!st.id.startsWith('lote8_')&&!st.id.startsWith('lote9_')&&!st.id.startsWith('lote10_')&&!st.id.startsWith('lote11_')&&!['cabana-oeste','cabana-leste','galpao','torre','farol','camara','porta'].includes(st.id)){ctx.save();ctx.fillStyle='rgba(7,8,15,.12)';ctx.beginPath();ctx.ellipse(st.x,st.y-3,w*.37,Math.max(5,w*.07),0,0,Math.PI*2);ctx.fill();ctx.restore();}
+ if(st.camada!=='chao'&&!st.id.startsWith('lote5_')&&!st.id.startsWith('lote6_')&&!st.id.startsWith('lote7_')&&!st.id.startsWith('lote8_')&&!st.id.startsWith('lote9_')&&!st.id.startsWith('lote10_')&&!st.id.startsWith('lote11_')&&!st.id.startsWith('lote12_')&&!['cabana-oeste','cabana-leste','galpao','torre','farol','camara','porta'].includes(st.id)){ctx.save();ctx.fillStyle='rgba(7,8,15,.12)';ctx.beginPath();ctx.ellipse(st.x,st.y-3,w*.37,Math.max(5,w*.07),0,0,Math.PI*2);ctx.fill();ctx.restore();}
  ctx.save();
- if((st.id==='lote9_flores'||st.id==='lote11_gramineas') && !reduced){ctx.translate(st.x,st.y);ctx.rotate(Math.sin(t*.8+st.x)*.012);ctx.translate(-st.x,-st.y);}
+ if((st.id==='lote9_flores'||st.id==='lote11_gramineas'||st.id==='lote12_flora') && !reduced){ctx.translate(st.x,st.y);ctx.rotate(Math.sin(t*.8+st.x)*.012);ctx.translate(-st.x,-st.y);}
  if(st.id==='barco' && !reduced){ctx.translate(st.x,st.y);ctx.rotate(Math.sin(t*.65)*.012);ctx.translate(-st.x,-st.y);}
  if(folha){
    const frame=reduced?0:Math.floor(t*4+(st.x%7)/7)%8;
@@ -95,12 +95,19 @@ function desenharEstrutura(ctx,st,t,reduced,state){
  if(st.id==='lote10_fogueira' && state.progress?.flags?.docas_fogueira_acesa){
    const fx=x+w*.5,fy=y+h*.50,unit=Math.max(2,w*.045),flicker=reduced?0:Math.sin(t*5)*unit*.5;
    glow(fx,fy,w*.48,'#ff9b45',pulso*.32);
-   ctx.save();ctx.fillStyle='#d96732';ctx.fillRect(fx-unit*2,fy-unit*2,unit*4,unit*2);
-   ctx.fillStyle='#ffb85a';ctx.fillRect(fx-unit,fy-unit*3-flicker,unit*2,unit*3+flicker);
-   ctx.fillStyle='#ffe3a0';ctx.fillRect(fx-unit*.4,fy-unit*1.5,unit*.8,unit*1.5);
+   // Línguas escalonadas em pixels, distintas da lenha, sem mudar a base.
+   ctx.save();ctx.fillStyle='#bf4e2b';ctx.fillRect(fx-unit*2,fy-unit,unit*4,unit);
+   ctx.fillStyle='#ed803a';ctx.fillRect(fx-unit*1.5,fy-unit*2,unit*3,unit);
+   ctx.fillRect(fx-unit*1.5,fy-unit*3-flicker,unit,unit+flicker);
+   ctx.fillRect(fx+unit*.5,fy-unit*3+flicker,unit,unit-flicker);
+   ctx.fillStyle='#ffc76e';ctx.fillRect(fx-unit*.5,fy-unit*3,unit,unit*2);
+   ctx.fillRect(fx-unit*.5,fy-unit*4-flicker,unit*.5,unit+flicker);
+   ctx.fillStyle='#ffeab0';ctx.fillRect(fx-unit*.5,fy-unit,unit,unit);
    if(!reduced)for(let i=0;i<2;i++){const p=(t*.19+i*.5)%1;ctx.fillStyle=`rgba(195,190,187,${(1-p)*.18})`;ctx.fillRect(fx+Math.sin(t+i)*unit-flicker,fy-unit*3-p*unit*7,unit,unit);}
    ctx.restore();
  }
+ if(st.id==='lote12_lampiao')glow(st.x,y+h*.62,w*.7,'#ffd395',pulso*.30);
+ if(st.id==='lote12_residuos'||st.id==='lote12_corais')glow(st.x,y+h*.62,w*.34,'#df83f5',pulso*.22);
  if(st.id==='lote11_lanterna-chao')glow(st.x,y+h*.42,w*.8,'#ffd395',pulso*.28);
  if(st.id==='lote11_cogumelos'||st.id==='lote11_totem')glow(st.x,y+h*.52,w*.35,'#78dff3',pulso*.22);
  if(st.id==='lote10_farolete')glow(st.x,y+h*.23,w*.75,'#ffd395',pulso*.35);

@@ -9,7 +9,10 @@ export function initHudCromatico() {
 export function atualizarHudCromatico(state, paused=false) {
   const root=document.getElementById('cromaticaHud');if(!root)return;
   const active=CROMATICA_MAPS.includes(state.world.currentMapId);root.hidden=!active;
-  atualizarAudioCromatico(active && !paused && !document.hidden, !!state.cromaticaRuntime?.perigo);
+  // Som local acompanha a fogueira persistente, nunca inicia o áudio sozinho.
+  const p=state.player, pertoFogo=state.world.currentMapId==='mare_cromatica_docas' && state.progress?.flags?.docas_fogueira_acesa && p
+    ? Math.max(0,1-Math.hypot(p.x-440*2.5/64,p.y-540*2.5/22)/4) : 0;
+  atualizarAudioCromatico(active && !paused && !document.hidden, !!state.cromaticaRuntime?.perigo, pertoFogo);
   if(!active)return;
   const d=lerMareCromatica(state.progress), sec=Math.ceil(d.restante);
   document.getElementById('cromaticaTimer').textContent=d.desfecho ? '• '+d.desfecho.toUpperCase() : `${d.iniciada?'•':'• AGUARDANDO'} ${String(Math.floor(sec/60)).padStart(2,'0')}:${String(sec%60).padStart(2,'0')}`;

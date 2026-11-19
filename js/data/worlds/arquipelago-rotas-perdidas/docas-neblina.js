@@ -68,7 +68,8 @@ export const docas={id:'mare_cromatica_docas',meta:{nome:'DOCAS DA NEBLINA',tipo
   {id:'cais-degrau',sprite:'lote7_cais-degrau',x:700,y:600,w:52,h:36,camada:'piso'},
  ],
  marDocas:[
-  {id:'tentaculo',x:205,y:555,tamanho:65},
+  {id:'tentaculo-cais',x:285,y:630,tamanho:72},
+  {id:'bote-cais',x:715,y:676,tamanho:55},
   {id:'tentaculo',x:1400,y:590,tamanho:60},
   {id:'boia',x:1450,y:600,tamanho:35},{id:'boia',x:1430,y:700,tamanho:35},
   {id:'olhos',x:1450,y:515,tamanho:22},
@@ -79,6 +80,7 @@ export const docas={id:'mare_cromatica_docas',meta:{nome:'DOCAS DA NEBLINA',tipo
   estrutura('cabana-oeste',585,478,150),estrutura('cabana-leste',1200,510,160),estrutura('galpao',875,468,145),
   estrutura('escada',1080,403,100,'chao'),estrutura('torre',1350,500,75),estrutura('farol',915,220,80),
   estrutura('camara',1250,240,135),estrutura('porta',975,225,35),
+  estrutura('cais_rochas',760,640,55),estrutura('cais_cristais',790,635,33),
   // Decoração sem colisão: não altera a malha nem cobre marcadores de missão.
   ...[[310,475,95],[455,365,100],[770,410,90],[1030,380,90],[1300,445,95],[1350,540,88]].map(([x,y,w])=>estrutura('lote3_palmeira',x,y,w)),
   ...[[375,420,105],[730,400,105],[395,520,90],[1160,455,90]].map(([x,y,w])=>estrutura('lote3_arvore',x,y,w)),
@@ -102,7 +104,7 @@ export const docas={id:'mare_cromatica_docas',meta:{nome:'DOCAS DA NEBLINA',tipo
   estrutura('lote6_arvore-seca',410,445,75),
   ...[[325,490,32],[1300,560,32],[1065,405,32]].map(([x,y,w])=>estrutura('lote6_cristal-violeta',x,y,w)),
   ...[[345,500,28],[1125,590,28],[1280,560,28]].map(([x,y,w])=>estrutura('lote6_corais',x,y,w)),
-  estrutura('lote6_bote',600,610,42),
+  // O bote não fica mais sobre as tábuas: agora flutua fora da máscara do deck.
   ...[[735,595,25],[1110,555,25]].map(([x,y,w])=>estrutura('lote6_empilhado',x,y,w)),
   estrutura('lote6_runa',840,580,28),
   ...[[650,610,24],[1250,540,24]].map(([x,y,w])=>estrutura('lote6_armadilha',x,y,w)),
@@ -115,7 +117,7 @@ export const docas={id:'mare_cromatica_docas',meta:{nome:'DOCAS DA NEBLINA',tipo
   estrutura('lote12_rocha-musgo',315,485,38),estrutura('lote12_raizes',365,490,38),
   estrutura('lote12_flora',470,410,31),estrutura('lote12_corais',1290,555,24),
   estrutura('lote12_residuos',405,555,28),estrutura('lote12_estacas',530,620,21),
-  estrutura('lote12_rede',585,615,27),estrutura('lote12_caixote',735,585,23),
+  estrutura('lote12_rede',730,585,27),estrutura('lote12_caixote',735,585,23),
   estrutura('lote12_vasilhame',1230,540,22),estrutura('lote12_lampiao',535,545,7),
   // Lote 11: reforços costeiros e sinais de navegação, próximos dos conjuntos existentes.
   estrutura('lote11_rocha-costeira',305,490,44),estrutura('lote11_arbusto-costeiro',460,400,43),
@@ -132,7 +134,7 @@ export const docas={id:'mare_cromatica_docas',meta:{nome:'DOCAS DA NEBLINA',tipo
   // Lote 9: agrupamentos junto às atividades, não espalhados pelo caminho.
   estrutura('lote9_banco',490,530,32),estrutura('lote9_vasos',540,492,25),
   estrutura('lote9_flores',485,510,33),estrutura('lote9_tronco',375,500,39),
-  estrutura('lote9_pescaria',580,605,29),estrutura('lote9_boias',610,620,27),
+  estrutura('lote9_pescaria',580,605,29),estrutura('lote9_boias',755,585,27),
   estrutura('lote9_postes',685,620,22),estrutura('lote9_anfora',1180,535,24),
   estrutura('lote9_engrenagem',910,490,30),estrutura('lote9_placa',1010,465,22),
   // Vestígios discretos, ancorados no piso e fora dos corredores centrais.

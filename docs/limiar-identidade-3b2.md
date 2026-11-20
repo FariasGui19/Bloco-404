@@ -74,3 +74,7 @@ Validação:
 - Navegador: T/R/J/K, forma Veloz no jogo principal; Quebra e retorno no laboratório com estado de QA de nível 4 (sem concessão no runtime); troca de prévias e descarte, teclado T na galeria, mobile/storage, WASD, voo, Q, barco, Maré/mergulho, save/retorno 2D, reentrada e perda de contexto.
 
 Capturas em `.qa/` ficam fora do Git: galeria das formas, ação da Quebra no gameplay e `3b2-transformacao.gif`, que registra uma demonstração do laboratório com os mesmos modelos/animações do jogo. O GIF é uma amostragem de frames renderizados, não vídeo recebido do usuário nem uma animação desenhada que substitui o gameplay.
+
+## Refinamento posterior
+
+Veja [roupa civil, cobertura capilar e HUD X10](limiar-lapidacao-personagem-x10.md) para a distinção corrigida entre trajes equipados e roupa convencional, remoção dos cristais e os novos testes/medidas.

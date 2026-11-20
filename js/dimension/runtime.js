@@ -1,3 +1,4 @@
+import { createNucleoHUD } from "./nucleo-hud.js";
 import { createOperatorActions } from "./operator-actions.js";
 import { createCameraMotion } from "./camera-motion.js";
 import { navigationBearing } from "./sector-layout.js";
@@ -107,6 +108,7 @@ export function createSpatialWorld({
     const actions = createOperatorActions(state, (message) => {
       notice.textContent = message;
     });
+    const nucleoHUD = createNucleoHUD(mount, state, actions);
     function reset() {
       keys.clear();
       pressed.clear();
@@ -477,6 +479,7 @@ export function createSpatialWorld({
       if (hudTime > 0.1) {
         hudTime = 0;
         drawMap();
+        nucleoHUD.update();
         el(".dimension-suit").textContent = profileFor(state.progress).name;
         el(".dimension-actions").textContent = actions.label();
         el(".dimension-level").textContent =
@@ -545,6 +548,7 @@ export function createSpatialWorld({
     function dispose() {
       if (disposed) return;
       disposed = true;
+      nucleoHUD.dispose();
       listener.abort();
       reset();
       world.environment.dispose();

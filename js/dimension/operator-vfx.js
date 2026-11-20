@@ -36,7 +36,7 @@ export function createOperatorVFX(body, hand, color, kind) {
   );
   blade.position.set(0, -0.31, 0.07);
   blade.name = "energy-blade";
-  const trail = mesh(new T.RingGeometry(0.45, 0.8, 20, 1, 0, 2.25), veil, hand);
+  const trail = mesh(new T.RingGeometry(kind === "mare" ? 0.67 : kind === "bio" ? 0.3 : 0.45, kind === "bio" ? 0.62 : 0.8, 20, 1, 0, kind === "mare" ? 4.6 : 2.25), veil, hand);
   trail.position.set(0, -0.37, 0.08);
   trail.name = "energy-trail";
   const read = mesh(
@@ -82,27 +82,28 @@ export function createOperatorVFX(body, hand, color, kind) {
     icon.visible = false;
     return icon;
   });
-  const shards = new T.Group();
-  shards.name = "transformation-shards";
-  root.add(shards);
-  const shardGeo = new T.OctahedronGeometry(0.045, 0);
+  const currents = new T.Group();
+  currents.name = "transformation-currents";
+  root.add(currents);
+  const currentGeo = new T.RingGeometry(0.24, 0.255, 16, 1, 0, Math.PI * 1.25).toNonIndexed();
   for (let i = 0; i < 8; i++) {
-    const o = mesh(shardGeo, light, shards),
+    const o = mesh(currentGeo, light, currents),
       a = (i * Math.PI) / 4;
     o.position.set(Math.sin(a) * 0.33, 0.4 + i * 0.13, Math.cos(a) * 0.25);
-    o.scale.set(0.7, 2, 0.7);
+    o.rotation.x = Math.PI / 2;
+    o.rotation.z = a;
   }
   const impact = mesh(new T.RingGeometry(0.22, 0.3, 16), veil);
   impact.rotation.x = -Math.PI / 2;
   impact.position.y = 0.025;
   impact.name = "impact-echo";
-  // Batched shards remain one rigid effect around the rig, not eight draw calls.
+  // Segmented currents are merged into one fixed effect; never floating gems.
   const parts = [];
-  shards.updateMatrixWorld(true);
-  for (const o of [...shards.children]) {
+  currents.updateMatrixWorld(true);
+  for (const o of [...currents.children]) {
     o.updateMatrix();
     parts.push(o.geometry.clone().applyMatrix4(o.matrix));
-    shards.remove(o);
+    currents.remove(o);
   }
   const positions = new Float32Array(
     parts.reduce((n, g) => n + g.attributes.position.array.length, 0),
@@ -113,11 +114,11 @@ export function createOperatorVFX(body, hand, color, kind) {
     offset += g.attributes.position.array.length;
     g.dispose();
   }
-  shardGeo.dispose();
+  currentGeo.dispose();
   const merged = new T.BufferGeometry();
   merged.setAttribute("position", new T.BufferAttribute(positions, 3));
-  shards.add(new T.Mesh(merged, light));
-  const all = [blade, trail, read, glyph, shards, impact];
+  currents.add(new T.Mesh(merged, light));
+  const all = [blade, trail, read, glyph, currents, impact];
   all.forEach((o) => (o.visible = false));
   return {
     root,
@@ -126,7 +127,9 @@ export function createOperatorVFX(body, hand, color, kind) {
       root.userData.action = p.id;
       root.userData.phase = p.u;
       blade.visible = p.attack && ["ancient", "bio", "veloz"].includes(kind);
-      blade.scale.y = 0.8 + p.trail * 0.25;
+      blade.scale.x = kind === "bio" ? 2.1 : 1;
+      blade.scale.y = kind === "bio" ? 0.48 : 0.8 + p.trail * 0.25;
+
       trail.visible = p.attack && p.trail > 0.03;
       trail.rotation.z = -0.9 + p.u * 2.7;
       trail.scale.setScalar(
@@ -145,11 +148,11 @@ export function createOperatorVFX(body, hand, color, kind) {
       read.rotation.z = p.u * 0.9;
       read.scale.setScalar(0.7 + p.read * 0.65);
       glyph.rotation.z = -p.u * 0.8;
-      shards.visible = p.transform;
-      shards.rotation.y = reduced ? 0 : p.u * 2.8;
-      shards.scale.setScalar(0.8 + p.flare * 0.5);
-      impact.visible =
-        p.attack && p.trail > 0.2 && ["bio", "brute", "mare"].includes(kind);
+      currents.visible = p.transform;
+      currents.rotation.y = reduced ? 0 : p.u * 2.8;
+      currents.scale.setScalar(0.8 + p.flare * 0.5);
+      impact.visible = (p.scan && kind === "ancient") ||
+        (p.attack && p.trail > 0.2 && ["bio", "brute", "mare"].includes(kind));
       impact.scale.setScalar(0.4 + p.u * (kind === "brute" ? 3.5 : 2));
     },
   };

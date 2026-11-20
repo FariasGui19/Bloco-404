@@ -187,6 +187,7 @@
         ><button data-performance="transform">T · TRANSFORMAÇÃO</button
         ><button data-performance="select">R · BRACELETE</button>
       </div>
+      <label>Vestuário <select id="sculpt-clothing"><option value="suit">Trajes equipados (X10 civil)</option><option value="civilian">Roupa convencional</option></select></label>
       <div id="sculpt-view"></div>
       <div class="sculpt-labels">
         <span>X10 · BRACELETE</span><span>BIO-FORJA · BIOMECÂNICA</span
@@ -295,6 +296,7 @@
           const selected = innerWidth < 700 ? state.progress.archetype : "all";
           document.querySelector("#sculpt-focus").value = selected;
           gallery.setFocus(selected);
+          document.querySelector("#sculpt-clothing").value = "suit";
           document.querySelector("#sculpt-close").focus();
         } catch (error) {
           galleryDialog.close();
@@ -326,6 +328,7 @@
         gallery?.setFocus("nucleo_dez_forma");
         document.querySelector("#sculpt-focus").value = "nucleo_dez_forma";
       };
+      document.querySelector("#sculpt-clothing").onchange = (event) => gallery?.setClothing(event.target.value === "suit");
       document.querySelector("#sculpt-motion").onchange = (event) =>
         gallery?.setLocomotion(event.target.value);
       function previewAction(action) {

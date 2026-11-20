@@ -28,7 +28,7 @@ for (const id of Object.keys(OPERATOR_STYLES)) {
     "sculpture cannot mutate simulation/save",
   );
   const spec = op.root.userData.sculpt;
-  assert.equal(spec.revision, "3B.1");
+  assert.equal(spec.revision, "3B.2");
   assert(spec.headWidth < 0.35 && spec.headHeight < 0.4);
   const head = op.root.getObjectByName("operator-head"),
     face = op.root.getObjectByName("sculpted-face");
@@ -63,7 +63,8 @@ for (const id of Object.keys(OPERATOR_STYLES)) {
         assert.equal(m.map.generateMipmaps, false);
         maps.add(m.map);
       }
-    if (!o.visible) return;
+    for (let parent = o; parent; parent = parent.parent)
+      if (!parent.visible) return;
     o.geometry.computeBoundingBox();
     visibleBounds.union(
       o.geometry.boundingBox.clone().applyMatrix4(o.matrixWorld),
@@ -82,7 +83,7 @@ for (const id of Object.keys(OPERATOR_STYLES)) {
     "sculpt remains in the existing camera/controller envelope",
   );
   assert(
-    triangles < 6500 && calls < 50,
+    triangles < (id === "motor_bio_forja" ? 7000 : 6600) && calls < 55,
     "explicit per-rig geometry/draw budget",
   );
   if (id === "nucleo_dez_forma")
@@ -121,6 +122,6 @@ const p = g.attributes.position,
 for (let i = 0; i < p.count; i++)
   if (p.getZ(i) > 0.149 && p.getY(i) === 0) assert(n.getZ(i) > 0);
 console.log(
-  "Sculpt 3B.1: volumetric face, proportional envelope, planted boots, distinct silhouettes, nearest UVs, bounded rigs and unchanged animation contract OK.",
+  "Sculpt 3B.2: volumetric face, proportional envelope, planted boots, distinct silhouettes, nearest UVs, bounded rigs and unchanged animation contract OK.",
   reports,
 );

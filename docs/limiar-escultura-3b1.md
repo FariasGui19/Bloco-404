@@ -1,5 +1,9 @@
 # Passo 3B.1 — escultura e leitura dos quatro operadores
 
+> Histórico desta etapa. A [revisão 3B.2](limiar-identidade-3b2.md) amplia a
+> atuação facial/corporal e substitui as formas X10 por rigs próprios.
+> Os custos e limites atualizados estão no documento novo.
+
 ## Escopo exclusivo
 
 Esta revisão altera somente a construção visual do operador e sua inspeção no laboratório. Não modifica `controller.js`, `operator-actions.js`, `operator-motion.js`, `DimensionManager`, câmera de gameplay, dados de progressão, sprites 2D ou qualquer construtor/dado do mapa. Os Passos 3B.2 (habilidades) e 3B.3 (mapa) não foram iniciados.

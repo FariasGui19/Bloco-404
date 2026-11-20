@@ -35,6 +35,26 @@ export function createOperatorGallery(mount) {
       scene.add(op.root);
       return op;
     });
+  function disposeModel(root) {
+    const gs = new Set(),
+      ms = new Set(),
+      ts = new Set();
+    root.traverse((o) => {
+      if (o.geometry) gs.add(o.geometry);
+      for (const m of Array.isArray(o.material) ? o.material : [o.material])
+        if (m) {
+          ms.add(m);
+          for (const v of Object.values(m)) if (v?.isTexture) ts.add(v);
+        }
+    });
+    gs.forEach((g) => g.dispose());
+    ms.forEach((m) => m.dispose());
+    ts.forEach((t) => t.dispose());
+  }
+  let previewAction = null,
+    previewRemaining = 0,
+    locomotion = "idle",
+    lastPreviewForm = "forma_veloz";
   let focus = "all",
     yaw = -0.28,
     drag = false,
@@ -102,21 +122,105 @@ export function createOperatorGallery(mount) {
     if (disposed) return;
     time += Math.min(0.05, Math.max(0, (now - last) / 1000));
     last = now;
+    previewRemaining = Math.max(
+      0,
+      previewRemaining -
+        Math.min(0.05, Math.max(0, (now - lastPreview) / 1000)),
+    );
+    lastPreview = now;
     models.forEach((op, i) => {
       op.root.visible = focus === "all" || focus === ids[i];
+      const primary = [
+        "forma_veloz",
+        "bio_dash",
+        "passo_corrente",
+        "golpe_ruptura",
+      ][i];
+      const secondary = [
+        "eco_scan",
+        "bio_diagnostic",
+        "senso_corrente",
+        "postura_dominio",
+      ][i];
+      const action =
+        previewRemaining > 0
+          ? {
+              id:
+                previewAction === "primary"
+                  ? op.root.userData.identity.form === "forma_bruta"
+                    ? "pancada_quebra"
+                    : primary
+                  : previewAction === "secondary"
+                    ? secondary
+                    : previewAction,
+              selected: models[0].root.userData.identity.form ?? "forma_veloz",
+              remaining: previewRemaining,
+              duration: 1.4,
+            }
+          : null;
+      const swim = locomotion === "swim",
+        flight = locomotion === "flight";
       op.animate(
-        { ...pose, x: focus === "all" ? (i - 1.5) * 1.9 : 0, yaw },
+        {
+          ...pose,
+          mode: swim ? "SUBMERSO" : "TERRA",
+          grounded: !swim && !flight,
+          flying: flight,
+          speed:
+            locomotion === "run"
+              ? 8
+              : locomotion === "walk"
+                ? 4
+                : swim
+                  ? 5
+                  : flight
+                    ? 15
+                    : 0,
+          x: focus === "all" ? (i - 1.5) * 1.9 : 0,
+          yaw,
+        },
         time,
+        { action },
       );
     });
     renderer.render(scene, camera);
     raf = requestAnimationFrame(frame);
   }
+  let lastPreview = performance.now();
   resize();
   raf = requestAnimationFrame(frame);
   return {
     models,
     renderer,
+    setForm(form) {
+      const id = ["forma_veloz", "forma_bruta"].includes(form) ? form : null;
+      if (id) lastPreviewForm = id;
+      const old = models[0];
+      scene.remove(old.root);
+      disposeModel(old.root);
+      models[0] = createOperator({ archetype: ids[0] }, { nucleoForm: id });
+      scene.add(models[0].root);
+      previewAction = "transform";
+      previewRemaining = 1.4;
+    },
+    play(action) {
+      if (action === "transform" && (focus === "all" || focus === ids[0])) {
+        this.setForm(
+          models[0].root.userData.identity.form ? null : lastPreviewForm,
+        );
+        return;
+      }
+      previewAction = action;
+      previewRemaining = 1.4;
+    },
+    setLocomotion(value) {
+      locomotion = ["walk", "run", "swim", "flight"].includes(value)
+        ? value
+        : "idle";
+    },
+    get preview() {
+      return { action: previewAction, remaining: previewRemaining, locomotion };
+    },
     setFocus(id) {
       focus = ids.includes(id) ? id : "all";
       resize();

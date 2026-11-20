@@ -1,5 +1,8 @@
 import * as T from "../vendor/three.module.js";
 import { createOperatorMotion } from "./operator-motion.js";
+import { createNucleoForm } from "./operator-forms.js";
+import { samplePerformance, facialSample } from "./operator-performance.js";
+import { createOperatorVFX } from "./operator-vfx.js";
 import { batchStatic } from "./sector-meshes.js";
 
 import { createSculptTools, loftGeometry } from "./operator-sculpt.js";
@@ -23,6 +26,11 @@ function texture(size, pixel) {
   return t;
 }
 export function createOperator(progress, player = {}) {
+  if (
+    progress?.archetype === "nucleo_dez_forma" &&
+    ["forma_veloz", "forma_bruta"].includes(player.nucleoForm)
+  )
+    return createNucleoForm(player.nucleoForm);
   const id = progress?.archetype,
     style = OPERATOR_STYLES[id] ?? OPERATOR_STYLES.nucleo_dez_forma;
   const bio = id === "motor_bio_forja",
@@ -40,6 +48,7 @@ export function createOperator(progress, player = {}) {
     archetype: id,
     level: 1,
     form,
+    model: "human",
     bracelet: x10,
     hair: "2b",
     glasses: true,
@@ -54,7 +63,7 @@ export function createOperator(progress, player = {}) {
     hipY: 0.89,
     headY: 1.71,
   };
-  root.userData.sculpt = { revision: "3B.1", ...proportions };
+  root.userData.sculpt = { revision: "3B.2", ...proportions };
   // Quiet pixel grain and panel breaks, not a high-contrast checker/grid.
   const cloth = texture(32, (x, y) => {
     const v = (x * 13 + y * 7) % 23 === 0 ? 224 : 245;
@@ -67,13 +76,6 @@ export function createOperator(progress, player = {}) {
     if (y > 47 && (x < 21 || x > 42)) c = [173, 115, 80];
     if (y > 33 && y < 40 && ((x > 12 && x < 23) || (x > 40 && x < 51)))
       c = [194, 133, 93];
-    if (y >= 24 && y <= 26 && ((x >= 12 && x <= 26) || (x >= 37 && x <= 51)))
-      c = [46, 33, 29];
-    if (y >= 29 && y <= 33 && ((x >= 16 && x <= 25) || (x >= 38 && x <= 47)))
-      c = [208, 192, 157];
-    if (y >= 29 && y <= 33 && ((x >= 16 && x <= 19) || (x >= 44 && x <= 47)))
-      c = [31, 32, 29];
-    if (y === 50 && x >= 26 && x <= 38) c = [119, 65, 49];
     return c;
   });
   const tattooMap = texture(32, (x, y) => {
@@ -263,6 +265,60 @@ export function createOperator(progress, player = {}) {
   const nose = ellipsoid(head, skin, 0.023, 0.041, 0.037, 0, -0.017, 0.142);
   nose.rotation.x = -0.1;
   ellipsoid(head, skin, 0.027, 0.018, 0.026, 0, -0.044, 0.165);
+  const eyeWhite = new T.MeshLambertMaterial({
+    color: 0xbdb89f,
+    flatShading: true,
+  });
+  const facePivots = [],
+    eyelids = [],
+    eyebrows = [],
+    gaze = new T.Group();
+  head.add(gaze);
+  for (const side of [-1, 1]) {
+    ellipsoid(head, eyeWhite, 0.024, 0.009, 0.006, side * 0.071, 0.005, 0.133);
+    const iris = ellipsoid(
+      gaze,
+      dark,
+      0.0095,
+      0.008,
+      0.004,
+      side * 0.071,
+      0.005,
+      0.14,
+    );
+    const lid = ellipsoid(
+      head,
+      skin,
+      0.028,
+      0.014,
+      0.004,
+      side * 0.071,
+      0.005,
+      0.146,
+    );
+    lid.name = "eyelid";
+    eyelids.push(lid);
+    facePivots.push(lid);
+    const brow = ellipsoid(
+      head,
+      hair,
+      0.033,
+      0.0055,
+      0.008,
+      side * 0.071,
+      0.041,
+      0.133,
+    );
+    brow.name = "eyebrow";
+    eyebrows.push(brow);
+    facePivots.push(brow);
+  }
+  const mouth = ellipsoid(head, dark, 0.022, 0.0025, 0.003, 0, -0.103, 0.112);
+  mouth.name = "expression-mouth";
+  facePivots.push(mouth);
+  const hairRig = new T.Group();
+  hairRig.name = "layered-hair";
+  head.add(hairRig);
   for (const side of [-1, 1]) {
     const ear = ellipsoid(
       head,
@@ -314,13 +370,13 @@ export function createOperator(progress, player = {}) {
     0.0045,
   );
   // Three offset layers of wavy locks, including the back and temples.
-  ellipsoid(head, hair, 0.154, 0.091, 0.137, 0, 0.15, -0.02);
+  ellipsoid(hairRig, hair, 0.154, 0.091, 0.137, 0, 0.15, -0.02);
   for (let row = 0; row < 3; row++)
     for (let i = 0; i < 7; i++) {
       const a = (i / 7) * Math.PI * 2 + row * 0.41,
         r = row === 2 ? 0.064 : 0.115;
       const lock = ellipsoid(
-        head,
+        hairRig,
         (i + row) % 4 === 0 ? hairHighlight : hair,
         0.053,
         0.041 + row * 0.004,
@@ -333,7 +389,7 @@ export function createOperator(progress, player = {}) {
     }
   for (let i = 0; i < 5; i++) {
     const curl = ellipsoid(
-      head,
+      hairRig,
       i % 3 === 0 ? hairHighlight : hair,
       0.041,
       0.031,
@@ -345,12 +401,35 @@ export function createOperator(progress, player = {}) {
     curl.rotation.z = Math.sin(i * 1.9) * 0.3;
   }
 
+  for (const side of [-1, 1])
+    for (let i = 0; i < 5; i++)
+      ellipsoid(
+        hairRig,
+        i % 3 === 0 ? hairHighlight : hair,
+        0.04,
+        0.042,
+        0.038,
+        side * (0.112 + (i % 2) * 0.012),
+        0.06 - i * 0.026,
+        -0.075 - i * 0.013,
+      );
+  for (let i = 0; i < 5; i++)
+    ellipsoid(
+      hairRig,
+      hair,
+      0.045,
+      0.036,
+      0.038,
+      (i - 2) * 0.048,
+      -0.035 + Math.cos(i) * 0.008,
+      -0.117,
+    );
   const limbs = [],
     jets = [],
     effects = new T.Group();
   effects.name = "operator-action";
   body.add(effects);
-  const staticPivots = [body, head];
+  const staticPivots = [body, head, hairRig, gaze];
   for (const side of [-1, 1]) {
     const leg = new T.Group();
     leg.position.set(side * proportions.hip, proportions.hipY, 0);
@@ -841,37 +920,54 @@ export function createOperator(progress, player = {}) {
         ],
         0.012,
       );
-  // Existing action presentation and joint contract are preserved verbatim.
-  const blade = mesh(
-    new T.ConeGeometry(0.11, 0.85, 3),
-    glow,
-    limbs[1].elbow,
-    0,
-    -0.48,
-    0.04,
-  );
-  blade.name = "energy-blade";
-  blade.visible = false;
-  const halo = mesh(
-    new T.TorusGeometry(0.6, 0.025, 4, 24),
-    glow,
-    effects,
-    0,
-    0.8,
-    0,
-  );
-  halo.rotation.x = Math.PI / 2;
-  halo.visible = false;
-  const pulse = mesh(
-    new T.TorusGeometry(0.14, 0.015, 4, 12),
-    glow,
-    effects,
-    0,
-    1.25,
-    0.5,
-  );
-  pulse.visible = false;
-  const excluded = new Set([blade, halo, pulse, ...jets]);
+  const presence = new T.Group();
+  presence.name = "archetype-presence";
+  body.add(presence);
+  if (ancient) {
+    for (let i = 0; i < 5; i++) {
+      const a = (i / 4 - 0.5) * 2;
+      const rune = mesh(
+        new T.OctahedronGeometry(0.025, 0),
+        glow,
+        presence,
+        Math.sin(a) * 0.36,
+        1.49 + Math.cos(a) * 0.12,
+        -0.15,
+      );
+      rune.scale.y = 1.7;
+    }
+    for (const side of [-1, 1])
+      tube(
+        body,
+        trim,
+        [
+          [side * 0.15, 1.05, -0.12],
+          [side * 0.25, 1.26, -0.2],
+          [side * 0.23, 1.43, -0.16],
+        ],
+        0.015,
+      );
+  }
+  if (bio)
+    for (const side of [-1, 1]) {
+      for (let i = 0; i < 3; i++) {
+        const plate = ellipsoid(
+          body,
+          suit,
+          0.07,
+          0.11,
+          0.052,
+          side * (0.28 + i * 0.024),
+          1.38 - i * 0.075,
+          -0.1 - i * 0.025,
+        );
+        plate.rotation.z = -side * 0.33;
+      }
+    }
+  batchStatic(presence);
+  const kind = bio ? "bio" : mare ? "mare" : ancient ? "ancient" : "human";
+  const vfx = createOperatorVFX(body, limbs[1].elbow, style.accent, kind);
+  const excluded = new Set([...facePivots, ...jets, ...vfx.excluded]);
   for (const pivot of staticPivots) batchStatic(pivot, excluded);
   const motion = createOperatorMotion();
   return {
@@ -881,40 +977,82 @@ export function createOperator(progress, player = {}) {
       return motion.pose;
     },
     animate(c, t, options = {}) {
-      const pose = motion.update(c, t, options),
-        action = options.action,
-        active = action?.remaining > 0,
-        u = active ? 1 - action.remaining / action.duration : 0;
+      const pose = motion.update(c, t, { ...options, archetype: id }),
+        p = samplePerformance(options.action, kind, t, options.reducedMotion);
+      const f = facialSample(t, p.expression, options.reducedMotion);
       root.position.set(c.x, c.y, c.z);
       root.rotation.y = c.yaw;
-      body.rotation.set(pose.pitch, 0, pose.bank);
-      body.position.y = pose.bob;
-      head.rotation.y = pose.head;
-      limbs.forEach(({ leg, knee, arm, elbow, side }, i) => {
-        leg.rotation.x = pose.legs[i];
-        knee.rotation.x = pose.knees[i];
-        arm.rotation.x = pose.arms[i];
-        elbow.rotation.x = pose.elbows[i];
-        arm.rotation.z = -side * pose.spread;
+      body.rotation.set(
+        pose.pitch + p.lean,
+        (pose.torsoYaw ?? 0) + p.twist,
+        pose.bank + (pose.hipRoll ?? 0),
+      );
+      body.position.y = pose.bob - p.crouch;
+      body.scale.setScalar(p.transform ? p.assembly : 1);
+      head.rotation.set(
+        (pose.headPitch ?? 0) + p.headPitch,
+        pose.head + p.headYaw,
+        -(pose.hipRoll ?? 0) * 0.6,
+      );
+      gaze.position.x = f.look;
+      eyelids.forEach((l) => {
+        l.visible = f.blink > 0.02;
+        l.scale.y = 0.014 * f.blink;
       });
-      if (active) {
-        limbs[1].arm.rotation.x = -1.3 - Math.sin(u * Math.PI) * 0.9;
-        limbs[1].arm.rotation.y = Math.sin(u * Math.PI) * 0.6;
-        limbs[0].arm.rotation.x = -0.7;
-      } else limbs[1].arm.rotation.y = 0;
-      blade.visible =
-        active && (action.id === "golpe_ruptura" || action.id === "bio_dash");
-      halo.visible = active;
-      halo.scale.setScalar(0.5 + u * 2.5);
-      halo.rotation.z = t * 0.6;
-      pulse.visible = active && !ancient && !bio;
-      pulse.scale.setScalar(1 + Math.sin(u * Math.PI) * 1.3);
+      eyebrows.forEach((b, i) => {
+        b.rotation.z = (i ? 1 : -1) * f.brow;
+        b.position.y = 0.041 + p.expression * 0.005;
+      });
+      mouth.scale.y = 0.0025 * f.mouth;
+      hairRig.rotation.set(
+        options.reducedMotion
+          ? 0
+          : Math.sin(t * 2.4) * 0.008 + (pose.pitch + p.lean) * 0.06,
+        0,
+        options.reducedMotion ? 0 : -pose.bank * 0.05,
+      );
+      limbs.forEach(({ leg, knee, arm, elbow, side }, i) => {
+        leg.rotation.x = pose.legs[i] + p.legs[i];
+        knee.rotation.x = pose.knees[i] + p.knees[i];
+        arm.rotation.set(
+          pose.arms[i] + p.arms[i],
+          p.armYaw[i],
+          -side * pose.spread,
+        );
+        elbow.rotation.x = pose.elbows[i] + p.elbows[i];
+      });
       for (const jet of jets) {
         const thrust =
-          pose.exhaust || (bio && (c.dash > 0 || c.actionBoost > 0) ? 1.5 : 0);
+          pose.exhaust ||
+          (bio && (c.dash > 0 || c.actionBoost > 0 || p.attack)
+            ? 1.2 + p.flare * 0.6
+            : 0);
         jet.visible = thrust > 0;
         jet.scale.y = thrust;
       }
+      const brightness = options.reducedMotion
+        ? 1
+        : mare
+          ? 0.94 + Math.sin(t * 2.7 - p.u * 4) * 0.11
+          : ancient
+            ? 0.96 + Math.sin(t * 1.5) * 0.04
+            : 1;
+      glow.color.setHex(style.accent).multiplyScalar(brightness);
+      presence.rotation.y = options.reducedMotion
+        ? 0
+        : Math.sin(t * 0.8) * 0.07;
+      presence.position.y = options.reducedMotion
+        ? 0
+        : Math.sin(t * 1.4) * 0.012;
+      vfx.update(p, t, options.reducedMotion);
+      root.userData.performance = {
+        action: p.id,
+        phase: p.u,
+        blink: f.blink,
+        expression: p.expression,
+        twist: p.twist,
+        scan: p.scan,
+      };
     },
   };
 }

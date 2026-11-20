@@ -30,6 +30,9 @@ poses articuladas e enquadramento suave, com um guia de sprites, texturas e mode
 A [revisão lvl 1](docs/limiar-identidade-lvl1-03.md) alinha os quatro trajes às sprites,
 integra bracelete/formas e ações J/K/T/R, além de vento, lanternas e cristais animados.
 
+A [escultura 3B.1](docs/limiar-escultura-3b1.md) refina proporções e silhuetas dos quatro operadores;
+o laboratório inclui galeria com vistas de frente, três-quartos e costas.
+
 ## Testes
 
 Os testes de lógica são scripts Node, sem dependências (testes opcionais de

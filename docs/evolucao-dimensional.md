@@ -135,3 +135,8 @@ Veja [limiar-personagem-03.md](limiar-personagem-03.md): apresentação modular 
 ### Revisão de identidade lvl 1
 
 A [revisão do Passo 3](limiar-identidade-lvl1-03.md) substitui o operador genérico por rosto/cabelo/óculos/tatuagens e trajes baseados nas sprites disponíveis. Acrescenta ações espaciais e integração às formas nativas, sem liberar níveis ou implementar missões do Passo 4.
+
+
+### Passo 3B.1 — escultura exclusiva
+
+A [revisão de escultura](limiar-escultura-3b1.md) refina rosto volumétrico, proporções e identidade dos quatro trajes. O laboratório ganhou inspeção de frente/três-quartos/costas com o mesmo modelo do jogo principal. Não altera habilidades ou mapa; Passos 3B.2 e 3B.3 permanecem pendentes.

@@ -116,3 +116,7 @@ node --experimental-default-type=module tests/dimension-browser.mjs
 Também passou `docas-gameplay-live-browser.mjs`: as animações e os modos de movimento do jogo anterior continuam funcionando no loop real. O laboratório foi inspecionado em viewport desktop e estreito, sem erros de página/console.
 
 Relatórios e capturas locais ficam em `.qa/`, ignorados pelo Git; não são necessários para executar o jogo.
+
+## Lapidação linear — base ambiental 01
+
+A primeira revisão visual está descrita em [limiar-base-ambiental-01.md](limiar-base-ambiental-01.md): terreno orgânico, costa/água por profundidade, iluminação e céu/névoa. O perfil ambiental e o bake foram separados para reaproveitamento em outros mapas. Os dados físicos, estruturas e controlador desta etapa continuam os mesmos. A animação da água agora é feita no shader, sem reescrita de vértices pela CPU por frame. As medições anteriores acima são histórico da primeira etapa; consulte o novo documento para os contadores desta revisão.

@@ -1,3 +1,4 @@
+import { createEnvironment } from "./environment-view.js";
 import * as T from "../vendor/three.module.js";
 import {
   SECTOR,
@@ -28,22 +29,15 @@ function pixelTexture(colors, size = 32) {
   tex.needsUpdate = true;
   return tex;
 }
-export function createSector() {
+export function createSector({ environmentProfile } = {}) {
   const scene = new T.Scene();
-  scene.background = new T.Color("#454477");
-  scene.fog = new T.FogExp2("#66638d", 0.0065);
-  scene.add(new T.HemisphereLight(0xb8ccff, 0x524063, 2.0));
-  const sun = new T.DirectionalLight(0xffd1aa, 2.4);
-  sun.position.set(-50, 70, 25);
-  scene.add(sun);
-  const grassTex = pixelTexture(["#89947b", "#77846f", "#9d9c7e", "#7f8e78"]);
+  const environment = createEnvironment(scene, {
+    heightAt: terrainHeight,
+    profile: environmentProfile,
+  });
   const stoneTex = pixelTexture(["#72768e", "#7f8097", "#626880", "#8a869e"]);
   const woodTex = pixelTexture(["#897061", "#a18a70", "#645263"]);
-  const terrainMat = new T.MeshLambertMaterial({
-    map: grassTex,
-    vertexColors: true,
-    flatShading: true,
-  });
+  const terrainMat = environment.terrainMaterial;
   const stone = new T.MeshLambertMaterial({
     map: stoneTex,
     color: 0xc7bdcc,
@@ -79,26 +73,14 @@ export function createSector() {
       scene.add(group);
       const geo = new T.PlaneGeometry(32, 32, 16, 16);
       geo.rotateX(-Math.PI / 2);
-      const pos = geo.attributes.position,
-        colors = [];
+      const pos = geo.attributes.position;
       for (let i = 0; i < pos.count; i++) {
         const x = pos.getX(i) + cx + 16,
           z = pos.getZ(i) + cz + 16,
           y = rawHeight(x, z);
         pos.setXYZ(i, x, y, z);
-        const color = new T.Color(
-          y < 1.5
-            ? "#d2b69b"
-            : y > 19
-              ? "#8fa4a2"
-              : y > 9
-                ? "#b4b5a1"
-                : "#92ad96",
-        );
-        color.multiplyScalar(0.91 + 0.09 * Math.sin(x * 0.31 + z * 0.27));
-        colors.push(color.r, color.g, color.b);
       }
-      geo.setAttribute("color", new T.Float32BufferAttribute(colors, 3));
+      environment.applyTerrainUV(geo);
       geo.computeVertexNormals();
       geo.computeBoundingSphere();
       const terrain = mesh(geo, terrainMat, group, 0, 0, 0);
@@ -150,31 +132,10 @@ export function createSector() {
         }
       }
     }
-  // Sea with crisp moving pixel bands and shallow polygonal waves.
-  const seaTex = pixelTexture(
-    ["#426b91", "#4d7b9c", "#548aa8", "#426d92", "#77a6b5"],
-    64,
-  );
-  seaTex.repeat.set(36, 36);
+  // Depth-aware pixel water: GPU waves, foam and sky glints, no CPU vertex uploads.
   const waterGeo = new T.PlaneGeometry(850, 850, 40, 40);
   waterGeo.rotateX(-Math.PI / 2);
-  const water = mesh(
-    waterGeo,
-    new T.MeshPhongMaterial({
-      map: seaTex,
-      color: 0xa3bddb,
-      shininess: 45,
-      specular: 0xb7c4dc,
-      transparent: true,
-      opacity: 0.83,
-      depthWrite: false,
-      side: T.DoubleSide,
-    }),
-    scene,
-    0,
-    0,
-    0,
-  );
+  const water = mesh(waterGeo, environment.waterMaterial, scene, 0, 0, 0);
   water.renderOrder = 2;
   // Visible seabed, kelp and motes make depth readable below the surface.
   const sand = mesh(
@@ -407,7 +368,7 @@ export function createSector() {
   mesh(
     new T.IcosahedronGeometry(8, 2),
     new T.MeshBasicMaterial({ color: 0xffd9b2, fog: false }),
-    scene,
+    environment.celestial,
     -125,
     105,
     -180,
@@ -419,7 +380,7 @@ export function createSector() {
   }
   const starsGeo = new T.BufferGeometry();
   starsGeo.setAttribute("position", new T.Float32BufferAttribute(stars, 3));
-  scene.add(
+  environment.celestial.add(
     new T.Points(
       starsGeo,
       new T.PointsMaterial({ color: 0xf5d9ee, size: 0.5, fog: false }),
@@ -546,17 +507,7 @@ export function createSector() {
     ring.rotation.z = t * 0.25;
     coreLight.intensity = 22 + Math.sin(t * 2) * 5;
     beamPivot.rotation.y = t * 0.23;
-    seaTex.offset.set(t * 0.004, t * 0.002);
-    water.position.y = Math.sin(t * 0.7) * 0.04;
-    const wave = waterGeo.attributes.position;
-    for (let i = 0; i < wave.count; i++)
-      wave.setY(
-        i,
-        Math.sin(wave.getX(i) * 0.12 + t * 0.8) *
-          Math.cos(wave.getZ(i) * 0.1 + t * 0.5) *
-          0.12,
-      );
-    wave.needsUpdate = true;
+    environment.update(t);
     const ground =
       c.y < -0.3
         ? terrainHeight(c.x, c.z)
@@ -580,6 +531,7 @@ export function createSector() {
     boat,
     anchor,
     update,
-    textures: [grassTex, stoneTex, woodTex, seaTex],
+    environment,
+    textures: [stoneTex, woodTex, ...environment.textures],
   };
 }

@@ -140,3 +140,8 @@ A [revisão do Passo 3](limiar-identidade-lvl1-03.md) substitui o operador gené
 ### Passo 3B.1 — escultura exclusiva
 
 A [revisão de escultura](limiar-escultura-3b1.md) refina rosto volumétrico, proporções e identidade dos quatro trajes. O laboratório ganhou inspeção de frente/três-quartos/costas com o mesmo modelo do jogo principal. Não altera habilidades ou mapa; Passos 3B.2 e 3B.3 permanecem pendentes.
+
+
+### Passo 3B.2 — identidade e atuação
+
+Veja [limiar-identidade-3b2.md](limiar-identidade-3b2.md): Veloz e Quebra Sistemas possuem rigs e silhuetas próprios, a base humana ganha atuação facial e as ações ganham envelopes de corpo inteiro. Laboratório inclui prévias reversíveis e modos de locomoção; regras nativas e mapa são preservados.

@@ -87,12 +87,20 @@ export function createOperatorActions(state, notify = () => {}) {
     selected =
       forms[(forms.findIndex((f) => f.id === selected) + 1) % forms.length]
         ?.id ?? null;
+    if (action.remaining <= 0 || action.id === "select")
+      Object.assign(action, {
+        id: "select",
+        duration: 0.55,
+        remaining: 0.55,
+        selected,
+      });
     notify(
       `BRACELETE · ${NUCLEO_FORMS[selected]?.name ?? "SEM FORMA"} · T ATIVAR/RETORNAR`,
     );
   }
   function transform() {
     const { progress, player } = state;
+    const previous = player.nucleoForm ?? null;
     const ok =
       progress.archetype === "nucleo_dez_forma"
         ? toggleNucleoForm(progress, player, selected)
@@ -100,6 +108,8 @@ export function createOperatorActions(state, notify = () => {}) {
     if (ok)
       Object.assign(action, {
         id: "transform",
+        from: previous,
+        to: player.nucleoForm ?? null,
         duration: 1.05,
         remaining: 1.05,
       });
@@ -137,7 +147,10 @@ export function createOperatorActions(state, notify = () => {}) {
             cost: getBioDashProfile(progress, player).energyCost,
           }
         : PROFILES[id];
-    if (action.remaining > 0 || (player.ability.cooldowns[id] ?? 0) > 0) {
+    if (
+      (action.remaining > 0 && action.id !== "select") ||
+      (player.ability.cooldowns[id] ?? 0) > 0
+    ) {
       notify("HABILIDADE RECARREGANDO");
       return false;
     }
@@ -174,7 +187,16 @@ export function createOperatorActions(state, notify = () => {}) {
         p.ability.effect.timeLeft = Math.max(0, p.ability.effect.timeLeft - dt);
         if (p.ability.effect.timeLeft <= 0) p.ability.effect = null;
       }
+      const before = p.nucleoForm;
       updateNucleoForm(state.progress, p, dt, true);
+      if (before !== p.nucleoForm)
+        Object.assign(action, {
+          id: "transform",
+          duration: 1.05,
+          remaining: 1.05,
+          from: before,
+          to: p.nucleoForm ?? null,
+        });
     },
     label() {
       const p = state.player;

@@ -33,6 +33,9 @@ integra bracelete/formas e ações J/K/T/R, além de vento, lanternas e cristais
 A [escultura 3B.1](docs/limiar-escultura-3b1.md) refina proporções e silhuetas dos quatro operadores;
 o laboratório inclui galeria com vistas de frente, três-quartos e costas.
 
+A [revisão 3B.2](docs/limiar-identidade-3b2.md) acrescenta atuação facial/corporal,
+formas X10 com rigs próprios e prévias de transformação/ações no laboratório.
+
 ## Testes
 
 Os testes de lógica são scripts Node, sem dependências (testes opcionais de

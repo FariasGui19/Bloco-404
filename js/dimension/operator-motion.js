@@ -9,6 +9,9 @@ export function createOperatorMotion() {
     impact = 0;
   const pose = {
     state: "idle",
+    torsoYaw: 0,
+    hipRoll: 0,
+    headPitch: 0,
     pitch: 0,
     bank: 0,
     bob: 0,
@@ -22,7 +25,7 @@ export function createOperatorMotion() {
   };
   return {
     pose,
-    update(c, time, { reducedMotion = false } = {}) {
+    update(c, time, { reducedMotion = false, archetype = null } = {}) {
       const dt = lastTime === null ? 0 : clamp(time - lastTime, 0, 0.05);
       lastTime = time;
       const turn =
@@ -80,9 +83,30 @@ export function createOperatorMotion() {
         : (state === "walk"
             ? Math.abs(Math.sin(phase)) * 0.045 * moving
             : state === "idle"
-              ? Math.sin(time * 2) * 0.012
+              ? Math.sin(time * 1.7) * 0.007 + Math.sin(time * 0.83) * 0.003
               : 0) - impact;
-      pose.head = reducedMotion ? 0 : Math.sin(time * 1.7) * 0.025;
+      const weight =
+        archetype === "motor_bio_forja"
+          ? 0.7
+          : archetype === "mare_astral"
+            ? 1.15
+            : 1;
+      pose.torsoYaw = reducedMotion
+        ? 0
+        : state === "walk"
+          ? Math.sin(phase) * 0.055 * moving * weight
+          : state === "swim"
+            ? Math.sin(phase * 0.5) * 0.075
+            : Math.sin(time * 0.77) * 0.008;
+      pose.hipRoll = reducedMotion
+        ? 0
+        : state === "walk"
+          ? Math.cos(phase) * 0.022 * moving
+          : 0;
+      pose.headPitch = reducedMotion ? 0 : Math.sin(time * 1.3) * 0.012;
+      pose.head = reducedMotion
+        ? 0
+        : Math.sin(time * 0.71) * 0.026 + Math.sin(time * 1.57) * 0.009;
       pose.spread = mix(pose.spread, flight ? 0.55 : swim ? 0.4 : 0.12, a);
       pose.exhaust = flight
         ? (0.65 + Math.min(1, speed / 25) * 0.65) *
@@ -142,7 +166,9 @@ export function createOperatorMotion() {
                 ? -0.8
                 : state === "boat"
                   ? -0.65
-                  : -0.18,
+                  : state === "walk"
+                    ? -0.22 - Math.max(0, step) * moving * 0.32
+                    : -0.18,
           a,
         );
       }

@@ -65,6 +65,79 @@ if (!process.env.BROWSER_EXECUTABLE) {
       () => window.labGallery.models.filter((m) => m.root.visible).length === 1,
     );
     await page.screenshot({ path: ".qa/sculpt-lab-x10.png" });
+    for (const [form, model] of [
+      ["forma_veloz", "veloz"],
+      ["forma_bruta", "brute"],
+      ["", "human"],
+    ]) {
+      await page.selectOption("#sculpt-form", form);
+      await page.waitForFunction(
+        (model) =>
+          window.labGallery.models[0].root.userData.identity.model === model,
+        model,
+        { timeout: 60000 },
+      );
+      await page.waitForFunction(
+        () => window.labGallery.preview.remaining === 0,
+        null,
+        { timeout: 60000 },
+      );
+      await page.screenshot({ path: `.qa/3b2-lab-${model}.png` });
+      assert.equal(
+        await page.evaluate(() => window.labGallery.stats.textures),
+        form ? 10 : 12,
+        "no old form texture remains resident",
+      );
+      await page.click('[data-performance="primary"]');
+      await page.waitForFunction(
+        () =>
+          window.labGallery.models[0].root.getObjectByName("energy-trail")
+            .visible,
+        null,
+        { timeout: 60000 },
+      );
+      await page.screenshot({ path: `.qa/3b2-lab-${model}-action.png` });
+      await page.waitForFunction(
+        () => window.labGallery.preview.remaining === 0,
+        null,
+        { timeout: 60000 },
+      );
+      assert.equal(
+        await page.evaluate(
+          () =>
+            window.labGallery.models[0].root.getObjectByName("energy-trail")
+              .visible,
+        ),
+        false,
+      );
+    }
+    await page.selectOption("#sculpt-motion", "run");
+    await page.waitForFunction(
+      () => window.labGallery.models[0].pose.state === "walk",
+      null,
+      { timeout: 60000 },
+    );
+    await page.selectOption("#sculpt-motion", "idle");
+    await page.click('[data-performance="transform"]');
+    await page.waitForFunction(
+      () =>
+        window.labGallery.models[0].root.userData.identity.model === "brute",
+      null,
+      { timeout: 60000 },
+    );
+    await page.waitForFunction(
+      () => window.labGallery.preview.remaining === 0,
+      null,
+      { timeout: 60000 },
+    );
+    await page.keyboard.press("t");
+    await page.waitForFunction(
+      () =>
+        window.labGallery.models[0].root.userData.identity.model === "human",
+      null,
+      { timeout: 60000 },
+    );
+    assert.equal(await page.inputValue("#sculpt-form"), "");
     await page.click("#sculpt-close");
     assert.equal(await page.locator("#sculpt-view canvas").count(), 0);
     await page.click("#enter");
@@ -90,9 +163,63 @@ if (!process.env.BROWSER_EXECUTABLE) {
           () =>
             window.labDimension.runtime.operator.root.userData.sculpt.revision,
         ),
-        "3B.1",
+        "3B.2",
       );
     }
+    // A progressed QA-only lab state exercises the existing level-4 form; no
+    // runtime unlock/UI shortcut is added and no save is written.
+    await page.evaluate(() => {
+      const s = window.labDimension.runtime.controller.state;
+      s.progress.archetypeProgress.nucleo_dez_forma = { level: 4, xp: 0 };
+    });
+    await page.locator(".dimension-viewport canvas").focus();
+    await page.keyboard.press("r");
+    await page.waitForFunction(
+      () => window.labDimension.runtime.actions.selected === "forma_veloz",
+      null,
+      { timeout: 60000 },
+    );
+    await page.keyboard.press("r");
+    await page.waitForFunction(
+      () => window.labDimension.runtime.actions.selected === "forma_bruta",
+      null,
+      { timeout: 60000 },
+    );
+    await page.keyboard.press("t");
+    await page.waitForFunction(
+      () =>
+        window.labDimension.runtime.operator.root.userData.identity.model ===
+        "brute",
+      null,
+      { timeout: 60000 },
+    );
+    await page.waitForFunction(
+      () => window.labDimension.runtime.actions.action.remaining === 0,
+      null,
+      { timeout: 60000 },
+    );
+    await page.keyboard.press("j");
+    await page.waitForFunction(
+      () =>
+        window.labDimension.runtime.operator.root.userData.performance
+          .action === "pancada_quebra",
+      null,
+      { timeout: 60000 },
+    );
+    await page.screenshot({ path: ".qa/3b2-bruta-gameplay.png" });
+    await page.waitForFunction(
+      () => window.labDimension.runtime.actions.action.remaining === 0,
+      null,
+      { timeout: 60000 },
+    );
+    await page.keyboard.press("t");
+    await page.waitForFunction(
+      () =>
+        window.labDimension.runtime.operator.root.userData.identity.model ===
+        "human",
+      null,
+      { timeout: 60000 },
+    );
     // Opening inspection from exploration must dispose that world first.
     await page.click("#inspect");
     await page.waitForFunction(

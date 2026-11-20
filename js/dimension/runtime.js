@@ -1,3 +1,4 @@
+import { createCameraMotion } from "./camera-motion.js";
 import { navigationBearing } from "./sector-layout.js";
 import * as T from "../vendor/three.module.js";
 import { createSector } from "./sector-scene.js";
@@ -78,6 +79,8 @@ export function createSpatialWorld({
     world.scene.add(camera);
     const keys = new Set(),
       pressed = new Set();
+    const cameraMotion = createCameraMotion();
+    const motionPreference = matchMedia("(prefers-reduced-motion: reduce)");
     let yaw = 0.3,
       pitch = 0.38,
       distance = 9,
@@ -374,18 +377,23 @@ export function createSpatialWorld({
       }
       pressed.clear();
       const c = controller;
-      operator.animate(c, time);
+      const reducedMotion = motionPreference.matches;
+      operator.animate(c, time, { reducedMotion });
       world.update(c, time);
-      target.set(c.x, c.y + 1.35, c.z);
+      const framing = cameraMotion.update(c, dt, { reducedMotion });
+      target.set(c.x + framing.lookX, c.y + framing.lookY, c.z + framing.lookZ);
+      if (Math.abs(camera.fov - framing.fov) > 0.01) {
+        camera.fov = framing.fov;
+        camera.updateProjectionMatrix();
+      }
       const progress =
-          transition.mode === "entering" &&
-          !matchMedia("(prefers-reduced-motion: reduce)").matches
+          transition.mode === "entering" && !reducedMotion
             ? transition.progress
             : 1,
         smooth = progress * progress * (3 - 2 * progress);
       const orbitYaw = yaw + (1 - smooth) * 0.8,
         orbitPitch = pitch + (1 - smooth) * 0.62,
-        dist = distance + (1 - smooth) * 17;
+        dist = distance + framing.distance + (1 - smooth) * 17;
       desired.set(
         target.x + Math.sin(orbitYaw) * Math.cos(orbitPitch) * dist,
         target.y + Math.sin(orbitPitch) * dist,
@@ -442,8 +450,8 @@ export function createSpatialWorld({
       flatPlane.visible = transition.mode === "entering";
       flatPlane.material.opacity = 1 - smooth;
       flatPlane.scale.set(
-        2 * Math.tan(T.MathUtils.degToRad(29)) * 2 * camera.aspect,
-        2 * Math.tan(T.MathUtils.degToRad(29)) * 2,
+        2 * Math.tan(T.MathUtils.degToRad(camera.fov / 2)) * 2 * camera.aspect,
+        2 * Math.tan(T.MathUtils.degToRad(camera.fov / 2)) * 2,
         1,
       );
       flatPlane.rotation.set(-smooth * 0.8, smooth * 0.6, smooth * 0.08);
@@ -542,6 +550,9 @@ export function createSpatialWorld({
       controller,
       camera,
       world,
+      get operator() {
+        return operator;
+      },
       get stats() {
         return {
           calls: renderer.info.render.calls,

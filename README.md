@@ -25,6 +25,8 @@ A [lapidação ambiental 01](docs/limiar-base-ambiental-01.md) traz materiais de
 terreno, água e atmosfera reutilizáveis, preservando o relevo e os controles.
 O [Passo 2 — estruturas e marcos](docs/limiar-estruturas-02.md) refina os POIs,
 acrescenta composição com rotas protegidas e integra bússola/minimapa.
+O [Passo 3 — personagem e câmera](docs/limiar-personagem-03.md) acrescenta
+poses articuladas e enquadramento suave, com um guia de sprites, texturas e modelos 3D.
 
 ## Testes
 

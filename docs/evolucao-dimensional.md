@@ -125,3 +125,8 @@ A primeira revisão visual está descrita em [limiar-base-ambiental-01.md](limia
 ## Estruturas e composição — Passo 2
 
 Veja [limiar-estruturas-02.md](limiar-estruturas-02.md) para os marcos modulares, densidade, rotas protegidas, acesso ao píer, índice espacial e novos contadores. O controlador e a base ambiental são preservados; animações/personagens do Passo 3 e progressão do Passo 4 não foram antecipados.
+
+
+## Personagem e câmera — Passo 3
+
+Veja [limiar-personagem-03.md](limiar-personagem-03.md): apresentação modular por estados, articulações e enquadramento limitado por velocidade, preservando o controlador e a colisão de câmera. A progressão do Passo 4 continua pendente.

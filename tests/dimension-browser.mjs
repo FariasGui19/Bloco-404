@@ -91,12 +91,23 @@ if (!process.env.BROWSER_EXECUTABLE) {
     );
     assert.equal(await page.evaluate(() => window.__dimension404.error), "");
     assert.equal(await page.evaluate(() => window.__dimension404.mode), "3d");
-    await page.waitForFunction(() => {
-      const rows = [...document.querySelectorAll(".dimension-landmark-list > *")];
-      return rows.length === 5 && rows.every(row => /\d+m/.test(row.textContent));
-    }, null, { timeout: 60000 });
-    const poiLegend = await page.locator(".dimension-landmark-list").innerText();
-    for (const name of ["PÍER", "ÂNCORA", "FAROL", "RUÍNAS", "ANEL"]) assert(poiLegend.includes(name));
+    await page.waitForFunction(
+      () => {
+        const rows = [
+          ...document.querySelectorAll(".dimension-landmark-list > *"),
+        ];
+        return (
+          rows.length === 5 && rows.every((row) => /\d+m/.test(row.textContent))
+        );
+      },
+      null,
+      { timeout: 60000 },
+    );
+    const poiLegend = await page
+      .locator(".dimension-landmark-list")
+      .innerText();
+    for (const name of ["PÍER", "ÂNCORA", "FAROL", "RUÍNAS", "ANEL"])
+      assert(poiLegend.includes(name));
     const start = await page.evaluate(
       () => window.__dimension404.runtime.controller.z,
     );
@@ -105,6 +116,12 @@ if (!process.env.BROWSER_EXECUTABLE) {
       (start) => window.__dimension404.runtime.controller.z < start - 1,
       start,
       { timeout: 60000 },
+    );
+    assert.equal(
+      await page.evaluate(
+        () => window.__dimension404.runtime.operator.pose.state,
+      ),
+      "walk",
     );
     await page.keyboard.up("w");
     assert(
@@ -130,6 +147,21 @@ if (!process.env.BROWSER_EXECUTABLE) {
     assert(
       await page.evaluate(() => window.__dimension404.runtime.controller.y > 7),
     );
+    assert.equal(
+      await page.evaluate(
+        () => window.__dimension404.runtime.operator.pose.state,
+      ),
+      "flight",
+    );
+    await page.emulateMedia({ reducedMotion: "reduce" });
+    await page.waitForFunction(
+      () =>
+        window.__dimension404.runtime.operator.pose.bob === 0 &&
+        window.__dimension404.runtime.operator.pose.head === 0,
+      null,
+      { timeout: 60000 },
+    );
+    await page.emulateMedia({ reducedMotion: "no-preference" });
     const beforeOrbit = await page.evaluate(() =>
       window.__dimension404.runtime.camera.quaternion.toArray(),
     );
@@ -271,6 +303,12 @@ if (!process.env.BROWSER_EXECUTABLE) {
         () => window.__dimension404.runtime.controller.y < -2,
       ),
       "real Maré swim dive",
+    );
+    assert.equal(
+      await page.evaluate(
+        () => window.__dimension404.runtime.operator.pose.state,
+      ),
+      "swim",
     );
     await page.screenshot({ path: ".qa/dimension-underwater.png" });
     // Graceful hardware/context failure, with no stale input or overlay.

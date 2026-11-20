@@ -23,6 +23,8 @@ Para experimentar os quatro modelos sem save, abra
 [Arquitetura, controles, limites e validação](docs/evolucao-dimensional.md).
 A [lapidação ambiental 01](docs/limiar-base-ambiental-01.md) traz materiais de
 terreno, água e atmosfera reutilizáveis, preservando o relevo e os controles.
+O [Passo 2 — estruturas e marcos](docs/limiar-estruturas-02.md) refina os POIs,
+acrescenta composição com rotas protegidas e integra bússola/minimapa.
 
 ## Testes
 

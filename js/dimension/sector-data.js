@@ -1,3 +1,4 @@
+import { createSectorLayout, createCollisionIndex } from "./sector-layout.js";
 // Setor Limiar: coordenadas em metros; Y é vertical (convenção Three.js).
 // Sem DOM/WebGL: a física e o terreno usam os mesmos dados determinísticos.
 export const SECTOR = Object.freeze({
@@ -40,6 +41,7 @@ export function terrainHeight(x, z) {
     ? a + (b - a) * u + (c - a) * v
     : d + (c - d) * (1 - u) + (b - d) * (1 - v);
 }
+export const SECTOR_LAYOUT = createSectorLayout(terrainHeight);
 export const PLATFORMS = [
   {
     id: "anchor-dais",
@@ -51,6 +53,15 @@ export const PLATFORMS = [
     top: terrainHeight(22, -28) + 0.55,
   },
   { id: "pier", x: -16, z: 52, w: 7, d: 24, bottom: 4.8, top: 5.3 },
+  {
+    id: "lighthouse-gallery",
+    x: 40,
+    z: -21,
+    w: 7.6,
+    d: 7.6,
+    bottom: terrainHeight(40, -21) + 23.65,
+    top: terrainHeight(40, -21) + 24.35,
+  },
   ...Array.from({ length: 7 }, (_, i) => ({
     id: "ruin-" + i,
     x: -12 - i * 5,
@@ -62,6 +73,7 @@ export const PLATFORMS = [
   })),
 ];
 export const SOLIDS = [
+  ...SECTOR_LAYOUT.colliders,
   {
     id: "lighthouse",
     x: 40,
@@ -81,8 +93,30 @@ export const SOLIDS = [
     top: terrainHeight(-30 + i * 6, 3) + 6,
   })),
 ];
+export const PIER_RAMP = Object.freeze({
+  x: -16,
+  w: 5,
+  startZ: 34,
+  endZ: 40,
+  top: 5.3,
+});
+export function pierRampHeight(x, z) {
+  const start = terrainHeight(x, PIER_RAMP.startZ),
+    t = clamp(
+      (z - PIER_RAMP.startZ) / (PIER_RAMP.endZ - PIER_RAMP.startZ),
+      0,
+      1,
+    );
+  return start + (PIER_RAMP.top - start) * t;
+}
 export const groundAt = (x, z, feet = Infinity) => {
   let h = terrainHeight(x, z);
+  if (
+    Math.abs(x - PIER_RAMP.x) <= PIER_RAMP.w / 2 &&
+    z >= PIER_RAMP.startZ &&
+    z <= PIER_RAMP.endZ
+  )
+    h = Math.max(h, pierRampHeight(x, z));
   for (const p of PLATFORMS)
     if (
       Math.abs(x - p.x) <= p.w / 2 + 0.25 &&
@@ -92,14 +126,9 @@ export const groundAt = (x, z, feet = Infinity) => {
       h = Math.max(h, p.top);
   return h;
 };
+export const COLLISION_INDEX = createCollisionIndex([...SOLIDS, ...PLATFORMS]);
 export function blocked(x, y, z, r = 0.38, height = 1.8) {
-  return [...SOLIDS, ...PLATFORMS].some(
-    (b) =>
-      Math.abs(x - b.x) < b.w / 2 + r &&
-      Math.abs(z - b.z) < b.d / 2 + r &&
-      y < b.top - 0.05 &&
-      y + height > b.bottom + 0.05,
-  );
+  return COLLISION_INDEX.blocked(x, y, z, r, height);
 }
 export const ARCHETYPE_3D = {
   nucleo_dez_forma: {

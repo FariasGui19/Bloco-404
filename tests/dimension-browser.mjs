@@ -91,6 +91,12 @@ if (!process.env.BROWSER_EXECUTABLE) {
     );
     assert.equal(await page.evaluate(() => window.__dimension404.error), "");
     assert.equal(await page.evaluate(() => window.__dimension404.mode), "3d");
+    await page.waitForFunction(() => {
+      const rows = [...document.querySelectorAll(".dimension-landmark-list > *")];
+      return rows.length === 5 && rows.every(row => /\d+m/.test(row.textContent));
+    }, null, { timeout: 60000 });
+    const poiLegend = await page.locator(".dimension-landmark-list").innerText();
+    for (const name of ["PÍER", "ÂNCORA", "FAROL", "RUÍNAS", "ANEL"]) assert(poiLegend.includes(name));
     const start = await page.evaluate(
       () => window.__dimension404.runtime.controller.z,
     );

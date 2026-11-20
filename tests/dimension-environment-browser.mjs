@@ -47,13 +47,13 @@ if (!process.env.BROWSER_EXECUTABLE) {
         view,
       );
       assert(
-        report[view].textures <= 5,
-        "five resident textures, no reflection/depth render targets",
+        report[view].textures <= 6,
+        "six resident textures after the structure pass, no reflection/depth render targets",
       );
-      assert(report[view].calls <= 125);
+      assert(report[view].calls <= 145);
       assert(
-        report[view].triangles < 30000,
-        "base environmental pass does not increase geometric budget",
+        report[view].triangles < 42000,
+        "environment plus authored structures stays inside the revised 42k triangle budget",
       );
       await page.screenshot({ path: `.qa/environment-after-${view}.png` });
     }

@@ -1,3 +1,4 @@
+import { navigationBearing } from "./sector-layout.js";
 import * as T from "../vendor/three.module.js";
 import { createSector } from "./sector-scene.js";
 import { createOperator } from "./operator.js";
@@ -47,6 +48,7 @@ export function createSpatialWorld({
   let world;
   try {
     world = createSector();
+    const anchorPOI = world.layout.pois.find((p) => p.id === "limiar.anchor");
     const camera = new T.PerspectiveCamera(58, 1, 0.12, 420),
       controller = new SpatialController(state);
     let operator = createOperator(state.progress),
@@ -231,6 +233,38 @@ export function createSpatialWorld({
         image.data[i + 3] = 255;
       }
     mc.putImageData(image, 0, 0);
+    // Routes/POIs use the same authored registry as geometry and future lore hooks.
+    for (const route of world.layout.routes.filter(
+      (r) =>
+        r.mode === "walk" || r.mode === "jump" || r.id === "harbor-channel",
+    )) {
+      mc.strokeStyle =
+        route.mode === "water"
+          ? "#aacad577"
+          : route.mode === "jump"
+            ? "#cda2de88"
+            : "#e3d4b070";
+      mc.lineWidth = 1;
+      mc.setLineDash(route.mode === "walk" ? [] : [2, 2]);
+      mc.beginPath();
+      route.points.forEach(([x, z], i) => {
+        const a = (x / 256 + 0.5) * 144,
+          b = (z / 256 + 0.5) * 144;
+        i ? mc.lineTo(a, b) : mc.moveTo(a, b);
+      });
+      mc.stroke();
+    }
+    mc.setLineDash([]);
+    const landmarkList = el(".dimension-landmark-list"),
+      landmarkRows = new Map();
+    for (const poi of world.layout.pois) {
+      const row = document.createElement("span");
+      row.dataset.poiId = poi.id;
+      row.style.color = poi.color;
+      landmarkList.append(row);
+      landmarkRows.set(poi.id, row);
+    }
+
     function drawMap() {
       mapContext.drawImage(minimap, 0, 0);
       const dot = (x, z, color, r) => {
@@ -245,9 +279,17 @@ export function createSpatialWorld({
         );
         mapContext.fill();
       };
-      dot(22, -28, "#a0ffe3", 3);
-      dot(40, -21, "#ffd6a0", 2);
-      dot(-16, 65, "#f1a8ec", 2);
+      for (const poi of world.layout.pois) {
+        dot(poi.x, poi.z, poi.color, 4.2);
+        mapContext.fillStyle = "#13283b";
+        mapContext.textAlign = "center";
+        mapContext.font = "bold 7px monospace";
+        mapContext.fillText(
+          poi.code,
+          (poi.x / 256 + 0.5) * 144,
+          (poi.z / 256 + 0.5) * 144 + 2.4,
+        );
+      }
       dot(controller.x, controller.z, "white", 3);
       mapContext.strokeStyle = "white";
       const x = (controller.x / 256 + 0.5) * 144,
@@ -260,8 +302,8 @@ export function createSpatialWorld({
     function interact() {
       const c = controller,
         nearAnchor =
-          Math.hypot(c.x - 22, c.z + 28) < 5 &&
-          Math.abs(c.y - terrainHeight(22, -28)) < 4;
+          Math.hypot(c.x - anchorPOI.x, c.z - anchorPOI.z) < 5 &&
+          Math.abs(c.y - terrainHeight(anchorPOI.x, anchorPOI.z)) < 4;
       const nearBoat =
         Math.hypot(c.x - world.boat.position.x, c.z - world.boat.position.z) <
           5 && Math.abs(c.y) < 7;
@@ -320,7 +362,10 @@ export function createSpatialWorld({
         if (pressed.has("KeyQ")) lock = !lock;
         if (pressed.has("KeyE")) interact();
         if (lock) {
-          const wanted = Math.atan2(controller.x - 22, controller.z + 28);
+          const wanted = Math.atan2(
+            controller.x - anchorPOI.x,
+            controller.z - anchorPOI.z,
+          );
           yaw +=
             Math.atan2(Math.sin(wanted - yaw), Math.cos(wanted - yaw)) *
             (1 - Math.exp(-dt * 3));
@@ -423,16 +468,29 @@ export function createSpatialWorld({
           `ALT ${Math.max(0, c.y).toFixed(1)} m   PROF ${Math.max(0, -c.y).toFixed(1)} m   VEL ${(c.speed * 3.6).toFixed(0)} km/h`;
         el(".dimension-heading").textContent =
           `N  ·  ${(((Math.round((yaw * 180) / Math.PI) % 360) + 360) % 360).toString().padStart(3, "0")}°  ·  S`;
+        const bearings = world.layout.pois.map((p) =>
+          navigationBearing(c.x, c.z, yaw, p),
+        );
+        for (const b of bearings)
+          landmarkRows.get(b.poi.id).textContent =
+            `${b.poi.code} ${b.poi.short} ${b.arrow} ${Math.round(b.distance)}m`;
+        const ahead = bearings
+          .filter((b) => Math.abs(b.delta) < Math.PI * 0.36 && b.distance > 5)
+          .sort((a, b) => Math.abs(a.delta) - Math.abs(b.delta))[0];
+        if (ahead)
+          el(".dimension-heading").textContent +=
+            `  |  ${ahead.poi.code} ${ahead.poi.short} ${Math.round(ahead.distance)}m`;
         el(".dimension-performance").textContent =
           `${fps} FPS · ${renderer.info.render.calls} DRAWS · ${(renderer.info.render.triangles / 1000).toFixed(1)}K TRI · ${world.chunks.filter((ch) => ch.group.visible).length}/64 SETORES`;
-        const anchorDistance = Math.hypot(c.x - 22, c.z + 28),
+        const anchorDistance = Math.hypot(c.x - anchorPOI.x, c.z - anchorPOI.z),
           boatDistance = Math.hypot(
             c.x - world.boat.position.x,
             c.z - world.boat.position.z,
           );
         el(".dimension-prompt").textContent = c.boating
           ? "E · DESEMBARCAR"
-          : anchorDistance < 5 && Math.abs(c.y - terrainHeight(22, -28)) < 4
+          : anchorDistance < 5 &&
+              Math.abs(c.y - terrainHeight(anchorPOI.x, anchorPOI.z)) < 4
             ? "E · ESTABILIZAR NÚCLEO DE ÂNCORA"
             : boatDistance < 5 && Math.abs(c.y) < 7
               ? "E · PILOTAR EMBARCAÇÃO"
@@ -474,6 +532,7 @@ export function createSpatialWorld({
       disposeTree(world.scene);
       renderer.dispose();
       renderer.forceContextLoss();
+      landmarkList.replaceChildren();
       renderer.domElement.remove();
       mount.classList.remove("underwater");
     }
@@ -505,6 +564,7 @@ export function createSpatialWorld({
     });
     renderer.dispose();
     renderer.forceContextLoss();
+    mount.querySelector(".dimension-landmark-list")?.replaceChildren();
     renderer.domElement.remove();
     throw error;
   }

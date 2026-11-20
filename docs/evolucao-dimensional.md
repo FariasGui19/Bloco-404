@@ -130,3 +130,8 @@ Veja [limiar-estruturas-02.md](limiar-estruturas-02.md) para os marcos modulares
 ## Personagem e câmera — Passo 3
 
 Veja [limiar-personagem-03.md](limiar-personagem-03.md): apresentação modular por estados, articulações e enquadramento limitado por velocidade, preservando o controlador e a colisão de câmera. A progressão do Passo 4 continua pendente.
+
+
+### Revisão de identidade lvl 1
+
+A [revisão do Passo 3](limiar-identidade-lvl1-03.md) substitui o operador genérico por rosto/cabelo/óculos/tatuagens e trajes baseados nas sprites disponíveis. Acrescenta ações espaciais e integração às formas nativas, sem liberar níveis ou implementar missões do Passo 4.

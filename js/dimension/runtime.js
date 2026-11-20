@@ -1,3 +1,4 @@
+import { createOperatorActions } from "./operator-actions.js";
 import { createCameraMotion } from "./camera-motion.js";
 import { navigationBearing } from "./sector-layout.js";
 import * as T from "../vendor/three.module.js";
@@ -52,8 +53,8 @@ export function createSpatialWorld({
     const anchorPOI = world.layout.pois.find((p) => p.id === "limiar.anchor");
     const camera = new T.PerspectiveCamera(58, 1, 0.12, 420),
       controller = new SpatialController(state);
-    let operator = createOperator(state.progress),
-      archetype = state.progress.archetype;
+    let operator = createOperator(state.progress, state.player),
+      archetype = `${state.progress.archetype}:${state.player.nucleoForm ?? ""}:${state.player.equippedSuit ?? ""}`;
     world.scene.add(operator.root);
     // During the rupture the actual 2D canvas becomes a tilting, fading plane.
     const snapshot = document.createElement("canvas");
@@ -103,6 +104,9 @@ export function createSpatialWorld({
       notice = el(".dimension-notice"),
       map = el(".dimension-map");
     const mapContext = map.getContext("2d");
+    const actions = createOperatorActions(state, (message) => {
+      notice.textContent = message;
+    });
     function reset() {
       keys.clear();
       pressed.clear();
@@ -353,15 +357,21 @@ export function createSpatialWorld({
         frames = 0;
         fpsTime = 0;
       }
-      if (archetype !== state.progress.archetype) {
+      const appearanceKey = `${state.progress.archetype}:${state.player.nucleoForm ?? ""}:${state.player.equippedSuit ?? ""}`;
+      if (archetype !== appearanceKey) {
         world.scene.remove(operator.root);
         disposeTree(operator.root);
-        operator = createOperator(state.progress);
+        operator = createOperator(state.progress, state.player);
         world.scene.add(operator.root);
-        archetype = state.progress.archetype;
+        archetype = `${state.progress.archetype}:${state.player.nucleoForm ?? ""}:${state.player.equippedSuit ?? ""}`;
         if (!profileFor(state.progress).fly) controller.flying = false;
       }
       if (transition.mode === "3d") {
+        actions.update(dt);
+        if (pressed.has("KeyR")) actions.select();
+        if (pressed.has("KeyT")) actions.transform();
+        if (pressed.has("KeyJ")) actions.trigger("primary", controller);
+        if (pressed.has("KeyK")) actions.trigger("secondary", controller);
         if (pressed.has("KeyQ")) lock = !lock;
         if (pressed.has("KeyE")) interact();
         if (lock) {
@@ -378,8 +388,8 @@ export function createSpatialWorld({
       pressed.clear();
       const c = controller;
       const reducedMotion = motionPreference.matches;
-      operator.animate(c, time, { reducedMotion });
-      world.update(c, time);
+      operator.animate(c, time, { reducedMotion, action: actions.action });
+      world.update(c, time, reducedMotion);
       const framing = cameraMotion.update(c, dt, { reducedMotion });
       target.set(c.x + framing.lookX, c.y + framing.lookY, c.z + framing.lookZ);
       if (Math.abs(camera.fov - framing.fov) > 0.01) {
@@ -468,6 +478,7 @@ export function createSpatialWorld({
         hudTime = 0;
         drawMap();
         el(".dimension-suit").textContent = profileFor(state.progress).name;
+        el(".dimension-actions").textContent = actions.label();
         el(".dimension-level").textContent =
           `SINCRONIZAÇÃO ${getArchetypeLevel(state.progress)} · ${c.mode}${lock ? " · MIRA: ÂNCORA" : ""}`;
         el(".dimension-vitals").textContent =
@@ -548,6 +559,7 @@ export function createSpatialWorld({
       frame,
       dispose,
       controller,
+      actions,
       camera,
       world,
       get operator() {

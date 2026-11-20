@@ -53,7 +53,42 @@ export function createSectorMaterials() {
     floor = tile("flagstone");
   const lambert = (color, map = null) =>
     new T.MeshLambertMaterial({ color, map, flatShading: true });
+  const wind = { value: 0 },
+    windStrength = { value: 1 };
+  const foliage = new T.MeshLambertMaterial({
+    vertexColors: true,
+    flatShading: true,
+  });
+  foliage.onBeforeCompile = (shader) => {
+    shader.uniforms.limiarTime = wind;
+    shader.uniforms.limiarWind = windStrength;
+    shader.vertexShader =
+      "uniform float limiarTime; uniform float limiarWind; varying vec3 limiarLeaf;\n" +
+      shader.vertexShader;
+    shader.vertexShader = shader.vertexShader.replace(
+      "#include <begin_vertex>",
+      `#include <begin_vertex>
+      limiarLeaf=(modelMatrix*vec4(position,1.)).xyz;
+      transformed.x+=sin(limiarTime*1.3+limiarLeaf.z*.65+limiarLeaf.x*.3)*.065*limiarWind;
+      transformed.z+=sin(limiarTime*.8+limiarLeaf.x*.6)*.035*limiarWind;`,
+    );
+    shader.fragmentShader =
+      "varying vec3 limiarLeaf;\n" + shader.fragmentShader;
+    shader.fragmentShader = shader.fragmentShader.replace(
+      "#include <color_fragment>",
+      `#include <color_fragment>
+      vec3 cell=floor(limiarLeaf*12.);
+      float grain=fract(sin(dot(cell,vec3(12.9898,78.233,37.719)))*43758.5453);
+      float leafPatch=step(.57,grain);
+      diffuseColor.rgb*=.89+leafPatch*.19;`,
+    );
+  };
+  foliage.customProgramCacheKey = () => "limiar-leaf-pixels-wind-v1";
   return {
+    update(t, reduced = false) {
+      wind.value = t;
+      windStrength.value = reduced ? 0 : 1;
+    },
     textures,
     masonry: lambert(0xcbd2da, wall),
     floor: lambert(0xb7c5ce, floor),
@@ -61,10 +96,7 @@ export function createSectorMaterials() {
     trim: lambert(0x3c4b60),
     copper: lambert(0xba8e68),
     iron: lambert(0x263748),
-    foliage: new T.MeshLambertMaterial({
-      vertexColors: true,
-      flatShading: true,
-    }),
+    foliage,
     rock: new T.MeshLambertMaterial({ vertexColors: true, flatShading: true }),
     teal: new T.MeshBasicMaterial({ color: 0x8df4d7 }),
     violet: new T.MeshBasicMaterial({ color: 0xc3a0eb }),

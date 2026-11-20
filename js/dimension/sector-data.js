@@ -133,26 +133,26 @@ export function blocked(x, y, z, r = 0.38, height = 1.8) {
 export const ARCHETYPE_3D = {
   nucleo_dez_forma: {
     name: "NÚCLEO X10",
-    color: 0xf1bd59,
-    accent: 0x7ceeff,
+    color: 0x536b6d,
+    accent: 0x64ffa3,
     fly: true,
   },
   mare_astral: {
     name: "MARÉ ASTRAL",
-    color: 0x39c5ca,
+    color: 0x20343d,
     accent: 0xa4f7ed,
     dive: true,
   },
   motor_bio_forja: {
     name: "MOTOR BIO-FORJA",
-    color: 0xb6c76a,
-    accent: 0xff925e,
+    color: 0x202a36,
+    accent: 0x43e5ff,
     heavy: true,
   },
   lamina_dominio_anciao: {
     name: "LÂMINA DO DOMÍNIO",
-    color: 0x9974dd,
-    accent: 0xf1d1ff,
+    color: 0x292d39,
+    accent: 0xffd564,
   },
 };
 export function profileFor(progress) {

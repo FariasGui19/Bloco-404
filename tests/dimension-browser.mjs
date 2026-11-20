@@ -54,6 +54,7 @@ if (!process.env.BROWSER_EXECUTABLE) {
       const s = createNewSave(1, "QA dimensional");
       s.world = { lastMapId: "mare_cromatica_docas", lastSpawnId: "inicio" };
       s.progress.archetype = "nucleo_dez_forma";
+      s.progress.abilities = ["forma_veloz", "eco_scan"];
       s.progress.onboardingCompleted = true;
       s.progress.flags = {
         docas_neblina_alcancada: true,
@@ -184,6 +185,47 @@ if (!process.env.BROWSER_EXECUTABLE) {
     await page.selectOption(".dimension-quality", "0.6");
     await page.locator(".dimension-viewport canvas").focus();
     await page.screenshot({ path: ".qa/dimension-flight.png" });
+    await page.keyboard.press("r");
+    await page.keyboard.press("t");
+    await page.waitForFunction(
+      () =>
+        window.__dimension404.runtime.operator.root.userData.identity.form ===
+        "forma_veloz",
+      null,
+      { timeout: 60000 },
+    );
+    await page.waitForFunction(
+      () => window.__dimension404.runtime.actions.action.remaining === 0,
+      null,
+      { timeout: 60000 },
+    );
+    await page.keyboard.press("j");
+    await page.waitForFunction(
+      () => window.__dimension404.runtime.actions.action.id === "forma_veloz",
+      null,
+      { timeout: 60000 },
+    );
+    await page.screenshot({ path: ".qa/dimension-identity-action.png" });
+    await page.waitForFunction(
+      () => window.__dimension404.runtime.actions.action.remaining === 0,
+      null,
+      { timeout: 60000 },
+    );
+    await page.keyboard.press("k");
+    await page.waitForFunction(
+      () => window.__dimension404.runtime.actions.action.id === "eco_scan",
+      null,
+      { timeout: 60000 },
+    );
+    await page.keyboard.press("t");
+    await page.waitForFunction(
+      () =>
+        window.__dimension404.runtime.operator.root.userData.identity.form ===
+        null,
+      null,
+      { timeout: 60000 },
+    );
+
     await page.evaluate(async () => {
       const c = window.__dimension404.runtime.controller;
       const { terrainHeight } = await import("/js/dimension/sector-data.js");
@@ -274,6 +316,38 @@ if (!process.env.BROWSER_EXECUTABLE) {
       window.dispatchEvent(new CustomEvent("bloco404:rupture")),
     );
     await page.waitForFunction(() => window.__dimension404.mode === "3d");
+    for (const [archetype, ability] of [
+      ["motor_bio_forja", "bio_dash"],
+      ["lamina_dominio_anciao", "golpe_ruptura"],
+    ]) {
+      await page.evaluate(
+        ({ archetype, ability }) => {
+          const r = window.__dimension404.runtime;
+          r.controller.state.progress.archetype = archetype;
+          r.controller.state.progress.abilities = [ability];
+          r.controller.state.player.energy = 100;
+        },
+        { archetype, ability },
+      );
+      await page.waitForFunction(
+        (id) =>
+          window.__dimension404.runtime.operator.root.userData.identity
+            .archetype === id,
+        archetype,
+        { timeout: 60000 },
+      );
+      await page.waitForFunction(
+        () => window.__dimension404.runtime.actions.action.remaining === 0,
+        null,
+        { timeout: 60000 },
+      );
+      await page.keyboard.press("j");
+      await page.waitForFunction(
+        (id) => window.__dimension404.runtime.actions.action.id === id,
+        ability,
+        { timeout: 60000 },
+      );
+    }
     await page.evaluate(
       () =>
         (window.__dimension404.runtime.controller.state.progress.archetype =
@@ -309,6 +383,23 @@ if (!process.env.BROWSER_EXECUTABLE) {
         () => window.__dimension404.runtime.operator.pose.state,
       ),
       "swim",
+    );
+    await page.evaluate(() => {
+      const s = window.__dimension404.runtime.controller.state;
+      s.progress.abilities = ["passo_corrente", "senso_corrente"];
+      s.player.energy = 100;
+    });
+    await page.waitForFunction(
+      () => window.__dimension404.runtime.actions.action.remaining === 0,
+      null,
+      { timeout: 60000 },
+    );
+    await page.keyboard.press("k");
+    await page.waitForFunction(
+      () =>
+        window.__dimension404.runtime.actions.action.id === "senso_corrente",
+      null,
+      { timeout: 60000 },
     );
     await page.screenshot({ path: ".qa/dimension-underwater.png" });
     // Graceful hardware/context failure, with no stale input or overlay.

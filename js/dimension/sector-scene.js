@@ -194,10 +194,11 @@ export function createSector({ environmentProfile } = {}) {
   batchScenery(chunks);
   batchStatic(scene, new Set([shadow, water]));
   scene.updateMatrixWorld(true);
-  function update(c, t) {
+  function update(c, t, reducedMotion = false) {
     for (const chunk of chunks)
       chunk.group.visible = Math.hypot(c.x - chunk.x, c.z - chunk.z) < 112;
-    landmarks.update(t);
+    landmarks.update(t, reducedMotion);
+    materials.update(t, reducedMotion);
     environment.update(t);
     const ground =
       c.y < -0.3

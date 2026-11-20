@@ -1,3 +1,4 @@
+import { NUCLEO_FORMS, getFormSpeedMultiplier } from "../data/nucleo-forms.js";
 import {
   SECTOR,
   clamp,
@@ -23,6 +24,7 @@ export class SpatialController {
     this.mode = "TERRA";
     this.dash = 0;
     this.dashCooldown = 0;
+    this.actionBoost = 0;
     this.time = 0;
   }
   step(dt, input, yaw = 0) {
@@ -61,6 +63,7 @@ export class SpatialController {
   }
   integrate(dt, keys, yaw) {
     this.time += dt;
+    this.actionBoost = Math.max(0, this.actionBoost - dt);
     this.dash = Math.max(0, this.dash - dt);
     this.dashCooldown = Math.max(0, this.dashCooldown - dt);
     const profile = profileFor(this.state.progress),
@@ -96,8 +99,22 @@ export class SpatialController {
         this.state.player.maxEnergy ?? 100,
         energy + dt * 7,
       );
-    const dx = -Math.sin(yaw) * forward + Math.cos(yaw) * side,
+    if (
+      !this.flying &&
+      !swimming &&
+      !this.boating &&
+      this.state.progress.archetype === "nucleo_dez_forma"
+    )
+      speed *= getFormSpeedMultiplier(
+        NUCLEO_FORMS[this.state.player.nucleoForm],
+      );
+    if (this.actionBoost > 0) speed *= 1.55;
+    let dx = -Math.sin(yaw) * forward + Math.cos(yaw) * side,
       dz = -Math.cos(yaw) * forward - Math.sin(yaw) * side;
+    if (this.actionBoost > 0 && !forward && !side) {
+      dx = Math.sin(this.yaw);
+      dz = Math.cos(this.yaw);
+    }
     const blend = 1 - Math.exp(-dt * (this.flying ? 5 : 12));
     this.vx += (dx * speed - this.vx) * blend;
     this.vz += (dz * speed - this.vz) * blend;

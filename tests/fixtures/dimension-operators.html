@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="pt-BR">
+  <meta charset="utf-8" /><title>Limiar — operadores lvl 1</title
+  ><style>
+    body {
+      margin: 0;
+      background: #131d2b;
+      color: #d5e8e5;
+      font: 14px monospace;
+    }
+    header {
+      padding: 20px;
+    }
+    canvas {
+      display: block;
+      image-rendering: pixelated;
+    }
+    nav {
+      display: flex;
+      justify-content: space-around;
+      padding: 15px;
+      color: #c5eae3;
+    }
+  </style>
+  <header>
+    BLOCO 404 · ESTUDO 3D INTEGRADO · IDENTIDADE LVL 1<br />Modelo low-poly
+    articulado · texturas pixel · mesma construção usada no gameplay
+  </header>
+  <div id="view"></div>
+  <nav>
+    <span>NÚCLEO X10 · BRACELETE</span><span>MOTOR BIO-FORJA</span
+    ><span>MARÉ ASTRAL</span><span>DOMÍNIO ANCIÃO</span>
+  </nav>
+  <script type="module">
+    import * as T from "../../js/vendor/three.module.js";
+    import { createOperator } from "../../js/dimension/operator.js";
+    const renderer = new T.WebGLRenderer({
+      antialias: false,
+      preserveDrawingBuffer: true,
+    });
+    renderer.setSize(1400, 660);
+    renderer.outputColorSpace = T.SRGBColorSpace;
+    renderer.setClearColor(0x172331);
+    document.querySelector("#view").append(renderer.domElement);
+    const scene = new T.Scene();
+    scene.add(new T.HemisphereLight(0xd8f6fa, 0x6d6070, 2));
+    const sun = new T.DirectionalLight(0xffebcf, 2.5);
+    sun.position.set(-3, 6, 7);
+    scene.add(sun);
+    const camera = new T.PerspectiveCamera(29, 1400 / 660, 0.1, 80);
+    camera.position.set(0, 2.4, 7.8);
+    camera.lookAt(0, 1.1, 0);
+    const ids = [
+      "nucleo_dez_forma",
+      "motor_bio_forja",
+      "mare_astral",
+      "lamina_dominio_anciao",
+    ];
+    const operators = ids.map((archetype, i) => {
+      const op = createOperator({ archetype });
+      scene.add(op.root);
+      return op;
+    });
+    const ground = new T.Mesh(
+      new T.PlaneGeometry(24, 10),
+      new T.MeshLambertMaterial({ color: 0x314452 }),
+    );
+    ground.rotation.x = -Math.PI / 2;
+    ground.position.y = -0.04;
+    scene.add(ground);
+    window.sampleOperators = (action = false) => {
+      operators.forEach((op, i) => {
+        for (let f = 0; f < 90; f++)
+          op.animate(
+            {
+              x: (i - 1.5) * 1.9,
+              y: 0,
+              z: 0,
+              yaw: -0.23,
+              vy: 0,
+              vx: 0,
+              vz: 0,
+              grounded: true,
+              speed: 0,
+              mode: "TERRA",
+            },
+            f / 60,
+            {
+              action: action
+                ? {
+                    duration: 1,
+                    remaining: 0.5,
+                    id: [
+                      "forma_veloz",
+                      "bio_dash",
+                      "passo_corrente",
+                      "golpe_ruptura",
+                    ][i],
+                  }
+                : null,
+            },
+          );
+      });
+      renderer.render(scene, camera);
+      return renderer.info.render;
+    };
+    window.sampleOperators();
+    window.ready = true;
+  </script>
+</html>

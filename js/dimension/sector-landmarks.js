@@ -16,6 +16,7 @@ import {
 } from "./sector-meshes.js";
 
 export function buildLandmarks(scene, layout, m) {
+  const ornaments = [];
   const roots = new Map(),
     cameraSurfaces = [];
   function root(id) {
@@ -294,15 +295,35 @@ export function buildLandmarks(scene, layout, m) {
     shard.scale.set(1.2, 1.15, 1.2);
     for (const dx of [-1.65, 1.65])
       box(ruins, m.violet, 0.12, 0.06, 0.55, p.x + dx, p.top + 0.025, p.z);
+    // Recessed-looking pixel inlays remain decorative: platform/collision tops unchanged.
+    for (const side of [-1, 1]) {
+      box(
+        ruins,
+        m.trim,
+        0.65,
+        0.018,
+        0.06,
+        p.x + side * 0.95,
+        p.top + 0.012,
+        p.z - 0.8,
+      );
+      box(
+        ruins,
+        m.violet,
+        0.08,
+        0.024,
+        0.28,
+        p.x + side * 0.95,
+        p.top + 0.022,
+        p.z - 0.7,
+      );
+    }
     cylinder(ruins, m.trim, 0.33, 0.48, 0.2, p.x, p.top + 0.08, p.z, 6);
-    addMesh(
-      ruins,
-      new T.OctahedronGeometry(0.24),
-      m.violet,
-      p.x,
-      p.top + 0.55,
-      p.z,
-    );
+    const floating = new T.Group();
+    floating.position.set(p.x, p.top + 0.55, p.z);
+    ruins.add(floating);
+    ornaments.push({ root: floating, base: p.top + 0.55, phase: p.x });
+    addMesh(floating, new T.OctahedronGeometry(0.24), m.violet, 0, 0, 0);
   }
   for (const s of SOLIDS.filter((s) => s.id.startsWith("pillar-"))) {
     cylinder(ruins, m.floor, 0.76, 0.78, 0.3, s.x, s.bottom + 0.1, s.z, 6);
@@ -339,7 +360,10 @@ export function buildLandmarks(scene, layout, m) {
     );
     inset.rotation.z = a;
   }
-  batchStatic(hoop);
+  const crystal = addMesh(hoop, new T.OctahedronGeometry(2), m.teal);
+  crystal.scale.set(0.7, 1.7, 0.7);
+  ornaments.push({ root: crystal, base: 0, phase: 1 });
+  batchStatic(hoop, new Set([crystal]));
   // Keep POI roots/metadata; merge only their opaque static children.
   for (const group of roots.values())
     batchStatic(group, new Set([anchor, ring]));
@@ -351,7 +375,18 @@ export function buildLandmarks(scene, layout, m) {
     beamPivot,
     coreLight,
     lamp,
-    update(t) {
+    update(t, reducedMotion = false) {
+      const clock = reducedMotion ? 0 : t;
+      for (const o of ornaments) {
+        o.root.position.y = o.base + Math.sin(clock * 1.3 + o.phase) * 0.08;
+        o.root.rotation.y = clock * 0.25;
+      }
+      m.amber.color
+        .setHex(0xffdaa1)
+        .multiplyScalar(reducedMotion ? 1 : 0.9 + Math.sin(t * 2) * 0.065);
+      m.violet.color
+        .setHex(0xc3a0eb)
+        .multiplyScalar(reducedMotion ? 1 : 0.92 + Math.sin(t * 1.6) * 0.07);
       anchor.rotation.y = t * 0.65;
       anchor.position.y = ay + 3.1 + Math.sin(t * 2) * 0.2;
       ring.rotation.z = t * 0.25;

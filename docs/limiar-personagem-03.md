@@ -1,5 +1,9 @@
 # Limiar — Passo 3: personagem, animação e câmera
 
+> Histórico da primeira revisão. A aparência genérica foi substituída pela
+> [revisão de identidade lvl 1 e ações](limiar-identidade-lvl1-03.md), com rosto,
+> bracelete, paletas corretas, habilidades espaciais e animações ambientais.
+
 ## Implementado
 
 O operador continua sendo um modelo 3D low-poly procedural, preservando as cores e acessórios dos quatro arquétipos. Agora há articulações de joelhos/cotovelos, cabeça com pivô próprio, detalhes de cintura/peito e uma textura procedural de tecido/painéis de 32×32 pixels com NearestFilter. Não é um personagem final desenhado à mão e não foi substituído por um sprite plano.

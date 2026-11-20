@@ -27,6 +27,8 @@ O [Passo 2 — estruturas e marcos](docs/limiar-estruturas-02.md) refina os POIs
 acrescenta composição com rotas protegidas e integra bússola/minimapa.
 O [Passo 3 — personagem e câmera](docs/limiar-personagem-03.md) acrescenta
 poses articuladas e enquadramento suave, com um guia de sprites, texturas e modelos 3D.
+A [revisão lvl 1](docs/limiar-identidade-lvl1-03.md) alinha os quatro trajes às sprites,
+integra bracelete/formas e ações J/K/T/R, além de vento, lanternas e cristais animados.
 
 ## Testes
 

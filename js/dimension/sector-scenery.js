@@ -8,7 +8,7 @@ import {
 } from "./sector-meshes.js";
 
 export function buildScenery(layout, chunkAt, m) {
-  const greens = [0x577d78, 0x456e70, 0x78998a, 0x648478];
+  const greens = [0x487f65, 0x376d63, 0x78a274, 0x5f9277];
   for (const p of layout.props) {
     const parent = chunkAt(p.x, p.z),
       s = p.scale;

@@ -403,9 +403,7 @@ export function createSpatialWorld({
       );
       flatPlane.rotation.set(-smooth * 0.8, smooth * 0.6, smooth * 0.08);
       const underwater = camera.position.y < -0.25;
-      world.scene.fog.color.set(underwater ? "#235b73" : "#66638d");
-      world.scene.fog.density = underwater ? 0.042 : 0.0065;
-      world.scene.background.set(underwater ? "#235b73" : "#454477");
+      world.environment.setCamera(camera, underwater);
       mount.classList.toggle("underwater", underwater);
       mount.style.setProperty(
         "--rupture",
@@ -464,13 +462,15 @@ export function createSpatialWorld({
       });
       for (const g of geometries) g.dispose();
       for (const m of materials) m.dispose();
-      for (const t of textures) t.dispose();
+      for (const t of textures)
+        if (!world.environment.textures.includes(t)) t.dispose();
     }
     function dispose() {
       if (disposed) return;
       disposed = true;
       listener.abort();
       reset();
+      world.environment.dispose();
       disposeTree(world.scene);
       renderer.dispose();
       renderer.forceContextLoss();
@@ -493,6 +493,7 @@ export function createSpatialWorld({
     };
   } catch (error) {
     listener.abort();
+    world?.environment.dispose();
     world?.scene.traverse((o) => {
       o.geometry?.dispose();
       for (const m of Array.isArray(o.material)

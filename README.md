@@ -21,6 +21,8 @@ Astral, plataformas, escalada, barco pilotável, farol e Núcleo de Âncora.
 Para experimentar os quatro modelos sem save, abra
 [`docs/setor-limiar-3d.html`](docs/setor-limiar-3d.html).
 [Arquitetura, controles, limites e validação](docs/evolucao-dimensional.md).
+A [lapidação ambiental 01](docs/limiar-base-ambiental-01.md) traz materiais de
+terreno, água e atmosfera reutilizáveis, preservando o relevo e os controles.
 
 ## Testes
 

@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Setor Limiar — laboratório 3D / Bloco 404</title>
+    <style>
+      body {
+        margin: 0;
+        background: #21283e;
+        color: #c9efe4;
+        font: 12px monospace;
+      }
+      #game {
+        width: 100vw;
+        height: 100vh;
+        display: block;
+      }
+      #lab {
+        position: fixed;
+        z-index: 6000;
+        top: 68px;
+        left: 50%;
+        transform: translateX(-50%);
+        display: flex;
+        gap: 7px;
+        align-items: center;
+        background: #192b3edb;
+        border: 1px solid #91d6c56b;
+        padding: 7px 12px;
+        border-radius: 3px;
+        font-size: 9px;
+        max-width: 94vw;
+      }
+      #lab select,
+      #lab button {
+        background: #263b4d;
+        color: #d9fff0;
+        border: 1px solid #91d6c566;
+        padding: 5px;
+        font: 10px monospace;
+      }
+      #lab a {
+        color: #e7d6a4;
+        text-decoration: none;
+      }
+      @media (max-width: 700px) {
+        #lab {
+          top: 60px;
+          font-size: 0;
+        }
+        #lab a {
+          font-size: 8px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <canvas id="game" width="1100" height="700"></canvas>
+    <nav id="lab" aria-label="Laboratório sem save">
+      LAB / SEM SAVE
+      <select id="archetype" aria-label="Arquétipo experimental">
+        <option value="nucleo_dez_forma">Núcleo X10 · voo</option>
+        <option value="mare_astral">Maré Astral · mergulho</option>
+        <option value="motor_bio_forja">Bio-Forja · armadura</option>
+        <option value="lamina_dominio_anciao">Lâmina · parkour</option></select
+      ><button id="enter">ENTRAR</button
+      ><a href="../index.html">JOGO COMPLETO ↗</a>
+    </nav>
+    <script type="module">
+      import { initDimensionModule } from "../js/dimension/ui.js";
+      import { ensureHealth } from "../js/game/health.js";
+      const state = {
+        world: { currentMapId: "laboratorio_dimensional" },
+        player: { x: 0, y: 0, facing: "down", energy: 100, maxEnergy: 100 },
+        progress: {
+          archetype: "nucleo_dez_forma",
+          archetypeProgress: {},
+          inventory: [],
+          flags: {},
+        },
+      };
+      const canvas = document.querySelector("#game"),
+        ctx = canvas.getContext("2d");
+      ctx.fillStyle = "#232b42";
+      ctx.fillRect(0, 0, 1100, 700);
+      ctx.strokeStyle = "#5d838350";
+      for (let i = -20; i < 30; i++) {
+        ctx.beginPath();
+        ctx.moveTo(i * 60, 0);
+        ctx.lineTo(i * 60 + 600, 700);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(i * 60, 700);
+        ctx.lineTo(i * 60 + 600, 0);
+        ctx.stroke();
+      }
+      ctx.fillStyle = "#c8fff0";
+      ctx.font = "26px monospace";
+      ctx.textAlign = "center";
+      ctx.fillText("CONTENÇÃO DIMENSIONAL // NÍVEL 1", 550, 300);
+      ctx.font = "14px monospace";
+      ctx.fillText(
+        "Laboratório isolado. Nenhum save é lido ou alterado.",
+        550,
+        340,
+      );
+      const dimensional = initDimensionModule({
+        state,
+        canvas,
+        clearInput: () => {},
+        canEnter: () => true,
+        save: () => {},
+      });
+      dimensional.setAvailable(true);
+      document.querySelector("#dimension-entry").style.display = "none";
+      document.querySelector("#enter").onclick = () =>
+        dimensional.manager.enter();
+      document.querySelector("#archetype").onchange = (e) => {
+        state.progress.archetype = e.target.value;
+        ensureHealth(state.player, state.progress);
+      };
+      let last = performance.now();
+      function frame(now) {
+        dimensional.manager.tick(Math.min(0.033, (now - last) / 1000));
+        last = now;
+        requestAnimationFrame(frame);
+      }
+      requestAnimationFrame(frame);
+      // Deliberate click starts WebGL; no autoplay audio and no storage writes.
+      window.labDimension = dimensional.manager;
+    </script>
+  </body>
+</html>

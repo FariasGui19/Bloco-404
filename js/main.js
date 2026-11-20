@@ -1,3 +1,4 @@
+import { initDimensionModule } from './dimension/ui.js';
 import { avancarAnimacaoDocas } from './engine/docas-animation.js';
 import { SPRITES_PESQUEIRO_03 } from './engine/docas-pesqueiro-03.js';
 import { SPRITES_TENTACULO_02 } from './engine/docas-tentaculo-02.js';
@@ -127,6 +128,16 @@ const immersive = new ImmersiveViewManager({
   state, camera, clearInput: resetInput, visit: registrarVisitaImersiva, sound: playImmersiveSound,
 });
 const renderImmersive = initImmersiveView(immersive);
+// Opt-in 3D layer; Three.js is imported only after a deliberate rupture.
+const dimensional = initDimensionModule({
+  state, canvas, clearInput: resetInput, save: () => saveGame(),
+  canEnter: () => gameStarted && !!state.progress.archetype && !state.world.isLoading
+    && !document.body.classList.contains('in-menu') && !immersive.active
+    && state.world.currentMap?.meta?.camera !== 'retro-fps'
+    && !travessiaAtiva() && !mapaTaticoAberto() && !isDialogueOpen()
+    && !isCutsceneOpen() && !isCodexOpen() && !isArchetypeCardsOpen()
+    && !isNucleoWheelOpen() && !isElevatorMenuOpen() && !morfadorAberto(),
+});
 
 await loadSprites([
   {
@@ -1453,6 +1464,13 @@ async function frame(now) {
   // stop simulation, but must not freeze the dock's sea, hull or tentacle.
   avancarAnimacaoDocas(state, (now-last)/1000, document.hidden);
   last = now;
+
+  dimensional.setAvailable(dimensional.manager.active || dimensional.manager.canEnter());
+  if (dimensional.manager.active) {
+    dimensional.manager.tick(dt);
+    endInputFrame();
+    return; // The entire 2D simulation/HUD stays paused, not just its renderer.
+  }
 
   atualizarClima(state.clima, dt);
   await update(dt);

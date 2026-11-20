@@ -25,7 +25,11 @@ export function createOperatorMotion() {
   };
   return {
     pose,
-    update(c, time, { reducedMotion = false, archetype = null } = {}) {
+    update(
+      c,
+      time,
+      { reducedMotion = false, archetype = null, gait = 1 } = {},
+    ) {
       const dt = lastTime === null ? 0 : clamp(time - lastTime, 0, 0.05);
       lastTime = time;
       const turn =
@@ -55,7 +59,7 @@ export function createOperatorMotion() {
       if (c.grounded && !wasGrounded) impact = 0.13;
       wasGrounded = c.grounded;
       impact *= Math.exp(-dt * 13);
-      phase += dt * (swim ? 5 : climb ? 6 : Math.min(18, speed * 1.9));
+      phase += dt * gait * (swim ? 5 : climb ? 6 : Math.min(18, speed * 1.9));
       const a = 1 - Math.exp(-dt * 12),
         moving = Math.min(1, speed / 5),
         flight = state === "flight";

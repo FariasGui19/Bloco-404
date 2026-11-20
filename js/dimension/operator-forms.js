@@ -1,3 +1,4 @@
+import { createLatticeBracelet } from "./operator-bracelet.js";
 import * as T from "../vendor/three.module.js";
 import { createSculptTools } from "./operator-sculpt.js";
 import { batchStatic } from "./sector-meshes.js";
@@ -48,10 +49,23 @@ export function createNucleoForm(form) {
     });
   const green = new T.MeshBasicMaterial({ color: 0x74ff9a }),
     core = new T.MeshBasicMaterial({ color: brute ? 0xffc554 : 0x74ff9a });
+  const steamMaterial = brute
+    ? new T.MeshBasicMaterial({
+        color: 0xb0c5c5,
+        transparent: true,
+        opacity: 0.26,
+        depthWrite: false,
+      })
+    : null;
   const { loft, ellipsoid, tube, ring, mesh } = createSculptTools(),
     limbs = [],
     pivots = [body, head],
-    jets = [];
+    jets = [],
+    bracelets = [],
+    pistons = [],
+    steam = new T.Group();
+  steam.name = "industrial-exhaust";
+  body.add(steam);
   const plate = (pa, ma, w, h, d, x, y, z) =>
     loft(
       pa,
@@ -78,6 +92,71 @@ export function createNucleoForm(form) {
     plate(head, trim, 0.24, 0.35, 0.03, 0, 0, 0.218);
     plate(head, core, 0.18, 0.29, 0.025, 0, 0, 0.24);
     for (const side of [-1, 1]) {
+      // Service fasteners, forward ribs and sliding knee/hip actuators.
+      for (let i = 0; i < 3; i++) {
+        ellipsoid(
+          body,
+          trim,
+          0.018,
+          0.018,
+          0.012,
+          side * 0.32,
+          1.05 + i * 0.15,
+          0.248,
+        );
+        plate(
+          body,
+          dark,
+          0.12,
+          0.022,
+          0.025,
+          side * 0.22,
+          1.1 + i * 0.075,
+          0.26,
+        );
+      }
+      const piston = new T.Group();
+      piston.position.set(side * 0.33, 0.86, 0.08);
+      body.add(piston);
+      loft(
+        piston,
+        trim,
+        [
+          [-0.23, 0.022, 0.022],
+          [0.14, 0.022, 0.022],
+        ],
+        0,
+        0,
+        0,
+        6,
+      );
+      loft(
+        piston,
+        dark,
+        [
+          [-0.22, 0.037, 0.036],
+          [-0.05, 0.037, 0.036],
+        ],
+        0,
+        0,
+        0,
+        8,
+      );
+      batchStatic(piston);
+      pistons.push(piston);
+      for (let j = 0; j < 2; j++) {
+        const puff = ellipsoid(
+          steam,
+          dark,
+          0.045 + j * 0.018,
+          0.07 + j * 0.025,
+          0.045,
+          side * 0.34,
+          1.8 + j * 0.12,
+          -0.28,
+        );
+        puff.material = steamMaterial;
+      }
       tube(
         body,
         trim,
@@ -340,8 +419,8 @@ export function createNucleoForm(form) {
       );
       claw.rotation.z = Math.PI;
     }
-    const dial = ring(elbow, green, 0.045, 0.009, 0, -0.1, 0.142);
-    dial.name = "form-bracelet-emblem";
+    if (side === -1)
+      bracelets.push(createLatticeBracelet(elbow, { industrial: brute }));
     if (!brute) {
       const blade = mesh(
         elbow,
@@ -397,14 +476,36 @@ export function createNucleoForm(form) {
     const mallet = mesh(
       hammer,
       shell,
-      new T.CylinderGeometry(0.17, 0.17, 0.48, 10),
+      new T.CylinderGeometry(0.21, 0.21, 0.62, 10),
       0,
       -0.78,
       0.08,
     );
     mallet.rotation.z = Math.PI / 2;
-    ring(hammer, trim, 0.172, 0.015, -0.21, -0.78, 0.08).rotation.y =
-      Math.PI / 2;
+    for (const side of [-1, 1]) {
+      ring(hammer, trim, 0.214, 0.018, side * 0.27, -0.78, 0.08).rotation.y =
+        Math.PI / 2;
+      const face = mesh(
+        hammer,
+        dark,
+        new T.CylinderGeometry(0.18, 0.18, 0.025, 8),
+        side * 0.32,
+        -0.78,
+        0.08,
+      );
+      face.rotation.z = Math.PI / 2;
+      tube(
+        hammer,
+        core,
+        [
+          [side * 0.1, -0.98, 0.12],
+          [side * 0.1, -0.85, 0.28],
+          [side * 0.1, -0.65, 0.2],
+        ],
+        0.012,
+      );
+    }
+    hammer.scale.set(1.1, 1.06, 1.1);
   }
   const vfx = createOperatorVFX(
     body,
@@ -412,6 +513,8 @@ export function createNucleoForm(form) {
     brute ? 0xffc554 : 0x74ff9a,
     kind,
   );
+  batchStatic(steam);
+  steam.visible = false;
   const excluded = new Set([...jets, ...vfx.excluded]);
   for (const p of pivots) batchStatic(p, excluded);
   if (hammer) batchStatic(hammer);
@@ -423,18 +526,39 @@ export function createNucleoForm(form) {
       return motion.pose;
     },
     animate(c, t, options = {}) {
-      const pose = motion.update(c, t, options),
+      const pose = motion.update(c, t, {
+          ...options,
+          gait: brute ? 0.68 : 1.4,
+        }),
         p = samplePerformance(options.action, kind, t, options.reducedMotion);
       root.position.set(c.x, c.y, c.z);
       root.rotation.y = c.yaw;
+      const running =
+        !c.flying && c.grounded && !c.boating
+          ? Math.min(1, (c.speed ?? 0) / 8)
+          : 0;
       body.rotation.set(
-        (brute ? pose.pitch * 0.45 : pose.pitch * 0.6) + p.lean,
+        (brute ? pose.pitch * 0.45 : pose.pitch * 0.6 + running * 0.25) +
+          p.lean,
         p.twist + (pose.torsoYaw ?? 0),
         pose.bank * 0.6,
       );
-      body.position.y = (brute ? 0 : 0.018) + pose.bob - p.crouch;
-      const scale = p.transform ? p.assembly : 1;
-      body.scale.setScalar(scale);
+      body.position.y =
+        (brute ? 0 : 0.018) + pose.bob * (brute ? 0.45 : 1) - p.crouch;
+      body.scale.set(brute ? 1.2 : 1, brute ? 1.28 : 1, brute ? 1.13 : 1);
+      pistons.forEach((piston, i) => {
+        piston.position.y =
+          0.86 +
+          (options.reducedMotion
+            ? 0
+            : Math.sin(t * 3.5 + i * Math.PI) * running * 0.025);
+      });
+      steam.visible =
+        brute &&
+        !options.reducedMotion &&
+        (p.attack || p.transform || (!running && Math.sin(t * 2) > 0.45));
+      steam.position.y = options.reducedMotion ? 0 : (t * 0.35) % 0.12;
+      steam.scale.setScalar(1 + p.flare * 0.5);
       head.rotation.set(p.headPitch, -p.twist * 0.4, 0);
       limbs.forEach(({ leg, knee, arm, elbow, side }, i) => {
         leg.rotation.x = pose.legs[i] * (brute ? 0.55 : 0.8) + p.legs[i];
@@ -455,8 +579,17 @@ export function createNucleoForm(form) {
         j.visible = c.flying;
         j.scale.y = pose.exhaust;
       }
-      vfx.update(p, t, options.reducedMotion);
-      root.userData.performance = { action: p.id, phase: p.u, model: kind };
+      bracelets.forEach((bracelet) =>
+        bracelet.update(p, options.reducedMotion),
+      );
+      vfx.update(p, t, options.reducedMotion, c);
+      root.userData.performance = {
+        action: p.id,
+        phase: p.u,
+        model: kind,
+        stage: p.stage,
+        variant: p.variant,
+      };
     },
   };
 }

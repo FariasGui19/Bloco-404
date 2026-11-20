@@ -157,6 +157,14 @@
             <option value="lamina_dominio_anciao">Domínio Ancião</option>
           </select></label
         >
+        <label
+          >ENQUADRAMENTO
+          <select id="sculpt-detail">
+            <option value="body">Corpo inteiro</option>
+            <option value="face">Rosto / cabeça</option>
+            <option value="bracelet">Bracelete</option>
+          </select></label
+        >
         <button data-sculpt-angle="0">FRENTE</button
         ><button data-sculpt-angle="-0.65">TRÊS-QUARTOS</button
         ><button data-sculpt-angle="3.14159265">COSTAS</button>
@@ -182,12 +190,19 @@
             <option value="flight">Voo</option>
           </select></label
         >
-        <button data-performance="primary">J · AÇÃO</button
+        <button data-performance="primary">J · COMBO</button
         ><button data-performance="secondary">K · LEITURA</button
+        ><button data-performance="signature">L · ESPECIAL</button
         ><button data-performance="transform">T · TRANSFORMAÇÃO</button
         ><button data-performance="select">R · BRACELETE</button>
       </div>
-      <label>Vestuário <select id="sculpt-clothing"><option value="suit">Trajes equipados (X10 civil)</option><option value="civilian">Roupa convencional</option></select></label>
+      <label
+        >Vestuário
+        <select id="sculpt-clothing">
+          <option value="suit">Trajes equipados (X10 civil)</option>
+          <option value="civilian">Roupa convencional</option>
+        </select></label
+      >
       <div id="sculpt-view"></div>
       <div class="sculpt-labels">
         <span>X10 · BRACELETE</span><span>BIO-FORJA · BIOMECÂNICA</span
@@ -197,7 +212,8 @@
         Arraste para girar. Prévia artística com os mesmos modelos/animações do
         jogo. Quebra Sistemas nesta galeria NÃO desbloqueia a forma (nível 4).
         Feche e use ENTRAR: T ativa/retorna; R seleciona uma forma já
-        disponível. Nenhum save é alterado.
+        disponível. J alterna gestos; L executa a variação especial do mesmo
+        poder (mesma energia e recarga). Nenhum save é alterado.
       </p>
     </dialog>
     <script type="module">
@@ -292,6 +308,7 @@
           );
           window.labGallery = gallery;
           document.querySelector("#sculpt-form").value = "";
+          document.querySelector("#sculpt-detail").value = "body";
           document.querySelector("#sculpt-motion").value = "idle";
           const selected = innerWidth < 700 ? state.progress.archetype : "all";
           document.querySelector("#sculpt-focus").value = selected;
@@ -318,6 +335,8 @@
         event.preventDefault();
         closeGallery();
       });
+      document.querySelector("#sculpt-detail").onchange = (event) =>
+        gallery?.setDetail(event.target.value);
       document.querySelector("#sculpt-focus").onchange = (event) =>
         gallery?.setFocus(event.target.value);
       for (const button of document.querySelectorAll("[data-sculpt-angle]"))
@@ -328,14 +347,15 @@
         gallery?.setFocus("nucleo_dez_forma");
         document.querySelector("#sculpt-focus").value = "nucleo_dez_forma";
       };
-      document.querySelector("#sculpt-clothing").onchange = (event) => gallery?.setClothing(event.target.value === "suit");
+      document.querySelector("#sculpt-clothing").onchange = (event) =>
+        gallery?.setClothing(event.target.value === "suit");
       document.querySelector("#sculpt-motion").onchange = (event) =>
         gallery?.setLocomotion(event.target.value);
       function previewAction(action) {
         gallery?.play(action);
         if (gallery)
           document.querySelector("#sculpt-form").value =
-            gallery.models[0].root.userData.identity.form ?? "";
+            gallery.preview.form ?? "";
       }
       for (const button of document.querySelectorAll("[data-performance]"))
         button.onclick = () => previewAction(button.dataset.performance);
@@ -344,6 +364,7 @@
         const action = {
           KeyJ: "primary",
           KeyK: "secondary",
+          KeyL: "signature",
           KeyT: "transform",
           KeyR: "select",
         }[event.code];

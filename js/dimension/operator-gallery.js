@@ -1,3 +1,4 @@
+import { deferAppearance } from "./operator-performance.js";
 import * as T from "../vendor/three.module.js";
 import { createOperator, OPERATOR_STYLES } from "./operator.js";
 
@@ -31,7 +32,16 @@ export function createOperatorGallery(mount) {
   scene.add(floor);
   const ids = Object.keys(OPERATOR_STYLES),
     models = ids.map((id) => {
-      const op = createOperator({ archetype: id }, { equippedSuit: ({ motor_bio_forja: "bio_forja", mare_astral: "mare", lamina_dominio_anciao: "dominio" })[id] });
+      const op = createOperator(
+        { archetype: id },
+        {
+          equippedSuit: {
+            motor_bio_forja: "bio_forja",
+            mare_astral: "mare",
+            lamina_dominio_anciao: "dominio",
+          }[id],
+        },
+      );
       scene.add(op.root);
       return op;
     });
@@ -54,7 +64,11 @@ export function createOperatorGallery(mount) {
   let previewAction = null,
     previewRemaining = 0,
     locomotion = "idle",
-    lastPreviewForm = "forma_veloz";
+    lastPreviewForm = "forma_veloz",
+    pendingForm = undefined,
+    pendingClothing = null,
+    previewVariant = 0,
+    combo = 0;
   let focus = "all",
     yaw = -0.28,
     drag = false,
@@ -63,6 +77,8 @@ export function createOperatorGallery(mount) {
     time = 0,
     last = performance.now(),
     raf;
+  const motionPreference = matchMedia("(prefers-reduced-motion: reduce)");
+  let detail = "body";
   const events = new AbortController();
   const pose = {
     x: 0,
@@ -84,9 +100,23 @@ export function createOperatorGallery(mount) {
     const distance =
       focus === "all"
         ? Math.max(4.6, 3.65 / camera.aspect / Math.tan((Math.PI * 32) / 360))
-        : Math.max(3.7, 0.7 / camera.aspect / Math.tan((Math.PI * 32) / 360));
-    camera.position.set(0, 1 + distance * 0.13, distance);
-    camera.lookAt(0, 1, 0);
+        : Math.max(4.6, 0.85 / camera.aspect / Math.tan((Math.PI * 32) / 360));
+    if (focus !== "all" && detail !== "body") {
+      const form = models[0].root.userData.identity.form;
+      const height =
+        focus === ids[0] && form ? (form === "forma_bruta" ? 2 : 1.25) : 1.73;
+      const x = detail === "bracelet" ? -0.36 : 0;
+      const y = detail === "bracelet" ? height - 0.73 : height;
+      const d = Math.max(
+        detail === "bracelet" ? 1.1 : 1.2,
+        0.26 / camera.aspect / Math.tan((Math.PI * 32) / 360),
+      );
+      camera.position.set(x, y + 0.05, d);
+      camera.lookAt(x, y, 0);
+    } else {
+      camera.position.set(0, 1 + distance * 0.13, distance);
+      camera.lookAt(0, 1, 0);
+    }
     camera.updateProjectionMatrix();
   }
   const observer = new ResizeObserver(resize);
@@ -128,6 +158,46 @@ export function createOperatorGallery(mount) {
         Math.min(0.05, Math.max(0, (now - lastPreview) / 1000)),
     );
     lastPreview = now;
+    if (
+      pendingForm !== undefined &&
+      !deferAppearance(
+        {
+          id: previewAction,
+          remaining: previewRemaining,
+          duration: 1.4,
+        },
+        motionPreference.matches,
+      )
+    ) {
+      const old = models[0];
+      scene.remove(old.root);
+      disposeModel(old.root);
+      models[0] = createOperator(
+        { archetype: ids[0] },
+        { nucleoForm: pendingForm },
+      );
+      scene.add(models[0].root);
+      pendingForm = undefined;
+      resize();
+    }
+    if (
+      pendingClothing &&
+      !deferAppearance(
+        { id: previewAction, remaining: previewRemaining, duration: 1.4 },
+        motionPreference.matches,
+      )
+    ) {
+      const { index, equippedSuit } = pendingClothing;
+      const old = models[index];
+      scene.remove(old.root);
+      disposeModel(old.root);
+      models[index] = createOperator(
+        { archetype: ids[index] },
+        { equippedSuit },
+      );
+      scene.add(models[index].root);
+      pendingClothing = null;
+    }
     models.forEach((op, i) => {
       op.root.visible = focus === "all" || focus === ids[i];
       const primary = [
@@ -145,14 +215,14 @@ export function createOperatorGallery(mount) {
       const action =
         previewRemaining > 0
           ? {
-              id:
-                previewAction === "primary"
-                  ? op.root.userData.identity.form === "forma_bruta"
-                    ? "pancada_quebra"
-                    : primary
-                  : previewAction === "secondary"
-                    ? secondary
-                    : previewAction,
+              id: ["primary", "signature"].includes(previewAction)
+                ? op.root.userData.identity.form === "forma_bruta"
+                  ? "pancada_quebra"
+                  : primary
+                : previewAction === "secondary"
+                  ? secondary
+                  : previewAction,
+              variant: previewVariant,
               selected: models[0].root.userData.identity.form ?? "forma_veloz",
               remaining: previewRemaining,
               duration: 1.4,
@@ -180,7 +250,7 @@ export function createOperatorGallery(mount) {
           yaw,
         },
         time,
-        { action },
+        { action, reducedMotion: motionPreference.matches },
       );
     });
     renderer.render(scene, camera);
@@ -193,21 +263,30 @@ export function createOperatorGallery(mount) {
     models,
     renderer,
     setClothing(equipped) {
+      pendingForm = undefined;
+      pendingClothing = null;
       models.forEach((old, i) => {
         scene.remove(old.root);
         disposeModel(old.root);
-        models[i] = createOperator({ archetype: ids[i] }, { equippedSuit: equipped ? ({ motor_bio_forja: "bio_forja", mare_astral: "mare", lamina_dominio_anciao: "dominio" })[ids[i]] : null });
+        models[i] = createOperator(
+          { archetype: ids[i] },
+          {
+            equippedSuit: equipped
+              ? {
+                  motor_bio_forja: "bio_forja",
+                  mare_astral: "mare",
+                  lamina_dominio_anciao: "dominio",
+                }[ids[i]]
+              : null,
+          },
+        );
         scene.add(models[i].root);
       });
     },
     setForm(form) {
       const id = ["forma_veloz", "forma_bruta"].includes(form) ? form : null;
       if (id) lastPreviewForm = id;
-      const old = models[0];
-      scene.remove(old.root);
-      disposeModel(old.root);
-      models[0] = createOperator({ archetype: ids[0] }, { nucleoForm: id });
-      scene.add(models[0].root);
+      pendingForm = id;
       previewAction = "transform";
       previewRemaining = 1.4;
     },
@@ -218,6 +297,23 @@ export function createOperatorGallery(mount) {
         );
         return;
       }
+      if (action === "transform" && focus !== "all" && focus !== ids[0]) {
+        const index = ids.indexOf(focus);
+        const suit = {
+          motor_bio_forja: "bio_forja",
+          mare_astral: "mare",
+          lamina_dominio_anciao: "dominio",
+        }[focus];
+        pendingClothing = {
+          index,
+          equippedSuit:
+            models[index].root.userData.identity.clothing === "civilian"
+              ? suit
+              : null,
+        };
+      }
+      previewVariant =
+        action === "signature" ? 2 : action === "primary" ? combo++ % 2 : 0;
       previewAction = action;
       previewRemaining = 1.4;
     },
@@ -227,10 +323,23 @@ export function createOperatorGallery(mount) {
         : "idle";
     },
     get preview() {
-      return { action: previewAction, remaining: previewRemaining, locomotion };
+      return {
+        action: previewAction,
+        remaining: previewRemaining,
+        locomotion,
+        form:
+          pendingForm !== undefined
+            ? pendingForm
+            : (models[0].root.userData.identity.form ?? null),
+      };
     },
     setFocus(id) {
       focus = ids.includes(id) ? id : "all";
+      resize();
+    },
+    setDetail(value) {
+      detail = ["face", "bracelet"].includes(value) ? value : "body";
+      yaw = 0;
       resize();
     },
     setAngle(angle) {

@@ -27,7 +27,7 @@ export function initDimensionModule({
  <header class="dimension-header"><div class="dimension-brand">BLOCO <b>404</b> <span>EVOLUÇÃO DIMENSIONAL / 01</span></div><div class="dimension-heading">N · 000° · S</div><button class="dimension-exit" type="button">ESC · VOLTAR AO 2D</button></header>
  <div class="dimension-title"><span>ARQUIPÉLAGO DAS ROTAS PERDIDAS</span><h1>SETOR LIMIAR</h1><p>Além do plano. A mesma consciência.</p></div>
  <aside class="dimension-status"><span class="dimension-label">OPERADOR / ECO ATIVO</span><strong class="dimension-suit"></strong><span class="dimension-level"></span><div class="dimension-rule"></div><span class="dimension-vitals"></span><span class="dimension-flight"></span><small class="dimension-performance"></small></aside>
- <aside class="dimension-navigation"><canvas class="dimension-map" width="144" height="144" aria-label="Minimapa: núcleo verde, farol dourado, barco rosa, operador branco"></canvas><span>◆ ÂNCORA &nbsp; ◇ FAROL &nbsp; • PÍER</span></aside>
+ <aside class="dimension-navigation"><canvas class="dimension-map" width="144" height="144" aria-label="Minimapa: A âncora, F farol, R ruínas, P píer, O anel; operador branco"></canvas><div class="dimension-landmark-list" aria-label="Marcos do setor"></div></aside>
  <div class="dimension-rupture" role="status"><small>FREQUÊNCIA 66.6 // DESCOMPRESSÃO</small><strong>CONTENÇÃO DIMENSIONAL ROMPIDA</strong><span>ESPAÇO TRIDIMENSIONAL DESBLOQUEADO</span></div>
  <div class="dimension-objective"><span>OBJETIVO EXPERIMENTAL</span><p class="dimension-notice" aria-live="polite">Alcance o Núcleo de Âncora no cume. O plano isométrico era uma contenção para estabilizar a consciência do operador.</p></div>
  <div class="dimension-prompt"></div>

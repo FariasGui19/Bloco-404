@@ -513,3 +513,30 @@ body.dimension-active {
     font-size: 13px;
   }
 }
+
+/* Step 2: authored landmarks share geometry, compass and minimap IDs. */
+.dimension-landmark-list {
+  display: grid;
+  gap: 3px;
+  width: 144px;
+  font-size: 8px;
+  letter-spacing: 0.6px;
+  text-align: left;
+  padding: 7px 9px;
+  background: #192b3cbd;
+  border-left: 1px solid #aacbb966;
+  border-radius: 2px;
+}
+.dimension-heading {
+  letter-spacing: 2px;
+  white-space: nowrap;
+  font-size: 10px;
+}
+@media (max-width: 520px) {
+  .dimension-landmark-list {
+    width: 112px;
+    font-size: 7px;
+    padding: 5px;
+    letter-spacing: 0;
+  }
+}

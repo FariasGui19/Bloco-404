@@ -120,3 +120,8 @@ Relatórios e capturas locais ficam em `.qa/`, ignorados pelo Git; não são nec
 ## Lapidação linear — base ambiental 01
 
 A primeira revisão visual está descrita em [limiar-base-ambiental-01.md](limiar-base-ambiental-01.md): terreno orgânico, costa/água por profundidade, iluminação e céu/névoa. O perfil ambiental e o bake foram separados para reaproveitamento em outros mapas. Os dados físicos, estruturas e controlador desta etapa continuam os mesmos. A animação da água agora é feita no shader, sem reescrita de vértices pela CPU por frame. As medições anteriores acima são histórico da primeira etapa; consulte o novo documento para os contadores desta revisão.
+
+
+## Estruturas e composição — Passo 2
+
+Veja [limiar-estruturas-02.md](limiar-estruturas-02.md) para os marcos modulares, densidade, rotas protegidas, acesso ao píer, índice espacial e novos contadores. O controlador e a base ambiental são preservados; animações/personagens do Passo 3 e progressão do Passo 4 não foram antecipados.

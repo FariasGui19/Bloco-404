@@ -68,7 +68,8 @@ const PROFILES = {
   },
 };
 export function createOperatorActions(state, notify = () => {}) {
-  let selected = null;
+  let selected = null,
+    sequence = 0;
   const action = { remaining: 0, duration: 1, id: null };
   const available = () =>
     Object.values(NUCLEO_FORMS).filter((f) =>
@@ -125,7 +126,7 @@ export function createOperatorActions(state, notify = () => {}) {
       kit = ARCHETYPE_KITS[progress.archetype];
     if (!kit) return false;
     const id =
-      slot === "primary"
+      slot !== "secondary"
         ? progress.archetype === "nucleo_dez_forma" &&
           player.nucleoForm === "forma_bruta"
           ? "pancada_quebra"
@@ -160,7 +161,14 @@ export function createOperatorActions(state, notify = () => {}) {
     }
     player.energy -= p.cost;
     player.ability.cooldowns[id] = p.cooldown;
-    Object.assign(action, { id, duration: p.duration, remaining: p.duration });
+    const variant =
+      slot === "signature" ? 2 : slot === "primary" ? sequence++ % 2 : 0;
+    Object.assign(action, {
+      id,
+      variant,
+      duration: p.duration,
+      remaining: p.duration,
+    });
     if (p.boost && !c.boating) c.actionBoost = 0.22;
     if (id === "pancada_quebra") chargeFormHit(player);
     notify(`${p.name} · ${p.boost ? "IMPULSO" : "RESPOSTA VISUAL"} 3D`);
@@ -201,8 +209,8 @@ export function createOperatorActions(state, notify = () => {}) {
     label() {
       const p = state.player;
       if (state.progress.archetype !== "nucleo_dez_forma")
-        return `J AÇÃO · K LEITURA · T ${p.equippedSuit ? "RECOLHER" : "ACIONAR"} TRAJE`;
-      return `${NUCLEO_FORMS[p.nucleoForm]?.name ?? "OPERADOR BASE"} · SELEÇÃO ${NUCLEO_FORMS[selected]?.name ?? getSelectedNucleoForm(state.progress)?.name ?? "CÓDEX"} · J AÇÃO / K LEITURA · R SELECIONAR · T ${p.nucleoForm ? "RETORNAR" : "TRANSFORMAR"}`;
+        return `J COMBO · K LEITURA · L ESPECIAL · T ${p.equippedSuit ? "RECOLHER" : "ACIONAR"} TRAJE`;
+      return `${NUCLEO_FORMS[p.nucleoForm]?.name ?? "OPERADOR BASE"} · SELEÇÃO ${NUCLEO_FORMS[selected]?.name ?? getSelectedNucleoForm(state.progress)?.name ?? "CÓDEX"} · J COMBO / K LEITURA / L ESPECIAL · R SELECIONAR · T ${p.nucleoForm ? "RETORNAR" : "TRANSFORMAR"}`;
     },
   };
 }

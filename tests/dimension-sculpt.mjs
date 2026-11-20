@@ -17,7 +17,13 @@ const base = {
 const reports = {};
 for (const id of Object.keys(OPERATOR_STYLES)) {
   const progress = { archetype: id },
-    player = { equippedSuit: ({ motor_bio_forja: "bio_forja", mare_astral: "mare", lamina_dominio_anciao: "dominio" })[id] },
+    player = {
+      equippedSuit: {
+        motor_bio_forja: "bio_forja",
+        mare_astral: "mare",
+        lamina_dominio_anciao: "dominio",
+      }[id],
+    },
     before = JSON.stringify({ progress, player });
   const op = createOperator(progress, player);
   op.animate(base, 0);
@@ -83,7 +89,12 @@ for (const id of Object.keys(OPERATOR_STYLES)) {
     "sculpt remains in the existing camera/controller envelope",
   );
   assert(
-    triangles < (id === "motor_bio_forja" ? 7000 : 6600) && calls < 55,
+    triangles <
+      (id === "lamina_dominio_anciao"
+        ? 7500
+        : id === "motor_bio_forja"
+          ? 7100
+          : 6600) && calls < 55,
     "explicit per-rig geometry/draw budget",
   );
   if (id === "nucleo_dez_forma")

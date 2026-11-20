@@ -45,3 +45,7 @@ O novo teste verifica roupa convencional/equipada no construtor e no T do gamepl
 A primeira tentativa de clicar em T durante o efeito nativo de transformação foi corretamente rejeitada. O HUD passou a mostrar SINCRONIZANDO e desabilitar o botão durante essa janela; o teste aguarda a disponibilidade real, sem remover a trava nativa.
 
 Capturas de QA (ignoradas pelo Git): `.qa/polish-equipped.png`, `.qa/polish-civilian.png`, `.qa/polish-back.png`, `.qa/polish-hud-active.png`, `.qa/polish-hud-recharge.png`, `.qa/polish-mobile.png`.
+
+## Continuação
+
+A [lapidação cirúrgica](limiar-lapidacao-cirurgica.md) documenta a revisão posterior de rosto/cabelo, espada persistente, cartucho X10 original, quatro fases de transformação, variações J/L e proporções industriais da Quebra Sistemas, com novos testes e orçamentos medidos.

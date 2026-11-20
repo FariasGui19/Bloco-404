@@ -36,6 +36,10 @@ o laboratório inclui galeria com vistas de frente, três-quartos e costas.
 A [revisão 3B.2](docs/limiar-identidade-3b2.md) acrescenta atuação facial/corporal,
 formas X10 com rigs próprios e prévias de transformação/ações no laboratório.
 
+A [lapidação cirúrgica](docs/limiar-lapidacao-cirurgica.md) refina rosto e cabelo,
+espada ancestral, cartucho original X10, transformação em fases e a Quebra Sistemas;
+J alterna ações e L oferece uma variação do poder nativo, sem novos desbloqueios.
+
 ## Testes
 
 Os testes de lógica são scripts Node, sem dependências (testes opcionais de

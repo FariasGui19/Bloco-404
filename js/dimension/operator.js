@@ -1,3 +1,4 @@
+import { createLatticeBracelet } from "./operator-bracelet.js";
 import * as T from "../vendor/three.module.js";
 import { createOperatorMotion } from "./operator-motion.js";
 import { createNucleoForm } from "./operator-forms.js";
@@ -33,7 +34,11 @@ export function createOperator(progress, player = {}) {
     return createNucleoForm(player.nucleoForm);
   const id = progress?.archetype,
     style = OPERATOR_STYLES[id] ?? OPERATOR_STYLES.nucleo_dez_forma;
-  const suitKey = { motor_bio_forja: "bio_forja", mare_astral: "mare", lamina_dominio_anciao: "dominio" }[id];
+  const suitKey = {
+    motor_bio_forja: "bio_forja",
+    mare_astral: "mare",
+    lamina_dominio_anciao: "dominio",
+  }[id];
   const equipped = !!suitKey && player.equippedSuit === suitKey;
   const bio = equipped && id === "motor_bio_forja",
     mare = equipped && id === "mare_astral",
@@ -101,12 +106,13 @@ export function createOperator(progress, player = {}) {
     flatShading: true,
   });
   const hair = new T.MeshLambertMaterial({
-    color: 0x241e20,
-    flatShading: true,
+    color: 0x211e20,
+    map: cloth,
+    flatShading: false,
   });
   const hairHighlight = new T.MeshLambertMaterial({
-    color: 0x30262a,
-    flatShading: true,
+    color: 0x292526,
+    flatShading: false,
   });
   const ink = new T.MeshLambertMaterial({ map: tattooMap, flatShading: true });
   const trim = new T.MeshLambertMaterial({
@@ -248,8 +254,8 @@ export function createOperator(progress, player = {}) {
   // onto this volume, not pasted on a flat rectangular face card.
   const skullGeometry = loftGeometry(
     [
-      [-0.18, 0.064, 0.073, 0.026],
-      [-0.143, 0.112, 0.099, 0.012],
+      [-0.17, 0.075, 0.073, 0.02],
+      [-0.133, 0.119, 0.105, 0.012],
       [-0.065, 0.151, 0.128, 0],
       [0.025, 0.159, 0.139, 0],
       [0.112, 0.15, 0.13, -0.008],
@@ -261,15 +267,15 @@ export function createOperator(progress, player = {}) {
   );
   const skull = mesh(
     skullGeometry,
-    [new T.MeshLambertMaterial({ map: faceMap, flatShading: true }), skin],
+    [new T.MeshLambertMaterial({ map: faceMap, flatShading: false }), skin],
     head,
   );
   skull.name = "sculpted-face";
-  const nose = ellipsoid(head, skin, 0.023, 0.041, 0.037, 0, -0.017, 0.142);
+  const nose = ellipsoid(head, skin, 0.019, 0.032, 0.024, 0, -0.011, 0.138);
   nose.rotation.x = -0.1;
-  ellipsoid(head, skin, 0.027, 0.018, 0.026, 0, -0.044, 0.165);
+  ellipsoid(head, skin, 0.024, 0.013, 0.018, 0, -0.033, 0.15);
   const eyeWhite = new T.MeshLambertMaterial({
-    color: 0xbdb89f,
+    color: 0xd1c9b7,
     flatShading: true,
   });
   const facePivots = [],
@@ -278,14 +284,14 @@ export function createOperator(progress, player = {}) {
     gaze = new T.Group();
   head.add(gaze);
   for (const side of [-1, 1]) {
-    ellipsoid(head, eyeWhite, 0.024, 0.009, 0.006, side * 0.071, 0.005, 0.133);
+    ellipsoid(head, eyeWhite, 0.025, 0.0085, 0.006, side * 0.068, 0.007, 0.136);
     const iris = ellipsoid(
       gaze,
       dark,
-      0.0095,
       0.008,
+      0.007,
       0.004,
-      side * 0.071,
+      side * 0.068,
       0.005,
       0.14,
     );
@@ -295,7 +301,7 @@ export function createOperator(progress, player = {}) {
       0.028,
       0.014,
       0.004,
-      side * 0.071,
+      side * 0.068,
       0.005,
       0.146,
     );
@@ -305,10 +311,10 @@ export function createOperator(progress, player = {}) {
     const brow = ellipsoid(
       head,
       hair,
-      0.033,
-      0.0055,
+      0.034,
       0.008,
-      side * 0.071,
+      0.008,
+      side * 0.068,
       0.041,
       0.133,
     );
@@ -316,7 +322,7 @@ export function createOperator(progress, player = {}) {
     eyebrows.push(brow);
     facePivots.push(brow);
   }
-  const mouth = ellipsoid(head, dark, 0.022, 0.0025, 0.003, 0, -0.103, 0.112);
+  const mouth = ellipsoid(head, dark, 0.022, 0.0025, 0.003, 0, -0.093, 0.122);
   mouth.name = "expression-mouth";
   facePivots.push(mouth);
   const hairRig = new T.Group();
@@ -335,9 +341,21 @@ export function createOperator(progress, player = {}) {
     );
     ear.rotation.z = -side * 0.1;
     // Thin black polygonal glasses with a small highlight, not opaque goggles.
-    const frame = ring(head, dark, 0.043, 0.006, side * 0.071, 0.01, 0.137);
-    frame.scale.set(1.18, 0.72, 1);
-    frame.rotation.y = side * 0.11;
+    const frame = tube(
+      head,
+      dark,
+      [
+        [side * 0.023, 0.031, 0.143],
+        [side * 0.107, 0.031, 0.14],
+        [side * 0.114, 0.012, 0.14],
+        [side * 0.099, -0.013, 0.145],
+        [side * 0.037, -0.014, 0.15],
+        [side * 0.023, 0.007, 0.148],
+        [side * 0.023, 0.031, 0.143],
+      ],
+      0.0045,
+    );
+    frame.name = "angular-prescription-frame";
     tube(
       head,
       dark,
@@ -351,12 +369,12 @@ export function createOperator(progress, player = {}) {
     const moustache = ellipsoid(
       head,
       hair,
-      0.029,
-      0.009,
-      0.01,
+      0.032,
+      0.0105,
+      0.007,
       side * 0.025,
-      -0.077,
-      0.13,
+      -0.065,
+      0.131,
     );
     moustache.rotation.z = -side * 0.13;
     ellipsoid(head, lensGlass, 0.019, 0.003, 0.003, side * 0.074, 0.025, 0.144);
@@ -373,34 +391,47 @@ export function createOperator(progress, player = {}) {
     0.0045,
   );
   // A fitted continuous shell follows the skull; the open front preserves the forehead.
-  const scalp = loftGeometry([
-    [-0.073, 0.15, 0.13, -0.008],
-    [0.025, 0.165, 0.145, -0.004],
-    [0.112, 0.157, 0.138, -0.008],
-    [0.18, 0.122, 0.11, -0.012],
-    [0.202, 0.055, 0.06, -0.014],
-  ], 16);
-  const scalpPositions = scalp.attributes.position, scalpIndices = [];
+  const scalp = loftGeometry(
+    [
+      [-0.073, 0.15, 0.13, -0.008],
+      [0.025, 0.165, 0.145, -0.004],
+      [0.112, 0.157, 0.138, -0.008],
+      [0.18, 0.122, 0.11, -0.012],
+      [0.202, 0.055, 0.06, -0.014],
+    ],
+    16,
+  );
+  const scalpPositions = scalp.attributes.position,
+    scalpIndices = [];
   for (let i = 0; i < scalp.index.count; i += 3) {
-    const triangle = [0, 1, 2].map(j => scalp.index.getX(i + j));
+    const triangle = [0, 1, 2].map((j) => scalp.index.getX(i + j));
     const y = triangle.reduce((n, j) => n + scalpPositions.getY(j), 0) / 3;
     const z = triangle.reduce((n, j) => n + scalpPositions.getZ(j), 0) / 3;
     if (y > 0.105 || z < 0.035) scalpIndices.push(...triangle);
   }
   scalp.setIndex(scalpIndices);
+  for (let i = 0; i < scalpPositions.count; i++) {
+    const y = scalpPositions.getY(i),
+      x = scalpPositions.getX(i);
+    scalpPositions.setZ(
+      i,
+      scalpPositions.getZ(i) + Math.sin(y * 98 + x * 83) * 0.0025,
+    );
+  }
+  scalp.computeVertexNormals();
   mesh(scalp, hair, hairRig).name = "continuous-hair-scalp";
-  for (let row = 0; row < 3; row++)
-    for (let i = 0; i < 7; i++) {
-      const a = (i / 7) * Math.PI * 2 + row * 0.41,
-        r = row === 2 ? 0.064 : 0.115;
+  for (let row = 0; row < 2; row++)
+    for (let i = 0; i < 6; i++) {
+      const a = (i / 6) * Math.PI * 2 + row * 0.41,
+        r = row === 1 ? 0.06 : 0.105;
       const lock = ellipsoid(
         hairRig,
         (i + row) % 4 === 0 ? hairHighlight : hair,
-        0.053,
-        0.026 + row * 0.003,
-        0.058,
+        0.045,
+        0.019 + row * 0.002,
+        0.075,
         Math.sin(a) * r,
-        0.128 + row * 0.022,
+        0.148 + row * 0.032,
         Math.cos(a) * r - 0.025,
       );
       lock.rotation.set(0.1 * Math.sin(a), a, 0.22 * Math.cos(a));
@@ -409,9 +440,9 @@ export function createOperator(progress, player = {}) {
     const curl = ellipsoid(
       hairRig,
       i % 3 === 0 ? hairHighlight : hair,
-      0.041,
-      0.031,
-      0.032,
+      0.033,
+      0.021,
+      0.038,
       (i - 2) * 0.055,
       0.115 + Math.sin(i * 1.6) * 0.014,
       0.109,
@@ -419,6 +450,7 @@ export function createOperator(progress, player = {}) {
     curl.rotation.z = Math.sin(i * 1.9) * 0.3;
   }
 
+  const bracelets = [];
   const limbs = [],
     jets = [],
     effects = new T.Group();
@@ -578,79 +610,7 @@ export function createOperator(progress, player = {}) {
     ellipsoid(elbow, skin, 0.043, 0.031, 0.015, 0, -0.322, 0.068);
     ellipsoid(elbow, dark, 0.028, 0.047, 0.027, -side * 0.052, -0.279, 0.04);
     if (x10 && side === -1) {
-      const bracelet = new T.Group();
-      bracelet.name = "x10-bracelet";
-      elbow.add(bracelet);
-      staticPivots.push(bracelet);
-      loft(
-        bracelet,
-        dark,
-        [
-          [-0.22, 0.084, 0.078],
-          [-0.1, 0.087, 0.081],
-        ],
-        0,
-        0,
-        0,
-        12,
-      );
-      for (const y of [-0.218, -0.102])
-        loft(
-          bracelet,
-          trim,
-          [
-            [y - 0.008, 0.085, 0.079],
-            [y + 0.008, 0.085, 0.079],
-          ],
-          0,
-          0,
-          0,
-          12,
-        );
-      const bezel = mesh(
-        new T.CylinderGeometry(0.101, 0.107, 0.033, 12),
-        dark,
-        bracelet,
-        0,
-        -0.157,
-        0.095,
-      );
-      bezel.rotation.x = Math.PI / 2;
-      ring(bracelet, trim, 0.093, 0.007, 0, -0.157, 0.115);
-      ring(bracelet, glow, 0.073, 0.009, 0, -0.157, 0.12);
-      const dial = mesh(
-        new T.CircleGeometry(0.064, 12),
-        dark,
-        bracelet,
-        0,
-        -0.157,
-        0.12,
-      );
-      const sigil = new T.Shape();
-      sigil.moveTo(-0.031, 0.036);
-      for (const p of [
-        [0.031, 0.036],
-        [0.009, 0],
-        [0.031, -0.036],
-        [-0.031, -0.036],
-        [-0.009, 0],
-      ])
-        sigil.lineTo(...p);
-      sigil.closePath();
-      mesh(new T.ShapeGeometry(sigil), glow, bracelet, 0, -0.157, 0.123);
-      for (let i = 0; i < 4; i++) {
-        const a = (i * Math.PI) / 2 + Math.PI / 4;
-        ellipsoid(
-          bracelet,
-          trim,
-          0.006,
-          0.006,
-          0.003,
-          Math.sin(a) * 0.09,
-          -0.157 + Math.cos(a) * 0.09,
-          0.119,
-        );
-      }
+      bracelets.push(createLatticeBracelet(elbow));
     }
     if (bio) {
       // Reinforced deltoids, exposed tattooed biceps and curved organic ribs.
@@ -720,7 +680,7 @@ export function createOperator(progress, player = {}) {
         -0.032,
       );
       fin.rotation.x = -0.24;
-      ellipsoid(knee, suit, 0.025, 0.13, 0.086, side * 0.071, -0.23, -0.049);
+      ellipsoid(knee, suit, 0.025, 0.13, 0.086, side * 0.068, -0.23, -0.049);
     }
     if (ancient) {
       const mantle = ellipsoid(
@@ -777,7 +737,7 @@ export function createOperator(progress, player = {}) {
         trim,
         [
           [side * 0.078, -0.025, 0.122],
-          [side * 0.071, -0.1, 0.136],
+          [side * 0.068, -0.1, 0.136],
           [0, -0.17, 0.137],
         ],
         0.009,
@@ -949,47 +909,183 @@ export function createOperator(progress, player = {}) {
     }
   if (!equipped) {
     // Civilian silhouette comes from the canonical player-sheet, not a tinted suit.
-    const cotton = new T.MeshLambertMaterial({ color: 0x17191f, map: cloth, flatShading: true });
-    const cargo = new T.MeshLambertMaterial({ color: 0xd3d0c7, map: cloth, flatShading: true });
+    const cotton = new T.MeshLambertMaterial({
+      color: 0x17191f,
+      map: cloth,
+      flatShading: true,
+    });
+    const cargo = new T.MeshLambertMaterial({
+      color: 0xd3d0c7,
+      map: cloth,
+      flatShading: true,
+    });
     const removed = [];
     for (const o of body.children) {
-      if (o.isMesh && o !== torso && o.material !== skin && o.material !== ink) removed.push(o);
+      if (o.isMesh && o !== torso && o.material !== skin && o.material !== ink)
+        removed.push(o);
     }
     torso.material = cotton;
     for (const { leg, knee, arm, elbow, side } of limbs) {
       // Keep only the main fabric volumes and shoes; strip plates and illuminated seams.
       for (const pivot of [leg, knee]) {
         let fabric = false;
-        for (const o of pivot.children) if (o.isMesh) {
-          if (o.name === "sculpted-boot") continue;
-          if (o.material === suit && !fabric && o.geometry.type === "BufferGeometry") {
-            o.material = cargo; fabric = true;
-          } else removed.push(o);
-        }
+        for (const o of pivot.children)
+          if (o.isMesh) {
+            if (o.name === "sculpted-boot") continue;
+            if (
+              o.material === suit &&
+              !fabric &&
+              o.geometry.type === "BufferGeometry"
+            ) {
+              o.material = cargo;
+              fabric = true;
+            } else removed.push(o);
+          }
       }
       for (const pivot of [arm, elbow]) {
         for (const o of pivot.children) if (o.isMesh) removed.push(o);
       }
-      loft(arm, ink, [[-0.285,0.062,0.067],[-0.16,0.083,0.08],[0,0.095,0.09],[0.06,0.062,0.067]],0,0,0,10);
-      loft(elbow, ink, [[-0.26,0.052,0.055],[-0.15,0.069,0.069],[0,0.067,0.069]],0,0,0,10);
-      ellipsoid(elbow, skin,0.056,0.085,0.049,0,-0.3,0.012);
-      ellipsoid(leg,cargo,0.04,0.105,0.085,side*0.095,-0.19,0.015).name = "cargo-pocket";
-      tube(knee,cargo,[[-0.068,-0.49,0.14],[0,-0.5,0.185],[0.068,-0.49,0.14]],0.009);
+      loft(
+        arm,
+        ink,
+        [
+          [-0.285, 0.062, 0.067],
+          [-0.16, 0.083, 0.08],
+          [0, 0.095, 0.09],
+          [0.06, 0.062, 0.067],
+        ],
+        0,
+        0,
+        0,
+        10,
+      );
+      loft(
+        elbow,
+        ink,
+        [
+          [-0.26, 0.052, 0.055],
+          [-0.15, 0.069, 0.069],
+          [0, 0.067, 0.069],
+        ],
+        0,
+        0,
+        0,
+        10,
+      );
+      ellipsoid(elbow, skin, 0.056, 0.085, 0.049, 0, -0.3, 0.012);
+      ellipsoid(
+        leg,
+        cargo,
+        0.04,
+        0.105,
+        0.085,
+        side * 0.095,
+        -0.19,
+        0.015,
+      ).name = "cargo-pocket";
+      tube(
+        knee,
+        cargo,
+        [
+          [-0.068, -0.49, 0.14],
+          [0, -0.5, 0.185],
+          [0.068, -0.49, 0.14],
+        ],
+        0.009,
+      );
     }
     const liveMaterials = new Set();
-    removed.forEach(o => { o.removeFromParent(); o.geometry.dispose(); });
-    root.traverse(o => { if (o.material) liveMaterials.add(o.material); });
+    removed.forEach((o) => {
+      o.removeFromParent();
+      o.geometry.dispose();
+    });
+    root.traverse((o) => {
+      if (o.material) liveMaterials.add(o.material);
+    });
     for (const m of [suit, trim, glow]) if (!liveMaterials.has(m)) m.dispose();
+  }
+  if (ancient) {
+    tube(
+      body,
+      dark,
+      [
+        [-0.23, 0.96, -0.06],
+        [-0.33, 0.65, -0.1],
+        [-0.41, 0.4, -0.12],
+      ],
+      0.028,
+    );
+    tube(
+      body,
+      trim,
+      [
+        [-0.245, 0.91, -0.035],
+        [-0.23, 0.96, -0.035],
+        [-0.21, 0.99, -0.035],
+      ],
+      0.008,
+    );
+    for (const side of [-1, 1]) {
+      tube(
+        body,
+        trim,
+        [
+          [side * 0.29, 1.43, 0.02],
+          [side * 0.35, 1.47, 0.1],
+          [side * 0.43, 1.43, 0.08],
+        ],
+        0.012,
+      );
+      for (let i = 0; i < 3; i++)
+        tube(
+          body,
+          glow,
+          [
+            [side * (0.12 + i * 0.027), 1.28 - i * 0.045, 0.18],
+            [side * (0.16 + i * 0.027), 1.25 - i * 0.045, 0.17],
+          ],
+          0.004,
+        );
+    }
+  }
+  if (bio) {
+    for (const side of [-1, 1])
+      tube(
+        body,
+        ink,
+        [
+          [side * 0.2, 1.4, -0.16],
+          [side * 0.3, 1.2, -0.21],
+          [side * 0.22, 1.02, -0.16],
+        ],
+        0.024,
+      );
   }
   batchStatic(presence);
   const kind = bio ? "bio" : mare ? "mare" : ancient ? "ancient" : "human";
-  const currents = mare ? [-1, 1].map(side => {
-    const drop = ellipsoid(body, glow, 0.012, 0.032, 0.012, side * 0.2, 1.2, 0.16);
-    drop.name = "living-duct-current";
-    return drop;
-  }) : [];
+  const currents = mare
+    ? [-1, 1].map((side) => {
+        const drop = ellipsoid(
+          body,
+          glow,
+          0.012,
+          0.032,
+          0.012,
+          side * 0.2,
+          1.2,
+          0.16,
+        );
+        drop.name = "living-duct-current";
+        return drop;
+      })
+    : [];
   const vfx = createOperatorVFX(body, limbs[1].elbow, style.accent, kind);
-  const excluded = new Set([...facePivots, ...jets, ...vfx.excluded, ...currents]);
+  const excluded = new Set([
+    ...facePivots,
+    ...jets,
+    ...vfx.excluded,
+    ...currents,
+  ]);
   for (const pivot of staticPivots) batchStatic(pivot, excluded);
   const motion = createOperatorMotion();
   return {
@@ -1010,7 +1106,7 @@ export function createOperator(progress, player = {}) {
         pose.bank + (pose.hipRoll ?? 0),
       );
       body.position.y = pose.bob - p.crouch;
-      body.scale.setScalar(p.transform ? p.assembly : 1);
+      body.scale.setScalar(1);
       head.rotation.set(
         (pose.headPitch ?? 0) + p.headPitch,
         pose.head + p.headYaw,
@@ -1068,9 +1164,16 @@ export function createOperator(progress, player = {}) {
         : Math.sin(t * 1.4) * 0.012;
       currents.forEach((drop, i) => {
         const u = options.reducedMotion ? 0.5 : (t * 0.7 + i * 0.5) % 1;
-        drop.position.set((i ? 1 : -1) * (0.16 + u * 0.07), 1.03 + u * 0.29, 0.166);
+        drop.position.set(
+          (i ? 1 : -1) * (0.16 + u * 0.07),
+          1.03 + u * 0.29,
+          0.166,
+        );
       });
-      vfx.update(p, t, options.reducedMotion);
+      bracelets.forEach((bracelet) =>
+        bracelet.update(p, options.reducedMotion),
+      );
+      vfx.update(p, t, options.reducedMotion, c);
       root.userData.performance = {
         action: p.id,
         phase: p.u,
@@ -1078,6 +1181,8 @@ export function createOperator(progress, player = {}) {
         expression: p.expression,
         twist: p.twist,
         scan: p.scan,
+        stage: p.stage,
+        variant: p.variant,
       };
     },
   };

@@ -1,3 +1,4 @@
+import { deferAppearance } from "./operator-performance.js";
 import { createNucleoHUD } from "./nucleo-hud.js";
 import { createOperatorActions } from "./operator-actions.js";
 import { createCameraMotion } from "./camera-motion.js";
@@ -360,7 +361,10 @@ export function createSpatialWorld({
         fpsTime = 0;
       }
       const appearanceKey = `${state.progress.archetype}:${state.player.nucleoForm ?? ""}:${state.player.equippedSuit ?? ""}`;
-      if (archetype !== appearanceKey) {
+      if (
+        archetype !== appearanceKey &&
+        !deferAppearance(actions.action, motionPreference.matches)
+      ) {
         world.scene.remove(operator.root);
         disposeTree(operator.root);
         operator = createOperator(state.progress, state.player);
@@ -374,6 +378,7 @@ export function createSpatialWorld({
         if (pressed.has("KeyT")) actions.transform();
         if (pressed.has("KeyJ")) actions.trigger("primary", controller);
         if (pressed.has("KeyK")) actions.trigger("secondary", controller);
+        if (pressed.has("KeyL")) actions.trigger("signature", controller);
         if (pressed.has("KeyQ")) lock = !lock;
         if (pressed.has("KeyE")) interact();
         if (lock) {
@@ -392,7 +397,10 @@ export function createSpatialWorld({
       const reducedMotion = motionPreference.matches;
       operator.animate(c, time, { reducedMotion, action: actions.action });
       world.update(c, time, reducedMotion);
-      const framing = cameraMotion.update(c, dt, { reducedMotion });
+      const framing = cameraMotion.update(c, dt, {
+        reducedMotion,
+        stature: state.player.nucleoForm === "forma_bruta" ? 1.28 : 1,
+      });
       target.set(c.x + framing.lookX, c.y + framing.lookY, c.z + framing.lookZ);
       if (Math.abs(camera.fov - framing.fov) > 0.01) {
         camera.fov = framing.fov;

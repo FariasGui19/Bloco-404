@@ -31,7 +31,7 @@ export function createOperatorGallery(mount) {
   scene.add(floor);
   const ids = Object.keys(OPERATOR_STYLES),
     models = ids.map((id) => {
-      const op = createOperator({ archetype: id });
+      const op = createOperator({ archetype: id }, { equippedSuit: ({ motor_bio_forja: "bio_forja", mare_astral: "mare", lamina_dominio_anciao: "dominio" })[id] });
       scene.add(op.root);
       return op;
     });
@@ -192,6 +192,14 @@ export function createOperatorGallery(mount) {
   return {
     models,
     renderer,
+    setClothing(equipped) {
+      models.forEach((old, i) => {
+        scene.remove(old.root);
+        disposeModel(old.root);
+        models[i] = createOperator({ archetype: ids[i] }, { equippedSuit: equipped ? ({ motor_bio_forja: "bio_forja", mare_astral: "mare", lamina_dominio_anciao: "dominio" })[ids[i]] : null });
+        scene.add(models[i].root);
+      });
+    },
     setForm(form) {
       const id = ["forma_veloz", "forma_bruta"].includes(form) ? form : null;
       if (id) lastPreviewForm = id;

@@ -1,7 +1,7 @@
 // Adapter to existing archetype IDs and form rules. No map gates, damage to 2D
 // enemies or new progression: Limiar remains an exploration sandbox.
 import { ARCHETYPE_KITS } from "../data/archetype-kits.js";
-import { NUCLEO_FORMS } from "../data/nucleo-forms.js";
+import { NUCLEO_FORMS, getSelectedNucleoForm } from "../data/nucleo-forms.js";
 import {
   toggleNucleoForm,
   updateNucleoForm,
@@ -202,7 +202,7 @@ export function createOperatorActions(state, notify = () => {}) {
       const p = state.player;
       if (state.progress.archetype !== "nucleo_dez_forma")
         return `J AÇÃO · K LEITURA · T ${p.equippedSuit ? "RECOLHER" : "ACIONAR"} TRAJE`;
-      return `${NUCLEO_FORMS[p.nucleoForm]?.name ?? "OPERADOR BASE"} · SELEÇÃO ${NUCLEO_FORMS[selected]?.name ?? "CÓDEX"} · J AÇÃO / K LEITURA · T TRAJE · R FORMA`;
+      return `${NUCLEO_FORMS[p.nucleoForm]?.name ?? "OPERADOR BASE"} · SELEÇÃO ${NUCLEO_FORMS[selected]?.name ?? getSelectedNucleoForm(state.progress)?.name ?? "CÓDEX"} · J AÇÃO / K LEITURA · R SELECIONAR · T ${p.nucleoForm ? "RETORNAR" : "TRANSFORMAR"}`;
     },
   };
 }

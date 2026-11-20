@@ -540,3 +540,34 @@ body.dimension-active {
     letter-spacing: 0;
   }
 }
+
+/* Native X10 state: selection is not activation. Shared by lab and gameplay. */
+.dimension-nucleo { position:absolute; right:22px; top:138px; width:276px; padding:12px; color:#d8ffe9; background:#101f29ed; border:1px solid #64ffa373; border-left:3px solid #64ffa3; font:10px/1.5 monospace; z-index:4; box-shadow:0 8px 24px #0005; }
+.dimension-nucleo[hidden] { display:none; }
+.dimension-nucleo header { display:flex; justify-content:space-between; align-items:center; letter-spacing:2px; }
+.dimension-nucleo header b { color:#64ffa3; font-size:22px; }
+.nucleo-cards { display:grid; grid-template-columns:1fr 1fr; gap:7px; margin:8px 0; }
+.nucleo-card { position:relative; display:grid; padding:7px; border:1px solid #5c81706b; background:#22353c; }
+.nucleo-card img { width:100%; height:66px; object-fit:contain; image-rendering:pixelated; }
+.nucleo-card span { font-size:9px; }
+.nucleo-card small { font-size:8px; color:#9bb7af; }
+.nucleo-card.selected { border-color:#baffda; box-shadow:inset 0 -3px #64ffa3; }
+.nucleo-card.active { background:#205542; }
+.nucleo-card.locked { opacity:.45; filter:grayscale(1); }
+.dimension-nucleo progress { display:block; width:100%; height:8px; accent-color:#64ffa3; }
+.dimension-nucleo::after { content:attr(data-timer); display:block; text-align:right; color:#64ffa3; font-size:9px; }
+.dimension-nucleo footer { display:flex; gap:5px; margin-top:10px; }
+.dimension-nucleo button { flex:1; background:#18372e; color:#dbffe8; border:1px solid #64ffa366; padding:8px 2px; font:9px monospace; cursor:pointer; }
+.dimension-nucleo button:focus-visible { outline:2px solid white; }
+@media(max-width:760px) { .dimension-nucleo { top:115px; right:10px; width:208px; padding:8px; } .nucleo-card img { height:42px; } }
+@media(max-height:620px) { .dimension-nucleo { top:70px; width:208px; } .nucleo-card img { height:32px; } .dimension-nucleo header b { font-size:16px; } }
+.has-nucleo .dimension-objective { display:none; }
+.dimension-nucleo button:disabled { opacity:.55; cursor:wait; }
+@media(max-width:520px) {
+  .dimension-nucleo { top:174px; width:180px; }
+  .nucleo-card img { height:32px; }
+  .nucleo-card { padding:4px; }
+  .dimension-nucleo footer { margin-top:6px; }
+  .dimension-nucleo button { padding:6px 2px; font-size:8px; }
+}
+@media(max-height:620px) and (min-width:521px) { .dimension-nucleo { top:70px; } }

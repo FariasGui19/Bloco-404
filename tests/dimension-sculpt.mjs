@@ -17,7 +17,7 @@ const base = {
 const reports = {};
 for (const id of Object.keys(OPERATOR_STYLES)) {
   const progress = { archetype: id },
-    player = {},
+    player = { equippedSuit: ({ motor_bio_forja: "bio_forja", mare_astral: "mare", lamina_dominio_anciao: "dominio" })[id] },
     before = JSON.stringify({ progress, player });
   const op = createOperator(progress, player);
   op.animate(base, 0);

@@ -114,10 +114,13 @@ for (const archetype of [
   });
   let nearest = false;
   operator.root.traverse((o) => {
-    if (o.material?.map) {
-      assert.equal(o.material.map.magFilter, T.NearestFilter);
-      nearest = true;
-    }
+    for (const material of Array.isArray(o.material)
+      ? o.material
+      : [o.material])
+      if (material?.map) {
+        assert.equal(material.map.magFilter, T.NearestFilter);
+        nearest = true;
+      }
   });
   assert(nearest);
   assert.equal(operator.root.position.y, controller.y);

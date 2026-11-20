@@ -40,6 +40,65 @@
         padding: 5px;
         font: 10px monospace;
       }
+      #sculpt-gallery {
+        width: min(1440px, 96vw);
+        height: 92vh;
+        box-sizing: border-box;
+        padding: 0;
+        border: 1px solid #7eabac;
+        background: #16232e;
+        color: #d2e8e3;
+      }
+      #sculpt-gallery[open] {
+        display: flex;
+        flex-direction: column;
+      }
+      #sculpt-gallery::backdrop {
+        background: #0b131fe8;
+      }
+      .sculpt-toolbar {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        flex-wrap: wrap;
+        padding: 12px 18px;
+      }
+      .sculpt-toolbar h2 {
+        margin: 0 auto 0 0;
+        font: 14px monospace;
+      }
+      .sculpt-toolbar button,
+      .sculpt-toolbar select {
+        color: #d6ece3;
+        background: #263f4a;
+        border: 1px solid #739c9e;
+        padding: 8px;
+        font: 11px monospace;
+      }
+      #sculpt-view {
+        min-height: 160px;
+        flex: 1;
+        overflow: hidden;
+        touch-action: none;
+      }
+      #sculpt-view canvas {
+        display: block;
+        image-rendering: pixelated;
+      }
+      .sculpt-labels {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        text-align: center;
+        padding: 12px;
+        gap: 8px;
+        font-size: 10px;
+      }
+      .sculpt-note {
+        margin: 0;
+        padding: 8px 18px 14px;
+        font-size: 10px;
+        color: #9fbebc;
+      }
       #lab a {
         color: #e7d6a4;
         text-decoration: none;
@@ -48,6 +107,20 @@
         #lab {
           top: 60px;
           font-size: 0;
+        }
+        #lab {
+          flex-wrap: wrap;
+          justify-content: center;
+          width: 94vw;
+          box-sizing: border-box;
+        }
+        .sculpt-labels {
+          grid-template-columns: repeat(2, 1fr);
+          font-size: 8px;
+        }
+        .sculpt-toolbar {
+          padding: 10px;
+          gap: 7px;
         }
         #lab a {
           font-size: 8px;
@@ -65,8 +138,39 @@
         <option value="motor_bio_forja">Bio-Forja · armadura</option>
         <option value="lamina_dominio_anciao">Lâmina · parkour</option></select
       ><button id="enter">ENTRAR</button
+      ><button id="inspect">GALERIA 3B.1</button
       ><a href="../index.html">JOGO COMPLETO ↗</a>
     </nav>
+    <dialog id="sculpt-gallery" aria-labelledby="sculpt-title">
+      <header class="sculpt-toolbar">
+        <h2 id="sculpt-title">ESCULTURA LVL 1 · PASSO 3B.1</h2>
+        <button id="sculpt-close">FECHAR</button>
+      </header>
+      <div class="sculpt-toolbar">
+        <label
+          >INSPECIONAR
+          <select id="sculpt-focus">
+            <option value="all">Os quatro arquétipos</option>
+            <option value="nucleo_dez_forma">Núcleo X10</option>
+            <option value="motor_bio_forja">Motor Bio-Forja</option>
+            <option value="mare_astral">Maré Astral</option>
+            <option value="lamina_dominio_anciao">Domínio Ancião</option>
+          </select></label
+        >
+        <button data-sculpt-angle="0">FRENTE</button
+        ><button data-sculpt-angle="-0.65">TRÊS-QUARTOS</button
+        ><button data-sculpt-angle="3.14159265">COSTAS</button>
+      </div>
+      <div id="sculpt-view"></div>
+      <div class="sculpt-labels">
+        <span>X10 · BRACELETE</span><span>BIO-FORJA · BIOMECÂNICA</span
+        ><span>MARÉ · DUTOS CIANO</span><span>DOMÍNIO · ANCESTRAL</span>
+      </div>
+      <p class="sculpt-note">
+        Arraste para girar. Mesmo construtor do jogo principal, sem trocar
+        habilidades, física ou saves. Feche e use ENTRAR para explorar o setor.
+      </p>
+    </dialog>
     <script type="module">
       import { initDimensionModule } from "../js/dimension/ui.js";
       import { ensureHealth } from "../js/game/health.js";
@@ -120,6 +224,62 @@
         state.progress.archetype = e.target.value;
         ensureHealth(state.player, state.progress);
       };
+      const galleryDialog = document.querySelector("#sculpt-gallery"),
+        inspectButton = document.querySelector("#inspect");
+      let gallery = null,
+        galleryOpening = false;
+      inspectButton.onclick = async () => {
+        if (galleryOpening || gallery) return;
+        galleryOpening = true;
+        inspectButton.disabled = true;
+        try {
+          // Never leave two renderers/gameplay input captures running together.
+          if (dimensional.manager.active) {
+            dimensional.manager.exit();
+            await new Promise((resolve) => {
+              function wait() {
+                if (!dimensional.manager.active) resolve();
+                else requestAnimationFrame(wait);
+              }
+              wait();
+            });
+          }
+          const { createOperatorGallery } =
+            await import("../js/dimension/operator-gallery.js");
+          galleryDialog.showModal();
+          gallery = createOperatorGallery(
+            document.querySelector("#sculpt-view"),
+          );
+          window.labGallery = gallery;
+          const selected = innerWidth < 700 ? state.progress.archetype : "all";
+          document.querySelector("#sculpt-focus").value = selected;
+          gallery.setFocus(selected);
+          document.querySelector("#sculpt-close").focus();
+        } catch (error) {
+          galleryDialog.close();
+          console.error(error);
+        } finally {
+          galleryOpening = false;
+          inspectButton.disabled = false;
+        }
+      };
+      function closeGallery() {
+        gallery?.dispose();
+        gallery = null;
+        window.labGallery = null;
+        galleryDialog.close();
+        inspectButton.focus();
+      }
+      document.querySelector("#sculpt-close").onclick = closeGallery;
+      galleryDialog.addEventListener("cancel", (event) => {
+        event.preventDefault();
+        closeGallery();
+      });
+      document.querySelector("#sculpt-focus").onchange = (event) =>
+        gallery?.setFocus(event.target.value);
+      for (const button of document.querySelectorAll("[data-sculpt-angle]"))
+        button.onclick = () =>
+          gallery?.setAngle(Number(button.dataset.sculptAngle));
       let last = performance.now();
       function frame(now) {
         dimensional.manager.tick(Math.min(0.033, (now - last) / 1000));

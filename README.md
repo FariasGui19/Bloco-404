@@ -10,9 +10,22 @@ python3 -m http.server 8000
 # abra http://localhost:8000
 ```
 
+## Evolução dimensional — sandbox 3D opcional
+
+O jogo isométrico continua intacto. Após escolher seu arquétipo, use o botão
+**◇ 3D // SETOR LIMIAR** para experimentar a ruptura dimensional e o setor
+aberto em Three.js local. **Esc** retorna ao mesmo ponto do 2D.
+
+Há voo do Núcleo X10 (**F**, espaço/Ctrl, Shift para turbo), mergulho da Maré
+Astral, plataformas, escalada, barco pilotável, farol e Núcleo de Âncora.
+Para experimentar os quatro modelos sem save, abra
+[`docs/setor-limiar-3d.html`](docs/setor-limiar-3d.html).
+[Arquitetura, controles, limites e validação](docs/evolucao-dimensional.md).
+
 ## Testes
 
-Os testes são scripts Node, sem dependências:
+Os testes de lógica são scripts Node, sem dependências (testes opcionais de
+navegador exigem Playwright/Chromium e variáveis de ambiente próprias):
 
 ```bash
 for f in tests/*.mjs; do node --experimental-default-type=module "$f" || break; done

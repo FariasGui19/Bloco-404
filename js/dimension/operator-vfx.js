@@ -30,7 +30,7 @@ export function createOperatorVFX(
     color: 0x252b35,
     flatShading: true,
   });
-  const { tube, loft, mesh: sculptMesh } = createSculptTools();
+  const { tube, loft, ellipsoid, mesh: sculptMesh } = createSculptTools();
   const mesh = (geometry, mat, parent = root) =>
     sculptMesh(parent, mat, geometry);
   const group = (name) => {
@@ -63,12 +63,15 @@ export function createOperatorVFX(
     shape.lineTo(...point);
   shape.closePath();
   const blade = mesh(
-    new T.ExtrudeGeometry(shape, { depth: 0.018, bevelEnabled: false }),
+    new T.ExtrudeGeometry(shape, {
+      depth: kind === "ancient" ? 0.028 : 0.018,
+      bevelEnabled: false,
+    }),
     light,
     hand,
   );
   blade.name = "energy-blade";
-  blade.position.set(0, -0.31, 0.07);
+  blade.position.set(0, kind === "ancient" ? -0.39 : -0.31, 0.07);
   const sword = new T.Group();
   sword.name = "ancestral-sword";
   hand.add(sword);
@@ -77,8 +80,8 @@ export function createOperatorVFX(
       sword,
       grip,
       [
-        [-0.31, 0.025, 0.025],
-        [-0.18, 0.025, 0.025],
+        [-0.38, 0.022, 0.024],
+        [-0.19, 0.026, 0.026],
       ],
       0,
       0,
@@ -89,11 +92,11 @@ export function createOperatorVFX(
       sword,
       metal,
       [
-        [-0.16, -0.35, 0.075],
-        [-0.09, -0.3, 0.075],
-        [0, -0.31, 0.075],
-        [0.09, -0.3, 0.075],
-        [0.16, -0.35, 0.075],
+        [-0.16, -0.42, 0.075],
+        [-0.09, -0.37, 0.075],
+        [0, -0.39, 0.075],
+        [0.09, -0.37, 0.075],
+        [0.16, -0.42, 0.075],
       ],
       0.018,
     );
@@ -115,9 +118,9 @@ export function createOperatorVFX(
       sword,
       inlay,
       [
-        [0, -0.36, 0.09],
-        [0, -0.75, 0.09],
-        [0.035, -0.96, 0.09],
+        [0, -0.43, 0.104],
+        [0.01, -0.95, 0.104],
+        [0.105, -1.24, 0.104],
       ],
       0.005,
     );
@@ -126,8 +129,8 @@ export function createOperatorVFX(
         sword,
         metal,
         [
-          [-0.021, -0.39 - i * 0.065, 0.091],
-          [0.018, -0.415 - i * 0.065, 0.091],
+          [-0.023, -0.23 - i * 0.045, 0.098],
+          [0.023, -0.25 - i * 0.045, 0.098],
         ],
         0.003,
       );
@@ -143,12 +146,12 @@ export function createOperatorVFX(
   const wristPoint = new T.Vector3();
   const trail = mesh(
     new T.RingGeometry(
-      kind === "mare" ? 0.67 : 0.45,
+      kind === "mare" ? 0.67 : kind === "ancient" ? 0.72 : 0.45,
       kind === "bio" ? 0.72 : 0.86,
       24,
       1,
       0,
-      kind === "ancient" ? 2.8 : 2.2,
+      kind === "ancient" ? 2.1 : 2.2,
     ),
     veil,
     hand,
@@ -158,10 +161,25 @@ export function createOperatorVFX(
   const wrist = new T.Group();
   wrist.name = "weapon-wrist";
   wrist.position.y = -0.25;
+  if (kind === "ancient") wrist.rotation.z = 0.78;
   hand.add(wrist);
   for (const part of [blade, sword, trail]) {
     wrist.add(part);
     part.position.y += 0.25;
+  }
+  if (kind === "ancient") {
+    const thumb = ellipsoid(
+      wrist,
+      grip,
+      0.019,
+      0.035,
+      0.025,
+      0.025,
+      -0.04,
+      0.08,
+    );
+    thumb.name = "sword-grip-thumb";
+    thumb.rotation.z = -0.45;
   }
   const read = mesh(
     new T.RingGeometry(0.26, 0.28, 20, 1, 0, Math.PI * 1.65),
@@ -375,7 +393,11 @@ export function createOperatorVFX(
         equipped &&
         (kind === "ancient" || (p.attack && ["bio", "veloz"].includes(kind)));
       sword.visible = equipped && kind === "ancient";
-      wrist.rotation.set(p.wristPitch ?? 0, p.wristYaw ?? 0, p.wristRoll ?? 0);
+      wrist.rotation.set(
+        p.wristPitch ?? 0,
+        p.wristYaw ?? 0,
+        (p.wristRoll ?? 0) + (kind === "ancient" ? 0.78 * (1 - p.weight) : 0),
+      );
       if (source && (p.select || p.transform || p.scan)) {
         source.updateWorldMatrix(true, false);
         root.updateWorldMatrix(true, false);
@@ -388,16 +410,10 @@ export function createOperatorVFX(
       }
       blade.scale.set(
         kind === "bio" ? 2.2 : 1,
-        kind === "bio"
-          ? 0.42
-          : kind === "ancient"
-            ? p.attack
-              ? 0.92
-              : 0.7
-            : 0.8,
+        kind === "bio" ? 0.42 : kind === "ancient" ? 0.88 : 0.8,
         1,
       );
-      sword.scale.y = p.attack ? 1 : 0.78;
+      sword.scale.y = 1;
       trail.visible = p.attack && p.trail > 0.03;
       trail.rotation.z = (p.variant === 1 ? 1 : -1) * (0.9 - p.u * 3.2);
       trail.scale.setScalar(kind === "brute" ? 1.55 : 1 + p.trail * 0.2);
@@ -409,6 +425,7 @@ export function createOperatorVFX(
       holograms.forEach((icon, i) => {
         icon.visible =
           p.select &&
+          ["human", "veloz", "brute"].includes(kind) &&
           (i === 1
             ? p.selected === "forma_bruta"
             : p.selected !== "forma_bruta");

@@ -42,7 +42,7 @@ export function samplePerformance(
   ].includes(id);
   const select = id === "select",
     transform = id === "transform",
-    attack = active && !scan && !select && !transform;
+    attack = active && !scan && !select && !transform && id !== "interact";
   const heavy = kind === "brute",
     variant = action?.variant ?? 0;
   const weight = active
@@ -160,6 +160,15 @@ export function samplePerformance(
       r.armYaw = [0.6 * release, -0.6 * release];
       r.bank = 0.035 * release;
     }
+    if (kind === "bio") {
+      r.arms = [-0.5 * gather - 0.9 * release, -0.7 * gather - 1.1 * release];
+      r.elbows = [-0.7 * gather, -0.7 * gather];
+      r.lean = -0.08 * gather + 0.1 * release;
+    }
+    if (kind === "veloz") {
+      r.crouch += 0.06 * gather;
+      r.headPitch -= 0.12 * release;
+    }
     if (heavy) {
       r.arms = [-0.5 * gather, -0.7 * gather];
       r.crouch = 0.11 * release;
@@ -188,6 +197,53 @@ export function samplePerformance(
     r.shiftX = -0.015 * read;
     r.read = read;
     r.expression = 0.18 * read;
+    if (kind === "ancient") {
+      r.arms = [-0.6 * read, -0.45 * read];
+      r.elbows = [-0.8 * read, -0.25 * read];
+      r.headYaw = 0.2 * read;
+      r.wristRoll = -0.3 * read;
+    }
+    if (kind === "bio") {
+      r.arms = [-1.2 * read, -0.5 * read];
+      r.elbows = [-0.45 * read, -1.1 * read];
+      r.twist = 0.17 * read;
+    }
+    if (kind === "mare") {
+      r.armYaw = [0.6 * read, -0.6 * read];
+      r.arms = [-0.7 * read, -0.7 * read];
+      r.headPitch = -0.08 * read;
+    }
+  } else if (id === "interact") {
+    const gesture = read;
+    r.arms = [-0.9 * gesture, -0.4 * gesture];
+    r.elbows = [-0.35 * gesture, -0.3 * gesture];
+    r.lean = 0.06 * gesture;
+    r.headPitch = 0.1 * gesture;
+    r.legs = [-0.08 * gesture, 0.07 * gesture];
+    r.knees = [0.12 * gesture, 0.06 * gesture];
+    if (kind === "ancient") {
+      r.arms[1] = -0.2 * gesture;
+      r.wristRoll = -0.4 * gesture;
+      r.twist = 0.12 * gesture;
+    }
+    if (kind === "bio") {
+      r.arms[0] = -1.2 * gesture;
+      r.elbows[0] = -0.6 * gesture;
+      r.headYaw = -0.18 * gesture;
+    }
+    if (kind === "mare") {
+      r.armYaw = [0.55 * gesture, -0.55 * gesture];
+      r.arms = [-0.85 * gesture, -0.85 * gesture];
+      r.bank = 0.04 * gesture;
+    }
+    if (kind === "veloz") {
+      r.crouch = 0.065 * gesture;
+      r.headPitch = 0.23 * gesture;
+    }
+    if (heavy) {
+      r.lean = 0.1 * gesture;
+      r.crouch = 0.04 * gesture;
+    }
   } else if (scan) {
     r.read = read;
     r.twist = -0.14 * load + 0.12 * follow;

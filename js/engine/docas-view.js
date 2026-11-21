@@ -1,4 +1,5 @@
-import { encaixeAtivo, substituidaPeloEncaixe, itensEncaixe, desenharEncaixe, desenharRelevoEncaixe, desenharContatosEncaixe, desenharNevoaEncaixe, desenharBrumaFundoEncaixe } from './docas-encaixe.js';
+import { desenharMarSuperior } from './docas-mar-superior.js';
+import { repararSoloDireito, repararFacesDireitas, pecasCostaAjustadas, encaixeAtivo, substituidaPeloEncaixe, itensEncaixe, desenharEncaixe, desenharRelevoEncaixe, desenharContatosEncaixe, desenharNevoaEncaixe, desenharBrumaFundoEncaixe } from './docas-encaixe.js';
 import { desenharPatioCentral, desenharLuzesCentrais, desenharAcessosCentrais, poseCentral } from './docas-central.js';
 import { tempoVisualDocas } from './docas-animation.js';
 import { desenharTentaculoRessaca, volta } from './docas-ressaca.js';
@@ -49,6 +50,7 @@ function construirTerreno(map) {
   for(const p of map.relevoDocas??[])if(p.camada==='base'&&!encaixeAtivo(map)){
     const img=getSprite(p.sprite?'docas_'+p.sprite:'docas_relevo_'+p.id);if(img)g.drawImage(img,(p.x-p.w/2)*s,(p.y-p.h)*s,p.w*s,p.h*s);
   }
+  if(encaixeAtivo(map))repararFacesDireitas(g,map);
   if(map.caisSul)desenharPecaCais(g,map.caisSul,map.caisSul.rocha,s,null);
   pathAll();g.fillStyle='#37313a';g.fill();g.save();g.clip();
   const areiaNova=getSprite('docas_lote5_areia'),terra=getSprite('docas_lote5_terra'),pedras=getSprite('docas_lote5_pedras');
@@ -86,6 +88,8 @@ function construirTerreno(map) {
     g.drawImage(suporte,st.x-bw/2,st.y-bh*.68,bw,bh);
   }
   let seed=404;for(let i=0;i<4200;i++){seed=(1664525*seed+1013904223)>>>0;const x=seed%w;seed=(1664525*seed+1013904223)>>>0;const y=seed%h;g.fillStyle=i%4===0?'rgba(18,17,25,.35)':'rgba(165,146,142,.15)';g.fillRect(x,y,2+i%4,1+i%2);}g.restore();
+  // Material repair is clipped to existing land, excluding the deck.
+  if(encaixeAtivo(map)){g.save();pathAll();g.clip();repararSoloDireito(g,s);g.restore();}
   // Cliff faces are outside the walkable floor clip by design.
   if(encaixeAtivo(map)){desenharRelevoEncaixe(g,s,0,true);desenharContatosEncaixe(g,s);}
   return out;
@@ -167,7 +171,10 @@ export function renderDocas(ctx,map,state,camX,camY,w,h,zoom,dpr,now,drawPlayer)
     desenharReflexosCais(ctx,cais,sCais);
     desenharMarCais(ctx,cais,sCais,clock);
   }
-  if(encaixeAtivo(map))desenharBrumaFundoEncaixe(ctx,sCais,t,reduced);
+  if(encaixeAtivo(map)){
+    desenharMarSuperior(ctx,sCais,t,reduced,{left:esquerda,right:direita,top:topo,bottom:base});
+    desenharBrumaFundoEncaixe(ctx,sCais,t,reduced);
+  }
   if(terreno){
     const x=Math.max(0,Math.floor(camX-w/(2*zoom)-4)),y=Math.max(0,Math.floor(camY-(h/2+115)/zoom-4));
     const x1=Math.min(terreno.width,Math.ceil(camX+w/(2*zoom)+4)),y1=Math.min(terreno.height,Math.ceil(camY+(h/2-115)/zoom+4));
@@ -231,7 +238,7 @@ export function renderDocas(ctx,map,state,camX,camY,w,h,zoom,dpr,now,drawPlayer)
   }
   if(!encaixeAtivo(map))desenharPatioCentral(ctx,map.geometriaDocas.escala,t,reduced,getSprite('docas_fx_faixas-nevoa'));
   for(const st of map.estruturasDocas)if(st.camada==='chao'&&!(encaixeAtivo(map)&&substituidaPeloEncaixe(st)))desenharEstrutura(ctx,st,t,reduced,state);
-  const pecasOeste=costaVisivel?[...oeste.rochas,...oeste.vegetacao].map(peca=>({pecaOeste:peca,y:(oeste.y+peca.pe*oeste.escala)*sCais})):[];
+  const pecasOeste=costaVisivel?(encaixeAtivo(map)?pecasCostaAjustadas(oeste):[...oeste.rochas,...oeste.vegetacao]).map(peca=>({pecaOeste:peca,y:(oeste.y+peca.pe*oeste.escala)*sCais})):[];
   const objs=ordenarProfundidadeDocas([...pecasCais,...pecasOeste,...(encaixeAtivo(map)?itensEncaixe(sCais):[]),...map.estruturasDocas.filter(st=>st.camada!=='chao'&&!(encaixeAtivo(map)&&substituidaPeloEncaixe(st))).map(st=>({estrutura:st,y:st.y})),...(state.trainingTargets??[]).filter(e=>e.health>0).map(e=>({entidade:e,y:e.y*SIDE_DEPTH_STEP})),...(state.cromaticaRuntime?.visao?[{entidade:state.cromaticaRuntime.visao,y:state.cromaticaRuntime.visao.y*SIDE_DEPTH_STEP}]:[]),{entidade:state.player,y:state.player.y*SIDE_DEPTH_STEP}]);
   for(const item of objs){
     if(item.encaixe){desenharEncaixe(ctx,item.encaixe,sCais,t,reduced);continue;}

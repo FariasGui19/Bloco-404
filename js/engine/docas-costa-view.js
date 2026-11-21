@@ -24,11 +24,13 @@ export function desenharPecaCosta(ctx, origem, peca, escala,t=null) {
     }
   } else ctx.drawImage(img,0,0,peca.w,peca.h);
   if(peca.id==='cristais'){
+    ctx.save();ctx.scale(peca.w/209,peca.h/169);
     for(const [sx,sy,off] of [[71,23,.13],[122,54,.49],[82,101,.79],[157,109,.29]]){
       const p=faseDocas(t,4.7,off);
       const a=t===null?.27:.55*Math.sin(p*Math.PI)**4;
       fxDocas(ctx,'cintila',sx+(t===null?0:Math.sin(t+off*7)*5),sy-9*p,27,23,p,a);
     }
+    ctx.restore();
   }
   ctx.restore();
 }

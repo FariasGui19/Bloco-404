@@ -21,15 +21,25 @@ export function desenharPecaFechamento(ctx,id,s,t=0,reduced=false){
  if(id==='casinha'){
   ctx.fillStyle='rgba(8,12,24,.32)';ctx.beginPath();ctx.ellipse(p.x+p.w*.51,p.foot-1,53,10,-.04,0,Math.PI*2);ctx.fill();
  }
- ctx.drawImage(img,...frame.rect,p.x,p.y,p.w,p.h);
+ const cabana=id==='casinha'&&getSprite('docas_acabamento_cabana');
+ if(cabana)ctx.drawImage(cabana,p.x,p.y,p.w,p.h);
+ else ctx.drawImage(img,...frame.rect,p.x,p.y,p.w,p.h);
  if(id==='casinha'){
   ctx.globalAlpha=reduced?.14:.14+.035*Math.sin(t*1.4);ctx.fillStyle='#e6dd96';
-  for(const [x,y] of [[.18,.61],[.37,.72]]){const g=ctx.createRadialGradient(p.x+p.w*x,p.y+p.h*y,0,p.x+p.w*x,p.y+p.h*y,10);g.addColorStop(0,'#d5ffc2');g.addColorStop(1,'rgba(139,255,190,0)');ctx.fillStyle=g;ctx.fillRect(p.x+p.w*x-10,p.y+p.h*y-10,20,20);}
+  for(const [x,y] of [[.77,.66]]){const g=ctx.createRadialGradient(p.x+p.w*x,p.y+p.h*y,0,p.x+p.w*x,p.y+p.h*y,10);g.addColorStop(0,'#d5ffc2');g.addColorStop(1,'rgba(139,255,190,0)');ctx.fillStyle=g;ctx.fillRect(p.x+p.w*x-10,p.y+p.h*y-10,20,20);}
  }
  ctx.restore();return true;
 }
 export function desenharMargensFechamento(ctx,s){
- for(const id of ['margemSul','margemLeste'])desenharPecaFechamento(ctx,id,s,0,true);
+ const img=getSprite('docas_acabamento_rocha');
+ if(!img){for(const id of ['margemSul','margemLeste'])desenharPecaFechamento(ctx,id,s,0,true);return;}
+ ctx.save();ctx.scale(s,s);ctx.imageSmoothingEnabled=true;ctx.imageSmoothingQuality='high';
+ // Rear/top surface beneath the watchtower feet (1355,456), then the
+ // front face down to the water. Neither piece adds collision geometry.
+ ctx.drawImage(img,1276,444,129,76);
+ // Continuous southern bank supporting the annex, behind its pilings.
+ ctx.drawImage(img,1013,595,151,58);
+ ctx.restore();
 }
 export function desenharVidaEncosta(ctx,s,t,reduced){
  ctx.save();ctx.scale(s,s);

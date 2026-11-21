@@ -1,3 +1,4 @@
+import { SPRITES_ENCAIXE } from './data/worlds/arquipelago-rotas-perdidas/docas-encaixe.js';
 import { initDimensionModule } from './dimension/ui.js';
 import { avancarAnimacaoDocas } from './engine/docas-animation.js';
 import { SPRITES_PESQUEIRO_03 } from './engine/docas-pesqueiro-03.js';
@@ -351,6 +352,7 @@ await loadSprites([
   ...SPRITES_CASCOS,
   ...SPRITES_PESQUEIRO_03,
   ...SPRITES_TENTACULO_02,
+  ...SPRITES_ENCAIXE,
   { id: 'docas_cabana-oeste', src: 'assets/sprites/docas-vila-04/cabana-oeste.png' },
   { id: 'docas_cabana-leste', src: 'assets/sprites/docas-vila-04/cabana-leste.png' },
   { id: 'docas_vila04_carga', src: 'assets/sprites/docas-vila-04/carga.png' },

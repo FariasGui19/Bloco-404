@@ -40,6 +40,9 @@ A [lapidação cirúrgica](docs/limiar-lapidacao-cirurgica.md) refina rosto e ca
 espada ancestral, cartucho original X10, transformação em fases e a Quebra Sistemas;
 J alterna ações e L oferece uma variação do poder nativo, sem novos desbloqueios.
 
+O [Morfador Mestre 3D](docs/limiar-morfador-mestre.md) permite trocar arquétipos,
+trajes e formas ao vivo em uma sessão criativa isolada do save (painel DEV / F8).
+
 ## Testes
 
 Os testes de lógica são scripts Node, sem dependências (testes opcionais de

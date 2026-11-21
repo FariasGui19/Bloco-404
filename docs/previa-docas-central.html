@@ -1,0 +1,33 @@
+<!doctype html><html lang="pt-BR"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Docas • Área Central</title>
+<style>body{margin:0;background:#090f20;color:#d3dfeb;font:15px system-ui}header{max-width:1280px;margin:auto;padding:24px}h1{margin:8px 0}p{color:#a6b7ce}button,label,a{color:#c4efef;margin-right:20px}button{background:#253048;border:1px solid #697083;padding:9px 18px;border-radius:5px}canvas{display:block;width:100%;max-width:1568px;margin:auto}#status{color:#d1b987}</style>
+<header>DOCAS DA NEBLINA / ÁREA CENTRAL<h1>Madeira gasta, terminais e vigília.</h1><p>Mesmo renderizador e planta do jogo. Prévia isolada: não lê nem grava a partida. Cabanas, oficina azul, trilhas e selo do pátio, carga, vegetação e cristais.</p><button id="view">Ver mapa inteiro</button><button id="pause">Pausar</button><label><input id="reduced" type="checkbox"> Movimento reduzido</label><a href="../index.html">Abrir jogo</a><span id="status">Carregando…</span></header><canvas width="1568" height="880"></canvas>
+<script type="module">
+import {loadSprites} from '../js/engine/sprites.js';
+import {docas} from '../js/data/worlds/arquipelago-rotas-perdidas/docas-neblina.js';
+import {SPRITES_CAIS_SUL} from '../js/data/worlds/arquipelago-rotas-perdidas/cais-sul.js';
+import {SPRITES_COSTA_OESTE} from '../js/data/worlds/arquipelago-rotas-perdidas/costa-oeste-docas.js';
+import {SPRITES_CASCOS} from '../js/engine/docas-cascos.js';
+import {SPRITES_PESQUEIRO_03} from '../js/engine/docas-pesqueiro-03.js';
+import {SPRITES_DOCAS_VIVAS} from '../js/engine/docas-vivas.js';
+import {SPRITES_RESSACA} from '../js/engine/docas-ressaca.js';
+import {SPRITES_TENTACULO_02} from '../js/engine/docas-tentaculo-02.js';
+import {renderDocas} from '../js/engine/docas-view.js';
+import {definirMovimentoDocas} from '../js/engine/docas-animation.js';
+// Preview changes the visual preference in memory only, never localStorage.
+const originalStorage=Storage.prototype.setItem;
+function motion(value){Storage.prototype.setItem=()=>{};try{definirMovimentoDocas(value);}finally{Storage.prototype.setItem=originalStorage;}}
+motion('normal');
+const source=await(await fetch('../js/main.js')).text();
+const explicit=Array.from(source.matchAll(/\{ id: '([^']+)', src: '([^']+)' \}/g),m=>({id:m[1],src:m[2]})).filter(s=>s.id.startsWith('docas_'));
+const loaded=await loadSprites([...explicit,...SPRITES_CAIS_SUL,...SPRITES_COSTA_OESTE,...SPRITES_CASCOS,...SPRITES_PESQUEIRO_03,...SPRITES_DOCAS_VIVAS,...SPRITES_RESSACA,...SPRITES_TENTACULO_02].map(s=>({...s,src:'../'+s.src})));
+document.querySelector('#status').textContent=loaded.every(Boolean)?'Artes carregadas':'Falha ao carregar arte';
+const state={player:{x:620*2.5/64,y:555*2.5/22},objects:[],trainingTargets:[],progress:{flags:{}},docasAnimation:{elapsed:0}};
+const canvas=document.querySelector('canvas'),ctx=canvas.getContext('2d');
+let paused=false,overview=false,last=performance.now();
+document.querySelector('#view').onclick=()=>{overview=!overview;document.querySelector('#view').textContent=overview?'Ver área central':'Ver mapa inteiro';};
+document.querySelector('#pause').onclick=()=>{paused=!paused;document.querySelector('#pause').textContent=paused?'Retomar':'Pausar';};
+document.querySelector('#reduced').onchange=e=>motion(e.target.checked?'reduzido':'normal');
+window.sampleCentral=t=>{state.docasAnimation.elapsed=t;renderDocas(ctx,docas,state,overview?1960:2320,overview?1215:1190,1568,880,overview?.4:.66,1,t*1000,()=>{});};
+function frame(now){if(!paused)state.docasAnimation.elapsed+=Math.min(.05,(now-last)/1000);last=now;window.sampleCentral(state.docasAnimation.elapsed);requestAnimationFrame(frame);}
+window.ready=true;requestAnimationFrame(frame);
+</script></html>

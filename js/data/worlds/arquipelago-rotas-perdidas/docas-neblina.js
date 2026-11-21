@@ -79,7 +79,14 @@ export const docas={id:'mare_cromatica_docas',meta:{nome:'DOCAS DA NEBLINA',tipo
   {id:'rocha',x:1500,y:730,tamanho:58},
  ],
  estruturasDocas:[
-  estrutura('cabana-oeste',585,478,150),estrutura('cabana-leste',1200,510,160),estrutura('galpao',875,468,145),
+  estrutura('cabana-oeste',585,478,150),estrutura('cabana-leste',1200,510,160),
+  {...estrutura('galpao',875,468,145),sprite:'central_console'},
+  {...estrutura('central_fundos',665,385,152),sprite:'galpao'},
+  ...[[715,403,45],[550,487,48],[1220,523,46]].map(([x,y,w])=>estrutura('lote6_cerca',x,y,w)),
+  ...[[750,536,30],[958,591,30]].map(([x,y,w])=>({...estrutura('central_carga',x,y,w),sprite:'vila04_carga'})),
+  ...[[805,575,24],[1110,511,22]].map(([x,y,w])=>estrutura('lote3_barris',x,y,w)),
+  ...[[1020,596,36],[1330,532,33],[1060,420,27]].map(([x,y,w])=>estrutura('lote6_cristal-violeta',x,y,w)),
+  ...[[1090,603,30],[1310,552,25]].map(([x,y,w])=>estrutura('lote6_corais',x,y,w)),
   estrutura('escada',1080,403,100,'chao'),estrutura('torre',1350,500,75),estrutura('farol',915,220,80),
   estrutura('camara',1250,240,135),estrutura('porta',975,225,35),
   // Decoração sem colisão: não altera a malha nem cobre marcadores de missão.

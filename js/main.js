@@ -354,6 +354,7 @@ await loadSprites([
   { id: 'docas_cabana-oeste', src: 'assets/sprites/docas-vila-04/cabana-oeste.png' },
   { id: 'docas_cabana-leste', src: 'assets/sprites/docas-vila-04/cabana-leste.png' },
   { id: 'docas_vila04_carga', src: 'assets/sprites/docas-vila-04/carga.png' },
+  { id: 'docas_central_console', src: 'assets/sprites/docas-reconstrucao/galpao.png' },
   { id: 'docas_galpao', src: 'assets/sprites/docas-vila-04/galpao.png' },
   { id: 'docas_escada', src: 'assets/sprites/docas-reconstrucao/escada.png' },
   { id: 'docas_torre', src: 'assets/sprites/docas-reconstrucao/torre.png' },

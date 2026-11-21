@@ -353,6 +353,7 @@ await loadSprites([
   ...SPRITES_PESQUEIRO_03,
   ...SPRITES_TENTACULO_02,
   ...SPRITES_ENCAIXE,
+  { id: 'docas_fechamento', src: 'assets/sprites/docas-fechamento/atlas.png' },
   { id: 'docas_cabana-oeste', src: 'assets/sprites/docas-vila-04/cabana-oeste.png' },
   { id: 'docas_cabana-leste', src: 'assets/sprites/docas-vila-04/cabana-leste.png' },
   { id: 'docas_vila04_carga', src: 'assets/sprites/docas-vila-04/carga.png' },

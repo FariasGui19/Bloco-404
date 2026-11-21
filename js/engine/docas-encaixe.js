@@ -1,3 +1,4 @@
+import { desenharPecaFechamento } from './docas-fechamento.js';
 import { PECAS_ENCAIXE } from '../data/worlds/arquipelago-rotas-perdidas/docas-encaixe.js';
 import { getSprite } from './sprites.js';
 import { poseCentral } from './docas-central.js';
@@ -55,6 +56,7 @@ function halo(ctx,x,y,r,color,alpha){
  ctx.save();ctx.globalAlpha=alpha;ctx.fillStyle=g;ctx.fillRect(x-r,y-r,r*2,r*2);ctx.restore();
 }
 export function desenharEncaixe(ctx,id,s,t,reduced){
+ if(id==='anexo-oeste'&&getSprite('docas_fechamento'))return desenharPecaFechamento(ctx,'casinha',s,t,reduced);
  const frame=PECAS_ENCAIXE[id],img=frame&&getSprite(`docas_encaixe_${frame.sheet}`);if(!img)return false;
  const dest=registroEncaixe(id);if(dest.oculta)return true;
  const [sx,sy,sw,sh]=frame.rect,{x,y,w,h,foot}=dest,p=poseCentral(t,reduced,x*.03);
@@ -117,8 +119,9 @@ function materialReparo(ctx,id,s){
 // grey joins; the dock and the water are never turned into new dry floor.
 export function repararSoloDireito(ctx,s){
  const material=materialReparo(ctx,'solo-reparo',s);if(!material)return;
- ctx.save();ctx.fillStyle=material;ctx.globalAlpha=.85;
- ctx.fillRect(840*s,520*s,560*s,122*s);ctx.fillRect(1280*s,445*s,125*s,90*s);ctx.restore();
+ ctx.save();ctx.fillStyle='#99807d';ctx.globalAlpha=.85;
+ ctx.fillRect(840*s,520*s,560*s,122*s);ctx.fillRect(1280*s,445*s,125*s,90*s);
+ ctx.fillStyle=material;ctx.globalAlpha=.16;ctx.fillRect(840*s,520*s,560*s,122*s);ctx.fillRect(1280*s,445*s,125*s,90*s);ctx.restore();
 }
 export function repararFacesDireitas(ctx,map){
  const s=map.geometriaDocas.escala,material=materialReparo(ctx,'rocha-reparo',s);if(!material)return;

@@ -1,3 +1,4 @@
+import { sampleFelineProfile } from "./feline-profile.js";
 import { sampleCreatureGait } from "./operator-gait.js";
 import { createLatticeBracelet } from "./operator-bracelet.js";
 import * as T from "../vendor/three.module.js";
@@ -82,6 +83,14 @@ export function createNucleoForm(form) {
       z,
       8,
     );
+  const mane = new T.Group(),
+    jaw = new T.Group();
+  mane.name = "alien-lion-mane";
+  jaw.name = "feline-jaw";
+  if (!brute) {
+    head.add(mane);
+    head.add(jaw);
+  }
   if (brute) {
     plate(body, shell, 0.84, 0.7, 0.48, 0, 1.19, 0);
     plate(body, dark, 0.48, 0.15, 0.3, 0, 0.84, 0);
@@ -197,15 +206,53 @@ export function createNucleoForm(form) {
     ellipsoid(body, shell, 0.235, 0.19, 0.34, 0, 1.07, 0.17);
     ellipsoid(body, dark, 0.19, 0.16, 0.22, 0, 0.75, -0.05);
     head.position.set(0, 1.23, 0.43);
-    const skull = ellipsoid(head, shell, 0.17, 0.15, 0.31, 0, 0, 0);
+    const skull = ellipsoid(head, shell, 0.19, 0.15, 0.235, 0, 0, 0);
     skull.rotation.x = 0.25;
-    const snout = ellipsoid(head, dark, 0.12, 0.075, 0.19, 0, -0.075, 0.19);
-    snout.rotation.x = 0.14;
+    const snout = ellipsoid(head, shell, 0.135, 0.068, 0.115, 0, -0.055, 0.21);
+    snout.rotation.x = 0.06;
+    jaw.position.set(0, -0.08, 0.17);
+    ellipsoid(jaw, dark, 0.125, 0.045, 0.13, 0, -0.022, 0.025);
+    ellipsoid(head, dark, 0.05, 0.028, 0.035, 0, -0.035, 0.315);
+    for (let i = 0; i < 7; i++) {
+      const a = (i / 6) * Math.PI * 1.4 - Math.PI * 0.2;
+      const tuft = ellipsoid(
+        mane,
+        i % 2 ? trim : shell,
+        0.09,
+        0.16,
+        0.12,
+        Math.cos(a) * 0.19,
+        Math.sin(a) * 0.15 - 0.015,
+        -0.12,
+      );
+      tuft.rotation.z = a - Math.PI / 2;
+    }
+    for (const side of [-1, 1]) {
+      ellipsoid(head, green, 0.047, 0.013, 0.012, side * 0.105, 0.025, 0.217);
+      const ear = mesh(
+        head,
+        shell,
+        new T.ConeGeometry(0.065, 0.14, 4),
+        side * 0.16,
+        0.16,
+        -0.055,
+      );
+      ear.rotation.z = -side * 0.3;
+      const fang = mesh(
+        jaw,
+        trim,
+        new T.ConeGeometry(0.018, 0.07, 5),
+        side * 0.075,
+        -0.015,
+        0.11,
+      );
+      fang.rotation.z = Math.PI;
+    }
     for (const side of [-1, 1]) {
       const horn = mesh(
         head,
         shell,
-        new T.ConeGeometry(0.065, 0.43, 5),
+        new T.ConeGeometry(0.05, 0.23, 5),
         side * 0.125,
         0.18,
         -0.15,
@@ -518,6 +565,10 @@ export function createNucleoForm(form) {
   batchStatic(steam);
   steam.visible = false;
   const excluded = new Set([...jets, ...vfx.excluded]);
+  if (!brute) {
+    batchStatic(mane);
+    batchStatic(jaw);
+  }
   for (const p of pivots) batchStatic(p, excluded);
   if (hammer) batchStatic(hammer);
   const motion = createOperatorMotion();
@@ -542,6 +593,9 @@ export function createNucleoForm(form) {
         !brute && terrestrial
           ? sampleCreatureGait(pose.phase, c.speed ?? 0, options.reducedMotion)
           : null;
+      const feline = !brute
+        ? sampleFelineProfile(p, c.speed, options.reducedMotion)
+        : null;
       const blend = 1 - p.weight * 0.92;
       root.position.set(c.x, c.y, c.z);
       root.rotation.y = c.yaw;
@@ -559,10 +613,19 @@ export function createNucleoForm(form) {
         p.shiftX,
         (brute ? 0 : 0.018) +
           (gait ? gait.bob : pose.bob * (brute ? 0.45 : 1)) * blend -
-          p.crouch,
+          p.crouch -
+          (feline?.crouch ?? 0),
         p.shiftZ,
       );
-      body.scale.set(brute ? 1.2 : 1, brute ? 1.28 : 1, brute ? 1.13 : 1);
+      body.scale.set(
+        brute ? 1.2 : feline.width,
+        brute ? 1.28 : feline.height,
+        brute ? 1.13 : feline.length,
+      );
+      if (feline) {
+        mane.scale.setScalar(feline.mane);
+        jaw.rotation.x = feline.jaw;
+      }
       pistons.forEach((piston, i) => {
         piston.position.y =
           0.86 +
@@ -629,6 +692,7 @@ export function createNucleoForm(form) {
         beat: p.beat,
         gait: gait ? "four-beat" : pose.state,
         blend,
+        feline,
       };
     },
   };

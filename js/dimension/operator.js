@@ -111,7 +111,7 @@ export function createOperator(progress, player = {}) {
     flatShading: false,
   });
   const hairHighlight = new T.MeshLambertMaterial({
-    color: 0x3a2d32,
+    color: 0x2d2529,
     flatShading: false,
   });
   const ink = new T.MeshLambertMaterial({ map: tattooMap, flatShading: true });
@@ -272,9 +272,9 @@ export function createOperator(progress, player = {}) {
     head,
   );
   skull.name = "sculpted-face";
-  const nose = ellipsoid(head, skin, 0.019, 0.032, 0.024, 0, -0.011, 0.138);
+  const nose = ellipsoid(head, skin, 0.017, 0.028, 0.022, 0, -0.011, 0.138);
   nose.rotation.x = -0.1;
-  ellipsoid(head, skin, 0.024, 0.013, 0.018, 0, -0.033, 0.15);
+  ellipsoid(head, skin, 0.02, 0.011, 0.015, 0, -0.031, 0.15);
   const eyeWhite = new T.MeshLambertMaterial({
     color: 0xd1c9b7,
     flatShading: true,
@@ -365,16 +365,16 @@ export function createOperator(progress, player = {}) {
         [side * 0.153, 0.016, 0.07],
         [side * 0.158, 0.005, 0.005],
       ],
-      0.005,
+      0.0035,
     );
     const moustache = ellipsoid(
       head,
       hair,
-      0.03,
-      0.009,
+      0.027,
       0.007,
-      side * 0.025,
-      -0.065,
+      0.007,
+      side * 0.022,
+      -0.062,
       0.131,
     );
     moustache.rotation.z = -side * 0.07;
@@ -421,34 +421,26 @@ export function createOperator(progress, player = {}) {
   }
   scalp.computeVertexNormals();
   mesh(scalp, hair, hairRig).name = "continuous-hair-scalp";
-  for (let row = 0; row < 2; row++)
-    for (let i = 0; i < 6; i++) {
-      const a = (i / 6) * Math.PI * 2 + row * 0.41,
-        r = row === 1 ? 0.06 : 0.105;
-      const lock = ellipsoid(
-        hairRig,
-        (i + row) % 4 === 0 ? hairHighlight : hair,
-        0.045,
-        0.026 + row * 0.006,
-        0.075,
-        Math.sin(a) * r,
-        0.153 + row * 0.034 + Math.sin(a * 2) * 0.008,
-        Math.cos(a) * r - 0.025,
-      );
-      lock.rotation.set(0.2 * Math.sin(a), a + 0.45, 0.28 * Math.cos(a));
-    }
-  for (let i = 0; i < 5; i++) {
-    const curl = ellipsoid(
+  // Overlapping S-shaped locks follow the crown in two staggered rows.
+  // The continuous scalp underneath closes every viewing angle.
+  for (let i = 0; i < 7; i++) {
+    const row = i < 4 ? 0 : 1,
+      col = i < 4 ? i : i - 4;
+    const x = -0.13 + col * 0.072 + (row ? 0.025 : 0),
+      z = row ? -0.035 : 0.085;
+    const y = 0.14 + row * 0.018 - Math.abs(x) * 0.08;
+    const lock = tube(
       hairRig,
       i % 3 === 0 ? hairHighlight : hair,
-      0.033,
+      [
+        [x, y, z],
+        [x + 0.012, y + 0.028, z + 0.015],
+        [x + 0.052, y + 0.034, z - 0.012],
+        [x + 0.075, y + 0.008, z - 0.042],
+      ],
       0.026,
-      0.045,
-      (i - 2) * 0.055,
-      0.115 + Math.sin(i * 1.6) * 0.014,
-      0.109,
     );
-    curl.rotation.z = Math.sin(i * 1.9) * 0.3;
+    lock.name = "swept-wave";
   }
 
   const bracelets = [];

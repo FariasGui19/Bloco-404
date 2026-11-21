@@ -347,6 +347,7 @@ export function createSpatialWorld({
       mapContext.stroke();
     }
     function interact() {
+      actions.presentInteraction();
       const c = controller,
         nearAnchor =
           Math.hypot(c.x - anchorPOI.x, c.z - anchorPOI.z) < 5 &&

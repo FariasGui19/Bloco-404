@@ -81,7 +81,14 @@ export function createOperatorActions(state, notify = () => {}) {
     );
   function select() {
     if (state.progress.archetype !== "nucleo_dez_forma") {
-      notify("R · SELETOR DO BRACELETE X10");
+      if (action.remaining <= 0 || action.id === "select")
+        Object.assign(action, {
+          id: "select",
+          duration: 0.65,
+          remaining: 0.65,
+          selected: null,
+        });
+      notify("R · SINTONIA DO ARQUÉTIPO ATIVO");
       return;
     }
     const forms = available();
@@ -185,6 +192,11 @@ export function createOperatorActions(state, notify = () => {}) {
       Object.assign(action, { remaining: 0, duration: 1, id: null });
     },
     available,
+    presentInteraction() {
+      if (action.remaining > 0) return false;
+      Object.assign(action, { id: "interact", duration: 0.7, remaining: 0.7 });
+      return true;
+    },
     select,
     transform,
     trigger,

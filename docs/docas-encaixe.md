@@ -1,5 +1,7 @@
 # Docas da Neblina — reconstrução e encaixe isométrico
 
+> Registro do passo anterior. A revisão atual está em [Ajustes cirúrgicos](docas-cirurgico.md), com um quarto atlas, correções de contato e mar superior.
+
 ## Ver o resultado
 
 - [Prévia animada no renderizador real](previa-docas-encaixe.html): mapa completo, detalhe central, antes/depois e movimento reduzido.

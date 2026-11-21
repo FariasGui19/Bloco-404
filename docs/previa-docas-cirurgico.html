@@ -1,0 +1,36 @@
+<!doctype html><html lang="pt-BR"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Docas • Revisão cirúrgica</title>
+<style>body{margin:0;background:#090f20;color:#d3dfeb;font:15px system-ui}header{max-width:1280px;margin:auto;padding:24px}h1{margin:8px 0}p{color:#a6b7ce}button,label,a{color:#c4efef;margin-right:20px}button{background:#253048;border:1px solid #697083;padding:9px 18px;border-radius:5px}canvas{display:block;width:100%;max-width:1568px;margin:auto}#status{color:#d1b987}</style>
+<header>DOCAS DA NEBLINA / AJUSTES CIRÚRGICOS<h1>Contatos corrigidos. Mar superior vivo.</h1><p>Um atlas adicional: cinco recortes refinados, materiais e borda direita. Cristal esquerdo reduzido, árvores sem apoio removidas e três novos tentáculos no mar superior. Cais, barcos e mar preservados. Prévia isolada: não lê nem grava a partida. A referência abaixo permite conferir proporções e as diferenças restantes na costa preservada.</p><button id="view">Ver área central</button><label><input id="before" type="checkbox"> Composição antiga, sem encaixe</label><button id="north">Mar superior</button><button id="pause">Pausar</button><label><input id="reduced" type="checkbox"> Movimento reduzido</label><a href="../index.html">Abrir jogo</a><span id="status">Carregando…</span></header><canvas width="1568" height="880"></canvas><section style="max-width:1568px;margin:28px auto"><h2>Antes desta revisão</h2><img style="display:block;width:100%" src="../qa/docas-encaixe-resultado.png" alt="Captura do commit-base antes dos ajustes cirúrgicos"><h2>Referência fornecida</h2><p>A pintura tem enquadramento e costa diferentes da base animada preservada. Não é uma promessa de igualdade pixel a pixel ou de resolução superior à fonte.</p><img style="display:block;width:100%" src="../assets/sprites/docas-neblina/referencia.png" alt="Referência original das Docas da Neblina"><p><a href="docas-cirurgico.md">Notas técnicas e validação</a></p></section>
+<script type="module">
+import {SPRITES_ENCAIXE} from '../js/data/worlds/arquipelago-rotas-perdidas/docas-encaixe.js';
+import {loadSprites} from '../js/engine/sprites.js';
+import {docas} from '../js/data/worlds/arquipelago-rotas-perdidas/docas-neblina.js';
+import {SPRITES_CAIS_SUL} from '../js/data/worlds/arquipelago-rotas-perdidas/cais-sul.js';
+import {SPRITES_COSTA_OESTE} from '../js/data/worlds/arquipelago-rotas-perdidas/costa-oeste-docas.js';
+import {SPRITES_CASCOS} from '../js/engine/docas-cascos.js';
+import {SPRITES_PESQUEIRO_03} from '../js/engine/docas-pesqueiro-03.js';
+import {SPRITES_DOCAS_VIVAS} from '../js/engine/docas-vivas.js';
+import {SPRITES_RESSACA} from '../js/engine/docas-ressaca.js';
+import {SPRITES_TENTACULO_02} from '../js/engine/docas-tentaculo-02.js';
+import {renderDocas} from '../js/engine/docas-view.js';
+import {definirMovimentoDocas} from '../js/engine/docas-animation.js';
+// Preview changes the visual preference in memory only, never localStorage.
+const originalStorage=Storage.prototype.setItem;
+function motion(value){Storage.prototype.setItem=()=>{};try{definirMovimentoDocas(value);}finally{Storage.prototype.setItem=originalStorage;}}
+motion('normal');
+const source=await(await fetch('../js/main.js')).text();
+const explicit=Array.from(source.matchAll(/\{ id: '([^']+)', src: '([^']+)' \}/g),m=>({id:m[1],src:m[2]})).filter(s=>s.id.startsWith('docas_'));
+const loaded=await loadSprites([...SPRITES_ENCAIXE,...explicit,...SPRITES_CAIS_SUL,...SPRITES_COSTA_OESTE,...SPRITES_CASCOS,...SPRITES_PESQUEIRO_03,...SPRITES_DOCAS_VIVAS,...SPRITES_RESSACA,...SPRITES_TENTACULO_02].map(s=>({...s,src:'../'+s.src})));
+document.querySelector('#status').textContent=loaded.every(Boolean)?'Artes carregadas':'Falha ao carregar arte';
+const state={player:{x:620*2.5/64,y:555*2.5/22},objects:[],trainingTargets:[],progress:{flags:{docas_fogueira_acesa:true}},docasAnimation:{elapsed:0}};
+const canvas=document.querySelector('canvas'),ctx=canvas.getContext('2d');
+let paused=false,overview=true,north=false,last=performance.now();
+document.querySelector('#north').onclick=()=>{north=!north;document.querySelector('#north').textContent=north?'Voltar ao mapa':'Mar superior';};
+document.querySelector('#view').onclick=()=>{overview=!overview;document.querySelector('#view').textContent=overview?'Ver área central':'Ver mapa inteiro';};
+document.querySelector('#pause').onclick=()=>{paused=!paused;document.querySelector('#pause').textContent=paused?'Retomar':'Pausar';};
+document.querySelector('#reduced').onchange=e=>motion(e.target.checked?'reduzido':'normal');
+const beforeMap={...docas,meta:{...docas.meta,docasEncaixe:false}};
+window.sampleCentral=t=>{state.docasAnimation.elapsed=t;renderDocas(ctx,document.querySelector('#before').checked?beforeMap:docas,state,north?1100:overview?1960:2320,north?250:overview?1387.5:1190,1568,880,north?.48:overview?.4:.66,1,t*1000,()=>{});};
+function frame(now){if(!paused)state.docasAnimation.elapsed+=Math.min(.05,(now-last)/1000);last=now;window.sampleCentral(state.docasAnimation.elapsed);requestAnimationFrame(frame);}
+window.ready=true;requestAnimationFrame(frame);
+</script></html>

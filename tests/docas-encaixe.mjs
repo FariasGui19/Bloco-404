@@ -6,8 +6,8 @@ import {itensEncaixe,substituidaPeloEncaixe,caixaEncaixe,encaixeAtivo} from '../
 import {ordenarProfundidadeDocas} from '../js/engine/docas-view.js';
 import {docas} from '../js/data/worlds/arquipelago-rotas-perdidas/docas-neblina.js';
 const manifest=JSON.parse(readFileSync('assets/sprites/docas-encaixe/manifest.json'));
-assert.equal(SPRITES_ENCAIXE.length,3);assert(SPRITES_ENCAIXE.length<=10);
-assert.equal(Object.keys(PECAS_ENCAIXE).length,30);
+assert.equal(SPRITES_ENCAIXE.length,4);assert(SPRITES_ENCAIXE.length<=10);
+assert.equal(Object.keys(PECAS_ENCAIXE).length,33);
 assert.equal(createHash('sha256').update(readFileSync(manifest.source)).digest('hex'),manifest.sha256,'same supplied reference');
 assert.deepEqual(manifest.frames,PECAS_ENCAIXE);
 for(const sheet of SPRITES_ENCAIXE){
@@ -30,4 +30,4 @@ const index=id=>order.findIndex(p=>p.encaixe===id),player=order.findIndex(p=>p.p
 assert(index('central_fundos')<player&&player<index('galpao'),'player behind workshop, ahead of rear cabin');
 assert.deepEqual(caixaEncaixe('galpao',2.5).foot,465*2.5);
 assert.equal(caixaEncaixe('missing',2.5),null);
-console.log('Encaixe: três atlas RGBA, 30 recortes registrados, gutters, referência, fallback e z-sort OK.');
+console.log('Encaixe: quatro atlas RGBA, 33 recortes registrados, gutters, referência, fallback e z-sort OK.');

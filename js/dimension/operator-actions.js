@@ -176,6 +176,12 @@ export function createOperatorActions(state, notify = () => {}) {
   }
   return {
     action,
+    reset() {
+      selected = null;
+      sequence = 0;
+      for (const key of Object.keys(action)) delete action[key];
+      Object.assign(action, { remaining: 0, duration: 1, id: null });
+    },
     available,
     select,
     transform,

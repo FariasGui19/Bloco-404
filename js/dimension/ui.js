@@ -7,6 +7,7 @@ export function initDimensionModule({
   canEnter,
   save,
   canvas,
+  developerTools = false,
 }) {
   const style = document.createElement("link");
   style.rel = "stylesheet";
@@ -91,6 +92,7 @@ export function initDimensionModule({
         mount: root,
         sourceCanvas: canvas,
         sound,
+        developerTools,
         onAnchor: () => save(),
       });
     },

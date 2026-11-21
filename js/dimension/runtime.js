@@ -1,3 +1,5 @@
+import { createMasterMorpher } from "./master-morpher.js";
+import { createMasterMorpherPanel } from "./master-morpher-ui.js";
 import { deferAppearance } from "./operator-performance.js";
 import { createNucleoHUD } from "./nucleo-hud.js";
 import { createOperatorActions } from "./operator-actions.js";
@@ -25,7 +27,10 @@ export function createSpatialWorld({
   sourceCanvas,
   onAnchor = () => {},
   sound = () => {},
+  developerTools = false,
 }) {
+  // Local facade: creative player/progress can never replace application refs.
+  state = { ...state };
   const viewport = mount.querySelector(".dimension-viewport");
   let renderer;
   try {
@@ -49,7 +54,7 @@ export function createSpatialWorld({
   );
   const listener = new AbortController(),
     events = { signal: listener.signal };
-  let world;
+  let world, masterMorpher, morpherPanel;
   try {
     world = createSector();
     const anchorPOI = world.layout.pois.find((p) => p.id === "limiar.anchor");
@@ -110,12 +115,44 @@ export function createSpatialWorld({
       notice.textContent = message;
     });
     const nucleoHUD = createNucleoHUD(mount, state, actions);
+    masterMorpher = createMasterMorpher(
+      state,
+      () => {
+        reset();
+        actions.reset();
+        controller.actionBoost = 0;
+        morpherPanel?.update();
+        notice.textContent = masterMorpher.active
+          ? "MORFADOR MESTRE · TESTE ISOLADO · SAVE NORMAL PRESERVADO"
+          : "MORFADOR DESATIVADO · OPERADOR E PROGRESSO RESTAURADOS";
+      },
+      { laboratory: developerTools },
+    );
+    morpherPanel = createMasterMorpherPanel(mount, masterMorpher);
+    mount
+      .querySelector(".dimension-morpher")
+      .addEventListener("focusin", reset, events);
     function reset() {
       keys.clear();
       pressed.clear();
       dragging = false;
     }
     function key(e, down) {
+      if (e.code === "F8") {
+        e.preventDefault();
+        e.stopImmediatePropagation();
+        if (down && !e.repeat) {
+          reset();
+          morpherPanel.toggle();
+        }
+        return;
+      }
+      if (e.code !== "Escape" && e.target.closest?.("[data-dimension-dev]")) {
+        // Keep native checkbox/select/summary behavior, but never leak dev
+        // typing to either the spatial controls or the underlying 2D hotkeys.
+        e.stopImmediatePropagation();
+        return;
+      }
       if (e.target instanceof HTMLSelectElement && e.code !== "Escape") return;
       if (
         e.code === "Tab" ||
@@ -334,7 +371,7 @@ export function createSpatialWorld({
       } else if (nearAnchor) {
         state.progress.flags ??= {};
         state.progress.flags.dimensionalAnchorStabilized = true;
-        onAnchor();
+        if (!masterMorpher.active) onAnchor();
         sound("anchor");
         notice.textContent =
           "ÂNCORA ESTABILIZADA · A consciência suporta profundidade. Retorno 2D disponível a qualquer momento.";
@@ -360,6 +397,7 @@ export function createSpatialWorld({
         frames = 0;
         fpsTime = 0;
       }
+      masterMorpher.update();
       const appearanceKey = `${state.progress.archetype}:${state.player.nucleoForm ?? ""}:${state.player.equippedSuit ?? ""}`;
       if (
         archetype !== appearanceKey &&
@@ -488,6 +526,7 @@ export function createSpatialWorld({
         hudTime = 0;
         drawMap();
         nucleoHUD.update();
+        morpherPanel.update();
         el(".dimension-suit").textContent = profileFor(state.progress).name;
         el(".dimension-actions").textContent = actions.label();
         el(".dimension-level").textContent =
@@ -556,6 +595,8 @@ export function createSpatialWorld({
     function dispose() {
       if (disposed) return;
       disposed = true;
+      masterMorpher.dispose();
+      morpherPanel.dispose();
       nucleoHUD.dispose();
       listener.abort();
       reset();
@@ -571,6 +612,7 @@ export function createSpatialWorld({
       frame,
       dispose,
       controller,
+      masterMorpher,
       actions,
       camera,
       world,
@@ -586,6 +628,8 @@ export function createSpatialWorld({
       },
     };
   } catch (error) {
+    masterMorpher?.dispose();
+    morpherPanel?.dispose();
     listener.abort();
     world?.environment.dispose();
     world?.scene.traverse((o) => {

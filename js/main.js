@@ -1465,6 +1465,7 @@ async function frame(now) {
   avancarAnimacaoDocas(state, (now-last)/1000, document.hidden);
   last = now;
 
+  dimensional.tickRupture();
   dimensional.setAvailable(dimensional.manager.active || dimensional.manager.canEnter());
   if (dimensional.manager.active) {
     dimensional.manager.tick(dt);

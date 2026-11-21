@@ -111,7 +111,7 @@ export function createOperator(progress, player = {}) {
     flatShading: false,
   });
   const hairHighlight = new T.MeshLambertMaterial({
-    color: 0x292526,
+    color: 0x3a2d32,
     flatShading: false,
   });
   const ink = new T.MeshLambertMaterial({ map: tattooMap, flatShading: true });
@@ -255,8 +255,8 @@ export function createOperator(progress, player = {}) {
   // onto this volume, not pasted on a flat rectangular face card.
   const skullGeometry = loftGeometry(
     [
-      [-0.17, 0.075, 0.073, 0.02],
-      [-0.133, 0.119, 0.105, 0.012],
+      [-0.17, 0.068, 0.073, 0.02],
+      [-0.133, 0.106, 0.105, 0.012],
       [-0.065, 0.151, 0.128, 0],
       [0.025, 0.159, 0.139, 0],
       [0.112, 0.15, 0.13, -0.008],
@@ -348,9 +348,9 @@ export function createOperator(progress, player = {}) {
       [
         [side * 0.023, 0.031, 0.143],
         [side * 0.107, 0.031, 0.14],
-        [side * 0.114, 0.012, 0.14],
-        [side * 0.099, -0.013, 0.145],
-        [side * 0.037, -0.014, 0.15],
+        [side * 0.11, 0.012, 0.14],
+        [side * 0.102, -0.008, 0.145],
+        [side * 0.032, -0.009, 0.15],
         [side * 0.023, 0.007, 0.148],
         [side * 0.023, 0.031, 0.143],
       ],
@@ -377,7 +377,7 @@ export function createOperator(progress, player = {}) {
       -0.065,
       0.131,
     );
-    moustache.rotation.z = -side * 0.13;
+    moustache.rotation.z = -side * 0.07;
     ellipsoid(head, lensGlass, 0.019, 0.003, 0.003, side * 0.074, 0.025, 0.144);
     ellipsoid(head, hair, 0.01, 0.055, 0.018, side * 0.15, 0.083, 0.008);
   }
@@ -429,21 +429,21 @@ export function createOperator(progress, player = {}) {
         hairRig,
         (i + row) % 4 === 0 ? hairHighlight : hair,
         0.045,
-        0.019 + row * 0.002,
+        0.026 + row * 0.006,
         0.075,
         Math.sin(a) * r,
-        0.148 + row * 0.032,
+        0.153 + row * 0.034 + Math.sin(a * 2) * 0.008,
         Math.cos(a) * r - 0.025,
       );
-      lock.rotation.set(0.1 * Math.sin(a), a, 0.22 * Math.cos(a));
+      lock.rotation.set(0.2 * Math.sin(a), a + 0.45, 0.28 * Math.cos(a));
     }
   for (let i = 0; i < 5; i++) {
     const curl = ellipsoid(
       hairRig,
       i % 3 === 0 ? hairHighlight : hair,
       0.033,
-      0.021,
-      0.038,
+      0.026,
+      0.045,
       (i - 2) * 0.055,
       0.115 + Math.sin(i * 1.6) * 0.014,
       0.109,
@@ -565,7 +565,7 @@ export function createOperator(progress, player = {}) {
     shoulder.rotation.z = side * 0.22;
     loft(
       arm,
-      bio ? ink : suit,
+      bio || ancient ? ink : suit,
       [
         [-0.285, 0.065, 0.07],
         [-0.18, bio ? 0.097 : 0.081, 0.085],
@@ -826,19 +826,36 @@ export function createOperator(progress, player = {}) {
     );
   }
   if (ancient) {
-    const lens = ring(head, trim, 0.051, 0.007, -0.071, 0.01, 0.151);
-    lens.scale.y = 0.88;
-    lens.name = "ancestral-lens";
-    tube(
-      head,
-      trim,
-      [
-        [-0.122, 0.02, 0.145],
-        [-0.155, 0.065, 0.08],
-        [-0.12, 0.1, 0.04],
-      ],
-      0.006,
-    );
+    // Reference keeps ordinary dark prescription glasses, not a monocle.
+    const coat = new T.Group();
+    coat.name = "ancestral-split-coat";
+    body.add(coat);
+    for (const side of [-1, 1]) {
+      const tail = loft(
+        coat,
+        suit,
+        [
+          [0.44, 0.085, 0.012],
+          [0.64, 0.105, 0.018],
+          [0.91, 0.07, 0.022],
+        ],
+        side * 0.15,
+        0,
+        -0.16,
+        6,
+      );
+      tail.rotation.z = side * -0.13;
+      tube(
+        coat,
+        trim,
+        [
+          [side * 0.12, 0.92, -0.19],
+          [side * 0.18, 0.68, -0.18],
+          [side * 0.2, 0.45, -0.17],
+        ],
+        0.006,
+      );
+    }
     for (const side of [-1, 1]) {
       tube(
         body,

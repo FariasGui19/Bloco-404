@@ -1,3 +1,4 @@
+import { requestRupture } from '../dimension/rupture.js';
 import { healPlayer } from './health.js';
 import { iniciarTravessiaNeblina } from '../ui/travessia-neblina.js';
 // js/game/interactions.js
@@ -445,7 +446,9 @@ function interactWithObject(object) {
       const result=estabilizarAncoraCromatica(state.progress);if(result){recordQuestEvent(state.progress,{type:'cromatica',target:'ancora'});saveGame();}
       openDialogue({speaker:'NÚCLEO DE ÂNCORA',dialogue:result ? [result==='total'?'A ÂNCORA FOI PURIFICADA. AS DUAS FITAS E A RECOMPILAÇÃO COMPLETA PERMITIRAM ISOLAR A PRAGA.':'ÂNCORA SALVA, MAS A CONTENÇÃO PERMANECE FRATURADA. A INFECÇÃO AINDA RESISTE NAS ZONAS BAIXAS.','A SOBRECARGA ABRIU UMA FENDA ATRÁS DA CÂMARA. O HUB ESTÁ SEGURO.'] : [d.ancoraEstavel?'A ÂNCORA PERMANECE ESTÁVEL.':'A ÂNCORA AINDA OSCILA. ALINHE OS TRÊS PAINÉIS ANTES DE TENTAR.']});return;
     }
-    if(id==='cromatica_limiar_final') {openDialogue({speaker:'NEXO-04 // FENDA',dialogue:['VOCÊ ATRAVESSOU O RASGO. ALÉM DESTE LIMIAR, A NOVA REALIDADE AINDA NÃO FOI CARTOGRAFADA.','A LINHA DE RETORNO PERMANECE ABERTA.']});return;}
+    if(id==='cromatica_limiar_final') {
+      const requested=requestRupture(state);if(requested)saveGame();
+      openDialogue({speaker:'NEXO-04 // FENDA',dialogue:requested ? ['OPERADOR NULO: VOCÊ ESTABILIZOU A ÂNCORA. NÃO A SAÍDA.','INTERFERÊNCIA DIRETA DETECTADA. A CONTENÇÃO DO PLANO ESTÁ FALHANDO — ISTO NÃO É UMA DERROTA.','PRESERVANDO MEMÓRIA, EQUIPAMENTO E LINHA DE RETORNO. DESTINO: SETOR LIMIAR.'] : ['A LINHA DE RETORNO PERMANECE ABERTA.','A ÂNCORA ESTÁVEL PRESERVA SUA MEMÓRIA. O SETOR LIMIAR CONTINUA ACESSÍVEL PELO MÓDULO 3D.']});return;}
   }
   if (object.id?.startsWith('ancora_666_')) {
     const id = object.id.slice('ancora_666_'.length);

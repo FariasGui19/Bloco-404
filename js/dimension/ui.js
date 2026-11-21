@@ -1,3 +1,4 @@
+import { createRuptureBridge, RUPTURE_ID } from "./rupture.js";
 import { DimensionManager } from "./dimension-manager.js";
 import { ensureHealth } from "../game/health.js";
 
@@ -87,6 +88,11 @@ export function initDimensionModule({
     createWorld: async (options) => {
       const { createSpatialWorld } = await import("./runtime.js");
       ensureHealth(state.player, state.progress);
+      root.dataset.narrative = String(options.reason === RUPTURE_ID);
+      root.querySelector(".dimension-rupture span").textContent =
+        options.reason === RUPTURE_ID
+          ? "INTERFERÊNCIA DO OPERADOR NULO · MEMÓRIA E RETORNO PRESERVADOS"
+          : "ESPAÇO TRIDIMENSIONAL DESBLOQUEADO";
       return createSpatialWorld({
         ...options,
         mount: root,
@@ -131,6 +137,15 @@ export function initDimensionModule({
       }
     },
   });
+  const rupture = createRuptureBridge({
+    state,
+    manager,
+    save,
+    emit: (detail) =>
+      window.dispatchEvent(
+        new CustomEvent("bloco404:rupture-phase", { detail }),
+      ),
+  });
   entry.onclick = () => manager.enter({ reason: "sandbox" });
   root.querySelector(".dimension-exit").onclick = () => manager.exit();
   // Public debug/event entry point: eligibility and transactional guards still apply.
@@ -150,6 +165,7 @@ export function initDimensionModule({
   window.__dimension404 = manager;
   return {
     manager,
+    tickRupture: () => rupture.tick(),
     setAvailable(available) {
       entry.hidden = !available;
     },

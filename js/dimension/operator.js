@@ -66,7 +66,7 @@ export function createOperator(progress, player = {}) {
   const proportions = {
     headWidth: 0.32,
     headHeight: 0.37,
-    shoulder: brute ? 0.47 : bio ? 0.405 : mare ? 0.325 : 0.36,
+    shoulder: !equipped ? 0.315 : bio ? 0.405 : mare ? 0.325 : 0.36,
     hip: 0.155,
     hipY: 0.89,
     headY: 1.71,
@@ -249,6 +249,7 @@ export function createOperator(progress, player = {}) {
   const head = new T.Group();
   head.name = "operator-head";
   head.position.y = proportions.headY;
+  head.scale.set(0.96, 0.96, 0.98);
   body.add(head);
   // Narrow chin, cheekbones, brow and curved temples; the portrait is UV-mapped
   // onto this volume, not pasted on a flat rectangular face card.
@@ -284,11 +285,11 @@ export function createOperator(progress, player = {}) {
     gaze = new T.Group();
   head.add(gaze);
   for (const side of [-1, 1]) {
-    ellipsoid(head, eyeWhite, 0.025, 0.0085, 0.006, side * 0.068, 0.007, 0.136);
+    ellipsoid(head, eyeWhite, 0.021, 0.0085, 0.006, side * 0.068, 0.007, 0.136);
     const iris = ellipsoid(
       gaze,
       dark,
-      0.008,
+      0.0098,
       0.007,
       0.004,
       side * 0.068,
@@ -353,7 +354,7 @@ export function createOperator(progress, player = {}) {
         [side * 0.023, 0.007, 0.148],
         [side * 0.023, 0.031, 0.143],
       ],
-      0.0045,
+      0.0035,
     );
     frame.name = "angular-prescription-frame";
     tube(
@@ -369,8 +370,8 @@ export function createOperator(progress, player = {}) {
     const moustache = ellipsoid(
       head,
       hair,
-      0.032,
-      0.0105,
+      0.03,
+      0.009,
       0.007,
       side * 0.025,
       -0.065,
@@ -1062,7 +1063,14 @@ export function createOperator(progress, player = {}) {
       );
   }
   batchStatic(presence);
-  const kind = bio ? "bio" : mare ? "mare" : ancient ? "ancient" : "human";
+  const kind =
+    id === "motor_bio_forja"
+      ? "bio"
+      : id === "mare_astral"
+        ? "mare"
+        : id === "lamina_dominio_anciao"
+          ? "ancient"
+          : "human";
   const currents = mare
     ? [-1, 1].map((side) => {
         const drop = ellipsoid(
@@ -1079,7 +1087,10 @@ export function createOperator(progress, player = {}) {
         return drop;
       })
     : [];
-  const vfx = createOperatorVFX(body, limbs[1].elbow, style.accent, kind);
+  const vfx = createOperatorVFX(body, limbs[1].elbow, style.accent, kind, {
+    equipped,
+    source: bracelets[0]?.root,
+  });
   const excluded = new Set([
     ...facePivots,
     ...jets,
@@ -1096,16 +1107,23 @@ export function createOperator(progress, player = {}) {
     },
     animate(c, t, options = {}) {
       const pose = motion.update(c, t, { ...options, archetype: id }),
-        p = samplePerformance(options.action, kind, t, options.reducedMotion);
+        p = samplePerformance(
+          options.action,
+          kind,
+          t,
+          options.reducedMotion,
+          !equipped,
+        );
+      const blend = 1 - p.weight * 0.88;
       const f = facialSample(t, p.expression, options.reducedMotion);
       root.position.set(c.x, c.y, c.z);
       root.rotation.y = c.yaw;
       body.rotation.set(
         pose.pitch + p.lean,
-        (pose.torsoYaw ?? 0) + p.twist,
-        pose.bank + (pose.hipRoll ?? 0),
+        (pose.torsoYaw ?? 0) * blend + p.twist,
+        pose.bank + (pose.hipRoll ?? 0) * blend + p.bank,
       );
-      body.position.y = pose.bob - p.crouch;
+      body.position.set(p.shiftX, pose.bob * blend - p.crouch, p.shiftZ);
       body.scale.setScalar(1);
       head.rotation.set(
         (pose.headPitch ?? 0) + p.headPitch,
@@ -1118,7 +1136,7 @@ export function createOperator(progress, player = {}) {
         l.scale.y = 0.014 * f.blink;
       });
       eyebrows.forEach((b, i) => {
-        b.rotation.z = (i ? 1 : -1) * f.brow;
+        b.rotation.z = (i ? 1 : -1) * f.brow + (i ? -0.035 : 0.035);
         b.position.y = 0.041 + p.expression * 0.005;
       });
       mouth.scale.y = 0.0025 * f.mouth;
@@ -1130,14 +1148,14 @@ export function createOperator(progress, player = {}) {
         options.reducedMotion ? 0 : -pose.bank * 0.05,
       );
       limbs.forEach(({ leg, knee, arm, elbow, side }, i) => {
-        leg.rotation.x = pose.legs[i] + p.legs[i];
-        knee.rotation.x = pose.knees[i] + p.knees[i];
+        leg.rotation.x = pose.legs[i] * blend + p.legs[i];
+        knee.rotation.x = pose.knees[i] * blend + p.knees[i];
         arm.rotation.set(
-          pose.arms[i] + p.arms[i],
+          pose.arms[i] * blend + p.arms[i],
           p.armYaw[i],
-          -side * pose.spread,
+          -side * pose.spread + p.armRoll[i],
         );
-        elbow.rotation.x = pose.elbows[i] + p.elbows[i];
+        elbow.rotation.x = pose.elbows[i] * blend + p.elbows[i];
       });
       for (const jet of jets) {
         const thrust =
@@ -1183,6 +1201,10 @@ export function createOperator(progress, player = {}) {
         scan: p.scan,
         stage: p.stage,
         variant: p.variant,
+        beat: p.beat,
+        blend,
+        identity: kind,
+        civilian: !equipped,
       };
     },
   };

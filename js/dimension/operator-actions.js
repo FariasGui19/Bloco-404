@@ -102,6 +102,7 @@ export function createOperatorActions(state, notify = () => {}) {
   function transform() {
     const { progress, player } = state;
     const previous = player.nucleoForm ?? null;
+    const returning = !!(previous || player.equippedSuit);
     const ok =
       progress.archetype === "nucleo_dez_forma"
         ? toggleNucleoForm(progress, player, selected)
@@ -109,6 +110,7 @@ export function createOperatorActions(state, notify = () => {}) {
     if (ok)
       Object.assign(action, {
         id: "transform",
+        returning,
         from: previous,
         to: player.nucleoForm ?? null,
         duration: 1.05,
@@ -208,6 +210,7 @@ export function createOperatorActions(state, notify = () => {}) {
           id: "transform",
           duration: 1.05,
           remaining: 1.05,
+          returning: true,
           from: before,
           to: p.nucleoForm ?? null,
         });

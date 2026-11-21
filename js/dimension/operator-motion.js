@@ -9,6 +9,7 @@ export function createOperatorMotion() {
     impact = 0;
   const pose = {
     state: "idle",
+    phase: 0,
     torsoYaw: 0,
     hipRoll: 0,
     headPitch: 0,
@@ -60,6 +61,7 @@ export function createOperatorMotion() {
       wasGrounded = c.grounded;
       impact *= Math.exp(-dt * 13);
       phase += dt * gait * (swim ? 5 : climb ? 6 : Math.min(18, speed * 1.9));
+      pose.phase = phase;
       const a = 1 - Math.exp(-dt * 12),
         moving = Math.min(1, speed / 5),
         flight = state === "flight";

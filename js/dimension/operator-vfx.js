@@ -3,7 +3,13 @@ import { createSculptTools } from "./operator-sculpt.js";
 import { batchStatic } from "./sector-meshes.js";
 
 // Owned, bounded geometry. No emitter, frame-time uploads, spawned lights or textures.
-export function createOperatorVFX(body, hand, color, kind) {
+export function createOperatorVFX(
+  body,
+  hand,
+  color,
+  kind,
+  { equipped = true, source = null } = {},
+) {
   const root = new T.Group();
   root.name = "operator-vfx";
   body.add(root);
@@ -131,6 +137,10 @@ export function createOperatorVFX(body, hand, color, kind) {
     metal.dispose();
     grip.dispose();
   }
+  if (source) {
+    source.updateWorldMatrix(true, false);
+  }
+  const wristPoint = new T.Vector3();
   const trail = mesh(
     new T.RingGeometry(
       kind === "mare" ? 0.67 : 0.45,
@@ -145,6 +155,14 @@ export function createOperatorVFX(body, hand, color, kind) {
   );
   trail.name = "energy-trail";
   trail.position.set(0, -0.37, 0.08);
+  const wrist = new T.Group();
+  wrist.name = "weapon-wrist";
+  wrist.position.y = -0.25;
+  hand.add(wrist);
+  for (const part of [blade, sword, trail]) {
+    wrist.add(part);
+    part.position.y += 0.25;
+  }
   const read = mesh(
     new T.RingGeometry(0.26, 0.28, 20, 1, 0, Math.PI * 1.65),
     veil,
@@ -346,7 +364,7 @@ export function createOperatorVFX(body, hand, color, kind) {
   blade.scale.y = 0.7;
   return {
     root,
-    excluded: new Set([blade, trail]),
+    excluded: new Set([blade, trail, wrist]),
     update(p, time, reduced = false, c = {}) {
       root.userData.action = p.id;
       root.userData.phase = p.u;
@@ -354,7 +372,20 @@ export function createOperatorVFX(body, hand, color, kind) {
       const moving = (c.speed ?? 0) > 2 && !c.boating && !c.flying;
       const watery = c.mode === "SUBMERSO" || c.mode === "NADO";
       blade.visible =
-        kind === "ancient" || (p.attack && ["bio", "veloz"].includes(kind));
+        equipped &&
+        (kind === "ancient" || (p.attack && ["bio", "veloz"].includes(kind)));
+      sword.visible = equipped && kind === "ancient";
+      wrist.rotation.set(p.wristPitch ?? 0, p.wristYaw ?? 0, p.wristRoll ?? 0);
+      if (source && (p.select || p.transform || p.scan)) {
+        source.updateWorldMatrix(true, false);
+        root.updateWorldMatrix(true, false);
+        source.getWorldPosition(wristPoint);
+        root.worldToLocal(wristPoint);
+        read.position.copy(wristPoint);
+        read.position.z += 0.13;
+        glyph.position.copy(read.position);
+        convergence.position.copy(read.position);
+      }
       blade.scale.set(
         kind === "bio" ? 2.2 : 1,
         kind === "bio"

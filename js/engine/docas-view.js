@@ -1,5 +1,5 @@
 import { itensMargemFechamento, desenharDetalheMargem, fechamentoPronto, desenharPecaFechamento, desenharMargensFechamento, desenharVidaEncosta, desenharBoiasFechamento } from './docas-fechamento.js';
-import { desenharMarPerimetral } from './docas-mar-perimetral.js';
+import { desenharMarPerimetral, desenharBrumaCosteira } from './docas-mar-perimetral.js';
 import { desenharMarSuperior } from './docas-mar-superior.js';
 import { repararSoloDireito, repararFacesDireitas, pecasCostaAjustadas, encaixeAtivo, substituidaPeloEncaixe, itensEncaixe, desenharEncaixe, desenharRelevoEncaixe, desenharContatosEncaixe, desenharNevoaEncaixe, desenharBrumaFundoEncaixe } from './docas-encaixe.js';
 import { desenharPatioCentral, desenharLuzesCentrais, desenharAcessosCentrais, poseCentral } from './docas-central.js';
@@ -263,6 +263,7 @@ export function renderDocas(ctx,map,state,camX,camY,w,h,zoom,dpr,now,drawPlayer)
     }ctx.restore();
   }
   if(fechamentoPronto(map))desenharVidaEncosta(ctx,sCais,t,reduced);
+  if(fechamentoPronto(map))desenharBrumaCosteira(ctx,sCais,t,reduced);
   if(encaixeAtivo(map))desenharNevoaEncaixe(ctx,sCais,t,reduced);
   desenharAcessosCentrais(ctx,map,state,t,reduced);
   if(encaixeAtivo(map)){ctx.save();ctx.translate(905*sCais,48*sCais);ctx.rotate(2.84+(reduced?0:Math.sin(t*.28)*.12));const light=ctx.createLinearGradient(0,0,510*sCais,0);light.addColorStop(0,'rgba(255,222,155,.19)');light.addColorStop(1,'rgba(255,222,155,0)');ctx.fillStyle=light;ctx.beginPath();ctx.moveTo(0,0);ctx.lineTo(510*sCais,-28*sCais);ctx.lineTo(510*sCais,28*sCais);ctx.closePath();ctx.fill();ctx.restore();}

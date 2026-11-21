@@ -118,10 +118,14 @@ function materialReparo(ctx,id,s){
 // This pass is INSIDE the existing terrain clip. It colours only the exposed
 // grey joins; the dock and the water are never turned into new dry floor.
 export function repararSoloDireito(ctx,s){
- const material=materialReparo(ctx,'solo-reparo',s);if(!material)return;
- ctx.save();ctx.fillStyle='#99807d';ctx.globalAlpha=.85;
- ctx.fillRect(840*s,520*s,560*s,122*s);ctx.fillRect(1280*s,445*s,125*s,90*s);
- ctx.fillStyle=material;ctx.globalAlpha=.16;ctx.fillRect(840*s,520*s,560*s,122*s);ctx.fillRect(1280*s,445*s,125*s,90*s);ctx.restore();
+ const img=getSprite('docas_acabamento_solo');
+ if(!img)return;
+ ctx.save();ctx.scale(s,s);
+ // Authored small-scale stones, not a flat paint fill or magnified cutout.
+ const pattern=ctx.createPattern(img,'repeat');
+ pattern.setTransform(new DOMMatrix().scale(.5));ctx.fillStyle=pattern;
+ ctx.fillRect(840,520,560,122);ctx.fillRect(1280,435,125,110);
+ ctx.restore();
 }
 export function repararFacesDireitas(ctx,map){
  const s=map.geometriaDocas.escala,material=materialReparo(ctx,'rocha-reparo',s);if(!material)return;

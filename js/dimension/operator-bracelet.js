@@ -103,10 +103,11 @@ export function createLatticeBracelet(parent, { industrial = false } = {}) {
         ? 0
         : p.transform
           ? p.converge
-          : p.select
+          : p.select || p.scan
             ? p.read * 0.55
             : 0;
       vanes.forEach((v, i) => {
+        v.position.z = open * 0.012;
         v.rotation.y = (i ? 1 : -1) * open * 0.75;
       });
       signal.color.setHex(p.selected === "forma_bruta" ? 0xffce79 : 0x99ffe1);

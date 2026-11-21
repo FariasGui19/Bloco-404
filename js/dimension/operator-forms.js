@@ -1,3 +1,4 @@
+import { sampleCreatureGait } from "./operator-gait.js";
 import { createLatticeBracelet } from "./operator-bracelet.js";
 import * as T from "../vendor/three.module.js";
 import { createSculptTools } from "./operator-sculpt.js";
@@ -512,6 +513,7 @@ export function createNucleoForm(form) {
     limbs[1].elbow,
     brute ? 0xffc554 : 0x74ff9a,
     kind,
+    { source: bracelets[0]?.root },
   );
   batchStatic(steam);
   steam.visible = false;
@@ -528,9 +530,19 @@ export function createNucleoForm(form) {
     animate(c, t, options = {}) {
       const pose = motion.update(c, t, {
           ...options,
-          gait: brute ? 0.68 : 1.4,
+          gait: brute ? 0.6 : 0.65,
         }),
         p = samplePerformance(options.action, kind, t, options.reducedMotion);
+      const terrestrial =
+        c.grounded &&
+        !c.flying &&
+        !c.boating &&
+        !["NADO", "SUBMERSO", "ESCALADA"].includes(c.mode);
+      const gait =
+        !brute && terrestrial
+          ? sampleCreatureGait(pose.phase, c.speed ?? 0, options.reducedMotion)
+          : null;
+      const blend = 1 - p.weight * 0.92;
       root.position.set(c.x, c.y, c.z);
       root.rotation.y = c.yaw;
       const running =
@@ -538,37 +550,62 @@ export function createNucleoForm(form) {
           ? Math.min(1, (c.speed ?? 0) / 8)
           : 0;
       body.rotation.set(
-        (brute ? pose.pitch * 0.45 : pose.pitch * 0.6 + running * 0.25) +
+        (brute ? pose.pitch * 0.45 : pose.pitch * 0.6 + (gait?.lean ?? 0)) +
           p.lean,
-        p.twist + (pose.torsoYaw ?? 0),
-        pose.bank * 0.6,
+        p.twist + (pose.torsoYaw ?? 0) * blend,
+        pose.bank * 0.6 + (gait?.roll ?? 0) * blend + p.bank,
       );
-      body.position.y =
-        (brute ? 0 : 0.018) + pose.bob * (brute ? 0.45 : 1) - p.crouch;
+      body.position.set(
+        p.shiftX,
+        (brute ? 0 : 0.018) +
+          (gait ? gait.bob : pose.bob * (brute ? 0.45 : 1)) * blend -
+          p.crouch,
+        p.shiftZ,
+      );
       body.scale.set(brute ? 1.2 : 1, brute ? 1.28 : 1, brute ? 1.13 : 1);
       pistons.forEach((piston, i) => {
         piston.position.y =
           0.86 +
           (options.reducedMotion
             ? 0
-            : Math.sin(t * 3.5 + i * Math.PI) * running * 0.025);
+            : Math.sin(pose.phase + i * Math.PI) * running * 0.025 +
+              p.impact * 0.025);
       });
       steam.visible =
         brute &&
         !options.reducedMotion &&
-        (p.attack || p.transform || (!running && Math.sin(t * 2) > 0.45));
+        (p.impact > 0.08 ||
+          p.scan ||
+          p.transform ||
+          (!running && Math.sin(t * 2) > 0.45));
       steam.position.y = options.reducedMotion ? 0 : (t * 0.35) % 0.12;
-      steam.scale.setScalar(1 + p.flare * 0.5);
+      steam.scale.setScalar(1 + p.impact * 0.8);
+      if (hammer) {
+        hammer.rotation.set(
+          p.wristPitch,
+          p.wristYaw,
+          p.wristRoll +
+            (options.reducedMotion
+              ? 0
+              : Math.sin(pose.phase) * running * 0.035 * blend),
+        );
+      }
       head.rotation.set(p.headPitch, -p.twist * 0.4, 0);
       limbs.forEach(({ leg, knee, arm, elbow, side }, i) => {
-        leg.rotation.x = pose.legs[i] * (brute ? 0.55 : 0.8) + p.legs[i];
-        knee.rotation.x = pose.knees[i] + p.knees[i] + (brute ? 0 : 0.25);
+        leg.rotation.x =
+          (gait ? gait.legs[i] : pose.legs[i] * (brute ? 0.55 : 0.8)) * blend +
+          p.legs[i];
+        knee.rotation.x =
+          (gait ? gait.knees[i] : pose.knees[i]) * blend + p.knees[i];
+        arm.scale.y = gait ? gait.reach : 1;
         arm.rotation.set(
-          pose.arms[i] * (brute ? 0.5 : 0.7) + p.arms[i],
+          (gait ? gait.arms[i] : pose.arms[i] * (brute ? 0.5 : 0.7)) * blend +
+            p.arms[i],
           p.armYaw[i],
-          -side * (brute ? 0.12 : 0.26),
+          -side * (brute ? 0.12 : gait ? 0.1 : 0.26) + p.armRoll[i],
         );
-        elbow.rotation.x = pose.elbows[i] + p.elbows[i];
+        elbow.rotation.x =
+          (gait ? gait.elbows[i] : pose.elbows[i]) * blend + p.elbows[i];
       });
       core.color
         .setHex(brute ? 0xffc554 : 0x74ff9a)
@@ -589,6 +626,9 @@ export function createNucleoForm(form) {
         model: kind,
         stage: p.stage,
         variant: p.variant,
+        beat: p.beat,
+        gait: gait ? "four-beat" : pose.state,
+        blend,
       };
     },
   };

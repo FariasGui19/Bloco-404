@@ -61,6 +61,7 @@ export function createOperatorGallery(mount) {
     ms.forEach((m) => m.dispose());
     ts.forEach((t) => t.dispose());
   }
+  let previewReturning = false;
   let previewAction = null,
     previewRemaining = 0,
     locomotion = "idle",
@@ -223,6 +224,7 @@ export function createOperatorGallery(mount) {
                   ? secondary
                   : previewAction,
               variant: previewVariant,
+              returning: previewReturning,
               selected: models[0].root.userData.identity.form ?? "forma_veloz",
               remaining: previewRemaining,
               duration: 1.4,
@@ -286,6 +288,7 @@ export function createOperatorGallery(mount) {
     setForm(form) {
       const id = ["forma_veloz", "forma_bruta"].includes(form) ? form : null;
       if (id) lastPreviewForm = id;
+      previewReturning = !!models[0].root.userData.identity.form && !id;
       pendingForm = id;
       previewAction = "transform";
       previewRemaining = 1.4;
@@ -297,6 +300,7 @@ export function createOperatorGallery(mount) {
         );
         return;
       }
+      previewReturning = false;
       if (action === "transform" && focus !== "all" && focus !== ids[0]) {
         const index = ids.indexOf(focus);
         const suit = {
@@ -304,6 +308,8 @@ export function createOperatorGallery(mount) {
           mare_astral: "mare",
           lamina_dominio_anciao: "dominio",
         }[focus];
+        previewReturning =
+          models[index].root.userData.identity.clothing !== "civilian";
         pendingClothing = {
           index,
           equippedSuit:

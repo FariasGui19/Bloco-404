@@ -1,3 +1,5 @@
+import { itensMargemFechamento, desenharDetalheMargem, fechamentoPronto, desenharPecaFechamento, desenharMargensFechamento, desenharVidaEncosta, desenharBoiasFechamento } from './docas-fechamento.js';
+import { desenharMarPerimetral } from './docas-mar-perimetral.js';
 import { desenharMarSuperior } from './docas-mar-superior.js';
 import { repararSoloDireito, repararFacesDireitas, pecasCostaAjustadas, encaixeAtivo, substituidaPeloEncaixe, itensEncaixe, desenharEncaixe, desenharRelevoEncaixe, desenharContatosEncaixe, desenharNevoaEncaixe, desenharBrumaFundoEncaixe } from './docas-encaixe.js';
 import { desenharPatioCentral, desenharLuzesCentrais, desenharAcessosCentrais, poseCentral } from './docas-central.js';
@@ -91,7 +93,7 @@ function construirTerreno(map) {
   // Material repair is clipped to existing land, excluding the deck.
   if(encaixeAtivo(map)){g.save();pathAll();g.clip();repararSoloDireito(g,s);g.restore();}
   // Cliff faces are outside the walkable floor clip by design.
-  if(encaixeAtivo(map)){desenharRelevoEncaixe(g,s,0,true);desenharContatosEncaixe(g,s);}
+  if(encaixeAtivo(map)){desenharRelevoEncaixe(g,s,0,true);if(fechamentoPronto(map))desenharMargensFechamento(g,s);desenharContatosEncaixe(g,s);}
   return out;
 }
 function desenharEstrutura(ctx,st,t,reduced,state){
@@ -171,6 +173,7 @@ export function renderDocas(ctx,map,state,camX,camY,w,h,zoom,dpr,now,drawPlayer)
     desenharReflexosCais(ctx,cais,sCais);
     desenharMarCais(ctx,cais,sCais,clock);
   }
+  if(fechamentoPronto(map))desenharMarPerimetral(ctx,map,sCais,t,reduced,{left:esquerda,right:direita,top:topo,bottom:base});
   if(encaixeAtivo(map)){
     desenharMarSuperior(ctx,sCais,t,reduced,{left:esquerda,right:direita,top:topo,bottom:base});
     desenharBrumaFundoEncaixe(ctx,sCais,t,reduced);
@@ -180,6 +183,7 @@ export function renderDocas(ctx,map,state,camX,camY,w,h,zoom,dpr,now,drawPlayer)
     const x1=Math.min(terreno.width,Math.ceil(camX+w/(2*zoom)+4)),y1=Math.min(terreno.height,Math.ceil(camY+(h/2-115)/zoom+4));
     if(x1>x && y1>y)ctx.drawImage(terreno,x,y,x1-x,y1-y,x,y,x1-x,y1-y);
   }
+  if(fechamentoPronto(map))desenharPecaFechamento(ctx,'encosta',sCais,t,reduced);
   // Sulcos de água e espuma deslocam-se pelo mar sem efeito estroboscópico.
   ctx.strokeStyle='rgba(87,183,192,.16)';ctx.lineWidth=2;
   for(let i=0;i<90;i++){const x=(i*137+t*(3+i%3))%(terreno.width+100),y=(i*191)%terreno.height;ctx.beginPath();ctx.arc(x,y,7+i%10,.15,2.5);ctx.stroke();}
@@ -221,6 +225,7 @@ export function renderDocas(ctx,map,state,camX,camY,w,h,zoom,dpr,now,drawPlayer)
     if(m.id==='boia'){ctx.save();ctx.globalAlpha=reduced?.22:.16+.06*Math.sin(t*1.1+m.x);const g=ctx.createRadialGradient(x,y-size*.23+bob,0,x,y-size*.23+bob,size*.24);g.addColorStop(0,'#ffe1a0');g.addColorStop(1,'rgba(255,215,130,0)');ctx.fillStyle=g;ctx.fillRect(x-size*.24,y-size*.47+bob,size*.48,size*.48);ctx.restore();}
 
   }
+  if(fechamentoPronto(map))desenharBoiasFechamento(ctx,sCais,t,reduced);
   if(costaVisivel)desenharMareOeste(ctx,oeste,sCais,clock);
   // Primeiro o piso (deck e degraus); estacas dianteiras usam o Y do ponto
   // em que atravessam as tábuas, não o Y em que somem na água.
@@ -239,8 +244,9 @@ export function renderDocas(ctx,map,state,camX,camY,w,h,zoom,dpr,now,drawPlayer)
   if(!encaixeAtivo(map))desenharPatioCentral(ctx,map.geometriaDocas.escala,t,reduced,getSprite('docas_fx_faixas-nevoa'));
   for(const st of map.estruturasDocas)if(st.camada==='chao'&&!(encaixeAtivo(map)&&substituidaPeloEncaixe(st)))desenharEstrutura(ctx,st,t,reduced,state);
   const pecasOeste=costaVisivel?(encaixeAtivo(map)?pecasCostaAjustadas(oeste):[...oeste.rochas,...oeste.vegetacao]).map(peca=>({pecaOeste:peca,y:(oeste.y+peca.pe*oeste.escala)*sCais})):[];
-  const objs=ordenarProfundidadeDocas([...pecasCais,...pecasOeste,...(encaixeAtivo(map)?itensEncaixe(sCais):[]),...map.estruturasDocas.filter(st=>st.camada!=='chao'&&!(encaixeAtivo(map)&&substituidaPeloEncaixe(st))).map(st=>({estrutura:st,y:st.y})),...(state.trainingTargets??[]).filter(e=>e.health>0).map(e=>({entidade:e,y:e.y*SIDE_DEPTH_STEP})),...(state.cromaticaRuntime?.visao?[{entidade:state.cromaticaRuntime.visao,y:state.cromaticaRuntime.visao.y*SIDE_DEPTH_STEP}]:[]),{entidade:state.player,y:state.player.y*SIDE_DEPTH_STEP}]);
+  const objs=ordenarProfundidadeDocas([...pecasCais,...pecasOeste,...(fechamentoPronto(map)?itensMargemFechamento(sCais):[]),...(encaixeAtivo(map)?itensEncaixe(sCais):[]),...map.estruturasDocas.filter(st=>st.camada!=='chao'&&!(encaixeAtivo(map)&&substituidaPeloEncaixe(st))).map(st=>({estrutura:st,y:st.y})),...(state.trainingTargets??[]).filter(e=>e.health>0).map(e=>({entidade:e,y:e.y*SIDE_DEPTH_STEP})),...(state.cromaticaRuntime?.visao?[{entidade:state.cromaticaRuntime.visao,y:state.cromaticaRuntime.visao.y*SIDE_DEPTH_STEP}]:[]),{entidade:state.player,y:state.player.y*SIDE_DEPTH_STEP}]);
   for(const item of objs){
+    if(item.fechamentoProp){desenharDetalheMargem(ctx,item.fechamentoProp,sCais,t,reduced);continue;}
     if(item.encaixe){desenharEncaixe(ctx,item.encaixe,sCais,t,reduced);continue;}
     if(item.pecaOeste){desenharPecaCosta(ctx,oeste,item.pecaOeste,sCais,clock);continue;}
     if(item.peca){drawCais(item.peca);continue;}
@@ -256,6 +262,7 @@ export function renderDocas(ctx,map,state,camX,camY,w,h,zoom,dpr,now,drawPlayer)
       ctx.translate(x,y);if(e.cromaticaFaceDireita)ctx.scale(-1,1);ctx.rotate(lean);ctx.globalAlpha=e.hitTimer>0?.68:1;ctx.imageSmoothingEnabled=false;ctx.drawImage(img,fr*fw,0,fw,img.height,-36,-96-bob,72,96);
     }ctx.restore();
   }
+  if(fechamentoPronto(map))desenharVidaEncosta(ctx,sCais,t,reduced);
   if(encaixeAtivo(map))desenharNevoaEncaixe(ctx,sCais,t,reduced);
   desenharAcessosCentrais(ctx,map,state,t,reduced);
   if(encaixeAtivo(map)){ctx.save();ctx.translate(905*sCais,48*sCais);ctx.rotate(2.84+(reduced?0:Math.sin(t*.28)*.12));const light=ctx.createLinearGradient(0,0,510*sCais,0);light.addColorStop(0,'rgba(255,222,155,.19)');light.addColorStop(1,'rgba(255,222,155,0)');ctx.fillStyle=light;ctx.beginPath();ctx.moveTo(0,0);ctx.lineTo(510*sCais,-28*sCais);ctx.lineTo(510*sCais,28*sCais);ctx.closePath();ctx.fill();ctx.restore();}

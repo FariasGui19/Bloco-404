@@ -52,7 +52,7 @@ const portal=(id,px,py,label,mapId,spawn='inicio',extra={})=>({id,tipo:'door',x:
 const ponto=(x,y)=>({x:x*ESCALA_DOCAS/64,y:y*ESCALA_DOCAS/22});
 // Pés/âncoras ordenados em profundidade, independentes da imagem de referência.
 const estrutura=(id,x,y,largura,camada='objeto')=>({id,x:x*ESCALA_DOCAS,y:y*ESCALA_DOCAS,largura:largura*ESCALA_DOCAS,camada});
-export const docas={id:'mare_cromatica_docas',meta:{nome:'DOCAS DA NEBLINA',tipo:'exterior',dimensao:'mare_cromatica',sideView:true,docasCamadas:true,cromatica:true,initialZoom:.8,corFundo:'#090f20'},layout,
+export const docas={id:'mare_cromatica_docas',meta:{nome:'DOCAS DA NEBLINA',tipo:'exterior',dimensao:'mare_cromatica',sideView:true,docasCamadas:true,docasEncaixe:true,cromatica:true,initialZoom:.8,corFundo:'#090f20'},layout,
  // O primeiro polígono é o deck caminhável, não terra sob o píer.
  geometriaDocas:{polys,terraPolys,deckPoly,escadaPoly,bloqueios,escala:ESCALA_DOCAS},
  caisSul:CAIS_SUL,costaOeste:COSTA_OESTE,

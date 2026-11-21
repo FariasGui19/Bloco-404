@@ -1,3 +1,4 @@
+import { encaixeAtivo, substituidaPeloEncaixe, itensEncaixe, desenharEncaixe, desenharRelevoEncaixe, desenharContatosEncaixe, desenharNevoaEncaixe, desenharBrumaFundoEncaixe } from './docas-encaixe.js';
 import { desenharPatioCentral, desenharLuzesCentrais, desenharAcessosCentrais, poseCentral } from './docas-central.js';
 import { tempoVisualDocas } from './docas-animation.js';
 import { desenharTentaculoRessaca, volta } from './docas-ressaca.js';
@@ -45,7 +46,7 @@ function construirTerreno(map) {
       const d=24*s;g.fillStyle=facePattern||'#292b35';g.beginPath();g.moveTo(x0,y0);g.lineTo(x1,y1);g.lineTo(x1,y1+d);g.lineTo(x0,y0+d);g.closePath();g.fill();pathAll();
     }
   }
-  for(const p of map.relevoDocas??[])if(p.camada==='base'){
+  for(const p of map.relevoDocas??[])if(p.camada==='base'&&!encaixeAtivo(map)){
     const img=getSprite(p.sprite?'docas_'+p.sprite:'docas_relevo_'+p.id);if(img)g.drawImage(img,(p.x-p.w/2)*s,(p.y-p.h)*s,p.w*s,p.h*s);
   }
   if(map.caisSul)desenharPecaCais(g,map.caisSul,map.caisSul.rocha,s,null);
@@ -75,16 +76,18 @@ function construirTerreno(map) {
   g.lineCap='round';g.lineJoin='round';for(const pts of caminhos){g.beginPath();pts.forEach(([x,y],i)=>i?g.lineTo(x*s,y*s):g.moveTo(x*s,y*s));g.strokeStyle='rgba(22,22,25,.35)';g.lineWidth=31*s;g.stroke();if(pedras){g.strokeStyle=g.createPattern(pedras,'repeat');g.globalAlpha=.32;g.lineWidth=21*s;g.stroke();g.globalAlpha=1;}}
   // Peças de chão e suportes são recortados ao contorno do terreno;
   // a passagem e as portas continuam definidas pela máscara, não pela arte.
-  for(const p of map.relevoDocas??[])if(p.camada==='piso'){
+  for(const p of map.relevoDocas??[])if(p.camada==='piso'&&!encaixeAtivo(map)){
     const img=getSprite(p.sprite?'docas_'+p.sprite:'docas_relevo_'+p.id);if(img)g.drawImage(img,(p.x-p.w/2)*s,(p.y-p.h)*s,p.w*s,p.h*s);
   }
-  const suporte=getSprite('docas_relevo_pilar');
+  const suporte=encaixeAtivo(map)?null:getSprite('docas_relevo_pilar');
   if(suporte)for(const st of map.estruturasDocas){
     if(!['cabana-oeste','cabana-leste','galpao','torre','farol','camara','porta'].includes(st.id))continue;
     const bw=st.largura*.78,bh=Math.min(st.largura*.28,65*s);
     g.drawImage(suporte,st.x-bw/2,st.y-bh*.68,bw,bh);
   }
   let seed=404;for(let i=0;i<4200;i++){seed=(1664525*seed+1013904223)>>>0;const x=seed%w;seed=(1664525*seed+1013904223)>>>0;const y=seed%h;g.fillStyle=i%4===0?'rgba(18,17,25,.35)':'rgba(165,146,142,.15)';g.fillRect(x,y,2+i%4,1+i%2);}g.restore();
+  // Cliff faces are outside the walkable floor clip by design.
+  if(encaixeAtivo(map)){desenharRelevoEncaixe(g,s,0,true);desenharContatosEncaixe(g,s);}
   return out;
 }
 function desenharEstrutura(ctx,st,t,reduced,state){
@@ -164,6 +167,7 @@ export function renderDocas(ctx,map,state,camX,camY,w,h,zoom,dpr,now,drawPlayer)
     desenharReflexosCais(ctx,cais,sCais);
     desenharMarCais(ctx,cais,sCais,clock);
   }
+  if(encaixeAtivo(map))desenharBrumaFundoEncaixe(ctx,sCais,t,reduced);
   if(terreno){
     const x=Math.max(0,Math.floor(camX-w/(2*zoom)-4)),y=Math.max(0,Math.floor(camY-(h/2+115)/zoom-4));
     const x1=Math.min(terreno.width,Math.ceil(camX+w/(2*zoom)+4)),y1=Math.min(terreno.height,Math.ceil(camY+(h/2-115)/zoom+4));
@@ -225,11 +229,12 @@ export function renderDocas(ctx,map,state,camX,camY,w,h,zoom,dpr,now,drawPlayer)
     }
     else pecasCais.push({peca,y:cais.y*sCais+peca.pe*unit});
   }
-  desenharPatioCentral(ctx,map.geometriaDocas.escala,t,reduced,getSprite('docas_fx_faixas-nevoa'));
-  for(const st of map.estruturasDocas)if(st.camada==='chao')desenharEstrutura(ctx,st,t,reduced,state);
+  if(!encaixeAtivo(map))desenharPatioCentral(ctx,map.geometriaDocas.escala,t,reduced,getSprite('docas_fx_faixas-nevoa'));
+  for(const st of map.estruturasDocas)if(st.camada==='chao'&&!(encaixeAtivo(map)&&substituidaPeloEncaixe(st)))desenharEstrutura(ctx,st,t,reduced,state);
   const pecasOeste=costaVisivel?[...oeste.rochas,...oeste.vegetacao].map(peca=>({pecaOeste:peca,y:(oeste.y+peca.pe*oeste.escala)*sCais})):[];
-  const objs=ordenarProfundidadeDocas([...pecasCais,...pecasOeste,...map.estruturasDocas.filter(st=>st.camada!=='chao').map(st=>({estrutura:st,y:st.y})),...(state.trainingTargets??[]).filter(e=>e.health>0).map(e=>({entidade:e,y:e.y*SIDE_DEPTH_STEP})),...(state.cromaticaRuntime?.visao?[{entidade:state.cromaticaRuntime.visao,y:state.cromaticaRuntime.visao.y*SIDE_DEPTH_STEP}]:[]),{entidade:state.player,y:state.player.y*SIDE_DEPTH_STEP}]);
+  const objs=ordenarProfundidadeDocas([...pecasCais,...pecasOeste,...(encaixeAtivo(map)?itensEncaixe(sCais):[]),...map.estruturasDocas.filter(st=>st.camada!=='chao'&&!(encaixeAtivo(map)&&substituidaPeloEncaixe(st))).map(st=>({estrutura:st,y:st.y})),...(state.trainingTargets??[]).filter(e=>e.health>0).map(e=>({entidade:e,y:e.y*SIDE_DEPTH_STEP})),...(state.cromaticaRuntime?.visao?[{entidade:state.cromaticaRuntime.visao,y:state.cromaticaRuntime.visao.y*SIDE_DEPTH_STEP}]:[]),{entidade:state.player,y:state.player.y*SIDE_DEPTH_STEP}]);
   for(const item of objs){
+    if(item.encaixe){desenharEncaixe(ctx,item.encaixe,sCais,t,reduced);continue;}
     if(item.pecaOeste){desenharPecaCosta(ctx,oeste,item.pecaOeste,sCais,clock);continue;}
     if(item.peca){drawCais(item.peca);continue;}
     if(item.estrutura){const st=item.estrutura,margin=st.largura*4;if(Math.abs(st.x-camX)<w/(2*zoom)+margin&&Math.abs(st.y-camY)<h/zoom+margin)desenharEstrutura(ctx,st,t,reduced,state);continue;}
@@ -244,9 +249,11 @@ export function renderDocas(ctx,map,state,camX,camY,w,h,zoom,dpr,now,drawPlayer)
       ctx.translate(x,y);if(e.cromaticaFaceDireita)ctx.scale(-1,1);ctx.rotate(lean);ctx.globalAlpha=e.hitTimer>0?.68:1;ctx.imageSmoothingEnabled=false;ctx.drawImage(img,fr*fw,0,fw,img.height,-36,-96-bob,72,96);
     }ctx.restore();
   }
+  if(encaixeAtivo(map))desenharNevoaEncaixe(ctx,sCais,t,reduced);
   desenharAcessosCentrais(ctx,map,state,t,reduced);
+  if(encaixeAtivo(map)){ctx.save();ctx.translate(905*sCais,48*sCais);ctx.rotate(2.84+(reduced?0:Math.sin(t*.28)*.12));const light=ctx.createLinearGradient(0,0,510*sCais,0);light.addColorStop(0,'rgba(255,222,155,.19)');light.addColorStop(1,'rgba(255,222,155,0)');ctx.fillStyle=light;ctx.beginPath();ctx.moveTo(0,0);ctx.lineTo(510*sCais,-28*sCais);ctx.lineTo(510*sCais,28*sCais);ctx.closePath();ctx.fill();ctx.restore();}
   const farol=map.estruturasDocas.find(o=>o.id==='farol'),lamp=getSprite('docas_farol');
-  if(farol&&lamp){const y=farol.y-farol.largura*lamp.height/lamp.width+35;ctx.save();ctx.translate(farol.x,y);ctx.rotate(2.8+Math.sin(t*.28)*.26);ctx.fillStyle='rgba(242,234,184,.07)';ctx.beginPath();ctx.moveTo(0,0);ctx.lineTo(650,-55);ctx.lineTo(650,55);ctx.closePath();ctx.fill();ctx.restore();}
+  if(farol&&lamp&&!encaixeAtivo(map)){const y=farol.y-farol.largura*lamp.height/lamp.width+35;ctx.save();ctx.translate(farol.x,y);ctx.rotate(2.8+Math.sin(t*.28)*.26);ctx.fillStyle='rgba(242,234,184,.07)';ctx.beginPath();ctx.moveTo(0,0);ctx.lineTo(650,-55);ctx.lineTo(650,55);ctx.closePath();ctx.fill();ctx.restore();}
   for(const o of state.objects??[]){if(!o.interacao)continue;const dist=Math.hypot(o.x-state.player.x,o.y-state.player.y);if(dist>2.2)continue;ctx.save();const selected=state.interaction?.active?.data?.id===o.id;const pulse=reduced?0:Math.sin(t*2.4)*.5;ctx.strokeStyle=selected?'rgba(199,255,234,.9)':'rgba(188,246,231,.5)';ctx.lineWidth=selected?2:1;ctx.beginPath();ctx.ellipse(o.x*64,o.y*22,12+(selected?pulse*2:0),4+(selected?pulse*.6:0),0,0,Math.PI*2);ctx.stroke();ctx.restore();}
   const mist=getSprite('docas_fx_faixas-nevoa');
   if(mist){ctx.save();ctx.globalAlpha=.045;for(let i=0;i<3;i++){const fx=((i*1000+t*(4+i))%(terreno.width+800))-400;ctx.drawImage(mist,fx,850+i*390,460,58);}ctx.restore();}

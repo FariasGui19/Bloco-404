@@ -22,7 +22,7 @@ else{
    try{window.sampleCentral(2);}finally{CanvasRenderingContext2D.prototype.drawImage=draw;}
    return urls;
   });
-  for(const file of ['docas-vila-04/cabana-oeste.png','docas-vila-04/cabana-leste.png','docas-vila-04/galpao.png','docas-reconstrucao/galpao.png','docas-reconstrucao/torre.png'])assert(drawn.some(s=>s.endsWith(file)),`${file} drawn by real renderer`);
+  for(const file of ['docas-encaixe/estruturas.png','docas-encaixe/vida.png'])assert(drawn.some(s=>s.endsWith(file)),`${file} drawn by real renderer`);
   assert.equal(await page.evaluate(()=>JSON.stringify(localStorage)),storage,'preview never writes saves or motion preference');
   assert.deepEqual(errors,[]);
   console.log('Chromium central: artes, estruturas no render real, pixels animados/repouso/retomada, zero erros e storage intacto.');

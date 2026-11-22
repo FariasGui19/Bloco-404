@@ -39,6 +39,10 @@ export function desenharParedesInteriorDocas(ctx,map,state){
   poly(ctx,[a,b,[b[0],b[1]-height],[a[0],a[1]-height]],room.wall,'#0d191c');
   // Horizontal weatherboards / corrugated steel, with a fixed footing.
   for(let z=9;z<height;z+=room.wood?9:14)line(ctx,[[a[0],a[1]-z],[b[0],b[1]-z]],room.wood?'#272d2b':'#14282e',1);
+  // Damp vertical joints, with local darkness rather than a global black veil.
+  const shade=ctx.createLinearGradient(a[0],a[1]-height,a[0],a[1]);shade.addColorStop(0,'rgba(1,5,8,.38)');shade.addColorStop(.65,'rgba(1,5,8,.08)');shade.addColorStop(1,'rgba(1,5,8,.25)');
+  poly(ctx,[a,b,[b[0],b[1]-height],[a[0],a[1]-height]],shade,null);
+  for(const f of [.18,.72]){const X=a[0]+(b[0]-a[0])*f,Y=a[1]+(b[1]-a[1])*f;line(ctx,[[X,Y-80],[X,Y-47],[X+1,Y-25]],'rgba(4,12,11,.2)',2);}
   line(ctx,[[a[0],a[1]-height],[b[0],b[1]-height]],room.accent,3);
   for(const q of [a,b]){line(ctx,[q,[q[0],q[1]-height]],'#172326',5);line(ctx,[[q[0]+1,q[1]-5],[q[0]+1,q[1]-height+4]],'#59605a',1);}
  }
@@ -68,12 +72,12 @@ export function desenharChaoInteriorDocas(ctx,map,state){
  const room=INTERIORES_DOCAS[map.id];if(!room)return;
  const {t,reduced}=tempoVisualDocas(state),cols=map.layout[0].length-1,rows=map.layout.length-1;
  ctx.save();
- if(room.wood){
+ if(room.wood&&room.key!=='pescador'){
   // Worn runner and sea-salt marks leave the center of the room legible.
   const x=room.key==='pescador'?5.3:5.5,y=4.9;
   const corners=[p(x,y),p(x+1.8,y),p(x+1.8,7.9),p(x,7.9)];poly(ctx,corners,room.key==='pescador'?'#504d42':'#354f49','#857c60');
   for(let i=0;i<7;i++){const a=p(x+.1,5.1+i*.4),b=p(x+1.7,5.1+i*.4);line(ctx,[a,b],'rgba(195,164,105,.15)');}
- }else{
+ }else if(!room.wood){
   const points=[[2,2],[2,6],[5,6],[5,3]].map(a=>p(...a));line(ctx,points,'#0c191e',6);line(ctx,points,'#52615c',2);
   for(let x=3;x<8;x+=.45){const a=p(x,6.7),b=p(x+.15,6.9);line(ctx,[a,b],'#a68e55',2);}
  }

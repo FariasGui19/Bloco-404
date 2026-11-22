@@ -45,7 +45,7 @@ for(const map of [cabanaOeste,cabanaLeste,galpao]){
  assert.equal(state.objects.filter(o=>o.docasHero).length,1,'one generated hero asset per room');
 }
 // Missing optional artwork must retain procedural furniture and Canvas balance.
-let depth=0;const canvas=new Proxy({save(){depth++;},restore(){depth--;assert(depth>=0);},createRadialGradient(){return {addColorStop(){}};}},{get:(o,k)=>k in o?o[k]:()=>{}});
+let depth=0;const canvas=new Proxy({save(){depth++;},restore(){depth--;assert(depth>=0);},createLinearGradient(){return {addColorStop(){}};},createRadialGradient(){return {addColorStop(){}};}},{get:(o,k)=>k in o?o[k]:()=>{}});
 const beforeState=JSON.stringify(state);
 for(const map of [cabanaOeste,cabanaLeste,galpao]){
  assert(desenharPisoInteriorDocas(canvas,map,2,2));assert(desenharParedesInteriorDocas(canvas,map,state));desenharChaoInteriorDocas(canvas,map,state);
@@ -54,10 +54,10 @@ for(const map of [cabanaOeste,cabanaLeste,galpao]){
 assert.equal(depth,0);assert.equal(JSON.stringify(state),beforeState,'interior drawing never writes gameplay/save state');
 const node=()=>({gain:{setTargetAtTime(v){this.value=v;}},pan:{setTargetAtTime(){}},connect(){},start(){}});
 const ctx={createGain:node,createStereoPanner:node,createBufferSource:node,createBuffer(c,n){const data=new Float32Array(n);return {getChannelData:()=>data};}};
-const channels=criarPaisagemDocas(ctx,node());assert.equal(channels.length,7);
+const channels=criarPaisagemDocas(ctx,node());assert.equal(channels.length,10);
 for(const room of Object.values(INTERIORES_DOCAS)){
  atualizarPaisagemDocas(channels,1,room.sound,false);assert(channels.find(c=>c.kind==='interior').gain.gain.value>0);assert(channels.find(c=>c.kind==='pressagio').gain.gain.value>0);
  atualizarPaisagemDocas(channels,2,null,false);assert(channels.every(c=>c.gain.gain.value===0));
 }
-for(const kind of ['pressagio','interior']){assert(DOCAS_FOLEY.includes(kind));const pcm=sintetizarFoley(kind,2000);assert.deepEqual(pcm,sintetizarFoley(kind,2000));assert(pcm.some(v=>Math.abs(v)>.02));assert(pcm.every(v=>Number.isFinite(v)&&Math.abs(v)<.6));assert(Math.abs(pcm[0])<.001&&Math.abs(pcm.at(-1))<.001);}
-console.log(`Docas final: three direct exterior round trips; three furnished interiors; ${solid} solids, ${interactions} accessible interactions/exits; seven opt-in audio layers, deterministic bounded horror textures and pause fades OK.`);
+for(const kind of ['pressagio','interior','cordame','interferencia','goteira']){assert(DOCAS_FOLEY.includes(kind));const pcm=sintetizarFoley(kind,2000);assert.deepEqual(pcm,sintetizarFoley(kind,2000));assert(pcm.some(v=>Math.abs(v)>.02));assert(pcm.every(v=>Number.isFinite(v)&&Math.abs(v)<.6));assert(Math.abs(pcm[0])<.001&&Math.abs(pcm.at(-1))<.001);}
+console.log(`Docas final: three direct exterior round trips; three furnished interiors; ${solid} solids, ${interactions} accessible interactions/exits; ten opt-in audio layers, deterministic bounded horror textures and pause fades OK.`);

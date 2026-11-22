@@ -164,7 +164,7 @@ export const docas={id:'mare_cromatica_docas',meta:{nome:'DOCAS DA NEBLINA',tipo
 
 function sala(id,nome,fragmento,fita,volta,spawn) {
  const w=13,h=10,layout=Array.from({length:h},(_,y)=>Array.from({length:w},(_,x)=>x===0||y===0||x===w-1||y===h-1?1:0));
- const obj=(id,x,y,label,sprite)=>({id,nome:label,tipo:'painel',x,y,sprite,useCrop:true,larguraPx:48,pivotX:.5,pivotY:.95,bloqueia:false,interacao:{label,distancia:1.4}});
+ const obj=(id,x,y,label,sprite)=>({id,nome:label,tipo:'painel',x,y,sprite,useCrop:true,larguraPx:34,pivotX:.5,pivotY:1,sombra:[12,4],bloqueia:false,interacao:{label,distancia:1.4}});
  return {id,meta:{nome,tipo:'interior',dimensao:'mare_cromatica',cromatica:true,docasInterior:true,estiloSala:'frequencia_limiar',corFundo:'#100e1d',useBackgroundWalls:true,initialZoom:1.1},corChao:'#25212c',layout,spawnPoints:{inicio:{x:6.5,y:8.2}},actors:[],fauna:[],collectibles:[],hazards:[],
  objects:[obj('cromatica_fragmento_'+fragmento,4,3,'RECOLHER FRAGMENTO MNEMÔNICO','freq666_memoria'),obj('cromatica_fita_'+fita,8,3,'OUVIR FITA CASSETE','freq666_receptor'),obj(fragmento==='costa'?'docas_chave':'docas_fusivel',fragmento==='costa'?2:10,6,fragmento==='costa'?'RECOLHER CHAVE DA TRILHA':'RECOLHER FUSÍVEL DO NÚCLEO','freq666_origem')],
  trainingTargets:[{id:id+'_infectado',x:6,y:4,maxHealth:55,cromaticaEnemy:true}],
@@ -175,7 +175,7 @@ export const cabanaLeste=mobiliarInteriorDocas(sala('mare_cromatica_cabana_leste
 
 const gLayout=Array.from({length:9},(_,y)=>Array.from({length:11},(_,x)=>x===0||y===0||x===10||y===8?1:0));
 export const galpao=mobiliarInteriorDocas({id:'mare_cromatica_galpao',meta:{nome:'GALPÃO CRT • DOCAS',tipo:'interior',dimensao:'mare_cromatica',cromatica:true,docasInterior:true,estiloSala:'frequencia_limiar',corFundo:'#0b1118',useBackgroundWalls:true,initialZoom:1.25},layout:gLayout,corChao:'#1d2c30',spawnPoints:{inicio:{x:5.5,y:7.2}},actors:[],fauna:[],collectibles:[],hazards:[],
-objects:[{id:'cromatica_terminal',nome:'TERMINAL CRT',tipo:'painel',x:5,y:3,sprite:'freq666_console',useCrop:true,larguraPx:65,pivotY:.95,bloqueia:false,interacao:{label:'RECOMPILAR TRAJE',distancia:1.5}},
+objects:[{id:'cromatica_terminal',nome:'TERMINAL CRT',tipo:'painel',x:5,y:3,sprite:'freq666_console',useCrop:true,larguraPx:56,pivotY:1,sombra:[18,5],bloqueia:false,interacao:{label:'RECOMPILAR TRAJE',distancia:1.5}},
 {id:'cromatica_fita_casa',tipo:'painel',nome:'GRAVADOR OESTE',x:2,y:4,sprite:'freq666_receptor',useCrop:true,larguraPx:42,bloqueia:false,interacao:{label:'OUVIR FITA DA CABANA OESTE',distancia:1.3}},
 {id:'cromatica_fita_vigilia',tipo:'painel',nome:'GRAVADOR LESTE',x:8,y:4,sprite:'freq666_receptor',useCrop:true,larguraPx:42,bloqueia:false,interacao:{label:'OUVIR FITA DA CABANA LESTE',distancia:1.3}}],
 portals:[{id:'docas_sair_galpao',tipo:'door',x:5,y:7,label:'SAIR DO GALPÃO',interactionDistance:1.1,destino:{mapId:'mare_cromatica_docas',spawnId:'galpao'}}]});

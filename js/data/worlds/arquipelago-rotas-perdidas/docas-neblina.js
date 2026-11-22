@@ -1,3 +1,4 @@
+import { mobiliarInteriorDocas } from './docas-interiores.js';
 import { NAVEGACAO_DOCAS } from './docas-navegacao.js';
 import { CAIS_SUL, plantaCais } from './cais-sul.js';
 import { COSTA_OESTE, plantaCosta } from './costa-oeste-docas.js';
@@ -169,12 +170,12 @@ function sala(id,nome,fragmento,fita,volta,spawn) {
  trainingTargets:[{id:id+'_infectado',x:6,y:4,maxHealth:55,cromaticaEnemy:true}],
  portals:[{id:volta,tipo:'door',x:6,y:8,label:'SAIR PARA AS DOCAS',interactionDistance:1.1,destino:{mapId:'mare_cromatica_docas',spawnId:spawn}}]};
 }
-export const cabanaOeste=sala('mare_cromatica_cabana_oeste','CABANA OESTE • DOCAS','costa','casa','docas_saida_oeste','cabana_esq');
-export const cabanaLeste=sala('mare_cromatica_cabana_leste','CABANA LESTE • DOCAS','acampamento','vigilia','docas_saida_leste','cabana_dir');
+export const cabanaOeste=mobiliarInteriorDocas(sala('mare_cromatica_cabana_oeste','CABANA OESTE • DOCAS','costa','casa','docas_saida_oeste','cabana_esq'));
+export const cabanaLeste=mobiliarInteriorDocas(sala('mare_cromatica_cabana_leste','CABANA LESTE • DOCAS','acampamento','vigilia','docas_saida_leste','cabana_dir'));
 
 const gLayout=Array.from({length:9},(_,y)=>Array.from({length:11},(_,x)=>x===0||y===0||x===10||y===8?1:0));
-export const galpao={id:'mare_cromatica_galpao',meta:{nome:'GALPÃO CRT • DOCAS',tipo:'interior',dimensao:'mare_cromatica',cromatica:true,docasInterior:true,estiloSala:'frequencia_limiar',corFundo:'#0b1118',useBackgroundWalls:true,initialZoom:1.25},layout:gLayout,corChao:'#1d2c30',spawnPoints:{inicio:{x:5.5,y:7.2}},actors:[],fauna:[],collectibles:[],hazards:[],
+export const galpao=mobiliarInteriorDocas({id:'mare_cromatica_galpao',meta:{nome:'GALPÃO CRT • DOCAS',tipo:'interior',dimensao:'mare_cromatica',cromatica:true,docasInterior:true,estiloSala:'frequencia_limiar',corFundo:'#0b1118',useBackgroundWalls:true,initialZoom:1.25},layout:gLayout,corChao:'#1d2c30',spawnPoints:{inicio:{x:5.5,y:7.2}},actors:[],fauna:[],collectibles:[],hazards:[],
 objects:[{id:'cromatica_terminal',nome:'TERMINAL CRT',tipo:'painel',x:5,y:3,sprite:'freq666_console',useCrop:true,larguraPx:65,pivotY:.95,bloqueia:false,interacao:{label:'RECOMPILAR TRAJE',distancia:1.5}},
 {id:'cromatica_fita_casa',tipo:'painel',nome:'GRAVADOR OESTE',x:2,y:4,sprite:'freq666_receptor',useCrop:true,larguraPx:42,bloqueia:false,interacao:{label:'OUVIR FITA DA CABANA OESTE',distancia:1.3}},
 {id:'cromatica_fita_vigilia',tipo:'painel',nome:'GRAVADOR LESTE',x:8,y:4,sprite:'freq666_receptor',useCrop:true,larguraPx:42,bloqueia:false,interacao:{label:'OUVIR FITA DA CABANA LESTE',distancia:1.3}}],
-portals:[{id:'docas_sair_galpao',tipo:'door',x:5,y:7,label:'SAIR DO GALPÃO',interactionDistance:1.1,destino:{mapId:'mare_cromatica_docas',spawnId:'galpao'}}]};
+portals:[{id:'docas_sair_galpao',tipo:'door',x:5,y:7,label:'SAIR DO GALPÃO',interactionDistance:1.1,destino:{mapId:'mare_cromatica_docas',spawnId:'galpao'}}]});

@@ -1,5 +1,7 @@
 # Docas — navegação contínua e vida ambiental
 
+> Registro da primeira revisão. A segunda revisão corrige novamente cais/escadarias, substitui as 32 sondas por borda exata e acrescenta interiores/som: veja [docas-interiores-revisao.md](docas-interiores-revisao.md).
+
 ## Escopo
 
 A arte aprovada não foi redesenhada. Os PNGs/atlases, barcos, cais, construções, terreno renderizado e sistemas do jogo permanecem intactos. Não foram necessárias novas sprite sheets.

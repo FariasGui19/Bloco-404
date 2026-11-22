@@ -1,3 +1,4 @@
+import { INTERIORES_DOCAS } from '../data/worlds/arquipelago-rotas-perdidas/docas-interiores.js';
 import { movimentoDocas, definirMovimentoDocas, tempoVisualDocas } from '../engine/docas-animation.js';
 import { ativarAudioCromatico, atualizarAudioCromatico } from '../game/mare-cromatica-audio.js';
 import { CROMATICA_MAPS, lerMareCromatica, objetivoCromatico } from '../game/mare-cromatica.js';
@@ -8,7 +9,7 @@ import { plantaCosta, COSTA_OESTE } from '../data/worlds/arquipelago-rotas-perdi
 
 const FONTES_DOCAS={ondas:plantaCosta([443,388]),madeira:plantaCais([541,348]),
   sino:plantaCais([587,488]),abismo:plantaCosta(COSTA_OESTE.tentaculo.base)};
-const AUDIO_DOCAS=Object.fromEntries(Object.keys(FONTES_DOCAS).map(id=>[id,{gain:0,pan:0}]));
+const AUDIO_DOCAS=Object.fromEntries([...Object.keys(FONTES_DOCAS),'pressagio'].map(id=>[id,{gain:0,pan:0}]));
 function audioNaCosta(p,escala){
   const x=p.x*CONFIG.TILE_W/escala,y=p.y*SIDE_DEPTH_STEP/escala;
   for(const id in FONTES_DOCAS){
@@ -19,6 +20,8 @@ function audioNaCosta(p,escala){
     AUDIO_DOCAS[id].gain=gain*gain;
     AUDIO_DOCAS[id].pan=Math.max(-.76,Math.min(.76,dx/260));
   }
+  AUDIO_DOCAS.pressagio.gain=.18+.55*Math.max(0,1-Math.hypot(x-1210,y-190)/480);
+  AUDIO_DOCAS.pressagio.pan=.3;
   return AUDIO_DOCAS;
 }
 export function initHudCromatico() {
@@ -41,9 +44,9 @@ export function atualizarHudCromatico(state, paused=false) {
     ? state.objects?.find(o=>o.id==='docas_fogueira') : null;
   const pertoFogo=fogueira?Math.max(0,1-Math.hypot(p.x-fogueira.x,p.y-fogueira.y)/4):0;
   const tocando=active && !paused && !document.hidden;
-  atualizarAudioCromatico(tocando, !!state.cromaticaRuntime?.perigo, pertoFogo,tocando&&noCais?audioNaCosta(p,state.world.currentMap?.geometriaDocas?.escala??2.5):null);
+  atualizarAudioCromatico(tocando, !!state.cromaticaRuntime?.perigo, pertoFogo,tocando?(noCais?audioNaCosta(p,state.world.currentMap?.geometriaDocas?.escala??2.5):INTERIORES_DOCAS[state.world.currentMapId]?.sound??null):null);
   const motionControl=document.getElementById('docasMotionControl');
-  if(motionControl)motionControl.hidden=!noCais;
+  if(motionControl)motionControl.hidden=!noCais&&!state.world.currentMap?.meta?.docasInterior;
   if(!active)return;
   const d=lerMareCromatica(state.progress), sec=Math.ceil(d.restante);
   document.getElementById('cromaticaTimer').textContent=d.desfecho ? '• '+d.desfecho.toUpperCase() : `${d.iniciada?'•':'• AGUARDANDO'} ${String(Math.floor(sec/60)).padStart(2,'0')}:${String(sec%60).padStart(2,'0')}`;
@@ -62,7 +65,7 @@ export function desenharAtmosferaCromatica(canvas,state) {
   // Névoa leve com quantidade fixa de elementos; movimento reduzido para
   // usuários que o solicitam, sem flash nem efeito estroboscópico.
   const now=globalThis.performance?.now?.()??0;
-  const docas=state.world.currentMapId==='mare_cromatica_docas';
+  const docas=state.world.currentMapId==='mare_cromatica_docas'||!!state.world.currentMap?.meta?.docasInterior;
   const visual=docas?tempoVisualDocas(state,now):null;
   const still=visual?visual.reduced:!!globalThis.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches;
   const t=visual?visual.t:still?0:now/1000;

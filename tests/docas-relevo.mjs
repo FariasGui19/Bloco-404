@@ -20,7 +20,11 @@ for(let i=0;i<queue.length;i++){
  const [x,y]=queue[i];if(x===end[0]&&y===end[1]){found=true;break;}
  for(const [dx,dy] of [[1,0],[-1,0],[0,1],[0,-1]]){
   const nx=x+dx,ny=y+dy,key=`${nx},${ny}`;
-  if(!previous.has(key)&&canStandAt(docas,(nx+.5)*step,(ny+.5)*step,.25,player)){previous.set(key,[x,y]);queue.push([nx,ny]);}
+  if(!previous.has(key)&&canStandAt(docas,(nx+.5)*step,(ny+.5)*step,.25,player)){
+   const probe={x:(x+.5)*step,y:(y+.5)*step};moveWithCollision(docas,probe,dx*step,dy*step,.25);
+   if(Math.hypot(probe.x-(nx+.5)*step,probe.y-(ny+.5)*step)>.001)continue;
+   previous.set(key,[x,y]);queue.push([nx,ny]);
+  }
  }
 }
 assert(found,'deve existir passagem entre píer, vila e platô superior');

@@ -227,6 +227,9 @@ await loadSprites([
   { id: 'bio_margem_baixa', src: 'assets/sprites/estacao-bio/bio-margem-baixa.png' },
   { id: 'bio_fundacao', src: 'assets/sprites/estacao-bio/bio-fundacao.png' },
   // Estação 66.6: artes próprias, recortadas com transparência real.
+  { id: 'docas_interior_pescador', src: 'assets/sprites/docas-interiores/bancada-pescador.png' },
+  { id: 'docas_interior_vigia', src: 'assets/sprites/docas-interiores/mesa-vigia.png' },
+  { id: 'docas_interior_crt', src: 'assets/sprites/docas-interiores/gerador-crt.png' },
   { id: 'freq666_entrada', src: 'assets/sprites/frequencia-666/abrigo-ampliado.png' },
   { id: 'freq666_receptor', src: 'assets/sprites/frequencia-666/receptor-costeiro.png' },
   { id: 'docas_mar_rocha', src: 'assets/sprites/travessia-lote1/rocha-folha.png' },

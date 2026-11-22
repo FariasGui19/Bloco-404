@@ -60,7 +60,7 @@ export async function usePortal(portal) {
       ? `VIAJANDO PARA:\n${portal.label}`
       : 'VIAJANDO...';
 
-    const mode=portal.id==='travessia_666'?'cidadela-entrada':portal.id==='retorno_cidadela'?'cidadela-retorno':'default';
+    const mode=portal.id==='travessia_666'?'cidadela-entrada':portal.id==='retorno_cidadela'?'cidadela-retorno':portal.id==='docas_portal_fenda'?'mare-fenda':'default';
     await playTransition(message,mode);
 
     const questRooms = { lamina_dominio_anciao: 'hub_camara_dominio', mare_astral: 'hub_camara_mare', nucleo_dez_forma: 'hub_camara_nucleo' };

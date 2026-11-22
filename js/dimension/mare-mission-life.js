@@ -1,6 +1,7 @@
 import {cell, canStand, move} from './mare-mission-model.js';
 
 import {details} from './mare-mission-details.js';
+import {pods} from './mare-mission-combat.js';
 export {details};
 export function visible(a,b){
  const distance=Math.hypot(b.x-a.x,b.y-a.y),steps=Math.max(1,Math.ceil(distance/.12));
@@ -32,13 +33,23 @@ export function terrain(m){
 }
 // Animation mapping shared by renderer and tests.
 export function enemyArt(e){
-  return e.phase==='windup'?'infectado-preparo'
-    :e.phase==='strike'?'infectado-golpe'
+  const hit = e.variant==='alto' ? 'infectado-golpe-alto' : 'infectado-golpe-baixo';
+  return e.phase==='dissolve'?'infectado-dissolvido'
+    :e.phase==='hurt'?'infectado-dano'
+    :e.phase==='windup'||e.phase==='strike'?hit
     :e.phase==='stunned'?'infectado-atordoado'
     :e.phase==='rise'||e.phase==='recover'?'infectado-erguendo'
     :e.phase==='listen'?'infectado-escuta'
     :e.phase==='search'?'infectado-busca'
     :'infectado';
+}
+// Local damage only: the operator's stress is the fail-safe, enemies have HP.
+export function hurtEnemy(e, damage=1){
+  if(!e||e.dead||e.phase==='dissolve')return null;
+  e.hp=Math.max(0,(e.hp??3)-Math.max(0,damage));
+  e.waypoint=null;
+  if(e.hp<=0){e.phase='dissolve';e.clock=1.15;return 'defeated';}
+  e.phase='hurt';e.clock=.45;return 'hurt';
 }
 
 // One shared, bounded flow field for both pursuers; never a path search per frame/enemy.
@@ -56,7 +67,7 @@ export function createPursuit(){
    // Perception is shared and deliberately fallible: sight + footstep noise + a
    // periodic Nulo "ping" that hints at the player's pattern. Without any of
    // these, the pair patrols and searches instead of omnisciently homing.
-   const range=m.crouched?9:16;
+   const range=(m.crouched?9:16)+(m.p?.containment?.lanterna?4:0);
    let sighted=false,heard=false;
    for(const e of enemies){
      const dist=Math.hypot(m.x-e.x,m.y-e.y);
@@ -71,15 +82,23 @@ export function createPursuit(){
    if(target){timer-=dt;if(timer<=0){rebuild(target);timer=.5;targetKey=Math.floor(target.y)*32+Math.floor(target.x);}}
    for(let i=0;i<enemies.length;i++){
      const e=enemies[i];e.phase??='hunt';e.clock??=0;e.clock=Math.max(0,e.clock-dt);
+     if(e.dead){
+       if(e.clock<=0){const pod=e.pod??(e.pod=pods[i%pods.length]??{x:16.5,y:28});e.x=pod.x;e.y=pod.y;e.anchor={x:pod.x,y:pod.y};e.dead=false;e.hp=3;e.phase='rise';e.clock=.9;e.waypoint=null;}
+       continue;
+     }
+     if(e.phase==='dissolve'){if(e.clock<=0){e.dead=true;e.clock=30;}continue;}
+     if(e.phase==='hurt'){if(e.clock<=0){e.phase='stunned';e.clock=.35;}continue;}
      if(m.ward>0){e.phase='stunned';e.clock=.32;e.waypoint=null;continue;}
      if(e.phase==='stunned'){if(e.clock<=0){e.phase='rise';e.clock=.8;}continue;}
      if(e.phase==='rise'){if(e.clock<=0)e.phase='hunt';continue;}
      const dist=Math.hypot(m.x-e.x,m.y-e.y),sight=dist<range&&visible(e,m);
-     if(e.phase==='windup'){if(e.clock<=0){e.phase='strike';e.clock=.2;if(dist<1.45&&visible(e,m))m.stress+=22;}continue;}
+     if(e.phase==='windup'){if(e.clock<=0){e.phase='strike';e.clock=.22;if(dist<1.55&&visible(e,m))m.stress+=e.variant==='alto'?26:16;}continue;}
      if(e.phase==='strike'){if(e.clock<=0){e.phase='recover';e.clock=1.15;}continue;}
      if(e.phase==='recover'){if(e.clock<=0)e.phase='hunt';continue;}
      if(e.phase==='listen'){if(e.clock<=0){e.phase='hunt';if(track&&track.age>1.2)track=null;}continue;}
-     if(dist<1.25&&sight&&!m.decoy){e.phase='windup';e.clock=.7;continue;}
+     if(dist<1.25&&sight&&!m.decoy){
+       e.variant=dist<.75?'baixo':'alto';e.phase='windup';e.clock=e.variant==='baixo'?.55:.85;continue;
+     }
      const adaptation=archetype==='mare_astral'?.1:archetype==='motor_bio_forja'?.06:0;
      if(!target){
        // Idle patrol around the spawn anchor; no wall-free omniscience.

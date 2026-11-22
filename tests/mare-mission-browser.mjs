@@ -97,6 +97,66 @@ try {
   });
   assert.match(await page.locator(".mare-mission aside").innerText(), /Maca de quarentena/);
   await capture("qa/mare-lore-maca.png");
+  // Melee: F is a short, local hit with its own cooldown and no global cost.
+  await page.evaluate(() => {
+    const m = d.manager.runtime.mission, e = d.manager.runtime.enemies[0];
+    m.x = 16; m.y = 24.6; m.angle = -Math.PI / 2; m.p.elapsed = 46;
+    Object.assign(e, { x: 16, y: 23.3, hp: 3, phase: "hunt", clock: 0, dead: false, variant: "alto" });
+    d.manager.tick(0.05);
+  });
+  await page.keyboard.press("f");
+  await page.evaluate(() => d.manager.tick(0.05));
+  const melee = await page.evaluate(() => {
+    const e = d.manager.runtime.enemies[0];
+    return { hp: e.hp, phase: e.phase, health: s.player.health, inventory: s.progress.inventory.slice() };
+  });
+  assert.equal(melee.hp, 2);
+  assert.equal(melee.phase, "hurt");
+  assert.equal(melee.health, 77);
+  assert.deepEqual(melee.inventory, ["echo"]);
+  // Local combat: the Q pulse damages/staggers a visible infected, draws a
+  // readable hurt pose and never touches global health/inventory.
+  await page.evaluate(() => {
+    const m = d.manager.runtime.mission, e = d.manager.runtime.enemies[0];
+    m.x = 16; m.y = 25.8; m.angle = -Math.PI / 2; m.cooldown = 0; m.p.elapsed = 46;
+    m.stress = 40; m.p.containment = {};
+    Object.assign(e, { x: 16, y: 23.2, hp: 3, phase: "hunt", clock: 0, dead: false, variant: "alto" });
+    d.manager.tick(0.05);
+  });
+  assert.match(await page.locator(".mare-readout").innerText(), /AMEAÇAS 2\/2/);
+  await page.keyboard.press("q");
+  await page.evaluate(() => d.manager.tick(0.05));
+  const combat = await page.evaluate(() => {
+    const e = d.manager.runtime.enemies[0];
+    return { hp: e.hp, phase: e.phase, health: s.player.health, inventory: s.progress.inventory.slice() };
+  });
+  assert.equal(combat.hp, 2);
+  assert.equal(combat.phase, "hurt");
+  assert.equal(combat.health, 77);
+  assert.deepEqual(combat.inventory, ["echo"]);
+  await capture("qa/mare-combat-pulse.png");
+  // Hazard damage is stress-only, and isolating the cable is one real [E] use.
+  await page.evaluate(() => {
+    const m = d.manager.runtime.mission;
+    m.x = 15.9; m.y = 12.6; m.angle = -Math.PI / 2; m.stress = 20; m.p.containment = {};
+    d.manager.tick(0.05);
+  });
+  await page.evaluate(() => { for (let i = 0; i < 20; i++) d.manager.tick(0.05); });
+  const hazard = await page.evaluate(() => ({
+    stress: d.manager.runtime.mission.stress,
+    health: s.player.health,
+  }));
+  assert.ok(hazard.stress > 25, "energized cable raises tension");
+  assert.equal(hazard.health, 77);
+  await page.locator("[data-action]").click();
+  assert.match(await page.locator(".mare-message").innerText(), /CABO ISOLADO/);
+  assert.equal(await page.evaluate(() => d.manager.runtime.mission.p.containment.cabo), true);
+  // Restore the encounter so the staged objective route stays deterministic.
+  await page.evaluate(() => {
+    const e = d.manager.runtime.enemies[0];
+    Object.assign(e, { x: 27, y: 16, hp: 3, phase: "hunt", clock: 0, dead: false });
+    d.manager.runtime.mission.ward = 0;
+  });
   // Stage each objective; route connectivity/radius collision is checked separately in Node.
   for (const id of ["fita", "sal", "eco", "terminal", "ancora"]) {
     await page.evaluate(async (id) => {
@@ -176,7 +236,7 @@ try {
   assert.equal(await page.locator(".mare-mission").count(), 0);
   assert.deepEqual(errors, []);
   console.log(
-    "Chromium: entry, keyboard/action, decoded assets, staged objectives, timer sabotage, optional audio, preserved state, ESC, asset-failure rollback and disposal OK",
+    "Chromium: entry, F/Q combat, hazard, decoded assets, staged objectives, timer sabotage, optional audio, preserved state, ESC, asset-failure rollback and disposal OK",
   );
 } finally {
   await browser.close();

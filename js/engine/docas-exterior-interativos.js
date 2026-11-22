@@ -27,6 +27,9 @@ export function desenharInterativoExterior(ctx,o,state,t,reduced){
   const a=done?.2:reduced?.36:.36+.07*Math.sin(t*1.4+o.x);
   ctx.fillStyle=`rgba(${done?'151,184,159':'131,225,209'},${a})`;ctx.beginPath();ctx.ellipse(x+(1-u)*w*.16,y-h*.43,1.7,1.1,0,0,Math.PI*2);ctx.fill();
  }
- if(state.player&&Math.hypot(o.x-state.player.x,o.y-state.player.y)<1.8){ctx.strokeStyle='rgba(196,222,196,.45)';ctx.lineWidth=.8;ctx.beginPath();ctx.ellipse(x,y+1,w*.35,4,0,0,Math.PI*2);ctx.stroke();}
+ const near=state.player&&Math.hypot(o.x-state.player.x,o.y-state.player.y)<1.8;
+ if(near){ctx.strokeStyle='rgba(196,222,196,.45)';ctx.lineWidth=.8;ctx.beginPath();ctx.ellipse(x,y+1,w*.35,4,0,0,Math.PI*2);ctx.stroke();}
+ // O portal de eco não tem prompt de HUD na vista lateral; rotula no mundo.
+ if(v.kind==='portal'&&state.player&&Math.hypot(o.x-state.player.x,o.y-state.player.y)<2.6){ctx.font='600 12px monospace';ctx.textAlign='center';ctx.fillStyle='rgba(3,12,16,.75)';ctx.fillRect(x-62,y-h-19,124,15);ctx.fillStyle='#bff5e1';ctx.fillText(state.progress?.flags?.cromatica_ancora_estavel?'[E] PORTAL DE ECO':'PORTAL DE ECO • SELADO',x,y-h-7);}
  ctx.restore();
 }

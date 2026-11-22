@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { cell, canStand, move, createMission, sites } from "../js/dimension/mare-mission-model.js";
-import { details, visible, nearestSignal, useDetail, terrain, createPursuit, enemyArt } from "../js/dimension/mare-mission-life.js";
+import { details, visible, nearestSignal, useDetail, terrain, createPursuit, enemyArt, hurtEnemy } from "../js/dimension/mare-mission-life.js";
 
 // Props: exactly eight, unique ids, empty tiles, reachable from the dock.
 assert.equal(details.length, 8);
@@ -87,8 +87,10 @@ sim.ward = 0.5;
 pursuit.update(sim, enemies, 1 / 30, "mare_astral");
 assert.equal(enemies[0].phase, "stunned");
 // Animation states stay legible and distinct.
-assert.equal(enemyArt({ phase: "windup" }), "infectado-preparo");
-assert.equal(enemyArt({ phase: "strike" }), "infectado-golpe");
+assert.equal(enemyArt({ phase: "windup", variant: "baixo" }), "infectado-golpe-baixo");
+assert.equal(enemyArt({ phase: "windup", variant: "alto" }), "infectado-golpe-alto");
+assert.equal(enemyArt({ phase: "hurt" }), "infectado-dano");
+assert.equal(enemyArt({ phase: "dissolve" }), "infectado-dissolvido");
 assert.equal(enemyArt({ phase: "stunned" }), "infectado-atordoado");
 assert.equal(enemyArt({ phase: "rise" }), "infectado-erguendo");
 assert.equal(enemyArt({ phase: "listen" }), "infectado-escuta");
@@ -127,4 +129,38 @@ shock.ward = 0; ward.update(shock, near, 0.5, "mare_astral");
 assert.equal(near[0].phase, "rise");
 ward.update(shock, near, 1, "mare_astral");
 assert.equal(near[0].phase, "hunt");
+// Local combat: three hits dissolve, the casulo reforms after 30s, variants telegraph.
+const combat = createMission({});
+combat.x = 16.5; combat.y = 27.5; combat.idle = 0;
+const foes = [{ x: 16.5, y: 26.4, hp: 3 }], fight = createPursuit();
+assert.equal(hurtEnemy(foes[0], 1), "hurt");
+assert.equal(foes[0].phase, "hurt");
+assert.equal(enemyArt(foes[0]), "infectado-dano");
+assert.equal(hurtEnemy(foes[0], 1), "hurt");
+assert.equal(hurtEnemy(foes[0], 1), "defeated");
+assert.equal(foes[0].phase, "dissolve");
+for (let i = 0; i < 40; i++) fight.update(combat, foes, 1 / 30, "mare_astral");
+assert.equal(foes[0].dead, true);
+assert.equal(foes[0].hp, 0);
+for (let i = 0; i < 1000 && foes[0].dead; i++) fight.update(combat, foes, 1 / 30, "mare_astral");
+assert.equal(foes[0].dead, false);
+assert.equal(foes[0].hp, 3);
+assert.equal(foes[0].phase, "rise");
+assert.ok(Math.hypot(foes[0].x - 26.2, foes[0].y - 15.2) < .2, "reforms at a casulo");
+// High/low variants use different telegraph timings.
+const variant = createMission({});
+variant.x = 16.5; variant.y = 28; variant.idle = 0;
+const close = [{ x: 16.5, y: 27.55, hp: 3 }], tel = createPursuit();
+tel.update(variant, close, 1 / 30, "mare_astral");
+assert.equal(close[0].phase, "windup");
+assert.equal(close[0].variant, "baixo");
+assert.ok(Math.abs(close[0].clock - 0.55) < 0.04);
+// Lantern trades stealth for a wider detection cone.
+const dark = createMission({}); dark.x = 16.5; dark.y = 27.5; dark.idle = 0; dark.crouched = true;
+const watcher = [{ x: 16.5, y: 17.6, hp: 3 }], sight = createPursuit();
+sight.update(dark, watcher, 1 / 30, "mare_astral");
+assert.equal(sight.track, null);
+dark.p.containment = { lanterna: true };
+sight.update(dark, watcher, 1 / 30, "mare_astral");
+assert.ok(sight.track, "lantern extends detection");
 console.log("Maré life: eight grounded props, LOS targeting, one-shot reserves, terrain, substepped collision and shared-field pursuit OK");

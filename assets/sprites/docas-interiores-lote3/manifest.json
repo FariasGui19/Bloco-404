@@ -1,0 +1,216 @@
+{
+  "batch": 3,
+  "count": 10,
+  "assets": [
+    {
+      "id": "rede-secagem",
+      "sourceSha256": "6999c52c5fe65975541944bbb9560c0306e049707325887c889067cedc63fd5d",
+      "selection": [
+        0,
+        0,
+        1408,
+        768
+      ],
+      "crop": [
+        450,
+        70,
+        956,
+        698
+      ],
+      "rotation": 0,
+      "size": [
+        413,
+        512
+      ]
+    },
+    {
+      "id": "mesa-refeicao",
+      "sourceSha256": "8a08504833eb27e724db6529e00417a680175d51027fdbc03be288a7cc0daa84",
+      "selection": [
+        0,
+        0,
+        1024,
+        1024
+      ],
+      "crop": [
+        102,
+        154,
+        921,
+        870
+      ],
+      "rotation": 0,
+      "size": [
+        512,
+        448
+      ]
+    },
+    {
+      "id": "bau-suprimentos",
+      "sourceSha256": "6449bb2fce8ef4aa636169dd23c992b1055cf510f2948e8385d77a46f7a7f125",
+      "selection": [
+        0,
+        0,
+        1408,
+        768
+      ],
+      "crop": [
+        188,
+        10,
+        1211,
+        750
+      ],
+      "rotation": 0,
+      "size": [
+        512,
+        370
+      ]
+    },
+    {
+      "id": "reserva-agua",
+      "sourceSha256": "5814ba4b9073ea262216797f51f1cb69441f2906903079a6f77ac1d0ef6eb399",
+      "selection": [
+        0,
+        0,
+        1408,
+        768
+      ],
+      "crop": [
+        452,
+        112,
+        1009,
+        668
+      ],
+      "rotation": 0,
+      "size": [
+        512,
+        511
+      ]
+    },
+    {
+      "id": "esteira-sisal",
+      "sourceSha256": "f2b64e8556eaca90a4bd9789be49d443ad5cf02a6ae5bbe114606918f32721f0",
+      "selection": [
+        0,
+        0,
+        1408,
+        768
+      ],
+      "crop": [
+        26,
+        26,
+        1382,
+        744
+      ],
+      "rotation": 90,
+      "size": [
+        271,
+        512
+      ]
+    },
+    {
+      "id": "carta-parede",
+      "sourceSha256": "90ef96d9aa222056a26c2a318f82a66fbc71dee4733c94187bafb5a21d298f3b",
+      "selection": [
+        0,
+        0,
+        1408,
+        768
+      ],
+      "crop": [
+        125,
+        22,
+        1282,
+        737
+      ],
+      "rotation": 0,
+      "size": [
+        512,
+        316
+      ]
+    },
+    {
+      "id": "grelha-piso",
+      "sourceSha256": "701dbdbf76c10bec4108ef81345820285432d50e0226564c4f2e2a7bf1bb337a",
+      "selection": [
+        0,
+        0,
+        1408,
+        768
+      ],
+      "crop": [
+        59,
+        65,
+        1349,
+        704
+      ],
+      "rotation": 0,
+      "size": [
+        512,
+        254
+      ]
+    },
+    {
+      "id": "capa-parede",
+      "sourceSha256": "c3da9710002221d4a517ca6d178164556263d1367d1ddb343ed993bd2d06da20",
+      "selection": [
+        507,
+        0,
+        915,
+        768
+      ],
+      "crop": [
+        0,
+        26,
+        408,
+        739
+      ],
+      "rotation": 0,
+      "size": [
+        293,
+        512
+      ]
+    },
+    {
+      "id": "lanterna-parede",
+      "sourceSha256": "cacbd3ce5052bd78ee4575e78042da6ace6a56967d9320a886319563ef1d37ff",
+      "selection": [
+        0,
+        0,
+        1408,
+        768
+      ],
+      "crop": [
+        481,
+        74,
+        868,
+        704
+      ],
+      "rotation": 0,
+      "size": [
+        315,
+        512
+      ]
+    },
+    {
+      "id": "tubo-valvula",
+      "sourceSha256": "0f566a8f710e816956e3688b698769d0ef15bd3f4fa89d7b0a9b1e78b60a5ed6",
+      "selection": [
+        0,
+        0,
+        1408,
+        768
+      ],
+      "crop": [
+        431,
+        53,
+        982,
+        718
+      ],
+      "rotation": 0,
+      "size": [
+        424,
+        512
+      ]
+    }
+  ]
+}

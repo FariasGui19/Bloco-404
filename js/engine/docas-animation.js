@@ -33,3 +33,7 @@ export function tempoVisualDocas(state,fallbackMilliseconds=0){
     ? state.docasAnimation.elapsed : Math.max(0,fallbackMilliseconds/1000)||0;
   return {reduced,t:reduced?0:elapsed,clock:reduced?null:elapsed};
 }
+// Shared smooth wind envelope: no random jitter or RAF-dependent phase.
+export function rajadaDocas(t,phase=0){
+ return .78*Math.sin(t*.65+phase)+.22*Math.sin(t*1.21+phase*.73);
+}

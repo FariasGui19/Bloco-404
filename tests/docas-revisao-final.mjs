@@ -42,7 +42,7 @@ for(const map of [cabanaOeste,cabanaLeste,galpao]){
  }
  for(const o of [...state.objects.filter(o=>o.interacao),...state.portals]){assert(hits.has(o.id),o.id+' accessible with furniture');interactions++;}
  for(const o of state.objects.filter(o=>o.docasProp)){assert(!canStandAt(map,o.x,o.y,.25),o.id+' solid');solid++;}
- assert.equal(state.objects.filter(o=>o.docasAsset).length,1,'one generated hero asset per room');
+ assert.equal(state.objects.filter(o=>o.docasHero).length,1,'one generated hero asset per room');
 }
 // Missing optional artwork must retain procedural furniture and Canvas balance.
 let depth=0;const canvas=new Proxy({save(){depth++;},restore(){depth--;assert(depth>=0);},createRadialGradient(){return {addColorStop(){}};}},{get:(o,k)=>k in o?o[k]:()=>{}});

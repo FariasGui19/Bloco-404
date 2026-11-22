@@ -1,3 +1,5 @@
+import {desenharSuperficiesDocas} from './docas-superficies-interiores.js';
+import {caixaMobiliaDocas} from './docas-apoios-interiores.js';
 import {CONFIG} from '../config.js';
 import {getSprite} from './sprites.js';
 import {INTERIORES_DOCAS} from '../data/worlds/arquipelago-rotas-perdidas/docas-interiores.js';
@@ -47,10 +49,16 @@ export function desenharParedesInteriorDocas(ctx,map,state){
   if(wx>=cols)continue;
   const a=p(wx+.05,wy),b=p(wx+.9,wy),top=72,bottom=34;
   poly(ctx,[[a[0],a[1]-bottom],[b[0],b[1]-bottom],[b[0],b[1]-top],[a[0],a[1]-top]],'#091d2a','#90836b');
-  for(let i=0;i<4;i++){const f=(i+.4)/4,X=a[0]+(b[0]-a[0])*f,Y=a[1]+(b[1]-a[1])*f;line(ctx,[[X,Y-66],[X-3,Y-40]],`rgba(117,183,203,${.16+(reduced?0:.06*Math.sin(t*.7+i))})`);}
+  ctx.save();ctx.beginPath();[[a[0],a[1]-bottom],[b[0],b[1]-bottom],[b[0],b[1]-top],[a[0],a[1]-top]].forEach(([x,y],i)=>i?ctx.lineTo(x,y):ctx.moveTo(x,y));ctx.closePath();ctx.clip();
+  for(let i=0;i<5;i++){
+   const f=(i+.4)/5,X=a[0]+(b[0]-a[0])*f,Y=a[1]+(b[1]-a[1])*f,fall=reduced?.45:(t*.34+i*.237)%1,z=68-fall*30;
+   line(ctx,[[X,Y-z],[X-2,Y-z+7]],'rgba(117,183,203,.21)');
+  }
+  ctx.restore();
   line(ctx,[[(a[0]+b[0])/2,(a[1]+b[1])/2-bottom],[(a[0]+b[0])/2,(a[1]+b[1])/2-top]],'#70674f',2);
   glow(ctx,(a[0]+b[0])/2,(a[1]+b[1])/2-45,48,'#73b8ce',.11);
  }
+ desenharSuperficiesDocas(ctx,map,state,'wall');
  // Exit cutaway is intentionally low: no front wall hides feet or supplies.
  for(const [a,b] of [[p(1,rows),p(cols,rows)],[p(cols,rows),p(cols,1)]])line(ctx,[a,b],'#676454',3);
  const door=p((cols+1)/2,rows-.5);glow(ctx,door[0],door[1],33,'#b7b993',.15);
@@ -69,6 +77,7 @@ export function desenharChaoInteriorDocas(ctx,map,state){
   const points=[[2,2],[2,6],[5,6],[5,3]].map(a=>p(...a));line(ctx,points,'#0c191e',6);line(ctx,points,'#52615c',2);
   for(let x=3;x<8;x+=.45){const a=p(x,6.7),b=p(x+.15,6.9);line(ctx,[a,b],'#a68e55',2);}
  }
+ desenharSuperficiesDocas(ctx,map,state,'floor');
  // Tiny dust motes drift above the floor, not over the interaction prompts.
  for(let i=0;i<12;i++){const [x,y]=p(1.7+(i*1.83)%(cols-2),2+(i*2.13)%(rows-2));const drift=reduced?0:Math.sin(t*.2+i)*4;ctx.fillStyle='rgba(199,202,169,.24)';ctx.fillRect(x+drift,y-12-(reduced?0:(t*1.7+i*3)%24),1,1);}
  ctx.restore();
@@ -77,11 +86,16 @@ export function desenharMobiliaDocas(ctx,o,state){
  if(!o.docasProp)return false;
  const {t,reduced}=tempoVisualDocas(state),[w,h]=o.docasSize,[px,py]=p(o.x,o.y),x=o.x-w/2,y=o.y-h/2;
  ctx.save();
- ctx.fillStyle='rgba(2,10,14,.4)';ctx.beginPath();ctx.ellipse(px,py+2,(w+h)*15,(w+h)*5,0,0,Math.PI*2);ctx.fill();
+ // Ground-plane contact, not an oversized detached oval below the prop.
+ poly(ctx,[p(x,y),p(x+w,y),p(x+w,y+h),p(x,y+h)],'rgba(2,10,14,.15)',null);
  const asset=o.docasAsset&&getSprite(o.docasAsset);
- if(asset){const width=(w+h)*42,height=width*asset.height/asset.width;
-  ctx.imageSmoothingEnabled=true;ctx.imageSmoothingQuality='high';ctx.drawImage(asset,px-width/2,py-height+3,width,height);
-  glow(ctx,px-width*.28,py-height*.65,28,o.docasProp==='gerador'?'#89d9d9':'#e5ba76',reduced?.1:.1+.025*Math.sin(t*1.2));
+ if(asset){
+  const visual=o.docasVisual,{x:ix,y:iy,width,height,frontX,frontY,contacts,flip}=caixaMobiliaDocas(o,asset);
+  ctx.fillStyle='rgba(1,8,11,.48)';
+  for(const [cx,cy] of contacts){ctx.beginPath();ctx.ellipse(cx,cy+.35,2.8,1.05,0,0,Math.PI*2);ctx.fill();}
+  if(flip){const cx=ix+width/2;ctx.translate(cx,0);ctx.scale(-1,1);ctx.translate(-cx,0);}
+  ctx.imageSmoothingEnabled=true;ctx.imageSmoothingQuality='high';ctx.drawImage(asset,ix,iy,width,height);
+  desenharLuzMobiliaDocas(ctx,o,ix,iy,width,height,t,reduced);
   ctx.restore();return true;
  }
  const wood='#665441',trim='#b29a6b';
@@ -120,4 +134,24 @@ export function desenharMobiliaDocas(ctx,o,state){
   }break;}
  }
  ctx.restore();return true;
+}
+
+// Emission is authored in normalized sprite UVs and follows scale/mirroring.
+// Wood, bedding, barrels and unpowered tools do not receive arbitrary halos.
+export function desenharLuzMobiliaDocas(ctx,o,x,y,w,h,t,reduced){
+ const visual=o.docasVisual,phase=o.x*.73+o.y*.41;
+ const pulse=reduced?.12:.12+.018*Math.sin(t*1.13+phase)+.009*Math.sin(t*2.07+phase);
+ if(!visual){if(o.docasHero)glow(ctx,x+w*.22,y+h*.35,28,o.docasProp==='gerador'?'#89d9d9':'#e5ba76',pulse);return;}
+ if(visual.light){const [u,v,r,color]=visual.light;glow(ctx,x+u*w,y+v*h,r,color,pulse);}
+ if(visual.screen){
+  ctx.save();ctx.beginPath();visual.screen.forEach(([u,v],i)=>i?ctx.lineTo(x+u*w,y+v*h):ctx.moveTo(x+u*w,y+v*h));ctx.closePath();ctx.clip();
+  const top=Math.min(...visual.screen.map(p=>p[1])),bottom=Math.max(...visual.screen.map(p=>p[1]));
+  const sweep=reduced?.5:(t*.23+phase)%1;
+  ctx.fillStyle='rgba(188,245,236,.22)';ctx.fillRect(x,y+(top+(bottom-top)*sweep)*h,w,Math.max(.45,h*.009));
+  ctx.restore();
+ }
+ for(const [i,[u,v]] of (visual.leds??[]).entries()){
+  ctx.fillStyle=`rgba(255,210,125,${reduced?.35:.35+.09*Math.sin(t*.9+phase+i*1.6)})`;
+  ctx.beginPath();ctx.ellipse(x+u*w,y+v*h,Math.max(.45,w*.014),Math.max(.4,h*.006),0,0,Math.PI*2);ctx.fill();
+ }
 }

@@ -1,0 +1,206 @@
+{
+  "batch": 2,
+  "count": 10,
+  "assets": [
+    {
+      "id": "cama-pescador",
+      "sourceSha256": "4cee9bc2c5d4b9ac3003cb5e89cbad21f30de29d9469fe2f3cea69dc07eab3b1",
+      "selection": [
+        0,
+        0,
+        1024,
+        1024
+      ],
+      "crop": [
+        87,
+        243,
+        948,
+        881
+      ],
+      "size": [
+        512,
+        379
+      ]
+    },
+    {
+      "id": "estante-pesca",
+      "sourceSha256": "59ed830a19e822af3b3f4f45d1cd6f41925efddb1b54e46c7f33ec34860a2bf4",
+      "selection": [
+        0,
+        0,
+        704,
+        768
+      ],
+      "crop": [
+        39,
+        18,
+        704,
+        750
+      ],
+      "size": [
+        465,
+        512
+      ]
+    },
+    {
+      "id": "barris-salmoura",
+      "sourceSha256": "b37128f41dfce51eb17c36ce9732928c19089fe1b29aba64c010a49c8d586c03",
+      "selection": [
+        0,
+        0,
+        1408,
+        768
+      ],
+      "crop": [
+        323,
+        21,
+        1100,
+        754
+      ],
+      "size": [
+        512,
+        483
+      ]
+    },
+    {
+      "id": "bau-marinheiro",
+      "sourceSha256": "8a96d6f6686088451ccb6a2cd342b9b0087b70d19de3989a1daf576603490f70",
+      "selection": [
+        0,
+        0,
+        1376,
+        768
+      ],
+      "crop": [
+        172,
+        19,
+        1204,
+        748
+      ],
+      "size": [
+        512,
+        362
+      ]
+    },
+    {
+      "id": "cama-vigia",
+      "sourceSha256": "95ca7135d02ff13484c56e569ed81362364a597fe661ead878dac4bfde328a40",
+      "selection": [
+        0,
+        0,
+        1408,
+        768
+      ],
+      "crop": [
+        85,
+        9,
+        1331,
+        765
+      ],
+      "size": [
+        512,
+        311
+      ]
+    },
+    {
+      "id": "radio-vigia",
+      "sourceSha256": "b98899dac99de5baeb0ae65cba860e121a6bd41be97753c7bdb3fb1e136dad60",
+      "selection": [
+        0,
+        0,
+        1408,
+        768
+      ],
+      "crop": [
+        502,
+        59,
+        914,
+        706
+      ],
+      "size": [
+        326,
+        512
+      ]
+    },
+    {
+      "id": "arquivo-vigia",
+      "sourceSha256": "b91287513387636daf4a4b8781dc6f1bf2438aa77f2a58af56267dea375346e2",
+      "selection": [
+        0,
+        0,
+        1024,
+        1024
+      ],
+      "crop": [
+        226,
+        31,
+        798,
+        988
+      ],
+      "size": [
+        306,
+        512
+      ]
+    },
+    {
+      "id": "rack-crt",
+      "sourceSha256": "89b25de4f88a63e6b6fbc7a96a04ba0114505b9e4ad9dce1ec4199b4a8891426",
+      "selection": [
+        0,
+        0,
+        704,
+        768
+      ],
+      "crop": [
+        241,
+        6,
+        636,
+        747
+      ],
+      "size": [
+        273,
+        512
+      ]
+    },
+    {
+      "id": "bancada-eletrica",
+      "sourceSha256": "a376c225bf5e06255fa394d1388a291fe898367366301ee3a8166772523793a0",
+      "selection": [
+        0,
+        0,
+        1456,
+        720
+      ],
+      "crop": [
+        378,
+        65,
+        1110,
+        687
+      ],
+      "size": [
+        512,
+        435
+      ]
+    },
+    {
+      "id": "carrinho-ferramentas",
+      "sourceSha256": "bb24ee4aa1a10587d78ead038ffb5c85ac08bbb514c10e32d4a223c917e53df9",
+      "selection": [
+        0,
+        0,
+        1376,
+        768
+      ],
+      "crop": [
+        407,
+        106,
+        1009,
+        702
+      ],
+      "size": [
+        512,
+        507
+      ]
+    }
+  ]
+}

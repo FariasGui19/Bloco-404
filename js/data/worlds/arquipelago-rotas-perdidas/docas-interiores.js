@@ -1,3 +1,5 @@
+import {pecaInteriorLote3} from './docas-interiores-lote3.js';
+import {pecaInteriorLote2} from './docas-interiores-lote2.js';
 // Accessible interiors only. The watchtower remains storm-closed and the
 // lighthouse/portal are exterior landmarks, not newly invented destinations.
 export const INTERIORES_DOCAS=Object.freeze({
@@ -13,9 +15,14 @@ export const INTERIORES_DOCAS=Object.freeze({
 });
 export function mobiliarInteriorDocas(map){
  const room=INTERIORES_DOCAS[map.id];if(!room)return map;
- return {...map,meta:{...map.meta,docasTema:room.key},objects:[...map.objects,...room.props.map(([kind,x,y,w,h],i)=>({
-  id:`${map.id}_mobilia_${i}`,nome:kind,tipo:'decoracao',docasProp:kind,x,y,bloqueia:true,
-  docasAsset:(room.key==='pescador'&&kind==='bancada')||(room.key==='vigia'&&kind==='cartas')||(room.key==='crt'&&kind==='gerador')?'docas_interior_'+room.key:null,
-  hitbox:{offsetX:-w/2,offsetY:-h/2,width:w,height:h},docasSize:[w,h],
- }))]};
+ const heroKinds={pescador:'bancada',vigia:'cartas',crt:'gerador'};
+ const furniture=room.props.map(([kind,x,y,w,h],i)=>{
+  const visual=pecaInteriorLote3(room.key,kind)??pecaInteriorLote2(room.key,kind),hero=heroKinds[room.key]===kind;
+  return {
+   id:`${map.id}_mobilia_${i}`,nome:kind,tipo:'decoracao',docasProp:kind,x,y,bloqueia:true,
+   docasHero:hero,docasFlip:hero&&room.key==='pescador',docasAsset:visual?.sprite??(hero?'docas_interior_'+room.key:null),docasVisual:visual,
+   hitbox:{offsetX:-w/2,offsetY:-h/2,width:w,height:h},docasSize:[w,h],
+  };
+ });
+ return {...map,meta:{...map.meta,docasTema:room.key},objects:[...map.objects,...furniture]};
 }

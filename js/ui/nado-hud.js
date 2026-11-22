@@ -30,7 +30,7 @@ export function desenharMedidorAr(nado) {
   const ctx = canvas.getContext('2d');
   if (!ctx) return;
 
-  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  const dpr = Math.min(window.devicePixelRatio || 1, 1.5);
   const w = canvas.width / dpr;
   const h = canvas.height / dpr;
 
@@ -97,6 +97,10 @@ export function desenharMedidorAr(nado) {
     ctx.fillText('↑', cx, cy + 4);
   }
 
+  if (!nado.submerso && pct < .98) {
+    ctx.fillStyle = '#c9fff3'; ctx.font = 'bold 9px monospace'; ctx.textAlign = 'left';
+    ctx.fillText(nado.semFolego ? 'RECUPERE O AR E SOLTE O MERGULHO' : 'RESPIRANDO • AR RECUPERANDO', cx + 44, cy + 3);
+  }
   // Segundos restantes, só quando o ar está de fato baixando.
   if (nado.submerso) {
     ctx.fillStyle = 'rgba(232,255,250,.62)';
@@ -155,7 +159,7 @@ export function desenharDegrauNado(state, map) {
   const alfa = player._nadoHud;
   if (alfa < .03) return;
 
-  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  const dpr = Math.min(window.devicePixelRatio || 1, 1.5);
   const h = canvas.height / dpr;
   const L = 258, A = r.prova ? 64 : 46;
   const x = 122, y = h - 132 - A / 2;

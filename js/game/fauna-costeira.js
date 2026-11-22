@@ -42,11 +42,14 @@ export function updateCoastalFauna(map, animals, player, dt) {
     a.clock += dt;
     const dx = a.x - player.x, dy = a.y - player.y;
     const distance = Math.hypot(dx, dy);
-    a.fleeing = distance < (a.species === 'gaivota' ? 2.8 : 2.1);
+    // Fauna com rotina calma/interativa tolera aproximação para diálogo antes de recuar.
+    const fleeRadius = a.calma ? 0.75 : (a.interacao ? 1.15 : (a.species === 'gaivota' ? 2.8 : 2.1));
+    a.fleeing = distance < fleeRadius;
     // O destino de passeio muda suavemente; fuga aponta para longe do jogador.
-    const radius = a.species === 'peixes' ? 0.75 : 1.15;
-    let tx = a.homeX + Math.sin(a.clock * 0.27 + a.homeX) * radius;
-    let ty = a.homeY + Math.cos(a.clock * 0.27 + a.homeX) * radius;
+    const radius = a.raioPasseio ?? (a.species === 'peixes' ? 0.75 : (a.calma ? 0.55 : 1.15));
+    const freq = a.species === 'tartaruga' || a.species === 'capivara' ? 0.18 : 0.27;
+    let tx = a.homeX + Math.sin(a.clock * freq + a.homeX) * radius;
+    let ty = a.homeY + Math.cos(a.clock * freq + a.homeX) * radius;
     if (a.fleeing && distance > 0.001) {
       tx = a.homeX + dx / distance * radius;
       ty = a.homeY + dy / distance * radius;
@@ -55,7 +58,7 @@ export function updateCoastalFauna(map, animals, player, dt) {
     const length = Math.hypot(vx, vy);
     a.moving = length > 0.12;
     if (!a.moving) continue;
-    const speed = a.fleeing ? (a.species === 'gaivota' ? 1.5 : 1.0) : 0.25;
+    const speed = a.fleeing ? (a.species === 'gaivota' ? 1.5 : 1.0) : (a.calma ? 0.18 : 0.25);
     const step = Math.min(length, speed * dt);
     vx = vx / length * step; vy = vy / length * step;
     // Movimento eixo a eixo permite contornar a beira do habitat.

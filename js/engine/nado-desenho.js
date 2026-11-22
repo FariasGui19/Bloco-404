@@ -97,6 +97,22 @@ export function desenharNadador(ctx, player, ix, iy, opt) {
   const vel = Math.hypot(nado.vx ?? 0, nado.vy ?? 0);
   const movendo = vel > .35;
   const arrancando = nado.arrancada > 0;
+  const esteiraArte = !(typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) && opt.arquetipo === 'mare_astral' && movendo && !submerso && getSprite('oceano_vivo_esteira_nado');
+  if (esteiraArte) {
+    const dx=(nado.dirX ?? 0)-(nado.dirY ?? 0), dy=((nado.dirX ?? 0)+(nado.dirY ?? 1))*.5;
+    ctx.save();ctx.translate(ix,iy);ctx.rotate(Math.atan2(dy,dx));ctx.globalAlpha=.35;
+    ctx.drawImage(esteiraArte,-100,-15,100,30);ctx.restore();
+  }
+  if (submerso && movendo && opt.arquetipo === 'mare_astral' && !(typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches)) {
+    const efeito=getSprite(arrancando ? 'mare_animacao_bolhas_impulso' : 'mare_animacao_bracada_mare');
+    if (efeito) {
+      const dx=(nado.dirX ?? 0)-(nado.dirY ?? 0),dy=((nado.dirX ?? 0)+(nado.dirY ?? 1))*.5;
+      ctx.save();ctx.translate(ix,iy);ctx.rotate(Math.atan2(dy,dx));ctx.globalAlpha=arrancando ? .5 : .18+.08*Math.sin(t*4);
+      if (arrancando) ctx.drawImage(efeito,-95,-16,90,32);
+      else ctx.drawImage(efeito,-10,-25,42,50);
+      ctx.restore();
+    }
+  }
   const impulsoMare = id === 'nado_mare' && arrancando && getSprite('nado_mare_impulso');
   if (impulsoMare) imagem = impulsoMare;
   const mare = id === 'nado_mare';
@@ -154,6 +170,14 @@ export function desenharNadador(ctx, player, ix, iy, opt) {
     ctx.restore();
   }
 
+  // Espuma de emergência é curta e nasce no peito ao voltar à superfície.
+  if (!submerso && nado.respiroVisual > 0) {
+    const espuma = getSprite('mare_encontro_respiro_superficie') || getSprite('rota_mare_espuma_respiro');
+    if (espuma) { ctx.save(); ctx.globalAlpha = .5 * Math.min(1, nado.respiroVisual / .5);
+      const tamanho = 45 + (1 - nado.respiroVisual / .9) * 17;
+      ctx.drawImage(espuma, ix-tamanho/2, iy-10, tamanho, 20); ctx.restore(); }
+  }
+
   // ---- anel de quem boia parado ----
   if (!movendo && !submerso) {
     ctx.save();
@@ -206,7 +230,8 @@ export function desenharNadador(ctx, player, ix, iy, opt) {
 
   ctx.save();
   ctx.translate(ix, iy - 7 + boia + fundura * 9);
-  ctx.rotate(ang);
+  const gesto = player.mareAcao?.timeLeft > 0 ? Math.sin(Math.PI * (1-player.mareAcao.timeLeft/player.mareAcao.duration)) : 0;
+  ctx.rotate(ang - gesto*.08 - (nado.subindoVisual ? .05 : 0));
   if (viradoParaEsquerda) ctx.scale(1, -1);
   const alisavaAntes = ctx.imageSmoothingEnabled;
   ctx.imageSmoothingEnabled = true;
@@ -275,8 +300,19 @@ export function desenharNadador(ctx, player, ix, iy, opt) {
   }
   ctx.restore();
 
+  if (player.mareAcao?.timeLeft > 0 && submerso) {
+    const img=getSprite('mare_encontro_anel_cuidado');
+    if (img) {const k=1-player.mareAcao.timeLeft/player.mareAcao.duration;ctx.save();ctx.globalAlpha=.7*(1-k);ctx.drawImage(img,ix-25-k*12,iy-18,50+k*24,26);ctx.restore();}
+  }
+  if (nado.subindoVisual && nado.emRotaMare) {
+    const img=getSprite('mare_encontro_bolhas_subida');
+    if (img) {ctx.save();ctx.globalAlpha=.55;ctx.drawImage(img,ix-7,iy-52,15,44);ctx.restore();}
+  }
+
   // ---- bolhas de quem prende o ar ----
   if (nado.submerso) {
+    const bolhas = nado.emRotaMare && getSprite('rota_mare_bolhas');
+    if (bolhas) { ctx.save(); ctx.globalAlpha=.25; ctx.drawImage(bolhas,ix+5,iy-30,14,23); ctx.restore(); }
     ctx.save();
     ctx.strokeStyle = 'rgba(232,255,250,.85)';
     ctx.lineWidth = 1;

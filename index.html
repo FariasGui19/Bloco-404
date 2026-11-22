@@ -26,6 +26,11 @@
         <span class="module-hud-label">ECO ATIVO</span>
         <strong id="moduleHudName">---</strong>
         <span id="moduleHudSubtitle">---</span>
+        <div id="enseadaBuffHud" class="enseada-buff-hud" aria-live="polite">
+          <i class="enseada-buff-dot" aria-hidden="true"></i>
+          <strong id="enseadaBuffName"></strong>
+          <span id="enseadaBuffEffect"></span>
+        </div>
       </div>
 
       <!-- HUD DE VITAIS E HABILIDADES -->
@@ -106,6 +111,28 @@
     </div>
   </div>
 
+  <button id="abrirMapaTatico" class="tactical-open" type="button" hidden>MAPA TÁTICO</button>
+  <aside id="radioNeblina" class="radio-neblina" hidden aria-label="Intercepção de rádio"><strong>◉ SOCORRO // SINAL INTERCEPTADO</strong><p id="radioTexto" aria-hidden="true"></p><span id="radioLeitor" class="radio-leitor" role="status" aria-live="polite"></span><span>COORDENADAS NA CARTA NÁUTICA</span></aside>
+  <section id="travessiaNeblina" class="travessia-neblina" hidden aria-label="Travessia até as Docas da Neblina">
+    <canvas id="travessiaCanvas" width="1100" height="620" aria-hidden="true"></canvas>
+    <div class="travessia-topo"><strong>CAMINHO DAS CORRENTES // DOCAS DA NEBLINA</strong><p id="travessiaEstado"></p><p id="travessiaMensagem" role="status"></p><button id="voltarTravessia" type="button">ABORTAR E RETORNAR</button></div>
+    <div id="comandosTravessia" class="travessia-controles"><p>W/S AVANÇAR / RÉ · A/D GIRAR · SHIFT ACELERAR · R SONAR · L FAROL · E NADAR / EMBARCAR</p><div class="travessia-botoes"><button data-viagem="esquerda">◀</button><button data-viagem="frente">▲</button><button data-viagem="tras">▼</button><button data-viagem="direita">▶</button><button data-viagem="acelerar">IMPULSO</button><button data-viagem="sonar">SONAR</button><button data-viagem="luz">FAROL</button><button id="trocarNado" data-viagem="trocar">NADAR / BARCO</button></div></div>
+    <div id="chegadaDocas" class="docas-chegada" hidden><strong>DOCAS DA NEBLINA // PÍER SUL</strong><p>A neblina se abre. O barco atraca; o sinal vem do interior. A incursão foi registrada.</p><p>O interior das docas ainda será construído. Seu retorno à Enseada está disponível.</p><button id="retornarDocas" type="button">RETORNAR À ENSEADA</button></div>
+  </section>
+  <section id="mapaTatico" class="mapa-tatico" role="dialog" aria-modal="true" aria-label="Mapa tático" hidden><div class="mapa-tatico-painel"><header><strong>MAPA TÁTICO // CARTAS DO ARQUIPÉLAGO</strong><button id="fecharMapaTatico" type="button">FECHAR</button></header><nav aria-label="Camadas do mapa"><button data-camada-tatica="terrestre">TERRESTRE</button><button data-camada-tatica="maritimo" aria-pressed="true">MARÍTIMO</button><button data-camada-tatica="aereo">AÉREO</button></nav><div id="cartaRota" class="carta-rota" aria-hidden="true"><span class="carta-origem">ENSEADA</span><i></i><b id="cartaPosicao">◆</b><span id="cartaDocas" class="carta-destino">DOCAS</span></div><pre id="mapaTaticoConteudo"></pre></div></section>
+  <aside id="cromaticaHud" class="cromatica-hud" hidden aria-label="Missão Maré Cromática">
+    <strong>MARÉ CROMÁTICA <span id="cromaticaTimer"></span></strong>
+    <div id="cromaticaObjective"></div><div id="cromaticaSync"></div><div id="cromaticaThreat"></div>
+    <button id="cromaticaSound" type="button" aria-pressed="false">SOM E TRILHA: DESLIGADO</button>
+    <label id="docasMotionControl" class="docas-motion" hidden>
+      MOVIMENTO DA CENA
+      <select id="docasMotion" aria-label="Movimento da cena nas Docas" title="Normal anima a cena. Reduzido fixa os efeitos. Sistema segue a preferência do navegador.">
+        <option value="normal">Normal — animado</option>
+        <option value="reduzido">Reduzido — estático</option>
+        <option value="sistema">Seguir sistema</option>
+      </select>
+    </label>
+  </aside>
   <div id="controls">
     <div class="panel">
       <b>WASD / Setas</b> mover &nbsp;|&nbsp; <b>T</b> traje / Núcleo &nbsp;|&nbsp; <b>CLIQUE ESQ.</b> atacar &nbsp;|&nbsp; <b>SHIFT + CLIQUE</b> mover &nbsp;|&nbsp; <b>ESPAÇO</b> mergulhar &nbsp;|&nbsp; <b>Z</b> mergulho livre (Maré) &nbsp;|&nbsp; <b>J</b> Códex &nbsp;|&nbsp; <b>F</b> Ultimate &nbsp;|&nbsp; <b>ARRASTAR botão direito</b>
@@ -200,6 +227,20 @@
       </footer>
     </section>
   </div>
+  <!-- Dioramas da Enseada: UI sobreposta sem interferir na câmera do mapa. -->
+  <section id="immersiveView" class="immersive-view" hidden aria-label="Visão imersiva da Enseada">
+    <canvas id="immersiveEffects" class="immersive-effects" aria-hidden="true" width="480" height="270"></canvas>
+    <div class="immersive-shade" aria-hidden="true"></div>
+    <header class="immersive-heading"><div><span>ENSEADA DOS ECOS · DIORAMA</span><h2 id="immersiveTitle"></h2><p id="immersiveSubtitle"></p></div><button id="immersiveSound" type="button" aria-pressed="false">SOM DESLIGADO</button></header>
+    <div class="immersive-bottom">
+      <p id="immersiveMessage" aria-live="polite">MOVA O MOUSE PARA OLHAR AO REDOR</p>
+      <nav aria-label="Ações da cena">
+        <button id="immersiveAction1" type="button"></button>
+        <button id="immersiveAction2" type="button"></button>
+        <button id="immersiveExit" type="button"><b>ESC / E</b> Levantar e sair</button>
+      </nav>
+    </div>
+  </section>
   <script type="module" src="js/main.js"></script>
 </body>
 

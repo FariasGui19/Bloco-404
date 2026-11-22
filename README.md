@@ -10,9 +10,43 @@ python3 -m http.server 8000
 # abra http://localhost:8000
 ```
 
+## Evolução dimensional — sandbox 3D opcional
+
+O jogo isométrico continua intacto. Após escolher seu arquétipo, use o botão
+**◇ 3D // SETOR LIMIAR** para experimentar a ruptura dimensional e o setor
+aberto em Three.js local. **Esc** retorna ao mesmo ponto do 2D.
+
+Há voo do Núcleo X10 (**F**, espaço/Ctrl, Shift para turbo), mergulho da Maré
+Astral, plataformas, escalada, barco pilotável, farol e Núcleo de Âncora.
+Para experimentar os quatro modelos sem save, abra
+[`docs/setor-limiar-3d.html`](docs/setor-limiar-3d.html).
+[Arquitetura, controles, limites e validação](docs/evolucao-dimensional.md).
+A [lapidação ambiental 01](docs/limiar-base-ambiental-01.md) traz materiais de
+terreno, água e atmosfera reutilizáveis, preservando o relevo e os controles.
+O [Passo 2 — estruturas e marcos](docs/limiar-estruturas-02.md) refina os POIs,
+acrescenta composição com rotas protegidas e integra bússola/minimapa.
+O [Passo 3 — personagem e câmera](docs/limiar-personagem-03.md) acrescenta
+poses articuladas e enquadramento suave, com um guia de sprites, texturas e modelos 3D.
+A [revisão lvl 1](docs/limiar-identidade-lvl1-03.md) alinha os quatro trajes às sprites,
+integra bracelete/formas e ações J/K/T/R, além de vento, lanternas e cristais animados.
+
+A [escultura 3B.1](docs/limiar-escultura-3b1.md) refina proporções e silhuetas dos quatro operadores;
+o laboratório inclui galeria com vistas de frente, três-quartos e costas.
+
+A [revisão 3B.2](docs/limiar-identidade-3b2.md) acrescenta atuação facial/corporal,
+formas X10 com rigs próprios e prévias de transformação/ações no laboratório.
+
+A [lapidação cirúrgica](docs/limiar-lapidacao-cirurgica.md) refina rosto e cabelo,
+espada ancestral, cartucho original X10, transformação em fases e a Quebra Sistemas;
+J alterna ações e L oferece uma variação do poder nativo, sem novos desbloqueios.
+
+O [Morfador Mestre 3D](docs/limiar-morfador-mestre.md) permite trocar arquétipos,
+trajes e formas ao vivo em uma sessão criativa isolada do save (painel DEV / F8).
+
 ## Testes
 
-Os testes são scripts Node, sem dependências:
+Os testes de lógica são scripts Node, sem dependências (testes opcionais de
+navegador exigem Playwright/Chromium e variáveis de ambiente próprias):
 
 ```bash
 for f in tests/*.mjs; do node --experimental-default-type=module "$f" || break; done
@@ -23,6 +57,54 @@ HTML/CSS existem com a caixa certa (import quebrado é a causa clássica de
 `Uncaught SyntaxError: Unexpected token '<'`: o servidor devolve HTML no lugar
 do `.js`). `tests/boot.mjs` importa `js/main.js` inteiro com um DOM falso para
 pegar export faltando antes de abrir o navegador.
+
+## Frequência 66.6 — Cidadela Retro-FPS
+
+Após registrar o sinal na Enseada, examine as três âncoras da Estação 66.6,
+estabilize o console com **R** e escolha atravessar no anel com **E**. Na
+Cidadela, **WASD** movimenta, **setas ou mouse** miram, **espaço ou clique**
+dispara, **T** recarrega, **E** interage, **Q** usa o módulo, **R** abre o
+radar e **F** usa a Ultimate quando desbloqueada. **Shift** dá impulso na
+direção de movimento, **P** pausa, **L** abre os registros encontrados e
+**J** consulta missões, **K** mostra a sintonia local por arquétipo e **M** liga ou desliga os efeitos sonoros opcionais. Marcos únicos desbloqueiam adaptações exclusivas desta dimensão, sem alterar o XP ou o kit global.
+Clique na tela para capturar o mouse; Esc libera o cursor e pausa o combate. As setas dispensam
+mouse capturado. Três registros abrem as eclusas; a saída fica junto à chegada.
+Durante o radar, uma linha indica uma rota pelas eclusas abertas ao próximo
+registro e, depois dos três, ao Vigilante no reator. Após a vitória, ela aponta
+para a saída **opcional**; os outros objetivos continuam marcados no mapa.
+A rota é uma orientação, não impede explorar nem garante segurança.
+Três arquivos opcionais, encontrados em terminais e consultáveis com **L**,
+contam mais da história e concedem XP uma vez ao completar a coleção. Três
+CRTs também registram uma figura misteriosa, sem confirmar sua identidade;
+**E** examina e permite rever as transmissões. Após
+estabilizar o reator, NEXO-04 oferece missões de exploração e uma simulação
+repetível na arena, além de três fendas opcionais com ondas e cofres. A nova Oficina da Vigília abre duas salas no pós-vitória, com circuitos temporizados, uma missão própria e um ensaio repetível sem XP adicional.
+A saída e a revisita continuam disponíveis.
+Novos **Ecos entre Tempos** convidam a usar **R** e depois **E** para sintonizar três memórias antes ou depois da vitória. Cada nova leitura ancora o sinal temporariamente, reduzindo o eco gerado; ao concluir, o terminal da entrada oferece recuperação limitada de energia e redução de eco.
+Os corredores agora contam com células de energia (+EN/+MUN), células de escudo de campo, barris explosivos de estática (sobrecarregáveis via **Q**/**F**), golpe cinético corpo-a-corpo (**V**/**C**, com **parry** de projéteis), sentinelas de elite com vistas direcionais, rajada dupla, investida de choque e colapso próprio, bônus de estabilização por setor, coleta de **Sucata de Código** e **Núcleo de Estática** (com ícones no HUD, Bancada e Códex) e a **Bancada de Síntese** (tecla **E**, receitas **1–5**) para criar recargas táticas e relíquias permanentes reconhecidas na Enseada e Estação 66.6. O **Vigilante** exibe reação de blindagem fechada, contagem regressiva e retículo de abertura do núcleo, **Fase 2** visual e tática com ataque dedicado e rajada tripla abaixo de 50% de vida e colapso animado; o **Sentinela de Elite** possui passos frontais, ataque lateral, queda intermediária e colapso próprios; no pós-vitória, a Arena do Reator e a Oficina da Vigília exibem paredes e pisos texturizados próprios, as gravações conectam a anomalia de 3 segundos, o **Terminal de Varredura** ativa rondas setoriais repetíveis com XP inicial, o **Console de Telemetria** resume a Arena, a **Placa Setor E1M1** e a **Célula de Sobrecarga E1M1** celebram o encontro entre DOOM e Bloco 404, **cada um dos 4 arquétipos** conta com passiva própria, leitura de lore exclusiva, golpe cinético `[V]` e explosão de Ultimate `[F]` dedicados (além de parry duplo e sequência de abates), concluir todos os pilares desbloqueia o selo **100% CIDADELA 404** com troféu no HUD/Diário/Códex, e a primeira saída estável exibe duas cenas de fechamento (`cidadela-retorno-estavel.jpg` e `cidadela-aurora-limiar.jpg`).
+
+A base visual da Cidadela tem quadros de disparo e retorno para os quatro
+canhões, emblemas de habilidade, balanço ligado ao deslocamento real e resposta
+de dano nas bordas. Imps, orbes e predadores têm poses de dano e início de
+queda, além de vistas laterais aproximadas e de costas com quadros de
+locomoção ligados ao deslocamento real; avisos, dano e início de queda têm
+poses laterais e de costas, com prioridade sobre a locomoção; o colapso
+final também acompanha a direção. Preparação e disparo usam poses distintas
+sincronizadas com a IA, inclusive nas vistas laterais e de costas. O HUD
+destaca ressonância alta a partir de 75%, sem prometer uma invocação imediata. Os três arquivos têm telas
+próprias e contexto narrativo opcional, sem confirmar a origem do sinal.
+O Vigilante distingue preparação em duas poses, núcleo exposto e dano. A interface é desenhada em resolução maior que o cenário, com pictogramas e rótulos textuais para os
+recursos. A recarga tem poses por arquétipo, indicador de progresso e aviso
+específico quando bloqueada; T ou uma tentativa de disparo sem munição pode
+agendar a recarga até o bloqueio terminar. Ela ainda pode ser cancelada
+disparando as balas restantes. Disparos têm dissipação e habilidades têm
+quadros intermediários e finais; os CRTs respondem com interferência discreta e novos fragmentos, sem confirmar a origem
+do sinal. Impactos em metal e blindagem, suprimentos e interações também
+recebem respostas visuais. A travessia dimensional ganha um anel ilustrado;
+a opção do sistema de movimento reduzido mantém os sinais importantes sem
+animação decorativa.
+
+Veja [a documentação da Cidadela](docs/cidadela-404.md) para regras e limites e o [roadmap vivo da Cidadela](docs/cidadela-roadmap.md) para o checklist completo de conclusão (PR #105 + Lotes #2–#10, 99 artes e 144 testes automatizados).
 
 ## Organização
 
@@ -65,6 +147,15 @@ pegar export faltando antes de abrir o navegador.
   profundo. Tudo é objeto de mapa dimensionado por `larguraPx`
   ([`js/data/relevo-praia.js`](js/data/relevo-praia.js)); a grade aprovada da
   praia não mudou.
+- **Piso 0 — Aeroporto Central 2.5D** em side-view profundo (estilo sci-fi
+  anos 90): 4 camadas de parallax com deriva suave pelo mouse, escala por
+  profundidade (o personagem encolhe perto dos janelões), naves geradas por
+  IA cruzando o espaço com rastro de plasma, planetas anelado e vermelho,
+  pórticos com vórtice animado tingido pela cor de cada doca, piso espelhado
+  em tempo real, painel de LED com o estado real da Área de Carga e dois NPCs
+  ambientais (a Viajante cruzando o concourse e a Unidade L-9 em patrulha).
+  Detalhes e o plano multi-gênero em
+  [`docs/plano-aeroporto-e-perspectivas.md`](docs/plano-aeroporto-e-perspectivas.md).
 - **Árvore de nado em 5 degraus** — MEDO DA ÁGUA → BOIAR → FÔLEGO → TRAVESSIA →
   MARÉ PLENA. Começa-se com medo do mar e aprende-se na Poça da Cascata; cada
   degrau abre mais mar, mais ar e mais fundura

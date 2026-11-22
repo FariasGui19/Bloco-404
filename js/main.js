@@ -1,3 +1,14 @@
+import { SPRITES_ENCAIXE } from './data/worlds/arquipelago-rotas-perdidas/docas-encaixe.js';
+import { initDimensionModule } from './dimension/ui.js';
+import { avancarAnimacaoDocas } from './engine/docas-animation.js';
+import { SPRITES_PESQUEIRO_03 } from './engine/docas-pesqueiro-03.js';
+import { SPRITES_TENTACULO_02 } from './engine/docas-tentaculo-02.js';
+import { SPRITES_CASCOS } from './engine/docas-cascos.js';
+import { SPRITES_RESSACA } from './engine/docas-ressaca.js';
+import { SPRITES_DOCAS_VIVAS } from './engine/docas-vivas.js';
+import { SPRITES_COSTA_OESTE } from './data/worlds/arquipelago-rotas-perdidas/costa-oeste-docas.js';
+import { SPRITES_CAIS_SUL } from './data/worlds/arquipelago-rotas-perdidas/cais-sul.js';
+import { initTravessiaNeblina, atualizarRadioNeblina, atualizarViagemNeblina, desenharViagemNeblina, travessiaAtiva, mapaTaticoAberto, alternarMapa } from './ui/travessia-neblina.js';
 // js/main.js
 // =====================================================================
 // MAIN
@@ -12,9 +23,11 @@ import { updateNucleoForm } from './game/nucleo-form.js';
 import { canStandAt } from './game/collision.js';
 import { dispararPropulsao } from './game/nado.js';
 import { desenharMedidorAr, desenharDegrauNado } from './ui/nado-hud.js';
+import { desenharRotaMare } from './ui/rota-mare-hud.js';
 import { atualizarProvas, garantirMissaoDeNado, garantirArvore, lerArvore, provaDe, degrauDe, nomeDoDegrau } from './game/nado-arvore.js';
 import { pushCombatText } from './game/combat-feedback.js';
 import { atualizarMissaoMare, criarFragmentosDeMare } from './game/mare-missao.js';
+import { iniciarMissoesEncontros, encontroProximo, realizarEncontro } from './game/encontros-mare.js';
 import { atualizarRotaCorrentes } from './game/rota-correntes.js';
 import { atualizarFauna, socorrerProximo } from './game/fauna-ferida.js';
 import { ganharRespeito, cabecaSubmersa, noFundoDoMar } from './game/nado.js';
@@ -24,22 +37,32 @@ import { alternarMorfador, manterInfinitos, autorizado } from './game/morfador.j
 import { alternarPainel, morfadorAberto, promoverAutoria } from './ui/morfador-panel.js';
 import { getCoastFieldForMap } from './engine/coast-field.js';
 import { CONFIG } from './config.js';
+import { playCutscene, isCutsceneOpen, BOOT_SCENES } from './ui/cutscene.js';
 import { isCodexOpen, openCodex, closeCodex, handleCodexInput } from './ui/codex.js';
 import { updateOwnedCompanion } from './game/companions.js';
 import { updateCoastalFauna } from './game/fauna-costeira.js';
 import { state } from './game/state.js';
+import { updateCitadel, renderCitadel, clearCitadelRuntime } from './game/cidadela-fps.js';
 
 import { getFloor } from './game/world.js';
 import { loadMap, getSafeSpawn } from './game/map-manager.js';
 
 import { updatePlayer } from './game/player.js';
+import { atualizarPassagemNado } from './game/passagem-nado.js';
 import { updateAbilities, showAbilityMessage } from './game/abilities.js';
 import { beginUltimate, updateUltimate } from './game/ultimate.js';
 import { toggleArchetypeSuit } from './game/ability-context.js';
 import { openNucleoWheel, isNucleoWheelOpen, updateNucleoWheel } from './ui/nucleo-wheel.js';
-import { updateCamera } from './engine/camera.js';
+import { updateCamera, camera } from './engine/camera.js';
+import { atualizarAmeacasCromaticas } from './game/mare-cromatica-ameacas.js';
+import { CROMATICA_MAPS, lerMareCromatica, prepararMareCromatica, avancarMareCromatica, colapsarMareCromatica } from './game/mare-cromatica.js';
+import { initHudCromatico, atualizarHudCromatico, desenharAtmosferaCromatica } from './ui/mare-cromatica-hud.js';
+import { usePortal, isPortalLocked } from './game/portals.js';
+import { ImmersiveViewManager, IMMERSIVE_MODE } from './game/immersive-view-manager.js';
+import { initImmersiveView } from './ui/immersive-view.js';
+import { playImmersiveSound } from './ui/immersive-audio.js';
 
-import { input, initInput, endInputFrame } from './engine/input.js';
+import { input, initInput, endInputFrame, resetInput } from './engine/input.js';
 import { initRenderer, render } from './engine/renderer.js';
 import { loadSprites, getSprite } from './engine/sprites.js';
 
@@ -47,7 +70,7 @@ import { initHud, updateHud } from './ui/hud.js';
 import { initTitleScreen } from './ui/menu.js';
 import { initTransition } from './ui/transition.js';
 
-import { checkInteractions } from './game/interactions.js';
+import { checkInteractions, registrarVisitaImersiva } from './game/interactions.js';
 
 import { updateDebugInput } from './game/debug.js';
 import {
@@ -71,6 +94,7 @@ import {
 } from './ui/save-menu.js';
 import {
   initDialogue,
+  openDialogue,
   isDialogueOpen,
 } from './ui/dialogue.js';
 
@@ -99,6 +123,22 @@ initTransition();
 initSaveMenu();
 initArchetypeCards();
 initDialogue();
+initHudCromatico();
+initTravessiaNeblina(state);
+const immersive = new ImmersiveViewManager({
+  state, camera, clearInput: resetInput, visit: registrarVisitaImersiva, sound: playImmersiveSound,
+});
+const renderImmersive = initImmersiveView(immersive);
+// Opt-in 3D layer; Three.js is imported only after a deliberate rupture.
+const dimensional = initDimensionModule({
+  state, canvas, clearInput: resetInput, save: () => saveGame(),
+  canEnter: () => gameStarted && !!state.progress.archetype && !state.world.isLoading
+    && !document.body.classList.contains('in-menu') && !immersive.active
+    && state.world.currentMap?.meta?.camera !== 'retro-fps'
+    && !travessiaAtiva() && !mapaTaticoAberto() && !isDialogueOpen()
+    && !isCutsceneOpen() && !isCodexOpen() && !isArchetypeCardsOpen()
+    && !isNucleoWheelOpen() && !isElevatorMenuOpen() && !morfadorAberto(),
+});
 
 await loadSprites([
   {
@@ -186,6 +226,315 @@ await loadSprites([
   { id: 'bio_distribuidor', src: 'assets/sprites/estacao-bio/bio-distribuidor.png' },
   { id: 'bio_margem_baixa', src: 'assets/sprites/estacao-bio/bio-margem-baixa.png' },
   { id: 'bio_fundacao', src: 'assets/sprites/estacao-bio/bio-fundacao.png' },
+  // Estação 66.6: artes próprias, recortadas com transparência real.
+  { id: 'docas_interior_lote3_rede_secagem', src: 'assets/sprites/docas-interiores-lote3/rede-secagem.png' },
+  { id: 'docas_interior_lote3_mesa_refeicao', src: 'assets/sprites/docas-interiores-lote3/mesa-refeicao.png' },
+  { id: 'docas_interior_lote3_bau_suprimentos', src: 'assets/sprites/docas-interiores-lote3/bau-suprimentos.png' },
+  { id: 'docas_interior_lote3_reserva_agua', src: 'assets/sprites/docas-interiores-lote3/reserva-agua.png' },
+  { id: 'docas_interior_lote3_esteira_sisal', src: 'assets/sprites/docas-interiores-lote3/esteira-sisal.png' },
+  { id: 'docas_interior_lote3_carta_parede', src: 'assets/sprites/docas-interiores-lote3/carta-parede.png' },
+  { id: 'docas_interior_lote3_grelha_piso', src: 'assets/sprites/docas-interiores-lote3/grelha-piso.png' },
+  { id: 'docas_interior_lote3_capa_parede', src: 'assets/sprites/docas-interiores-lote3/capa-parede.png' },
+  { id: 'docas_interior_lote3_lanterna_parede', src: 'assets/sprites/docas-interiores-lote3/lanterna-parede.png' },
+  { id: 'docas_interior_lote3_tubo_valvula', src: 'assets/sprites/docas-interiores-lote3/tubo-valvula.png' },
+  { id: 'docas_interior_lote2_cama_pescador', src: 'assets/sprites/docas-interiores-lote2/cama-pescador.png' },
+  { id: 'docas_interior_lote2_estante_pesca', src: 'assets/sprites/docas-interiores-lote2/estante-pesca.png' },
+  { id: 'docas_interior_lote2_barris_salmoura', src: 'assets/sprites/docas-interiores-lote2/barris-salmoura.png' },
+  { id: 'docas_interior_lote2_bau_marinheiro', src: 'assets/sprites/docas-interiores-lote2/bau-marinheiro.png' },
+  { id: 'docas_interior_lote2_cama_vigia', src: 'assets/sprites/docas-interiores-lote2/cama-vigia.png' },
+  { id: 'docas_interior_lote2_radio_vigia', src: 'assets/sprites/docas-interiores-lote2/radio-vigia.png' },
+  { id: 'docas_interior_lote2_arquivo_vigia', src: 'assets/sprites/docas-interiores-lote2/arquivo-vigia.png' },
+  { id: 'docas_interior_lote2_rack_crt', src: 'assets/sprites/docas-interiores-lote2/rack-crt.png' },
+  { id: 'docas_interior_lote2_bancada_eletrica', src: 'assets/sprites/docas-interiores-lote2/bancada-eletrica.png' },
+  { id: 'docas_interior_lote2_carrinho_ferramentas', src: 'assets/sprites/docas-interiores-lote2/carrinho-ferramentas.png' },
+  { id: 'docas_interior_pescador', src: 'assets/sprites/docas-interiores/bancada-pescador.png' },
+  { id: 'docas_interior_vigia', src: 'assets/sprites/docas-interiores/mesa-vigia.png' },
+  { id: 'docas_interior_crt', src: 'assets/sprites/docas-interiores/gerador-crt.png' },
+  { id: 'freq666_entrada', src: 'assets/sprites/frequencia-666/abrigo-ampliado.png' },
+  { id: 'freq666_receptor', src: 'assets/sprites/frequencia-666/receptor-costeiro.png' },
+  { id: 'docas_mar_rocha', src: 'assets/sprites/travessia-lote1/rocha-folha.png' },
+  { id: 'docas_mar_boia', src: 'assets/sprites/travessia-lote1/boia-folha.png' },
+  { id: 'docas_mar_oleo', src: 'assets/sprites/travessia-lote1/oleo-folha.png' },
+  { id: 'docas_mar_redemoinho', src: 'assets/sprites/travessia-lote1/redemoinho-folha.png' },
+  { id: 'docas_mar_tentaculo', src: 'assets/sprites/travessia-lote1/tentaculo-folha.png' },
+  { id: 'docas_mar_olhos', src: 'assets/sprites/travessia-lote1/olhos-folha.png' },
+  { id: 'docas_lote3_cristal', src: 'assets/sprites/docas-lote3/cristal-folha.png' },
+  { id: 'docas_lote3_arvore', src: 'assets/sprites/docas-lote3/arvore-folha.png' },
+  { id: 'docas_lote3_palmeira', src: 'assets/sprites/docas-lote3/palmeira-folha.png' },
+  { id: 'docas_lote3_caixotes', src: 'assets/sprites/docas-lote3/caixotes-folha.png' },
+  { id: 'docas_lote3_barris', src: 'assets/sprites/docas-lote3/barris-folha.png' },
+  { id: 'docas_lote3_resina', src: 'assets/sprites/docas-lote3/resina-folha.png' },
+  { id: 'docas_lote3_fitas', src: 'assets/sprites/docas-lote3/fitas-folha.png' },
+  { id: 'docas_lote3_tentaculo', src: 'assets/sprites/docas-lote3/tentaculo-folha.png' },
+  { id: 'docas_lote3_esporos', src: 'assets/sprites/docas-lote3/esporos-folha.png' },
+  { id: 'docas_lote3_rede', src: 'assets/sprites/docas-lote3/rede-folha.png' },
+  { id: 'docas_relevo_falesia-frente', src: 'assets/sprites/docas-relevo/falesia-frente.png' },
+  { id: 'docas_relevo_falesia-lateral', src: 'assets/sprites/docas-relevo/falesia-lateral.png' },
+  { id: 'docas_relevo_rampa-rocha', src: 'assets/sprites/docas-relevo/rampa-rocha.png' },
+  { id: 'docas_relevo_escada-rocha', src: 'assets/sprites/docas-relevo/escada-rocha.png' },
+  { id: 'docas_relevo_plato', src: 'assets/sprites/docas-relevo/plato.png' },
+  { id: 'docas_relevo_muro', src: 'assets/sprites/docas-relevo/muro.png' },
+  { id: 'docas_relevo_cascalho', src: 'assets/sprites/docas-relevo/cascalho.png' },
+  { id: 'docas_relevo_pilar', src: 'assets/sprites/docas-relevo/pilar.png' },
+  { id: 'docas_relevo_borda', src: 'assets/sprites/docas-relevo/borda.png' },
+  { id: 'docas_lote5_areia', src: 'assets/sprites/docas-lote5/areia.png' },
+  { id: 'docas_lote5_terra', src: 'assets/sprites/docas-lote5/terra.png' },
+  { id: 'docas_lote5_pedras', src: 'assets/sprites/docas-lote5/pedras.png' },
+  { id: 'docas_lote5_falesia', src: 'assets/sprites/docas-lote5/falesia.png' },
+  { id: 'docas_lote5_conchas', src: 'assets/sprites/docas-lote5/conchas.png' },
+  { id: 'docas_lote5_destrocos', src: 'assets/sprites/docas-lote5/destrocos.png' },
+  { id: 'docas_lote5_cordas', src: 'assets/sprites/docas-lote5/cordas.png' },
+  { id: 'docas_lote5_ancora', src: 'assets/sprites/docas-lote5/ancora.png' },
+  { id: 'docas_lote5_poste', src: 'assets/sprites/docas-lote5/poste.png' },
+  { id: 'docas_lote5_capim', src: 'assets/sprites/docas-lote5/capim.png' },
+  { id: 'docas_lote6_cerca', src: 'assets/sprites/docas-vila-04/cerca.png' },
+  { id: 'docas_lote6_arvore-seca', src: 'assets/sprites/docas-vila-04/arvores-secas.png' },
+  { id: 'docas_lote6_cristal-violeta', src: 'assets/sprites/docas-lote6/cristal-violeta.png' },
+  { id: 'docas_lote6_corais', src: 'assets/sprites/docas-lote6/corais.png' },
+  { id: 'docas_lote6_empilhado', src: 'assets/sprites/docas-lote6/empilhado.png' },
+  { id: 'docas_lote6_runa', src: 'assets/sprites/docas-lote6/runa.png' },
+  { id: 'docas_lote6_armadilha', src: 'assets/sprites/docas-lote6/armadilha.png' },
+  { id: 'docas_lote6_rochedos', src: 'assets/sprites/docas-lote6/rochedos.png' },
+  { id: 'docas_lote6_luminaria', src: 'assets/sprites/docas-lote6/luminaria.png' },
+  { id: 'docas_lote7_margem-rochas', src: 'assets/sprites/docas-lote7/margem-rochas.png' },
+  { id: 'docas_lote7_raiz-costa', src: 'assets/sprites/docas-lote7/raiz-costa.png' },
+  { id: 'docas_lote7_coral-pedra', src: 'assets/sprites/docas-lote7/coral-pedra.png' },
+  { id: 'docas_lote7_lajotas', src: 'assets/sprites/docas-lote7/lajotas.png' },
+  { id: 'docas_lote7_talude', src: 'assets/sprites/docas-lote7/talude.png' },
+  { id: 'docas_lote7_rocha-alta', src: 'assets/sprites/docas-lote7/rocha-alta.png' },
+  { id: 'docas_lote8_boia-antiga', src: 'assets/sprites/docas-lote8/boia-antiga.png' },
+  { id: 'docas_lote8_rede-pesca', src: 'assets/sprites/docas-lote8/rede-pesca.png' },
+  { id: 'docas_lote8_mastro', src: 'assets/sprites/docas-lote8/mastro.png' },
+  { id: 'docas_lote8_cesto', src: 'assets/sprites/docas-lote8/cesto.png' },
+  { id: 'docas_lote8_madeiras', src: 'assets/sprites/docas-lote8/madeiras.png' },
+  { id: 'docas_lote8_arbusto', src: 'assets/sprites/docas-lote8/arbusto.png' },
+  { id: 'docas_lote8_placa', src: 'assets/sprites/docas-lote8/placa.png' },
+  { id: 'docas_lote8_ampola', src: 'assets/sprites/docas-lote8/ampola.png' },
+  { id: 'docas_lote8_corais', src: 'assets/sprites/docas-lote8/corais.png' },
+  { id: 'docas_lote8_lampiao', src: 'assets/sprites/docas-lote8/lampiao.png' },
+  { id: 'docas_lote9_banco', src: 'assets/sprites/docas-lote9/banco.png' },
+  { id: 'docas_lote9_boias', src: 'assets/sprites/docas-lote9/boias.png' },
+  { id: 'docas_lote9_engrenagem', src: 'assets/sprites/docas-lote9/engrenagem.png' },
+  { id: 'docas_lote9_flores', src: 'assets/sprites/docas-lote9/flores.png' },
+  { id: 'docas_lote9_pescaria', src: 'assets/sprites/docas-lote9/pescaria.png' },
+  { id: 'docas_lote9_placa', src: 'assets/sprites/docas-lote9/placa.png' },
+  { id: 'docas_lote9_postes', src: 'assets/sprites/docas-lote9/postes.png' },
+  { id: 'docas_lote9_tronco', src: 'assets/sprites/docas-lote9/tronco.png' },
+  { id: 'docas_lote9_vasos', src: 'assets/sprites/docas-lote9/vasos.png' },
+  { id: 'docas_lote9_anfora', src: 'assets/sprites/docas-lote9/anfora.png' },
+  { id: 'docas_lote10_algas', src: 'assets/sprites/docas-lote10/algas.png' },
+  { id: 'docas_lote10_ancoradouro', src: 'assets/sprites/docas-lote10/ancoradouro.png' },
+  { id: 'docas_lote10_barricada', src: 'assets/sprites/docas-lote10/barricada.png' },
+  { id: 'docas_lote10_bau', src: 'assets/sprites/docas-lote10/bau.png' },
+  { id: 'docas_lote10_coral', src: 'assets/sprites/docas-lote10/coral.png' },
+  { id: 'docas_lote10_farolete', src: 'assets/sprites/docas-lote10/farolete.png' },
+  { id: 'docas_lote10_fogueira', src: 'assets/sprites/docas-lote10/fogueira.png' },
+  { id: 'docas_lote10_guincho', src: 'assets/sprites/docas-lote10/guincho.png' },
+  { id: 'docas_lote10_placa-lore', src: 'assets/sprites/docas-lote10/placa-lore.png' },
+  { id: 'docas_lote10_tambores', src: 'assets/sprites/docas-lote10/tambores.png' },
+  { id: 'docas_lote11_arbusto-costeiro', src: 'assets/sprites/docas-lote11/arbusto-costeiro.png' },
+  { id: 'docas_lote11_bandeirola', src: 'assets/sprites/docas-lote11/bandeirola.png' },
+  { id: 'docas_lote11_cais-lateral', src: 'assets/sprites/docas-lote11/cais-lateral.png' },
+  { id: 'docas_lote11_cogumelos', src: 'assets/sprites/docas-lote11/cogumelos.png' },
+  { id: 'docas_lote11_correntes', src: 'assets/sprites/docas-lote11/correntes.png' },
+  { id: 'docas_lote11_gramineas', src: 'assets/sprites/docas-lote11/gramineas.png' },
+  { id: 'docas_lote11_lanterna-chao', src: 'assets/sprites/docas-lote11/lanterna-chao.png' },
+  { id: 'docas_lote11_rocha-costeira', src: 'assets/sprites/docas-lote11/rocha-costeira.png' },
+  { id: 'docas_lote11_sucata', src: 'assets/sprites/docas-lote11/sucata.png' },
+  { id: 'docas_lote11_totem', src: 'assets/sprites/docas-lote11/totem.png' },
+  { id: 'docas_lote12_rocha-musgo', src: 'assets/sprites/docas-lote12/rocha-musgo.png' },
+  { id: 'docas_lote12_raizes', src: 'assets/sprites/docas-lote12/raizes.png' },
+  { id: 'docas_lote12_rede', src: 'assets/sprites/docas-lote12/rede.png' },
+  { id: 'docas_lote12_estacas', src: 'assets/sprites/docas-lote12/estacas.png' },
+  { id: 'docas_lote12_caixote', src: 'assets/sprites/docas-lote12/caixote.png' },
+  { id: 'docas_lote12_vasilhame', src: 'assets/sprites/docas-lote12/vasilhame.png' },
+  { id: 'docas_lote12_flora', src: 'assets/sprites/docas-lote12/flora.png' },
+  { id: 'docas_lote12_lampiao', src: 'assets/sprites/docas-lote12/lampiao.png' },
+  { id: 'docas_lote12_residuos', src: 'assets/sprites/docas-lote12/residuos.png' },
+  { id: 'docas_lote12_corais', src: 'assets/sprites/docas-lote12/corais.png' },
+  { id: 'docas_fx_brasa', src: 'assets/sprites/docas-lote13/brasa.png' },
+  { id: 'docas_fx_brilho-ambar', src: 'assets/sprites/docas-lote13/brilho-ambar.png' },
+  { id: 'docas_fx_brilho-ciano', src: 'assets/sprites/docas-lote13/brilho-ciano.png' },
+  { id: 'docas_fx_faixas-nevoa', src: 'assets/sprites/docas-lote13/faixas-nevoa.png' },
+  { id: 'docas_fx_fumaca', src: 'assets/sprites/docas-lote13/fumaca.png' },
+  { id: 'docas_fx_linha-crt', src: 'assets/sprites/docas-lote13/linha-crt.png' },
+  { id: 'docas_fx_onda-ciano', src: 'assets/sprites/docas-lote13/onda-ciano.png' },
+  { id: 'docas_fx_onda-magenta', src: 'assets/sprites/docas-lote13/onda-magenta.png' },
+  { id: 'docas_fx_redemoinho', src: 'assets/sprites/docas-lote13/redemoinho.png' },
+  { id: 'docas_fx_chama', src: 'assets/sprites/docas-lote13/chama-folha.png' },
+  { id: 'docas_cais_cristais', src: 'assets/sprites/docas-cais-refino/cristais.png' },
+  { id: 'docas_caixas', src: 'assets/sprites/docas-reconstrucao/caixas.png' },
+  { id: 'docas_palmeira', src: 'assets/sprites/docas-reconstrucao/palmeira.png' },
+  { id: 'docas_mata', src: 'assets/sprites/docas-reconstrucao/mata.png' },
+  { id: 'docas_areia', src: 'assets/sprites/docas-reconstrucao/piso-areia.png' },
+  { id: 'docas_agua', src: 'assets/sprites/travessia-neblina/mar.png' },
+  ...SPRITES_CAIS_SUL,
+  ...SPRITES_COSTA_OESTE,
+  ...SPRITES_DOCAS_VIVAS,
+  ...SPRITES_RESSACA,
+  ...SPRITES_CASCOS,
+  ...SPRITES_PESQUEIRO_03,
+  ...SPRITES_TENTACULO_02,
+  ...SPRITES_ENCAIXE,
+  { id: 'docas_acabamento_cabana', src: 'assets/sprites/docas-acabamento/cabana.png' },
+  { id: 'docas_acabamento_solo', src: 'assets/sprites/docas-acabamento/solo-costeiro.png' },
+  { id: 'docas_acabamento_rocha', src: 'assets/sprites/docas-acabamento/promontorio.png' },
+  { id: 'docas_fiel_acesso', src: 'assets/sprites/docas-fidelidade/acesso-cais.png' },
+  { id: 'docas_fiel_mar', src: 'assets/sprites/docas-fidelidade/mar.png' },
+  { id: 'docas_fiel_solo', src: 'assets/sprites/docas-fidelidade/solo.png' },
+  { id: 'docas_fiel_abrigo', src: 'assets/sprites/docas-fidelidade/abrigo-oeste.png' },
+  { id: 'docas_fiel_fundos', src: 'assets/sprites/docas-fidelidade/fundos-enraizados.png' },
+  { id: 'docas_fiel_costa', src: 'assets/sprites/docas-fidelidade/costa-sudeste.png' },
+  { id: 'docas_oeste_pontual_fundos', src: 'assets/sprites/docas-oeste-pontual/fundos-preservados.png' },
+  { id: 'docas_oeste_pontual', src: 'assets/sprites/docas-oeste-pontual/atlas.png' },
+  { id: 'docas_fechamento', src: 'assets/sprites/docas-fechamento/atlas.png' },
+  { id: 'docas_cabana-oeste', src: 'assets/sprites/docas-vila-04/cabana-oeste.png' },
+  { id: 'docas_cabana-leste', src: 'assets/sprites/docas-vila-04/cabana-leste.png' },
+  { id: 'docas_vila04_carga', src: 'assets/sprites/docas-vila-04/carga.png' },
+  { id: 'docas_central_console', src: 'assets/sprites/docas-reconstrucao/galpao.png' },
+  { id: 'docas_galpao', src: 'assets/sprites/docas-vila-04/galpao.png' },
+  { id: 'docas_escada', src: 'assets/sprites/docas-reconstrucao/escada.png' },
+  { id: 'docas_torre', src: 'assets/sprites/docas-reconstrucao/torre.png' },
+  { id: 'docas_farol', src: 'assets/sprites/docas-reconstrucao/farol.png' },
+  { id: 'docas_camara', src: 'assets/sprites/docas-reconstrucao/camara.png' },
+  { id: 'docas_porta', src: 'assets/sprites/docas-reconstrucao/porta.png' },
+  { id: 'cromatica_ancora', src: 'assets/sprites/mare-cromatica/ancora.png' },
+  { id: 'cromatica_infectado', src: 'assets/sprites/mare-cromatica/infectado-folha.png' },
+  { id: 'cromatica_nulo', src: 'assets/sprites/mare-cromatica/nulo.png' },
+  { id: 'freq666_portal', src: 'assets/sprites/frequencia-666/limiar-industrial.png' },
+  { id: 'freq666_console', src: 'assets/sprites/frequencia-666/mesa-controle.png' },
+  { id: 'freq666_origem', src: 'assets/sprites/frequencia-666/ancora-origem.png' },
+  { id: 'freq666_retorno', src: 'assets/sprites/frequencia-666/ancora-retorno.png' },
+  { id: 'freq666_memoria', src: 'assets/sprites/frequencia-666/ancora-memoria.png' },
+  { id: 'freq666_cartografia', src: 'assets/sprites/frequencia-666/mesa-cartografia.png' },
+  { id: 'freq666_baliza', src: 'assets/sprites/frequencia-666/poste-baliza.png' },
+  { id: 'freq666_escuta', src: 'assets/sprites/frequencia-666/painel-escuta.png' },
+  { id: 'freq666_rack', src: 'assets/sprites/frequencia-666/rack-estacao.png' },
+  { id: 'freq666_mesa', src: 'assets/sprites/frequencia-666/mesa-arquivo.png' },
+  { id: 'freq666_reator', src: 'assets/sprites/frequencia-666/reator-estacao.png' },
+  { id: 'freq666_selo_convergencia', src: 'assets/sprites/cidadela-404/estacao-666-selo-convergencia.png' },
+  { id: 'mare_animacao_mar_calmo', src: 'assets/sprites/mare-animacao/mar-calmo.png' },
+  { id: 'mare_animacao_vento_leve', src: 'assets/sprites/mare-animacao/vento-leve.png' },
+  { id: 'mare_animacao_onda_ressaca', src: 'assets/sprites/mare-animacao/onda-ressaca.png' },
+  { id: 'mare_animacao_gotas_chuva', src: 'assets/sprites/mare-animacao/gotas-chuva.png' },
+  { id: 'mare_animacao_nevoa_mar', src: 'assets/sprites/mare-animacao/nevoa-mar.png' },
+  { id: 'mare_animacao_cardume_superficie', src: 'assets/sprites/mare-animacao/cardume-superficie.png' },
+  { id: 'mare_animacao_cardume_fundo', src: 'assets/sprites/mare-animacao/cardume-fundo.png' },
+  { id: 'mare_animacao_luz_ondulante', src: 'assets/sprites/mare-animacao/luz-ondulante.png' },
+  { id: 'mare_animacao_bolhas_impulso', src: 'assets/sprites/mare-animacao/bolhas-impulso.png' },
+  { id: 'mare_animacao_bracada_mare', src: 'assets/sprites/mare-animacao/bracada-mare.png' },
+  { id: 'oceano_vivo_darsena_marinha', src: 'assets/sprites/oceano-vivo/darsena-marinha.png' },
+  { id: 'oceano_vivo_baliza_navegacao', src: 'assets/sprites/oceano-vivo/baliza-navegacao.png' },
+  { id: 'oceano_vivo_alga_longa', src: 'assets/sprites/oceano-vivo/alga-longa.png' },
+  { id: 'oceano_vivo_alga_vermelha', src: 'assets/sprites/oceano-vivo/alga-vermelha.png' },
+  { id: 'oceano_vivo_peixe_recife', src: 'assets/sprites/oceano-vivo/peixe-recife.png' },
+  { id: 'oceano_vivo_peixe_abissal', src: 'assets/sprites/oceano-vivo/peixe-abissal.png' },
+  { id: 'oceano_vivo_lula_astral', src: 'assets/sprites/oceano-vivo/lula-astral.png' },
+  { id: 'oceano_vivo_coral_profundo', src: 'assets/sprites/oceano-vivo/coral-profundo.png' },
+  { id: 'oceano_vivo_rocha_arco', src: 'assets/sprites/oceano-vivo/rocha-arco.png' },
+  { id: 'oceano_vivo_esteira_nado', src: 'assets/sprites/oceano-vivo/esteira-nado.png' },
+  { id: 'mar_vivo_onda_crista', src: 'assets/sprites/mar-vivo/onda-crista.png' },
+  { id: 'mar_vivo_onda_larga', src: 'assets/sprites/mar-vivo/onda-larga.png' },
+  { id: 'mar_vivo_chuva_mar', src: 'assets/sprites/mar-vivo/chuva-mar.png' },
+  { id: 'mar_vivo_barco_pescador', src: 'assets/sprites/mar-vivo/barco-pescador.png' },
+  { id: 'mar_vivo_barco_carga', src: 'assets/sprites/mar-vivo/barco-carga.png' },
+  { id: 'mar_vivo_boia_sinal', src: 'assets/sprites/mar-vivo/boia-sinal.png' },
+  { id: 'mar_vivo_coral_leque', src: 'assets/sprites/mar-vivo/coral-leque.png' },
+  { id: 'mar_vivo_medusa_luz', src: 'assets/sprites/mar-vivo/medusa-luz.png' },
+  { id: 'mar_vivo_ruina_submersa', src: 'assets/sprites/mar-vivo/ruina-submersa.png' },
+  { id: 'mar_vivo_peixes_luz', src: 'assets/sprites/mar-vivo/peixes-luz.png' },
+  { id: 'mare_encontro_tartaruga_resgate', src: 'assets/sprites/mare-encontros/tartaruga-resgate.png' },
+  { id: 'mare_encontro_arraia_curiosa', src: 'assets/sprites/mare-encontros/arraia-curiosa.png' },
+  { id: 'mare_encontro_peixe_guia', src: 'assets/sprites/mare-encontros/peixe-guia.png' },
+  { id: 'mare_encontro_rede_perdida', src: 'assets/sprites/mare-encontros/rede-perdida.png' },
+  { id: 'mare_encontro_coral_ferido', src: 'assets/sprites/mare-encontros/coral-ferido.png' },
+  { id: 'mare_encontro_coral_restaurado', src: 'assets/sprites/mare-encontros/coral-restaurado.png' },
+  { id: 'mare_encontro_eco_perola', src: 'assets/sprites/mare-encontros/eco-perola.png' },
+  { id: 'mare_encontro_anel_cuidado', src: 'assets/sprites/mare-encontros/anel-cuidado.png' },
+  { id: 'mare_encontro_bolhas_subida', src: 'assets/sprites/mare-encontros/bolhas-subida.png' },
+  { id: 'mare_encontro_respiro_superficie', src: 'assets/sprites/mare-encontros/respiro-superficie.png' },
+  { id: 'rota_mare_tartaruga', src: 'assets/sprites/rota-mare/tartaruga.png' },
+  { id: 'rota_mare_arraia', src: 'assets/sprites/rota-mare/arraia.png' },
+  { id: 'rota_mare_golfinho', src: 'assets/sprites/rota-mare/golfinho.png' },
+  { id: 'rota_mare_cardume', src: 'assets/sprites/rota-mare/cardume.png' },
+  { id: 'rota_mare_agua_viva', src: 'assets/sprites/rota-mare/agua-viva.png' },
+  { id: 'rota_mare_cavalo_marinho', src: 'assets/sprites/rota-mare/cavalo-marinho.png' },
+  { id: 'rota_mare_peixe_lanterna', src: 'assets/sprites/rota-mare/peixe-lanterna.png' },
+  { id: 'rota_mare_alga', src: 'assets/sprites/rota-mare/alga.png' },
+  { id: 'rota_mare_espuma_respiro', src: 'assets/sprites/rota-mare/espuma-respiro.png' },
+  { id: 'rota_mare_bolhas', src: 'assets/sprites/rota-mare/bolhas.png' },
+  { id: 'freq666_fx_vortice', src: 'assets/sprites/frequencia-666/fx-vortice.png' },
+  { id: 'freq666_fx_vapor', src: 'assets/sprites/frequencia-666/fx-vapor.png' },
+  { id: 'freq666_fx_centelha', src: 'assets/sprites/frequencia-666/fx-centelha.png' },
+  { id: 'freq666_fx_sinal', src: 'assets/sprites/frequencia-666/fx-sinal.png' },
+  { id: 'freq666_fx_baliza', src: 'assets/sprites/frequencia-666/fx-baliza.png' },
+  { id: 'freq666_fx_poeira', src: 'assets/sprites/frequencia-666/fx-poeira.png' },
+  // Oficina Inicial — Motor Bio-Forja (tools/preparar-sala-bio.py)
+  { id: 'bio_sala_piso_placa', src: 'assets/sprites/sala-bio/piso-placa.png' },
+  { id: 'bio_sala_piso_grade', src: 'assets/sprites/sala-bio/piso-grade.png' },
+  { id: 'bio_sala_parede_canto', src: 'assets/sprites/sala-bio/parede-canto.png' },
+  { id: 'bio_sala_parede_tubos', src: 'assets/sprites/sala-bio/parede-tubos.png' },
+  { id: 'bio_sala_parede_tanque', src: 'assets/sprites/sala-bio/parede-tanque.png' },
+  { id: 'bio_sala_porta_eclusa', src: 'assets/sprites/sala-bio/porta-eclusa.png' },
+  { id: 'bio_sala_banco_reconstrucao', src: 'assets/sprites/sala-bio/banco-reconstrucao.png' },
+  { id: 'bio_sala_grade_contencao', src: 'assets/sprites/sala-bio/grade-contencao.png' },
+  { id: 'bio_sala_pilar_contencao', src: 'assets/sprites/sala-bio/pilar-contencao.png' },
+  { id: 'bio_sala_pilar_sensor', src: 'assets/sprites/sala-bio/pilar-sensor.png' },
+  { id: 'bio_sala_incubadora', src: 'assets/sprites/sala-bio/incubadora-eco.png' },
+  // Santuário Inicial — Lâmina Domínio Ancião (tools/preparar-sala-dominio.py)
+  { id: 'dom_sala_piso_obsidiana', src: 'assets/sprites/sala-dominio/piso-obsidiana.png' },
+  { id: 'dom_sala_piso_runa', src: 'assets/sprites/sala-dominio/piso-runa.png' },
+  { id: 'dom_sala_parede_canto', src: 'assets/sprites/sala-dominio/parede-canto.png' },
+  { id: 'dom_sala_parede_plana', src: 'assets/sprites/sala-dominio/parede-plana.png' },
+  { id: 'dom_sala_parede_relevo', src: 'assets/sprites/sala-dominio/parede-relevo.png' },
+  { id: 'dom_sala_porta_doca', src: 'assets/sprites/sala-dominio/porta-doca.png' },
+  { id: 'dom_sala_altar_lamina', src: 'assets/sprites/sala-dominio/altar-lamina.png' },
+  { id: 'dom_sala_lacre_frequencia', src: 'assets/sprites/sala-dominio/lacre-frequencia.png' },
+  { id: 'dom_sala_pilar', src: 'assets/sprites/sala-dominio/pilar-dominio.png' },
+  { id: 'dom_sala_pira', src: 'assets/sprites/sala-dominio/pira-dominio.png' },
+  { id: 'dom_sala_estela_registro', src: 'assets/sprites/sala-dominio/estela-registro.png' },
+  { id: 'dom_sala_armeiro', src: 'assets/sprites/sala-dominio/armeiro-dominio.png' },
+  { id: 'dom_sala_monolito_intacto', src: 'assets/sprites/sala-dominio/monolito-intacto.png' },
+  { id: 'dom_sala_monolito_partido', src: 'assets/sprites/sala-dominio/monolito-partido.png' },
+  // Dársena Abissal & Aquário Oceânico — Maré Astral (tools/preparar-sala-mare.py)
+  { id: 'mare_sala_piso_ardosia', src: 'assets/sprites/sala-mare/piso-ardosia-mare.png' },
+  { id: 'mare_sala_piso_grade', src: 'assets/sprites/sala-mare/piso-grade-mare.png' },
+  { id: 'mare_sala_parede_canto', src: 'assets/sprites/sala-mare/parede-canto-mare.png' },
+  { id: 'mare_sala_parede_tubos', src: 'assets/sprites/sala-mare/parede-tubos-mare.png' },
+  { id: 'mare_sala_parede_aquario', src: 'assets/sprites/sala-mare/parede-aquario-mare.png' },
+  { id: 'mare_sala_porta_eclusa', src: 'assets/sprites/sala-mare/porta-eclusa-mare.png' },
+  { id: 'mare_sala_gerador_corrente', src: 'assets/sprites/sala-mare/gerador-corrente-mare.png' },
+  { id: 'mare_sala_fluxo_contido', src: 'assets/sprites/sala-mare/fluxo-contido-mare.png' },
+  { id: 'mare_sala_fluxo_aberto', src: 'assets/sprites/sala-mare/fluxo-aberto-mare.png' },
+  { id: 'mare_sala_arco_conduto', src: 'assets/sprites/sala-mare/arco-conduto-mare.png' },
+  { id: 'mare_sala_arco_enseada', src: 'assets/sprites/sala-mare/arco-conduto-enseada.png' },
+  { id: 'mare_sala_pilar_hidro', src: 'assets/sprites/sala-mare/pilar-hidro-mare.png' },
+  { id: 'mare_sala_lanterna_abissal', src: 'assets/sprites/sala-mare/lanterna-abissal-mare.png' },
+  { id: 'mare_sala_terminal_sonar', src: 'assets/sprites/sala-mare/terminal-sonar-mare.png' },
+  { id: 'mare_sala_valvula_fechada', src: 'assets/sprites/sala-mare/valvula-pressao-mare.png' },
+  { id: 'mare_sala_valvula_ativa', src: 'assets/sprites/sala-mare/valvula-ativa-mare.png' },
+  // Base dos Vetores & Viaduto — Núcleo 10X (tools/preparar-sala-nucleo.py)
+  { id: 'nucleo_sala_piso_grafite', src: 'assets/sprites/sala-nucleo/piso-grafite.png' },
+  { id: 'nucleo_sala_piso_cinetico', src: 'assets/sprites/sala-nucleo/piso-cinetico.png' },
+  { id: 'nucleo_sala_parede_canto', src: 'assets/sprites/sala-nucleo/parede-canto.png' },
+  { id: 'nucleo_sala_parede_modular', src: 'assets/sprites/sala-nucleo/parede-modular.png' },
+  { id: 'nucleo_sala_porta_doca', src: 'assets/sprites/sala-nucleo/porta-doca.png' },
+  { id: 'nucleo_sala_eixo_adaptacao', src: 'assets/sprites/sala-nucleo/eixo-adaptacao.png' },
+  { id: 'nucleo_sala_malha_cinetica', src: 'assets/sprites/sala-nucleo/malha-cinetica.png' },
+  { id: 'nucleo_sala_pilar_cinetico', src: 'assets/sprites/sala-nucleo/pilar-cinetico.png' },
+  { id: 'nucleo_sala_terminal_registro', src: 'assets/sprites/sala-nucleo/terminal-registro.png' },
+  { id: 'nucleo_sala_bigorna_contrapeso', src: 'assets/sprites/sala-nucleo/bigorna-contrapeso.png' },
+  { id: 'nucleo_sala_contrapeso_liberado', src: 'assets/sprites/sala-nucleo/contrapeso-liberado.png' },
+  { id: 'nucleo_sala_regulador_inercia', src: 'assets/sprites/sala-nucleo/regulador-inercia.png' },
+  { id: 'nucleo_sala_relicario_vetor', src: 'assets/sprites/sala-nucleo/relicario-vetor.png' },
+  { id: 'nucleo_sala_arco_viaduto', src: 'assets/sprites/sala-nucleo/arco-viaduto.png' },
+  // Peças pintadas do lado de fora (tools/preparar-viaduto-vetores.py).
+  { id: 'viaduto_panorama_noite', src: 'assets/sprites/viaduto-vetores/panorama-noite.png' },
+  { id: 'viaduto_vao_trelica', src: 'assets/sprites/viaduto-vetores/vao-trelica.png' },
+  { id: 'viaduto_pod_carga', src: 'assets/sprites/viaduto-vetores/pod-carga.png' },
+  { id: 'viaduto_guindaste', src: 'assets/sprites/viaduto-vetores/guindaste.png' },
+  { id: 'viaduto_totem_sinal', src: 'assets/sprites/viaduto-vetores/totem-sinal.png' },
+  { id: 'viaduto_modulo_bomba', src: 'assets/sprites/viaduto-vetores/modulo-bomba.png' },
   { id: 'pet_bolt', src: 'assets/sprites/companions/bolt.png' },
   { id: 'hub_nexo_lateral', src: 'assets/sprites/saguao/nexo-lateral-limpo.png' },
   { id: 'hub_viajante', src: 'assets/sprites/saguao/viajante-2026.png' },
@@ -270,6 +619,366 @@ await loadSprites([
     src: 'assets/sprites/backgrounds/aeroporto-central-bg.png',
   },
   {
+    id: 'guia_aeroporto',
+    src: 'assets/sprites/npcs/guia-aeroporto.png',
+  },
+  // ---- AEROPORTO 2.5D VIVO: naves, planetas e vórtice gerados por IA ----
+  // (assets/source-art/aeroporto -> tools/preparar-aeroporto.py)
+  {
+    id: 'aeroporto_portal_swirl',
+    src: 'assets/sprites/aeroporto/portal-vortice.png',
+  },
+  {
+    id: 'aeroporto_nave_cargueiro',
+    src: 'assets/sprites/aeroporto/nave-cargueiro.png',
+  },
+  {
+    id: 'aeroporto_nave_cruzador',
+    src: 'assets/sprites/aeroporto/nave-cruzador.png',
+  },
+  {
+    id: 'aeroporto_nave_shuttle',
+    src: 'assets/sprites/aeroporto/nave-shuttle.png',
+  },
+  {
+    id: 'aeroporto_planeta_anelado',
+    src: 'assets/sprites/aeroporto/planeta-anelado.png',
+  },
+  {
+    id: 'aeroporto_planeta_vermelho',
+    src: 'assets/sprites/aeroporto/planeta-vermelho.png',
+  },
+  // ---- CENOGRAFIA NOVA DO AEROPORTO (gerada por IA) ----
+  // (assets/source-art/aeroporto -> tools/preparar-salas-aeroporto.py)
+  {
+    id: 'aero_painel_partidas',
+    src: 'assets/sprites/aeroporto/painel-partidas.png',
+  },
+  {
+    id: 'aero_carrinho_bagagem',
+    src: 'assets/sprites/aeroporto/carrinho-bagagem.png',
+  },
+  {
+    id: 'aero_totem_holo',
+    src: 'assets/sprites/aeroporto/totem-holo.png',
+  },
+  {
+    id: 'aero_planta_aliena',
+    src: 'assets/sprites/aeroporto/planta-aliena.png',
+  },
+  // ---- SALAS DE MISSÃO: máquina da Bio-Forja + portões de barreira (gerados por IA) ----
+  // (assets/source-art/salas -> tools/preparar-salas-aeroporto.py)
+  {
+    id: 'sala_bio_maquina',
+    src: 'assets/sprites/salas/maquina-bio.png',
+  },
+  {
+    id: 'sala_bio_grade',
+    src: 'assets/sprites/salas/grade-bio.png',
+  },
+  {
+    id: 'sala_dominio_lacre',
+    src: 'assets/sprites/salas/lacre-dominio.png',
+  },
+  {
+    id: 'sala_mare_fluxo',
+    src: 'assets/sprites/salas/fluxo-mare.png',
+  },
+  {
+    id: 'sala_nucleo_malha',
+    src: 'assets/sprites/salas/malha-nucleo.png',
+  },
+  // ---- ENSEADA DOS ECOS 2.0 — Lote #4 (tools/preparar-enseada-2.py) ----
+  { id: 'enseada_embarcadouro_mare', src: 'assets/sprites/enseada-2/embarcadouro-mare-astral.png' },
+  { id: 'enseada_espelho_arquetipo', src: 'assets/sprites/enseada-2/espelho-eco-arquetipo.png' },
+  // Lote 2: espelho da arte de referência (moldura dourada sobre praça de losangos).
+  { id: 'enseada_espelho_revisado', src: 'assets/sprites/enseada-espelho-revisado/espelho.png' },
+  { id: 'enseada_altar_revisado', src: 'assets/sprites/enseada-espelho-revisado/altar.png' },
+  { id: 'enseada_pedras_revisadas', src: 'assets/sprites/enseada-espelho-revisado/pedras.png' },
+  { id: 'enseada2_espelho_referencia', src: 'assets/sprites/enseada-lote2/espelho-arquetipos.png' },
+  { id: 'enseada_relogio_mare', src: 'assets/sprites/enseada-2/relogio-mare-solar.png' },
+  { id: 'enseada_ninho_tartarugas', src: 'assets/sprites/enseada-2/ninho-tartarugas-praia.png' },
+  { id: 'enseada_poleiro_aves', src: 'assets/sprites/enseada-2/poleiro-aves-costeiro.png' },
+  { id: 'enseada_banco_conchas', src: 'assets/sprites/enseada-2/banco-areia-conchas.png' },
+  { id: 'enseada_lanterna_marinha', src: 'assets/sprites/enseada-2/lanterna-marinha-flutuante.png' },
+  { id: 'enseada_fonte_termal', src: 'assets/sprites/enseada-2/fonte-termal-enseada.png' },
+  { id: 'enseada_banco_ostras', src: 'assets/sprites/enseada-2/banco-ostras-perola.png' },
+  { id: 'enseada_sino_oeste_frontal', src: 'assets/sprites/enseada-lote2/sino-bambu-frontal.png' },
+  { id: 'enseada_carrilhao_vento', src: 'assets/sprites/enseada-2/carrilhao-vento-bambu.png' },
+  // ---- ENSEADA DOS ECOS 2.0 — Lote #5 (tools/preparar-enseada-2.py) ----
+  { id: 'enseada_portal_correntes', src: 'assets/sprites/enseada-2/portal-caminho-correntes.png' },
+  { id: 'enseada_portico_praia', src: 'assets/sprites/enseada-2/portico-trilha-praia.png' },
+  { id: 'enseada_barco_expedicao', src: 'assets/sprites/docas-cascos/pesqueiro-repouso.png' },
+  { id: 'enseada_santuario_lumeo', src: 'assets/sprites/enseada-2/santuario-lumeo-pedra.png' },
+  { id: 'enseada_acampamento_vigilia', src: 'assets/sprites/enseada-2/acampamento-vigilia-fogueira.png' },
+  { id: 'enseada_torre_antena', src: 'assets/sprites/enseada-2/torre-antena-escuta.png' },
+  { id: 'enseada_farolete_baia', src: 'assets/sprites/enseada-2/farolete-baia-enseada.png' },
+  { id: 'enseada_bancada_campo', src: 'assets/sprites/enseada-2/bancada-campo-arquetipos.png' },
+  { id: 'enseada_baliza_boia', src: 'assets/sprites/enseada-2/baliza-mare-boia.png' },
+  { id: 'enseada_totem_eco', src: 'assets/sprites/enseada-2/totem-eco-instavel.png' },
+  // ---- ENSEADA DOS ECOS 2.0 — Lote #6 (tools/preparar-enseada-2.py) ----
+  { id: 'enseada_piscina_mare', src: 'assets/sprites/enseada-2/piscina-mare-viva.png' },
+  { id: 'enseada_cais_pesca', src: 'assets/sprites/enseada-2/cais-madeira-pesca.png' },
+  { id: 'enseada_coral_azul', src: 'assets/sprites/enseada-2/coral-luminescente-azul.png' },
+  { id: 'enseada_estela_navegadores', src: 'assets/sprites/enseada-2/estela-navegadores.png' },
+  { id: 'enseada_algas_douradas', src: 'assets/sprites/enseada-2/banco-algas-douradas.png' },
+  { id: 'enseada_rede_cristal', src: 'assets/sprites/enseada-2/rede-cristal-ecos.png' },
+  { id: 'enseada_gruta_concha', src: 'assets/sprites/enseada-2/gruta-concha-mar.png' },
+  { id: 'enseada_jardim_pedras', src: 'assets/sprites/enseada-2/jardim-pedras-equilibrio.png' },
+  { id: 'enseada_bau_deriva', src: 'assets/sprites/enseada-2/bau-deriva-naufragio.png' },
+  { id: 'enseada_caixa_suprimentos', src: 'assets/sprites/enseada-2/caixa-suprimentos-mar.png' },
+  // ---- ENSEADA DOS ECOS 2.0 — Lote #7 (Quadros B de animação + peças vivas de orla/trilha) ----
+  { id: 'enseada_acampamento_vigilia_b', src: 'assets/sprites/enseada-2/acampamento-vigilia-fogueira-b.png' },
+  { id: 'enseada_portal_correntes_b', src: 'assets/sprites/enseada-2/portal-caminho-correntes-b.png' },
+  { id: 'enseada_farolete_baia_b', src: 'assets/sprites/enseada-2/farolete-baia-enseada-b.png' },
+  { id: 'enseada_totem_eco_b', src: 'assets/sprites/enseada-2/totem-eco-instavel-b.png' },
+  { id: 'enseada_carrilhao_vento_b', src: 'assets/sprites/enseada-2/carrilhao-vento-bambu-b.png' },
+  { id: 'enseada_algas_douradas_b', src: 'assets/sprites/enseada-2/banco-algas-douradas-b.png' },
+  { id: 'enseada_barco_expedicao_b', src: 'assets/sprites/docas-cascos/pesqueiro-repouso.png' },
+  { id: 'enseada_trilha_pedras', src: 'assets/sprites/enseada-2/trilha-pedras-costa.png' },
+  { id: 'enseada_cardume_vivo', src: 'assets/sprites/enseada-2/cardume-orla-vivo.png' },
+  { id: 'enseada_bandeirola_vento', src: 'assets/sprites/enseada-2/bandeirola-vento-expedicao.png' },
+  // ---- ENSEADA DOS ECOS 2.0 — Lote #8 (Animações de água/estruturas + vida marinha/aérea) ----
+  { id: 'enseada_piscina_mare_b', src: 'assets/sprites/enseada-2/piscina-mare-viva-b.png' },
+  { id: 'enseada_fonte_termal_b', src: 'assets/sprites/enseada-2/fonte-termal-enseada-b.png' },
+  { id: 'enseada_espelho_arquetipo_b', src: 'assets/sprites/enseada-2/espelho-eco-arquetipo-b.png' },
+  { id: 'enseada_coral_azul_b', src: 'assets/sprites/enseada-2/coral-luminescente-azul-b.png' },
+  { id: 'enseada_rede_cristal_b', src: 'assets/sprites/enseada-2/rede-cristal-ecos-b.png' },
+  { id: 'enseada_lanterna_marinha_b', src: 'assets/sprites/enseada-2/lanterna-marinha-flutuante-b.png' },
+  { id: 'enseada_baliza_boia_b', src: 'assets/sprites/enseada-2/baliza-mare-boia-b.png' },
+  { id: 'enseada_cais_pesca_b', src: 'assets/sprites/enseada-2/cais-madeira-pesca-b.png' },
+  { id: 'enseada_ondulacao_mar', src: 'assets/sprites/enseada-2/ondulacao-mar-crista.png' },
+  { id: 'enseada_borboletas_vivas', src: 'assets/sprites/enseada-2/borboletas-costa-vivas.png' },
+  // ---- ENSEADA DOS ECOS 2.0 — Lote #9 (Quadros B finais para animar 100% dos marcos) ----
+  { id: 'enseada_portico_praia_b', src: 'assets/sprites/enseada-2/portico-trilha-praia-b.png' },
+  { id: 'enseada_relogio_mare_b', src: 'assets/sprites/enseada-2/relogio-mare-solar-b.png' },
+  { id: 'enseada_torre_antena_b', src: 'assets/sprites/enseada-2/torre-antena-escuta-b.png' },
+  { id: 'enseada_bancada_campo_b', src: 'assets/sprites/enseada-2/bancada-campo-arquetipos-b.png' },
+  { id: 'enseada_santuario_lumeo_b', src: 'assets/sprites/enseada-2/santuario-lumeo-pedra-b.png' },
+  { id: 'enseada_estela_navegadores_b', src: 'assets/sprites/enseada-2/estela-navegadores-b.png' },
+  { id: 'enseada_gruta_concha_b', src: 'assets/sprites/enseada-2/gruta-concha-mar-b.png' },
+  { id: 'enseada_banco_ostras_b', src: 'assets/sprites/enseada-2/banco-ostras-perola-b.png' },
+  { id: 'enseada_bau_deriva_b', src: 'assets/sprites/enseada-2/bau-deriva-naufragio-b.png' },
+  { id: 'enseada_caixa_suprimentos_b', src: 'assets/sprites/enseada-2/caixa-suprimentos-mar-b.png' },
+  // ---- ENSEADA DOS ECOS 2.0 — Lote #10 (+9 animações B para 100% dos itens vivos, costeiros e Conduto) ----
+  { id: 'enseada_bandeirola_vento_b', src: 'assets/sprites/enseada-2/bandeirola-vento-expedicao-b.png' },
+  { id: 'enseada_jardim_pedras_b', src: 'assets/sprites/enseada-2/jardim-pedras-equilibrio-b.png' },
+  { id: 'enseada_borboletas_vivas_b', src: 'assets/sprites/enseada-2/borboletas-costa-vivas-b.png' },
+  { id: 'enseada_banco_conchas_b', src: 'assets/sprites/enseada-2/banco-areia-conchas-b.png' },
+  { id: 'enseada_poleiro_aves_b', src: 'assets/sprites/enseada-2/poleiro-aves-costeiro-b.png' },
+  { id: 'enseada_ninho_tartarugas_b', src: 'assets/sprites/enseada-2/ninho-tartarugas-praia-b.png' },
+  { id: 'enseada_embarcadouro_mare_b', src: 'assets/sprites/enseada-2/embarcadouro-mare-astral-b.png' },
+  { id: 'enseada_cardume_vivo_b', src: 'assets/sprites/enseada-2/cardume-orla-vivo-b.png' },
+  { id: 'enseada_arco_conduto_b', src: 'assets/sprites/enseada-2/arco-conduto-mare-b.png' },
+  // ---- ENSEADA DOS ECOS 3.0 — lote visual 1 (recorte e arte nova baseada na referência) ----
+  { id: 'enseada3_estacao_666', src: 'assets/sprites/enseada-3/estacao-666-cliff-gate.png' },
+  { id: 'enseada_correntes_boia_vermelha', src: 'assets/sprites/enseada-correntes/boia-vermelha.png' },
+  { id: 'enseada_correntes_boia_laranja', src: 'assets/sprites/enseada-correntes/boia-laranja.png' },
+  { id: 'enseada_correntes_cardume', src: 'assets/sprites/enseada-correntes/cardume.png' },
+  { id: 'enseada_correntes_portal_ref', src: 'assets/sprites/enseada-correntes/portal-referencia.png' },
+  { id: 'enseada_correntes_pedra_1', src: 'assets/sprites/enseada-correntes/pedra-1.png' },
+  { id: 'enseada_correntes_pedra_2', src: 'assets/sprites/enseada-correntes/pedra-2.png' },
+  { id: 'enseada_correntes_pedra_3', src: 'assets/sprites/enseada-correntes/pedra-3.png' },
+  { id: 'enseada_estacao_mata_juncao', src: 'assets/sprites/enseada-estacao/mata-juncao.png' },
+  { id: 'enseada_estacao_planta_piscina', src: 'assets/sprites/enseada-estacao/planta-piscina.png' },
+  { id: 'enseada_estacao_pedras_degrau', src: 'assets/sprites/enseada-estacao/pedras-degrau.png' },
+  { id: 'enseada_estacao_integrada', src: 'assets/sprites/enseada-estacao/estacao-integrada.png' },
+  { id: 'enseada_estacao_revisada', src: 'assets/sprites/enseada-estacao-revisada/montanha.png' },
+  { id: 'enseada_correntes_recife_revisado', src: 'assets/sprites/enseada-estacao-revisada/recife-submerso.png' },
+  { id: 'enseada3_platao_cascata', src: 'assets/sprites/enseada-3/plateau-waterfall-wide.png' },
+  { id: 'enseada3_platao_cascata_b', src: 'assets/sprites/enseada-3/plateau-waterfall-wide-b.png' },
+  { id: 'enseada3_portal_recife', src: 'assets/sprites/enseada-3/reef-portal-arch.png' },
+  { id: 'enseada3_portico_oeste', src: 'assets/sprites/enseada-3/western-grove-arch.png' },
+  { id: 'enseada3_palmeiral', src: 'assets/sprites/enseada-3/western-palm-grove.png' },
+  { id: 'enseada3_monolito', src: 'assets/sprites/enseada-3/echo-monolith-dais.png' },
+  { id: 'enseada3_piscina', src: 'assets/sprites/enseada-lote2/piscina-sem-areia.png' },
+  { id: 'enseada3_cais_barco', src: 'assets/sprites/enseada-3/wooden-pier-sailboat.png' },
+  { id: 'enseada3_calcada', src: 'assets/sprites/enseada-3/stone-path-cobble.png' },
+  { id: 'enseada8_cais_barco_ref', src: 'assets/sprites/enseada-8/cais-barco-sem-areia-recortado.png' },
+  { id: 'enseada_cais_barco', src: 'assets/sprites/docas-cascos/enseada-cais-pesqueiro.png' },
+  { id: 'enseada_cais_pesqueiro_folha', src: 'assets/sprites/docas-cascos/enseada-cais-pesqueiro-folha.png' },
+  // Enseada: movimentos ambientais visíveis, lote 7.
+  { id: 'enseada_folha7_cachoeira', src: 'assets/sprites/enseada-animacao-lote7/cachoeira.png' },
+  { id: 'enseada_folha7_piscina', src: 'assets/sprites/enseada-animacao-lote7/piscina.png' },
+  { id: 'enseada_folha7_fogueira', src: 'assets/sprites/enseada-animacao-lote7/fogueira.png' },
+  { id: 'enseada_folha7_barco', src: 'assets/sprites/enseada-animacao-lote7/barco.png' },
+  { id: 'enseada_folha7_portal', src: 'assets/sprites/enseada-animacao-lote7/portal.png' },
+  { id: 'enseada_folha7_palmeira_alta', src: 'assets/sprites/enseada-animacao-lote7/palmeira-alta.png' },
+  { id: 'enseada_folha7_palmeira_baixa', src: 'assets/sprites/enseada-animacao-lote7/palmeira-baixa.png' },
+  { id: 'enseada_folha7_palmeira_jovem', src: 'assets/sprites/enseada-animacao-lote7/palmeira-jovem.png' },
+  { id: 'enseada_folha7_palmeira_media', src: 'assets/sprites/enseada-animacao-lote7/palmeira-media.png' },
+  { id: 'enseada_folha7_arvore_camp', src: 'assets/sprites/enseada-animacao-lote7/arvore-camp.png' },
+  // Enseada: vento, correntes, luz rúnica e veleiro junto ao cais.
+  { id: 'enseada_folha6_arvores_redondas', src: 'assets/sprites/enseada-animacao-lote6/arvores-redondas.png' },
+  { id: 'enseada_folha6_mata_densa', src: 'assets/sprites/enseada-animacao-lote6/mata-densa.png' },
+  { id: 'enseada_folha6_planta_cascata', src: 'assets/sprites/enseada-animacao-lote6/planta-cascata.png' },
+  { id: 'enseada_folha6_corais_amarelos', src: 'assets/sprites/enseada-animacao-lote6/corais-amarelos.png' },
+  { id: 'enseada_folha6_coral_rosa', src: 'assets/sprites/enseada-animacao-lote6/coral-rosa.png' },
+  { id: 'enseada_folha6_pedras_runicas', src: 'assets/sprites/enseada-animacao-lote6/pedras-runicas.png' },
+  { id: 'enseada_folha6_concha', src: 'assets/sprites/enseada-animacao-lote6/concha.png' },
+  { id: 'enseada_folha6_tartaruga', src: 'assets/sprites/enseada-animacao-lote6/tartaruga.png' },
+  // Enseada: lote de reflexos e pulsos sobre os recortes originais.
+  { id: 'enseada_folha5_relogio', src: 'assets/sprites/enseada-animacao-lote5/relogio.png' },
+  { id: 'enseada_folha5_antena', src: 'assets/sprites/enseada-animacao-lote5/antena.png' },
+  { id: 'enseada_folha5_bancada', src: 'assets/sprites/enseada-animacao-lote5/bancada.png' },
+  { id: 'enseada_folha5_monolito', src: 'assets/sprites/enseada-animacao-lote5/monolito.png' },
+  { id: 'enseada_folha5_estela', src: 'assets/sprites/enseada-animacao-lote5/estela.png' },
+  { id: 'enseada_folha5_altar', src: 'assets/sprites/enseada-animacao-lote5/altar.png' },
+  { id: 'enseada_folha5_espelho', src: 'assets/sprites/enseada-animacao-lote5/espelho.png' },
+  { id: 'enseada_folha5_cristais', src: 'assets/sprites/enseada-animacao-lote5/cristais.png' },
+  { id: 'enseada_folha5_lanterna', src: 'assets/sprites/enseada-animacao-lote5/lanterna.png' },
+  { id: 'enseada_folha4_carrilhao', src: 'assets/sprites/enseada-animacao-lote4/carrilhao.png' },
+  { id: 'enseada_folha4_bambu', src: 'assets/sprites/enseada-animacao-lote4/bambu.png' },
+  { id: 'enseada_folha4_arbusto_florido', src: 'assets/sprites/enseada-animacao-lote4/arbusto-florido.png' },
+  { id: 'enseada_folha4_arbustos', src: 'assets/sprites/enseada-animacao-lote4/arbustos.png' },
+  { id: 'enseada_folha_biruta', src: 'assets/sprites/enseada-animacao-lote3/biruta.png' },
+  { id: 'enseada_folha_tenda', src: 'assets/sprites/enseada-animacao-lote3/tenda.png' },
+  { id: 'enseada_folha_algas', src: 'assets/sprites/enseada-animacao-lote3/algas.png' },
+  { id: 'enseada_rede_baixa', src: 'assets/sprites/enseada-animacao-lote2/rede-baixa.png' },
+  { id: 'enseada_rede_alta', src: 'assets/sprites/enseada-animacao-lote2/rede-alta.png' },
+  { id: 'enseada_gaivota_esquerda', src: 'assets/sprites/enseada-animacao-lote2/gaivota-esquerda.png' },
+  { id: 'enseada_gaivota_direita', src: 'assets/sprites/enseada-animacao-lote2/gaivota-direita.png' },
+  { id: 'enseada_cais_pedras', src: 'assets/sprites/enseada-cais-revisao/pedras.png' },
+  { id: 'enseada_cais_rede', src: 'assets/sprites/enseada-cais-revisao/rede.png' },
+  { id: 'enseada8_montanha_66', src: 'assets/sprites/enseada-8/montanha-cachoeira-66-recortado.png' },
+  { id: 'enseada8_entrada_666', src: 'assets/sprites/enseada-8/entrada-estacao-666-recortado.png' },
+  { id: 'enseada8_acampamento', src: 'assets/sprites/enseada-8/acampamento-plataforma-recortado.png' },
+  { id: 'enseada_terraco_acampamento', src: 'assets/sprites/enseada-estacao/terraco-curto.png' },
+  // Setor 1: mesa desenhada em pixel art a partir da silhueta medida.
+  { id: 'enseada_setor1_plato', src: 'assets/sprites/enseada-norte/plato-acampamento.png' },
+  { id: 'enseada_setor1_terraco', src: 'assets/sprites/enseada-norte/terraco-plato-recortado.png' },
+  { id: 'enseada_setor1_encosta', src: 'assets/sprites/enseada-norte/encosta-plato-recortado.png' },
+  // Montanha da Estação 66.6 com a base arenosa FECHADA (a arte anterior
+  // terminava em diagonal e o chão do mapa aparecia por baixo, cortando a
+  // piscina da cachoeira).
+  { id: 'enseada_estacao_integrada_v2', src: 'assets/sprites/enseada-estacao/estacao-66-completa.png' },
+  { id: 'enseada_camp_ref_tronco', src: 'assets/sprites/enseada-camp/tronco-banco.png' },
+  { id: 'enseada_camp_escada', src: 'assets/sprites/enseada-camp/escada-pedra.png' },
+  { id: 'enseada_setor1_plato_v3', src: 'assets/sprites/enseada-lote2/plato-sem-areia.png' },
+  { id: 'enseada_banco_tronco', src: 'assets/sprites/enseada-lote-10/04-troncos.png' },
+  { id: 'enseada_biruta_camp', src: 'assets/sprites/enseada-lote-10/07-biruta.png' },
+  { id: 'enseada_bancada_expedicao', src: 'assets/sprites/enseada-lote-10/05-paineis.png' },
+  { id: 'enseada_rochedo_portal', src: 'assets/sprites/enseada-lote-10/03-rochedo.png' },
+  // Rochedo orgânico da praia (pedra + musgo), para a base dos arcos de coral.
+  { id: 'enseada_rochedo_organico', src: 'assets/sprites/enseada-lote2/rochedo-praia-sudeste.png' },
+  { id: 'enseada_portal_sudeste_rochedo', src: 'assets/sprites/enseada-lote2/portal-sudeste-rochedo.png' },
+  { id: 'enseada_sudeste_portal_completo', src: 'assets/sprites/enseada-sudeste/portal-completo.png' },
+  { id: 'enseada_sudeste_poste', src: 'assets/sprites/enseada-sudeste/poste-praia.png' },
+  { id: 'enseada_sudeste_encosta', src: 'assets/sprites/enseada-sudeste/encosta.png' },
+  { id: 'enseada_sudeste_cercado', src: 'assets/sprites/enseada-sudeste/cercado.png' },
+  { id: 'enseada_sudeste_gaivotas', src: 'assets/sprites/enseada-sudeste/gaivotas-rochedo.png' },
+  { id: 'enseada_sudeste_conchas', src: 'assets/sprites/enseada-sudeste/conchas.png' },
+  { id: 'enseada_sudeste_lanterna', src: 'assets/sprites/enseada-sudeste/lanterna.png' },
+  { id: 'enseada_ilha_grama_central', src: 'assets/sprites/enseada-centro/ilha-grama.png' },
+  { id: 'enseada_cairn_central', src: 'assets/sprites/enseada-centro/cairn.png' },
+  { id: 'enseada_borboleta_azul_a', src: 'assets/sprites/enseada-centro/borboleta-azul-a.png' },
+  { id: 'enseada_borboleta_azul_b', src: 'assets/sprites/enseada-centro/borboleta-azul-b.png' },
+  { id: 'enseada_borboleta_dourada', src: 'assets/sprites/enseada-centro/borboleta-dourada.png' },
+  { id: 'enseada_monolito_vertical', src: 'assets/sprites/enseada-lote2/monolito-eco-vertical.png' },
+  { id: 'enseada_grama_orla_animada', src: 'assets/sprites/enseada-lote2/grama-orla-animada.png' },
+  { id: 'enseada_grama_alta_vento', src: 'assets/sprites/enseada-lote2/grama-alta-vento.png' },
+  { id: 'enseada_portico_lateral', src: 'assets/sprites/enseada-lote2/portico-oeste-lateral.png' },
+  { id: 'enseada_calcada_oeste_escada', src: 'assets/sprites/enseada-lote2/calcada-oeste-escada.png' },
+  { id: 'enseada_calcada_central', src: 'assets/sprites/enseada-lote2/calcada-central.png' },
+  { id: 'enseada_parede_escada', src: 'assets/sprites/enseada-lote2/parede-camp-integrada.png' },
+  { id: 'enseada_rede_descanso', src: 'assets/sprites/enseada-lote2/rede-descanso.png' },
+  { id: 'enseada_concha_gigante', src: 'assets/sprites/enseada-lote2/gruta-concha-nitida.png' },
+  { id: 'enseada_gruta_oeste', src: 'assets/sprites/enseada-lote2/gruta-oeste-compacta.png' },
+  { id: 'enseada_concha_perola_oeste', src: 'assets/sprites/enseada-lote2/concha-perola-oeste.png' },
+  { id: 'enseada_cristais_oeste', src: 'assets/sprites/enseada-lote2/cristais-corais-oeste.png' },
+  { id: 'enseada_bambus_oeste', src: 'assets/sprites/enseada-lote2/bambus-oeste.png' },
+  { id: 'enseada_promontorio_sudeste', src: 'assets/sprites/enseada-lote2/promontorio-sudeste.png' },
+  { id: 'enseada_rede_praia_branca', src: 'assets/sprites/enseada-lote2/rede-praia-branca.png' },
+  { id: 'enseada8_portal_ne', src: 'assets/sprites/enseada-8/portal-nordeste-coral-recortado.png' },
+  { id: 'enseada8_portal_leste', src: 'assets/sprites/enseada-8/portal-leste-rochedo-recortado.png' },
+  { id: 'enseada8_mesa_trabalho', src: 'assets/sprites/enseada-8/mesa-trabalho-madeira-recortado.png' },
+  { id: 'enseada8_caixas', src: 'assets/sprites/enseada-8/pilha-caixas-madeira-recortado.png' },
+  { id: 'enseada8_estela', src: 'assets/sprites/enseada-8/estela-navegacao-runas-recortado.png' },
+  { id: 'enseada8_cairn', src: 'assets/sprites/enseada-8/cairn-pedras-zen-recortado.png' },
+  { id: 'enseada8_gruta', src: 'assets/sprites/enseada-8/gruta-concha-cristal-recortado.png' },
+  // SETOR 4 — praia sul e portais submarinos (geração dedicada, fundo magenta).
+  { id: 'enseada4_portal_submarino', src: 'assets/sprites/enseada-setor4/portal-submarino-coral.png' },
+  { id: 'enseada4_orla_rochas', src: 'assets/sprites/enseada-setor4/orla-rochas-poste.png' },
+  // SETOR 3 — centro-sul e oeste (geração dedicada, fundo magenta).
+  { id: 'enseada3_capivara', src: 'assets/sprites/enseada-setor3/capivara.png' },
+  { id: 'enseada3_fonte_cristal', src: 'assets/sprites/enseada-setor3/fonte-cristal.png' },
+  { id: 'enseada3_piscina_termal', src: 'assets/sprites/enseada-setor3/piscina-termal.png' },
+  // ---- ENSEADA DOS ECOS 3.1 — lote visual 2 (acampamento, gruta e praia sul) ----
+  { id: 'enseada4_torre_vigilia', src: 'assets/sprites/enseada-4/signal-watchtower.png' },
+  { id: 'enseada4_tenda', src: 'assets/sprites/enseada-4/expedition-tent.png' },
+  { id: 'enseada4_fogueira', src: 'assets/sprites/enseada-4/stone-ring-campfire.png' },
+  { id: 'enseada4_mesa_campo', src: 'assets/sprites/enseada-4/field-table-bench.png' },
+  { id: 'enseada4_caixas', src: 'assets/sprites/enseada-4/supply-crates.png' },
+  { id: 'enseada_camp_lateral_esquerda', src: 'assets/sprites/enseada-camp/lateral-esquerda.png' },
+  { id: 'enseada_camp_lateral_direita', src: 'assets/sprites/enseada-camp/lateral-direita.png' },
+  { id: 'enseada_camp_chao_completo', src: 'assets/sprites/enseada-camp/chao-encaixado.png' },
+  { id: 'enseada_camp_ref_arvore', src: 'assets/sprites/enseada-camp/arvore-referencia-a.png' },
+  { id: 'enseada_camp_ref_torre_radio', src: 'assets/sprites/enseada-camp/torre-radio.png' },
+  { id: 'enseada_camp_ref_caixa', src: 'assets/sprites/enseada-camp/caixa.png' },
+  { id: 'enseada_camp_ref_cesto_ferramentas', src: 'assets/sprites/enseada-camp/cesto-ferramentas.png' },
+  { id: 'enseada_camp_ref_tenda_referencia', src: 'assets/sprites/enseada-camp/tenda-referencia.png' },
+  { id: 'enseada_camp_ref_relogio', src: 'assets/sprites/enseada-camp/relogio.png' },
+  { id: 'enseada_camp_ref_bancada', src: 'assets/sprites/enseada-camp/bancada.png' },
+  { id: 'enseada_camp_ref_banco', src: 'assets/sprites/enseada-camp/banco.png' },
+  { id: 'enseada_camp_ref_fogueira', src: 'assets/sprites/enseada-camp/fogueira.png' },
+  { id: 'enseada_camp_ref_pilha_caixas', src: 'assets/sprites/enseada-camp/pilha-caixas.png' },
+  // ---- SETOR 2 (Nordeste): vegetação de transição e rochas do planalto ----
+  { id: 'enseada_ne_arvores', src: 'assets/sprites/enseada-norte/arvores-redondas.png' },
+  { id: 'enseada_ne_arbustos', src: 'assets/sprites/enseada-norte/arbustos-densos.png' },
+  { id: 'enseada_ne_pedras', src: 'assets/sprites/enseada-norte/pedras-cinzentas.png' },
+  { id: 'enseada_ne_palmeira_baixa', src: 'assets/sprites/enseada-norte/palmeira-baixa.png' },
+  { id: 'enseada_ne_palmeira_media', src: 'assets/sprites/enseada-norte/palmeira-media.png' },
+  // ---- SETOR 2: artes novas (geradas para o planalto nordeste) ----
+  { id: 'enseada_ne_mata_densa', src: 'assets/sprites/enseada-nordeste/mata-transicao-densa.png' },
+  { id: 'enseada_ne_arbusto_florido', src: 'assets/sprites/enseada-nordeste/arbusto-florido.png' },
+  { id: 'enseada_ne_palmeira', src: 'assets/sprites/enseada-nordeste/palmeira-nordeste.png' },
+  { id: 'enseada_ne_penhasco', src: 'assets/sprites/enseada-nordeste/penhasco-canto-leste.png' },
+  { id: 'enseada_ne_parede', src: 'assets/sprites/enseada-nordeste/parede-falesia.png' },
+  { id: 'enseada_ne_topo_grama', src: 'assets/sprites/enseada-nordeste/plato-topo-grama.png' },
+  { id: 'enseada_ne_matacao', src: 'assets/sprites/enseada-nordeste/matacao-grande.png' },
+  { id: 'enseada_ne_poco', src: 'assets/sprites/enseada-nordeste/poco-cachoeira.png' },
+  { id: 'enseada_ne_trilha_areia', src: 'assets/sprites/enseada-nordeste/trilha-areia-curva.png' },
+  { id: 'enseada_ne_vegetacao_borda', src: 'assets/sprites/enseada-nordeste/caixa-vegetacao-falésia.png' },
+  { id: 'enseada4_relogio', src: 'assets/sprites/enseada-4/coastal-clock-post.png' },
+  { id: 'enseada4_placa', src: 'assets/sprites/enseada-4/trail-marker-sign.png' },
+  { id: 'enseada4_gruta', src: 'assets/sprites/enseada-4/shell-grotto.png' },
+  { id: 'enseada4_rede', src: 'assets/sprites/enseada-4/beach-training-net.png' },
+  { id: 'enseada4_cairn', src: 'assets/sprites/enseada-4/zen-stone-cairn.png' },
+  { id: 'enseada4_travessia_pedras', src: 'assets/sprites/enseada-4/stepping-stone-path-water.png' },
+  { id: 'enseada5_capivara', src: 'assets/sprites/enseada-5/capivara-piscina-termal.png' },
+  { id: 'enseada5_capivara_b', src: 'assets/sprites/enseada-5/capivara-piscina-termal-b.png' },
+  { id: 'enseada5_golfinho_saltando', src: 'assets/sprites/enseada-5/golfinho-saltando.png' },
+  { id: 'enseada5_golfinho_saltando_b', src: 'assets/sprites/enseada-5/golfinho-saltando-b.png' },
+  { id: 'enseada5_golfinho_nadando', src: 'assets/sprites/enseada-5/golfinho-nadando.png' },
+  { id: 'enseada5_golfinho_nadando_b', src: 'assets/sprites/enseada-5/golfinho-nadando-b.png' },
+  { id: 'enseada5_tartaruga', src: 'assets/sprites/enseada-5/tartaruga-marinha.png' },
+  { id: 'enseada5_tartaruga_b', src: 'assets/sprites/enseada-5/tartaruga-marinha-b.png' },
+  { id: 'enseada5_caranguejos', src: 'assets/sprites/enseada-5/caranguejos-areia.png' },
+  { id: 'enseada5_caranguejos_b', src: 'assets/sprites/enseada-5/caranguejos-areia-b.png' },
+  { id: 'enseada5_escadaria', src: 'assets/sprites/enseada-5/escadaria-pedra-acampamento.png' },
+  { id: 'enseada5_cristais', src: 'assets/sprites/enseada-5/cristais-azuis-mar.png' },
+  { id: 'enseada5_cristais_b', src: 'assets/sprites/enseada-5/cristais-azuis-mar-b.png' },
+  { id: 'enseada5_corais', src: 'assets/sprites/enseada-5/corais-amarelos.png' },
+  { id: 'enseada5_corais_b', src: 'assets/sprites/enseada-5/corais-amarelos-b.png' },
+  { id: 'enseada6_estrela', src: 'assets/sprites/enseada-6/estrela-do-mar.png' },
+  { id: 'enseada6_poste', src: 'assets/sprites/enseada-6/poste-lanterna-madeira.png' },
+  { id: 'enseada6_boia', src: 'assets/sprites/enseada-6/boia-cone-laranja.png' },
+  { id: 'enseada6_coral_rosa', src: 'assets/sprites/enseada-6/coral-rosa.png' },
+  { id: 'enseada6_ourico', src: 'assets/sprites/enseada-6/ourico-do-mar.png' },
+  { id: 'enseada6_pedra_azul', src: 'assets/sprites/enseada-6/pedra-brilho-azul.png' },
+  { id: 'enseada6_banco', src: 'assets/sprites/enseada-6/banco-pedra.png' },
+  { id: 'enseada6_arbusto', src: 'assets/sprites/enseada-6/arbusto-flores-roxas.png' },
+  { id: 'enseada6_palmeira', src: 'assets/sprites/enseada-6/palmeira-jovem.png' },
+  { id: 'enseada6_concha', src: 'assets/sprites/enseada-6/concha-gigante.png' },
+  { id: 'enseada7_toras', src: 'assets/sprites/enseada-7/pilha-toras-madeira.png' },
+  { id: 'enseada7_cerca', src: 'assets/sprites/enseada-7/cerca-madeira-baixa.png' },
+  { id: 'enseada7_lanterna', src: 'assets/sprites/enseada-7/lanterna-pedra-chao.png' },
+  { id: 'enseada7_vaso', src: 'assets/sprites/enseada-7/vaso-planta-pedra.png' },
+  { id: 'enseada7_arco_pedra', src: 'assets/sprites/enseada-7/arco-pedra-degraus.png' },
+  { id: 'enseada7_banco_madeira', src: 'assets/sprites/enseada-7/banco-madeira.png' },
+  { id: 'enseada7_rede_pesca', src: 'assets/sprites/enseada-7/rede-pesca-areia.png' },
+  { id: 'enseada7_jardim', src: 'assets/sprites/enseada-7/jardim-cercado-pedras.png' },
+  {
     id: 'metro_rail_kit',
     src: 'assets/sprites/tiles/metro-rail-kit.png',
   },
@@ -286,6 +995,7 @@ await loadSprites([
   { id: 'visao_dominio', src: 'assets/sprites/backgrounds/camara-dominio-visao.jpg' },
   { id: 'visao_mare', src: 'assets/sprites/backgrounds/camara-mare-visao.jpg' },
   { id: 'visao_nucleo', src: 'assets/sprites/backgrounds/camara-nucleo-visao.jpg' },
+  { id: 'visao_bio', src: 'assets/sprites/backgrounds/camara-bio-visao.jpg' },
   { id: 'beach_novas_artes', src: 'assets/sprites/tiles/beach-novas-artes.png' },
   { id: 'fauna_costeira', src: 'assets/sprites/fauna/fauna-costeira.png' },
   { id: 'fauna_nova_1010', src: 'assets/sprites/fauna/fauna-nova-1010.png' },
@@ -341,12 +1051,31 @@ if (bioMissing.length) {
 // UPDATE
 // =====================================================================
 
+let cromaticaSaveClock = 0, cromaticaReturning = false;
+
 async function update(dt) {
+  if (mapaTaticoAberto()) { if(input.pressed.has('escape')) alternarMapa(false); return; }
+  if (travessiaAtiva()) { atualizarViagemNeblina(dt,input); return; }
+  if (immersive.active) {
+    if (state.world.currentMapId !== 'ilha_enseada_ecos') immersive.finish();
+    else immersive.update(dt, input);
+    return;
+  }
+  if (state.world.currentMap?.meta?.camera === 'retro-fps') {
+    if (!isCutsceneOpen() && !isDialogueOpen() && !state.world.isLoading) updateCitadel(dt, state, input);
+    return;
+  }
+  if (isCutsceneOpen()) {
+    state.player.moving = false; state.player.target = null;
+    input.click = null; input.attackClick = null;
+    return;
+  }
   updateDebugInput();
   // Atualiza a ferramenta de calibração antes de qualquer outro input.
   updateBackgroundCalibration();
 
   const player = state.player;
+  const mapaAtual = getFloor();
 
   // ===============================================================
   // MODO DE CALIBRAÇÃO
@@ -363,7 +1092,7 @@ async function update(dt) {
     player.target = null;
     input.click = null; input.attackClick = null;
 
-    updateCamera(dt, player.x, player.y);
+    updateCamera(dt, player.x, player.y, null, mapaAtual);
     return;
   }
 
@@ -376,7 +1105,7 @@ async function update(dt) {
     player.target = null;
     input.click = null; input.attackClick = null;
     updateNpcBrains(dt);
-    updateCamera(dt, player.x, player.y);
+    updateCamera(dt, player.x, player.y, null, mapaAtual);
     return;
   }
 
@@ -391,7 +1120,7 @@ async function update(dt) {
     input.click = null; input.attackClick = null;
 
     updateNpcBrains(dt);
-    updateCamera(dt, player.x, player.y);
+    updateCamera(dt, player.x, player.y, null, mapaAtual);
     return;
   }
 
@@ -400,7 +1129,7 @@ async function update(dt) {
     player.moving = false;
     player.target = null;
     input.click = null; input.attackClick = null;
-    updateCamera(dt, player.x, player.y);
+    updateCamera(dt, player.x, player.y, null, mapaAtual);
     return;
   }
 
@@ -408,7 +1137,7 @@ async function update(dt) {
     handleCodexInput(input.pressed);
     player.moving = false; player.target = null;
     input.click = null; input.attackClick = null;
-    updateCamera(dt, player.x, player.y); return;
+    updateCamera(dt, player.x, player.y, null, mapaAtual); return;
   }
   if (!isElevatorMenuOpen() && (input.pressed.has('j') || input.pressed.has('keyj'))) {
     openCodex(state.progress, getFloor(), player);
@@ -426,6 +1155,29 @@ async function update(dt) {
     input.click = null; input.attackClick = null;
     state.onElevator = false;
   } else {
+    if (CROMATICA_MAPS.includes(mapaAtual?.id) && !state.world.isLoading) {
+      if (prepararMareCromatica(state.progress)) saveGame();
+      let data = lerMareCromatica(state.progress);
+      if (data.iniciada && !data.desfecho && (player.health ?? 1) <= 0) {
+        colapsarMareCromatica(state.progress); saveGame(); data = lerMareCromatica(state.progress);
+      }
+      if (!data.desfecho && avancarMareCromatica(state.progress,dt)) { saveGame(); data=lerMareCromatica(state.progress); }
+      cromaticaSaveClock += dt;
+      if (cromaticaSaveClock >= 10) { cromaticaSaveClock=0;saveGame(); }
+      if (data.desfecho === 'colapso') {
+        player.target=null;player.moving=false;
+        if (!cromaticaReturning && !isPortalLocked()) {
+          cromaticaReturning=true;
+          void usePortal({id:'cromatica_colapso',label:'RETORNO DE EMERGÊNCIA',destino:{mapId:'estacao_limiar_666',spawnId:'vindo_da_enseada'}}).then(ok=>{
+            if(ok) {
+              if(Number.isFinite(player.maxHealth)) player.health=Math.max(1,Math.round(player.maxHealth*.5));
+              openDialogue({speaker:'NEXO-04 // RETORNO DE EMERGÊNCIA',dialogue:['A LINHA DE CONTENÇÃO CAIU. A ÂNCORA FOI CONSUMIDA E A INCURSÃO ENTROU EM QUARENTENA.', 'SEUS REGISTROS FORAM PRESERVADOS. CONSULTE O ALERTA DO METRÔ PARA TENTAR A REDENÇÃO.']});
+            }
+          }).finally(()=>{cromaticaReturning=false;});
+        }
+        return;
+      }
+    }
     // T não atua em diálogos, menus, calibração ou durante um dash.
     if (input.pressed.has('t') || input.pressed.has('keyt')) {
       if (state.progress.archetype === 'nucleo_dez_forma') {
@@ -499,12 +1251,16 @@ async function update(dt) {
         dispararPropulsao(nado, mareAlinhado);
       }
       updatePlayer(dt);
+      atualizarPassagemNado();
     }
 
     // Vida e dano ambiental só correm durante a exploração, nunca em menus
     // nem durante uma habilidade que trava o movimento.
     if (!abilityLocksMovement) updateHazards(state.hazards, player, state.progress, dt);
     updateHealth(player, state.progress, dt, { onRespawn: () => getSafeSpawn() });
+    if (mapaAtual?.meta?.cromatica && state.cromaticaRuntime && !state.world.isLoading && lerMareCromatica(state.progress).iniciada) {
+      state.cromaticaRuntime.perigo=atualizarAmeacasCromaticas(mapaAtual, state.cromaticaRuntime, state.trainingTargets, player, state.progress, dt).perto;
+    }
 
   }
 
@@ -513,7 +1269,6 @@ async function update(dt) {
 
   // Missão do Maré: eventos de mergulho e coleta saem do estado real do
   // nado, nunca de um contador de tempo.
-  const mapaAtual = getFloor();
   const sinalCorrente = atualizarRotaCorrentes(mapaAtual, player, state.progress);
   if (sinalCorrente) {
     player.ability ??= {};
@@ -592,7 +1347,7 @@ async function update(dt) {
         avisar(`O MAR ASSUSTA • TREINE ${ondeTreinar}`, 3.2);
         player.nadoAviso = 2.4; player.nadoDestaque = 4;
       } else if (eventos.engoliu) {
-        avisar('ENGOLIU ÁGUA • SOLTE ESPAÇO ANTES DO AR ACABAR', 3);
+        avisar('ENGOLIU ÁGUA • SUBA PARA RESPIRAR ANTES DO AR ACABAR', 3);
         player.nadoAviso = 2.4;
       } else if (eventos.limite) {
         avisar(arvore.nivel === 0
@@ -603,6 +1358,16 @@ async function update(dt) {
     }
     eventos.susto = eventos.engoliu = eventos.limite = false;
     player.nadoDestaque = Math.max(0, (player.nadoDestaque ?? 0) - dt);
+  }
+  if (player.mareAcao) {
+    player.mareAcao.timeLeft = Math.max(0, player.mareAcao.timeLeft - dt);
+    if (!player.mareAcao.timeLeft) player.mareAcao = null;
+  }
+  if (iniciarMissoesEncontros(mapaAtual, player, state.progress)) {
+    player.ability ??= {};
+    player.ability.lastMessage = 'NOVAS MISSÕES SUBMERSAS • CONSULTE O CÓDEX [J]';
+    player.ability.messageTimer = 4;
+    saveGame();
   }
   // Fauna ferida: presença alivia, o módulo certo socorre.
   const ancoraFauna = getFloor();
@@ -651,6 +1416,7 @@ async function update(dt) {
           arvore.respeito = Math.max(arvore.respeito ?? 0, player.nado.respeito.valor);
         }
         state.interaction.faunaPronta = null;
+        if (submerso) player.mareAcao = {tipo:'socorro',timeLeft:1.1,duration:1.1};
         saveGame();
       } else if (res?.motivo) {
         player.ability ??= {};
@@ -660,6 +1426,23 @@ async function update(dt) {
     }
   }
 
+  // Um único E por quadro: socorro existente tem prioridade, depois os
+  // encontros da rota, por fim os portais/objetos habituais.
+  const encontro = encontroProximo(mapaAtual, player, state.progress);
+  state.interaction.encontroMare = state.interaction.faunaPronta ? null : encontro;
+  if (encontro && !state.interaction.socorroConsumiuE && (input.pressed.has('e') || input.pressed.has('keye'))) {
+    state.interaction.socorroConsumiuE = true;
+    const res = realizarEncontro(mapaAtual, player, state.progress);
+    if (res) {
+      player.ability ??= {};
+      player.ability.lastMessage = res.concluidas?.length ? `MISSÃO CONCLUÍDA • ${res.concluidas[0].title}` : res.mensagem;
+      player.ability.messageTimer = 3.5;
+      if (res.ok) { state.interaction.encontroMare = null; saveGame(); }
+    }
+  }
+
+  if (mapaAtual?.id === 'ilha_enseada_ecos') immersive.updateProximity(dt, state.objects, player);
+
   // Interações (portais, NPCs, objetos) correm DEPOIS da fauna: assim o
   // socorro tem a primeira chance no E, e um E perto de bicho não abre
   // a placa atrás dele ao mesmo tempo.
@@ -667,12 +1450,17 @@ async function update(dt) {
     const pressedE =
       input.pressed.has('e') ||
       input.pressed.has('keye');
-    await checkInteractions(pressedE && !state.interaction.socorroConsumiuE);
+    await checkInteractions(pressedE && !state.interaction.socorroConsumiuE, { onObject: (object, callback) => immersive.begin(object, callback) });
     state.interaction.socorroConsumiuE = false;
+    if (immersive.active) return;
   }
 
   updateOwnedCompanion(getFloor(), dt, canStandAt);
-  updateCamera(dt, player.x, player.y, player.nado);
+  updateCamera(dt, player.x, player.y, player.nado, mapaAtual, {
+    ability: player.ability,
+    flags: state.progress?.flags,
+    form: player.nucleoForm,
+  });
 }
 
 // =====================================================================
@@ -709,20 +1497,55 @@ async function frame(now) {
     Math.min(0.033, (now - last) / 1000)
   );
 
+  // Visual time uses the RAF delta, not the clamped physics/mission delta.
+  // Keep it outside update(): waiting missions, dialogs and calibration may
+  // stop simulation, but must not freeze the dock's sea, hull or tentacle.
+  avancarAnimacaoDocas(state, (now-last)/1000, document.hidden);
   last = now;
+
+  dimensional.tickRupture();
+  dimensional.setAvailable(dimensional.manager.active || dimensional.manager.canEnter());
+  if (dimensional.manager.active) {
+    dimensional.manager.tick(dt);
+    endInputFrame();
+    return; // The entire 2D simulation/HUD stays paused, not just its renderer.
+  }
 
   atualizarClima(state.clima, dt);
   await update(dt);
+  atualizarRadioNeblina(dt, mapaTaticoAberto() || isDialogueOpen() || isCutsceneOpen() || state.world.isLoading || isCodexOpen() || isArchetypeCardsOpen() || isNucleoWheelOpen() || isElevatorMenuOpen());
 
+  if (travessiaAtiva()) { desenharViagemNeblina(); endInputFrame(); return; }
   const map = getFloor();
+  atualizarHudCromatico(state, isDialogueOpen() || isCutsceneOpen() || state.world.isLoading || isCodexOpen() || isArchetypeCardsOpen() || isNucleoWheelOpen() || isElevatorMenuOpen());
+  const fpsWorld = map?.meta?.camera === 'retro-fps';
+  document.body.classList.toggle('retro-fps', !!fpsWorld);
+  if (fpsWorld) {
+    renderCitadel(canvas, state);
+    endInputFrame();
+    return;
+  }
+  clearCitadelRuntime();
+  if (document.pointerLockElement === canvas) document.exitPointerLock?.();
 
-  render(map, state);
+  // No diorama estabilizado o mundo fica congelado e não é redesenhado:
+  // transições ainda desenham o mapa para o cross-fade de ida/volta.
+  if (immersive.mode === IMMERSIVE_MODE.FIRST_PERSON_DIORAMA) {
+    renderImmersive(dt, canvas);
+    endInputFrame();
+    return;
+  }
+  render(map, state, now);
+  desenharAtmosferaCromatica(canvas,state);
   updateHud(map, state);
   // Fôlego só aparece quando importa (nadando); em terra não ocupa tela.
   if (state.player?.nado?.ativo) desenharMedidorAr(state.player.nado);
+  desenharRotaMare(canvas, map, state);
   if (state.player?.nado?.perspectiva3d) {
-    const dpr = Math.min(window.devicePixelRatio || 1, 2), w = canvas.width / dpr, h = canvas.height / dpr;
+    const dpr = Math.min(window.devicePixelRatio || 1, 1.5), w = canvas.width / dpr, h = canvas.height / dpr;
     const c = canvas.getContext('2d'); c.save(); c.setTransform(dpr, 0, 0, dpr, 0, 0);
+    const bolhasRota = map?.meta?.rotaMare && getSprite('rota_mare_bolhas');
+    if (bolhasRota) { c.save(); c.globalAlpha=.15; c.drawImage(bolhasRota,w/2+18,h/2-35,22,38); c.restore(); }
     c.font = 'bold 11px monospace'; c.textAlign = 'right';
     c.fillStyle = 'rgba(0,30,42,.72)'; c.fillRect(w - 510, h - 127, 496, 32);
     c.fillStyle = '#bdfaf0'; c.fillText('A/D GIRAR · W NADAR/DESCER · S SUBIR · Q IMPULSO · R SONAR', w - 24, h - 107);
@@ -734,9 +1557,17 @@ async function frame(now) {
     }
     c.restore();
   }
+  if (state.interaction?.encontroMare && !state.interaction?.faunaPronta) {
+    const dpr=Math.min(window.devicePixelRatio || 1,1.5), w=canvas.width/dpr, h=canvas.height/dpr;
+    const c=canvas.getContext('2d'); c.save(); c.setTransform(dpr,0,0,dpr,0,0);
+    c.textAlign='center';c.font='bold 11px monospace';c.fillStyle='rgba(0,30,42,.88)';
+    c.fillRect(w/2-190,h-190,380,32);c.fillStyle='#cafff3';
+    c.fillText(`E · ${state.interaction.encontroMare.label}`,w/2,h-170);c.restore();
+  }
   // Degrau do nado + prova em curso: perto d'água, ou comemorando.
   if (map?.aguaPraia) desenharDegrauNado(state, map);
 
+  renderImmersive(dt, canvas);
   endInputFrame();
 }
 
@@ -749,14 +1580,18 @@ async function startGameFromSave({ mapId, spawnId }) {
 
   gameStarted = true;
 
-  initInput(canvas);
-
   // Carrega o mapa do save/perfil selecionado.
   await loadMap(
     mapId ?? 'hub_saguao',
     spawnId ?? 'inicio'
   );
 
+  if (state.progress.flags?.prologoPendente) {
+    await playCutscene(BOOT_SCENES);
+    state.progress.flags.prologoPendente = false;
+    saveGame();
+  }
+  initInput(canvas);
   last = performance.now();
   requestAnimationFrame(frame);
 }

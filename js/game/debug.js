@@ -220,7 +220,18 @@ function drawObjectDebug(ctx, object, halfW, halfH) {
   //
   // Suporta hitbox única e múltiplas hitboxes.
   // ---------------------------------------------------------------
-  if (Array.isArray(object.hitboxes) && object.hitboxes.length > 0) {
+  if (Array.isArray(object.poligonosColisao) && object.poligonosColisao.length > 0) {
+    ctx.save(); ctx.strokeStyle = '#40ff75'; ctx.lineWidth = 1.5;
+    for (const poly of object.poligonosColisao) {
+      ctx.beginPath();
+      poly.forEach(([x, y], i) => {
+        const p = worldToIso(object.x + x, object.y + y, halfW, halfH);
+        if (i === 0) ctx.moveTo(p.x, p.y); else ctx.lineTo(p.x, p.y);
+      });
+      ctx.closePath(); ctx.stroke();
+    }
+    ctx.restore();
+  } else if (Array.isArray(object.hitboxes) && object.hitboxes.length > 0) {
     for (const hitbox of object.hitboxes) {
       const box = {
         x: object.x + (hitbox.offsetX ?? -0.30),

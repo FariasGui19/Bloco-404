@@ -1,0 +1,106 @@
+{
+  "version": 1,
+  "provenance": "Uma repintura gerada; 60 poses por malha ancorada e 96 poses procedurais de água.",
+  "sheets": {
+    "tentaculo-emerge": {
+      "w": 384,
+      "h": 320,
+      "frames": 15,
+      "columns": 5,
+      "anchor": [
+        144,
+        282
+      ]
+    },
+    "tentaculo-dobra": {
+      "w": 384,
+      "h": 320,
+      "frames": 15,
+      "columns": 5,
+      "anchor": [
+        144,
+        282
+      ]
+    },
+    "tentaculo-alcance": {
+      "w": 384,
+      "h": 320,
+      "frames": 15,
+      "columns": 5,
+      "anchor": [
+        144,
+        282
+      ]
+    },
+    "tentaculo-recolhe": {
+      "w": 384,
+      "h": 320,
+      "frames": 15,
+      "columns": 5,
+      "anchor": [
+        144,
+        282
+      ]
+    },
+    "agua-anel": {
+      "w": 256,
+      "h": 128,
+      "frames": 16,
+      "columns": 4,
+      "anchor": [
+        128,
+        64
+      ]
+    },
+    "agua-espuma": {
+      "w": 256,
+      "h": 128,
+      "frames": 16,
+      "columns": 4,
+      "anchor": [
+        128,
+        64
+      ]
+    },
+    "agua-reflexo": {
+      "w": 256,
+      "h": 128,
+      "frames": 16,
+      "columns": 4,
+      "anchor": [
+        128,
+        64
+      ]
+    },
+    "agua-gotas": {
+      "w": 256,
+      "h": 128,
+      "frames": 16,
+      "columns": 4,
+      "anchor": [
+        128,
+        64
+      ]
+    },
+    "agua-refluxo": {
+      "w": 256,
+      "h": 128,
+      "frames": 16,
+      "columns": 4,
+      "anchor": [
+        128,
+        64
+      ]
+    },
+    "agua-esteira": {
+      "w": 256,
+      "h": 128,
+      "frames": 16,
+      "columns": 4,
+      "anchor": [
+        128,
+        64
+      ]
+    }
+  }
+}

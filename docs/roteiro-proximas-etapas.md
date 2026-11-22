@@ -1,5 +1,132 @@
 # Próximas Etapas — Bloco 404
 
+## Concluído na 0.11.7 — Área de Carga viva
+
+- **Refinos do Núcleo** — o arco do Viaduto agora olha para a rota
+  (espelhado em tela, sem hitbox) e ganhou filme de energia, varredura e
+  LEDs de status. O contrapeso partido **mantém colisão** (`manterColisao`):
+  vira entulho sólido; a rota livre é o portal, não o corpo da bigorna.
+- **Área de Carga viva** — os bays compactos por arquétipo ganharam piso
+  pintado do módulo, casca de contêineres, esteira de conferência, drone
+  de patrulha, campo animado da trava e berço do fragmento. Travas com
+  arte pintada: Malha Cinética (Núcleo), Lacre de Frequência (Domínio),
+  Fluxo Contido (Maré) e Grade de Impulso (Bio). Gramática R → Q →
+  fragmento além da trava → metrô.
+- **Missão mais dinâmica** — `calibracao_de_eco` fala a língua do módulo
+  equipado; abrir a trava puxa o estágio para `collect_fragment` na hora;
+  manifestos e fragmentos têm falas próprias por arquétipo.
+- **Verificação** — `tests/carga-viva.mjs` + suíte completa **93/93**;
+  QA de navegador com os 4 bays, contrapeso sólido, eclusa animada e
+  R → Q → fragmento no Núcleo, zero erros de página.
+
+Versão `0.11.7-carga-viva`.
+
+## Concluído na 0.11.6 — Núcleo: polimento e Viaduto vivo
+
+- **Arte pintada, face SE** — regulador, relicário e pórtico deixaram de ser
+  procedurais; eixo/terminal foram espelhados **na fonte** (pipeline), sem
+  `espelhar:true` no objeto, preservando a hitbox. Chroma-key agora apaga
+  magenta fechado (`holes`) e franja de reamostragem; a malha rosa virou
+  vidro verde translúcido. Asserts no pipeline + teste de pixel RGBA.
+- **Colisão e escala** — hitboxes acompanharam a base larga das máquinas
+  (contrapeso 1.32×1.04, relicário sólido 1.10×0.86, eixo 2.10×1.40);
+  campo `sombra:[w,h]` consumido no renderer do Núcleo (contato + difusa).
+- **Q da Quebra confiável** — mira congelada no windup; Q durante a
+  metamorfose entra em `queuedSmash` e dispara no 1º frame livre; fila
+  limpa em `loadMap`/retorno ao operador. HUD anuncia `PANCADA DA QUEBRA`.
+  Trava perto sempre responde: nível, scan, pré-requisito e mira de costas
+  têm mensagem própria (nada de Q silencioso).
+- **Viaduto dos Vetores reconstruído** — 6 peças pintadas (panorama,
+  treliça, pod aéreo, guindaste, totem, bomba) em side-view 2.5D na mesma
+  câmera do Aeroporto; logística animada, água/reflexos, clima, portais
+  virados para a rota e bomba de indução interativa (+25 XP, persiste).
+  Panorama antigo removido; retorno recíproco Base ↔ Estação mantido.
+- **Verificação** — `tests/nucleo-polimento.mjs` (arte/colisão/Q/feedback/
+  render side-view) + suíte completa 92/92; QA de navegador com save nível 4
+  fotografando as duas cenas e abrindo a rota com Q enfileirado.
+
+Versão `0.11.6-nucleo-polimento`.
+
+## Concluído na 0.11.1 — Refinamento e organização
+
+Ajustes de proporção e enquadramento após revisão visual:
+
+- **Salas de Missão** — paredes mais baixas (`alturaParede` 0.85), portões de
+  contenção maiores e levemente elevados (preenchem o vão sem afundar no
+  piso), heróis reescalados (máquina da Bio-Forja 0.36→0.155, matriz do
+  Núcleo 0.46→0.27, lâmina 0.48→0.36), plantas alienígenas em escala de
+  vaso (0.13). Novo quadro de arquivo **visão da Bio-Forja**
+  (`visao_bio`) completa a série — todos os quatro registros agora exibem a
+  arte da câmara em moldura. Gerador da Dársena corrigido (era um quadro de
+  planta; agora é um gabinete de máquina). Luminárias/barris/caixas extras
+  adensam cada sala.
+- **Aeroporto** — L-9 em 1.25× (1.7 era dominante demais), Guia do
+  Aeroporto 0.165→0.215, totens holográficos menores (0.28–0.30) e fora da
+  frente dos pórticos (GATE 00 e intervalo B2/C3), plantas alienígenas
+  menores (0.13–0.14) e realocadas aos vãos entre docas (nada obstruindo
+  portais).
+
+Versão `0.11.1-refinamento`.
+
+## Concluído na 0.11.0 — Lapidação do Aeroporto e Salas de Missão
+
+1. **Escala por profundidade aposentada** — o pseudo-3D de W/S que encolhia/
+   crescia sprites foi removido do side-view (player, NPCs, objetos, reflexos);
+   todos desenham em escala constante.
+2. **Aeroporto ainda mais cenográfico** — novos sprites gerados por IA:
+   painel de partidas split-flap interativo (substitui o placeholder),
+   carrinho de bagagem no desembarque, dois totens holográficos de anúncios
+   (GATE 00 e Docas) e plantas alienígenas ladeando as Docas. L-9 patrulha
+   em escala 1.7× (antes destoava do porte da estação).
+3. **Pórticos dimensionais repaginados** — moldura com gradiente metálico,
+   chanfro interno, soleira estendida e rebites; anel rúnico orbital com 12
+   glifos; arcos de energia saltando raros (semente temporal); feixe de luz
+   dimensional jorrando para a passarela; placa eletrônica com parafusos e
+   LED de status; filete de neon interno; reflexo de piso mais forte; vórtice
+   com alpha corrigido por luminância (B2 âmbar não estoura mais no branco).
+4. **Salas de Missão Iniciais reconstruídas** — as quatro salas
+   (Bio-Forja/Domínio/Maré/Núcleo) ganharam planta baixa própria e aberta
+   (spawn sempre em chão livre — antes nascia dentro de parede), registro de
+   missão com o protocolo R → Q, obstáculo único por arquétipo com arte
+   gerada por IA (grade viva, lacre de frequência, fluxo contido, malha
+   cinética), Fragmento de Eco realmente coletável (antes a flag exigida
+   nunca era gravada) e portal de retorno ao Aeroporto. Ver
+   `tests/salas-arquetipos.mjs`.
+5. **Gates + legíveis** — prompt contextualizado em três estados
+   (precisa diagnosticar / pronto para agir / bloqueado).
+
+Versão `0.11.0-salas-missao`.
+
+## Concluído na 0.10.0 — Aeroporto Central 2.5D Vivo
+
+Registro completo, com a análise do que a implementação side-view entregou e o
+norte multi-gênero do projeto, em [`plano-aeroporto-e-perspectivas.md`](plano-aeroporto-e-perspectivas.md).
+Em resumo:
+
+1. **Perspectiva refinada** — escala por profundidade (0.80x no fundo → 1.14x
+   na borda frontal) aplicada a player, NPCs, objetos, sombras e reflexos;
+   parallax dinâmico com o mouse; varredura especular no piso; estrelas
+   cadentes ocasionais fora dos janelões.
+2. **Arte gerada por IA integrada** — vórtice dos pórticos (tingido em
+   runtime pela cor de cada doca, duas camadas giratórias), frota de naves
+   (cargueiro, cruzador, shuttle) com rastro de plasma e faróis, planeta
+   anelado e planeta vermelho. Fonte em `assets/source-art/aeroporto/`,
+   preparador em `tools/preparar-aeroporto.py`.
+3. **Aeroporto vivo** — painel de LED corrido no mezanino com o estado real
+   da Área de Carga (lido do save), perigo "marching ants" + varredura de
+   segurança na comporta trancada, faíscas espirais nos pórticos ativos,
+   Viajante ambiental cruzando o concourse e Unidade L-9 em patrulha.
+4. **Mobília remapeada** por setor (A desembarque, B mirante, C docas,
+   D engenharia), com vending, plantas, luminárias, cone e grade de
+   contenção — sem bloquear portais nem a faixa central.
+5. **Letreiros de setor** migrados para o teto — fim da sobreposição com as
+   placas dos pórticos.
+6. **Verificação** — novo `tests/aeroporto-vivo.mjs` renderiza o mapa inteiro
+   headless e falha se qualquer coordenada NaN/Infinity chegar ao canvas.
+   90 testes passando.
+
+Versão `0.10.0-aeroporto` (histórico).
+
 ## Concluído
 - Saguão (concluído)
 - Estação Bio 0.3.5-bio (cabeceira, distribuidor, rede, válvula, 30/30 testes, PR #30 mesclada)

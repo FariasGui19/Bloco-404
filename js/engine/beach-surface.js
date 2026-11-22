@@ -7,6 +7,11 @@
 // e o `alpha` acompanha a iso-linha, então a areia termina em curva.
 // Nenhuma célula de terra nova nasce daí: o campo é travado para não trocar
 // de lado no centro de nenhuma célula (ver `coast-field.js`).
+//
+// AREIA + GRAMA (referência da Enseada): a orla é areia e o interior é
+// grama. A cor muda pela MESMA distância à água (`shore`): até 2,2 tiles
+// é areia, depois vira grama com transição suave. Nenhuma letra nova na
+// grade, nenhuma mudança de colisão — só a cor da textura.
 
 
 const sand = c => c != null && 'SMT'.includes(c);
@@ -19,15 +24,85 @@ function hash(x, y) {
 const water = c => c != null && 'YyDdX'.includes(c);
 const smooth = t => { t = Math.max(0, Math.min(1, t)); return t * t * (3 - 2 * t); };
 
-export function createBeachSurface(rows, scale = 16) {
+// Distância a segmentos em coordenadas da grade; os caminhos só alteram cor.
+function distanciaAoCaminho(x, y, caminhos) {
+  let menor = Infinity;
+  for (const [ax, ay, bx, by] of caminhos) {
+    const dx = bx - ax, dy = by - ay;
+    const comprimento2 = dx * dx + dy * dy;
+    const t = comprimento2 ? Math.max(0, Math.min(1, ((x - ax) * dx + (y - ay) * dy) / comprimento2)) : 0;
+    menor = Math.min(menor, Math.hypot(x - ax - t * dx, y - ay - t * dy));
+  }
+  return menor;
+}
+
+// `zonasRocha` apaga a grama onde o relevo desenhado (montanha da Estação
+// 66.6, maciços de pedra) já é o chão visível. Sem isso a mancha de grama do
+// interior sobe por cima da base do penhasco e fatia a cachoeira ao meio —
+// era o defeito de camada do setor norte.
+// Campos manuais limitados a um setor, em coordenadas da arte de referência.
+function intensidadePoligono(px, py, pontos, suavidade = 10) {
+  let dentro = false, menor = Infinity;
+  for (let i = 0, j = pontos.length - 1; i < pontos.length; j = i++) {
+    const [ax, ay] = pontos[j], [bx, by] = pontos[i];
+    if ((ay > py) !== (by > py) && px < (bx - ax) * (py - ay) / (by - ay) + ax) dentro = !dentro;
+    const dx = bx - ax, dy = by - ay, len = dx*dx + dy*dy;
+    const t = len ? Math.max(0, Math.min(1, ((px-ax)*dx + (py-ay)*dy)/len)) : 0;
+    menor = Math.min(menor, Math.hypot(px-ax-t*dx, py-ay-t*dy));
+  }
+  return smooth(.5 + (dentro ? menor : -menor) / suavidade);
+}
+
+export function createBeachSurface(rows, scale = 16, { gramaInterior = false, caminhos = [], zonasGrama = [], zonasRocha = [], celulasGrama = null, ajusteSolo = null, ajusteSoloCentral = null, texturaGramaCentral = null, ajusteSoloSudeste = null, areiaPraiaSul = null, areiaCostaLeste = null, trilhaEstacaoPortal = [] } = {}) {
   const height = rows.length, width = rows[0].length;
+  const margemAjuste = 55;
+  const limitesAjuste = ajusteSolo && {
+    minX: Math.min(...ajusteSolo.area.map(p => p[0])) - margemAjuste,
+    maxX: Math.max(...ajusteSolo.area.map(p => p[0])) + margemAjuste,
+    minY: Math.min(...ajusteSolo.area.map(p => p[1])) - margemAjuste,
+    maxY: Math.max(...ajusteSolo.area.map(p => p[1])) + margemAjuste,
+  };
+  // A borda suave tem alcance de cinco pixels; não percorrer polígonos
+  // distantes ao montar o cache de terreno.
+  const regioesGrama = ajusteSolo?.grama.map(pontos => ({
+    pontos,
+    minX: Math.min(...pontos.map(p => p[0])) - 5,
+    maxX: Math.max(...pontos.map(p => p[0])) + 5,
+    minY: Math.min(...pontos.map(p => p[1])) - 5,
+    maxY: Math.max(...pontos.map(p => p[1])) + 5,
+  })) ?? [];
+  const limitesCentral = ajusteSoloCentral && {
+    minX: Math.min(...ajusteSoloCentral.area.map(p => p[0])) - 10,
+    maxX: Math.max(...ajusteSoloCentral.area.map(p => p[0])) + 10,
+    minY: Math.min(...ajusteSoloCentral.area.map(p => p[1])) - 10,
+    maxY: Math.max(...ajusteSoloCentral.area.map(p => p[1])) + 10,
+  };
+  const limitesAreiaSul = areiaPraiaSul && {
+    minX: Math.min(...areiaPraiaSul.area.map(p => p[0])) - 8,
+    maxX: Math.max(...areiaPraiaSul.area.map(p => p[0])) + 8,
+    minY: Math.min(...areiaPraiaSul.area.map(p => p[1])) - 8,
+    maxY: Math.max(...areiaPraiaSul.area.map(p => p[1])) + 8,
+  };
+  const limitesAreiaLeste = areiaCostaLeste && {
+    minX: Math.min(...areiaCostaLeste.area.map(p => p[0])) - 8,
+    maxX: Math.max(...areiaCostaLeste.area.map(p => p[0])) + 8,
+    minY: Math.min(...areiaCostaLeste.area.map(p => p[1])) - 8,
+    maxY: Math.max(...areiaCostaLeste.area.map(p => p[1])) + 8,
+  };
+  const limitesSudeste = ajusteSoloSudeste && {
+    minX: Math.min(...ajusteSoloSudeste.area.map(p => p[0])) - 10,
+    maxX: Math.max(...ajusteSoloSudeste.area.map(p => p[0])) + 10,
+    minY: Math.min(...ajusteSoloSudeste.area.map(p => p[1])) - 10,
+    maxY: Math.max(...ajusteSoloSudeste.area.map(p => p[1])) + 10,
+  };
   const pixels = new Uint8ClampedArray(width * height * scale * scale * 4);
   for (let py = 0; py < height * scale; py++) for (let px = 0; px < width * scale; px++) {
     const x = (px + .5) / scale, y = (py + .5) / scale;
     const ix = Math.floor(x), iy = Math.floor(y), tile = rows[iy][ix];
     if (!sand(tile)) continue;
-    let shore = 3;
-    for (let dy = -2; dy <= 2; dy++) for (let dx = -2; dx <= 2; dx++) {
+    const alcance = gramaInterior ? 5 : 2;
+    let shore = gramaInterior ? 5 : 3;
+    for (let dy = -alcance; dy <= alcance; dy++) for (let dx = -alcance; dx <= alcance; dx++) {
       if (!water(rows[iy + dy]?.[ix + dx])) continue;
       const nx = ix + dx, ny = iy + dy;
       const ex = Math.max(nx - x, 0, x - nx - 1);
@@ -45,9 +120,149 @@ export function createBeachSurface(rows, scale = 16) {
     const grain = (hash(px, py) - .5) * 9 + (hash(px >> 1, py >> 1) - .5) * 6;
     // Veios largos e irregulares sugerem depósitos de areia, não tiles soltos.
     const drift = Math.max(0, Math.sin(x * .85 + Math.sin(y * .38) * 2.1 + y * .17) - .72) * (1 - wet) * 12;
+    // Areia da orla (referência): dourada, molhada na beira.
     let r = 229 + broad + grain - wet * 30 - drift;
     let g = 197 + broad + grain - wet * 18 - drift * .8;
     let b = 143 + broad + grain - wet * 7 - drift * .45;
+    // Grama do interior: verde-amarelado da referência, com o mesmo grão.
+    // `grama` é 0 na orla e 1 no miolo; a mistura é suave (sem linha dura).
+    // Deslocamento suave quebra linhas retas sem introduzir ruído por tile.
+    const tx = x + .45 * Math.sin(y * .42) + .16 * Math.sin(y * 1.05);
+    const ty = y + .45 * Math.sin(x * .38) + .16 * Math.sin(x * .93);
+    const distancia = caminhos.length ? distanciaAoCaminho(tx, ty, caminhos) : Infinity;
+    // Bordas levemente irregulares sem mudar a faixa navegável.
+    const ruidoTrilha = Math.sin(x * .71 + Math.sin(y * .48)) * .16;
+    const foraDaTrilha = smooth((distancia + ruidoTrilha - .8) / .6);
+    let grama = gramaInterior ? smooth((shore - 2.2) / 2.4) * foraDaTrilha : 0;
+    // Grama lida da arte de referência (`celulasGrama`). `x`/`y` aqui são
+    // PIXELS de textura (0.0625 de tile), não células: a interpolação bilinear
+    // do campo acontece dentro do tile e a borda sai curva, não em xadrez.
+    if (celulasGrama) {
+      const gx = x - .5, gy = y - .5;
+      const x0 = Math.floor(gx), y0 = Math.floor(gy);
+      const fx = smooth(gx - x0), fy = smooth(gy - y0);
+      const amostra = (ax, ay) => celulasGrama[ay]?.[ax] ?? 0;
+      const topo = amostra(x0, y0) * (1 - fx) + amostra(x0 + 1, y0) * fx;
+      const base = amostra(x0, y0 + 1) * (1 - fx) + amostra(x0 + 1, y0 + 1) * fx;
+      const campo = topo * (1 - fy) + base * fy;
+      // Borda irregular: ruído de mundo modula o limiar, como na arte.
+      const ondulacao = Math.sin(x * .9 + Math.sin(y * .7) * 1.4) * .10
+        + Math.sin(y * 1.13 + Math.sin(x * .53) * 1.1) * .08;
+      grama = Math.max(grama, smooth((campo - .5 + ondulacao) / .22));
+    }
+    // Faixas internas de vegetação não mudam a máscara nem cobrem água.
+    for (const zona of zonasGrama) {
+      const dx = (x - zona.x) / zona.rx, dy = (y - zona.y) / zona.ry;
+      if (Math.abs(dx) >= 1 || Math.abs(dy) >= 1) continue;
+      const borda = Math.sqrt(dx * dx + dy * dy);
+      grama = Math.max(grama, smooth((1 - borda) / .35) * foraDaTrilha);
+    }
+    // Relevo desenhado manda no próprio chão: onde o penhasco já ocupa a
+    // célula, a grama do interior sai de cena e a pedra fica exposta.
+    for (const zona of zonasRocha) {
+      const dx = (x - zona.x) / zona.rx, dy = (y - zona.y) / zona.ry;
+      const borda = Math.sqrt(dx * dx + dy * dy);
+      if (borda < 1) grama *= smooth(borda / .35) * (zona.manter ?? 0);
+    }
+    // O ajuste é estritamente visual e só existe no polígono deste setor;
+    // não altera a costa, a grade de colisão nem a paleta de outros mapas.
+    if (ajusteSolo) {
+      const sx = ajusteSolo.cx + ajusteSolo.sx * (x - y);
+      const sy = ajusteSolo.cy + ajusteSolo.sy * (x + y);
+      const area = sx < limitesAjuste.minX || sx > limitesAjuste.maxX || sy < limitesAjuste.minY || sy > limitesAjuste.maxY
+        ? 0 : intensidadePoligono(sx, sy, ajusteSolo.area, 110);
+      // A estreita orla oeste fica arenosa até o limite da água.
+      const faixaOeste = smooth((260 - sx) / 35) * smooth((sy - 160) / 35) * smooth((650 - sy) / 35);
+      grama *= 1 - faixaOeste * (1 - smooth((shore - .8) / 1.2));
+      if (area > 0) {
+        let verde = 0;
+        for (const regiao of regioesGrama) {
+          if (sx < regiao.minX || sx > regiao.maxX || sy < regiao.minY || sy > regiao.maxY) continue;
+          verde = Math.max(verde, intensidadePoligono(sx, sy, regiao.pontos, 10));
+        }
+        grama += (verde - grama) * area;
+        grama *= 1 - faixaOeste * (1 - smooth((shore - .8) / 1.2));
+        r += 16 * area; g += 9 * area; b -= 12 * area;
+      }
+    }
+    let intensidadeRelvaCentral = 0, refCentralX = 0, refCentralY = 0;
+    // Recorte local do centro, posterior ao ajuste oeste e sem alterar alpha.
+    if (ajusteSoloCentral) {
+      const sx = ajusteSoloCentral.cx + ajusteSoloCentral.sx * (x - y);
+      const sy = ajusteSoloCentral.cy + ajusteSoloCentral.sy * (x + y);
+      if (sx >= limitesCentral.minX && sx <= limitesCentral.maxX && sy >= limitesCentral.minY && sy <= limitesCentral.maxY) {
+        const area = intensidadePoligono(sx, sy, ajusteSoloCentral.area, 20);
+        if (area > 0) {
+          const ilha = intensidadePoligono(sx, sy, ajusteSoloCentral.grama, 8);
+          grama += (ilha - grama) * area;
+          intensidadeRelvaCentral = ilha * area; refCentralX = sx; refCentralY = sy;
+        }
+      }
+    }
+    if (ajusteSoloSudeste) {
+      const sx = ajusteSoloSudeste.cx + ajusteSoloSudeste.sx * (x-y);
+      const sy = ajusteSoloSudeste.cy + ajusteSoloSudeste.sy * (x+y);
+      if (sx >= limitesSudeste.minX && sx <= limitesSudeste.maxX && sy >= limitesSudeste.minY && sy <= limitesSudeste.maxY) {
+        const area = intensidadePoligono(sx, sy, ajusteSoloSudeste.area, 20);
+        if (area > 0) {
+          const ilha = Math.max(
+            intensidadePoligono(sx, sy, ajusteSoloSudeste.grama, 10),
+            ajusteSoloSudeste.gramaIntermediaria ? intensidadePoligono(sx, sy, ajusteSoloSudeste.gramaIntermediaria, 10) : 0,
+            ajusteSoloSudeste.gramaCercado ? intensidadePoligono(sx, sy, ajusteSoloSudeste.gramaCercado, 10) : 0,
+          );
+          grama += (ilha - grama) * area;
+        }
+      }
+    }
+    // Faixa entre os elementos da praia e a nova linha d'água é só areia.
+    if (areiaPraiaSul) {
+      const sx = areiaPraiaSul.cx + areiaPraiaSul.sx * (x-y);
+      const sy = areiaPraiaSul.cy + areiaPraiaSul.sy * (x+y);
+      if (sx >= limitesAreiaSul.minX && sx <= limitesAreiaSul.maxX && sy >= limitesAreiaSul.minY && sy <= limitesAreiaSul.maxY) {
+        grama *= 1 - intensidadePoligono(sx, sy, areiaPraiaSul.area, 16);
+      }
+    }
+    if (areiaCostaLeste) {
+      const sx = areiaCostaLeste.cx + areiaCostaLeste.sx * (x-y);
+      const sy = areiaCostaLeste.cy + areiaCostaLeste.sy * (x+y);
+      if (sx >= limitesAreiaLeste.minX && sx <= limitesAreiaLeste.maxX && sy >= limitesAreiaLeste.minY && sy <= limitesAreiaLeste.maxY) {
+        grama *= 1 - intensidadePoligono(sx, sy, areiaCostaLeste.area, 16);
+      }
+    }
+    // Após o recuo oeste, a orla exposta é areia, não relva até o mar.
+    if (ajusteSolo && shore < 2.2) {
+      const sx = ajusteSolo.cx + ajusteSolo.sx * (x - y);
+      const sy = ajusteSolo.cy + ajusteSolo.sy * (x + y);
+      const oesteNorte = smooth((445 - sx) / 35) * smooth((430 - sy) / 35);
+      grama *= 1 - oesteNorte * (1 - smooth((shore - .65) / 1.55));
+    }
+    // Só muda a cor: a trilha contínua não cria terra nem muda colisões.
+    if (trilhaEstacaoPortal.length && x >= 14 && x <= 51 && y >= 15 && y <= 32) {
+      const dist = distanciaAoCaminho(x, y, trilhaEstacaoPortal);
+      grama *= smooth((dist + ruidoTrilha - 0.9) / 0.48);
+    }
+    if (grama > 0) {
+      let gr = 126 + broad * .6 + grain * .7 - wet * 8;
+      let gg = 186 + broad * .6 + grain * .7 - wet * 6;
+      let gb = 78 + broad * .5 + grain * .6;
+      if (texturaGramaCentral && intensidadeRelvaCentral > 0) {
+        // Projeta a arte como uma peça só, sem ladrilhar ou plantar clones.
+        const tx = Math.floor((refCentralX - 624) / 162 * texturaGramaCentral.width);
+        const ty = Math.floor((refCentralY - 350) / 73 * texturaGramaCentral.height);
+        let tr = 135, tg = 168, tb = 58; // paleta da grama do platô
+        if (tx >= 0 && tx < texturaGramaCentral.width && ty >= 0 && ty < texturaGramaCentral.height) {
+          const i = (ty * texturaGramaCentral.width + tx) * 4, p = texturaGramaCentral.pixels;
+          // As bordas escuras do recorte não devem formar uma segunda ilha.
+          if (p[i+3] > 200 && p[i] + p[i+1] + p[i+2] > 155) { tr = p[i]; tg = p[i+1]; tb = p[i+2]; }
+        }
+        gr += (tr - gr) * intensidadeRelvaCentral;
+        gg += (tg - gg) * intensidadeRelvaCentral;
+        gb += (tb - gb) * intensidadeRelvaCentral;
+      }
+      r += (gr - r) * grama;
+      g += (gg - g) * grama;
+      b += (gb - b) * grama;
+    }
     // As antigas poças quadradas viram manchas suaves na mesma área caminhável.
     if (tile === 'T') {
       const d = Math.hypot((x - ix - .5) / .32, (y - iy - .5) / .22);

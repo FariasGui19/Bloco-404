@@ -42,7 +42,7 @@ export const CLIMAS = Object.freeze({
 
 // Ordem de transição: o clima só "anda" um passo por vez entre vizinhos.
 // É o que impede sol virar ressaca em dois segundos.
-export const CORRENTE = Object.freeze(['limpo', 'brisa', 'nublado', 'garoa', 'chuva', 'ressaca']);
+export const CORRENTE = Object.freeze(['limpo', 'brisa', 'nublado', 'garoa', 'chuva', 'ressaca', 'chuva', 'garoa', 'nublado', 'neblina', 'brisa']);
 
 export const CLIMA = Object.freeze({
   // Segundos, em média, para o clima mudar de faixa. Um dia de jogo tem
@@ -143,6 +143,13 @@ export function nomeDoClima(clima) {
   if (!clima) return CLIMAS.limpo.nome;
   if (clima.fracao > 0.75) return CLIMAS[clima.proximo].nome;
   return CLIMAS[clima.atual].nome;
+}
+
+/** Intensidade da neblina acompanha a mesma curva das demais faixas. */
+export function neblinaDoClima(clima) {
+  if (!clima) return 0;
+  const f = curva(Math.max(0, Math.min(1, clima.fracao ?? 0)));
+  return (clima.atual === 'neblina' ? 1 - f : 0) + (clima.proximo === 'neblina' ? f : 0);
 }
 
 /** Cor de tinta para o HUD (sol = claro, ressaca = escuro). */
@@ -257,4 +264,25 @@ export function resumoClima(clima) {
     vento: +clima.vento.toFixed(2),
     mudancas: clima.mudancas,
   };
+}
+
+/**
+ * Sintoniza o clima da faixa atual para um estado escolhido (ex.: Relógio de Maré Solar).
+ * Mantém a corrente coerente e recalcula luz/vento/chuva/mar imediatamente.
+ */
+export function sintonizarClima(clima, alvoId) {
+  if (!clima || !CLIMAS[alvoId]) return false;
+  const idx = CORRENTE.indexOf(alvoId);
+  clima.indice = idx >= 0 ? idx : 0;
+  clima.atual = alvoId;
+  clima.proximo = CORRENTE[(clima.indice + 1) % CORRENTE.length];
+  clima.fracao = 0;
+  const c = CLIMAS[alvoId];
+  clima.forca = c.forca;
+  clima.luz = c.luz;
+  clima.chuva = c.chuva;
+  clima.mar = c.mar;
+  clima.vento = c.vento;
+  clima.mudancas = (clima.mudancas ?? 0) + 1;
+  return true;
 }

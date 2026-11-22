@@ -225,6 +225,9 @@ for (const [id, x, y, sprite, scale] of [
 
 objects.push({ id: 'acesso_controle_bio', tipo: 'decoracao', x: 16, y: 12, bioMarker: 'CONTROLE', bloqueia: false });
 objects.push({ id: 'estacao_cabo_chegada', tipo: 'decoracao', x: 8, y: 10, cableStation: 'PRAIA', bloqueia: false });
+objects.push({ id: 'arco_viaduto_estacao', tipo: 'decoracao', x: 8.2, y: 11.8,
+  sprite: 'nucleo_sala_arco_viaduto', useCrop: true, larguraPx: 120, pivotX: .5, pivotY: .9,
+  bloqueia: false, brilho: { cor: '#74ff8a', raio: 1.6, forca: .30 } });
 objects.push({ id: 'bio_plataforma_tecnica', tipo: 'decoracao', x: 33, y: 26, sprite: 'bio_plataforma', scale: .24,
   depthOffset: -.6, sombra: [40, 16], bloqueia: true, hitbox: { offsetX: -2, offsetY: -2, width: 2, height: 2 } });
 for (const [id, x, y, sprite, scale] of [
@@ -265,7 +268,7 @@ export const map = {
   layout: rows.map(r => [...r].map(c => (c === 'X' || c === 'Y' ? 1 : 0))),
   walkMask: ground.walkMask, pisos: ground.pisos,
   bioBridges, bioBridgeRails, bioNetwork, bioRoute,
-  spawnPoints: { inicio: { x: 9.5, y: 10.5 }, vindo_controle: { x: 16.5, y: 12.5 } },
+  spawnPoints: { inicio: { x: 9.5, y: 10.5 }, vindo_controle: { x: 16.5, y: 12.5 }, vindo_do_viaduto: { x: 9.5, y: 12.5 } },
   objects,
   trainingTargets: [{ id: 'simulador_bio_1', x: 33, y: 18, maxHealth: 60 }, { id: 'simulador_bio_2', x: 48, y: 51, maxHealth: 60 }],
   collectibles: [
@@ -274,5 +277,10 @@ export const map = {
     { id: 'bio_estacao_estufa', nome: 'ESTUFA', tipo: 'fragmento', x: 50, y: 50, requiresFlag: 'collected_bio_estacao_regulador', label: 'ESTABILIZAR ESTUFA', dialogue: ['O PULSO DA ESTAÇÃO SE ESTABILIZA.', 'SETOR INICIAL CONCLUÍDO. O SISTEMA AINDA EXIGE UMA RECONSTRUÇÃO MAIS PROFUNDA.'] },
   ],
   portals: [{ id: 'entrar_controle_bio', tipo: 'door', x: 16, y: 12, label: 'ENTRAR NA SALA DE CONTROLE', interactionDistance: 1.3, destino: { mapId: 'bio_sala_controle', spawnId: 'inicio' }, transition: 'fade' },
-      { id: 'estacao_voltar', tipo: 'door', x: 8, y: 10, label: 'VOLTAR À PRAIA', labelConcluido: 'RETORNAR · LEITURA REGISTRADA', missaoFlag: 'gate_bio_valvula_estufa', interactionDistance: 1.4, destino: { mapId: 'ilha_praia_inicial', spawnId: 'vindo_da_estacao' }, transition: 'fade' }],
+      { id: 'estacao_voltar', tipo: 'door', x: 8, y: 10, label: 'VOLTAR À PRAIA', labelConcluido: 'RETORNAR · LEITURA REGISTRADA', missaoFlag: 'gate_bio_valvula_estufa', interactionDistance: 1.4, destino: { mapId: 'ilha_praia_inicial', spawnId: 'vindo_da_estacao' }, transition: 'fade' },
+    { id: 'retorno_viaduto_vetores', tipo: 'door', x: 8, y: 12,
+      requiresFlag: 'rota_viaduto_vetores_aberta', lockedLabel: 'VIADUTO DE MANUTENÇÃO SELADO',
+      mensagemBloqueado: ['O VIADUTO DOS VETORES AINDA NÃO FOI LIBERADO NA BASE DO NÚCLEO 10X.'],
+      label: 'CRUZAR O VIADUTO -> BASE DOS VETORES (NÚCLEO 10X)', interactionDistance: 1.6,
+      destino: { mapId: 'viaduto_dos_vetores', spawnId: 'vindo_da_estacao' }, transition: 'fade' }],
 };

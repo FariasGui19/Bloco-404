@@ -1,0 +1,13 @@
+import assert from 'node:assert/strict';
+import {ativarAudioCromatico,atualizarAudioCromatico} from '../js/game/mare-cromatica-audio.js';
+let created=0,resumed=0,suspended=0,started=0;const gains=[];
+const parameter=()=>({value:0,setTargetAtTime(v){this.value=v;}});
+const node=()=>({gain:parameter(),frequency:parameter(),connect(){},start(){started++;}});
+globalThis.AudioContext=class {constructor(){created++;this.sampleRate=100;this.currentTime=0;this.destination={};}createGain(){const n=node();gains.push(n);return n;}createBiquadFilter(){return node();}createOscillator(){return node();}createBuffer(_n,size){return {getChannelData(){return new Float32Array(size)}};}createBufferSource(){return node();}resume(){resumed++;return Promise.resolve();}suspend(){suspended++;return Promise.resolve();}};
+atualizarAudioCromatico(true,false);assert.equal(created,0,'não há autoplay');
+assert.equal(ativarAudioCromatico(),true);assert.equal(created,1);assert.equal(resumed,1);assert(started>=6);
+atualizarAudioCromatico(true,false,.5);assert.equal(gains[4].gain.value,.0225);
+atualizarAudioCromatico(true,true,1);assert.equal(gains[4].gain.value,.045);
+atualizarAudioCromatico(false,false,1);assert.equal(gains[4].gain.value,0,'fogo silenciado durante pausa');
+assert.equal(ativarAudioCromatico(),false);assert.equal(suspended,1);assert.equal(ativarAudioCromatico(),true);assert.equal(created,1,'fontes reutilizadas');assert.equal(resumed,2);
+console.log('Áudio cromático: opt-in, perigo, pausa e reutilização de fontes OK.');

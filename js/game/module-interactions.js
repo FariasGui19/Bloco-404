@@ -9,6 +9,9 @@ import { saveGame } from './save.js';
 import { recordAirportDiagnosis, recordCargoDiagnosis, installMetroFragment } from './metro-quest.js';
 import { isGateOpen } from './gates.js';
 import { hasAbility, showAbilityMessage, ARCHETYPE_ABILITIES } from './abilities.js';
+import { recordQuestEvent } from './quests.js';
+import { recordFrequencySignal, countFrequencyAnchors, stabilizeFrequencyThreshold } from './frequencia-quest.js';
+import { playCutscene, SIGNAL_SCENES } from '../ui/cutscene.js';
 
 const DEFAULT_MODULE_DISTANCE = 1.65;
 
@@ -134,8 +137,8 @@ function diagnoseMetroSystem(target) {
       dialogue: [
         'LINHA INTERDIMENSIONAL OPERACIONAL.',
         'PLATAFORMA DE EMBARQUE DISPONÍVEL.',
-        'ROTA PRIMÁRIA DETECTADA: ARQUIPÉLAGO DAS ROTAS PERDIDAS.',
-        'AVISO: DESTINO AINDA ESTÁ EM CALIBRAÇÃO.',
+        'ROTA PRIMÁRIA: PRAIA INICIAL, ARQUIPÉLAGO DAS ROTAS PERDIDAS.',
+        'UMA TRANSMISSÃO IRREGULAR VEM DA ENSEADA DOS ECOS. INVESTIGUE COM [R].',
       ],
     });
     return;
@@ -147,8 +150,10 @@ function diagnoseMetroSystem(target) {
       'FRAGMENTO DE SINCRONIZAÇÃO DETECTADO.',
       'COMPATIBILIDADE DO MÓDULO: APROVADA.',
       'A INSTALAÇÃO DO FRAGMENTO REATIVARÁ A LINHA INTERDIMENSIONAL.',
+      'DESTINO MAIS ESTÁVEL: PRAIA INICIAL. UM SINAL ANALÓGICO VEM DA ENSEADA.',
       'ATENÇÃO: A ENERGIA RESTANTE PODE ATRAIR ECOS INSTÁVEIS.',
     ],
+    choicesAfterDialogue: true,
     choices: [
       {
         text: 'INSTALAR FRAGMENTO DE SINCRONIZAÇÃO',
@@ -166,7 +171,7 @@ function diagnoseMetroSystem(target) {
               // A MENSAGEM DO RIVAL ENTRA AQUI:
               'ALERTA: ASSINATURA ANTERIOR DETECTADA.',
               'ARQUIVO 0 VALIDOU ESTA LINHA HÁ 00:00:03.',
-              'RECOMENDAÇÃO: PROSSIGA COM CAUTELA.'
+              'ORIGEM DO SINAL COSTEIRO: ENSEADA DOS ECOS. INVESTIGUE O TERMINAL COM [R].'
             ],
           });
         },
@@ -257,6 +262,70 @@ function diagnoseCargoSecurityPanel() {
   });
 }
 
+function diagnoseFrequencyTerminal() {
+  if (!state.progress.flags?.metroCalibrado) {
+    showDiagnosis({ speaker: 'TERMINAL DA ENSEADA', dialogue: [
+      'UM RUÍDO PULSA NO CANAL DE MANUTENÇÃO. O RECEPTOR DO HUB AINDA NÃO TEM SINCRONIA.',
+      'RESTAURE A LINHA DO METRÔ ANTES DE TENTAR RASTREAR A ORIGEM.',
+    ] });
+    return;
+  }
+  if (!recordFrequencySignal(state.progress)) {
+    const flags = state.progress.flags ?? {};
+    const inv = state.progress.inventory ?? [];
+    const extra = [];
+    if (flags.cidadela_estavel) extra.push('NEXO-04: O REATOR DA CIDADELA ESTÁ ESTÁVEL. A PORTADORA DE 66.6 MHz NÃO SOFRE MAIS INTERFERÊNCIA.');
+    if (inv.includes('selo_codigo_queimado')) extra.push('SELO DO CÓDIGO QUEIMADO DETECTADO NO MÓDULO: +25% RESSONÂNCIA OFENSIVA NA CIDADELA.');
+    if (inv.includes('nucleo_vigilante_forjado')) extra.push('NÚCLEO DO VIGILANTE FORJADO ATIVO: SINTONIA DE ENERGIA ESTABILIZADA.');
+    showDiagnosis({ speaker: 'TERMINAL DA ENSEADA', dialogue: [
+      '66.6 MHz // SINAL REGISTRADO.',
+      ...(extra.length ? extra : ['A PORTA DE MANUTENÇÃO PRÓXIMA LEVA À ESTAÇÃO 66.6. NEXO-04 MANTÉM O CANAL EM ESCUTA.']),
+    ], choicesAfterDialogue: true, choices: [
+      { text: 'REVER REGISTRO', onSelect: () => { state.player.ability.scanning = 0; void playCutscene(SIGNAL_SCENES); } },
+      { text: 'ENCERRAR', onSelect: () => { state.player.ability.scanning = 0; } },
+    ] });
+    return;
+  }
+  saveGame();
+  showDiagnosis({ speaker: 'TERMINAL DA ENSEADA', dialogue: [
+    '[FREQ. 66.6 MHz] — SINCRONIZANDO CANAL DE ECO... SINAL DETECTADO.',
+    'NEXO-04: ESTA FREQUÊNCIA RESPONDE A UM PEDIDO DE SOCORRO QUE VOCÊ SÓ EMITIRÁ DAQUI A TRÊS CICLOS. ALGO ESTÁ CONVERSANDO COM SEU FUTURO.',
+    '[SYS_WARNING]: ROTA AUTORIZADA PELO NULO. BEM-VINDO AO SEU APAGAMENTO, OPERADOR.',
+    'NEXO-04: ISSO NÃO VEIO DE MIM. A PORTA DA ESTAÇÃO DESTRAVOU SOZINHA. SE A CIDADELA TREMER, PROCURE UMA SAÍDA, NÃO UMA RESPOSTA. MANTEREI A LINHA ABERTA.',
+  ], onFinish: () => { void playCutscene(SIGNAL_SCENES); } });
+}
+
+function diagnoseFrequencyConsole() {
+  const flags = state.progress.flags ??= {};
+  if (!flags.frequencia666Registrada) {
+    showDiagnosis({ speaker: 'NEXO-04', dialogue: ['O CONSOLE PRECISA DO SINAL DA ENSEADA. VOLTE AO RECEPTOR E USE [R].'] }); return;
+  }
+  const count = countFrequencyAnchors(state.progress);
+  if (count < 3) {
+    showDiagnosis({ speaker: 'NEXO-04', dialogue: [
+      `ÂNCORAS SINCRONIZADAS: ${count}/3.`,
+      'EXAMINE ORIGEM, RETORNO E MEMÓRIA NA ESTAÇÃO COM [E]. NÃO ABRIREMOS UMA JANELA SEM CAMINHO DE VOLTA.',
+    ] }); return;
+  }
+  if (flags.freq666_limiar_estavel) {
+    const relics = ['selo_codigo_queimado', 'nucleo_vigilante_forjado'].filter(id => state.progress.inventory?.includes(id)).length;
+    const protoNote = flags.cidadela_protocolo_concluido ? ' • PROTOCOLO DA VIGÍLIA CONCLUÍDO' : '';
+    const msg = flags.cidadela_100_porcento
+      ? `CIDADELA 404 100% ESTABILIZADA • RELÍQUIAS ${relics}/2 • RONDAS: ${flags.cidadela_rondas_concluidas ?? 0}${protoNote}. O PORTAL SEGUE PRONTO PARA A PRÓXIMA DIMENSÃO.`
+      : flags.cidadela_estavel
+      ? `REATOR DA CIDADELA ESTÁVEL • RELÍQUIAS ${relics}/2 • RONDAS CONCLUÍDAS: ${flags.cidadela_rondas_concluidas ?? 0}${protoNote}. O ANEL SEGUE ABERTO.`
+      : 'A JANELA SEGUE ESTÁVEL. O ANEL AGUARDA VOCÊ; APROXIME-SE E USE [E].';
+    showDiagnosis({ speaker: 'NEXO-04', dialogue: [msg] }); return;
+  }
+  stabilizeFrequencyThreshold(state.progress); saveGame();
+  showDiagnosis({ speaker: 'NEXO-04', dialogue: [
+    'ORIGEM CONFIRMADA. RETORNO CONFIRMADO. MEMÓRIA PRESERVADA.',
+    'O SINAL NÃO ESTÁ CHAMANDO O BLOCO 404. ESTÁ PEDINDO QUE ALGUÉM MANTENHA O REATOR VIVO.',
+    'JANELA ESTABILIZADA. APROXIME-SE DO ANEL E PREPARE A TRAVESSIA COM [E].',
+    'VOU MANTER A LINHA DE RETORNO ABERTA. VOCÊ NÃO PRECISA RESPONDER A ESSE CHAMADO SOZINHO.',
+  ] });
+}
+
 function diagnoseGeneric(target) {
   const system = target.item.moduleSystem;
   showDiagnosis({
@@ -284,7 +353,7 @@ function showDiagnosis(opts) {
 
 export function hasSharedQuestSystem() {
   const id = getNearestModuleSystem()?.item.moduleSystem?.id;
-  return id === 'airport_maintenance_terminal' || id === 'metro_navigation_core';
+  return id === 'airport_maintenance_terminal' || id === 'metro_navigation_core' || id === 'frequencia_666_terminal' || id === 'frequencia_666_console';
 }
 
 export function tryModuleInteraction() {
@@ -304,7 +373,11 @@ export function tryModuleInteraction() {
   const diagnosisFlag = target.item.moduleSystem?.diagnosisFlag;
   if (diagnosisFlag) {
     state.progress.flags ??= {};
+    const firstDiag = !state.progress.flags[diagnosisFlag];
     state.progress.flags[diagnosisFlag] = true;
+    if (firstDiag) {
+      recordQuestEvent(state.progress, { type: 'diagnose', target: diagnosisFlag });
+    }
     saveGame();
   }
 
@@ -314,6 +387,8 @@ export function tryModuleInteraction() {
   const sharedId = target.item.moduleSystem?.id;
   if (sharedId === 'airport_maintenance_terminal') { diagnoseAirportTerminal(target); return true; }
   if (sharedId === 'metro_navigation_core') { diagnoseMetroSystem(target); return true; }
+  if (sharedId === 'frequencia_666_terminal') { diagnoseFrequencyTerminal(); return true; }
+  if (sharedId === 'frequencia_666_console') { diagnoseFrequencyConsole(); return true; }
   if (archetype === 'motor_bio_forja') {
     const systemId = target.item.moduleSystem?.id;
     switch (systemId) {

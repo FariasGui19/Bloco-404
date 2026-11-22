@@ -9,11 +9,14 @@ import { canStandAt } from './collision.js';
 import { getCurrentMap } from './map-manager.js';
 import { tryAbilityDamage } from './combat.js';
 import { recordMastery } from './mastery.js';
+import { recordQuestEvent } from './quests.js';
+import { grantArchetypeXp } from './rpg.js';
 import { dispararPropulsao, ganharRespeito } from './nado.js';
 import { DEGRAUS } from './nado-arvore.js';
 import { fragmentosColetados } from './mare-missao.js';
 import { detalhesFauna } from './fauna-ferida.js';
 import { getVidaAquatica } from './vida-aquatica.js';
+import { perfilSincronizacao } from './mare-cromatica.js';
 
 export const POWER_PROFILES = {
   golpe_ruptura: { cost: 24, cooldown: 1.4, color: '#ffd264', duration: 0.55 },
@@ -29,6 +32,11 @@ const SCAN_LABELS = {
 };
 
 function facingDirection(facing) {
+  if (getCurrentMap()?.meta?.sideView) {
+    const sideVectors = { down: [0, 1], up: [0, -1], right: [1, 0], left: [-1, 0] };
+    const [sx, sy] = sideVectors[facing] ?? sideVectors.right;
+    return { x: sx, y: sy };
+  }
   const vectors = { down: [1, 1], up: [-1, -1], right: [1, -1], left: [-1, 1] };
   const [x, y] = vectors[facing] ?? vectors.down;
   return { x: x / Math.SQRT2, y: y / Math.SQRT2 };
@@ -52,12 +60,14 @@ function canStart(id, showMessage) {
     showMessage('HABILIDADE RECARREGANDO');
     return false;
   }
-  if (player.energy < profile.cost) {
+  const sync = perfilSincronizacao(state.progress, state.world.currentMapId);
+  const cost = Math.ceil(profile.cost * sync.custo);
+  if (player.energy < cost) {
     showMessage('ENERGIA INSUFICIENTE');
     return false;
   }
-  player.energy -= profile.cost;
-  player.ability.cooldowns[id] = profile.cooldown;
+  player.energy -= cost;
+  player.ability.cooldowns[id] = profile.cooldown * sync.recarga;
   // Apenas a duração visual aumenta com o traje; deslocamento, custo e recarga não mudam.
   const visualDuration = player.equippedSuit === 'dominio' && id === 'golpe_ruptura' ? 0.8
     : player.equippedSuit === 'mare' && id === 'passo_corrente' ? 0.55
@@ -125,10 +135,12 @@ export function tryArchetypePower(id, showMessage) {
     player.ability.messageTimer = 3;
   }
   if (SCAN_LABELS[id]) {
-    const target = nearestGate(5);
+    const radius = 5 * perfilSincronizacao(state.progress, state.world.currentMapId).alcance;
+    const target = nearestGate(radius, o => !!o.gate?.scanFlag) ?? nearestGate(radius);
     if (target?.gate?.scanFlag && target.gate.diagnosisArchetype === state.progress.archetype) {
       state.progress.flags ??= {};
       state.progress.flags[target.gate.scanFlag] = true;
+      recordQuestEvent(state.progress, { type: 'diagnose', target: target.gate.scanFlag });
       saveGame();
     }
     player.ability.reveal = target ? { targetId: target.id, timeLeft: 4, color: profile.color } : null;
@@ -138,14 +150,25 @@ export function tryArchetypePower(id, showMessage) {
 
   if (id === 'golpe_ruptura') {
     const direction = facingDirection(player.facing);
-    const target = nearestGate(2.6, o => {
+    const target = nearestGate(2.9, o => {
       const dx = o.x - player.x, dy = o.y - player.y;
-      return (o.id === 'rocha_rachada' || o.gate.requiredAction === id) && dx * direction.x + dy * direction.y > 0 && checkGate(o.gate);
+      const reach = o.gate?.strikeRadius ?? 2.6;
+      return Math.hypot(dx, dy) <= reach &&
+        (o.id === 'rocha_rachada' || o.gate.requiredAction === id) &&
+        dx * direction.x + dy * direction.y > 0 &&
+        checkGate(o.gate);
     });
     if (target) {
       openGate(target);
+      recordQuestEvent(state.progress, { type: 'breach_gate', target: target.id });
+      if (target.gate?.bonusXp > 0 && state.progress.archetype) {
+        grantArchetypeXp(state.progress, target.gate.bonusXp);
+      }
+      player.ultimate ??= {};
+      player.ultimate.shake = { timeLeft: 0.42, duration: 0.42, power: 10.5 };
+      player.ability.ruptureFlash = { x: target.x, y: target.y, timeLeft: 0.65, duration: 0.65 };
       saveGame();
-      showMessage('RUPTURA: ROCHA DESTRUÍDA');
+      showMessage(target.gate?.breakMessage ?? 'RUPTURA: ROCHA DESTRUÍDA');
     } else showMessage('GOLPE DE RUPTURA');
     return false;
   }
@@ -176,7 +199,7 @@ export function tryArchetypePower(id, showMessage) {
   // Se já está tocando a barreira (inclusive saves antigos), deixe sair para
   // qualquer lado conforme a direção; fora dela, exige apontar para o gate.
   const phaseDirection = phaseGate ? (Math.abs(phaseDelta) < 0.75 ? Math.sign(direction[phaseAxis]) : Math.sign(phaseDelta)) : 0;
-  const phaseDistance = phaseGate ? Math.abs(phaseGate[phaseAxis] - player[phaseAxis]) + 1 : profile.distance;
+  const phaseDistance = phaseGate ? Math.abs(phaseGate[phaseAxis] - player[phaseAxis]) + 1 : profile.distance * perfilSincronizacao(state.progress, state.world.currentMapId).alcance;
   player.ability.active = id;
   player.ability.dash = {
     directionX: phaseGate ? (phaseAxis === 'x' ? phaseDirection : 0) : direction.x, directionY: phaseGate ? (phaseAxis === 'y' ? phaseDirection : 0) : direction.y,

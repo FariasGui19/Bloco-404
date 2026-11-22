@@ -1,0 +1,62 @@
+{
+  "abrigo-oeste": {
+    "size": [
+      998,
+      800
+    ],
+    "sourceCrop": [
+      84,
+      60,
+      1082,
+      860
+    ],
+    "sourceSha256": "303a8ce41bd382b650bdf0000788ead0ce15515f36729423745ba015e263c4ba"
+  },
+  "fundos-enraizados": {
+    "size": [
+      1392,
+      751
+    ],
+    "sourceCrop": [
+      0,
+      11,
+      1392,
+      762
+    ],
+    "sourceSha256": "2aa3b96a3fc36bda2b9dd75ee229eb190525d23d58e3d2fd067646a03dbc067d"
+  },
+  "costa-sudeste": {
+    "size": [
+      1440,
+      669
+    ],
+    "sourceCrop": [
+      10,
+      12,
+      1488,
+      699
+    ],
+    "sourceSha256": "e77462497fae183899c8923175b5ec758a3c0b84ca1a1b05b2cced74d5cd0513"
+  },
+  "acesso-cais": {
+    "size": [
+      1111,
+      683
+    ],
+    "sourceCrop": [
+      152,
+      17,
+      1263,
+      700
+    ],
+    "sourceSha256": "69f384662f3f6884cb2dfeca876970477ba157187e61a101f436182c8ef593b3"
+  },
+  "mar-fosforescente": {
+    "sourceSha256": "39059cc0cfc5c351cbaa3acccd3a62b3df69fd385c8c27ec4167f5414a31813b",
+    "atlasSize": [
+      800,
+      400
+    ],
+    "frames": 4
+  }
+}

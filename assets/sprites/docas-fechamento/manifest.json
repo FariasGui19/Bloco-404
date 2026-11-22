@@ -1,0 +1,55 @@
+{
+  "version": 1,
+  "provenance": "Three newly AI-generated assets guided by the supplied harbor reference; chroma keyed and independently anchored.",
+  "size": [
+    2048,
+    849
+  ],
+  "frames": {
+    "casinha-esquerda": {
+      "rect": [
+        8,
+        8,
+        622,
+        520
+      ],
+      "sourceCrop": [
+        321,
+        77,
+        1055,
+        691
+      ],
+      "sourceSha256": "9d47b65aa1a9fe6d0541797e1d36ee555ab0c2095978290fa2c33db091dbbb63"
+    },
+    "encosta-viva": {
+      "rect": [
+        646,
+        8,
+        1024,
+        407
+      ],
+      "sourceCrop": [
+        25,
+        14,
+        1576,
+        630
+      ],
+      "sourceSha256": "c238b4c55c971dbfd0ed6f30f0e8635d7efb319071d373460dbf9541f1e1f09e"
+    },
+    "margem-rochosa": {
+      "rect": [
+        8,
+        544,
+        1024,
+        297
+      ],
+      "sourceCrop": [
+        15,
+        14,
+        1858,
+        549
+      ],
+      "sourceSha256": "1beac91ecc783aa7e97ea3fcd2c86f6cfa6a77f4360821b3a7a431d2852ac6f3"
+    }
+  }
+}

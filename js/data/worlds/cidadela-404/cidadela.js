@@ -1,0 +1,151 @@
+// Geometria ortogonal compartilhada pelo raycaster, colisão e minimapa.
+// Três eclusas sucessivas garantem uma rota legível sem depender de cor.
+const layout = Array.from({ length: 22 }, () => Array(32).fill(1));
+for (const [a, b] of [[1, 7], [9, 14], [16, 21], [23, 30]]) {
+  for (let y = 2; y <= 10; y++) for (let x = a; x <= b; x++) layout[y][x] = 0;
+}
+for (const x of [8, 15, 22]) for (let y = 5; y <= 7; y++) layout[y][x] = 0;
+// A Oficina da Vigília forma duas salas ligadas e duas rotas de volta; as
+// comportas em y=11 são verificadas por wallAt após a vitória no reator.
+for (const [a,b] of [[1,14],[17,30]]) for(let y=14;y<=20;y++) for(let x=a;x<=b;x++) layout[y][x]=0;
+for(let y=17;y<=18;y++) for(let x=15;x<=16;x++) layout[y][x]=0;
+for(let y=11;y<=13;y++) for(const x of [4,5,19,20]) layout[y][x]=0;
+for(const [x,y] of [[3,16],[8,16],[11,19],[19,15],[23,18],[28,15]]) layout[y][x]=1;
+// Pilares deixam as salas menos vazias e oferecem cobertura; corredores,
+// registros, pontos de chegada e centro da arena permanecem transitáveis.
+for (const [x,y] of [[3,3],[3,9],[6,6], [10,3],[12,6],[14,3],
+  [17,4],[18,7],[20,9], [25,4],[25,8],[27,3],[27,9]]) layout[y][x] = 1;
+export const map = {
+  id: 'cidadela_404',
+  meta: { nome: 'CIDADELA DO CÓDIGO QUEIMADO', dimensao: 'cidadela_404', camera: 'retro-fps', rules: { abilities: 'adaptadas', stats: 'operador' } },
+  layout, spawnPoints: { inicio: { x: 2.5, y: 6.5 } },
+  actors: [], objects: [], portals: [], collectibles: [],
+};
+
+// Elementos cenográficos não bloqueiam o jogador nem servem de cobertura;
+// a geometria de colisão continua expressa exclusivamente em layout.
+export const CITADEL_DECOR = [
+  {type:'crate',x:2.4,y:2.45,scale:.56}, {type:'barrel',x:3.8,y:10.35,scale:.58},
+  {type:'drone',x:5.5,y:10.3,scale:.35}, {type:'column',x:7.4,y:2.5,scale:1.0},
+  {type:'generator',x:9.6,y:2.5,scale:.74}, {type:'vent',x:11.3,y:10.3,scale:.65},
+  {type:'beacon',x:14.4,y:10.2,scale:.58}, {type:'antenna',x:16.5,y:2.5,scale:.78},
+  {type:'crate',x:18.5,y:10.25,scale:.56}, {type:'barrel',x:21.3,y:10.3,scale:.58},
+  {type:'generator',x:24.3,y:2.5,scale:.78}, {type:'vent',x:24.2,y:10.25,scale:.65},
+  {type:'column',x:29.35,y:10.25,scale:1.0}, {type:'reactor',x:30.4,y:6.5,scale:1.35},
+];
+export const CITADEL_ARCHIVES = [
+  {id:'origem',flag:'cidadela_arquivo_origem',x:4.5,y:2.6,label:'ORIGEM',log:'O PEDIDO FOI OUVIDO ANTES DO ENVIO.'},
+  {id:'retorno',flag:'cidadela_arquivo_retorno',x:13.5,y:10.2,label:'RETORNO',log:'ECHOVORE APRENDE COM IMPULSOS E RADAR.'},
+  {id:'memoria',flag:'cidadela_arquivo_memoria',x:20.5,y:2.6,label:'MEMÓRIA',log:'FIGURA NOS CRTS. IDENTIDADE NÃO CONFIRMADA.'},
+];
+
+// Pontos opcionais de exploração depois da vitória. Não bloqueiam caminhos.
+export const CITADEL_POSTGAME = Object.freeze({
+  sonda: {kind:'probe',x:24.5,y:6.5,scale:.55},
+  transmissor: {kind:'transmitter',x:26.5,y:10.2,scale:.75},
+  treino: {kind:'training',x:29.5,y:3.5,scale:.65},
+  reles: [
+    {kind:'relay',id:'entrada',x:4.5,y:4.4,scale:.65,label:'ENTRADA'},
+    {kind:'relay',id:'galeria',x:11.5,y:8.5,scale:.65,label:'GALERIA'},
+    {kind:'relay',id:'forja',x:19.5,y:6.5,scale:.65,label:'FORJA'},
+  ],
+  registros: [
+    {kind:'recording',id:'entrada',x:6.5,y:9.5,scale:.42,label:'ENTRADA',log:'A EQUIPE ISOLAVA O RUÍDO, NÃO UMA PESSOA.'},
+    {kind:'recording',id:'galeria',x:10.5,y:4.5,scale:.42,label:'GALERIA',log:'A RESPOSTA NÃO IDENTIFICA QUEM A ENVIOU.'},
+    {kind:'recording',id:'forja',x:21.35,y:9.5,scale:.42,label:'FORJA',log:'A RETIRADA FOI ORDENADA; O REATOR FICOU.'},
+  ],
+  decor: [
+    {type:'listening_beacon',x:2.6,y:8.15,scale:.55},
+    {type:'listening_beacon',x:16.5,y:4.4,scale:.55},
+    {type:'signal_fragment',x:27.5,y:10.25,scale:.4},
+  ],
+});
+
+// Desafios opcionais sem paredes móveis: sair ou morrer cancela a tentativa;
+// o selo e o cofre só persistem após a conclusão correspondente.
+export const CITADEL_BREACHES = Object.freeze([
+  {id:'entrada',label:'ENTRADA',bounds:[1,8],x:7.35,y:7.5,cache:{x:7.35,y:9.5},spawns:[[5.5,7.5],[7.2,9.5],[5.5,10.3]]},
+  {id:'galeria',label:'GALERIA',bounds:[9,15],x:14.3,y:5.5,cache:{x:14.4,y:8.5},spawns:[[11.5,5.5],[13.5,7.5],[10.5,9.5]]},
+  {id:'forja',label:'FORJA',bounds:[16,22],x:21.35,y:5.5,cache:{x:21.35,y:7.5},spawns:[[19.5,5.5],[20.5,7.5],[17.5,8.5]]},
+]);
+export const CITADEL_BREACH_CONSOLE = Object.freeze({kind:'breach_console',x:28.5,y:10.25});
+
+// Transmissões são exibidas somente nos CRTs e não constituem combate nem
+// confirmação da origem da figura. Os pontos permanecem opcionais e relíveis.
+export const CITADEL_NULL_MONITORS = Object.freeze([
+  {id:'entrada',label:'ENTRADA',x:6.5,y:2.3,flag:'cidadela_crt_entrada',log:'UMA FIGURA EM LINHAS. NO ROSTO, UM VAZIO RETANGULAR.'},
+  {id:'galeria',label:'GALERIA',x:13.5,y:2.3,flag:'cidadela_crt_galeria',log:'O CRT REPETE UM GESTO. NENHUMA VOZ FOI IDENTIFICADA.'},
+  {id:'forja',label:'FORJA',x:21.35,y:2.3,flag:'cidadela_crt_forja',log:'A FIGURA SE VOLTA AO REATOR. A ORIGEM DO SINAL É INCERTA.'},
+]);
+
+// Os ecos podem ser sintonizados antes ou depois do reator. O radar expõe
+// uma janela de leitura; nenhum deles bloqueia portas ou o caminho principal.
+export const CITADEL_ECHOES = Object.freeze([
+  {kind:'memory_echo',id:'entrada',label:'ENTRADA',flag:'cidadela_eco_entrada',x:5.05,y:8.15,log:'ANTES DO PEDIDO, ALGUÉM TESTOU UMA LINHA DE RETORNO.'},
+  {kind:'memory_echo',id:'galeria',label:'GALERIA',flag:'cidadela_eco_galeria',x:10.15,y:7.25,log:'DURANTE A FALHA, A EQUIPE PROTEGEU UM CANAL, NÃO UM NOME.'},
+  {kind:'memory_echo',id:'forja',label:'FORJA',flag:'cidadela_eco_forja',x:17.15,y:5.5,log:'DEPOIS DA RETIRADA, O REATOR AINDA ENVIAVA UMA RESPOSTA.'},
+]);
+export const CITADEL_ECHO_TERMINAL = Object.freeze({kind:'echo_terminal',x:2.5,y:4.6});
+export const CITADEL_ECHO_DECOR = Object.freeze([
+  {type:'anchor_sleep',x:2.1,y:3.0,scale:.48,ground:true},
+  {type:'lost_recorder',x:9.5,y:10.25,scale:.30,ground:true},
+  {type:'signal_map',x:14.25,y:2.4,scale:.36},
+  {type:'emergency_light',x:16.5,y:10.25,scale:.32,ground:true},
+  {type:'memory_relay',x:23.8,y:3.2,scale:.35},
+]);
+
+// Oficina opcional pós-vitória. Os emissores não bloqueiam passagem e seus
+// ciclos só aplicam dano no raio visível; a saída está sempre aberta.
+export const CITADEL_WORKSHOP = Object.freeze({
+  switches: [
+    {kind:'workshop_switch',id:'bancada',label:'BANCADA',flag:'cidadela_vigilia_bancada',x:5.5,y:16.5,emitter:{x:6.65,y:16.5},offset:0,log:'UM DIÁRIO DE MANUTENÇÃO FALA EM MANTER A ROTA ABERTA, NÃO EM VENCER UMA GUERRA.'},
+    {kind:'workshop_switch',id:'ponte',label:'PONTE',flag:'cidadela_vigilia_ponte',x:12.5,y:18.5,emitter:{x:13.65,y:18.5},offset:1.4,log:'A EQUIPE DEIXOU DOIS CAMINHOS DE SAÍDA PARA QUEM VIESSE DEPOIS.'},
+    {kind:'workshop_switch',id:'reserva',label:'RESERVA',flag:'cidadela_vigilia_reserva',x:25.5,y:16.5,emitter:{x:26.65,y:16.5},offset:2.8,log:'O ÚLTIMO REPARO NÃO TEM ASSINATURA. A LINHA FOI MANTIDA MANUALMENTE OU POR ROTINA.'},
+  ],
+  terminal:{kind:'workshop_terminal',x:28.4,y:19.5},
+  core:{x:24.5,y:19.5},
+  decor:[{type:'workshop_pipes',x:2.4,y:14.4,scale:.72},
+    {type:'workshop_bench',x:9.4,y:20.2,scale:.68},
+    {type:'workshop_robot',x:18.3,y:20.2,scale:.5}],
+});
+
+// Células táticas de energia/munição (sessão), bancada de síntese (forja),
+// console de patrulha pós-vitória e o chassi dormente do Vigilante.
+export const CITADEL_ENERGY_CELLS = Object.freeze([
+  {x:2.5,y:9.5},{x:11.5,y:2.5},{x:18.5,y:3.2},{x:28.5,y:2.5},
+]);
+export const CITADEL_CRAFT_BENCH = Object.freeze({
+  kind:'crafting_bench',x:16.5,y:9.5,label:'BANCADA DE SÍNTESE',
+});
+export const CITADEL_PATROL_CONSOLE = Object.freeze({
+  kind:'patrol_console',x:23.5,y:4.5,label:'TERMINAL DE VARREDURA',
+});
+export const CITADEL_DORMANT_GUARDIAN = Object.freeze({
+  kind:'dormant_guardian',x:29.2,y:5.2,label:'VIGILANTE INERTE',
+  log:'ACORRENTADO AO REATOR PARA MANTER A LINHA ABERTA. SEM SINAL DE HOSTILIDADE RESTANTE.',
+});
+export const CITADEL_BARRELS = Object.freeze([
+  {x:2.3,y:3.5},{x:11.8,y:8.8},{x:19.2,y:3.5},{x:26.2,y:3.5},{x:26.2,y:9.5},
+]);
+export const CITADEL_SHIELD_CELLS = Object.freeze([
+  {x:10.5,y:9.2},{x:17.5,y:9.2},{x:24.8,y:3.5},
+]);
+export const CITADEL_SECRET_E1M1 = Object.freeze({
+  kind:'secret_plaque',x:9.5,y:9.5,label:'PLACA SETOR E1M1',
+});
+export const CITADEL_OVERDRIVE_CELL = Object.freeze({
+  x:17.5,y:5.5,
+});
+export const CITADEL_REACTOR_CONSOLE = Object.freeze({
+  kind:'reactor_console',x:29.5,y:8.2,label:'CONSOLE DO REATOR',
+});
+export const CITADEL_PROTOCOL_BEACON = Object.freeze({
+  kind:'protocol_beacon',x:26.2,y:2.5,label:'BALIZA DO PROTOCOLO',
+});
+export function sectorNameAt(x, y) {
+  if (y >= 12) return 'OFICINA DA VIGÍLIA';
+  if (x >= 22) return 'ARENA DO REATOR';
+  if (x >= 15) return 'SETOR 03 // FORJA';
+  if (x >= 8) return 'SETOR 02 // GALERIA';
+  return 'SETOR 01 // ENTRADA';
+}

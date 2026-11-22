@@ -1,9 +1,14 @@
 // Pequena rotina ambiental, sem missão, persistência ou colisão com o jogador.
 // A viajante espera em vez de atravessar player, paredes, móveis ou NPCs.
+// A rota pode vir do próprio ator (`visitorRoute: [{x, y}, ...]`), para cada
+// mapa desenhar o seu "viajante ambiental" sem tocar nesta rotina.
 import { canStandAt } from './collision.js';
-const ROUTE = [{ x: 6.8, y: 11.8 }, { x: 10.3, y: 11.8 }];
+const DEFAULT_ROUTE = [{ x: 6.8, y: 11.8 }, { x: 10.3, y: 11.8 }];
 export function updateLobbyVisitor(actor, player, map, dt) {
   if (!actor || !map || !Number.isFinite(dt) || dt <= 0) return;
+  const ROUTE = (Array.isArray(actor.visitorRoute) && actor.visitorRoute.length >= 2)
+    ? actor.visitorRoute
+    : DEFAULT_ROUTE;
   const r = actor.visitorRuntime ??= { index: 1, wait: 1, blocked: 0, clock: 0 };
   actor.moving = false;
   if (r.wait > 0) { r.wait = Math.max(0, r.wait - dt); return; }

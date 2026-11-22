@@ -1,4 +1,6 @@
-import { iniciarVoo, atualizarVoo } from './nado-voo.js';
+import { podeVoarLivre, atualizarVooLivre } from './voo-livre.js';
+import { lerMareCromatica } from './mare-cromatica.js';
+import { iniciarVoo, atualizarVoo, controlarSolturaAposSubida, frearSubida } from './nado-voo.js';
 // js/game/player.js
 // =====================================================================
 // PLAYER
@@ -49,7 +51,16 @@ export function getPlayerMoveSpeed(progress, player) {
   const veloz = form?.id === NUCLEO_VELOZ;
   const mastery = 1 + stats.moveSpeedPct + (veloz ? stats.formSpeedPct : 0);
   const formMultiplier = veloz ? VELOZ_SPEED_MULTIPLIER : getFormSpeedMultiplier(form);
-  return CONFIG.PLAYER_SPEED * formMultiplier * mastery;
+  let enseadaBonus = 1;
+  if (state.world?.currentMapId === 'ilha_enseada_ecos') {
+    const tile = state.world.currentMap?.aguaPraia?.[Math.floor(player?.y ?? 0)]?.[Math.floor(player?.x ?? 0)];
+    if (progress?.archetype === 'mare_astral' && (tile === 'M' || player?.nado?.ativo)) enseadaBonus = 1.1;
+    else if (progress?.archetype === 'nucleo_dez_forma' && tile === 'S') enseadaBonus = 1.08;
+    else if (progress?.archetype === 'motor_bio_forja') enseadaBonus = 1.04;
+    if (player?.enseadaBuff === 'pulso_salino' && (tile === 'M' || player?.nado?.ativo)) enseadaBonus += 0.1;
+    if (player?.enseadaBuff === 'vetor_leve' && tile === 'S') enseadaBonus += 0.1;
+  }
+  return CONFIG.PLAYER_SPEED * formMultiplier * mastery * enseadaBonus;
 }
 
 // Distância é acumulada e enviada em blocos para não recalcular maestria
@@ -66,7 +77,7 @@ function trackDistance(progress, amount) {
 const keyHeld = (...keys) =>
   keys.some(key => input.keys[key]);
 
-function readKeyboardDirection() {
+function readKeyboardDirection(map) {
   const screenX =
     (keyHeld('d', 'arrowright') ? 1 : 0) -
     (keyHeld('a', 'arrowleft') ? 1 : 0);
@@ -82,7 +93,10 @@ function readKeyboardDirection() {
   let worldX;
   let worldY;
 
-  if (CONFIG.SCREEN_RELATIVE_CONTROLS) {
+  if (map?.meta?.sideView) {
+    worldX = screenX;
+    worldY = screenY * 0.78;
+  } else if (CONFIG.SCREEN_RELATIVE_CONTROLS) {
     worldX = screenX + screenY;
     worldY = screenY - screenX;
   } else {
@@ -98,10 +112,20 @@ function readKeyboardDirection() {
   };
 }
 
-function updateFacing(dx, dy) {
+function updateFacing(dx, dy, map) {
   if (dx === 0 && dy === 0) return;
 
   const player = state.player;
+
+  if (map?.meta?.sideView) {
+    if (Math.abs(dx) >= Math.abs(dy) * 0.65) {
+      player.facing = dx > 0 ? 'right' : 'left';
+      player.dir = dx > 0 ? 1 : -1;
+    } else {
+      player.facing = dy > 0 ? 'down' : 'up';
+    }
+    return;
+  }
 
   const screenDx = dx - dy;
   const screenDy = dx + dy;
@@ -114,11 +138,28 @@ function updateFacing(dx, dy) {
   }
 }
 
+// O mapa precisa autorizar explicitamente e o módulo precisa ter adquirido
+// capacidade aérea. Nenhum mapa atual habilita voo até ter arte e colisão Z.
+export function iniciarVooAereo(player, progress, map) {
+  if (!map?.meta?.vooLivre || progress?.archetype !== 'nucleo_dez_forma' || !podeVoarLivre({
+    capacidadeAerea: progress.flags?.voo_livre_habilitado === true,
+    exigeSincronizacao: !!map.meta.cromatica,
+    sincronizacao: lerMareCromatica(progress).sincronizacao,
+  })) return false;
+  player.vooLivre={x:player.x,y:player.y,altura:0,vx:0,vy:0,vz:0,roll:0,pitch:0};
+  return true;
+}
 export function updatePlayer(dt) {
   const player = state.player;
   const map = getFloor();
 
   if (!map) return;
+  if (player.vooLivre && map.meta?.vooLivre) {
+    const v=player.vooLivre;v.x=player.x;v.y=player.y;
+    atualizarVooLivre(v,{frente:keyHeld('w','arrowup'),tras:keyHeld('s','arrowdown'),esquerda:keyHeld('a','arrowleft'),direita:keyHeld('d','arrowright'),subir:keyHeld(' '),descer:keyHeld('control','controlleft'),propulsao:keyHeld('shift','shiftleft')},dt);
+    moveWithCollision(map,player,v.x-player.x,v.y-player.y,CONFIG.PLAYER_RADIUS);
+    v.x=player.x;v.y=player.y;player.moving=Math.hypot(v.vx,v.vy)>.1;player.target=null;return;
+  }
 
   // ---- NADO ----
   // `nado` vive no player (e não no mapa) porque o fôlego e a propulsão
@@ -135,7 +176,7 @@ export function updatePlayer(dt) {
   const campoCosta = getCoastFieldForMap(map);
   // ESPAÇO = mergulhar (segurar). Em terra a tecla não faz nada.
   const mergulhoFixoDisponivel = state.progress?.archetype === 'mare_astral' && (arvore?.nivel ?? 0) >= 3;
-  controlarMergulhoFixo(nado, mergulhoFixoDisponivel, input.pressed.has('z') || input.pressed.has('keyz'));
+  controlarMergulhoFixo(nado, mergulhoFixoDisponivel && !nado.aguardaSoltarAposSubida, input.pressed.has('z') || input.pressed.has('keyz'));
   let vooDir = null;
   // Só troca os controles depois que a perspectiva realmente está disponível.
   if (nado.perspectiva3d && nado.ativo && nado.profundidade > 1.25 && mergulhoFixoDisponivel) {
@@ -148,7 +189,9 @@ export function updatePlayer(dt) {
     nado.dirX = vooDir.x; nado.dirY = vooDir.y;
     if (vooDir.subir) nado.mergulhoFixo = false;
   } else if (!nado.ativo || nado.profundidade <= 1.25 || !nado.perspectiva3d) nado.voo = null;
-  const querMergulhar = !vooDir?.subir && !!(input.keys[' '] || input.keys['space'] || nado.mergulhoFixo);
+  const espaco = !!(input.keys[' '] || input.keys['space']);
+  const esperaSoltar = controlarSolturaAposSubida(nado, !!vooDir?.subir, espaco);
+  const querMergulhar = !vooDir?.subir && !esperaSoltar && !!(espaco || nado.mergulhoFixo);
   const efeitoNado = atualizarNado(nado, {
     map, x: player.x, y: player.y, field: campoCosta, dt,
     tempo: performance.now() / 1000,
@@ -216,7 +259,7 @@ export function updatePlayer(dt) {
   // ---------------------------------------------------------------
   // Teclado tem prioridade sobre caminho por clique.
   // ---------------------------------------------------------------
-  const keyboardDirection = vooDir ? (vooDir.ativo ? { x: vooDir.x, y: vooDir.y } : null) : readKeyboardDirection();
+  const keyboardDirection = vooDir ? (vooDir.ativo ? { x: vooDir.x, y: vooDir.y } : null) : readKeyboardDirection(map);
 
   if (keyboardDirection) {
     dx = keyboardDirection.x * maxStep;
@@ -280,12 +323,15 @@ export function updatePlayer(dt) {
       ? Math.hypot(player.target.x - player.x, player.target.y - player.y) : Infinity;
     const velocidade = devolvendo ? speed / DEGRAUS[nado.nivel ?? 4].velocidade * .8
       : speed * Math.min(1, Math.max(.18, distanciaAlvo / 1.4));
+    // Subir freia a inércia horizontal sem teletransportar nem interromper
+    // correnteza: permite emergir com precisão perto de uma entrada.
+    if (vooDir && keyHeld('s', 'arrowdown')) frearSubida(nado, dt);
     const passo = moverNaAgua(nado, dt, dir.x, dir.y, velocidade);
     const antesX = player.x, antesY = player.y;
     moved = moveWithCollision(map, player, passo.dx, passo.dy, radius, devolvendo ? podeNadar : agua, { submerso: submerso && !devolvendo });
     // Descarta a componente da inércia que colidiu, preservando o deslizamento
     // paralelo à parede. Evita ficar preso empurrando uma estaca após virar.
-    if (submerso && dt > 0) {
+    if (dt > 0) {
       const vxReal = (player.x - antesX) / dt, vyReal = (player.y - antesY) / dt;
       if (Math.abs(passo.dx) > .001 && Math.abs(vxReal * dt) < Math.abs(passo.dx) * .5) nado.vx *= .45;
       if (Math.abs(passo.dy) > .001 && Math.abs(vyReal * dt) < Math.abs(passo.dy) * .5) nado.vy *= .45;
@@ -327,7 +373,7 @@ export function updatePlayer(dt) {
   if (moved) trackDistance(state.progress, Math.hypot(player.x - beforeX, player.y - beforeY));
 
   if (dx !== 0 || dy !== 0) {
-    updateFacing(dx, dy);
+    updateFacing(dx, dy, map);
   }
 
   if (!moved && player.target && !keyboardDirection) {

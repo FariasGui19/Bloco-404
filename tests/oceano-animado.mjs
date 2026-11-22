@@ -1,0 +1,50 @@
+import assert from 'node:assert/strict';
+import { statSync, readFileSync } from 'node:fs';
+import { detalhesDoMar } from '../js/game/mar-vivo.js';
+import { CLIMAS, neblinaDoClima } from '../js/game/clima.js';
+import { profundidadeOceano, alturaLeitoOceano, setorOceano } from '../js/game/oceano-regioes.js';
+import { profundidadeEm, criarEstadoNado, atualizarNado, podeNadar } from '../js/game/nado.js';
+import { frearSubida } from '../js/game/nado-voo.js';
+import { getCoastFieldForMap } from '../js/engine/coast-field.js';
+import { map } from '../js/data/worlds/arquipelago-rotas-perdidas/rota-mare.js';
+import { state } from '../js/game/state.js';
+import { loadMap } from '../js/game/map-manager.js';
+import { input } from '../js/engine/input.js';
+import { updatePlayer } from '../js/game/player.js';
+import { findNearestInteraction } from '../js/game/interactions.js';
+const artes=['mar-calmo','vento-leve','onda-ressaca','gotas-chuva','nevoa-mar','cardume-superficie','cardume-fundo','luz-ondulante','bolhas-impulso','bracada-mare'];
+for(const nome of artes){const path=`assets/sprites/mare-animacao/${nome}.png`;const png=readFileSync(path);assert(statSync(path).size<200000,`${nome} leve`);assert.equal(png[25],6,`${nome} tem alpha RGBA`);}
+const calmo=detalhesDoMar(1,0,CLIMAS.limpo,0), forte=detalhesDoMar(1,0,CLIMAS.ressaca,0);
+assert(calmo.calmo>forte.calmo && forte.ressaca>calmo.ressaca && forte.chuva>calmo.chuva && forte.vento>calmo.vento);
+assert(detalhesDoMar(1,0,CLIMAS.neblina,1).neblina>0);
+assert.equal(neblinaDoClima({atual:'neblina',proximo:'brisa',fracao:0}),1);
+assert.deepEqual(detalhesDoMar(3,1,CLIMAS.chuva,.5,true),detalhesDoMar(3,100,CLIMAS.chuva,.5,true));
+assert.notDeepEqual(detalhesDoMar(3,1,CLIMAS.chuva,.5),detalhesDoMar(3,100,CLIMAS.chuva,.5));
+assert(map.detalhesOceano.length<=120 && map.detalhesOceano.every(p=>podeNadar(map,p.x,p.y)));
+const banco=profundidadeOceano(map,45,27), aberto=profundidadeOceano(map,25,15);
+assert(banco>=1.45 && banco<aberto);assert.equal(profundidadeOceano({},45,27),null);
+assert.equal(alturaLeitoOceano(map,45,27),-2.9+(2-banco)*1.15);
+assert.equal(profundidadeEm(map,45,27,getCoastFieldForMap(map)),banco);
+assert.notEqual(setorOceano(map,20),setorOceano(map,50));assert.notEqual(setorOceano(map,50),setorOceano(map,80));assert.notEqual(setorOceano(map,80),setorOceano(map,100));
+assert(podeNadar(map,109.5,60.5),'nova área além da Dársena é navegável');
+for(let x=0;x<112;x+=.5) {const d=profundidadeOceano(map,x,27), d2=profundidadeOceano(map,x+.5,27); assert(Math.abs(d-d2)<.1,'leito suave');}
+const arvore={nivel:4,provas:{},respeito:0}, n=criarEstadoNado();n.ar=12;
+for(let i=0;i<80;i++) atualizarNado(n,{map,x:45,y:27,field:getCoastFieldForMap(map),dt:.05,arvore,mareAstral:true,mergulhoLivre:true,mergulhar:true});
+assert(n.submerso && n.profundidade<=banco+.001 && n.ar<9,'banco limita profundidade e consome ar');
+for(let i=0;i<40;i++) atualizarNado(n,{map,x:45,y:27,field:getCoastFieldForMap(map),dt:.05,arvore,mareAstral:true,mergulhoLivre:true,mergulhar:false});
+assert(!n.submerso && n.ar>9,'retorno à superfície recupera ar');
+const a={vx:3,vy:-2},b={vx:3,vy:-2};for(let i=0;i<10;i++)frearSubida(a,.01);for(let i=0;i<2;i++)frearSubida(b,.05);
+assert(Math.abs(a.vx-b.vx)<1e-10 && a.vx>0 && a.vx<3 && a.vy<0);
+// Vestígios são opcionais, sem bloqueio nem prompt na superfície.
+globalThis.window={addEventListener(){},removeEventListener(){}};globalThis.document={getElementById(){return null;}};
+state.save.loaded=false;state.progress={archetype:'mare_astral',flags:{rota_livre_enseada_aberta:true},nado:arvore};await loadMap(map.id,'vindo_da_enseada');
+Object.assign(state.player,{x:47.5,y:29.5,nado:{ativo:true,submerso:false,profundidade:.9}});
+assert.notEqual(findNearestInteraction()?.data.id,'registro_bancos_azul');
+Object.assign(state.player.nado,{submerso:true,profundidade:1.6});assert.equal(findNearestInteraction()?.data.id,'registro_bancos_azul');
+// Controle real: S desacelera e emerge, sem respiração submersa.
+Object.assign(state.player,{x:45,y:27,nado:{...criarEstadoNado(),ativo:true,mareAstral:true,submerso:true,perspectiva3d:true,profundidade:1.6,ar:10,vx:2,vy:0,dirX:1,dirY:0}});
+input.keys={s:true}; updatePlayer(.05);
+assert(state.player.nado.ar<10 && state.player.nado.vx<2,'S freia enquanto o ar continua caindo');
+for(let i=0;i<50;i++) updatePlayer(.05);
+assert(!state.player.nado.submerso && state.player.nado.ar>10,'S leva à superfície e só então recupera ar');input.keys={};
+console.log('Oceano: 10 sprites, clima contínuo, bancos, freio e vestígios submersos OK.');

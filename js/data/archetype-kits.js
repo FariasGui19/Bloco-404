@@ -14,7 +14,7 @@ export const KIT_SLOTS = Object.freeze(['q', 'r', 'utility', 'support', 'ultimat
 // Os demais Q/R são protótipos jogáveis com efeitos procedurais provisórios.
 export const IMPLEMENTED_ABILITIES = Object.freeze([
   'bio_dash', 'bio_diagnostic', 'golpe_ruptura', 'postura_dominio',
-  'passo_corrente', 'senso_corrente', 'forma_veloz', 'eco_scan',
+  'passo_corrente', 'senso_corrente', 'forma_veloz', 'eco_scan', 'pancada_quebra',
   'pulso_forja_viva', 'coroa_da_falha', 'sinfonia_estuario', 'horizonte_dez_ecos',
   // Sobrecargas de ferramenta (Ultimate nível 1), escolhidas no Códex.
   ...TOOL_ULTIMATE_IDS,

@@ -52,6 +52,8 @@ export function desenharPocas(ctx, map, t, HW, HH) {
   ctx.lineCap = 'round';
 
   for (const p of pocas) {
+    // Algumas piscinas já têm água no sprite; mantém-se a zona de nado.
+    if (p.renderizar === false) continue;
     // 1. Areia molhada em volta: a poça não é um adesivo colado na areia.
     contorno(ctx, p, 1.16);
     ctx.fillStyle = 'rgba(150,108,66,.30)';

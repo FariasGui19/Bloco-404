@@ -18,7 +18,7 @@ export function getFrame(image, col, row, cols, rows, opts = {}) {
     cache.set(image, porImagem);
   }
 
-  const key = `${cols}x${rows}|${col},${row}|${opts.removeShadow ? 1 : 0}`;
+  const key = `${cols}x${rows}|${col},${row}|${opts.removeShadow ? 1 : 0}|${opts.tolerancia ?? 60}`;
   if (porImagem.has(key)) return porImagem.get(key);
 
   let res = null;
@@ -216,9 +216,17 @@ function manterPrincipal(d, w, h) {
   const manter = new Uint8Array(comps.length + 1);
   manter[main.id] = 1;
 
+  // O componente MAIOR é sempre mantido, mesmo encostando na borda. Vários
+  // sprites de cenário (a montanha da Estação 66.6, entre outros) ocupam o
+  // quadro inteiro e a base toca o rodapé do PNG; antes isso marcava o próprio
+  // corpo do sprite como `borda` e ele era apagado no recorte, deixando o chão
+  // do mapa aparecer por baixo e "cortando" a silhueta.
   const gap = h * 0.12;
   for (const c of comps) {
-    if (c === main || c.borda || c.area < 6) continue;
+    if (c === main || c.area < 6) continue;
+    // Pequeno encostado na borda: quase sempre sobra de fundo. Grande: é parte
+    // do cenário (uma pedra solta, a areia da base) e fica.
+    if (c.borda && c.area < main.area * 0.02) continue;
     const gx = Math.max(0, main.minX - c.maxX, c.minX - main.maxX);
     const gy = Math.max(0, main.minY - c.maxY, c.minY - main.maxY);
     if (gx <= gap && gy <= gap) manter[c.id] = 1;

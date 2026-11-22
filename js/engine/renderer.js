@@ -1,4 +1,10 @@
+import { desenharPisoInteriorDocas, desenharParedesInteriorDocas, desenharChaoInteriorDocas, desenharMobiliaDocas } from './docas-interiores.js';
+import { desenharEmbarquePesqueiro } from './docas-cascos.js';
+import { renderDocas } from './docas-view.js';
 import { perspectivaSubmersa } from './perspectiva-submersa.js';
+import { posicaoVidaRota } from '../game/vida-rota-mare.js';
+import { animacaoMar, detalhesDoMar } from '../game/mar-vivo.js';
+import { encontroConcluido, posicaoEncontro } from '../game/encontros-mare.js';
 // js/engine/renderer.js
 // =====================================================================
 //  RENDERER
@@ -21,8 +27,11 @@ import { bridgeGateGeometry } from './bridge-geometry.js';
 import { getBioWalkFrame, bioWalkSheet } from '../data/bio-walk.js';
 import { faunaFootAnchor } from '../game/fauna-costeira.js';
 import { getFrame } from './sprite-clean.js';
+import { quadroEnseada, temDetalheEnseada, desenharDetalheEnseada } from './enseada-vida-lote2.js';
 import { drawAmbientBack, drawAmbientFront } from './ambient.js';
-import { tintaDoClima, atualizarParticulas, climaVisivelNoMapa } from '../game/clima.js';
+import { tintaDoClima, atualizarParticulas, climaVisivelNoMapa, neblinaDoClima } from '../game/clima.js';
+import { renderSideViewMap } from './side-view.js';
+import { renderViadutoVetores } from './viaduto-view.js';
 import { animarFauna } from '../game/fauna-animacao.js';
 import { isDebugEnabled, drawDebugWorld } from '../game/debug.js';
 import { ACTION_SPRITES } from '../data/action-sprites.js';
@@ -81,7 +90,7 @@ function resize() {
 // =====================================================================
 //  FRAME
 // =====================================================================
-export function render(map, state) {
+export function render(map, state, frameNow = performance.now()) {
   if (!map) return;
   const { dpr } = view;
   const estavaEm3d = !!state.player?.nado?.perspectiva3d;
@@ -101,6 +110,52 @@ export function render(map, state) {
     return;
   }
 
+  // A planta das Docas usa a mesma projeção lateral de câmera e input.
+  if (map.meta?.docasCamadas) {
+    renderDocas(ctx,map,state,camera.x,camera.y,view.w,view.h,camera.zoom,dpr,frameNow,(p,x,y)=>{
+      drawShadow(x,y,.28);drawPlayerSprite(p,x,y);
+    });
+    ctx.setTransform(dpr,0,0,dpr,0,0);drawLabels(state);drawBubbles(state);return;
+  }
+  // SIDE-VIEW: Aeroporto Central usa perspectiva frontal/lateral profunda
+  if (map.meta?.sideView) {
+    const renderSide = map.meta?.estiloSala === 'viaduto_vetores' ? renderViadutoVetores : renderSideViewMap;
+    renderSide(
+      ctx, map, state,
+      camera.x, camera.y,
+      view.w, view.h,
+      camera.zoom, dpr,
+      performance.now(),
+      {
+        drawPlayer: (p, px, py) => {
+          drawShadow(px, py, 0.28);
+          if (!drawPlayerSprite(p, px, py)) {
+            ctx.beginPath();
+            ctx.arc(px, py - 14, 9, 0, Math.PI * 2);
+            ctx.fillStyle = '#ffffff';
+            ctx.fill();
+          }
+        },
+        drawActor: (a, ax, ay) => {
+          drawShadow(ax, ay, 0.30);
+          if (a.sprite === 'guia_aeroporto' && drawGuiaSprite(a, ax, ay)) return;
+          if (a.tipo === 'viajante_ambiental' && drawViajanteSprite(a, ax, ay)) return;
+          if (a.tipo === 'robo' && drawRobo(a, ax, ay)) return;
+          if (drawNexoSprite(a, ax, ay)) return;
+          ctx.beginPath();
+          ctx.arc(ax, ay - 18, 10, 0, Math.PI * 2);
+          ctx.fillStyle = a.cor ?? '#35E6D3';
+          ctx.fill();
+        },
+      }
+    );
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    drawLabels(state);
+    drawBubbles(state);
+    return;
+  }
+
+  // ISOMÉTRICO (padrão)
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   ctx.fillStyle = map.meta?.corFundo ?? C.BG;
   ctx.fillRect(0, 0, view.w, view.h);
@@ -132,38 +187,79 @@ export function render(map, state) {
   // O metrô modular volta a usar chão e tiles.
   if (!map.meta?.backgroundCoversFloor) {
     if (map.aguaPraia) {
+      // Na Dársena Maré Astral, recorta a água contínua exatamente dentro da bacia do Grande Aquário Oceânico (x=14.35..21, y=1..11).
+      const clipMareAquario = map.meta?.estiloSala === 'mare_astral';
+      if (clipMareAquario) {
+        const p = (x, y) => [(x - y) * HW, (x + y) * HH];
+        const [a0, a1] = p(15.0, 1.0);
+        const [b0, b1] = p(21.0, 1.0);
+        const [c0, c1] = p(21.0, 11.0);
+        const [d0, d1] = p(15.0, 11.0);
+        ctx.save();
+        ctx.beginPath();
+        ctx.moveTo(a0, a1); ctx.lineTo(b0, b1); ctx.lineTo(c0, c1); ctx.lineTo(d0, d1);
+        ctx.closePath();
+        ctx.clip();
+      }
       // AREIA primeiro, MAR por cima: o mar recorta a própria borda pelo campo
       // de costa (`beach-water.js`), então a linha d'água é curva em vez de
       // seguir a borda quadrada das células de areia.
-      if (map.id !== 'ilha_estacao_bio') drawBeachSurface(map);
+      if (map.id !== 'ilha_estacao_bio' && map.meta?.estiloSala !== 'mare_astral' && !map.meta?.rotaMare) drawBeachSurface(map);
       drawBeachSea(map);
       const imersao = intensidadeSubmersa(state.player?.nado);
       if (imersao > 0) drawFundoSubmerso(map, imersao);
       drawVidaAquatica(map, state);
-      if (imersao < .5) drawBeachRipples(map);
+      if (map.detalhesOceano) drawDetalhesOceano(map, state);
+      if (map.vidaRota) drawVidaRota(map, state);
+      if (map.fundoMar) drawFundoMarVivo(map);
+      if (map.encontrosMare) drawEncontrosMare(map, state);
+      if (imersao < .5) { drawBeachRipples(map); if (map.ondasMar) drawOndasMarVivo(map, state); }
+      if (clipMareAquario) ctx.restore();
       // Poças de treino: água por cima da areia (zona, não célula da grade).
       desenharPocas(ctx, map, performance.now() / 1000, HW, HH);
       // Cordão de boias: o limite do degrau de nado, só perto do operador.
       const nivelNado = lerArvore(state.progress).nivel;
-      if (nivelNado === 1 || nivelNado === 2) {
+      if (!map.meta?.ocultarCordaoBoias && (nivelNado === 1 || nivelNado === 2)) {
         desenharBoias(ctx, boiasDoLimite(map, nivelNado), state.player, range, performance.now() / 1000, HW, HH);
       }
     }
     // O nadador no fundo é desenhado antes das passarelas da superfície.
     if (nadadorNoFundo(state.player, map)) drawEntity(state.player, state);
+    if (map.meta?.estiloSala === 'bio_forja') drawBioForjaUnderlay(map, state);
+    if (map.meta?.estiloSala === 'dominio_anciao') drawDominioUnderlay(map, state);
+    if (map.meta?.estiloSala === 'mare_astral') drawMareAstralUnderlay(map, state);
+    if (map.meta?.estiloSala === 'nucleo_10x') drawNucleo10xUnderlay(map, state);
+    if (map.meta?.estiloSala === 'carga_eco' || map.meta?.estiloSala === 'frequencia_limiar') drawCargoEcoUnderlay(map, state);
     drawFloors(map, state);
+    if(map.meta?.docasInterior) desenharChaoInteriorDocas(ctx,map,state);
     drawHazards(state.hazards);
     if (map.id === 'hub_saguao') drawHubFloorMarkings();
     if (map.id === 'ilha_praia_inicial') drawBeachStation(map);
+    if (map.id === 'ilha_enseada_ecos') drawObjectContactShadows(map);
     if (map.id === 'bio_sala_controle') drawBioControlFloor();
+    if (map.meta?.estiloSala === 'bio_forja') drawBioForjaFloorOverlay(map, state);
+    if (map.meta?.estiloSala === 'dominio_anciao') drawDominioFloorOverlay(map, state);
+    if (map.meta?.estiloSala === 'mare_astral') drawMareAstralFloorOverlay(map, state);
+    if (map.meta?.estiloSala === 'nucleo_10x') drawNucleo10xFloorOverlay(map, state);
+    if (map.meta?.estiloSala === 'carga_eco') {
+      drawCargoEcoFloorOverlay(map, state);
+      drawObjectContactShadows(map);
+    }
+    if (map.meta?.estiloSala === 'frequencia_limiar') {
+      drawFrequencyStationFloor(state);
+      drawObjectContactShadows(map);
+    }
     if (map.id === 'ilha_estacao_bio') {
       drawStationPaving(map);
       drawStationCanalRims(map);
       drawStationBridges(map);
       drawBioNetwork(map);
       drawStationRoute(map);
-      drawBioShadows(map);
+      drawObjectContactShadows(map);
     }
+    // Máquinas pintadas do Núcleo também assentam no piso: sombra difusa +
+    // contato duro vindas do campo `sombra:[w,h]` de cada objeto.
+    if (map.meta?.estiloSala === 'nucleo_10x') drawObjectContactShadows(map);
 
     if (map.metroTiles) {
       drawMetroPlatformTiles(map);
@@ -206,6 +302,25 @@ export function render(map, state) {
     g.addColorStop(0, 'rgba(0,20,30,0)');
     g.addColorStop(1, `rgba(0,26,46,${(imersaoTela * .42).toFixed(3)})`);
     ctx.fillStyle = g; ctx.fillRect(0, 0, view.w, view.h);
+    ctx.restore();
+  }
+  // Vinheta tática de Postura do Domínio [R]: fecha o foco periférico em obsidiana e ouro
+  if (map.meta?.estiloSala === 'dominio_anciao' && (state.player?.ability?.reveal?.timeLeft ?? 0) > 0) {
+    const rev = state.player.ability.reveal;
+    const peso = Math.min(1, rev.timeLeft / 0.45) * Math.min(1, (4.1 - rev.timeLeft) / 0.25 + 0.35);
+    ctx.save();
+    const vg = ctx.createRadialGradient(
+      view.w * 0.5, view.h * 0.5, Math.min(view.w, view.h) * 0.28,
+      view.w * 0.5, view.h * 0.5, Math.max(view.w, view.h) * 0.72
+    );
+    vg.addColorStop(0, 'rgba(0, 0, 0, 0)');
+    vg.addColorStop(0.72, `rgba(18, 11, 6, ${(0.22 * peso).toFixed(3)})`);
+    vg.addColorStop(1, `rgba(42, 24, 6, ${(0.46 * peso).toFixed(3)})`);
+    ctx.fillStyle = vg;
+    ctx.fillRect(0, 0, view.w, view.h);
+    ctx.strokeStyle = `rgba(255, 212, 92, ${(0.28 * peso).toFixed(3)})`;
+    ctx.lineWidth = 2;
+    ctx.strokeRect(10, 10, view.w - 20, view.h - 20);
     ctx.restore();
   }
   // Clarão curto no instante da soltura (não cobre a HUD, que é DOM).
@@ -521,11 +636,15 @@ function drawBeachSea(map) {
   // cruzando é o que faz a água "dançar". É UM drawImage a mais, de uma
   // textura pronta; sem folga, não é desenhada.
   const nivel = medirFolga();
-  if (sea.causticas && nivel > .02) {
+  const reduzir = typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+  // A Enseada conserva uma camada animada mesmo quando a heurística de FPS
+  // desliga os enfeites: água parada não comunica mar. Um único drawImage.
+  const forca = map.id === 'ilha_enseada_ecos' && !reduzir ? Math.max(.45, nivel) : nivel;
+  if (sea.causticas && forca > .02 && !reduzir) {
     const t = performance.now() / 1000;
-    ctx.globalAlpha = nivel * (.34 + Math.sin(t * .8) * .06);
+    ctx.globalAlpha = forca * (.40 + Math.sin(t * .8) * .08);
     ctx.drawImage(sea.causticas,
-      -m + .43 + Math.sin(t * .27) * .22, -m + .31 + Math.cos(t * .21) * .18, cols, lines);
+      -m + .43 + Math.sin(t * .45) * .32, -m + .31 + Math.cos(t * .37) * .25, cols, lines);
     ctx.globalAlpha = 1;
   }
   ctx.restore();
@@ -545,15 +664,16 @@ function drawFundoSubmerso(map, intensidade) {
   let tela = fundoSubmersoCache.get(map);
   if (!tela) {
     // Um único canvas por mapa; custo e memória não dependem do zoom.
-    const escala = 8, rows = map.aguaPraia, cols = rows[0].length;
+    const escala = 8, rows = map.aguaPraia, cols = rows[0].length, margem = map.meta?.rotaMare ? 18 : 0;
     const padrao = document.createElement('canvas');
     padrao.width = 64; padrao.height = 64;
     padrao.getContext('2d').drawImage(imagem, 0, 0, 64, 64);
     tela = document.createElement('canvas');
-    tela.width = cols * escala; tela.height = rows.length * escala;
+    tela.width = (cols + margem * 2) * escala; tela.height = (rows.length + margem * 2) * escala;
     const pincel = tela.getContext('2d');
     pincel.fillStyle = pincel.createPattern(padrao, 'repeat');
-    for (let y = 0; y < rows.length; y++) for (let x = 0; x < cols; x++) {
+    if (margem) pincel.fillRect(0, 0, tela.width, tela.height);
+    else for (let y = 0; y < rows.length; y++) for (let x = 0; x < cols; x++) {
       if ('YyDdX'.includes(rows[y][x]) || (map.aguaSobPontes && 'Bb'.includes(rows[y][x]))) pincel.fillRect(x * escala, y * escala, escala, escala);
     }
     fundoSubmersoCache.set(map, tela);
@@ -562,7 +682,8 @@ function drawFundoSubmerso(map, intensidade) {
   ctx.globalAlpha = intensidade * .95;
   ctx.transform(HW, HH, -HW, HH, 0, 0);
   ctx.imageSmoothingEnabled = true;
-  ctx.drawImage(tela, 0, 0, map.aguaPraia[0].length, map.aguaPraia.length);
+  const margem = map.meta?.rotaMare ? 18 : 0;
+  ctx.drawImage(tela, -margem, -margem, map.aguaPraia[0].length + margem * 2, map.aguaPraia.length + margem * 2);
   ctx.restore();
 }
 
@@ -572,7 +693,31 @@ const beachSurfaceCache = new WeakMap();
 function drawBeachSurface(map) {
   let texture = beachSurfaceCache.get(map);
   if (!texture) {
-    const data = createBeachSurface(map.aguaPraia);
+    // A textura de relva da ilha central é lida do sprite uma vez no cache.
+    let texturaGramaCentral = null;
+    const arteGrama = map.ajusteSoloCentral && getSprite('enseada_ilha_grama_central');
+    if (arteGrama) {
+      const amostra = document.createElement('canvas');
+      amostra.width = 256; amostra.height = 160;
+      const ag = amostra.getContext('2d');
+      ag.drawImage(arteGrama, 0, 0, amostra.width, amostra.height);
+      texturaGramaCentral = { width: amostra.width, height: amostra.height,
+        pixels: ag.getImageData(0, 0, amostra.width, amostra.height).data };
+    }
+    const data = createBeachSurface(map.aguaPraia, 16, {
+      gramaInterior: map.meta?.gramaInterior === true,
+      caminhos: map.caminhosAreia ?? [],
+      zonasGrama: map.zonasGrama ?? [],
+      zonasRocha: map.zonasRocha ?? [],
+      celulasGrama: map.celulasGrama ?? null,
+      ajusteSolo: map.ajusteSolo ?? null,
+      ajusteSoloCentral: map.ajusteSoloCentral ?? null,
+      ajusteSoloSudeste: map.ajusteSoloSudeste ?? null,
+      areiaPraiaSul: map.areiaPraiaSul ?? null,
+      areiaCostaLeste: map.areiaCostaLeste ?? null,
+      trilhaEstacaoPortal: map.trilhaEstacaoPortal ?? [],
+      texturaGramaCentral,
+    });
     texture = document.createElement('canvas');
     texture.width = data.width; texture.height = data.height;
     const paint = texture.getContext('2d');
@@ -609,7 +754,8 @@ function drawBeachSurface(map) {
 const SHORE_ARC_BUDGET = 72;
 function drawBeachRipples(map) {
   const rows = map.aguaPraia;
-  const time = performance.now() / 1000;
+  const reduzir = typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+  const time = reduzir ? 0 : performance.now() / 1000;
   const arcs = foamArcs(rows, range, time, SHORE_ARC_BUDGET);
   if (!arcs.length) return;
   ctx.save();
@@ -679,6 +825,27 @@ function drawClima(ctx, state, view) {
     ctx.restore();
   }
 
+  // Névoa translúcida sem partículas: entra e sai junto ao clima e não
+  // encobre a HUD. Mais densa no horizonte, sem bloquear visão da costa.
+  // Perto do Farolete da Baía na Enseada, o feixe dissipa até 55% da neblina.
+  let neblina = neblinaDoClima(clima);
+  if (neblina > .01 && state.world?.currentMapId === 'ilha_enseada_ecos') {
+    const farolete = state.objects?.find(o => o.id === 'farolete_baia_enseada');
+    if (farolete && state.player) {
+      const dist = Math.hypot(state.player.x - farolete.x, state.player.y - farolete.y);
+      if (dist < 8.5) {
+        const alivio = (1 - dist / 8.5) * 0.55;
+        neblina *= (1 - alivio);
+      }
+    }
+  }
+  if (neblina > .01) {
+    const g = ctx.createLinearGradient(0, 0, 0, view.h);
+    g.addColorStop(0, `rgba(196,222,224,${(.24*neblina).toFixed(3)})`);
+    g.addColorStop(1, `rgba(196,222,224,${(.04*neblina).toFixed(3)})`);
+    ctx.fillStyle=g;ctx.fillRect(0,0,view.w,view.h);
+  }
+
   // 2. CHUVA: só desenha se o buffer existir (evita alocar em mapa seco).
   if (clima.chuva > 0.02 && state.particulasClima) {
     const ativas = Math.round(state.particulasClima.length * Math.min(1, clima.chuva));
@@ -716,6 +883,120 @@ function drawClima(ctx, state, view) {
     ctx.restore();
   }
   ctx.restore();
+}
+
+// Orçamento definido pelo mapa; ondas e pingos nunca criam partículas por
+// quadro. A ressaca aumenta a espuma, não a colisão nem o tamanho do mapa.
+function drawDetalhesOceano(map, state) {
+  const reduzido=window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+  const tempo=performance.now()/1000, clima=state.clima, imersao=intensidadeSubmersa(state.player.nado);
+  const neblina=neblinaDoClima(clima), vento=clima?.direcao ?? 0;
+  // Vetor físico do vento projetado sobre o plano isométrico.
+  const vx=Math.cos(vento), vy=Math.sin(vento), ang=Math.atan2((vx+vy)*HH,(vx-vy)*HW);
+  const imgs=['mar_calmo','vento_leve','onda_ressaca','gotas_chuva','nevoa_mar','luz_ondulante'].map(id=>getSprite(`mare_animacao_${id}`));
+  let visiveis=0;
+  for (const p of map.detalhesOceano) {
+    if (p.x<range.x0-2 || p.x>range.x1+2 || p.y<range.y0-2 || p.y>range.y1+2) continue;
+    if (++visiveis>28) break;
+    const a=detalhesDoMar(p.fase,tempo,clima,neblina,reduzido);
+    const x=(p.x-p.y)*HW, y=(p.x+p.y)*HH;
+    const pintar=(img,alpha,w,h,rot=0,offset=0)=>{
+      if (!img || alpha<.01) return;
+      ctx.save();ctx.globalAlpha=alpha;ctx.translate(x,y+offset);ctx.rotate(rot);
+      ctx.drawImage(img,-w/2,-h/2,w,h);ctx.restore();
+    };
+    if (imersao>.1) {
+      if (p.fase%3===0) pintar(imgs[5],imersao*.10,90,45,0,a.deslocamento);
+      continue;
+    }
+    const vis=1-imersao;
+    if (p.fase%2===0) pintar(imgs[0],a.calmo*vis,85,16,ang*.15,a.deslocamento);
+    if (p.fase%3===0) pintar(imgs[1],a.vento*vis,80,14,ang,a.deslocamento*2);
+    if (p.fase%4===1) pintar(imgs[2],a.ressaca*vis,75,24,ang*.15,a.deslocamento*2);
+    if (p.fase%3===1) pintar(imgs[3],a.chuva*vis,48,20,0,a.deslocamento);
+    if (p.fase%4===2) pintar(imgs[4],a.neblina*vis,115,20,ang*.15,a.deslocamento*3);
+  }
+}
+function drawOndasMarVivo(map, state) {
+  const reduzir = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+  const t = performance.now() / 1000;
+  const { clima } = state;
+  for (let i = 0; i < map.ondasMar.length; i++) {
+    const p = map.ondasMar[i];
+    if (p.x < range.x0-2 || p.x > range.x1+2 || p.y < range.y0-2 || p.y > range.y1+2) continue;
+    const a = animacaoMar(i, t, clima, reduzir);
+    const img = getSprite(p.tipo ? 'mar_vivo_onda_larga' : 'mar_vivo_onda_crista');
+    const x=(p.x-p.y)*HW, y=(p.x+p.y)*HH;
+    if (img) {
+      const w=p.tipo ? 62 : 35, h=w*img.height/img.width*.62;
+      ctx.save(); ctx.globalAlpha=a.espuma * .52; ctx.translate(x, y + a.deslocamento*4);
+      ctx.rotate(a.inclinacao); ctx.drawImage(img,-w/2,-h/2,w,h); ctx.restore();
+    }
+    if (a.chuva > .12 && i % 2 === 0) {
+      const splash=getSprite('mar_vivo_chuva_mar');
+      if (splash) { const pulso=reduzir ? .45 : Math.max(0,Math.sin(a.fase*2));
+        ctx.save(); ctx.globalAlpha=a.chuva*pulso*.45; ctx.drawImage(splash,x-13,y-6,26,13); ctx.restore(); }
+    }
+  }
+}
+function drawFundoMarVivo(map) {
+  for (const p of map.fundoMar) {
+    if (p.x < range.x0-2 || p.x > range.x1+2 || p.y < range.y0-2 || p.y > range.y1+2) continue;
+    const img=getSprite(`${p.origem === 'oceano-vivo' ? 'oceano_vivo' : 'mar_vivo'}_${p.tipo.replaceAll('-', '_')}`); if (!img) continue;
+    const w=42*p.tamanho,h=w*img.height/img.width,x=(p.x-p.y)*HW,y=(p.x+p.y)*HH;
+    ctx.save();ctx.globalAlpha=.26;ctx.drawImage(img,x-w/2,y-h/2,w,h);ctx.restore();
+  }
+}
+function drawEncontrosMare(map, state) {
+  const reduzido=window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+  const t=reduzido ? 0 : performance.now()/1000;
+  for (let i=0;i<map.encontrosMare.length;i++) {
+    const p=map.encontrosMare[i], concluido=encontroConcluido(state.progress,p.id);
+    if (p.id === 'rede' && concluido) continue;
+    if (p.x < range.x0-2 || p.x > range.x1+2 || p.y < range.y0-2 || p.y > range.y1+2) continue;
+    const id=concluido && p.spriteConcluido ? p.spriteConcluido : p.sprite;
+    const img=getSprite(`mare_encontro_${id.replaceAll('-', '_')}`); if (!img) continue;
+    const w=48*p.tamanho,h=w*img.height/img.width;
+    const pos=posicaoEncontro(p,state.progress,t,reduzido);
+    const x=(pos.x-pos.y)*HW,y=(pos.x+pos.y)*HH;
+    ctx.save();ctx.globalAlpha=state.player.nado?.submerso ? .8 : .3;
+    ctx.translate(x,y-pos.altura*18);
+    ctx.drawImage(img,-w/2,-h*.72,w,h);
+    if (!concluido && state.player.nado?.submerso) {
+      ctx.fillStyle='#c7fff1';ctx.globalAlpha=.7;ctx.beginPath();ctx.arc(0,-h*.8,2.5,0,Math.PI*2);ctx.fill();
+    }
+    ctx.restore();
+  }
+}
+
+function drawFlutuanteMar(object, state) {
+  const img=getSprite(`mar_vivo_${object.flutuanteMar.replaceAll('-', '_')}`); if (!img) return;
+  const reduzir=window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+  const a=animacaoMar(object.x+object.y,performance.now()/1000,state.clima,reduzir);
+  const x=(object.x-object.y)*HW,y=(object.x+object.y)*HH,w=object.larguraPx,h=w*img.height/img.width;
+  ctx.save();ctx.translate(x,y+a.deslocamento*2);ctx.rotate(a.inclinacao);
+  // Sombra e espuma prendem o casco à superfície em vez de deixá-lo colado sobre ela.
+  ctx.fillStyle='rgba(1,30,40,.25)';ctx.beginPath();ctx.ellipse(0,3,w*.39,Math.max(5,w*.055),0,0,Math.PI*2);ctx.fill();
+  ctx.strokeStyle='rgba(180,250,237,.35)';ctx.lineWidth=2;ctx.beginPath();ctx.ellipse(0,3,w*.42,Math.max(7,w*.07),0,0,Math.PI*2);ctx.stroke();
+  ctx.drawImage(img,-w/2,-h*.72,w,h);ctx.restore();
+}
+
+// Na superfície, silhuetas sob a água; a versão submersa usa os mesmos
+// trajetos em sprites 3D. Culling e limite fixo mantêm o custo pequeno.
+function drawVidaRota(map, state) {
+  const reduced = typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+  const t = performance.now()/1000;
+  for (let i=0; i<map.vidaRota.length; i++) {
+    const item = map.vidaRota[i], p = posicaoVidaRota(item,i,t,reduced);
+    if (item.soSuperficie && state.player.nado?.submerso) continue;
+    if (p.x < range.x0-2 || p.x > range.x1+2 || p.y < range.y0-2 || p.y > range.y1+2) continue;
+    const image = getSprite(`${item.origem === 'oceano-vivo' ? 'oceano_vivo' : item.origem === 'mare-animacao' ? 'mare_animacao' : 'rota_mare'}_${item.tipo.replaceAll('-', '_')}`); if (!image) continue;
+    const w = (item.tipo === 'alga' ? 27 : item.origem === 'mare-animacao' ? 68 : 48) * item.tamanho, h = w*image.height/image.width;
+    const x=(p.x-p.y)*HW, y=(p.x+p.y)*HH;
+    ctx.save();ctx.translate(x,y);ctx.rotate(p.inclinacao);
+    ctx.globalAlpha = item.tipo === 'golfinho' || item.tipo === 'tartaruga' ? .53 : .29;
+    ctx.drawImage(image,-w/2,-h/2,w,h);ctx.restore();
+  }
 }
 
 function drawVidaAquatica(map, state) {
@@ -1012,6 +1293,7 @@ function drawCostao(x, y, tx, ty, map) {
 }
 
 function drawFloorTile(type, x, y, map) {
+  if(map.meta?.docasInterior && desenharPisoInteriorDocas(ctx,map,x,y)) return;
   const tx = (x - y) * HW;
   const ty = (x + y) * HH;
 
@@ -1024,6 +1306,30 @@ function drawFloorTile(type, x, y, map) {
 
   // Costão: laje de pedra escura com poças de maré (não é placa de sprite).
   if (map.costao?.[`${x},${y}`]) { drawCostao(x, y, tx, ty, map); return; }
+
+  // Oficina Inicial — Motor Bio-Forja: placas de ferro/bronze e grades luminosas.
+  if (map.meta?.estiloSala === 'bio_forja') {
+    if (drawBioForjaFloorTile(x, y, tx, ty, map)) return;
+  }
+
+  // Santuário do Anel — Lâmina Domínio Ancião: obsidiana kintsugi e grelhas rúnicas douradas.
+  if (map.meta?.estiloSala === 'dominio_anciao') {
+    if (drawDominioFloorTile(x, y, tx, ty)) return;
+  }
+
+  // Dársena Abissal — Maré Astral: ardósia úmida com veios ciano e grelhas hidráulicas submersas.
+  if (map.meta?.estiloSala === 'mare_astral') {
+    if (drawMareAstralFloorTile(x, y, tx, ty)) return;
+  }
+
+  // Base dos Vetores — Núcleo 10X: grafite usinado e trilhos de indução.
+  if (map.meta?.estiloSala === 'nucleo_10x') {
+    if (drawNucleo10xFloorTile(x, y, tx, ty)) return;
+  }
+  // Área de Carga viva: piso pintado do módulo, não placa genérica.
+  if (map.meta?.estiloSala === 'carga_eco' || map.meta?.estiloSala === 'frequencia_limiar') {
+    if (drawCargoEcoFloorTile(x, y, tx, ty, map)) return;
+  }
 
   // Placa específica (map.pisos) ou mapa inteiro em placas
   const placas = map.meta?.estiloPiso === 'placas';
@@ -1158,6 +1464,629 @@ function drawBioControlFloor() {
     route.forEach(([x,y], i) => { const [a,b] = p(x,y); if (!i) ctx.moveTo(a,b); else ctx.lineTo(a,b); });
     ctx.stroke();
   }
+  ctx.restore();
+}
+
+// =====================================================================
+// OFICINA INICIAL — MOTOR BIO-FORJA (piso, fundação e rede viva)
+// =====================================================================
+function ehGradeBioForja(x, y) {
+  // Baia do Banco de Reconstrução, pista central de impulso e relicário leste.
+  if (x >= 4 && x <= 7 && y >= 1 && y <= 3) return true;
+  if (x >= 7 && x <= 10 && (y === 5 || y === 6)) return true;
+  if (x >= 11 && x <= 13 && y >= 4 && y <= 7) return true;
+  if ((x === 3 || x === 4) && y === 9) return true;
+  return false;
+}
+
+function drawBioForjaFloorTile(x, y, tx, ty) {
+  const usaGrade = ehGradeBioForja(x, y);
+  const spriteId = usaGrade ? 'bio_sala_piso_grade' : 'bio_sala_piso_placa';
+  const img = getSprite(spriteId);
+  const f = img && getFrame(img, 0, 0, 1, 1)?.crop;
+  if (!f) {
+    const base = usaGrade ? '#1d312c' : '#242c29';
+    quad(tx, ty, tx + HW, ty + HH, tx, ty + TH, tx - HW, ty + HH, base, '#121a18', 1);
+    return true;
+  }
+  const w = CONFIG.TILE_W * 1.03;
+  const h = w * (f.h / f.w);
+  ctx.save();
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = 'high';
+  // Pequena variação espelhada quebra repetição sem desalinhar o bisel 2:1.
+  const flip = !usaGrade && ((x * 7 + y * 13) & 1) === 1;
+  ctx.translate(tx, ty - 0.8);
+  if (flip) ctx.scale(-1, 1);
+  ctx.drawImage(f.canvas, 0, 0, f.w, f.h, -w / 2, 0, w, h);
+  ctx.restore();
+  return true;
+}
+
+function drawBioForjaUnderlay(map, curState) {
+  const cols = map.layout[0].length - 1; // 14
+  const rows = map.layout.length - 1;    // 11
+  const p = (x, y) => [(x - y) * HW, (x + y) * HH];
+  const synced = !!curState?.progress?.flags?.oficina_bio_sincronizada;
+  const gateOpen = !!curState?.progress?.flags?.gate_grade_impeto_vivo;
+
+  ctx.save();
+  // 1) Halo atmosférico subterrâneo sob a oficina (elimina o vazio chapado).
+  const [cx, cy] = p(cols * 0.52, rows * 0.52);
+  const amb = ctx.createRadialGradient(cx, cy, 40, cx, cy, 480);
+  amb.addColorStop(0, synced ? 'rgba(42, 118, 98, 0.28)' : 'rgba(24, 78, 68, 0.22)');
+  amb.addColorStop(0.6, 'rgba(11, 32, 29, 0.14)');
+  amb.addColorStop(1, 'rgba(5, 10, 10, 0)');
+  ctx.fillStyle = amb;
+  ctx.beginPath();
+  ctx.ellipse(cx, cy + 16, 490, 265, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  // 2) Sombra projetada da plataforma suspensa.
+  const [nX, nY] = p(0.8, 0.8);
+  const [eX, eY] = p(cols + 0.15, 0.8);
+  const [sX, sY] = p(cols + 0.15, rows + 0.15);
+  const [wX, wY] = p(0.8, rows + 0.15);
+  ctx.fillStyle = 'rgba(2, 6, 7, 0.68)';
+  ctx.beginPath();
+  ctx.moveTo(wX, wY + 14);
+  ctx.lineTo(sX, sY + 34);
+  ctx.lineTo(eX, eY + 30);
+  ctx.lineTo(eX, eY + 6);
+  ctx.lineTo(sX, sY + 6);
+  ctx.lineTo(wX, wY + 2);
+  ctx.closePath();
+  ctx.fill();
+
+  // 3) Laje estrutural escura sob todo o piso e sob a divisória x=10.
+  const [fN0, fN1] = p(1, 1);
+  const [fE0, fE1] = p(cols, 1);
+  const [fS0, fS1] = p(cols, rows);
+  const [fW0, fW1] = p(1, rows);
+  quad(fN0, fN1, fE0, fE1, fS0, fS1, fW0, fW1, '#141d1b', '#0c1312', 2);
+
+  // 4) Saia arquitetônica frontal esculpida (ferro forjado + nervuras de bronze + fendas bio).
+  const skirtH = 26;
+  const glowColor = synced ? '#7efce0' : gateOpen ? '#35e6d3' : '#2aa89a';
+  // Face sudoeste: (1, rows) -> (cols, rows)
+  for (let x = 1; x < cols; x++) {
+    const [ax, ay] = p(x, rows);
+    const [bx, by] = p(x + 1, rows);
+    quad(ax, ay, bx, by, bx, by + skirtH, ax, ay + skirtH, (x % 2 === 0) ? '#232d2b' : '#1e2726', '#101716', 1);
+    // Friso de bronze oxidado superior
+    quad(ax, ay, bx, by, bx, by + 5, ax, ay + 5, '#5a4631', '#281f16', 0.8);
+    // Nervura estrutural vertical
+    ctx.strokeStyle = '#6e563c';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(ax, ay + 1);
+    ctx.lineTo(ax, ay + skirtH - 1);
+    ctx.stroke();
+    // Fenda bioluminescente alternada
+    if (x % 2 === 0) {
+      const mx = (ax + bx) * 0.5, my = (ay + by) * 0.5 + 14;
+      ctx.strokeStyle = '#0c1716';
+      ctx.lineWidth = 4;
+      ctx.beginPath();
+      ctx.moveTo(mx - 8, my - 4);
+      ctx.lineTo(mx + 8, my + 4);
+      ctx.stroke();
+      ctx.strokeStyle = glowColor;
+      ctx.lineWidth = 1.8;
+      ctx.beginPath();
+      ctx.moveTo(mx - 7, my - 3.5);
+      ctx.lineTo(mx + 7, my + 3.5);
+      ctx.stroke();
+    }
+  }
+  // Face sudeste: (cols, 1) -> (cols, rows)
+  for (let y = 1; y < rows; y++) {
+    const [ax, ay] = p(cols, y);
+    const [bx, by] = p(cols, y + 1);
+    quad(ax, ay, bx, by, bx, by + skirtH, ax, ay + skirtH, (y % 2 === 0) ? '#1a2322' : '#161e1d', '#0d1413', 1);
+    quad(ax, ay, bx, by, bx, by + 5, ax, ay + 5, '#473726', '#211911', 0.8);
+    ctx.strokeStyle = '#57432e';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(ax, ay + 1);
+    ctx.lineTo(ax, ay + skirtH - 1);
+    ctx.stroke();
+    if (y === 5 || y === 6 || y % 3 === 0) {
+      const mx = (ax + bx) * 0.5, my = (ay + by) * 0.5 + 14;
+      ctx.strokeStyle = '#091211';
+      ctx.lineWidth = 4;
+      ctx.beginPath();
+      ctx.moveTo(mx + 8, my - 4);
+      ctx.lineTo(mx - 8, my + 4);
+      ctx.stroke();
+      ctx.strokeStyle = glowColor;
+      ctx.lineWidth = 1.7;
+      ctx.beginPath();
+      ctx.moveTo(mx + 7, my - 3.5);
+      ctx.lineTo(mx - 7, my + 3.5);
+      ctx.stroke();
+    }
+  }
+  ctx.restore();
+}
+
+function drawBioForjaFloorOverlay(map, curState) {
+  const cols = map.layout[0].length - 1; // 14
+  const rows = map.layout.length - 1;    // 11
+  const p = (x, y) => [(x - y) * HW, (x + y) * HH];
+  const flags = curState?.progress?.flags ?? {};
+  const diagnosed = !!flags.bio_placa_diagnostico;
+  const gateOpen = !!flags.gate_grade_impeto_vivo;
+  const fragmentTaken = !!flags.collected_fragmento_eco_bio;
+  const southRepaired = !!flags.gate_condutor_oficina_bio;
+  const synced = !!flags.oficina_bio_sincronizada;
+  const t = performance.now() / 1000;
+  const pulse = 0.72 + Math.sin(t * 3.2) * 0.22;
+
+  ctx.save();
+  ctx.lineJoin = 'round';
+  ctx.lineCap = 'round';
+
+  // 1) Moldura de bronze da Baia do Banco de Reconstrução (x=4..8, y=1.15..4.15)
+  {
+    const [a0, a1] = p(4.1, 1.18);
+    const [b0, b1] = p(7.9, 1.18);
+    const [c0, c1] = p(7.9, 4.05);
+    const [d0, d1] = p(4.1, 4.05);
+    ctx.strokeStyle = 'rgba(14, 24, 22, 0.85)';
+    ctx.lineWidth = 5;
+    ctx.beginPath();
+    ctx.moveTo(a0, a1); ctx.lineTo(b0, b1); ctx.lineTo(c0, c1); ctx.lineTo(d0, d1); ctx.closePath();
+    ctx.stroke();
+    ctx.strokeStyle = synced ? '#ffd36e' : '#8b6c47';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    // Halo esmeralda sob o tanque central do Banco de Reconstrução (6.0, 2.55)
+    const [bx, by] = p(6.0, 2.65);
+    const g = ctx.createRadialGradient(bx, by, 6, bx, by, 56);
+    g.addColorStop(0, synced ? 'rgba(126, 252, 224, 0.42)' : 'rgba(53, 230, 211, 0.24)');
+    g.addColorStop(1, 'rgba(53, 230, 211, 0)');
+    ctx.fillStyle = g;
+    ctx.beginPath();
+    ctx.ellipse(bx, by, 56, 28, 0, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  // 2) Soleira da Eclusa Doca A1 (x=1.08..2.65, y=4.85..6.75)
+  {
+    const [a0, a1] = p(1.08, 4.85);
+    const [b0, b1] = p(2.65, 4.85);
+    const [c0, c1] = p(2.65, 6.75);
+    const [d0, d1] = p(1.08, 6.75);
+    quad(a0, a1, b0, b1, c0, c1, d0, d1, 'rgba(20, 32, 30, 0.58)', '#7c613e', 1.6);
+    const [lx, ly] = p(2.05, 5.85);
+    ctx.save();
+    ctx.translate(lx, ly);
+    ctx.transform(1, -0.5, 1, 0.5, 0, 0);
+    ctx.fillStyle = 'rgba(53, 230, 211, 0.78)';
+    ctx.font = 'bold 6.5px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText('◂ DOCA A1', 0, 2);
+    ctx.restore();
+  }
+
+  // 3) Rede viva de conduítes de bio-energia no piso
+  const drawConduit = (pts, active, overdrive = false) => {
+    // Calha escura
+    ctx.strokeStyle = 'rgba(9, 18, 17, 0.92)';
+    ctx.lineWidth = 6.5;
+    ctx.beginPath();
+    pts.forEach(([wx, wy], i) => {
+      const [sx, sy] = p(wx, wy);
+      if (i === 0) ctx.moveTo(sx, sy); else ctx.lineTo(sx, sy);
+    });
+    ctx.stroke();
+
+    // Borda de bronze
+    ctx.strokeStyle = 'rgba(118, 91, 58, 0.62)';
+    ctx.lineWidth = 3.8;
+    ctx.stroke();
+
+    // Filamento de plasma/seiva
+    ctx.strokeStyle = overdrive
+      ? `rgba(146, 255, 224, ${(0.78 + 0.2 * pulse).toFixed(2)})`
+      : active
+        ? `rgba(53, 230, 211, ${(0.65 + 0.25 * pulse).toFixed(2)})`
+        : 'rgba(208, 148, 72, 0.52)';
+    ctx.lineWidth = active ? 2.2 : 1.6;
+    ctx.stroke();
+
+    // Pulso viajante luminoso ao longo do conduíte
+    const segs = pts.length - 1;
+    if (segs > 0) {
+      const prog = ((t * (active ? 0.65 : 0.28)) % 1) * segs;
+      const idx = Math.min(segs - 1, Math.floor(prog));
+      const frac = prog - idx;
+      const wx = pts[idx][0] + (pts[idx + 1][0] - pts[idx][0]) * frac;
+      const wy = pts[idx][1] + (pts[idx + 1][1] - pts[idx][1]) * frac;
+      const [px, py] = p(wx, wy);
+      ctx.fillStyle = overdrive ? '#fff3b8' : active ? '#aefcf0' : '#f0b96b';
+      ctx.beginPath();
+      ctx.arc(px, py, active ? 2.6 : 1.9, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  };
+
+  // Tronco principal: Eclusa -> Terminal -> Banco -> Pista -> Grade -> Relicário
+  drawConduit([[1.9, 5.8], [3.3, 5.8], [3.3, 3.2], [5.2, 3.2]], true, synced);
+  drawConduit([[6.0, 3.85], [6.0, 6.0], [10.5, 6.0]], diagnosed || gateOpen, synced);
+  drawConduit([[10.5, 6.0], [12.5, 6.0]], gateOpen, synced);
+  // Ramal das incubadoras do relicário
+  drawConduit([[12.5, 6.0], [12.5, 2.7]], gateOpen, synced);
+  drawConduit([[12.5, 6.0], [12.5, 9.3]], gateOpen, synced);
+  // Ramal sul (estação auxiliar de pressão e treino)
+  drawConduit([[6.0, 6.0], [6.0, 8.2], [4.0, 9.5]], southRepaired || synced, synced);
+
+  // 4) Pista tática de Impulso (x=7.2..9.9, y=6.0) apontando para a Grade (10.5, 6.0)
+  {
+    const chevColor = gateOpen
+      ? 'rgba(110, 242, 198, 0.42)'
+      : diagnosed
+        ? `rgba(53, 230, 211, ${(0.62 + 0.32 * pulse).toFixed(2)})`
+        : 'rgba(232, 172, 84, 0.55)';
+
+    for (let i = 0; i < 3; i++) {
+      const cx = 7.55 + i * 0.82;
+      const cy = 6.0;
+      const [pL0, pL1] = p(cx - 0.22, cy - 0.42);
+      const [pM0, pM1] = p(cx + 0.26, cy);
+      const [pR0, pR1] = p(cx - 0.22, cy + 0.42);
+      ctx.strokeStyle = chevColor;
+      ctx.lineWidth = 2.4;
+      ctx.beginPath();
+      ctx.moveTo(pL0, pL1);
+      ctx.lineTo(pM0, pM1);
+      ctx.lineTo(pR0, pR1);
+      ctx.stroke();
+    }
+  }
+
+  // 5) Altar / Berço do Fragmento de Eco no Relicário Leste (12.5, 6.0)
+  {
+    const [sx, sy] = p(12.5, 6.0);
+    // Plataforma octogonal concêntrica em bronze e jade
+    const drawIsoOct = (r, fill, stroke, lw = 1.5) => {
+      const k = r * 0.72;
+      const pts = [
+        [r, 0], [k, k], [0, r], [-k, k],
+        [-r, 0], [-k, -k], [0, -r], [k, -k],
+      ];
+      ctx.beginPath();
+      pts.forEach(([ox, oy], idx) => {
+        const [px, py] = p(12.5 + ox, 6.0 + oy);
+        if (idx === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+      });
+      ctx.closePath();
+      if (fill) { ctx.fillStyle = fill; ctx.fill(); }
+      if (stroke) { ctx.strokeStyle = stroke; ctx.lineWidth = lw; ctx.stroke(); }
+    };
+    drawIsoOct(1.05, 'rgba(20, 31, 29, 0.88)', '#7d613e', 2);
+    drawIsoOct(0.72, 'rgba(16, 44, 40, 0.92)', synced ? '#ffd36e' : '#35e6d3', 1.6);
+    drawIsoOct(0.38, !fragmentTaken ? 'rgba(53, 230, 211, 0.34)' : 'rgba(32, 72, 66, 0.45)', '#9efce9', 1.2);
+
+    if (!fragmentTaken) {
+      const beam = ctx.createRadialGradient(sx, sy - 10, 3, sx, sy - 4, 44);
+      beam.addColorStop(0, 'rgba(130, 255, 232, 0.36)');
+      beam.addColorStop(1, 'rgba(53, 230, 211, 0)');
+      ctx.fillStyle = beam;
+      ctx.beginPath();
+      ctx.ellipse(sx, sy, 42, 21, 0, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+
+  // 6) Meio-fio de corte arquitetônico nas bordas frontais (cols e rows)
+  {
+    const [e0, e1] = p(cols, 1);
+    const [s0, s1] = p(cols, rows);
+    const [w0, w1] = p(1, rows);
+    ctx.strokeStyle = '#141c1b';
+    ctx.lineWidth = 5;
+    ctx.beginPath();
+    ctx.moveTo(w0, w1); ctx.lineTo(s0, s1); ctx.lineTo(e0, e1);
+    ctx.stroke();
+    ctx.strokeStyle = '#7b6040';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(w0, w1 - 1); ctx.lineTo(s0, s1 - 1); ctx.lineTo(e0, e1 - 1);
+    ctx.stroke();
+  }
+
+  ctx.restore();
+}
+
+function ehRunaDominio(x, y) {
+  // Passarela Imperial (y=5..6) da Doca B2 até o Trono da Coroa + adro do Altar da Lâmina
+  if ((y === 5 || y === 6) && x >= 2 && x <= 13) return true;
+  if (x >= 5 && x <= 7 && y >= 2 && y <= 3) return true;
+  if (x >= 11 && x <= 13 && y >= 4 && y <= 7) return true;
+  return false;
+}
+
+function drawDominioFloorTile(x, y, tx, ty) {
+  const usaRuna = ehRunaDominio(x, y);
+  const spriteId = usaRuna ? 'dom_sala_piso_runa' : 'dom_sala_piso_obsidiana';
+  const img = getSprite(spriteId);
+  const f = img && getFrame(img, 0, 0, 1, 1)?.crop;
+  if (!f) {
+    const base = usaRuna ? '#352613' : '#1b1920';
+    quad(tx, ty, tx + HW, ty + HH, tx, ty + TH, tx - HW, ty + HH, base, '#0e0c12', 1);
+    return true;
+  }
+  const w = CONFIG.TILE_W * 1.03;
+  const h = w * (f.h / f.w);
+  ctx.save();
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = 'high';
+  const flip = !usaRuna && ((x * 11 + y * 5) & 1) === 1;
+  ctx.translate(tx, ty - 0.8);
+  if (flip) ctx.scale(-1, 1);
+  ctx.drawImage(f.canvas, 0, 0, f.w, f.h, -w / 2, 0, w, h);
+  ctx.restore();
+  return true;
+}
+
+function drawDominioUnderlay(map, curState) {
+  const cols = map.layout[0].length - 1; // 14
+  const rows = map.layout.length - 1;    // 11
+  const p = (x, y) => [(x - y) * HW, (x + y) * HH];
+  const flags = curState?.progress?.flags ?? {};
+  const consagrado = !!flags.santuario_dominio_consagrado;
+  const gateOpen = !!flags.gate_lacre_frequencia_sala;
+
+  ctx.save();
+  // 1) Abismo vulcânico-solar sob o santuário suspenso de obsidiana
+  const [cx, cy] = p((cols + 1) * 0.5, (rows + 1) * 0.5);
+  const abyss = ctx.createRadialGradient(cx, cy + 28, 36, cx, cy + 28, 600);
+  abyss.addColorStop(0, consagrado ? 'rgba(245, 182, 56, 0.28)' : gateOpen ? 'rgba(218, 138, 34, 0.22)' : 'rgba(176, 98, 22, 0.17)');
+  abyss.addColorStop(0.55, 'rgba(34, 18, 10, 0.52)');
+  abyss.addColorStop(1, 'rgba(8, 6, 10, 0)');
+  ctx.fillStyle = abyss;
+  ctx.beginPath();
+  ctx.ellipse(cx, cy + 32, 620, 320, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  // 2) Saia monumental em basalto negro e bronze dourado nas bordas frontais
+  const skirtH = 30;
+  const [eTopX, eTopY] = p(cols, 1);
+  const [sMidX, sMidY] = p(cols, rows);
+  const [wTopX, wTopY] = p(1, rows);
+
+  // Face sudeste (x = cols, y = 1..rows)
+  quad(
+    sMidX, sMidY,
+    eTopX, eTopY,
+    eTopX, eTopY + skirtH,
+    sMidX, sMidY + skirtH,
+    '#15131a', '#09080c', 1.2
+  );
+  // Face sudoeste (y = rows, x = 1..cols)
+  quad(
+    wTopX, wTopY,
+    sMidX, sMidY,
+    sMidX, sMidY + skirtH,
+    wTopX, wTopY + skirtH,
+    '#1d1923', '#09080c', 1.2
+  );
+
+  // Friso real de bronze dourado ao longo da fundação
+  ctx.strokeStyle = consagrado ? '#ffd54f' : '#a87d34';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(wTopX, wTopY + 7);
+  ctx.lineTo(sMidX, sMidY + 7);
+  ctx.lineTo(eTopX, eTopY + 7);
+  ctx.stroke();
+
+  // Nervuras e respiradouros solares na saia sudoeste e sudeste
+  const glowColor = consagrado ? '#ffe27a' : '#f0a429';
+  for (let x = 2; x < cols; x += 2) {
+    const [rx, ry] = p(x, rows);
+    ctx.strokeStyle = '#3b2e22';
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(rx, ry + 2);
+    ctx.lineTo(rx, ry + skirtH - 2);
+    ctx.stroke();
+
+    const [vx0, vy0] = p(x + 0.65, rows);
+    const [vx1, vy1] = p(x + 1.35, rows);
+    ctx.strokeStyle = glowColor;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(vx0, vy0 + 16);
+    ctx.lineTo(vx1, vy1 + 16);
+    ctx.stroke();
+  }
+  for (let y = 2; y < rows; y += 2) {
+    const [rx, ry] = p(cols, y);
+    ctx.strokeStyle = '#2c231b';
+    ctx.lineWidth = 2.6;
+    ctx.beginPath();
+    ctx.moveTo(rx, ry + 2);
+    ctx.lineTo(rx, ry + skirtH - 2);
+    ctx.stroke();
+  }
+  ctx.restore();
+}
+
+function drawDominioFloorOverlay(map, curState) {
+  const cols = map.layout[0].length - 1; // 14
+  const rows = map.layout.length - 1;    // 11
+  const p = (x, y) => [(x - y) * HW, (x + y) * HH];
+  const flags = curState?.progress?.flags ?? {};
+  const scanned = !!flags.scan_lacre_sala;
+  const gateOpen = !!flags.gate_lacre_frequencia_sala;
+  const fragmentTaken = !!flags.collected_fragmento_eco_dominio;
+  const consagrado = !!flags.santuario_dominio_consagrado;
+  const stanceActive = (curState?.player?.ability?.reveal?.timeLeft ?? 0) > 0;
+  const t = performance.now() / 1000;
+  const pulse = 0.5 + 0.5 * Math.sin(t * 3.4);
+
+  ctx.save();
+
+  // 1) Trilhos imperiais de bronze flanqueando a Passarela de Ruptura (y=5..7)
+  const drawRail = (x0, y0, x1, y1, color, w = 2.2) => {
+    const [ax, ay] = p(x0, y0);
+    const [bx, by] = p(x1, y1);
+    ctx.strokeStyle = '#120f16';
+    ctx.lineWidth = w + 3.2;
+    ctx.beginPath(); ctx.moveTo(ax, ay); ctx.lineTo(bx, by); ctx.stroke();
+    ctx.strokeStyle = color;
+    ctx.lineWidth = w;
+    ctx.beginPath(); ctx.moveTo(ax, ay); ctx.lineTo(bx, by); ctx.stroke();
+  };
+  const railTone = consagrado ? '#ffe074' : gateOpen ? '#edb847' : '#9c7430';
+  drawRail(1.3, 5.0, 13.4, 5.0, railTone, 2.2);
+  drawRail(1.3, 7.0, 13.4, 7.0, railTone, 2.2);
+
+  // 2) O ANEL DE RUPTURA — grande círculo concêntrico rúnico no centro da nave (6.4, 6.0)
+  {
+    const rcx = 6.4, rcy = 6.0;
+    const [icx, icy] = p(rcx, rcy);
+    const drawIsoCircle = (radW, stroke, lw, fill = null, dash = null) => {
+      ctx.save();
+      if (dash) ctx.setLineDash(dash);
+      ctx.beginPath();
+      ctx.ellipse(icx, icy, radW * HW * 1.414, radW * HH * 1.414, 0, 0, Math.PI * 2);
+      if (fill) { ctx.fillStyle = fill; ctx.fill(); }
+      if (stroke) { ctx.strokeStyle = stroke; ctx.lineWidth = lw; ctx.stroke(); }
+      ctx.restore();
+    };
+
+    const ringGlow = consagrado
+      ? 'rgba(255, 224, 112, 0.92)'
+      : stanceActive || scanned
+        ? `rgba(255, 210, 88, ${(0.66 + 0.28 * pulse).toFixed(2)})`
+        : 'rgba(198, 148, 56, 0.72)';
+
+    drawIsoCircle(2.25, '#120f17', 7, 'rgba(18, 14, 20, 0.42)');
+    drawIsoCircle(2.25, ringGlow, 2.6);
+    drawIsoCircle(1.82, '#8b6629', 1.6);
+    drawIsoCircle(1.18, ringGlow, 1.8, consagrado ? 'rgba(255, 196, 64, 0.10)' : 'rgba(24, 18, 14, 0.32)');
+
+    // 16 glifos rúnicos radiais entre o anel externo (2.25) e o interno (1.82)
+    ctx.strokeStyle = stanceActive || consagrado ? '#ffe588' : '#d69f3a';
+    ctx.lineWidth = 1.8;
+    for (let i = 0; i < 16; i++) {
+      const ang = (i / 16) * Math.PI * 2 + (consagrado ? t * 0.08 : 0);
+      const wx0 = rcx + Math.cos(ang) * 1.86;
+      const wy0 = rcy + Math.sin(ang) * 1.86;
+      const wx1 = rcx + Math.cos(ang) * 2.19;
+      const wy1 = rcy + Math.sin(ang) * 2.19;
+      const [gx0, gy0] = p(wx0, wy0);
+      const [gx1, gy1] = p(wx1, wy1);
+      ctx.beginPath();
+      ctx.moveTo(gx0, gy0);
+      ctx.lineTo(gx1, gy1);
+      ctx.stroke();
+    }
+
+    // Brasão de lâmina apontando da coroa do Anel direto para o Lacre (10.5, 6.0)
+    const [b0x, b0y] = p(7.6, 6.0);
+    const [bLx, bLy] = p(8.35, 5.68);
+    const [bTx, bTy] = p(9.75, 6.0);
+    const [bRx, bRy] = p(8.35, 6.32);
+    ctx.fillStyle = stanceActive || scanned ? 'rgba(255, 204, 72, 0.34)' : 'rgba(176, 128, 44, 0.22)';
+    ctx.strokeStyle = ringGlow;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(b0x, b0y);
+    ctx.lineTo(bLx, bLy);
+    ctx.lineTo(bTx, bTy);
+    ctx.lineTo(bRx, bRy);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+  }
+
+  // 3) Veios de falha harmônica (revelados por Postura do Domínio [R]) + fenda de Ruptura [Q]
+  if (stanceActive || scanned || gateOpen) {
+    const veinAlpha = gateOpen ? 0.55 : stanceActive ? (0.72 + 0.26 * pulse) : (0.42 + 0.24 * pulse);
+    const drawFault = (pts, width, color) => {
+      ctx.strokeStyle = color;
+      ctx.lineWidth = width;
+      ctx.beginPath();
+      pts.forEach(([wx, wy], i) => {
+        const [px, py] = p(wx, wy);
+        if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+      });
+      ctx.stroke();
+    };
+    const veinCol = `rgba(255, 212, 84, ${veinAlpha.toFixed(2)})`;
+    drawFault([[8.2, 5.75], [9.0, 5.55], [9.7, 5.82], [10.45, 5.95]], 2.2, veinCol);
+    drawFault([[8.2, 6.25], [9.1, 6.42], [9.8, 6.18], [10.45, 6.05]], 2.2, veinCol);
+  }
+
+  // Fenda sísmica permanente onde o Lacre de Frequência foi partido ao meio
+  if (gateOpen) {
+    const [s0x, s0y] = p(10.45, 4.95);
+    const [sMx, sMy] = p(10.52, 6.0);
+    const [s1x, s1y] = p(10.45, 7.05);
+    ctx.strokeStyle = '#0d090c';
+    ctx.lineWidth = 7;
+    ctx.beginPath(); ctx.moveTo(s0x, s0y); ctx.lineTo(sMx, sMy); ctx.lineTo(s1x, s1y); ctx.stroke();
+    ctx.strokeStyle = consagrado ? '#ffe680' : '#ffab2e';
+    ctx.lineWidth = 2.6;
+    ctx.beginPath(); ctx.moveTo(s0x, s0y); ctx.lineTo(sMx, sMy); ctx.lineTo(s1x, s1y); ctx.stroke();
+  }
+
+  // 4) Trono Octogonal da Coroa Antiga (12.5, 6.0) na Câmara Leste
+  {
+    const [sx, sy] = p(12.5, 6.0);
+    const drawIsoOct = (r, fill, stroke, lw = 1.6) => {
+      const k = r * 0.72;
+      const pts = [
+        [r, 0], [k, k], [0, r], [-k, k],
+        [-r, 0], [-k, -k], [0, -r], [k, -k],
+      ];
+      ctx.beginPath();
+      pts.forEach(([ox, oy], idx) => {
+        const [px, py] = p(12.5 + ox, 6.0 + oy);
+        if (idx === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+      });
+      ctx.closePath();
+      if (fill) { ctx.fillStyle = fill; ctx.fill(); }
+      if (stroke) { ctx.strokeStyle = stroke; ctx.lineWidth = lw; ctx.stroke(); }
+    };
+    drawIsoOct(1.08, 'rgba(18, 15, 22, 0.92)', '#9e7632', 2.2);
+    drawIsoOct(0.74, 'rgba(32, 22, 14, 0.94)', consagrado ? '#ffe680' : '#f2b63d', 1.8);
+    drawIsoOct(0.38, !fragmentTaken ? 'rgba(255, 198, 68, 0.36)' : 'rgba(56, 38, 18, 0.52)', '#ffe89c', 1.3);
+
+    if (!fragmentTaken) {
+      const beam = ctx.createRadialGradient(sx, sy - 10, 3, sx, sy - 4, 46);
+      beam.addColorStop(0, 'rgba(255, 226, 122, 0.42)');
+      beam.addColorStop(1, 'rgba(245, 168, 36, 0)');
+      ctx.fillStyle = beam;
+      ctx.beginPath();
+      ctx.ellipse(sx, sy, 44, 22, 0, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+
+  // 5) Meio-fio de corte arquitetônico nas bordas frontais
+  {
+    const [e0, e1] = p(cols, 1);
+    const [s0, s1] = p(cols, rows);
+    const [w0, w1] = p(1, rows);
+    ctx.strokeStyle = '#0d0b11';
+    ctx.lineWidth = 5;
+    ctx.beginPath();
+    ctx.moveTo(w0, w1); ctx.lineTo(s0, s1); ctx.lineTo(e0, e1);
+    ctx.stroke();
+    ctx.strokeStyle = consagrado ? '#ffd54f' : '#967030';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(w0, w1 - 1); ctx.lineTo(s0, s1 - 1); ctx.lineTo(e0, e1 - 1);
+    ctx.stroke();
+  }
+
   ctx.restore();
 }
 
@@ -1417,7 +2346,7 @@ function drawBioNetwork(map) {
 }
 
 // Apoio no solo para as estruturas grandes: elipse escura antes dos objetos.
-function drawBioShadows() {
+function drawObjectContactShadows() {
   ctx.save();
   // Fundação projetada a partir da mesma hitbox sólida do terminal.
   const terminal = (state.objects ?? []).find(o => o.id === 'bio_terminal_principal');
@@ -1434,7 +2363,8 @@ function drawBioShadows() {
     ctx.beginPath(); ctx.moveTo(...d); ctx.lineTo(...c); ctx.lineTo(...b); ctx.stroke();
   }
   for (const o of state.objects ?? []) {
-    if (!o.sombra || o.oculto) continue;
+    if (!o.sombra || o.oculto || (o.hideWhenFlag && state.progress?.flags?.[o.hideWhenFlag]) ||
+        (o.showWhenFlag && !state.progress?.flags?.[o.showWhenFlag])) continue;
     const ix = (o.x - o.y) * HW, iy = (o.x + o.y) * HH;
     // Sombra larga difusa + contato duro junto à base: a peça "assenta".
     ctx.fillStyle = 'rgba(10,26,27,.22)';
@@ -1819,6 +2749,7 @@ function drawWorld(map, state) {
   if (state.companion) drawList.push(state.companion);
   for (const a of state.fauna ?? []) if (visivel(a)) drawList.push(a);
   for (const target of state.trainingTargets ?? []) if (visivel(target)) drawList.push(target);
+  if (state.cromaticaRuntime?.visao && visivel(state.cromaticaRuntime.visao)) drawList.push(state.cromaticaRuntime.visao);
 
   for (const o of state.objects ?? []) {
     if (o.camada === 'fundo') { backList.push(o); continue; }  // trem/trilho sempre
@@ -1873,7 +2804,9 @@ function drawWorld(map, state) {
         ctx.save(); ctx.globalAlpha = .35; drawMapObject(item, state); ctx.restore();
       } else drawMapObject(item, state);
     } else if (item.renderType === 'trainingTarget') {
-      drawTrainingTarget(item);
+      if (item.cromaticaEnemy) drawCromaticaInfectado(item); else drawTrainingTarget(item);
+    } else if (item.renderType === 'cromaticaVisao') {
+      drawCromaticaNulo(item);
     } else if (item.renderType === 'companion') {
       if (item.speciesId === 'bolt') drawBolt(item); else drawLumeo(item);
     } else if (item.renderType === 'fauna') {
@@ -1895,8 +2828,17 @@ function drawWorld(map, state) {
     const rail = backList.find(o => o.id === 'trilho_dimensional_principal');
     if (rail) drawBeachRailTunnel(rail);
   }
-  // Camada de fundo (trilho, trem): atrás de tudo, só acima do chão.
+  // Casca estrutural das paredes externas da Oficina Bio-Forja / Santuário Domínio / Dársena Maré (atrás de backList).
+  if (map.meta?.estiloSala === 'bio_forja') drawBioForjaOuterWallShell(map);
+  if (map.meta?.estiloSala === 'dominio_anciao') drawDominioOuterWallShell(map);
+  if (map.meta?.estiloSala === 'mare_astral') drawMareAstralOuterWallShell(map);
+  if (map.meta?.estiloSala === 'nucleo_10x') drawNucleo10xOuterWallShell(map);
+  if (map.meta?.estiloSala === 'carga_eco' && map.meta?.useBackgroundWalls) drawCargoEcoWallShell(map);
+  if(map.meta?.docasInterior) desenharParedesInteriorDocas(ctx,map,state);
+  else if (map.meta?.estiloSala === 'frequencia_limiar' && map.meta?.useBackgroundWalls) drawFrequencyStationWalls(map);
+  // Camada de fundo (trilho, trem, painéis murais): atrás de tudo, só acima do chão.
   for (const o of backList) if ((o.ordem ?? 0) >= 0) drawMapObject(o, state);
+  if (map.meta?.estiloSala === 'mare_astral') drawMareAstralWindowLife(map, state);
 
   let ei = 0;
   for (let d = range.x0 + range.y0; d <= range.x1 + range.y1; d++) {
@@ -1920,6 +2862,11 @@ function drawWorld(map, state) {
 
   while (ei < drawList.length) drawItem(drawList[ei++]);
 
+  if (map.meta?.estiloSala === 'bio_forja') drawBioForjaHudCallouts(map, state);
+  if (map.meta?.estiloSala === 'dominio_anciao') drawDominioHudCallouts(map, state);
+  if (map.meta?.estiloSala === 'mare_astral') drawMareAstralHudCallouts(map, state);
+  if (map.meta?.estiloSala === 'nucleo_10x') drawNucleo10xHudCallouts(map, state);
+  if (map.meta?.estiloSala === 'carga_eco') drawCargoEcoHudCallouts(map, state);
   drawCombatFeedback();
   drawPlayerHurt();
 }
@@ -2097,6 +3044,25 @@ function drawBioRail(rail) {
   ctx.restore();
 }
 
+// Aparição e infectados vivem no mesmo espaço/profundidade dos objetos.
+function drawCromaticaInfectado(target) {
+  if (target.health <= 0) return;
+  const x=(target.x-target.y)*HW,y=(target.x+target.y)*HH,img=getSprite('cromatica_infectado');
+  ctx.save();ctx.fillStyle='rgba(18,8,28,.32)';ctx.beginPath();ctx.ellipse(x,y+1,17,6,0,0,Math.PI*2);ctx.fill();
+  if (target.windup>0) {ctx.strokeStyle='#ffb3dc';ctx.lineWidth=2;ctx.beginPath();ctx.ellipse(x,y,21,9,0,0,Math.PI*2);ctx.stroke();}
+  if(img) {const fw=img.width/8,fh=img.height,frame=Math.floor((target.clock??0)*5)%8;
+    ctx.translate(x,y);if(target.flip)ctx.scale(-1,1);ctx.imageSmoothingEnabled=false;
+    ctx.globalAlpha=target.hitTimer>0?.65:1;ctx.drawImage(img,frame*fw,0,fw,fh,-45,-114,90,114);
+  } else {ctx.fillStyle='#8e4d83';ctx.fillRect(x-8,y-34,16,34);}
+  ctx.restore();
+}
+function drawCromaticaNulo(vision) {
+  const img=getSprite('cromatica_nulo');if(!img)return;
+  const x=(vision.x-vision.y)*HW,y=(vision.x+vision.y)*HH;
+  const alpha=Math.min(1,Math.max(0,vision.tempo/0.65),Math.max(0,(3.5-vision.tempo)/.45));
+  ctx.save();ctx.globalAlpha=alpha*.8;ctx.imageSmoothingEnabled=false;ctx.drawImage(img,x-23,y-75,46,75);ctx.restore();
+}
+
 // Manifestação de treino é um alvo explícito e inofensivo; não é fauna.
 function drawTrainingTarget(target) {
   const x = (target.x-target.y)*HW, y = (target.x+target.y)*HH;
@@ -2181,7 +3147,7 @@ function drawCoastalFauna(a) {
   const x = (a.x - a.y) * HW, y = (a.x + a.y) * HH;
   // Golfinho e tartaruga vivem na água: a sombra deles é na própria
   // lâmina d'água, e o golfinho ganha arco de salto.
-  const naAgua = a.species === 'golfinho' || a.species === 'tartaruga' || a.species === 'peixes';
+  const naAgua = a.submersa || a.species === 'golfinho' || a.species === 'tartaruga' || a.species === 'peixes';
   // Animação vem do módulo de fauna: parábola de verdade para o golfinho,
   // batida em rajada para o trinta-réis, passo para o graxaim. O renderer
   // só obedece — nada de seno solto aqui dentro.
@@ -2200,7 +3166,18 @@ function drawCoastalFauna(a) {
   const box = (a.species === 'capivara' || nova) ? getVisibleBox(image, col * cw, row * ch, cw, ch) : null;
   // Usa a base opaca de cada quadro, sem redimensioná-lo ou deslocar a sombra.
   const anchor = faunaFootAnchor(box, ch);
-  ctx.drawImage(image, col * cw, row * ch, cw, ch, -width / 2, -height * anchor, width, height);
+  if (a.submersa && box) {
+    // A linha da água corta as patas, respeitando a caixa visível do quadro.
+    const linhaAgua = -height * anchor + height * (box.y + box.h * .72) / ch;
+    ctx.save();
+    ctx.beginPath(); ctx.rect(-width, -height * 2, width * 2, linhaAgua + height * 2); ctx.clip();
+    ctx.drawImage(image, col * cw, row * ch, cw, ch, -width / 2, -height * anchor, width, height);
+    ctx.restore();
+    ctx.strokeStyle = 'rgba(196,255,242,.8)'; ctx.lineWidth = 1.4;
+    ctx.beginPath(); ctx.ellipse(0, linhaAgua, width * .22, 3, 0, 0, Math.PI); ctx.stroke();
+  } else {
+    ctx.drawImage(image, col * cw, row * ch, cw, ch, -width / 2, -height * anchor, width, height);
+  }
   ctx.restore();
 }
 
@@ -2212,11 +3189,1878 @@ function drawWallTile(x, y, map) {
   const lastY = map.layout.length - 1;
   const front = y === lastY || x === lastX;
 
+  if (map.meta?.estiloSala === 'bio_forja') {
+    drawBioForjaWallTile(x, y, front);
+    return;
+  }
+
+  if (map.meta?.estiloSala === 'dominio_anciao') {
+    drawDominioWallTile(x, y, front);
+    return;
+  }
+
+  if (map.meta?.estiloSala === 'mare_astral') {
+    drawMareAstralWallTile(x, y, front, map);
+    return;
+  }
+
+  if (map.meta?.estiloSala === 'nucleo_10x') {
+    drawNucleo10xWallTile(x, y, front);
+    return;
+  }
+
   if (!front && (x === 0 || y === 0) && map.meta?.estiloParede !== 'simples') {
     if (drawWallSprite(x, y, map)) return;
   }
 
   drawWallProcedural(x, y, front);
+}
+
+function drawBioForjaOuterWallShell(map) {
+  const cols = map.layout[0].length - 1; // 14
+  const rows = map.layout.length - 1;    // 11
+  const p = (x, y) => [(x - y) * HW, (x + y) * HH];
+  const wallH = 66;
+  const thick = 0.42;
+
+  ctx.save();
+  // Ala noroeste (x=1, y=1..rows): respaldo contínuo em ferro e bronze oxidado
+  {
+    const [i0x, i0y] = p(1, 1);
+    const [i1x, i1y] = p(1, rows);
+    const [o0x, o0y] = p(1 - thick, 1 - thick);
+    const [o1x, o1y] = p(1 - thick, rows);
+    // Face interna visível entre painéis
+    quad(i1x, i1y, i0x, i0y, i0x, i0y - wallH, i1x, i1y - wallH, '#1d2725', '#101716', 1);
+    // Topo de coroamento da muralha noroeste
+    quad(o1x, o1y - wallH, o0x, o0y - wallH, i0x, i0y - wallH, i1x, i1y - wallH, '#2c3835', '#5e4932', 1.2);
+    // Testa frontal do topo na ponta oeste
+    quad(o1x, o1y, i1x, i1y, i1x, i1y - wallH, o1x, o1y - wallH, '#25302e', '#121918', 1);
+  }
+  // Ala nordeste (y=1, x=1..cols): respaldo contínuo em ferro e bronze oxidado
+  {
+    const [i0x, i0y] = p(1, 1);
+    const [i1x, i1y] = p(cols, 1);
+    const [o0x, o0y] = p(1 - thick, 1 - thick);
+    const [o1x, o1y] = p(cols, 1 - thick);
+    quad(i0x, i0y, i1x, i1y, i1x, i1y - wallH, i0x, i0y - wallH, '#18211f', '#101716', 1);
+    quad(o0x, o0y - wallH, o1x, o1y - wallH, i1x, i1y - wallH, i0x, i0y - wallH, '#26312f', '#523f2b', 1.2);
+    quad(i1x, i1y, o1x, o1y, o1x, o1y - wallH, i1x, i1y - wallH, '#151e1d', '#0f1615', 1);
+  }
+  ctx.restore();
+}
+
+function drawBioForjaHudCallouts(map, curState) {
+  const p = (x, y) => [(x - y) * HW, (x + y) * HH];
+  const flags = curState?.progress?.flags ?? {};
+  const diagnosed = !!flags.bio_placa_diagnostico;
+  const gateOpen = !!flags.gate_grade_impeto_vivo;
+  const synced = !!flags.oficina_bio_sincronizada;
+
+  ctx.save();
+  // 1) Dica tática na pista de impulso (sempre nítida acima dos pilares)
+  {
+    const [hx, hy] = p(7.65, 6.95);
+    const label = gateOpen
+      ? (synced ? 'OFICINA SINCRONIZADA' : 'PASSAGEM ESTABILIZADA')
+      : diagnosed
+        ? 'ALINHE E USE [Q] IMPULSO ▸'
+        : '1º [R] DIAGNOSTICAR GRADE';
+    ctx.font = 'bold 7.5px monospace';
+    ctx.textAlign = 'center';
+    const halfW = Math.ceil(ctx.measureText(label).width * 0.5) + 7;
+    ctx.fillStyle = 'rgba(8, 20, 20, 0.88)';
+    ctx.fillRect(hx - halfW, hy - 8, halfW * 2, 13);
+    ctx.strokeStyle = gateOpen ? 'rgba(110, 242, 198, 0.6)' : diagnosed ? '#35e6d3' : '#d89b48';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(hx - halfW, hy - 8, halfW * 2, 13);
+    ctx.fillStyle = gateOpen ? '#b8f7e2' : diagnosed ? '#c8fff7' : '#ffe2b0';
+    ctx.fillText(label, hx, hy + 1.5);
+  }
+
+  // 2) Etiqueta de trava exposta sobre a Grade de Ímpeto Vivo após [R]
+  if (diagnosed && !gateOpen) {
+    const [gx, gy] = p(10.5, 6.0);
+    const cx = gx, cy = gy - 66;
+    const badge = 'TRAVA EXPOSTA · [Q]';
+    ctx.font = 'bold 7.5px monospace';
+    ctx.textAlign = 'center';
+    const hw = Math.ceil(ctx.measureText(badge).width * 0.5) + 7;
+    ctx.fillStyle = 'rgba(6, 22, 22, 0.92)';
+    ctx.fillRect(cx - hw, cy - 8, hw * 2, 13);
+    ctx.strokeStyle = '#35e6d3';
+    ctx.lineWidth = 1.1;
+    ctx.strokeRect(cx - hw, cy - 8, hw * 2, 13);
+    ctx.fillStyle = '#d4fff6';
+    ctx.fillText(badge, cx, cy + 1.5);
+  }
+  ctx.restore();
+}
+
+function drawBioForjaWallTile(x, y, front) {
+  // Bordas frontais usam meio-fio + saia; paredes externas (x=0, y=0) usam
+  // casca contínua + painéis murais em backList (nunca cobrem objetos!).
+  if (front || x === 0 || y === 0) return;
+
+  const tx = (x - y) * HW;
+  const ty = (x + y) * HH;
+
+  // Sapatas dos dois pilares de contenção que ladeiam a Grade de Ímpeto Vivo.
+  if (x === 10 && (y === 4 || y === 7)) {
+    const h = 9;
+    quad(tx - HW, ty + HH, tx, ty + TH, tx, ty + TH - h, tx - HW, ty + HH - h, '#2b3634', '#141c1b', 1);
+    quad(tx, ty + TH, tx + HW, ty + HH, tx + HW, ty + HH - h, tx, ty + TH - h, '#202928', '#141c1b', 1);
+    quad(tx, ty - h, tx + HW, ty + HH - h, tx, ty + TH - h, tx - HW, ty + HH - h, '#5c4731', '#221a12', 1);
+    return;
+  }
+
+  // Anteparo interno de contenção Bio-Forja (x=10): blindagem isométrica de
+  // meia-altura (46 px) com almofadas metálicas, tubulação de cobre e plasma.
+  const h = 46;
+  const synced = !!state.progress?.flags?.oficina_bio_sincronizada;
+  const active = synced || !!state.progress?.flags?.gate_grade_impeto_vivo || !!state.progress?.flags?.bio_placa_diagnostico;
+
+  // Face esquerda (voltada para a oficina oeste)
+  quad(tx - HW, ty + HH, tx, ty + TH, tx, ty + TH - h, tx - HW, ty + HH - h, '#283432', '#121a19', 1);
+  // Almofada recuada escura na face oeste
+  quad(
+    tx - HW * 0.84, ty + HH * 1.16 - 8,
+    tx - HW * 0.16, ty + HH * 1.84 - 8,
+    tx - HW * 0.16, ty + HH * 1.84 - h + 9,
+    tx - HW * 0.84, ty + HH * 1.16 - h + 9,
+    '#1c2625', '#0f1615', 0.9
+  );
+  // Rodapé e friso superior de bronze oxidado na face esquerda
+  quad(tx - HW, ty + HH, tx, ty + TH, tx, ty + TH - 6, tx - HW, ty + HH - 6, '#624b33', '#1e1710', 0.8);
+  quad(tx - HW, ty + HH - h + 6, tx, ty + TH - h + 6, tx, ty + TH - h, tx - HW, ty + HH - h, '#7b5f41', '#241b12', 0.8);
+
+  // Face direita (voltada para o relicário leste)
+  quad(tx, ty + TH, tx + HW, ty + HH, tx + HW, ty + HH - h, tx, ty + TH - h, '#1d2726', '#111817', 1);
+  quad(
+    tx + HW * 0.16, ty + HH * 1.84 - 8,
+    tx + HW * 0.84, ty + HH * 1.16 - 8,
+    tx + HW * 0.84, ty + HH * 1.16 - h + 9,
+    tx + HW * 0.16, ty + HH * 1.84 - h + 9,
+    '#151d1c', '#0d1312', 0.9
+  );
+  quad(tx, ty + TH, tx + HW, ty + HH, tx + HW, ty + HH - 6, tx, ty + TH - 6, '#4b3a27', '#1b150e', 0.8);
+  quad(tx, ty + TH - h + 6, tx + HW, ty + HH - h + 6, tx + HW, ty + HH - h, tx, ty + TH - h, '#5e4831', '#201810', 0.8);
+
+  // Tubo vertical de cobre + visor de plasma na face oeste
+  ctx.save();
+  ctx.strokeStyle = '#9c6638';
+  ctx.lineWidth = 2.2;
+  ctx.beginPath();
+  ctx.moveTo(tx - HW * 0.5, ty + HH * 1.5 - 6);
+  ctx.lineTo(tx - HW * 0.5, ty + HH * 1.5 - h + 6);
+  ctx.stroke();
+
+  ctx.strokeStyle = active ? '#35e6d3' : '#d89b48';
+  ctx.lineWidth = 1.8;
+  ctx.beginPath();
+  ctx.moveTo(tx - HW * 0.76, ty + HH * 1.24 - h * 0.50);
+  ctx.lineTo(tx - HW * 0.24, ty + HH * 1.76 - h * 0.50);
+  ctx.stroke();
+
+  // Topo chanfrado com trilho energético correndo ao longo do eixo y (rumo à grade)
+  quad(tx, ty - h, tx + HW, ty + HH - h, tx, ty + TH - h, tx - HW, ty + HH - h, '#33413e', '#6d5439', 1);
+  const cTopX = tx + HW * 0.5, cTopY = ty + HH * 0.5 - h;
+  const cBotX = tx - HW * 0.5, cBotY = ty + HH * 1.5 - h;
+  ctx.strokeStyle = '#101a19';
+  ctx.lineWidth = 5;
+  ctx.beginPath();
+  ctx.moveTo(cTopX, cTopY);
+  ctx.lineTo(cBotX, cBotY);
+  ctx.stroke();
+  ctx.strokeStyle = synced ? '#9effe6' : active ? '#35e6d3' : '#d89b48';
+  ctx.lineWidth = 2.2;
+  ctx.stroke();
+  ctx.restore();
+}
+
+function drawDominioOuterWallShell(map) {
+  const cols = map.layout[0].length - 1; // 14
+  const rows = map.layout.length - 1;    // 11
+  const p = (x, y) => [(x - y) * HW, (x + y) * HH];
+  const wallH = 68;
+  const thick = 0.44;
+
+  ctx.save();
+  // Ala noroeste (x=1, y=1..rows): respaldo contínuo em obsidiana negra e bronze real
+  {
+    const [i0x, i0y] = p(1, 1);
+    const [i1x, i1y] = p(1, rows);
+    const [o0x, o0y] = p(1 - thick, 1 - thick);
+    const [o1x, o1y] = p(1 - thick, rows);
+    quad(i1x, i1y, i0x, i0y, i0x, i0y - wallH, i1x, i1y - wallH, '#16141c', '#0a080d', 1);
+    quad(o1x, o1y - wallH, o0x, o0y - wallH, i0x, i0y - wallH, i1x, i1y - wallH, '#24202d', '#8e6b2d', 1.2);
+    quad(o1x, o1y, i1x, i1y, i1x, i1y - wallH, o1x, o1y - wallH, '#1d1925', '#0b090f', 1);
+  }
+  // Ala nordeste (y=1, x=1..cols): respaldo contínuo em obsidiana negra e bronze real
+  {
+    const [i0x, i0y] = p(1, 1);
+    const [i1x, i1y] = p(cols, 1);
+    const [o0x, o0y] = p(1 - thick, 1 - thick);
+    const [o1x, o1y] = p(cols, 1 - thick);
+    quad(i0x, i0y, i1x, i1y, i1x, i1y - wallH, i0x, i0y - wallH, '#121018', '#0a080d', 1);
+    quad(o0x, o0y - wallH, o1x, o1y - wallH, i1x, i1y - wallH, i0x, i0y - wallH, '#1f1b28', '#826128', 1.2);
+    quad(i1x, i1y, o1x, o1y, o1x, o1y - wallH, i1x, i1y - wallH, '#110e16', '#09070c', 1);
+  }
+  ctx.restore();
+}
+
+function drawDominioHudCallouts(map, curState) {
+  const p = (x, y) => [(x - y) * HW, (x + y) * HH];
+  const flags = curState?.progress?.flags ?? {};
+  const scanned = !!flags.scan_lacre_sala;
+  const gateOpen = !!flags.gate_lacre_frequencia_sala;
+  const consagrado = !!flags.santuario_dominio_consagrado;
+  const stanceActive = (curState?.player?.ability?.reveal?.timeLeft ?? 0) > 0;
+  const t = performance.now() / 1000;
+
+  ctx.save();
+  // Letreiro dourado na Doca B2 (acima do pórtico oeste, sem cobrir as runas do lintel)
+  {
+    const [dx, dy] = p(1.05, 5.95);
+    ctx.font = 'bold 9px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillStyle = 'rgba(14, 11, 18, 0.90)';
+    ctx.fillRect(dx - 29, dy - 92, 58, 14);
+    ctx.strokeStyle = consagrado ? '#ffe074' : '#c9963a';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(dx - 29, dy - 92, 58, 14);
+    ctx.fillStyle = consagrado ? '#fff0ad' : '#ffd54f';
+    ctx.fillText('DOCA B2', dx, dy - 82);
+  }
+
+  // Mira harmônica do ponto frágil sobre o Lacre de Frequência (após [R], antes de [Q])
+  if ((stanceActive || scanned) && !gateOpen) {
+    const [gx, gy] = p(10.5, 6.0);
+    const r = 13 + 3.2 * Math.sin(t * 6.0);
+    ctx.strokeStyle = '#ffd54f';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(gx, gy - 26 - r);
+    ctx.lineTo(gx + r, gy - 26);
+    ctx.lineTo(gx, gy - 26 + r);
+    ctx.lineTo(gx - r, gy - 26);
+    ctx.closePath();
+    ctx.stroke();
+
+    ctx.fillStyle = 'rgba(18, 12, 8, 0.90)';
+    ctx.fillRect(gx - 54, gy - 58, 108, 14);
+    ctx.strokeStyle = 'rgba(255, 213, 79, 0.78)';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(gx - 54, gy - 58, 108, 14);
+    ctx.fillStyle = '#ffe380';
+    ctx.font = 'bold 8px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText('PONTO FRÁGIL • [Q]', gx, gy - 48);
+  }
+
+  // Rasgo luminoso de clivagem no instante em que Golpe de Ruptura [Q] parte um obstáculo
+  const flash = curState?.player?.ability?.ruptureFlash;
+  if (flash && flash.timeLeft > 0 && flash.duration > 0) {
+    const k = flash.timeLeft / flash.duration;
+    const [fx, fy] = p(flash.x, flash.y);
+    const rad = (1 - k) * 68 + 14;
+    ctx.save();
+    ctx.strokeStyle = `rgba(255, 224, 112, ${(0.85 * k).toFixed(3)})`;
+    ctx.lineWidth = 3.2 * k + 0.8;
+    ctx.beginPath();
+    ctx.ellipse(fx, fy - 12, rad, rad * 0.5, 0, 0, Math.PI * 2);
+    ctx.stroke();
+
+    // Traço diagonal de espada cortando o selo ao meio
+    const len = 54 * (0.65 + 0.35 * (1 - k));
+    ctx.strokeStyle = `rgba(255, 248, 210, ${(0.95 * k).toFixed(3)})`;
+    ctx.lineWidth = 4.5 * k;
+    ctx.beginPath();
+    ctx.moveTo(fx - len, fy - 34 - len * 0.42);
+    ctx.lineTo(fx + len, fy - 10 + len * 0.42);
+    ctx.stroke();
+    ctx.restore();
+  }
+  ctx.restore();
+}
+
+function ehGradeMare(x, y) {
+  // Canal central de corrente (y=5..6), berço do Núcleo Hidrodimensional e galeria dos janelões
+  if ((y === 5 || y === 6) && x >= 2 && x <= 13) return true;
+  if (x >= 5 && x <= 7 && y >= 2 && y <= 3) return true;
+  if (y === 1 && (x === 3 || x === 4 || x === 7 || x === 8 || x === 12)) return true;
+  return false;
+}
+
+function drawMareAstralFloorTile(x, y, tx, ty) {
+  const usaGrade = ehGradeMare(x, y);
+  const spriteId = usaGrade ? 'mare_sala_piso_grade' : 'mare_sala_piso_ardosia';
+  const img = getSprite(spriteId);
+  const f = img && getFrame(img, 0, 0, 1, 1)?.crop;
+  if (!f) {
+    const base = usaGrade ? '#0d3146' : '#122230';
+    quad(tx, ty, tx + HW, ty + HH, tx, ty + TH, tx - HW, ty + HH, base, '#08131d', 1);
+    return true;
+  }
+  const w = CONFIG.TILE_W * 1.03;
+  const h = w * (f.h / f.w);
+  ctx.save();
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = 'high';
+  const flip = !usaGrade && ((x * 7 + y * 13) & 1) === 1;
+  ctx.translate(tx, ty - 0.8);
+  if (flip) ctx.scale(-1, 1);
+  ctx.drawImage(f.canvas, 0, 0, f.w, f.h, -w / 2, 0, w, h);
+  ctx.restore();
+  return true;
+}
+
+function drawMareAstralUnderlay(map, curState) {
+  const cols = map.layout[0].length - 1; // 21
+  const rows = map.layout.length - 1;    // 11
+  const dockCols = 14;
+  const p = (x, y) => [(x - y) * HW, (x + y) * HH];
+  const flags = curState?.progress?.flags ?? {};
+  const sincronizada = !!flags.darsena_mare_sincronizada;
+  const rotaAberta = !!flags.gate_comporta_aquario_mare;
+
+  ctx.save();
+  // 1) Halo abissal pelágico sob a Dársena + Grande Aquário Oceânico
+  const [cx, cy] = p((cols + 1) * 0.5, (rows + 1) * 0.5);
+  const abyss = ctx.createRadialGradient(cx, cy + 24, 40, cx, cy + 24, 780);
+  abyss.addColorStop(0, sincronizada ? 'rgba(53, 230, 211, 0.30)' : 'rgba(28, 168, 212, 0.22)');
+  abyss.addColorStop(0.55, 'rgba(6, 32, 52, 0.62)');
+  abyss.addColorStop(1, 'rgba(3, 12, 22, 0)');
+  ctx.fillStyle = abyss;
+  ctx.beginPath();
+  ctx.ellipse(cx, cy + 28, 820, 390, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  // 2) Saia submarina rebitada da Dársena (x=1..14, y=rows) + saia oceânica do Grande Aquário (x=14..cols)
+  const skirtH = 30;
+  const [wTopX, wTopY] = p(1, rows);
+  const [dMidX, dMidY] = p(dockCols, rows);
+  const [sMidX, sMidY] = p(cols, rows);
+  const [eTopX, eTopY] = p(cols, 1);
+
+  // Face sudoeste da Dársena (titânio naval)
+  quad(wTopX, wTopY, dMidX, dMidY, dMidX, dMidY + skirtH, wTopX, wTopY + skirtH, '#10202e', '#07111a', 1.2);
+  // Face sudoeste e sudeste da Bacia Oceânica (basalto marinho + vidro temperado abissal)
+  quad(dMidX, dMidY, sMidX, sMidY, sMidX, sMidY + skirtH, dMidX, dMidY + skirtH, '#09293d', '#06131e', 1.2);
+  quad(sMidX, sMidY, eTopX, eTopY, eTopX, eTopY + skirtH, sMidX, sMidY + skirtH, '#072234', '#051019', 1.2);
+
+  // Friso de bronze naval contínuo
+  ctx.strokeStyle = sincronizada ? '#4ef2e4' : '#8c7548';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(wTopX, wTopY + 7);
+  ctx.lineTo(sMidX, sMidY + 7);
+  ctx.lineTo(eTopX, eTopY + 7);
+  ctx.stroke();
+
+  // Vigias bioluminescentes ao longo da saia frontal
+  for (let x = 2; x < cols; x += 2) {
+    const [rx, ry] = p(x, rows);
+    const isSea = x > dockCols;
+    ctx.fillStyle = isSea ? (rotaAberta ? '#5cf7eb' : '#25b8d4') : (sincronizada ? '#4ef2e4' : '#2aa6bd');
+    ctx.globalAlpha = 0.72;
+    ctx.beginPath();
+    ctx.ellipse(rx, ry + 16, isSea ? 7 : 4.5, 3.2, 0, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.restore();
+}
+
+function drawMareAstralFloorOverlay(map, curState) {
+  const cols = map.layout[0].length - 1; // 21
+  const rows = map.layout.length - 1;    // 11
+  const dockCols = 14;
+  const p = (x, y) => [(x - y) * HW, (x + y) * HH];
+  const flags = curState?.progress?.flags ?? {};
+  const gateOpen = !!flags.gate_fluxo_contido_sala;
+  const sincronizada = !!flags.darsena_mare_sincronizada;
+  const valvulaAtiva = !!flags.valvula_pressao_mare_equalizada;
+  const comportaAberta = !!flags.gate_comporta_aquario_mare;
+  const t = performance.now() / 1000;
+  const pulse = 0.5 + 0.5 * Math.sin(t * 2.6);
+
+  ctx.save();
+
+  // 1) Correntes bioluminescentes pulsando sob as grelhas da Dársena (x=2..13, y=5..6)
+  {
+    const [a0, a1] = p(2.0, 6.0);
+    const [b0, b1] = p(13.6, 6.0);
+    const boost = (sincronizada ? 0.16 : 0) + (valvulaAtiva ? 0.10 : 0);
+    ctx.strokeStyle = `rgba(53, 230, 211, ${(0.22 + boost + 0.12 * pulse).toFixed(3)})`;
+    ctx.lineWidth = 6;
+    ctx.beginPath();
+    ctx.moveTo(a0, a1);
+    ctx.lineTo(b0, b1);
+    ctx.stroke();
+
+    // Partículas laminares correndo rumo ao Grande Aquário a leste
+    for (let i = 0; i < 6; i++) {
+      const u = ((t * 0.24 + i / 6) % 1);
+      const wx = 2.2 + u * (gateOpen ? 11.4 : 7.8);
+      const [px, py] = p(wx, 5.95 + 0.18 * Math.sin(t * 3 + i));
+      ctx.fillStyle = `rgba(150, 252, 255, ${(0.55 * (1 - Math.abs(u - 0.5) * 1.4)).toFixed(3)})`;
+      ctx.beginPath();
+      ctx.ellipse(px, py, 5, 2.3, -0.45, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+
+  // 2) Anel hidro-harmônico sob o Núcleo Hidrodimensional (6.1, 3.5) e sob o Relicário (12.5, 6.0)
+  {
+    const [gx, gy] = p(6.1, 3.5);
+    const grad = ctx.createRadialGradient(gx, gy, 6, gx, gy, 74);
+    grad.addColorStop(0, sincronizada ? 'rgba(92, 247, 235, 0.42)' : 'rgba(42, 198, 224, 0.26)');
+    grad.addColorStop(1, 'rgba(12, 60, 88, 0)');
+    ctx.fillStyle = grad;
+    ctx.beginPath();
+    ctx.ellipse(gx, gy, 74, 37, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    const [rx, ry] = p(12.5, 6.0);
+    const rGrad = ctx.createRadialGradient(rx, ry, 4, rx, ry, 54);
+    rGrad.addColorStop(0, gateOpen ? 'rgba(92, 247, 235, 0.40)' : 'rgba(38, 178, 210, 0.22)');
+    rGrad.addColorStop(1, 'rgba(10, 48, 72, 0)');
+    ctx.fillStyle = rGrad;
+    ctx.beginPath();
+    ctx.ellipse(rx, ry, 52, 26, 0, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  // 3) Degraus submersos da rampa náutica (x=14..15, y=5..7) rumo ao Grande Aquário Oceânico
+  {
+    for (let step = 0; step < 3; step++) {
+      const sx0 = dockCols + step * 0.32;
+      const sx1 = sx0 + 0.30;
+      const [r0x, r0y] = p(sx0, 5.06);
+      const [r1x, r1y] = p(sx1, 5.06);
+      const [r2x, r2y] = p(sx1, 6.94);
+      const [r3x, r3y] = p(sx0, 6.94);
+      const alpha = (0.76 - step * 0.20).toFixed(2);
+      quad(
+        r0x, r0y, r1x, r1y, r2x, r2y, r3x, r3y,
+        `rgba(24, 58, 78, ${alpha})`,
+        comportaAberta ? 'rgba(92, 247, 235, 0.68)' : 'rgba(140, 117, 72, 0.58)',
+        1
+      );
+    }
+  }
+
+  // 4) Vida abissal extra dentro do Grande Aquário Oceânico (x=15..20, y=1..10):
+  //    águas-vivas bioluminescentes, anéis de corrente rumo ao Arco da Enseada e cáusticas
+  {
+    const medusas = [
+      { bx: 16.2, by: 2.8, amp: 0.42, spd: 0.75, ph: 0.4, sz: 8.5 },
+      { bx: 18.4, by: 3.4, amp: 0.50, spd: 0.62, ph: 2.1, sz: 10.0 },
+      { bx: 16.8, by: 8.6, amp: 0.46, spd: 0.68, ph: 3.7, sz: 9.2 },
+      { bx: 19.1, by: 8.2, amp: 0.38, spd: 0.82, ph: 5.0, sz: 7.8 },
+      { bx: 17.6, by: 5.9, amp: 0.34, spd: 0.90, ph: 1.3, sz: 8.0 },
+    ];
+    for (const m of medusas) {
+      const wx = m.bx + Math.cos(t * m.spd + m.ph) * m.amp * 0.6;
+      const wy = m.by + Math.sin(t * m.spd + m.ph) * m.amp;
+      const [mx, my] = p(wx, wy);
+      const bell = m.sz * (0.88 + 0.16 * Math.sin(t * 3.1 + m.ph));
+
+      const halo = ctx.createRadialGradient(mx, my, 1, mx, my, bell * 2.3);
+      halo.addColorStop(0, 'rgba(130, 255, 248, 0.42)');
+      halo.addColorStop(1, 'rgba(30, 180, 210, 0)');
+      ctx.fillStyle = halo;
+      ctx.beginPath();
+      ctx.arc(mx, my, bell * 2.3, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Umbela translúcida da água-viva
+      ctx.fillStyle = 'rgba(116, 250, 242, 0.62)';
+      ctx.strokeStyle = 'rgba(200, 255, 255, 0.82)';
+      ctx.lineWidth = 1.1;
+      ctx.beginPath();
+      ctx.ellipse(mx, my, bell, bell * 0.62, -0.3, Math.PI, Math.PI * 2);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+
+      // Tentáculos ondulantes
+      ctx.strokeStyle = 'rgba(126, 248, 255, 0.48)';
+      ctx.lineWidth = 1;
+      for (let k = -1; k <= 1; k++) {
+        ctx.beginPath();
+        ctx.moveTo(mx + k * bell * 0.42, my);
+        ctx.quadraticCurveTo(
+          mx + k * bell * 0.5 + Math.sin(t * 4 + m.ph + k) * 4,
+          my + bell * 0.7,
+          mx + k * bell * 0.35 - Math.cos(t * 3.4 + m.ph) * 3,
+          my + bell * 1.35
+        );
+        ctx.stroke();
+      }
+    }
+
+    // Trilha luminosa de corrente guiando da rampa (15.0, 6.0) até o Arco da Enseada (19.6, 5.8)
+    for (let i = 0; i < 4; i++) {
+      const wx = 15.4 + i * 1.15;
+      const [cx, cy] = p(wx, 5.95);
+      const glow = 0.24 + 0.18 * Math.sin(t * 2.8 - i * 0.8);
+      ctx.strokeStyle = `rgba(92, 247, 235, ${glow.toFixed(3)})`;
+      ctx.lineWidth = 1.6;
+      ctx.beginPath();
+      ctx.ellipse(cx, cy, 16, 8, 0, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+  }
+
+  // 5) Meio-fio arquitetônico frontal ao redor de toda a sala + aquário
+  {
+    const [e0, e1] = p(cols, 1);
+    const [s0, s1] = p(cols, rows);
+    const [w0, w1] = p(1, rows);
+    ctx.strokeStyle = '#07131d';
+    ctx.lineWidth = 5;
+    ctx.beginPath();
+    ctx.moveTo(w0, w1); ctx.lineTo(s0, s1); ctx.lineTo(e0, e1);
+    ctx.stroke();
+    ctx.strokeStyle = sincronizada ? '#4ef2e4' : '#8c7548';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(w0, w1 - 1); ctx.lineTo(s0, s1 - 1); ctx.lineTo(e0, e1 - 1);
+    ctx.stroke();
+  }
+
+  ctx.restore();
+}
+
+function drawMareAstralOuterWallShell(map) {
+  const cols = map.layout[0].length - 1; // 21
+  const rows = map.layout.length - 1;    // 11
+  const dockCols = 14;
+  const p = (x, y) => [(x - y) * HW, (x + y) * HH];
+  const wallH = 68;
+  const seaWallH = 26;
+  const thick = 0.44;
+
+  ctx.save();
+  // Ala noroeste (x=1, y=1..rows): antepara submarina em aço-titânio e bronze
+  {
+    const [i0x, i0y] = p(1, 1);
+    const [i1x, i1y] = p(1, rows);
+    const [o0x, o0y] = p(1 - thick, 1 - thick);
+    const [o1x, o1y] = p(1 - thick, rows);
+    quad(i1x, i1y, i0x, i0y, i0x, i0y - wallH, i1x, i1y - wallH, '#0f1f2d', '#071019', 1);
+    quad(o1x, o1y - wallH, o0x, o0y - wallH, i0x, i0y - wallH, i1x, i1y - wallH, '#1b3347', '#8a7346', 1.2);
+    quad(o1x, o1y, i1x, i1y, i1x, i1y - wallH, o1x, o1y - wallH, '#152838', '#08121b', 1);
+  }
+  // Ala nordeste da Dársena (y=1, x=1..dockCols): galeria dos janelões do aquário
+  {
+    const [i0x, i0y] = p(1, 1);
+    const [i1x, i1y] = p(dockCols, 1);
+    const [o0x, o0y] = p(1 - thick, 1 - thick);
+    const [o1x, o1y] = p(dockCols, 1 - thick);
+    quad(i0x, i0y, i1x, i1y, i1x, i1y - wallH, i0x, i0y - wallH, '#0d1c29', '#071019', 1);
+    quad(o0x, o0y - wallH, o1x, o1y - wallH, i1x, i1y - wallH, i0x, i0y - wallH, '#193042', '#8a7346', 1.2);
+    quad(i1x, i1y, o1x, o1y, o1x, o1y - wallH, i1x, i1y - wallH, '#0f202e', '#071019', 1);
+  }
+  // Borda nordeste rebaixada do Grande Aquário Oceânico (y=1, x=dockCols..cols): parapeito oceânico aberto
+  {
+    const [i0x, i0y] = p(dockCols, 1);
+    const [i1x, i1y] = p(cols, 1);
+    const [o0x, o0y] = p(dockCols, 1 - thick);
+    const [o1x, o1y] = p(cols, 1 - thick);
+    quad(i0x, i0y, i1x, i1y, i1x, i1y - seaWallH, i0x, i0y - seaWallH, '#0c283b', '#07141f', 1);
+    quad(o0x, o0y - seaWallH, o1x, o1y - seaWallH, i1x, i1y - seaWallH, i0x, i0y - seaWallH, '#194258', '#44c9c2', 1.2);
+  }
+  ctx.restore();
+}
+
+function drawMareAstralWindowLife(map, curState) {
+  // Animação viva contida exatamente dentro dos 3 janelões panorâmicos da parede nordeste (y=1.0)
+  const p = (x, y) => [(x - y) * HW, (x + y) * HH];
+  const t = performance.now() / 1000;
+  const windows = [
+    { wx: 5.25, wy: 1.0, seed: 1.1 },
+    { wx: 8.35, wy: 1.0, seed: 3.4 },
+    { wx: 12.55, wy: 1.0, seed: 5.7 },
+  ];
+
+  ctx.save();
+  for (const w of windows) {
+    const [cx, cy] = p(w.wx, w.wy);
+    // Feixes de luz cáustica suaves dentro da moldura do vidro
+    for (let k = -1; k <= 1; k++) {
+      const sway = Math.sin(t * 1.1 + w.seed + k) * 3.5;
+      const bx = cx + k * 18 + sway;
+      const by = cy - 34 + k * 9;
+      const ray = ctx.createLinearGradient(bx - 4, by - 16, bx + 6, by + 14);
+      ray.addColorStop(0, 'rgba(130, 252, 255, 0.20)');
+      ray.addColorStop(1, 'rgba(30, 170, 210, 0)');
+      ctx.fillStyle = ray;
+      ctx.beginPath();
+      ctx.moveTo(bx - 4, by - 15);
+      ctx.lineTo(bx + 4, by - 12);
+      ctx.lineTo(bx + 8, by + 13);
+      ctx.lineTo(bx - 2, by + 10);
+      ctx.closePath();
+      ctx.fill();
+    }
+
+    // Cardume luminoso cruzando suavemente o janelão ao longo do eixo +2:+1
+    for (let f = 0; f < 3; f++) {
+      const u = ((t * 0.14 + w.seed * 0.2 + f * 0.31) % 1) - 0.5;
+      const fx = cx + u * 58;
+      const fy = cy - 33 + u * 29 + Math.sin(t * 2.4 + f + w.seed) * 2.5;
+      ctx.fillStyle = 'rgba(148, 252, 255, 0.56)';
+      ctx.beginPath();
+      ctx.ellipse(fx, fy, 3.0, 1.3, 0.46, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // Esporos bioluminescentes ascendentes dentro do vidro
+    for (let s = 0; s < 4; s++) {
+      const v = (t * 0.26 + s * 0.24 + w.seed) % 1;
+      const sx = cx + (s - 1.5) * 13 + Math.sin(t * 1.8 + s) * 2;
+      const sy = cy - 18 + (s - 1.5) * 6.5 - v * 24;
+      ctx.fillStyle = `rgba(176, 255, 252, ${(0.60 * (1 - v)).toFixed(3)})`;
+      ctx.beginPath();
+      ctx.arc(sx, sy, 1.4, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+  ctx.restore();
+}
+
+function drawMareAstralHudCallouts(map, curState) {
+  const p = (x, y) => [(x - y) * HW, (x + y) * HH];
+  const flags = curState?.progress?.flags ?? {};
+  const scanned = !!flags.scan_fluxo_sala;
+  const gateOpen = !!flags.gate_fluxo_contido_sala;
+  const sincronizada = !!flags.darsena_mare_sincronizada;
+  const comportaAberta = !!flags.gate_comporta_aquario_mare;
+  const nadoPronto = !!flags.aprendeu_a_nadar || lerArvore(curState?.progress).nivel >= 4;
+  const revealActive = (curState?.player?.ability?.reveal?.timeLeft ?? 0) > 0;
+  const t = performance.now() / 1000;
+
+  ctx.save();
+  // 1) Letreiro náutico centrado no lintel da Eclusa Doca A2
+  {
+    const [dx, dy] = p(1.05, 5.95);
+    ctx.font = 'bold 9px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillStyle = 'rgba(7, 19, 29, 0.90)';
+    ctx.fillRect(dx - 29, dy - 92, 58, 14);
+    ctx.strokeStyle = sincronizada ? '#5cf7eb' : '#2fb8cc';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(dx - 29, dy - 92, 58, 14);
+    ctx.fillStyle = sincronizada ? '#b8ffff' : '#6eeeff';
+    ctx.fillText('DOCA A2', dx, dy - 82);
+  }
+
+  // 2) Janela laminar revelada pelo Senso de Corrente [R] sobre o Fluxo Contido
+  if ((revealActive || scanned) && !gateOpen) {
+    const [gx, gy] = p(10.5, 6.0);
+    const r = 13 + 3.0 * Math.sin(t * 5.6);
+    ctx.strokeStyle = '#5cf7eb';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(gx, gy - 26, r, 0, Math.PI * 2);
+    ctx.stroke();
+
+    ctx.fillStyle = 'rgba(6, 22, 34, 0.90)';
+    ctx.fillRect(gx - 58, gy - 58, 116, 14);
+    ctx.strokeStyle = 'rgba(92, 247, 235, 0.80)';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(gx - 58, gy - 58, 116, 14);
+    ctx.fillStyle = '#9efcff';
+    ctx.font = 'bold 8px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText('JANELA LAMINAR • [Q]', gx, gy - 48);
+  }
+
+  // 3) Indicador da Comporta do Aquário / Rota de Nado Livre para a Enseada dos Ecos
+  if (gateOpen) {
+    const [ax, ay] = comportaAberta ? p(18.5, 5.7) : p(13.85, 4.65);
+    const prontoAbrir = !comportaAberta && sincronizada && !!flags.visitou_praia_inicial && nadoPronto;
+    const label = comportaAberta
+      ? 'CONDUTO -> ENSEADA DOS ECOS'
+      : prontoAbrir
+        ? 'ABRIR ROTA OCEÂNICA • [E]'
+        : 'ROTA MARINHA • TREINE NA PRAIA';
+    const w = label.length * 5.2 + 14;
+    const yOff = comportaAberta ? 86 : 74;
+    ctx.fillStyle = 'rgba(6, 22, 34, 0.88)';
+    ctx.fillRect(ax - w / 2, ay - yOff, w, 14);
+    ctx.strokeStyle = comportaAberta || prontoAbrir ? '#5cf7eb' : '#6c8ea3';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(ax - w / 2, ay - yOff, w, 14);
+    ctx.fillStyle = comportaAberta || prontoAbrir ? '#b8ffff' : '#a8c8d8';
+    ctx.font = 'bold 8px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText(label, ax, ay - yOff + 10);
+  }
+
+  // 4) Onda de expansão fluida no Passo de Corrente [Q] / abertura da comporta
+  const tideFlash = curState?.player?.ability?.tideFlash;
+  if (tideFlash && tideFlash.timeLeft > 0 && tideFlash.duration > 0) {
+    const k = tideFlash.timeLeft / tideFlash.duration;
+    const [fx, fy] = p(tideFlash.x, tideFlash.y);
+    const rad = (1 - k) * 76 + 16;
+    ctx.strokeStyle = `rgba(92, 247, 235, ${(0.88 * k).toFixed(3)})`;
+    ctx.lineWidth = 3.2 * k + 0.8;
+    ctx.beginPath();
+    ctx.ellipse(fx, fy - 10, rad, rad * 0.5, 0, 0, Math.PI * 2);
+    ctx.stroke();
+  }
+  ctx.restore();
+}
+
+function drawMareAstralWallTile(x, y, front, map) {
+  if (front || x === 0 || y === 0) return;
+  const water = map?.aguaPraia?.[y]?.[x];
+  if (water && 'YyDdX'.includes(water)) return;
+
+  const tx = (x - y) * HW;
+  const ty = (x + y) * HH;
+  const flags = state?.progress?.flags ?? {};
+  const sincronizada = !!flags.darsena_mare_sincronizada;
+  const active = sincronizada || !!flags.gate_fluxo_contido_sala || !!flags.scan_fluxo_sala;
+  const cyanStroke = sincronizada ? '#7efcff' : active ? '#4ef2e4' : '#2b8ea8';
+
+  // Cais leste rebaixado (x = 14): mureta náutica de ardósia e bronze entre o Relicário e o Aquário
+  const isSeawall = x === 14;
+  const h = isSeawall ? 20 : 48;
+
+  // Face sudoeste
+  quad(
+    tx - HW, ty + HH,
+    tx, ty + TH,
+    tx, ty + TH - h,
+    tx - HW, ty + HH - h,
+    isSeawall ? '#132838' : '#102231',
+    '#07111a',
+    1
+  );
+  quad(tx - HW, ty + HH, tx, ty + TH, tx, ty + TH - 5, tx - HW, ty + HH - 5, '#6d5b38', '#141c24', 0.8);
+  quad(tx - HW, ty + HH - h + 5, tx, ty + TH - h + 5, tx, ty + TH - h, tx - HW, ty + HH - h, '#8c7548', '#18222c', 0.8);
+
+  // Face sudeste
+  quad(
+    tx, ty + TH,
+    tx + HW, ty + HH,
+    tx + HW, ty + HH - h,
+    tx, ty + TH - h,
+    isSeawall ? '#0e2231' : '#0c1b27',
+    '#060f17',
+    0.9
+  );
+  quad(tx, ty + TH, tx + HW, ty + HH, tx + HW, ty + HH - 5, tx, ty + TH - 5, '#594a2d', '#111820', 0.8);
+  quad(tx, ty + TH - h + 5, tx + HW, ty + HH - h + 5, tx + HW, ty + HH - h, tx, ty + TH - h, '#75613b', '#141d26', 0.8);
+
+  // Topo em titânio naval com duto hidrodinâmico ciano rumo ao pórtico
+  quad(tx, ty - h, tx + HW, ty + HH - h, tx, ty + TH - h, tx - HW, ty + HH - h, '#1c3548', '#8a7346', 1);
+  ctx.save();
+  if (!isSeawall) {
+    ctx.strokeStyle = cyanStroke;
+    ctx.lineWidth = 1.8;
+    ctx.beginPath();
+    ctx.moveTo(tx - HW * 0.5, ty + HH * 1.5 - 8);
+    ctx.lineTo(tx - HW * 0.5, ty + HH * 1.5 - h + 8);
+    ctx.stroke();
+  }
+  const cTopX = tx + HW * 0.5, cTopY = ty + HH * 0.5 - h;
+  const cBotX = tx - HW * 0.5, cBotY = ty + HH * 1.5 - h;
+  ctx.strokeStyle = '#07131d';
+  ctx.lineWidth = 4.5;
+  ctx.beginPath();
+  ctx.moveTo(cTopX, cTopY);
+  ctx.lineTo(cBotX, cBotY);
+  ctx.stroke();
+  ctx.strokeStyle = cyanStroke;
+  ctx.lineWidth = 2.0;
+  ctx.stroke();
+  ctx.restore();
+}
+
+// =====================================================================
+// BASE DOS VETORES — NÚCLEO 10X (grafite usinado, indução verde-neon)
+// =====================================================================
+// =====================================================================
+// ÁREA DE CARGA VIVA — bay compacto por arquétipo (R → Q → fragmento).
+// Mesmo tamanho das câmaras antigas; a vida é luz, esteira, guindaste,
+// drone de conferência e campo da trava. Nada aqui decide colisão.
+// =====================================================================
+function drawCargoEcoFloorTile(x, y, tx, ty, map) {
+  const spriteId = {
+    bio: 'bio_sala_piso_placa',
+    dominio: 'dom_sala_piso_obsidiana',
+    mare: 'mare_sala_piso_ardosia',
+    nucleo: 'nucleo_sala_piso_grafite',
+  }[map.meta?.cargoKey] ?? 'nucleo_sala_piso_grafite';
+  const img = getSprite(spriteId);
+  const f = img && getFrame(img, 0, 0, 1, 1)?.crop;
+  if (!f) return false;
+  const w = CONFIG.TILE_W * 1.03;
+  const h = w * (f.h / f.w);
+  ctx.save();
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = 'high';
+  const flip = ((x * 7 + y * 13) & 1) === 1;
+  ctx.translate(tx, ty - 0.8);
+  if (flip) ctx.scale(-1, 1);
+  ctx.drawImage(f.canvas, 0, 0, f.w, f.h, -w / 2, 0, w, h);
+  ctx.restore();
+  return true;
+}
+
+// Casca do bay: paredes-contêiner baixas e divisória de carga no lugar dos
+// blocos genéricos. Colisão continua vindo do layout/walkMask.
+function drawCargoEcoWallShell(map) {
+  const p = (x, y) => [(x - y) * HW, (x + y) * HH];
+  const theme = cargoTheme(map);
+  const cols = map.layout[0].length - 1, rows = map.layout.length - 1;
+  const h = 20;
+  ctx.save();
+  const panel = (x0, y0, x1, y1, fill) => {
+    const [ax, ay] = p(x0, y0), [bx, by] = p(x1, y1);
+    quad(ax, ay, bx, by, bx, by - h, ax, ay - h, fill, '#05080c', 1);
+    ctx.strokeStyle = theme; ctx.globalAlpha = 0.32; ctx.lineWidth = 1.2;
+    ctx.beginPath(); ctx.moveTo(ax, ay - h + 5); ctx.lineTo(bx, by - h + 5); ctx.stroke();
+    ctx.globalAlpha = 1;
+  };
+  for (let x = 1; x < cols; x++) {
+    panel(x, 1, x + 1, 1, '#141c26');
+    panel(x, rows, x + 1, rows, '#0e151e');
+  }
+  for (let y = 1; y < rows; y++) {
+    panel(1, y, 1, y + 1, '#101822');
+    panel(cols, y, cols, y + 1, '#0c131b');
+  }
+  // As divisórias acompanham TODOS os tiles sólidos internos, inclusive os
+  // da Bio-Forja. Sua altura baixa mantém a leitura da sala e da passagem.
+  for (let d = 2; d < cols + rows; d++) {
+    for (let x = 1; x < cols; x++) {
+      const y = d - x;
+      if (y < 1 || y >= rows || map.layout[y]?.[x] !== 1) continue;
+      // A divisória termina no MESMO plano dos postes da trava. Cubos de
+      // um tile inteiro engoliam as extremidades mesmo com o sprite alinhado.
+      const divider = x === (map.meta?.cargoKey === 'bio' ? 10 : 5);
+      const x0 = divider ? x + .46 : x, x1 = divider ? x + .54 : x + 1;
+      const [ax, ay] = p(x0, y), [bx, by] = p(x1, y);
+      const [cx, cy] = p(x1, y + 1), [dx, dy] = p(x0, y + 1);
+      const ch = 24;
+      quad(ax, ay - ch, bx, by - ch, cx, cy - ch, dx, dy - ch, '#202c37', '#101820', 1);
+      quad(dx, dy, cx, cy, cx, cy - ch, dx, dy - ch, '#121c25', '#080e14', 1);
+      quad(bx, by, cx, cy, cx, cy - ch, bx, by - ch, '#101922', '#080e14', 1);
+      ctx.strokeStyle = theme; ctx.globalAlpha = 0.28; ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(dx + 3, dy - 6); ctx.lineTo(cx - 3, cy - 6); ctx.stroke();
+      ctx.globalAlpha = 1;
+    }
+  }
+  ctx.restore();
+}
+
+// Plataformas, trilhas e circuitos são cenografia: não alteram colisão.
+function frequencyPoint(x, y) { return [(x - y) * HW, (x + y) * HH]; }
+function frequencySlab(x0, y0, x1, y1, fill, line = '#73837e') {
+  const a = frequencyPoint(x0, y0), b = frequencyPoint(x1, y0);
+  const c = frequencyPoint(x1, y1), d = frequencyPoint(x0, y1);
+  quad(...a, ...b, ...c, ...d, fill, line, 1);
+}
+function frequencyLine(points, color, width) {
+  ctx.strokeStyle = color; ctx.lineWidth = width; ctx.lineJoin = 'round';
+  ctx.beginPath(); ctx.moveTo(...frequencyPoint(...points[0]));
+  for (const point of points.slice(1)) ctx.lineTo(...frequencyPoint(...point));
+  ctx.stroke();
+}
+
+function drawFrequencyExteriorFloor(curState) {
+  ctx.save();
+  // Pequeno cais técnico em pedra, integrado à areia sob a entrada.
+  frequencySlab(16.4, 9.2, 19.6, 12.2, '#59615a', '#3d4743');
+  frequencySlab(16.55, 9.35, 19.45, 12.05, '#767b6c', '#9b9c88');
+  for (let x = 17; x < 19.5; x += .55) frequencyLine([[x, 9.4], [x, 12]], 'rgba(44,57,53,.35)', 1);
+  // Passarela baixa de manutenção liga o receptor à soleira, sem ocupar a rota da praia.
+  frequencyLine([[12.5, 14.5], [14.5, 14.5], [16.9, 11.55], [18.5, 11.25]], 'rgba(51,53,44,.42)', 13);
+  frequencyLine([[12.5, 14.5], [14.5, 14.5], [16.9, 11.55], [18.5, 11.25]], '#a8a18a', 8);
+  frequencyLine([[12.5, 14.5], [14.5, 14.5], [16.9, 11.55], [18.5, 11.25]], 'rgba(50,71,64,.7)', 1);
+  const [rx, ry] = frequencyPoint(12.5, 14.5);
+  // Contato sob o pedestal, não uma sombra separada à frente.
+  ctx.fillStyle = 'rgba(38,42,36,.35)'; ctx.beginPath(); ctx.ellipse(rx, ry - 5, 26, 10, 0, 0, Math.PI * 2); ctx.fill();
+  // A iluminação da soleira confirma o sinal, sem substituir o aviso textual.
+  ctx.fillStyle = curState.progress?.flags?.frequencia666Registrada ? '#75e8d2' : '#d4a76d';
+  for (const [x,y] of [[18.15,11.45],[18.9,11.45]]) { const [px,py]=frequencyPoint(x,y); ctx.beginPath(); ctx.ellipse(px,py,3,1.5,0,0,Math.PI*2);ctx.fill(); }
+  ctx.restore();
+}
+
+function drawFrequencyStationWalls(map) {
+  const cols = map.layout[0].length - 1, rows = map.layout.length - 1, h = 31;
+  ctx.save();
+  function panel(x0,y0,x1,y1,back, height = h) {
+    const h = height;
+    const [ax,ay]=frequencyPoint(x0,y0), [bx,by]=frequencyPoint(x1,y1);
+    quad(ax,ay,bx,by,bx,by-h,ax,ay-h,back ? '#1d2a30' : '#101b21','#071015',1);
+    ctx.strokeStyle = '#65746e'; ctx.globalAlpha = .55; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(ax,ay-h+4);ctx.lineTo(bx,by-h+4);ctx.stroke();
+    ctx.strokeStyle = '#44bbae'; ctx.globalAlpha = .45;
+    ctx.beginPath();ctx.moveTo(ax,ay-7);ctx.lineTo(bx,by-7);ctx.stroke(); ctx.globalAlpha = 1;
+    ctx.fillStyle='#9b885f';ctx.beginPath();ctx.arc((ax+bx)/2,(ay+by)/2-h+9,1.5,0,Math.PI*2);ctx.fill();
+  }
+  for (let x=1;x<cols;x++) { panel(x,1,x+1,1,true); panel(x,rows,x+1,rows,false); }
+  for (let y=1;y<rows;y++) { panel(1,y,1,y+1,true, y >= 7 && y <= 9 ? 102 : h); panel(cols,y,cols,y+1,false); }
+  // Tubulação presa à parede de fundo e janelas de serviço: detalhes fixos,
+  // desenhados no mesmo plano isométrico que os painéis da casca.
+  for (const offset of [13, 17]) {
+    const [ax,ay]=frequencyPoint(1,1), [bx,by]=frequencyPoint(cols,1);
+    ctx.strokeStyle=offset===13?'#080f12':'#8b8266';ctx.lineWidth=offset===13?4:1.2;
+    ctx.beginPath();ctx.moveTo(ax,ay-offset);ctx.lineTo(bx,by-offset);ctx.stroke();
+  }
+  for (const x of [2,3,11,12]) {
+    const a=frequencyPoint(x+.15,1), b=frequencyPoint(x+.85,1);
+    quad(a[0],a[1]-20,b[0],b[1]-20,b[0],b[1]-29,a[0],a[1]-29,'#0b292d','#50665e',1);
+    ctx.strokeStyle='#4cc7bd';ctx.globalAlpha=.6;ctx.lineWidth=1;
+    ctx.beginPath();ctx.moveTo(a[0]+2,a[1]-24);ctx.lineTo(b[0]-2,b[1]-24);ctx.stroke();ctx.globalAlpha=1;
+  }
+  ctx.restore();
+}
+
+function drawFrequencyStationFloor(curState) {
+  const p = frequencyPoint, objects = curState.objects ?? [], flags = curState.progress?.flags ?? {};
+  const control = objects.find(o => o.id === 'console_limiar_666');
+  if (!control) return;
+  const [cx, cy] = p(control.x, control.y);
+  ctx.save();
+  // Dais em dois níveis, moldura e placas em vez de um piso uniforme.
+  frequencySlab(5.7,1.25,9.4,4.35,'#172b2d','#5e7974');
+  frequencySlab(5.95,1.5,9.15,4.05,'#26383a','#ad9b71');
+  frequencySlab(6.2,1.75,8.9,3.8,'#17282c','#546b63');
+  frequencySlab(1,7.2,2.25,9.7,'rgba(26,45,45,.85)','#766d55');
+  frequencySlab(2.0,5.3,4.4,7.35,'rgba(26,45,45,.85)','#766d55');
+  frequencySlab(12.3,5.5,13.8,7.2,'rgba(26,45,45,.85)','#766d55');
+  // Corredor central e faixa de segurança guiam até o limiar.
+  frequencySlab(6.65,4.4,8.35,8.8,'rgba(33,53,54,.72)','#718177');
+  for(let y=4.65;y<8.7;y+=.42) frequencyLine([[6.72,y],[6.94,y+.16]],'rgba(212,164,78,.65)',2);
+  // Conduítes seguem cantos da arquitetura, sem atravessar aleatoriamente a sala.
+  const anchors = [
+    ['ancora_666_origem', 'freq666_ancora_origem', '#ffc878', 'rgba(255,170,65,.24)'],
+    ['ancora_666_retorno', 'freq666_ancora_retorno', '#79e8d4', 'rgba(74,245,208,.23)'],
+    ['ancora_666_memoria', 'freq666_ancora_memoria', '#b9a8ff', 'rgba(159,139,255,.24)'],
+  ];
+  const reduced = typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+  const t = reduced ? 0 : performance.now()/1000;
+  for (const [id, flag, activeColor, activeGlow] of anchors) {
+    const item = objects.find(o => o.id === id); if (!item) continue;
+    const [x, y] = p(item.x, item.y);
+    const route = [[item.x,item.y],[control.x,item.y],[control.x,control.y]];
+    frequencyLine(route,'#090f13',8); frequencyLine(route,'#52615a',4);
+    frequencyLine(route,flags[flag] ? activeColor : '#a67949',1.5);
+    ctx.strokeStyle=flags[flag]?activeColor:'#ca9a55';ctx.globalAlpha=.75;ctx.lineWidth=1.4;
+    ctx.beginPath();ctx.ellipse(x,y-5,24,11,0,0,Math.PI*2);ctx.stroke();
+    ctx.beginPath();ctx.ellipse(x,y-5,19,8,0,0,Math.PI*2);ctx.stroke();ctx.globalAlpha=1;
+    const glow=ctx.createRadialGradient(x,y,1,x,y,32);glow.addColorStop(0,flags[flag]?activeGlow:'rgba(247,169,74,.13)');glow.addColorStop(1,'rgba(0,0,0,0)');ctx.fillStyle=glow;ctx.beginPath();ctx.ellipse(x,y,32,14,0,0,Math.PI*2);ctx.fill();
+    if (flags[flag]) { const q=(t*.25)%1; const [px,py]=p(item.x+(control.x-item.x)*q,item.y);ctx.fillStyle='#bcfff0';ctx.beginPath();ctx.arc(px,py,2,0,Math.PI*2);ctx.fill(); }
+  }
+  const gate = objects.find(o => o.id === 'anel_limiar_666');
+  if (gate) {
+    const [gx,gy]=p(gate.x,gate.y);
+    frequencyLine([[control.x,control.y],[gate.x,gate.y]],'#090f13',8);
+    frequencyLine([[control.x,control.y],[gate.x,gate.y]],flags.freq666_limiar_estavel?'#65e5cf':'#a07850',2);
+    ctx.strokeStyle=flags.freq666_limiar_estavel?'#70e7d4':'#b5905a';ctx.globalAlpha=.45;ctx.lineWidth=1.5;
+    ctx.beginPath();ctx.ellipse(gx,gy-7,70,20,0,0,Math.PI*2);ctx.stroke();ctx.globalAlpha=1;
+  }
+  // Partículas discretas de luz, congeladas quando movimento reduzido é pedido.
+  const mote = getSprite('freq666_fx_poeira');
+  if (mote) { ctx.save(); ctx.globalCompositeOperation='screen'; ctx.globalAlpha=.28;
+    for (let i=0;i<6;i++) { const [mx,my]=p(3+(i*1.7)%9, 3+(i*2.3)%5);
+      ctx.drawImage(mote,mx-2,my-18-(reduced?0:(t*3+i*7)%18),4,4); } ctx.restore(); }
+  // Marcas de orientação diferenciadas por forma e cor, sem depender da cor.
+  ctx.font='bold 7px monospace'; ctx.textAlign='center';ctx.fillStyle='rgba(205,223,199,.75)';
+  for (const [x,y,label] of [[3.5,4.15,'I  ORIGEM'],[11.5,4.2,'II  RETORNO'],[11.5,8.2,'III  MEMÓRIA']]) { const [px,py]=p(x,y);ctx.fillText(label,px,py); }
+  ctx.restore();
+}
+
+function drawEnseadaObjectAnimations(object, state) {
+  const interactionFx = object.id === 'bancada_campo_enseada' || object.id === 'fonte_termal_enseada' ||
+    object.id === 'piscina_mare_viva_enseada' || object.id === 'algas_douradas_enseada' ||
+    object.id === 'gruta_concha_enseada' || object.id === 'espelho_arquetipos_enseada' ||
+    object.id === 'jardim_pedras_enseada';
+  if (!object.fogueiraViva && !object.feixeFarolete && !object.pulsoAntena && !object.pulsoTotem && !object.pulsoBiolum && !object.vorticidadeCorrentes && !object.cachoeiraViva && !object.vaporTermal && !interactionFx) return;
+  const reduced = typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+  const t = reduced ? 0 : performance.now() / 1000;
+  const ix = (object.x - object.y) * HW + (object.ajusteX ?? 0);
+  const iy = (object.x + object.y) * HH + (object.ajusteY ?? 0);
+  ctx.save();
+  ctx.globalCompositeOperation = 'lighter';
+
+  if (object.vorticidadeCorrentes) {
+    // O vórtice fica restrito à abertura do arco, sem cobrir as pedras.
+    const config = typeof object.vorticidadeCorrentes === 'object' ? object.vorticidadeCorrentes : {};
+    const cx = ix + (config.x ?? 0), cy = iy + (config.y ?? -115);
+    const rx = config.rx ?? 24, ry = config.ry ?? 55;
+    const intensidade = config.intensidade ?? 1;
+    ctx.save();
+    ctx.beginPath(); ctx.ellipse(cx, cy, rx, ry, 0, 0, Math.PI * 2); ctx.clip();
+    for (let i = 0; i < 4; i++) {
+      const fase = (t * .35 + i / 4) % 1;
+      ctx.strokeStyle = `rgba(85, 255, 255, ${(.38 * intensidade * (1 - fase)).toFixed(3)})`;
+      ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.ellipse(cx, cy, rx * (.17 + fase * .83), ry * (.18 + fase * .82), .18 * Math.sin(t + i), 0, Math.PI * 2); ctx.stroke();
+    }
+    for (let i = 0; i < 8; i++) {
+      const f = (t * .18 + i * .137) % 1;
+      const px = cx + Math.sin(t * 1.7 + i * 4.2) * rx * (.2 + .6 * f);
+      const py = cy + (f - .5) * ry * 1.6;
+      ctx.fillStyle = `rgba(196,255,255,${(.45 * intensidade * Math.sin(Math.PI * f)).toFixed(3)})`;
+      ctx.fillRect(px, py, 2, 2);
+    }
+    ctx.restore();
+  }
+
+  if (object.cachoeiraViva) {
+    // Faixas translúcidas só dentro da queda da arte; custo fixo por quadro.
+    // Cada versão usa coordenadas próprias da arte e o pivô do objeto.
+    const revisada = object.cachoeiraViva?.revisada === true;
+    const k = object.larguraPx / (revisada ? 1301 : 530);
+    const left = ix - object.larguraPx * (object.pivotX ?? .5);
+    const top = iy - (revisada ? 685 : 275) * k * (object.pivotY ?? 1);
+    if (revisada) {
+      ctx.save(); ctx.translate(left, top); ctx.scale(k, k);
+      ctx.beginPath(); ctx.moveTo(405, 190); ctx.bezierCurveTo(455, 230, 495, 264, 515, 320);
+      ctx.bezierCurveTo(532, 375, 527, 485, 529, 550);
+      ctx.lineTo(595, 577); ctx.lineTo(587, 500); ctx.lineTo(577, 370);
+      ctx.bezierCurveTo(570, 292, 507, 248, 445, 192); ctx.closePath(); ctx.clip();
+      for (let i = 0; i < 9; i++) {
+        const y = 280 + (t * 64 + i * 39) % 285;
+        const x = 535 + (i % 4) * 11 + Math.sin(t * 2 + i) * 3;
+        ctx.fillStyle = `rgba(220,255,255,${i % 2 ? .20 : .33})`;
+        ctx.fillRect(x, y, i % 3 === 0 ? 4 : 2, 15 + i % 3 * 5);
+      }
+      ctx.restore();
+      const foamX = left + 535 * k, foamY = top + 586 * k;
+      for (let i = 0; i < 3; i++) {
+        const f = (t * .45 + i / 3) % 1;
+        ctx.strokeStyle = `rgba(205,255,255,${(.42 * (1-f)).toFixed(3)})`;
+        ctx.lineWidth = 1.2; ctx.beginPath();
+        ctx.ellipse(foamX, foamY, 3 + f * 20, 1 + f * 5, 0, 0, Math.PI * 2); ctx.stroke();
+      }
+    } else {
+      ctx.save();
+      ctx.translate(left, top); ctx.scale(k, k);
+      ctx.beginPath();
+      ctx.moveTo(220, 112); ctx.bezierCurveTo(233, 122, 235, 140, 235, 158);
+      ctx.lineTo(236, 207); ctx.bezierCurveTo(234, 217, 227, 224, 220, 226);
+      ctx.lineTo(248, 232); ctx.bezierCurveTo(255, 224, 254, 215, 250, 205);
+      ctx.lineTo(249, 155); ctx.bezierCurveTo(249, 132, 241, 117, 230, 108);
+      ctx.closePath(); ctx.clip();
+      for (let i = 0; i < 9; i++) {
+        const y = 112 + (t * 34 + i * 17) % 112;
+        const x = 228 + (i % 4) * 5 + Math.sin(t * 2 + i) * 1.5;
+        ctx.fillStyle = `rgba(220,255,255,${i % 2 ? .27 : .42})`;
+        ctx.fillRect(x, y, i % 3 === 0 ? 2 : 1, 7 + i % 3 * 3);
+      }
+      ctx.restore();
+      const foamX = left + 245 * k, foamY = top + 233 * k;
+      for (let i = 0; i < 3; i++) {
+        const f = (t * .45 + i / 3) % 1;
+        ctx.strokeStyle = `rgba(205,255,255,${(.42 * (1-f)).toFixed(3)})`;
+        ctx.lineWidth = 1.2;
+        ctx.beginPath(); ctx.ellipse(foamX, foamY, 3 + f * 15, 1 + f * 4, 0, 0, Math.PI * 2); ctx.stroke();
+      }
+    }
+  }
+
+  if (object.fogueiraViva) {
+    const pulso = 0.8 + Math.sin(t * 7.5 + object.x) * 0.18;
+    const g = ctx.createRadialGradient(ix - 8, iy - 14, 2, ix - 8, iy - 14, 34 * pulso);
+    g.addColorStop(0, 'rgba(255, 198, 102, 0.34)');
+    g.addColorStop(0.55, 'rgba(255, 122, 48, 0.14)');
+    g.addColorStop(1, 'rgba(255, 100, 30, 0)');
+    ctx.fillStyle = g;
+    ctx.beginPath(); ctx.arc(ix - 8, iy - 14, 34 * pulso, 0, Math.PI * 2); ctx.fill();
+    for (let i = 0; i < 5; i++) {
+      const f = (t * 0.72 + i * 0.21) % 1;
+      const sx = ix - 8 + Math.sin(t * 4.5 + i * 2.1) * 7 + (state.clima?.vento ?? 0.2) * f * 8;
+      const sy = iy - 16 - f * 26;
+      ctx.fillStyle = `rgba(255, ${185 - Math.round(f * 75)}, 82, ${(Math.sin(f * Math.PI) * 0.75).toFixed(2)})`;
+      ctx.beginPath(); ctx.arc(sx, sy, 1.5 - f * 0.7, 0, Math.PI * 2); ctx.fill();
+    }
+  }
+
+  if (object.feixeFarolete) {
+    const climaForca = Math.min(1, (state.clima?.chuva ?? 0) * 0.7 + (state.clima?.forca ?? 0.2) * 0.6 + 0.25);
+    const topoY = iy - 62;
+    const ang = t * 1.15;
+    for (const dir of [0, Math.PI]) {
+      const a = ang + dir;
+      const dx = Math.cos(a) * 92;
+      const dy = Math.sin(a) * 44;
+      const grad = ctx.createLinearGradient(ix, topoY, ix + dx, topoY + dy);
+      grad.addColorStop(0, `rgba(145, 255, 240, ${(0.36 * climaForca).toFixed(2)})`);
+      grad.addColorStop(1, 'rgba(145, 255, 240, 0)');
+      ctx.fillStyle = grad;
+      ctx.beginPath();
+      ctx.moveTo(ix, topoY);
+      ctx.lineTo(ix + dx - Math.sin(a) * 18, topoY + dy + Math.cos(a) * 10);
+      ctx.lineTo(ix + dx + Math.sin(a) * 18, topoY + dy - Math.cos(a) * 10);
+      ctx.closePath();
+      ctx.fill();
+    }
+    ctx.fillStyle = `rgba(220, 255, 248, ${(0.55 + Math.sin(t * 3.2) * 0.2).toFixed(2)})`;
+    ctx.beginPath(); ctx.arc(ix, topoY, 3.6, 0, Math.PI * 2); ctx.fill();
+  }
+
+  if (object.pulsoAntena) {
+    const topoY = iy - (object.id === 'torre_antena_enseada' ? object.larguraPx * 3.2 : 42);
+    for (let i = 0; i < 2; i++) {
+      const f = (t * 0.55 + i * 0.5) % 1;
+      ctx.strokeStyle = `rgba(110, 247, 255, ${((1 - f) * 0.42).toFixed(2)})`;
+      ctx.lineWidth = 1.2;
+      ctx.beginPath();
+      ctx.ellipse(ix, topoY - f * 6, 4 + f * 18, 2 + f * 8, 0, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+  }
+
+  if (object.pulsoTotem && object.id === 'totem_eco_enseada') {
+    const orbY = iy - 75 * (object.larguraPx / 62);
+    const g = ctx.createRadialGradient(ix, orbY, 1, ix, orbY, 17);
+    g.addColorStop(0, `rgba(139,255,255,${(.30 + .15 * Math.sin(t * 2.2)).toFixed(3)})`);
+    g.addColorStop(1, 'rgba(45,225,255,0)');
+    ctx.fillStyle = g; ctx.beginPath(); ctx.arc(ix, orbY, 17, 0, Math.PI * 2); ctx.fill();
+  }
+  if (object.pulsoTotem) {
+    const pulso = 0.78 + Math.sin(t * 2.8) * 0.22;
+    ctx.strokeStyle = `rgba(255, 217, 128, ${(0.34 * pulso).toFixed(2)})`;
+    ctx.lineWidth = 1.4;
+    ctx.beginPath(); ctx.ellipse(ix, iy - 34, 18 * pulso, 7 * pulso, 0, 0, Math.PI * 2); ctx.stroke();
+    ctx.strokeStyle = `rgba(110, 247, 255, ${(0.32 * pulso).toFixed(2)})`;
+    ctx.beginPath(); ctx.ellipse(ix, iy - 22, 22, 8, Math.sin(t * 1.6) * 0.25, 0, Math.PI); ctx.stroke();
+  }
+
+  if (object.pulsoBiolum) {
+    const cor = object.pulsoBiolum === '#ffd86b' ? '255, 216, 107' : '92, 247, 235';
+    const colhida = object.id === 'algas_douradas_enseada' && !!state.progress?.flags?.enseada_algas_colhidas;
+    const resp = (0.65 + Math.sin(t * 2.2 + object.x * 0.9) * 0.35) * (colhida ? 0.42 : 1);
+    const g = ctx.createRadialGradient(ix, iy - 20, 2, ix, iy - 20, 32);
+    g.addColorStop(0, `rgba(${cor}, ${(0.22 * resp).toFixed(2)})`);
+    g.addColorStop(1, `rgba(${cor}, 0)`);
+    ctx.fillStyle = g;
+    ctx.beginPath(); ctx.arc(ix, iy - 20, 32, 0, Math.PI * 2); ctx.fill();
+    for (let i = 0; i < 3; i++) {
+      const f = (t * 0.42 + i * 0.33 + object.x * 0.1) % 1;
+      const px = ix + Math.sin(t * 2 + i * 2.4) * 12;
+      const py = iy - 12 - f * 24;
+      ctx.fillStyle = `rgba(${cor}, ${(Math.sin(f * Math.PI) * 0.65).toFixed(2)})`;
+      ctx.beginPath(); ctx.arc(px, py, 1.5, 0, Math.PI * 2); ctx.fill();
+    }
+  }
+
+  if (object.vaporTermal) {
+    // Vapor da piscina termal: colunas curvas subindo da água. Fica aqui
+    // (e não no fim de drawObject) porque `useCrop` retorna antes daquele
+    // trecho — o efeito existia no código e nunca era desenhado.
+    const visitada = !!state.progress?.flags?.enseada_fonte_termal_visitada;
+    ctx.save();
+    ctx.strokeStyle = visitada ? 'rgba(185, 255, 240, 0.52)' : 'rgba(218, 255, 248, 0.34)';
+    ctx.lineWidth = visitada ? 2 : 1.6;
+    ctx.lineCap = 'round';
+    for (let i = 0; i < 5; i++) {
+      const fase = (t * (visitada ? 0.58 : 0.48) + i * 0.2) % 1;
+      const vx = ix + (i - 2) * 13 + Math.sin(t * 2 + i * 2) * (visitada ? 5 : 3);
+      const vy = iy - 14 - fase * (visitada ? 34 : 26);
+      ctx.globalAlpha = Math.sin(fase * Math.PI) * (visitada ? 0.58 : 0.45);
+      ctx.beginPath();
+      ctx.moveTo(vx, vy + 7);
+      ctx.quadraticCurveTo(vx + Math.sin(t * 3 + i) * 4, vy + 3, vx, vy - 5);
+      ctx.stroke();
+    }
+    if (visitada) {
+      ctx.globalAlpha = 0.22 + Math.sin(t * 2.4) * 0.08;
+      ctx.strokeStyle = '#9affeb';
+      ctx.beginPath(); ctx.ellipse(ix, iy - 8, 34, 12, 0, 0, Math.PI * 2); ctx.stroke();
+    }
+    ctx.restore();
+  }
+
+  // A bancada responde à calibração com um pequeno holograma de três nós;
+  // o efeito usa a flag real da interação e não simula uma recompensa.
+  if (object.id === 'bancada_campo_enseada') {
+    const ativa = !!state.progress?.flags?.enseada_bancada_calibrada;
+    const pulso = ativa ? 0.68 + Math.sin(t * 3.8) * 0.22 : 0.28 + Math.sin(t * 2) * 0.08;
+    ctx.globalAlpha = pulso;
+    ctx.strokeStyle = ativa ? '#9dffe0' : '#62d9c5';
+    ctx.fillStyle = ativa ? 'rgba(90,255,207,.14)' : 'rgba(50,160,150,.08)';
+    ctx.lineWidth = 1.3;
+    ctx.beginPath(); ctx.ellipse(ix, iy - 24, 24, 8, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+    for (let i = 0; i < 3; i++) {
+      const a = t * (ativa ? 1.4 : .6) + i * Math.PI * 2 / 3;
+      const px = ix + Math.cos(a) * 18, py = iy - 25 + Math.sin(a) * 5;
+      ctx.beginPath(); ctx.moveTo(ix, iy - 24); ctx.lineTo(px, py); ctx.stroke();
+      ctx.fillStyle = ativa ? '#d4fff1' : '#84cfc0';
+      ctx.beginPath(); ctx.arc(px, py, ativa ? 2.2 : 1.4, 0, Math.PI * 2); ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+  }
+
+  // Ondas concêntricas e bolhas na piscina: movimento leve, sem deslocar
+  // a colisão nem o hotspot de mergulho.
+  if (object.id === 'piscina_mare_viva_enseada') {
+    const visita = !!state.progress?.flags?.enseada_piscina_visitada;
+    for (let i = 0; i < 2; i++) {
+      const f = (t * (visita ? .24 : .15) + i * .5) % 1;
+      ctx.globalAlpha = (1 - f) * (visita ? .38 : .2);
+      ctx.strokeStyle = visita ? '#a0fff4' : '#63e8e2';
+      ctx.lineWidth = 1.2;
+      ctx.beginPath(); ctx.ellipse(ix, iy - 49, 16 + f * 30, 6 + f * 10, 0, 0, Math.PI * 2); ctx.stroke();
+    }
+    for (let i = 0; i < 3; i++) {
+      const f = (t * .28 + i / 3) % 1;
+      ctx.globalAlpha = Math.sin(f * Math.PI) * .6;
+      ctx.fillStyle = '#b4fff6';
+      ctx.beginPath(); ctx.arc(ix + Math.sin(t + i * 2) * 10, iy - 48 - f * 9, 1.2 + (1 - f), 0, Math.PI * 2); ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+  }
+
+  // A fenda ganha luz de abrigo quando visitada; as partículas permanecem
+  // confinadas à boca da gruta para não parecerem outro objeto no piso.
+  if (object.id === 'gruta_concha_enseada') {
+    const visitada = !!state.progress?.flags?.enseada_gruta_visitada;
+    const f = .65 + Math.sin(t * (visitada ? 2.5 : 1.3)) * .22;
+    ctx.globalAlpha = f;
+    ctx.strokeStyle = visitada ? '#b7f9ff' : '#62d9ff';
+    ctx.lineWidth = visitada ? 1.8 : 1.1;
+    ctx.beginPath(); ctx.ellipse(ix, iy - 18, visitada ? 22 : 16, 7, 0, Math.PI * .08, Math.PI * .92); ctx.stroke();
+    for (let i = 0; i < 2; i++) {
+      const q = (t * .22 + i * .5) % 1;
+      ctx.fillStyle = visitada ? '#d7ffff' : '#6cecff';
+      ctx.beginPath(); ctx.arc(ix + (i ? 1 : -1) * (6 + q * 5), iy - 14 - q * 16, 1.2, 0, Math.PI * 2); ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+  }
+
+  // Reflexo restrito ao vidro do espelho, com resposta à sintonia real.
+  if (object.id === 'espelho_arquetipos_enseada') {
+    const sintonizado = !!state.progress?.flags?.enseada_espelho_sintonizado;
+    const fase = (t * .24) % 1;
+    ctx.save();
+    ctx.beginPath(); ctx.ellipse(ix, iy - 39, 14, 24, 0, 0, Math.PI * 2); ctx.clip();
+    ctx.globalAlpha = sintonizado ? .28 : .17;
+    ctx.strokeStyle = '#e7ffff'; ctx.lineWidth = 4;
+    ctx.beginPath(); ctx.moveTo(ix - 25 + fase * 50, iy - 15);
+    ctx.lineTo(ix - 5 + fase * 50, iy - 65); ctx.stroke();
+    ctx.restore();
+    ctx.globalAlpha = sintonizado ? .65 : .28;
+    ctx.fillStyle = '#d2ffff';
+    const y = iy - 38 + Math.sin(t * 1.7) * 17;
+    ctx.fillRect(ix + 10, y, 2, 2); ctx.globalAlpha = 1;
+  }
+
+  // Pequenas runas percorrem a estela; ficam mais claras após a decifração.
+  if (object.id === 'estela_navegadores_enseada') {
+    const decifrada = !!state.progress?.flags?.enseada_estela_decifrada;
+    ctx.fillStyle = '#baffff';
+    for (let i = 0; i < 3; i++) {
+      ctx.globalAlpha = (decifrada ? .65 : .35) * (.5 + .5 * Math.sin(t * 2 + i * 1.8));
+      ctx.fillRect(ix - 2 + (i % 2) * 3, iy - 14 - i * 9, 2, 2);
+    }
+    ctx.globalAlpha = 1;
+  }
+
+  // Cintilação junto à ponta do cristal, sem redesenhar o pedestal.
+  if (object.id === 'fonte_cristal_enseada') {
+    const f = (t * .3) % 1;
+    ctx.globalAlpha = Math.sin(f * Math.PI) * .65;
+    ctx.fillStyle = '#e4ffff';
+    ctx.fillRect(ix + 7, iy - 64 - f * 7, 2, 3);
+    ctx.globalAlpha = 1;
+  }
+
+  // Luz suave, sem mover as pedras nem simular física sobre o cairn.
+  if (object.id === 'jardim_pedras_enseada') {
+    const meditado = !!state.progress?.flags?.enseada_pedras_meditado;
+    for (let i = 0; i < 3; i++) {
+      const f = (t * .18 + i / 3) % 1;
+      ctx.globalAlpha = Math.sin(f * Math.PI) * (meditado ? .6 : .25);
+      ctx.fillStyle = '#ffe6a3';
+      ctx.beginPath(); ctx.arc(ix + Math.sin(t + i * 2.1) * 14, iy - 20 - f * 36, 1.3, 0, Math.PI * 2); ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+  }
+
+  // Essência dourada anima folhas e orvalho; após a coleta, o brilho baixa
+  // em vez de deixar a fonte de recurso visualmente inesgotável.
+  if (object.id === 'algas_douradas_enseada') {
+    const colhida = !!state.progress?.flags?.enseada_algas_colhidas;
+    ctx.globalAlpha = colhida ? .32 : .78;
+    ctx.fillStyle = colhida ? '#c2a85a' : '#ffe68a';
+    for (let i = 0; i < 4; i++) {
+      const f = (t * (colhida ? .12 : .3) + i * .25) % 1;
+      const a = i * Math.PI * .5 + t * .35;
+      const px = ix + Math.cos(a) * (8 + f * 12);
+      const py = iy - 8 - f * 20;
+      ctx.beginPath(); ctx.arc(px, py, 1.1 + Math.sin(f * Math.PI) * .6, 0, Math.PI * 2); ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+  }
+
+  ctx.restore();
+}
+
+// Sobreposições discretas na arte existente: nenhum objeto ou interação extra.
+function drawFrequencyObjectLife(object, image) {
+  const ids = ['terminal_frequencia_666', 'registro_estacao_666', 'baliza_666_receptor',
+    'baliza_666_entrada', 'reator_estacao_666', 'console_limiar_666', 'rack_estacao_666_c'];
+  if (!ids.includes(object.id) || (object.id === 'terminal_frequencia_666' && object.sprite !== 'freq666_receptor')) return;
+  const frame = getFrame(image, 0, 0, 1, 1)?.crop;
+  if (!frame) return;
+  const w = object.larguraPx, h = w * frame.h / frame.w;
+  const x = (object.x - object.y) * HW + (object.ajusteX ?? 0) - w * (object.pivotX ?? .5);
+  const y = (object.x + object.y) * HH + (object.ajusteY ?? 0) - h * (object.pivotY ?? 1);
+  const reduced = typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+  const t = reduced ? 0 : performance.now() / 1000;
+  ctx.save(); ctx.globalCompositeOperation = 'screen';
+  if (object.id === 'rack_estacao_666_c') {
+    // Intrusão permanente e sem flashes: um rosto vazio no monitor CRT.
+    ctx.globalCompositeOperation='source-over'; ctx.fillStyle='#071315'; ctx.fillRect(x+w*.35,y+h*.19,w*.29,h*.28);
+    ctx.strokeStyle='#62b3ad'; ctx.lineWidth=1; ctx.strokeRect(x+w*.35,y+h*.19,w*.29,h*.28);
+    ctx.beginPath(); ctx.moveTo(x+w*.50,y+h*.30);ctx.lineTo(x+w*.41,y+h*.43);ctx.moveTo(x+w*.50,y+h*.30);ctx.lineTo(x+w*.58,y+h*.43);ctx.moveTo(x+w*.43,y+h*.37);ctx.lineTo(x+w*.56,y+h*.37);ctx.stroke();
+    ctx.fillStyle='#000'; ctx.fillRect(x+w*.46,y+h*.23,w*.08,h*.08);
+  } else if (object.id === 'terminal_frequencia_666' || object.id === 'registro_estacao_666') {
+    const fx = getSprite('freq666_fx_sinal');
+    if (fx) { ctx.globalAlpha = .25 + .12 * Math.sin(t * 2); ctx.drawImage(fx, x+w*.48, y+h*.40, w*.18, h*.035); }
+  } else if (object.id.startsWith('baliza_666_')) {
+    const fx = getSprite('freq666_fx_baliza');
+    if (fx) { ctx.globalAlpha = .24 + .08 * Math.sin(t * 1.7); ctx.drawImage(fx, x+w*.23, y+h*.20, w*.54, w*.54); }
+  } else if (object.id === 'reator_estacao_666') {
+    const fx = getSprite('freq666_fx_vapor');
+    if (fx) { ctx.globalAlpha = .12 + .05 * Math.sin(t); ctx.drawImage(fx, x+w*.38, y-h*.14 - (reduced ? 0 : (t*2)%5), w*.16, h*.20); }
+  } else {
+    const fx = getSprite('freq666_fx_centelha');
+    if (fx) { ctx.globalAlpha = .13 + .10 * Math.max(0, Math.sin(t * 2)); ctx.drawImage(fx, x+w*.49, y+h*.18, w*.12, w*.12); }
+  }
+  ctx.restore();
+}
+
+function drawFrequencyThreshold(object, curState) {
+  const image = getSprite(object.sprite);
+  const config = getObjectSpriteConfig(object.sprite);
+  if (!image || !drawCroppedObject(object,image,config)) return;
+  const frame = getFrame(image,0,0,1,1)?.crop;
+  if (!frame) return;
+  const w=object.larguraPx, h=w*frame.h/frame.w;
+  const x=(object.x-object.y)*HW, y=(object.x+object.y)*HH;
+  const stable=!!curState.progress?.flags?.freq666_limiar_estavel;
+  const reduced=typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+  const t=reduced ? 0 : performance.now()/1000;
+  // Vórtice limitado à abertura da própria arte; o aro nunca é apagado.
+  ctx.save();ctx.translate(x-w*.02,y-h*((object.pivotY ?? 1)-.395));ctx.rotate(-.25);
+  ctx.beginPath();ctx.ellipse(0,0,w*.205,h*.225,0,0,Math.PI*2);ctx.clip();
+  if (!stable) { ctx.fillStyle='rgba(4,11,14,.84)';ctx.fillRect(-w,-h,w*2,h*2); }
+  else {
+    const vortex = getSprite('freq666_fx_vortice');
+    if (vortex) {
+      ctx.save(); ctx.globalAlpha = .18 + .05 * Math.sin(t * 1.2);
+      ctx.rotate(t * .07); ctx.drawImage(vortex, -w*.22, -h*.22, w*.44, h*.44); ctx.restore();
+    }
+    const light=ctx.createRadialGradient(0,0,1,0,0,w*.2);
+    light.addColorStop(0,'rgba(239,92,86,.35)');light.addColorStop(.45,'rgba(72,231,204,.12)');light.addColorStop(1,'rgba(6,25,26,0)');
+    ctx.fillStyle=light;ctx.fillRect(-w,-h,w*2,h*2);
+    ctx.strokeStyle='rgba(150,255,235,.28)';ctx.lineWidth=1;
+    for(let i=0;i<3;i++){ const r=9+i*6;ctx.beginPath();ctx.ellipse(0,0,r,r*1.38,t*.22+i,0,Math.PI*1.2);ctx.stroke(); }
+  }
+  ctx.restore();
+}
+
+function cargoTheme(map) { return map.meta?.corTema || '#35E6D3'; }
+function cargoGateObject(curState) {
+  return (curState?.objects ?? []).find(o => o?.gate || o?.dashPassable) ?? null;
+}
+function cargoFragmentObject(curState) {
+  return (curState?.collectibles ?? []).find(c => c.id === 'fragmento_sincronizacao') ?? null;
+}
+function cargoGateOpen(gate, flags) {
+  if (!gate) return false;
+  if (gate.dashPassable) return !!flags.fragmentoSincronizacaoColetado;
+  return !!(gate.aberto || flags[`gate_${gate.id}`]);
+}
+
+function drawCargoEcoUnderlay(map, curState) {
+  const p = (x, y) => [(x - y) * HW, (x + y) * HH];
+  const theme = cargoTheme(map);
+  const cols = map.layout[0].length - 1, rows = map.layout.length - 1;
+  const [cx, cy] = p((cols + 1) / 2, (rows + 1) / 2);
+  ctx.save();
+  const halo = ctx.createRadialGradient(cx, cy + 16, 24, cx, cy + 16, 520);
+  halo.addColorStop(0, 'rgba(20,32,40,0.55)');
+  halo.addColorStop(0.6, 'rgba(8,14,20,0.72)');
+  halo.addColorStop(1, 'rgba(3,6,10,0)');
+  ctx.fillStyle = halo;
+  ctx.beginPath(); ctx.ellipse(cx, cy + 18, 560, 280, 0, 0, Math.PI * 2); ctx.fill();
+  // Um brilho difuso, sem a elipse sólida que parecia uma plataforma.
+  const tintHalo = ctx.createRadialGradient(cx, cy + 18, 20, cx, cy + 18, 390);
+  tintHalo.addColorStop(0, theme); tintHalo.addColorStop(1, 'rgba(0,0,0,0)');
+  ctx.globalAlpha = 0.10; ctx.fillStyle = tintHalo;
+  ctx.beginPath(); ctx.ellipse(cx, cy + 18, 390, 195, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.globalAlpha = 1;
+  const skirt = 22;
+  const [wTopX, wTopY] = p(1, rows);
+  const [sMidX, sMidY] = p(cols, rows);
+  const [eTopX, eTopY] = p(cols, 1);
+  quad(wTopX, wTopY, sMidX, sMidY, sMidX, sMidY + skirt, wTopX, wTopY + skirt, '#0c1218', '#05080c', 1);
+  quad(sMidX, sMidY, eTopX, eTopY, eTopX, eTopY + skirt, sMidX, sMidY + skirt, '#0a1016', '#05080c', 1);
+  ctx.strokeStyle = theme; ctx.globalAlpha = 0.5; ctx.lineWidth = 1.6;
+  ctx.beginPath(); ctx.moveTo(wTopX, wTopY + 5); ctx.lineTo(sMidX, sMidY + 5); ctx.lineTo(eTopX, eTopY + 5); ctx.stroke();
+  ctx.restore();
+}
+
+function drawCargoEcoFloorOverlay(map, curState) {
+  const p = (x, y) => [(x - y) * HW, (x + y) * HH];
+  const theme = cargoTheme(map);
+  const flags = curState?.progress?.flags ?? {};
+  const gate = cargoGateObject(curState);
+  const frag = cargoFragmentObject(curState);
+  const t = performance.now() / 1000;
+  const open = cargoGateOpen(gate, flags);
+  ctx.save();
+
+  // A rota acompanha o corredor de cada planta, sem cortar paredes.
+  const spawn = map.spawnPoints?.vindo_do_aeroporto ?? { x: 2.5, y: 4.5 };
+  const route = map.meta?.cargoKey === 'bio'
+    ? [spawn, { x: 5.5, y: 9.5 }, { x: 5.5, y: 5.5 }, { x: 10.5, y: 5.5 }, { x: 11.5, y: 5.5 }]
+    : [spawn, { x: 5.5, y: 4.5 }];
+  if (frag) route.push({ x: frag.x, y: frag.y });
+  const points = route.map(({ x, y }) => p(x, y));
+  const trace = () => {
+    ctx.beginPath(); ctx.moveTo(...points[0]);
+    for (const point of points.slice(1)) ctx.lineTo(...point);
+    ctx.stroke();
+  };
+  ctx.strokeStyle = 'rgba(10,16,22,0.7)'; ctx.lineWidth = 10; trace();
+  ctx.strokeStyle = theme; ctx.globalAlpha = 0.13; ctx.lineWidth = 6; trace();
+  ctx.globalAlpha = 1;
+  const segments = points.slice(1).map((point, i) => ({
+    from: points[i], to: point,
+    length: Math.hypot(point[0] - points[i][0], point[1] - points[i][1]),
+  }));
+  const total = segments.reduce((sum, segment) => sum + segment.length, 0);
+  if (total > 0) for (let i = 0; i < 10; i++) {
+    let distance = ((t * 0.16 + i / 10) % 1) * total;
+    for (const segment of segments) {
+      if (distance > segment.length) { distance -= segment.length; continue; }
+      if (!segment.length) continue;
+      const u = distance / segment.length;
+      const x = segment.from[0] + (segment.to[0] - segment.from[0]) * u;
+      const y = segment.from[1] + (segment.to[1] - segment.from[1]) * u;
+      ctx.fillStyle = theme; ctx.globalAlpha = 0.35;
+      ctx.beginPath(); ctx.ellipse(x, y, 3, 1.5, 0, 0, Math.PI * 2); ctx.fill();
+      break;
+    }
+  }
+  ctx.globalAlpha = 1;
+
+  if (gate) {
+    // Marcas nas duas aproximações, projetadas no próprio piso.
+    ctx.strokeStyle = open ? theme : '#ffc94a';
+    ctx.lineWidth = 1.2;
+    ctx.globalAlpha = open ? 0.3 : 0.42 + 0.16 * Math.sin(t * 4);
+    for (const side of [-1, 1]) {
+      const [mx, my] = p(gate.x + side * 0.65, gate.y);
+      ctx.beginPath(); ctx.moveTo(mx - 5, my + 1); ctx.lineTo(mx, my + 4); ctx.lineTo(mx + 5, my + 1); ctx.stroke();
+    }
+    ctx.globalAlpha = 1;
+
+    // O campo já está pintado na arte da trava. Um retângulo frontal aqui
+    // criava uma segunda barreira flutuante e fora da perspectiva.
+
+  }
+
+  // Berço do fragmento: feixe contido + anéis de sincronização.
+  if (frag && (!frag.requiresFlag || flags[frag.requiresFlag]) && !flags[`collected_${frag.id}`]) {
+    const [bx, by] = p(frag.x, frag.y);
+    const pulse = 0.5 + 0.5 * Math.sin(t * 2.4);
+    const beam = ctx.createLinearGradient(bx, by - 96, bx, by);
+    beam.addColorStop(0, 'rgba(234,255,244,0)');
+    beam.addColorStop(1, theme);
+    ctx.globalAlpha = 0.16 + 0.1 * pulse; ctx.fillStyle = beam;
+    ctx.beginPath(); ctx.moveTo(bx - 10, by - 96); ctx.lineTo(bx + 10, by - 96);
+    ctx.lineTo(bx + 20, by); ctx.lineTo(bx - 20, by); ctx.closePath(); ctx.fill();
+    ctx.globalAlpha = 0.5; ctx.strokeStyle = theme; ctx.lineWidth = 1.6;
+    for (let r = 0; r < 2; r++) {
+      const ph = (t * 0.5 + r / 2) % 1;
+      ctx.globalAlpha = 0.45 * (1 - ph);
+      ctx.beginPath(); ctx.ellipse(bx, by + 4, 18 + ph * 26, (18 + ph * 26) * 0.5, 0, 0, Math.PI * 2); ctx.stroke();
+    }
+    ctx.globalAlpha = 1;
+  }
+  ctx.restore();
+}
+
+function drawCargoEcoHudCallouts(map, curState) {
+  const p = (x, y) => [(x - y) * HW, (x + y) * HH];
+  const theme = cargoTheme(map);
+  const flags = curState?.progress?.flags ?? {};
+  const gate = cargoGateObject(curState);
+  const frag = cargoFragmentObject(curState);
+  const open = cargoGateOpen(gate, flags);
+  const t = performance.now() / 1000;
+  ctx.save();
+  ctx.font = 'bold 9px monospace'; ctx.textAlign = 'center';
+
+  // Indicação discreta apenas ao se aproximar; o HUD de interação já traz
+  // os detalhes. Não deixar placas permanentes cobrindo a arte e o jogador.
+  if (gate && !open && curState.player &&
+      Math.hypot(curState.player.x - gate.x, curState.player.y - gate.y) < 2.2) {
+    const [gx, gy] = p(gate.x, gate.y);
+    const scanned = gate.gate?.scanFlag ? flags[gate.gate.scanFlag] : flags.cargoSecurityDiagnosed;
+    const label = scanned ? 'USE [Q]' : 'LEIA COM [R]';
+    ctx.font = 'bold 7px monospace';
+    const w = label.length * 4.2 + 10;
+    ctx.fillStyle = 'rgba(6,10,16,0.84)'; ctx.fillRect(gx - w / 2, gy - 58, w, 12);
+    ctx.strokeStyle = scanned ? theme : '#ffc94a'; ctx.lineWidth = 0.7;
+    ctx.strokeRect(gx - w / 2, gy - 58, w, 12);
+    ctx.fillStyle = '#eafff4'; ctx.fillText(label, gx, gy - 49);
+  }
+
+  // Drone de conferência: patrulha curta, luz de leitura, sem colisão.
+  const u = (Math.sin(t * 0.45) + 1) / 2;
+  const [d0x, d0y] = p(2.4, 2.1), [d1x, d1y] = p(7.6, 2.1);
+  const dx = d0x + (d1x - d0x) * u, dy = d0y + (d1y - d0y) * u - 42 + Math.sin(t * 2.2) * 3;
+  ctx.globalAlpha = 0.12; ctx.fillStyle = theme;
+  ctx.beginPath(); ctx.moveTo(dx - 4, dy + 6); ctx.lineTo(dx + 4, dy + 6); ctx.lineTo(dx + 18, dy + 48); ctx.lineTo(dx - 18, dy + 48); ctx.closePath(); ctx.fill();
+  ctx.globalAlpha = 1;
+  ctx.fillStyle = '#1b2733'; ctx.strokeStyle = theme; ctx.lineWidth = 1.2;
+  ctx.beginPath(); ctx.ellipse(dx, dy, 9, 5, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+  ctx.strokeStyle = 'rgba(223,247,255,0.7)';
+  ctx.beginPath(); ctx.moveTo(dx - 12, dy - 3); ctx.lineTo(dx + 12, dy - 3); ctx.stroke();
+  ctx.fillStyle = Math.sin(t * 6) > 0 ? '#ff6b6b' : theme; ctx.fillRect(dx - 1, dy - 1, 2, 2);
+  ctx.restore();
+}
+
+// Eclusa do Viaduto na Base dos Vetores: filme de energia animado, varredura
+// e status. O arco é espelhado na fonte de tela para olhar para a rota.
+function drawNucleo10xViadutoGate(map, curState) {
+  const p = (x, y) => [(x - y) * HW, (x + y) * HH];
+  const flags = curState?.progress?.flags ?? {};
+  const rota = !!flags.rota_viaduto_vetores_aberta;
+  const [ax, ay] = p(16.5, 5.7);
+  const t = performance.now() / 1000;
+  const color = rota ? '#8cff9e' : '#ffc94a';
+  ctx.save();
+  ctx.strokeStyle = color; ctx.globalAlpha = 0.4 + 0.2 * Math.sin(t * 3);
+  ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.ellipse(ax, ay + 5, 40, 18, 0, 0, Math.PI * 2); ctx.stroke();
+  ctx.translate(ax, ay - 46);
+  // O filme acompanha o plano isométrico da eclusa, não um retângulo de frente.
+  ctx.transform(1, 0.5, 0, 1, 0, 0);
+  const w = 54, h = 78;
+  const film = ctx.createLinearGradient(0, -h / 2, 0, h / 2);
+  film.addColorStop(0, 'rgba(6,18,10,0.05)');
+  film.addColorStop(0.5, color);
+  film.addColorStop(1, 'rgba(6,18,10,0.05)');
+  ctx.globalAlpha = rota ? 0.22 : 0.14; ctx.fillStyle = film;
+  ctx.fillRect(-w / 2, -h / 2, w, h);
+  ctx.globalAlpha = rota ? 0.75 : 0.5; ctx.strokeStyle = color; ctx.lineWidth = 1.4;
+  ctx.strokeRect(-w / 2, -h / 2, w, h);
+  const scan = (t * (rota ? 0.5 : 0.28)) % 1;
+  const sy = -h / 2 + scan * h;
+  ctx.globalAlpha = 0.8; ctx.fillStyle = '#eafff4';
+  ctx.fillRect(-w / 2, sy - 1.5, w, 3);
+  ctx.globalAlpha = 0.5;
+  for (let i = 0; i < 3; i++) {
+    const cy = -h / 2 + ((t * 0.35 + i / 3) % 1) * h;
+    ctx.beginPath(); ctx.moveTo(-10, cy - 4); ctx.lineTo(0, cy); ctx.lineTo(-10, cy + 4); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(10, cy - 4); ctx.lineTo(0, cy); ctx.lineTo(10, cy + 4); ctx.stroke();
+  }
+  ctx.globalAlpha = 1; ctx.fillStyle = color;
+  ctx.fillRect(-w / 2 - 4, -h / 2 + 6, 3, 3);
+  ctx.fillRect(w / 2 + 1, -h / 2 + 6, 3, 3);
+  ctx.restore();
+}
+
+function drawNucleo10xFloorTile(x, y, tx, ty) {
+  const pista = (y === 5 || y === 6) && x >= 2 && x <= 16;
+  const spriteId = pista ? 'nucleo_sala_piso_cinetico' : 'nucleo_sala_piso_grafite';
+  const img = getSprite(spriteId);
+  const f = img && getFrame(img, 0, 0, 1, 1)?.crop;
+  if (!f) {
+    quad(tx, ty, tx + HW, ty + HH, tx, ty + TH, tx - HW, ty + HH, pista ? '#18261e' : '#172019', '#0a120d', 1);
+    return true;
+  }
+  const w = CONFIG.TILE_W * 1.03;
+  const h = w * (f.h / f.w);
+  ctx.save();
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = 'high';
+  const flip = !pista && ((x * 7 + y * 13) & 1) === 1;
+  ctx.translate(tx, ty - 0.8);
+  if (flip) ctx.scale(-1, 1);
+  ctx.drawImage(f.canvas, 0, 0, f.w, f.h, -w / 2, 0, w, h);
+  ctx.restore();
+  return true;
+}
+
+function drawNucleo10xUnderlay(map, curState) {
+  const cols = map.layout[0].length - 1;
+  const rows = map.layout.length - 1;
+  const p = (x, y) => [(x - y) * HW, (x + y) * HH];
+  const flags = curState?.progress?.flags ?? {};
+  const sincronizada = !!flags.base_vetores_sincronizada;
+  const rota = !!flags.rota_viaduto_vetores_aberta;
+  ctx.save();
+  const [cx, cy] = p((cols + 1) * 0.5, (rows + 1) * 0.5);
+  const halo = ctx.createRadialGradient(cx, cy + 20, 30, cx, cy + 20, 720);
+  halo.addColorStop(0, sincronizada ? 'rgba(116,255,138,0.26)' : 'rgba(64,180,96,0.18)');
+  halo.addColorStop(0.55, 'rgba(10,32,18,0.58)');
+  halo.addColorStop(1, 'rgba(4,10,6,0)');
+  ctx.fillStyle = halo;
+  ctx.beginPath(); ctx.ellipse(cx, cy + 24, 760, 360, 0, 0, Math.PI * 2); ctx.fill();
+
+  const skirtH = 26;
+  const [wTopX, wTopY] = p(1, rows);
+  const [sMidX, sMidY] = p(cols, rows);
+  const [eTopX, eTopY] = p(cols, 1);
+  quad(wTopX, wTopY, sMidX, sMidY, sMidX, sMidY + skirtH, wTopX, wTopY + skirtH, '#101a14', '#060c08', 1.2);
+  quad(sMidX, sMidY, eTopX, eTopY, eTopX, eTopY + skirtH, sMidX, sMidY + skirtH, '#0c1510', '#050a06', 1.2);
+  ctx.strokeStyle = sincronizada ? '#8cff9e' : rota ? '#5fbf78' : '#315c40';
+  ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.moveTo(wTopX, wTopY + 6); ctx.lineTo(sMidX, sMidY + 6); ctx.lineTo(eTopX, eTopY + 6); ctx.stroke();
+  for (let x = 2; x < cols; x += 2) {
+    const [rx, ry] = p(x, rows);
+    ctx.fillStyle = sincronizada ? '#9dffb8' : '#3f7a52';
+    ctx.globalAlpha = 0.72;
+    ctx.beginPath(); ctx.ellipse(rx, ry + 14, 4.5, 3.0, 0, 0, Math.PI * 2); ctx.fill();
+  }
+  ctx.restore();
+}
+
+function drawNucleo10xFloorOverlay(map, curState) {
+  const p = (x, y) => [(x - y) * HW, (x + y) * HH];
+  const flags = curState?.progress?.flags ?? {};
+  const gateOpen = !!flags.gate_malha_cinetica_sala;
+  const sincronizada = !!flags.base_vetores_sincronizada;
+  const calibrado = !!flags.regulador_inercia_nucleo_calibrado;
+  const rota = !!flags.rota_viaduto_vetores_aberta;
+  const t = performance.now() / 1000;
+  const pulse = 0.5 + 0.5 * Math.sin(t * 3.1);
+  ctx.save();
+
+  // Trilho de indução da pista de aceleração (vão duplo y=5..6).
+  const [a0, a1] = p(2.0, 6.0);
+  const [b0, b1] = p(gateOpen ? 16.2 : 9.6, 6.0);
+  const boost = (sincronizada ? 0.16 : 0) + (calibrado ? 0.10 : 0);
+  ctx.strokeStyle = `rgba(140,255,158,${(0.22 + boost + 0.12 * pulse).toFixed(3)})`;
+  ctx.lineWidth = 6;
+  ctx.beginPath(); ctx.moveTo(a0, a1); ctx.lineTo(b0, b1); ctx.stroke();
+  for (let i = 0; i < 6; i++) {
+    const u = ((t * 0.28 + i / 6) % 1);
+    const wx = 2.2 + u * (gateOpen ? 13.8 : 7.2);
+    const [px, py] = p(wx, 5.95 + 0.16 * Math.sin(t * 3 + i));
+    ctx.fillStyle = `rgba(190,255,205,${(0.55 * (1 - Math.abs(u - 0.5) * 1.4)).toFixed(3)})`;
+    ctx.beginPath(); ctx.ellipse(px, py, 5, 2.3, -0.45, 0, Math.PI * 2); ctx.fill();
+  }
+
+  // Anéis adaptativos do Eixo de Adaptação no piso.
+  const [ex, ey] = p(6.0, 2.5);
+  for (let r = 0; r < 3; r++) {
+    const phase = ((t * (sincronizada ? 0.55 : 0.32) + r / 3) % 1);
+    const rad = 26 + phase * (sincronizada ? 62 : 44);
+    ctx.strokeStyle = `rgba(140,255,158,${(0.42 * (1 - phase)).toFixed(3)})`;
+    ctx.lineWidth = 2.2 - phase * 1.2;
+    ctx.beginPath(); ctx.ellipse(ex, ey + 6, rad, rad * 0.5, 0, 0, Math.PI * 2); ctx.stroke();
+  }
+
+  // Relicário de Vetor: halo contido até o fragmento ser recolhido.
+  if (!flags.collected_fragmento_eco_nucleo) {
+    const [rx, ry] = p(12.5, 6.0);
+    ctx.strokeStyle = `rgba(157,255,184,${(0.35 + 0.25 * pulse).toFixed(3)})`;
+    ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.ellipse(rx, ry + 4, 30, 15, 0, 0, Math.PI * 2); ctx.stroke();
+  }
+
+  // Contrapeso: faixas de carga âmbar; após partido, fratura verde.
+  const [cx, cy] = p(12.7, 8.9);
+  ctx.strokeStyle = rota ? 'rgba(140,255,158,0.55)' : `rgba(255,201,74,${(0.35 + 0.25 * pulse).toFixed(3)})`;
+  ctx.lineWidth = 3;
+  ctx.beginPath(); ctx.ellipse(cx, cy + 4, 34, 17, 0, 0, Math.PI * 2); ctx.stroke();
+  if (rota) {
+    ctx.strokeStyle = 'rgba(190,255,205,0.7)'; ctx.lineWidth = 1.6;
+    ctx.beginPath(); ctx.moveTo(cx - 18, cy - 6); ctx.lineTo(cx - 4, cy + 4); ctx.lineTo(cx + 10, cy - 8); ctx.stroke();
+  }
+
+  // Regulador calibrado: pequeno volante de carga no piso sul.
+  if (calibrado) {
+    const [gx, gy] = p(2.7, 9.0);
+    ctx.strokeStyle = 'rgba(255,201,74,0.5)'; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.ellipse(gx, gy + 4, 24, 12, 0, 0, Math.PI * 2); ctx.stroke();
+  }
+  ctx.restore();
+}
+
+function drawNucleo10xOuterWallShell(map) {
+  const cols = map.layout[0].length - 1;
+  const rows = map.layout.length - 1;
+  const p = (x, y) => [(x - y) * HW, (x + y) * HH];
+  const h = 14;
+  const thick = 0.40;
+  ctx.save();
+  const [i0x, i0y] = p(1, 1);
+  const [i1x, i1y] = p(1, rows);
+  const [o0x, o0y] = p(1 - thick, 1 - thick);
+  const [o1x, o1y] = p(1 - thick, rows);
+  quad(i1x, i1y, i0x, i0y, i0x, i0y - h, i1x, i1y - h, '#111a15', '#060c08', 1);
+  quad(o1x, o1y - h, o0x, o0y - h, i0x, i0y - h, i1x, i1y - h, '#1d2a22', '#315c40', 1.1);
+  const [j1x, j1y] = p(cols, 1);
+  const [q1x, q1y] = p(cols, 1 - thick);
+  quad(i0x, i0y, j1x, j1y, j1x, j1y - h, i0x, i0y - h, '#0e1712', '#060c08', 1);
+  quad(o0x, o0y - h, q1x, q1y - h, j1x, j1y - h, i0x, i0y - h, '#1a261f', '#315c40', 1.1);
+  ctx.restore();
+}
+
+function drawNucleo10xHudCallouts(map, curState) {
+  const p = (x, y) => [(x - y) * HW, (x + y) * HH];
+  const flags = curState?.progress?.flags ?? {};
+  const scanned = !!flags.scan_malha_sala;
+  const gateOpen = !!flags.gate_malha_cinetica_sala;
+  const sincronizada = !!flags.base_vetores_sincronizada;
+  const rota = !!flags.rota_viaduto_vetores_aberta;
+  const revealActive = (curState?.player?.ability?.reveal?.timeLeft ?? 0) > 0;
+  const t = performance.now() / 1000;
+  ctx.save();
+  drawNucleo10xViadutoGate(map, curState);
+
+  const [dx, dy] = p(1.5, 5.5);
+  ctx.font = 'bold 9px monospace'; ctx.textAlign = 'center';
+  ctx.fillStyle = 'rgba(7,16,10,0.90)'; ctx.fillRect(dx - 29, dy - 92, 58, 14);
+  ctx.strokeStyle = sincronizada ? '#8cff9e' : '#3f7a52'; ctx.lineWidth = 1;
+  ctx.strokeRect(dx - 29, dy - 92, 58, 14);
+  ctx.fillStyle = sincronizada ? '#d8ffe4' : '#9dffb8'; ctx.fillText('DOCA D4', dx, dy - 82);
+
+  if ((revealActive || scanned) && !gateOpen) {
+    const [gx, gy] = p(10.5, 6.0);
+    const r = 13 + 3.0 * Math.sin(t * 5.6);
+    ctx.strokeStyle = '#8cff9e'; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.arc(gx, gy - 26, r, 0, Math.PI * 2); ctx.stroke();
+    ctx.fillStyle = 'rgba(6,18,10,0.90)'; ctx.fillRect(gx - 62, gy - 58, 124, 14);
+    ctx.strokeStyle = 'rgba(140,255,158,0.80)'; ctx.lineWidth = 1;
+    ctx.strokeRect(gx - 62, gy - 58, 124, 14);
+    ctx.fillStyle = '#c8ffd8'; ctx.font = 'bold 8px monospace'; ctx.textAlign = 'center';
+    ctx.fillText('JANELA CINÉTICA • [Q]', gx, gy - 48);
+  }
+
+  if (gateOpen) {
+    const [ax, ay] = p(16.5, 5.7);
+    const label = rota ? 'VIADUTO -> ESTAÇÃO QUE RESPIRA' : 'VIADUTO • CONTRAPESO SELADO';
+    const w = label.length * 5.2 + 14;
+    ctx.fillStyle = 'rgba(6,18,10,0.88)'; ctx.fillRect(ax - w / 2, ay - 86, w, 14);
+    ctx.strokeStyle = rota ? '#8cff9e' : '#6c8a76'; ctx.lineWidth = 1;
+    ctx.strokeRect(ax - w / 2, ay - 86, w, 14);
+    ctx.fillStyle = rota ? '#d8ffe4' : '#a8c8b4'; ctx.font = 'bold 8px monospace'; ctx.textAlign = 'center';
+    ctx.fillText(label, ax, ay - 76);
+  }
+
+  const massFlash = curState?.player?.ability?.massFlash;
+  if (massFlash && massFlash.timeLeft > 0 && massFlash.duration > 0) {
+    const k = massFlash.timeLeft / massFlash.duration;
+    const [fx, fy] = p(massFlash.x, massFlash.y);
+    const rad = (1 - k) * 82 + 18;
+    ctx.strokeStyle = `rgba(255,201,74,${(0.88 * k).toFixed(3)})`;
+    ctx.lineWidth = 3.4 * k + 0.8;
+    ctx.beginPath(); ctx.ellipse(fx, fy - 8, rad, rad * 0.5, 0, 0, Math.PI * 2); ctx.stroke();
+  }
+  const tideFlash = curState?.player?.ability?.tideFlash;
+  if (tideFlash && tideFlash.timeLeft > 0 && tideFlash.duration > 0) {
+    const k = tideFlash.timeLeft / tideFlash.duration;
+    const [fx, fy] = p(tideFlash.x, tideFlash.y);
+    const rad = (1 - k) * 76 + 16;
+    ctx.strokeStyle = `rgba(140,255,158,${(0.88 * k).toFixed(3)})`;
+    ctx.lineWidth = 3.2 * k + 0.8;
+    ctx.beginPath(); ctx.ellipse(fx, fy - 10, rad, rad * 0.5, 0, 0, Math.PI * 2); ctx.stroke();
+  }
+  ctx.restore();
+}
+
+function drawNucleo10xWallTile(x, y, front) {
+  if (front || x === 0 || y === 0) return;
+  if (x !== 10 && x !== 14) return;
+  const tx = (x - y) * HW, ty = (x + y) * HH;
+  const h = 22;
+  const flags = state?.progress?.flags ?? {};
+  const active = !!flags.gate_malha_cinetica_sala || !!flags.scan_malha_sala;
+  const stroke = active ? '#8cff9e' : '#315c40';
+  quad(tx - HW, ty + HH, tx, ty + TH, tx, ty + TH - h, tx - HW, ty + HH - h, '#121c16', '#060c08', 1);
+  quad(tx, ty + TH, tx + HW, ty + HH, tx + HW, ty + HH - h, tx, ty + TH - h, '#0e1712', '#050a06', 0.9);
+  quad(tx, ty - h, tx + HW, ty + HH - h, tx, ty + TH - h, tx - HW, ty + HH - h, '#1d2a22', stroke, 1);
+  ctx.save();
+  ctx.strokeStyle = stroke; ctx.lineWidth = 1.8;
+  ctx.beginPath(); ctx.moveTo(tx - HW * 0.5, ty + HH * 1.5 - 6); ctx.lineTo(tx - HW * 0.5, ty + HH * 1.5 - h + 6); ctx.stroke();
+  ctx.restore();
+}
+
+function drawDominioWallTile(x, y, front) {
+  if (front) return;
+  if (x === 0 || y === 0) return;
+
+  // Divisória interna do Santuário (x = 10): blocos de obsidiana entalhada e ouro real
+  const tx = (x - y) * HW;
+  const ty = (x + y) * HH;
+  const h = 50;
+  const flags = state?.progress?.flags ?? {};
+  const consagrado = !!flags.santuario_dominio_consagrado;
+  const active = consagrado || !!flags.gate_lacre_frequencia_sala || !!flags.scan_lacre_sala;
+  const goldStroke = consagrado ? '#ffe074' : active ? '#f5b83d' : '#96702e';
+
+  // Face sudoeste (voltada para o Anel de Ruptura)
+  quad(
+    tx - HW, ty + HH,
+    tx, ty + TH,
+    tx, ty + TH - h,
+    tx - HW, ty + HH - h,
+    '#1c1824', '#0c0a10', 1
+  );
+  // Frisos de bronze dourado na base e na cornija
+  quad(tx - HW, ty + HH, tx, ty + TH, tx, ty + TH - 6, tx - HW, ty + HH - 6, '#6e5224', '#1d150c', 0.8);
+  quad(tx - HW, ty + HH - h + 6, tx, ty + TH - h + 6, tx, ty + TH - h, tx - HW, ty + HH - h, '#87652c', '#22180e', 0.8);
+
+  // Face sudeste (voltada para a Câmara da Coroa)
+  quad(
+    tx, ty + TH,
+    tx + HW, ty + HH,
+    tx + HW, ty + HH - h,
+    tx, ty + TH - h,
+    '#14111a', '#09070d', 0.9
+  );
+  quad(tx, ty + TH, tx + HW, ty + HH, tx + HW, ty + HH - 6, tx, ty + TH - 6, '#57401c', '#18110a', 0.8);
+  quad(tx, ty + TH - h + 6, tx + HW, ty + HH - h + 6, tx + HW, ty + HH - h, tx, ty + TH - h, '#6e5224', '#1d150c', 0.8);
+
+  // Entalhe rúnico vertical dourado na face oeste
+  ctx.save();
+  ctx.strokeStyle = goldStroke;
+  ctx.lineWidth = 2.0;
+  ctx.beginPath();
+  ctx.moveTo(tx - HW * 0.5, ty + HH * 1.5 - 8);
+  ctx.lineTo(tx - HW * 0.5, ty + HH * 1.5 - h + 8);
+  ctx.stroke();
+
+  ctx.beginPath();
+  ctx.moveTo(tx - HW * 0.72, ty + HH * 1.28 - h * 0.52);
+  ctx.lineTo(tx - HW * 0.28, ty + HH * 1.72 - h * 0.52);
+  ctx.stroke();
+
+  // Topo de obsidiana com canal harmônico dourado rumo aos pilares do Lacre
+  quad(tx, ty - h, tx + HW, ty + HH - h, tx, ty + TH - h, tx - HW, ty + HH - h, '#282334', '#8e6b2d', 1);
+  const cTopX = tx + HW * 0.5, cTopY = ty + HH * 0.5 - h;
+  const cBotX = tx - HW * 0.5, cBotY = ty + HH * 1.5 - h;
+  ctx.strokeStyle = '#0d0a12';
+  ctx.lineWidth = 5;
+  ctx.beginPath();
+  ctx.moveTo(cTopX, cTopY);
+  ctx.lineTo(cBotX, cBotY);
+  ctx.stroke();
+  ctx.strokeStyle = goldStroke;
+  ctx.lineWidth = 2.2;
+  ctx.stroke();
+  ctx.restore();
 }
 
 function drawWallSprite(x, y, map) {
@@ -2288,7 +5132,13 @@ function drawWallProcedural(x, y, front) {
 // - dimensional_train
 // =====================================================================
 
-function getObjectSpriteConfig(spriteId) {
+export function getObjectSpriteConfig(spriteId) {
+  if (typeof spriteId === 'string' && (
+    spriteId.startsWith('freq666_') || spriteId.startsWith('oceano_vivo_') ||
+    /^enseada(?:\d+)?_/.test(spriteId)
+  )) return { SHEET_COLS: 1, SHEET_ROWS: 1, DEFAULT_SCALE: 1, FEET_ANCHOR_Y: 1 };
+  if (typeof spriteId === 'string' && (spriteId.startsWith('bio_sala_') || spriteId.startsWith('dom_sala_') || spriteId.startsWith('mare_sala_') || spriteId.startsWith('nucleo_sala_') || spriteId.startsWith('viaduto_'))) return { SHEET_COLS: 1, SHEET_ROWS: 1, DEFAULT_SCALE: 1, FEET_ANCHOR_Y: 1 };
+  if (['sala_bio_maquina', 'sala_bio_grade', 'sala_dominio_lacre', 'sala_mare_fluxo', 'sala_nucleo_malha', 'aero_painel_partidas', 'aero_carrinho_bagagem', 'aero_totem_holo', 'aero_planta_aliena'].includes(spriteId)) return { SHEET_COLS: 1, SHEET_ROWS: 1, DEFAULT_SCALE: 1, FEET_ANCHOR_Y: 1 };
   if (['bio_terminal', 'bio_reator', 'bio_ponte', 'bio_estufa', 'bio_floreira', 'bio_tubos', 'bio_caixa', 'bio_luminaria', 'bio_plataforma', 'bio_margem_canto', 'bio_margem_cano', 'bio_margem_ruina', 'bio_margem_mureta', 'bio_condutor_quebrado', 'bio_condutor_ativo', 'bio_regulador_quebrado', 'bio_regulador_ativo', 'bio_mato_cano', 'bio_mato_ventilacao', 'bio_mato_barris', 'bio_mato_fissura', 'bio_cabeceira', 'bio_distribuidor', 'bio_margem_baixa', 'bio_fundacao'].includes(spriteId)) return { SHEET_COLS: 1, SHEET_ROWS: 1, DEFAULT_SCALE: 1, FEET_ANCHOR_Y: 1 };
   if (['hub_vaso_novo', 'hub_reciclagem', 'hub_carrinho', 'hub_bebedouro'].includes(spriteId)) return { SHEET_COLS: 1, SHEET_ROWS: 1, DEFAULT_SCALE: .25, FEET_ANCHOR_Y: 1 };
   if (spriteId === 'costa_rochosa') return { SHEET_COLS: 4, SHEET_ROWS: 1, DEFAULT_SCALE: 1, FEET_ANCHOR_Y: 1 };
@@ -2501,22 +5351,48 @@ export function fatiaObjeto(object, altura) {
   return { sy, sh: Math.max(1, fim - sy) };
 }
 
+function drawBioGateResonance(object, curState) {
+  const diagnosed = !!curState?.progress?.flags?.bio_placa_diagnostico;
+  if (!diagnosed) return;
+  const ix = (object.x - object.y) * HW + (object.ajusteX ?? 0);
+  const iy = (object.x + object.y) * HH + (object.ajusteY ?? 0);
+  const t = performance.now() / 1000;
+  const pulse = 0.65 + Math.sin(t * 5.2) * 0.3;
+
+  ctx.save();
+  const cx = ix, cy = iy - 28;
+  ctx.strokeStyle = `rgba(126, 252, 224, ${pulse.toFixed(2)})`;
+  ctx.lineWidth = 1.6;
+  const r = 11 + Math.sin(t * 4) * 1.5;
+  for (const [sx, sy] of [[-1, -1], [1, -1], [1, 1], [-1, 1]]) {
+    ctx.beginPath();
+    ctx.moveTo(cx + sx * r, cy + sy * (r * 0.45));
+    ctx.lineTo(cx + sx * r, cy + sy * r * 0.85);
+    ctx.lineTo(cx + sx * (r * 0.55), cy + sy * r * 0.85);
+    ctx.stroke();
+  }
+  ctx.restore();
+}
+
 function drawMapObject(object, state) {
-  if (object.invisivel) return;
+  if (object.invisivel || object.renderizar === false) return;
   if (object.hideWhenFlag && state.progress.flags?.[object.hideWhenFlag]) return;
   if (object.showWhenFlag && !state.progress.flags?.[object.showWhenFlag]) return; // NOVO
+  if(object.docasProp && desenharMobiliaDocas(ctx,object,state)) return;
 
   if (['rocha_rachada', 'travessia_mare_eco', 'passagem_mare_eco', 'caverna_alagada', 'fenda_estreita', 'teleferico_quebrado'].includes(object.id)) { drawBridgeThreshold(object, state.world?.currentMap, state); return; }
 
-  if (object.gate) {
+  if (object.gate && (!object.__coluna || object.__coluna.index === 0)) {
     const x = (object.x - object.y) * HW, y = (object.x + object.y) * HH;
     ctx.save(); ctx.fillStyle = 'rgba(11,24,28,.28)'; ctx.beginPath();
     ctx.ellipse(x, y + 3, 30, 9, 0, 0, Math.PI * 2); ctx.fill(); ctx.restore();
   }
 
+  if (object.flutuanteMar) { drawFlutuanteMar(object, state); return; }
   if (object.bioMarker) { drawBioMarker(object); return; }
   if (object.cableStation) { drawCableStation(object); return; }
   if (object.tipo === 'holograma_decorativo') { drawHubHologram(object); return; }
+  if (object.tipo === 'limiar_frequencia') { drawFrequencyThreshold(object, state); return; }
   if (object.porta) { drawDoor(object); return; }
   if (object.routeMarker) {
     const x = (object.x - object.y) * HW, y = (object.x + object.y) * HH;
@@ -2546,14 +5422,39 @@ function drawMapObject(object, state) {
   }
   // ...
 
-  const sheet = getObjectSpriteConfig(object.sprite);
-  const image = getSprite(object.sprite ?? sheet.ID);
+  const reducedMotion = typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+  let spriteId = quadroEnseada(object, performance.now() / 1000, reducedMotion);
+  if (!object.quadrosAnimacao && !object.animacaoFolha && object.spriteB && !reducedMotion) {
+    const periodo = object.animPeriodo ?? 0.55;
+    const fase = (performance.now() / 1000) / periodo + (object.x + object.y) * 0.27;
+    if (Math.floor(fase) % 2 === 1 && getSprite(object.spriteB)) {
+      spriteId = object.spriteB;
+    }
+  }
+  if (object.quadrosAnimacao && !getSprite(spriteId)) spriteId = object.sprite;
+  const sheet = getObjectSpriteConfig(spriteId);
+  const image = getSprite(spriteId ?? sheet.ID);
   if (!image || !sheet) return;
+
+  if(object.id==='cais_enseada_visual' && desenharEmbarquePesqueiro(ctx,object,
+    (object.x-object.y)*HW+(object.ajusteX??0),(object.x+object.y)*HH+(object.ajusteY??0),
+    reducedMotion?null:performance.now()/1000))return;
 
   // Estado ligado a uma flag de progresso (ex.: válvula da estufa aberta).
   const filtro = filtroObjeto(object);
 
-  if (object.useCrop && drawCroppedObject(object, image, sheet)) return;
+  if (object.useCrop && drawCroppedObject(object, image, sheet)) {
+    drawFrequencyObjectLife(object, image);
+    drawEnseadaObjectAnimations(object, state);
+    if (temDetalheEnseada(object.id)) {
+      const crop = getFrame(image, 0, 0, sheet.SHEET_COLS, sheet.SHEET_ROWS)?.crop;
+      desenharDetalheEnseada(ctx, object, crop, performance.now() / 1000, reducedMotion);
+    }
+    if (object.id === 'grade_impeto_vivo' && (!object.__coluna || object.__coluna.index === object.__coluna.count - 1)) {
+      drawBioGateResonance(object, state);
+    }
+    return;
+  }
 
   // fallback antigo (não usado pelo trem/trilho)
   const frameW = image.width / sheet.SHEET_COLS;
@@ -2687,14 +5588,24 @@ function drawCroppedObject(object, image, sheet) {
   const px = object.pivotX ?? 0.5;
   const py = object.pivotY ?? 1;
 
-  const ix = (object.x - object.y) * HW + (object.ajusteX ?? 0);
-  const iy = (object.x + object.y) * HH + (object.ajusteY ?? 0);
+  const agora = performance.now() / 1000;
+  const movimentoReduzido = typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+  const voa = !movimentoReduzido;
+  const boiaY = object.flutuacaoSuave && voa ? Math.sin(agora * 2.1 + object.x * 1.7 + object.y) * 2.4 : 0;
+  const cardumeX = object.nadoCardume && voa ? Math.cos(agora * 1.35 + object.x) * 4.5 : 0;
+  const cardumeY = object.nadoCardume && voa ? Math.sin(agora * 2.0 + object.y) * 2.2 : 0;
+  const ix = (object.x - object.y) * HW + (object.ajusteX ?? 0) + cardumeX;
+  const iy = (object.x + object.y) * HH + (object.ajusteY ?? 0) + boiaY + cardumeY;
 
   // skewY: inclina o eixo longo (y' = y + skewY * x) sem esticar a altura.
   // Positivo = a ponta direita desce. Aplicado em espaço de TELA,
   // depois do espelhamento, então vale igual para objetos espelhados.
   const skewY = object.skewY ?? 0;
   const escalaY = object.escalaY ?? 1;
+  const asas = object.bateAsas && !movimentoReduzido ? 0.68 + 0.32 * Math.abs(Math.sin(agora * 8 + object.ajusteX * .07)) : 1;
+  const brisaSkewX = object.oscilaBrisa && !movimentoReduzido
+    ? Math.sin(agora * 2.1 + object.x * 1.3 + object.y) * 0.032 * (0.65 + (state.clima?.vento ?? 0.3))
+    : 0;
 
   const banda = fatiaObjeto(object, c.h);
   // Tira vertical de um paredão (ver `drawWorld`). Um pixel de sobra de cada
@@ -2706,7 +5617,6 @@ function drawCroppedObject(object, image, sheet) {
     sw = Math.min(c.w, Math.ceil(c.w * (tira.index + 1) / tira.count) + 1) - sx;
   }
   const inteiro = !object.__slice && (!tira || tira.index === 0);
-  const agora = performance.now() / 1000;
   // Pedra no mar: a espuma nasce ANTES da pedra (fica por baixo do sprite).
   if (object.espuma && inteiro) {
     desenharAnelEspuma(ctx, ix + (object.espumaX ?? 0), iy + (object.espumaY ?? 0), object.espuma, agora, (object.x * 7 + object.y * 13) | 0);
@@ -2718,9 +5628,14 @@ function drawCroppedObject(object, image, sheet) {
     ctx.beginPath(); ctx.rect(boca.x - 34, -10000, 20000, 20000); ctx.clip();
   }
   const filtro = filtroObjeto(object);
+  // Folhas com quadros de mesmo tamanho e margem fixa: a base continua no
+  // pivô exato do sprite original. Se a folha ainda não carregou, usa a arte.
+  const anim = object.animacaoFolha;
+  const folha = anim && !movimentoReduzido ? getSprite(anim.sprite) : null;
+  const folhaValida = folha && folha.width === (c.w + 2 * anim.margem) * anim.quadros && folha.height === c.h && !tira && !object.__slice;
   // Cópia 1:1 do sprite já reduzido (ver "SPRITES JÁ NA ESCALA DA TELA").
   const kTela = scale * escaladosZoom;
-  const pronto = escaladosAtivo && !filtro && skewY === 0 && escalaY === 1 && kTela <= ESCALADOS_MAX_K
+  const pronto = !folhaValida && escaladosAtivo && !filtro && skewY === 0 && brisaSkewX === 0 && escalaY === 1 && asas === 1 && kTela <= ESCALADOS_MAX_K
     ? spriteEscalado(c.canvas, kTela, Boolean(object.espelhar))
     : null;
   if (pronto) {
@@ -2747,10 +5662,19 @@ function drawCroppedObject(object, image, sheet) {
     ctx.imageSmoothingEnabled = true;
     ctx.imageSmoothingQuality = 'high';
     ctx.translate(ix, iy);
-    if (skewY !== 0 || escalaY !== 1) ctx.transform(1, skewY, 0, escalaY, 0, 0);
+    if (skewY !== 0 || brisaSkewX !== 0 || escalaY !== 1) ctx.transform(1, skewY, brisaSkewX, escalaY, 0, 0);
     if (object.espelhar) ctx.scale(-1, 1);
-    ctx.drawImage(c.canvas, sx, banda.sy, sw, banda.sh,
-      -w * px + sx * scale, -h * py + banda.sy * scale, sw * scale, banda.sh * scale);
+    if (asas !== 1) ctx.scale(asas, 1);
+    if (folhaValida) {
+      const fw = c.w + 2 * anim.margem;
+      const impulso = object.id === 'carrilhao_vento_enseada' && agora < (object.immersiveChimeUntil ?? 0) ? 2.6 : 1;
+      const quadro = Math.floor((agora * impulso + (anim.fase ?? 0)) / anim.periodo) % anim.quadros;
+      ctx.drawImage(folha, quadro * fw, 0, fw, c.h,
+        -w * px - anim.margem * scale, -h * py, fw * scale, h);
+    } else {
+      ctx.drawImage(c.canvas, sx, banda.sy, sw, banda.sh,
+        -w * px + sx * scale, -h * py + banda.sy * scale, sw * scale, banda.sh * scale);
+    }
     ctx.filter = 'none';
   }
   // Queda-d'água: fios animados recortados pela máscara da arte, e o
@@ -3684,8 +6608,64 @@ function drawRobo(e, ix, iy) {
   const rc = (!e.moving && cfg.ESTADOS?.[e.estado]) || cfg.DIRECOES?.[e.dir] || [0, 0];
   const bob = e.moving ? Math.abs(Math.sin((performance.now() / 1000) * 14)) : 0;
 
-  return drawFramePe(e, image, cfg, rc, ix, iy - bob, cfg.SCALE ?? 0.16, false);
+  // spriteScale opcional por ator: unidades maiores/menores que o padrão (L-9 do aeroporto)
+  const scale = (cfg.SCALE ?? 0.16) * (e.spriteScale ?? 1);
+  return drawFramePe(e, image, cfg, rc, ix, iy - bob, scale, false);
 }
+
+// =====================================================================
+//  GUIA DO AEROPORTO — sprite próprio (5 poses em linha: frente, dir, costas, esq, aceno)
+// =====================================================================
+function drawGuiaSprite(npc, ix, iy) {
+  const image = getSprite('guia_aeroporto');
+  if (!image) return false;
+
+  const isWave = npc.pose === 'wave' || npc.talking || Boolean(npc.bark);
+  const col = isWave
+    ? 4
+    : ({ down: 0, right: 1, up: 2, left: 3 }[npc.facing ?? 'down'] ?? 0);
+
+  const fr = getFrame(image, col, 0, 5, 1, { tolerancia: 14 });
+  if (!fr) return false;
+
+  const pe = pePos(fr);
+  const scale = 0.215;
+  const bob = npc.moving ? Math.abs(Math.sin(performance.now() / 120)) * 2 : 0;
+
+  ctx.save();
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = 'medium';
+  ctx.translate(ix, iy - bob);
+  ctx.drawImage(
+    fr.cell,
+    -pe.x * scale,
+    -pe.y * scale,
+    fr.cell.width * scale,
+    fr.cell.height * scale
+  );
+  ctx.restore();
+
+  npc._topo = Math.round((pe.y - fr.crop.y) * scale);
+  return true;
+}
+
+// Viajante ambiental (saguão e aeroporto): 4 vistas × 6 quadros a 256px.
+// Sem folha direcional de caminhada — só oscilação entre quadros do ciclo.
+function drawViajanteSprite(entity, ix, iy) {
+  const image = getSprite('hub_viajante');
+  if (!image) return false;
+  const row = { down: 0, right: 1, up: 2, left: 3 }[entity.facing] ?? 0;
+  const passo = entity.visitorRuntime?.clock ?? 0;
+  const frame = entity.moving ? Math.floor(passo * 7) % 6 : 0;
+  const oscilacao = entity.moving ? (1 - Math.cos(passo * 14 * Math.PI)) * .45 : 0;
+  ctx.save();
+  ctx.translate(ix, iy - oscilacao);
+  ctx.drawImage(image, frame * 256, row * 256, 256, 256, -68, -129, 136, 136);
+  ctx.restore();
+  entity._topo = 122;
+  return true;
+}
+
 // =====================================================================
 //  ENTIDADES
 // =====================================================================
@@ -3755,13 +6735,21 @@ function drawCollectible(item, state) {
     26
   );
 
-  gradient.addColorStop(0, 'rgba(53,230,211,0.42)');
-  gradient.addColorStop(1, 'rgba(53,230,211,0)');
+  const isDominioFrag = item.id === 'fragmento_eco_dominio';
+  gradient.addColorStop(0, isDominioFrag ? 'rgba(255,213,79,0.52)' : 'rgba(53,230,211,0.42)');
+  gradient.addColorStop(1, isDominioFrag ? 'rgba(255,172,42,0)' : 'rgba(53,230,211,0)');
 
   ctx.fillStyle = gradient;
   ctx.beginPath();
   ctx.ellipse(ix, iy, 26, 12, 0, 0, Math.PI * 2);
   ctx.fill();
+
+  // Nas câmaras de carga, o cristal já integra a arte do berço.
+  if (state.world?.currentMap?.meta?.estiloSala === 'carga_eco' &&
+      (state.objects ?? []).some(o => o.id.startsWith('berco_fragmento_'))) {
+    ctx.restore();
+    return;
+  }
 
   // Fragmento.
   ctx.save();
@@ -3775,11 +6763,11 @@ function drawCollectible(item, state) {
   ctx.lineTo(-9, 0);
   ctx.closePath();
 
-  ctx.fillStyle = '#83fff5';
+  ctx.fillStyle = isDominioFrag ? '#ffe994' : '#83fff5';
   ctx.fill();
 
   ctx.lineWidth = 2;
-  ctx.strokeStyle = '#0ba8b2';
+  ctx.strokeStyle = isDominioFrag ? '#d48d1e' : '#0ba8b2';
   ctx.stroke();
 
   ctx.restore();
@@ -4043,7 +7031,7 @@ function drawMarcadorDeTreino(map, state) {
   const arvore = lerArvore(state.progress);
   if (arvore.nivel >= 2) return;
   const poca = map.pocas.find(p => p.treino);
-  if (!poca) return;
+  if (!poca || poca.ocultarMarcador) return;
   const d = Math.hypot(state.player.x - poca.x, state.player.y - poca.y);
   // Dentro da poça o painel do degrau já explica: o marcador recua.
   const forca = Math.max(0, Math.min(1, (d - 1.2) / 1.6));
@@ -4116,7 +7104,19 @@ function drawEntity(entity, state) {
       ? 1 - entity.ultimate.charge / (entity.ultimate.chargeDuration || .42)
       : 0;
     const afundar = carga > 0 ? Math.sin(Math.PI * Math.min(1, carga)) * 3 : 0;
-    if (drawPlayerSprite(entity, ix + dx / length * push, iy + dy / length * push + afundar)) return;
+    // Preparação curta sem teleporte ou alteração de colisão. Agachar é uma
+    // deformação do sprite existente, não uma folha nova de personagem.
+    const gesto = entity.immersivePose;
+    ctx.save();
+    if (gesto?.amount > 0) {
+      const agacha = ['gruta_concha_enseada','piscina_mare_viva_enseada','jardim_pedras_enseada','acampamento_vigilia_enseada','enseada_banco_tronco_camp'].includes(gesto.id);
+      ctx.translate(ix, iy);
+      ctx.transform(1, 0, gesto.side * gesto.amount * (agacha ? .025 : .11), 1 - gesto.amount * (agacha ? .18 : .03), 0, 0);
+      ctx.translate(-ix, -iy);
+    }
+    const desenhado = drawPlayerSprite(entity, ix + dx / length * push, iy + dy / length * push + afundar);
+    ctx.restore();
+    if (desenhado) return;
 
     ctx.beginPath();
     ctx.arc(ix, iy - 14, 9, 0, Math.PI * 2);
@@ -4129,19 +7129,9 @@ function drawEntity(entity, state) {
   }
 
   if (entity.tipo === 'viajante_ambiental') {
-    const image = getSprite('hub_viajante');
-    if (image) {
-      drawShadow(ix, iy, .24);
-      const row = { down: 0, right: 1, up: 2, left: 3 }[entity.facing] ?? 0;
-      const frame = entity.moving ? Math.floor((entity.visitorRuntime?.clock ?? 0) * 7) % 6 : 0;
-      // Oscilação curta e contínua entre os quadros, sem escalar o corpo.
-      const passo = entity.visitorRuntime?.clock ?? 0;
-      const oscilacao = entity.moving ? (1 - Math.cos(passo * 14 * Math.PI)) * .45 : 0;
-      ctx.save(); ctx.translate(ix, iy - oscilacao);
-      ctx.drawImage(image, frame * 256, row * 256, 256, 256, -68, -129, 136, 136);
-      ctx.restore(); entity._topo = 122; return;
-    }
-    return; // Sem arte, não desenha uma cópia do NEXO.
+    drawShadow(ix, iy, .24);
+    drawViajanteSprite(entity, ix, iy); // sem arte, não desenha uma cópia do NEXO
+    return;
   }
   if (entity.tipo === 'robo') {
     ctx.beginPath();
@@ -4152,6 +7142,7 @@ function drawEntity(entity, state) {
   } else {
     drawShadow(ix, iy, 0.32);
     if (drawNexoSprite(entity, ix, iy)) return;
+    if (entity.sprite === 'guia_aeroporto' && drawGuiaSprite(entity, ix, iy)) return;
   }
 
   ctx.beginPath();

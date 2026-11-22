@@ -6,13 +6,16 @@
 
 import { WORLD_REGISTRY } from '../data/world-registry.js';
 import { state } from './state.js';
-import { snapCameraTo, setMapZoomMin } from '../engine/camera.js';
+import { snapCameraTo, setMapZoomMin, setZoom } from '../engine/camera.js';
 import { createActorRuntime } from './actors.js';
 import { createCoastalFauna } from './fauna-costeira.js';
 import { createTrainingTargets } from './combat.js';
+import { criarAmeacaCromatica } from './mare-cromatica-ameacas.js';
 import { createHazards } from './hazards.js';
 import { rememberMapLocation } from './save.js';
 import { applyGateStates } from './gates.js';
+import { startQuest, recordQuestEvent } from './quests.js';
+import { reachFirstRoute } from './frequencia-quest.js';
 
 function findDefaultSpawn(layout) {
   const height = layout.length;
@@ -58,12 +61,26 @@ export async function loadMap(mapId, spawnId = 'inicio') {
     state.companion = null; // posição do vínculo é runtime, não atravessa saves/mapas
     state.fauna = createCoastalFauna(mapData);
     state.trainingTargets = createTrainingTargets(mapData);
+    state.cromaticaRuntime = criarAmeacaCromatica(mapData);
     state.hazards = createHazards(mapData);
     state.player.combat = null;
+    state.player.vooLivre = null;
+    // Uma ação não atravessa a eclusa: nada de marretada pendente disparar
+    // no mapa seguinte depois de um Q dado durante a transformação.
+    if (state.player.ability) {
+      state.player.ability.cast = null;
+      state.player.ability.queuedSmash = null;
+    }
     state.objects = [];
     state.portals = [];
     state.collectibles = [];
+    // Prompts e gestos são efêmeros; nunca atravessam a troca de mapa.
+    state.interaction.encontroMare = null;
+    state.interaction.faunaPronta = null;
+    state.player.mareAcao = null;
 
+    state.world.fpsPaused = false;
+    state.world.fpsPauseRequested = false;
     state.world.currentMapId = mapData.id;
     state.world.currentDimension = mapData.meta?.dimensao ?? 'unknown';
     state.world.currentMap = mapData;
@@ -117,9 +134,77 @@ export async function loadMap(mapId, spawnId = 'inicio') {
     p.y = spawn.y;
     p.target = null;
     p.moving = false;
+    // O rastro está em coordenadas do mapa anterior; fôlego e nado ficam.
+    p._esteira = [];
 
     setMapZoomMin(mapData.meta?.minZoom);
-    snapCameraTo(p.x, p.y);
+    if (Number.isFinite(mapData.meta?.initialZoom)) setZoom(mapData.meta.initialZoom);
+    snapCameraTo(p.x, p.y, mapData);
+    if (mapData.id === 'ilha_praia_inicial' && state.progress) {
+      state.progress.flags ??= {};
+      state.progress.flags.visitou_praia_inicial = true;
+    }
+    if (mapData.id === 'sala_bio_forja' && state.progress?.archetype === 'motor_bio_forja') {
+      if (!state.progress.questLog?.forja_do_propulsor) {
+        startQuest(state.progress, 'forja_do_propulsor');
+        const fl = state.progress.flags ?? {};
+        if (fl.bio_placa_diagnostico) recordQuestEvent(state.progress, { type: 'diagnose', target: 'bio_placa_diagnostico' });
+        if (fl.gate_grade_impeto_vivo) recordQuestEvent(state.progress, { type: 'breach_gate', target: 'grade_impeto_vivo' });
+        if (fl.collected_fragmento_eco_bio) recordQuestEvent(state.progress, { type: 'collect', target: 'fragmento_eco_bio' });
+        if (fl.oficina_bio_sincronizada) recordQuestEvent(state.progress, { type: 'sync_forge', target: 'maquina_bio' });
+      }
+    }
+    if (mapData.id === 'sala_dominio' && state.progress?.archetype === 'lamina_dominio_anciao') {
+      if (!state.progress.questLog?.prova_da_ruptura) {
+        startQuest(state.progress, 'prova_da_ruptura');
+        const fl = state.progress.flags ?? {};
+        if (fl.scan_lacre_sala) recordQuestEvent(state.progress, { type: 'diagnose', target: 'scan_lacre_sala' });
+        if (fl.gate_lacre_frequencia_sala) recordQuestEvent(state.progress, { type: 'breach_gate', target: 'lacre_frequencia_sala' });
+        if (fl.collected_fragmento_eco_dominio) recordQuestEvent(state.progress, { type: 'collect', target: 'fragmento_eco_dominio' });
+        if (fl.santuario_dominio_consagrado) recordQuestEvent(state.progress, { type: 'consecrate_blade', target: 'pedestal_lamina' });
+      }
+    }
+    if (mapData.id === 'sala_mare' && state.progress?.archetype === 'mare_astral') {
+      if (!state.progress.questLog?.calibragem_de_corrente) {
+        startQuest(state.progress, 'calibragem_de_corrente');
+        const fl = state.progress.flags ?? {};
+        if (fl.scan_fluxo_sala) recordQuestEvent(state.progress, { type: 'diagnose', target: 'scan_fluxo_sala' });
+        if (fl.gate_fluxo_contido_sala) recordQuestEvent(state.progress, { type: 'breach_gate', target: 'fluxo_contido_sala' });
+        if (fl.collected_fragmento_eco_mare) recordQuestEvent(state.progress, { type: 'collect', target: 'fragmento_eco_mare' });
+        if (fl.darsena_mare_sincronizada) recordQuestEvent(state.progress, { type: 'sync_tide', target: 'gerador_corrente' });
+      }
+    }
+    if (mapData.id === 'sala_nucleo' && state.progress?.archetype === 'nucleo_dez_forma') {
+      const entry = state.progress.questLog?.sincronia_dos_vetores;
+      if (!entry || entry.status !== 'completed') {
+        startQuest(state.progress, 'sincronia_dos_vetores');
+        const fl = state.progress.flags ?? {};
+        if (fl.scan_malha_sala) recordQuestEvent(state.progress, { type: 'diagnose', target: 'scan_malha_sala' });
+        if (fl.gate_malha_cinetica_sala) recordQuestEvent(state.progress, { type: 'breach_gate', target: 'malha_cinetica_sala' });
+        if (fl.collected_fragmento_eco_nucleo) recordQuestEvent(state.progress, { type: 'collect', target: 'fragmento_eco_nucleo' });
+        if (fl.base_vetores_sincronizada) recordQuestEvent(state.progress, { type: 'sync_vectors', target: 'nucleo_adaptacao' });
+      }
+    }
+    if (mapData.id === 'viaduto_dos_vetores' && state.progress) {
+      state.progress.flags ??= {};
+      state.progress.flags.visitou_viaduto_vetores = true;
+    }
+    if (mapData.id === 'ilha_enseada_ecos' && state.progress) {
+      state.progress.flags ??= {};
+      state.progress.flags.visitou_enseada_ecos = true;
+      if (!state.progress.questLog?.ecos_da_enseada_viva) {
+        startQuest(state.progress, 'ecos_da_enseada_viva');
+      }
+      if (!state.progress.questLog?.expedicao_da_baia_enseada) {
+        startQuest(state.progress, 'expedicao_da_baia_enseada');
+      }
+      if (!state.progress.questLog?.ecos_profundos_enseada) {
+        startQuest(state.progress, 'ecos_profundos_enseada');
+      }
+    } else if (state.player) {
+      state.player.enseadaBuff = null;
+    }
+    reachFirstRoute(state.progress, mapData.id);
     // Salva a última localização somente se um perfil estiver ativo.
     rememberMapLocation(mapData.id, spawnId);
     return true;

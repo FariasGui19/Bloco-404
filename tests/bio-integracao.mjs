@@ -82,7 +82,7 @@ const valvula2 = achar('bio_valvula_estufa');
 irPerto(valvula2, -1.2);
 assert.equal(getModuleInteractionPrompt(), 'DIAGNOSTICAR VÁLVULA DA ESTUFA');
 assert(!checkGate(valvula2.gate), 'E continua exigindo o diagnóstico R');
-assert.equal(getInteractionPrompt(findNearestInteraction()), 'EXAMINAR • DIAGNÓSTICO: R');
+assert.equal(getInteractionPrompt(findNearestInteraction()), 'EXAMINAR • R: DIAGNOSTICAR');
 await checkInteractions(true);
 assert(isDialogueOpen()); closeDialogue();
 assert(!state.progress.flags.gate_bio_valvula_estufa, 'E antes de R não abre o fluxo');

@@ -1,0 +1,236 @@
+{
+  "version": 1,
+  "provenance": "Dez pinturas geradas separadamente a partir da referência; recorte e registro com alfa. Peças estáticas, sem folhas novas de animação.",
+  "pieces": {
+    "cabana-oeste": {
+      "file": "cabana-oeste.png",
+      "size": [
+        768,
+        564
+      ],
+      "sourceCrop": [
+        245,
+        27,
+        1218,
+        742
+      ],
+      "sourceObjectSize": [
+        973,
+        715
+      ],
+      "keyColor": [
+        1,
+        254,
+        0
+      ],
+      "coastFrame": false
+    },
+    "galpao": {
+      "file": "galpao.png",
+      "size": [
+        768,
+        544
+      ],
+      "sourceCrop": [
+        187,
+        29,
+        1222,
+        762
+      ],
+      "sourceObjectSize": [
+        1035,
+        733
+      ],
+      "keyColor": [
+        3,
+        255,
+        1
+      ],
+      "coastFrame": false
+    },
+    "cabana-leste": {
+      "file": "cabana-leste.png",
+      "size": [
+        768,
+        531
+      ],
+      "sourceCrop": [
+        278,
+        1,
+        1385,
+        767
+      ],
+      "sourceObjectSize": [
+        1107,
+        766
+      ],
+      "keyColor": [
+        136,
+        33,
+        100
+      ],
+      "coastFrame": false
+    },
+    "arvores-secas": {
+      "file": "arvores-secas.png",
+      "size": [
+        382,
+        454
+      ],
+      "sourceCrop": [
+        507,
+        162,
+        889,
+        616
+      ],
+      "sourceObjectSize": [
+        382,
+        454
+      ],
+      "keyColor": [
+        2,
+        255,
+        3
+      ],
+      "coastFrame": false
+    },
+    "palmeiras": {
+      "file": "palmeiras.png",
+      "size": [
+        434,
+        524
+      ],
+      "sourceCrop": [
+        266,
+        36,
+        1129,
+        749
+      ],
+      "sourceObjectSize": [
+        863,
+        713
+      ],
+      "keyColor": [
+        10,
+        249,
+        4
+      ],
+      "coastFrame": true
+    },
+    "cristais": {
+      "file": "cristais.png",
+      "size": [
+        418,
+        338
+      ],
+      "sourceCrop": [
+        442,
+        52,
+        946,
+        717
+      ],
+      "sourceObjectSize": [
+        504,
+        665
+      ],
+      "keyColor": [
+        10,
+        249,
+        5
+      ],
+      "coastFrame": true
+    },
+    "cerca": {
+      "file": "cerca.png",
+      "size": [
+        768,
+        469
+      ],
+      "sourceCrop": [
+        85,
+        35,
+        1271,
+        760
+      ],
+      "sourceObjectSize": [
+        1186,
+        725
+      ],
+      "keyColor": [
+        1,
+        253,
+        1
+      ],
+      "coastFrame": false
+    },
+    "promontorio": {
+      "file": "promontorio.png",
+      "size": [
+        306,
+        318
+      ],
+      "sourceCrop": [
+        0,
+        0,
+        1385,
+        768
+      ],
+      "sourceObjectSize": [
+        1385,
+        768
+      ],
+      "keyColor": [
+        4,
+        255,
+        0
+      ],
+      "coastFrame": true
+    },
+    "quebra-mar": {
+      "file": "quebra-mar.png",
+      "size": [
+        394,
+        204
+      ],
+      "sourceCrop": [
+        86,
+        5,
+        1320,
+        698
+      ],
+      "sourceObjectSize": [
+        1234,
+        693
+      ],
+      "keyColor": [
+        8,
+        250,
+        1
+      ],
+      "coastFrame": true
+    },
+    "carga": {
+      "file": "carga.png",
+      "size": [
+        768,
+        515
+      ],
+      "sourceCrop": [
+        141,
+        21,
+        1252,
+        766
+      ],
+      "sourceObjectSize": [
+        1111,
+        745
+      ],
+      "keyColor": [
+        5,
+        246,
+        2
+      ],
+      "coastFrame": false
+    }
+  }
+}

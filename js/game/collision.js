@@ -1,3 +1,4 @@
+import { podePisarDocas } from './docas-navigation.js';
 // js/game/collision.js
 // =====================================================================
 //  COLISÃO
@@ -57,6 +58,7 @@ export function isWalkMaskTileWalkable(map, tileX, tileY) {
 
 export function tileAt(map, x, y) {
   if (!map) return TILE.WALL;
+  if (map.navegacaoDocas) return podePisarDocas(map.navegacaoDocas,x,y) ? TILE.FLOOR : TILE.WALL;
 
   const tileX = Math.floor(x);
   const tileY = Math.floor(y);
@@ -104,11 +106,27 @@ function circleHitsRect(circleX, circleY, radius, rectX, rectY, rectW, rectH) {
   return (dx * dx + dy * dy) < (radius * radius);
 }
 
+// Polígono em offsets do objeto: raio contra interior e arestas. Usado para
+// faces irregulares onde retângulos atravessariam escadas e soleiras.
+export function circleHitsPolygon(x, y, radius, object, polygon) {
+  let inside = false;
+  for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
+    const ax = object.x + polygon[j][0], ay = object.y + polygon[j][1];
+    const bx = object.x + polygon[i][0], by = object.y + polygon[i][1];
+    if ((ay > y) !== (by > y) && x < (bx-ax)*(y-ay)/(by-ay)+ax) inside = !inside;
+    const dx = bx-ax, dy = by-ay, length2 = dx*dx+dy*dy;
+    const t = length2 ? Math.max(0, Math.min(1, ((x-ax)*dx+(y-ay)*dy)/length2)) : 0;
+    if ((x-ax-t*dx)**2 + (y-ay-t*dy)**2 < radius*radius) return true;
+  }
+  return inside;
+}
+
 // =====================================================================
 // PAREDES (inclui a máscara, via tileAt)
 // =====================================================================
 
 export function hitsWall(map, x, y, radius) {
+  if (map?.navegacaoDocas) return !podePisarDocas(map.navegacaoDocas,x,y,radius);
   const minX = Math.floor(x - radius);
   const maxX = Math.floor(x + radius);
   const minY = Math.floor(y - radius);
@@ -245,6 +263,11 @@ export function getBlockingObject(x, y, radius, ignore = null, pular = null) {
 
     // Bloqueia andando, libera durante dash.
     if (canDashPassObject(object, ignore)) continue;
+
+    if (Array.isArray(object.poligonosColisao) && object.poligonosColisao.length) {
+      if (object.poligonosColisao.some(poly => circleHitsPolygon(x, y, radius, object, poly))) return object;
+      continue;
+    }
 
     // Múltiplas hitboxes.
     if (Array.isArray(object.hitboxes) && object.hitboxes.length > 0) {

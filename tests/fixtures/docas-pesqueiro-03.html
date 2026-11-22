@@ -1,0 +1,21 @@
+<!doctype html><meta charset="utf-8"><style>body{margin:0;background:#071622}canvas{width:100%}</style><canvas width="1280" height="780"></canvas><script type="module">
+import {loadSprites} from '../../js/engine/sprites.js';
+import {SPRITES_CAIS_SUL,plantaCais} from '../../js/data/worlds/arquipelago-rotas-perdidas/cais-sul.js';
+import {SPRITES_COSTA_OESTE} from '../../js/data/worlds/arquipelago-rotas-perdidas/costa-oeste-docas.js';
+import {docas,ESCALA_DOCAS} from '../../js/data/worlds/arquipelago-rotas-perdidas/docas-neblina.js';
+import {SPRITES_CASCOS} from '../../js/engine/docas-cascos.js';
+import {SPRITES_PESQUEIRO_03} from '../../js/engine/docas-pesqueiro-03.js';
+import {SPRITES_DOCAS_VIVAS} from '../../js/engine/docas-vivas.js';
+import {SPRITES_RESSACA} from '../../js/engine/docas-ressaca.js';
+import {renderDocas} from '../../js/engine/docas-view.js';
+import {state} from '../../js/game/state.js';
+const source=await(await fetch('../../js/main.js')).text();
+const selected=new Set(['docas_agua','docas_areia']);
+const other=Array.from(source.matchAll(/\{ id: '([^']+)', src: '([^']+)' \}/g),m=>({id:m[1],src:m[2]})).filter(s=>selected.has(s.id));
+await loadSprites([...SPRITES_CAIS_SUL,...SPRITES_COSTA_OESTE,...SPRITES_CASCOS,...SPRITES_PESQUEIRO_03,...SPRITES_DOCAS_VIVAS,...SPRITES_RESSACA,...other].map(s=>({...s,src:'../../'+s.src})));
+state.world.currentMapId=docas.id;state.world.currentMap=docas;
+state.trainingTargets=[];state.objects=[];
+const [cx,cy]=plantaCais([620,340]).map(v=>v*ESCALA_DOCAS),canvas=document.querySelector('canvas'),ctx=canvas.getContext('2d');
+window.sampleFull=t=>renderDocas(ctx,docas,state,cx,cy,1280,780,1.2,1,t*1000,()=>{});
+window.sampleFull(1.6);window.ready=true;
+</script>

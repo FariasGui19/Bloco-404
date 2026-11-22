@@ -25,11 +25,13 @@ import { getBioDashProfile } from './ability-context.js';
 import { tryArchetypePower, POWER_PROFILES } from './archetype-powers.js';
 import { openGate, checkGate, isGateOpen } from './gates.js';
 import { saveGame } from './save.js';
-import { getDerivedStats } from './rpg.js';
+import { getDerivedStats, grantArchetypeXp } from './rpg.js';
 import { recordMastery } from './mastery.js';
 import { executeBrutaSmash } from './combat.js';
 import { chargeFormHit } from './nucleo-form.js';
 import { NUCLEO_FORMS } from '../data/nucleo-forms.js';
+import { recordQuestEvent } from './quests.js';
+import { perfilSincronizacao } from './mare-cromatica.js';
 
 // ---------------------------------------------------------------------
 // CONFIGURAÇÃO INTERNA DE HABILIDADES
@@ -109,7 +111,17 @@ function pressed(...keys) {
 // Converte a direção visual do player para direção de mundo isométrico.
 // ---------------------------------------------------------------------
 
-function getFacingWorldDirection(facing) {
+export function getFacingWorldDirection(facing) {
+  if (getFloor()?.meta?.sideView) {
+    const sideDirs = {
+      down: { x: 0, y: 1 },
+      up: { x: 0, y: -1 },
+      right: { x: 1, y: 0 },
+      left: { x: -1, y: 0 },
+    };
+    return sideDirs[facing] ?? sideDirs.right;
+  }
+
   const directions = {
     // Baixo na tela.
     down: { x: 1, y: 1 },
@@ -162,16 +174,18 @@ function tryStartBioDash() {
     return false;
   }
 
-  if (player.energy < profile.energyCost) {
+  const sync = perfilSincronizacao(state.progress, state.world.currentMapId);
+  const cost = Math.ceil(profile.energyCost * sync.custo);
+  if (player.energy < cost) {
     showAbilityMessage('ENERGIA INSUFICIENTE');
     return false;
   }
 
   const direction = getFacingWorldDirection(player.facing);
 
-  player.energy -= profile.energyCost;
+  player.energy -= cost;
 
-  ability.cooldowns.bio_dash = profile.cooldown;
+  ability.cooldowns.bio_dash = profile.cooldown * sync.recarga;
   recordMastery(state.progress, 'distance', 6); // o dash também treina locomoção
   recordMastery(state.progress, 'ability_use');
 
@@ -182,7 +196,7 @@ function tryStartBioDash() {
     directionY: direction.y,
 
     timeLeft: profile.duration,
-    speed: profile.distance / profile.duration,
+    speed: profile.distance * sync.alcance / profile.duration,
     mode: profile.mode,
 
     // Usaremos isso depois no renderer para rastro/partículas.
@@ -204,9 +218,11 @@ export function activateBioDashSensors(start, end) {
   for (const sensor of state.objects ?? []) {
     if (!sensor.dashSensor || !sensor.gate || isGateOpen(sensor) || !checkGate(sensor.gate)) continue;
     const t = Math.max(0, Math.min(1, ((sensor.x - start.x) * dx + (sensor.y - start.y) * dy) / len2));
-    if (Math.hypot(start.x + dx * t - sensor.x, start.y + dy * t - sensor.y) > .45) continue;
-    openGate(sensor); saveGame(); activated = true;
-    if (state.player.ability) showAbilityMessage('IMPULSO REGISTRADO • ATIVE O PAINEL');
+    if (Math.hypot(start.x + dx * t - sensor.x, start.y + dy * t - sensor.y) > (sensor.dashRadius ?? .45)) continue;
+    openGate(sensor);
+    recordQuestEvent(state.progress, { type: 'breach_gate', target: sensor.id });
+    saveGame(); activated = true;
+    if (state.player.ability) showAbilityMessage(sensor.dashMessage ?? 'IMPULSO REGISTRADO • ATIVE O PAINEL');
   }
   return activated;
 }
@@ -245,6 +261,11 @@ function updateBioDash(dt) {
     const gate = state.objects.find(o => o.id === dash.phaseGateId);
     if (gate && dash.phaseCrosses && (player[dash.phaseAxis ?? 'x'] - gate[dash.phaseAxis ?? 'x']) * dash.phaseDirection >= 0.85 && !state.progress.flags?.[`gate_${gate.id}`]) {
       openGate(gate);
+      recordQuestEvent(state.progress, { type: 'breach_gate', target: gate.id });
+      if (gate.gate?.bonusXp > 0 && state.progress.archetype) {
+        grantArchetypeXp(state.progress, gate.gate.bonusXp);
+      }
+      player.ability.tideFlash = { x: gate.x, y: gate.y, timeLeft: 0.7, duration: 0.7 };
       saveGame();
     }
   }
@@ -291,16 +312,20 @@ function tryBrutaSmash(player) {
     showAbilityMessage('PISTÕES RECARREGANDO');
     return true;
   }
-  if (player.energy < perfil.cost) {
+  const sync = perfilSincronizacao(state.progress, state.world.currentMapId);
+  if (player.energy < Math.ceil(perfil.cost * sync.custo)) {
     showAbilityMessage('ENERGIA INSUFICIENTE');
     return true;
   }
-  // Preparação: o corpo trava, o golpe básico dura mais e o dano sai no fim
-  // (o combate básico já aplica o dano quando a marreta desce).
-  player.ability.cooldowns[perfil.id] = perfil.cooldown;
+  // Fixa a mira no início do windup. O helper conhece as duas projeções:
+  // direita no viaduto é +X, não a diagonal +X/-Y da sala isométrica.
+  const facing = player.facing ?? 'down';
+  const direction = getFacingWorldDirection(facing);
+  player.facing = facing;
+  player.ability.cooldowns[perfil.id] = perfil.cooldown * sync.recarga;
   recordMastery(state.progress, 'ability_use');
   const form = NUCLEO_FORMS[player.nucleoForm];
-  player.energy -= perfil.cost;
+  player.energy -= Math.ceil(perfil.cost * sync.custo);
   // O efeito usa id PRÓPRIO. Antes ele reaproveitava o id da transformação e,
   // com forma já ativa, o jogo desfazia e refazia a metamorfose em vez de
   // socar — era o "me destransforma e transforma de novo" do relato.
@@ -310,6 +335,9 @@ function tryBrutaSmash(player) {
     duration: perfil.windup,
     timeLeft: perfil.windup,
     form: player.nucleoForm,
+    facing,
+    dx: direction.x,
+    dy: direction.y,
     windup: true,
   };
   player.moving = false;
@@ -341,15 +369,23 @@ export function updateAbilities(dt) {
       const cast = ability.cast;
       ability.cast = null;
       // A marreta desce: dano em disco à frente, empurrão e tremor.
+      player.facing = cast.facing ?? player.facing;
       executeBrutaSmash({ player, progress: state.progress, targets: state.trainingTargets });
-      // Corpo e animação de golpe: a folha de ataque da Quebra é escolhida
-      // pelo estilo do arquétipo, então o mesmo ataque básico anima a marreta.
-      player.combat = { ...(player.combat ?? {}), style: 'nucleo_dez_forma', dx: cast.dx ?? 1, dy: cast.dy ?? 1, duration: .48, timeLeft: .48, cooldown: 0 };
+      // O impacto usa a mira congelada no Q, inclusive na passarela side-view.
+      player.combat = {
+        ...(player.combat ?? {}), style: 'nucleo_dez_forma', form: 'forma_bruta',
+        dx: cast.dx ?? 1, dy: cast.dy ?? 1, color: cast.color,
+        duration: .48, timeLeft: .48, cooldown: 0,
+      };
       // O peso do impacto consome barra além do custo de energia.
       chargeFormHit(player);
     }
   }
-  for (const key of ['effect', 'reveal', 'sonarAquatico']) {
+  if (ability.queuedSmash) {
+    ability.queuedSmash.timeLeft -= dt;
+    if (ability.queuedSmash.timeLeft <= 0 || player.nucleoForm !== 'forma_bruta') ability.queuedSmash = null;
+  }
+  for (const key of ['effect', 'reveal', 'sonarAquatico', 'ruptureFlash', 'tideFlash', 'massFlash']) {
     if (!ability[key]) continue;
     ability[key].timeLeft -= dt;
     if (ability[key].timeLeft <= 0) ability[key] = null;
@@ -363,8 +399,11 @@ export function updateAbilities(dt) {
     );
   }
 
-  // Regeneração de energia (a árvore do arquétipo pode somar aqui).
-  const energyRegen = CONFIG.ABILITIES.ENERGY_REGEN + (getDerivedStats(state.progress)?.energyRegen ?? 0);
+  // Regeneração de energia (a árvore do arquétipo e buffs da Enseada podem somar aqui).
+  const buffRegen = state.world?.currentMapId === 'ilha_enseada_ecos'
+    ? (player?.enseadaBuff === 'foco_equilibrio' ? 2 : player?.enseadaBuff === 'pulso_salino' && player?.nado?.ativo ? 1.5 : 0)
+    : 0;
+  const energyRegen = CONFIG.ABILITIES.ENERGY_REGEN + (getDerivedStats(state.progress)?.energyRegen ?? 0) + buffRegen;
   player.energy = Math.min(
     player.maxEnergy,
     player.energy + energyRegen * dt
@@ -390,8 +429,29 @@ export function updateAbilities(dt) {
     }
   }
 
-  // A transição de forma é uma ação curta e não permite interromper com Q/T.
-  if (ability.effect?.id === 'transformacao_10x') return true;
+  // T ainda está vestindo o corpo: não interrompe a animação, mas também não
+  // joga o Q do jogador no lixo. Guarda UM pedido, com a mira deste instante;
+  // ele sai sozinho no primeiro quadro livre (ou expira se houver cancelamento).
+  if (ability.effect?.id === 'transformacao_10x') {
+    if (pressed('q', 'keyq') && player.nucleoForm === 'forma_bruta' && ability.effect.activating) {
+      const facing = player.facing ?? 'down';
+      const direction = getFacingWorldDirection(facing);
+      ability.queuedSmash = {
+        timeLeft: ability.effect.timeLeft + .2,
+        facing, dx: direction.x, dy: direction.y,
+      };
+      showAbilityMessage('TRANSFORMANDO • PANCADA NA FILA');
+    }
+    return true;
+  }
+  if (ability.queuedSmash) {
+    const queued = ability.queuedSmash;
+    ability.queuedSmash = null;
+    if (queued.timeLeft > 0 && player.nucleoForm === 'forma_bruta' && !ability.dash && !(ability.scanning > 0)) {
+      player.facing = queued.facing;
+      return tryBrutaSmash(player);
+    }
+  }
   // A preparação da marreta também finca o corpo no chão: o golpe sai de onde
   // o jogador mirou, e o peso aparece no tempo de resposta.
   if (ability.cast?.id === 'pancada_quebra') return true;

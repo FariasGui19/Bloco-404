@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="pt-BR">
+  <meta charset="utf-8" /><title>Setor Limiar — QA ambiental</title
+  ><style>
+    html,
+    body {
+      margin: 0;
+      background: #161e35;
+    }
+    canvas {
+      display: block;
+      width: 100vw;
+      height: 100vh;
+      image-rendering: pixelated;
+    }
+  </style>
+  <script type="module">
+    import * as T from "../../js/vendor/three.module.js";
+    import { createSector } from "../../js/dimension/sector-scene.js";
+    const renderer = new T.WebGLRenderer({
+      antialias: false,
+      preserveDrawingBuffer: true,
+    });
+    renderer.setPixelRatio(1);
+    renderer.setSize(1100, 700);
+    renderer.outputColorSpace = T.SRGBColorSpace;
+    document.body.append(renderer.domElement);
+    const world = createSector(),
+      camera = new T.PerspectiveCamera(58, 1100 / 700, 0.12, 420);
+    const views = {
+      harborDetail: [
+        [-27, 11, 68],
+        [-16, 6, 53],
+      ],
+      lighthouseDetail: [
+        [58, 39, 5],
+        [40, 31, -21],
+      ],
+      anchorDetail: [
+        [31, 35, -17],
+        [22, 32, -28],
+      ],
+      ruinsDetail: [
+        [2, 17, 6],
+        [-23, 12, -19],
+      ],
+      ground: [
+        [6, 10, 32],
+        [0, 7, 3],
+      ],
+      coast: [
+        [-52, 17, 83],
+        [-7, 0, 50],
+      ],
+      flight: [
+        [-75, 66, 91],
+        [0, 7, 0],
+      ],
+      underwater: [
+        [-20, -4, 83],
+        [-16, -5, 58],
+      ],
+    };
+    window.sampleEnvironment = (name = "ground", time = 12) => {
+      const [eye, target] = views[name];
+      camera.position.set(...eye);
+      camera.lookAt(...target);
+      camera.updateMatrixWorld();
+      world.update({ x: 0, z: 24, y: 5, boating: false }, time);
+      world.environment?.setCamera(camera, name === "underwater");
+      renderer.render(world.scene, camera);
+      return {
+        calls: renderer.info.render.calls,
+        triangles: renderer.info.render.triangles,
+        textures: renderer.info.memory.textures,
+        geometries: renderer.info.memory.geometries,
+      };
+    };
+    window.environmentWorld = world;
+    window.environmentRenderer = renderer;
+    window.environmentCamera = camera;
+    window.sampleEnvironment();
+    window.ready = true;
+  </script>
+</html>

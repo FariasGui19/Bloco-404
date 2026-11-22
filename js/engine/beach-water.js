@@ -328,7 +328,11 @@ export function getSeaCanvas(map) {
   if (!map?.aguaPraia) return null;
   let entrada = seaCache.get(map);
   if (entrada) return entrada;
-  const data = createSeaTextureForMap(map);
+  // Mar aberto sem faixa de areia pode usar textura menor sem afetar
+  // colisão ou o campo de profundidade. Outros mapas preservam a escala.
+  const escala = Number.isFinite(map.meta?.escalaTexturaMar)
+    ? Math.max(6, Math.min(WATER_SCALE, Math.round(map.meta.escalaTexturaMar))) : WATER_SCALE;
+  const data = createSeaTextureForMap(map, escala);
   const canvas = document.createElement('canvas');
   canvas.width = data.width;
   canvas.height = data.height;

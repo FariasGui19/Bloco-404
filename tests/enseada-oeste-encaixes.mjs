@@ -1,0 +1,23 @@
+import assert from 'node:assert/strict';
+import { map } from '../js/data/worlds/arquipelago-rotas-perdidas/enseada-ecos.js';
+import { VEGETACAO } from '../js/data/enseada-vegetacao.js';
+const obj = id => { const o = map.objects.find(v => v.id === id); assert(o, id); return o; };
+const concha = obj('concha_praia_central_enseada');
+assert.equal(concha.espelhar, true, 'concha menor deve olhar para o espelho');
+assert(concha.x-concha.y > obj('espelho_arquetipos_enseada').x-obj('espelho_arquetipos_enseada').y);
+assert(obj('arbusto_concha_perola_oeste'));
+const poste = obj('poste_lanterna_madeira');
+assert(poste.x + poste.y > 39.5 + 46.3, 'poste desceu na imagem');
+const rede = obj('rede_treino_praia_enseada');
+// A nova rede de praia tem seus próprios postes e estacas, não é uma rede de descanso.
+assert.equal(rede.sprite, 'enseada_cais_rede');
+assert.equal(rede.bloqueia, false);
+assert(rede.interacao, 'rede mantém interação');
+assert.equal(obj('enseada_palmeira_camp_oeste').renderizar, false, 'remove duplicação das palmeiras');
+assert.equal(obj('enseada_palmeira_camp_norte').renderizar, false, 'remove duplicação das palmeiras');
+console.log('Oeste: orientação da concha, poste e apoios da rede OK.');
+const sino = obj('carrilhao_vento_enseada');
+assert.equal(sino.sprite, 'enseada_sino_oeste_frontal');
+assert(sino.larguraPx >= 90 && sino.interacao, 'sino maior continua interativo');
+assert(VEGETACAO.some(([tipo,x,y]) => tipo === 'J' && x === 40.8 && y === 46.6), 'palmeira junto à concha menor');
+assert(map.ajusteSolo.grama.length >= 3, 'canteiro da concha integrado ao solo');

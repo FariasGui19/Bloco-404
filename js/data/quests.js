@@ -10,6 +10,121 @@
 // =====================================================================
 
 export const QUESTS = Object.freeze({
+  mare_cromatica_ancora: Object.freeze({
+    id:'mare_cromatica_ancora',title:'A MARÉ CROMÁTICA',giver:'METRÔ INTERDIMENSIONAL',kind:'principal',
+    description:'Investigue as Docas da Neblina, recompile o traje no galpão e recupere a âncora no alto do penhasco.',
+    objectives:Object.freeze([
+      Object.freeze({type:'cromatica',target:'recompilar',count:1,label:'Recompilar o traje no terminal seguro'}),
+      Object.freeze({type:'cromatica',target:'selo',count:1,label:'Abrir o selo de acesso à âncora'}),
+      Object.freeze({type:'cromatica',target:'ancora',count:1,label:'Estabilizar a âncora de dados'}),
+    ]), rewards:Object.freeze({xp:120,flags:Object.freeze({mare_cromatica_missao_concluida:true})}),
+  }),
+  cidadela_forja_sobrevivencia: Object.freeze({
+    id:'cidadela_forja_sobrevivencia',title:'FORJA DO CÓDIGO QUEIMADO',giver:'NEXO-04',kind:'secundária',
+    description:'Recolha fragmentos de combate na Cidadela e utilize a Bancada de Síntese na Forja para fabricar suprimentos táticos ou relíquias dimensionais.',
+    objectives:Object.freeze([
+      Object.freeze({type:'cidadela_coleta_sucata',target:'sucata_codigo',count:2,label:'Recolher Sucata de Código de inimigos'}),
+      Object.freeze({type:'cidadela_coleta_nucleo',target:'nucleo_estatica',count:1,label:'Recolher Núcleo de Estática de inimigos'}),
+      Object.freeze({type:'cidadela_sintese_item',target:'craft',count:1,label:'Sintetizar um equipamento na Bancada [E]'}),
+    ]),
+    rewards:Object.freeze({xp:65,points:1,flags:Object.freeze({cidadela_forja_concluida:true})}),
+  }),
+  cidadela_oficina_vigilia: Object.freeze({
+    id:'cidadela_oficina_vigilia',title:'OFICINA DA VIGÍLIA',giver:'NEXO-04',kind:'secundária',
+    description:'Depois de estabilizar o reator, explore a oficina ao sul. Desative três circuitos durante suas janelas seguras e confirme a manutenção no terminal.',
+    objectives:Object.freeze([
+      Object.freeze({type:'cidadela_vigilia_controle',target:'bancada',count:1,label:'Regular circuito da bancada [E]'}),
+      Object.freeze({type:'cidadela_vigilia_controle',target:'ponte',count:1,label:'Regular circuito da ponte [E]'}),
+      Object.freeze({type:'cidadela_vigilia_controle',target:'reserva',count:1,label:'Regular circuito da reserva [E]'}),
+      Object.freeze({type:'cidadela_vigilia_relato',target:'terminal',count:1,label:'Confirmar no terminal da oficina [E]'}),
+    ]),
+    rewards:Object.freeze({xp:80,flags:Object.freeze({cidadela_vigilia_concluida:true})}),
+  }),
+  cidadela_ecos_entre_tempos: Object.freeze({
+    id:'cidadela_ecos_entre_tempos', title:'ECOS ENTRE TEMPOS', giver:'NEXO-04', kind:'secundária',
+    description:'Use o radar [R] perto de cada eco da Cidadela e sintonize-o [E] enquanto a leitura estiver ativa. As três memórias podem ser encontradas antes ou depois do reator.',
+    objectives:Object.freeze([
+      Object.freeze({type:'cidadela_eco_memoria',target:'entrada',count:1,label:'Sintonizar eco da entrada [R + E]'}),
+      Object.freeze({type:'cidadela_eco_memoria',target:'galeria',count:1,label:'Sintonizar eco da galeria [R + E]'}),
+      Object.freeze({type:'cidadela_eco_memoria',target:'forja',count:1,label:'Sintonizar eco da forja [R + E]'}),
+    ]),
+    rewards:Object.freeze({xp:50,flags:Object.freeze({cidadela_ecos_concluidos:true})}),
+  }),
+  cidadela_transmissoes_crt: Object.freeze({
+    id:'cidadela_transmissoes_crt', title:'ENTRE LINHAS', giver:'NEXO-04', kind:'secundária',
+    description:'Examine os três CRTs da Cidadela. O sinal contém uma figura em linhas; a origem e a identidade permanecem desconhecidas.',
+    objectives:Object.freeze([
+      Object.freeze({type:'cidadela_crt',target:'entrada',count:1,label:'Examinar CRT da entrada [E]'}),
+      Object.freeze({type:'cidadela_crt',target:'galeria',count:1,label:'Examinar CRT da galeria [E]'}),
+      Object.freeze({type:'cidadela_crt',target:'forja',count:1,label:'Examinar CRT da forja [E]'}),
+    ]),
+    rewards:Object.freeze({xp:45,flags:Object.freeze({cidadela_crts_completos:true})}),
+  }),
+  cidadela_fendas_residuais: Object.freeze({
+    id:'cidadela_fendas_residuais', title:'FENDAS RESIDUAIS', giver:'NEXO-04', kind:'secundária',
+    description:'Após estabilizar o reator, vença as duas ondas em cada fenda e abra seu cofre. Uma tentativa pode ser cancelada na fenda ou abandonada pela saída.',
+    objectives:Object.freeze([
+      Object.freeze({type:'cidadela_fenda',target:'entrada',count:1,label:'Selar fenda da entrada'}),
+      Object.freeze({type:'cidadela_fenda',target:'galeria',count:1,label:'Selar fenda da galeria'}),
+      Object.freeze({type:'cidadela_fenda',target:'forja',count:1,label:'Selar fenda da forja'}),
+      Object.freeze({type:'cidadela_cofre',target:'entrada',count:1,label:'Abrir cofre da entrada'}),
+      Object.freeze({type:'cidadela_cofre',target:'galeria',count:1,label:'Abrir cofre da galeria'}),
+      Object.freeze({type:'cidadela_cofre',target:'forja',count:1,label:'Abrir cofre da forja'}),
+    ]),
+    rewards:Object.freeze({xp:90,flags:Object.freeze({cidadela_fendas_concluidas:true})}),
+  }),
+  cidadela_rede_escuta: Object.freeze({
+    id:'cidadela_rede_escuta', title:'REDE DE ESCUTA', giver:'NEXO-04', kind:'secundária',
+    description:'Depois de estabilizar o reator, converse com a sonda na arena e restaure três relés em qualquer ordem. Volte à sonda para confirmar a rede.',
+    objectives:Object.freeze([
+      Object.freeze({type:'cidadela_rele',target:'entrada',count:1,label:'Restaurar relé da entrada [E]'}),
+      Object.freeze({type:'cidadela_rele',target:'galeria',count:1,label:'Restaurar relé da galeria [E]'}),
+      Object.freeze({type:'cidadela_rele',target:'forja',count:1,label:'Restaurar relé da forja [E]'}),
+      Object.freeze({type:'cidadela_relato',target:'rede',count:1,label:'Confirmar a rede com a sonda [E]'}),
+    ]),
+    rewards:Object.freeze({xp:60,flags:Object.freeze({cidadela_rede_concluida:true})}),
+  }),
+  cidadela_vozes_estatica: Object.freeze({
+    id:'cidadela_vozes_estatica', title:'VOZES NA ESTÁTICA', giver:'NEXO-04', kind:'secundária',
+    description:'Com a rede restaurada, consulte o transmissor na arena, recupere três caixas de registro e volte ao transmissor. Nenhuma delas confirma a identidade de Nulo.',
+    objectives:Object.freeze([
+      Object.freeze({type:'cidadela_registro',target:'entrada',count:1,label:'Ouvir caixa da entrada [E]'}),
+      Object.freeze({type:'cidadela_registro',target:'galeria',count:1,label:'Ouvir caixa da galeria [E]'}),
+      Object.freeze({type:'cidadela_registro',target:'forja',count:1,label:'Ouvir caixa da forja [E]'}),
+      Object.freeze({type:'cidadela_relato',target:'vozes',count:1,label:'Transmitir os registros [E]'}),
+    ]),
+    rewards:Object.freeze({xp:70,flags:Object.freeze({cidadela_vozes_concluida:true})}),
+  }),
+  cidadela_protocolo_vigilia: Object.freeze({
+    id:'cidadela_protocolo_vigilia', title:'PROTOCOLO DA VIGÍLIA // 66.6', giver:'NEXO-04', kind:'secundária',
+    description:'Após estabilizar o reator, ative a Baliza do Protocolo na arena, sincronize a Sonda ou o Console do Reator, honre o Vigilante Inerte e sele a convergência final.',
+    objectives:Object.freeze([
+      Object.freeze({type:'cidadela_protocolo_passo',target:'sonda',count:1,label:'Sincronizar Sonda ou Console do Reator [E]'}),
+      Object.freeze({type:'cidadela_protocolo_passo',target:'vigilante',count:1,label:'Honrar o Vigilante Inerte no Reator [E]'}),
+      Object.freeze({type:'cidadela_protocolo_passo',target:'console',count:1,label:'Selar convergência na Baliza do Protocolo [E]'}),
+    ]),
+    rewards:Object.freeze({xp:120,points:2,items:Object.freeze(['insignia_vigilia_404']),flags:Object.freeze({cidadela_protocolo_concluido:true})}),
+  }),
+  jardim_de_retorno: Object.freeze({
+    id:'jardim_de_retorno', title:'JARDIM DE RETORNO', giver:'O MAR', kind:'secundária',
+    description:'Na Rota das Marés, retire a rede perdida, liberte a tartaruga e restaure o coral. Mergulhe até cada sinal e use [E]; volte à superfície sempre que precisar respirar.',
+    objectives:Object.freeze([
+      Object.freeze({type:'encontro_mare',target:'rede',count:1,label:'Recolher a rede perdida [E]'}),
+      Object.freeze({type:'encontro_mare',target:'tartaruga',count:1,label:'Libertar a tartaruga [E]'}),
+      Object.freeze({type:'encontro_mare',target:'coral',count:1,label:'Restaurar o coral [E]'}),
+    ]),
+    rewards:Object.freeze({xp:100,items:Object.freeze(['registro_jardim_mare']),flags:Object.freeze({jardim_de_retorno_concluido:true})}),
+  }),
+  testemunhas_do_azul: Object.freeze({
+    id:'testemunhas_do_azul', title:'TESTEMUNHAS DO AZUL', giver:'O MAR', kind:'secundária',
+    description:'Na Rota das Marés, aproxime-se sem atacar: observe a arraia e o peixe-guia e registre a pérola de eco no fundo com [E].',
+    objectives:Object.freeze([
+      Object.freeze({type:'encontro_mare',target:'arraia',count:1,label:'Observar a arraia [E]'}),
+      Object.freeze({type:'encontro_mare',target:'peixe',count:1,label:'Observar o peixe-guia [E]'}),
+      Object.freeze({type:'encontro_mare',target:'perola',count:1,label:'Registrar a pérola de eco [E]'}),
+    ]),
+    rewards:Object.freeze({xp:90,items:Object.freeze(['registro_testemunhas_azul']),flags:Object.freeze({testemunhas_do_azul_concluida:true})}),
+  }),
   caminho_das_correntes: Object.freeze({
     id: 'caminho_das_correntes', title: 'CAMINHO DAS CORRENTES', giver: 'O MAR', kind: 'secundária',
     description: 'Na Enseada dos Ecos, siga para o Caminho das Correntes. Com Maré Astral, mergulhe junto às três balizas: Recife da Escuta, Jardim das Marés e Farol Submerso.',
@@ -25,7 +140,7 @@ export const QUESTS = Object.freeze({
     title: 'CALIBRAÇÃO DE CAMPO',
     giver: 'NEXO-04',
     kind: 'secundária',
-    description: 'Disperte três ecos de treino para o Núcleo registrar sua assinatura de combate.',
+    description: 'Treino voluntário de NEXO-04: disperse três ecos simulados para registrar sua assinatura de combate. A linha do metrô não depende deste teste.',
     objectives: Object.freeze([
       Object.freeze({ type: 'defeat', target: 'training', count: 3, label: 'Ecos de treino dispersos' }),
     ]),
@@ -44,7 +159,7 @@ export const QUESTS = Object.freeze({
     title: 'MARÉ PROFUNDA',
     giver: 'MARÉ ASTRAL',
     kind: 'secundária',
-    description: 'A maré esconde o que a areia não mostra. Desça na enseada, alcance o fundo e volte com o que o mar guardou.',
+    description: 'A maré guarda vestígios que a areia não mostra. Enquanto a enseada responde ao sinal, desça, alcance o fundo e volte com o que o mar guardou.',
     objectives: Object.freeze([
       Object.freeze({ type: 'mergulho', count: 3, label: 'Mergulhos fundos na enseada' }),
       Object.freeze({ type: 'coleta_marinha', count: 4, label: 'Fragmentos de maré recolhidos' }),
@@ -110,6 +225,153 @@ export const QUESTS = Object.freeze({
       points: 1,
       items: Object.freeze(['boia_de_cortica']),
       flags: Object.freeze({ aprendeu_a_nadar: true }),
+    }),
+  }),
+  // -------------------------------------------------------------------
+  // MOTOR BIO-FORJA — FORJA DO PROPULSOR (Oficina Inicial · Doca A1)
+  // -------------------------------------------------------------------
+  forja_do_propulsor: Object.freeze({
+    id: 'forja_do_propulsor',
+    title: 'FORJA DO PROPULSOR',
+    giver: 'BANCO DE RECONSTRUÇÃO',
+    kind: 'secundária',
+    description: 'Na Oficina Bio-Forja (Doca A1), exponha a falha da Grade de Ímpeto Vivo com [R], rompa o campo com o Propulsor [Q], recolha o Fragmento de Eco no relicário e sincronize-o no Banco de Reconstrução.',
+    objectives: Object.freeze([
+      Object.freeze({ type: 'diagnose', target: 'bio_placa_diagnostico', count: 1, label: 'Diagnosticar a Grade de Ímpeto Vivo com [R]' }),
+      Object.freeze({ type: 'breach_gate', target: 'grade_impeto_vivo', count: 1, label: 'Romper a grade com o Propulsor de Impulso [Q]' }),
+      Object.freeze({ type: 'collect', target: 'fragmento_eco_bio', count: 1, label: 'Recolher o Fragmento de Eco no relicário leste' }),
+      Object.freeze({ type: 'sync_forge', target: 'maquina_bio', count: 1, label: 'Sincronizar o fragmento no Banco de Reconstrução [E]' }),
+    ]),
+    rewards: Object.freeze({
+      xp: 75,
+      points: 1,
+      items: Object.freeze(['selo_forja_bio']),
+      flags: Object.freeze({ missao_bio_forja_concluida: true }),
+    }),
+  }),
+  // -------------------------------------------------------------------
+  // LÂMINA DOMÍNIO ANCIÃO — PROVA DA RUPTURA (Santuário do Anel · Doca B2)
+  // -------------------------------------------------------------------
+  prova_da_ruptura: Object.freeze({
+    id: 'prova_da_ruptura',
+    title: 'PROVA DA RUPTURA',
+    giver: 'ALTAR DA LÂMINA ANCESTRAL',
+    kind: 'secundária',
+    description: 'No Santuário do Anel (Doca B2), assuma a Postura do Domínio [R] para expor a falha do Lacre de Frequência, parta o selo com o Golpe de Ruptura [Q], recolha o Fragmento de Eco e consagre o juramento no Altar da Lâmina.',
+    objectives: Object.freeze([
+      Object.freeze({ type: 'diagnose', target: 'scan_lacre_sala', count: 1, label: 'Revelar o ponto frágil do Lacre com Postura do Domínio [R]' }),
+      Object.freeze({ type: 'breach_gate', target: 'lacre_frequencia_sala', count: 1, label: 'Partir o Lacre de Frequência com Golpe de Ruptura [Q]' }),
+      Object.freeze({ type: 'collect', target: 'fragmento_eco_dominio', count: 1, label: 'Recolher o Fragmento de Eco na Câmara da Coroa' }),
+      Object.freeze({ type: 'consecrate_blade', target: 'pedestal_lamina', count: 1, label: 'Consagrar o fragmento no Altar da Lâmina Ancestral [E]' }),
+    ]),
+    rewards: Object.freeze({
+      xp: 75,
+      points: 1,
+      items: Object.freeze(['insignia_anel_dominio']),
+      flags: Object.freeze({ missao_dominio_concluida: true }),
+    }),
+  }),
+  // -------------------------------------------------------------------
+  // MARÉ ASTRAL — CALIBRAGEM DE CORRENTE (Dársena Abissal · Doca A2)
+  // -------------------------------------------------------------------
+  calibragem_de_corrente: Object.freeze({
+    id: 'calibragem_de_corrente',
+    title: 'CALIBRAGEM DE CORRENTE',
+    giver: 'NÚCLEO HIDRODIMENSIONAL',
+    kind: 'secundária',
+    description: 'Na Dársena Abissal (Doca A2), leia a janela laminar do Fluxo Contido com o Senso de Corrente [R], atravesse a cortina d’água com o Passo de Corrente [Q], recolha o Fragmento de Eco e sintonize-o no Núcleo Hidrodimensional.',
+    objectives: Object.freeze([
+      Object.freeze({ type: 'diagnose', target: 'scan_fluxo_sala', count: 1, label: 'Ler a janela do Fluxo Contido com Senso de Corrente [R]' }),
+      Object.freeze({ type: 'breach_gate', target: 'fluxo_contido_sala', count: 1, label: 'Atravessar o Fluxo Contido com Passo de Corrente [Q]' }),
+      Object.freeze({ type: 'collect', target: 'fragmento_eco_mare', count: 1, label: 'Recolher o Fragmento de Eco no Relicário de Coral' }),
+      Object.freeze({ type: 'sync_tide', target: 'gerador_corrente', count: 1, label: 'Sintonizar o fragmento no Núcleo Hidrodimensional [E]' }),
+    ]),
+    rewards: Object.freeze({
+      xp: 75,
+      points: 1,
+      items: Object.freeze(['amuleto_corrente_mare']),
+      flags: Object.freeze({ missao_mare_concluida: true }),
+    }),
+  }),
+  // -------------------------------------------------------------------
+  // NÚCLEO 10X — SINCRONIA DOS VETORES (Base dos Vetores · Doca D4)
+  // -------------------------------------------------------------------
+  sincronia_dos_vetores: Object.freeze({
+    id: 'sincronia_dos_vetores',
+    title: 'SINCRONIA DOS VETORES',
+    giver: 'EIXO DE ADAPTAÇÃO',
+    kind: 'secundária',
+    description: 'Na Base dos Vetores (Doca D4), leia a janela da Malha Cinética com Eco Scan [R], atravesse-a com o Pulso Veloz [Q], recolha o Fragmento de Eco no relicário e sincronize-o no Eixo de Adaptação.',
+    objectives: Object.freeze([
+      Object.freeze({ type: 'diagnose', target: 'scan_malha_sala', count: 1, label: 'Ler a janela da Malha Cinética com Eco Scan [R]' }),
+      Object.freeze({ type: 'breach_gate', target: 'malha_cinetica_sala', count: 1, label: 'Atravessar a Malha Cinética com o Pulso Veloz [Q]' }),
+      Object.freeze({ type: 'collect', target: 'fragmento_eco_nucleo', count: 1, label: 'Recolher o Fragmento de Eco no Relicário de Vetor' }),
+      Object.freeze({ type: 'sync_vectors', target: 'nucleo_adaptacao', count: 1, label: 'Sincronizar o fragmento no Eixo de Adaptação [E]' }),
+    ]),
+    rewards: Object.freeze({
+      xp: 75,
+      points: 1,
+      items: Object.freeze(['selo_vetor_nucleo']),
+      flags: Object.freeze({ missao_nucleo_concluida: true }),
+    }),
+  }),
+  // -------------------------------------------------------------------
+  // ENSEADA DOS ECOS 2.0 — ECOS DA ENSEADA VIVA
+  // -------------------------------------------------------------------
+  ecos_da_enseada_viva: Object.freeze({
+    id: 'ecos_da_enseada_viva',
+    title: 'ECOS DA ENSEADA VIVA',
+    giver: 'ENSEADA DOS ECOS',
+    kind: 'secundária',
+    description: 'Explore os novos marcos da Enseada dos Ecos: leia o clima no Relógio ou Carrilhão, revitalize-se na Fonte Termal, observe o Ninho ou Banco de Ostras e sintonize o Espelho dos Arquétipos.',
+    objectives: Object.freeze([
+      Object.freeze({ type: 'enseada_clima_lido', target: 'clima', count: 1, label: 'Consultar o Relógio de Maré ou o Carrilhão de Vento [E]' }),
+      Object.freeze({ type: 'enseada_fonte_termal', target: 'fonte', count: 1, label: 'Revitalizar-se na Fonte Termal da Enseada [E]' }),
+      Object.freeze({ type: 'enseada_vida_costeira', target: 'costa', count: 1, label: 'Inspecionar o Ninho de Tartarugas ou o Banco de Ostras [E]' }),
+      Object.freeze({ type: 'enseada_espelho_arquetipo', target: 'espelho', count: 1, label: 'Ressoar no Espelho dos Arquétipos [E]' }),
+    ]),
+    rewards: Object.freeze({
+      xp: 120,
+      points: 1,
+      items: Object.freeze(['concha_eco_enseada']),
+      flags: Object.freeze({ enseada_viva_concluida: true }),
+    }),
+  }),
+  expedicao_da_baia_enseada: Object.freeze({
+    id: 'expedicao_da_baia_enseada',
+    title: 'EXPEDIÇÃO DA BAÍA',
+    giver: 'ENSEADA DOS ECOS',
+    kind: 'secundária',
+    description: 'Prepare a Enseada para rotas distantes: calibre seu módulo na Bancada de Campo, ouça a Torre-Antena, inspecione o Barco ou o Farolete da baía e visite o Acampamento ou o Santuário de Lúmeo.',
+    objectives: Object.freeze([
+      Object.freeze({ type: 'enseada_bancada_calibrada', target: 'bancada', count: 1, label: 'Calibrar módulo na Bancada de Campo [E]' }),
+      Object.freeze({ type: 'enseada_torre_lida', target: 'torre', count: 1, label: 'Sintonizar a Torre-Antena de Escuta [E]' }),
+      Object.freeze({ type: 'enseada_navegacao_lida', target: 'baia', count: 1, label: 'Inspecionar o Barco de Expedição ou o Farolete [E]' }),
+      Object.freeze({ type: 'enseada_vigilia_lida', target: 'vigilia', count: 1, label: 'Descansar no Acampamento ou visitar o Santuário de Lúmeo [E]' }),
+    ]),
+    rewards: Object.freeze({
+      xp: 130,
+      points: 1,
+      items: Object.freeze(['bussola_mar_ecos']),
+      flags: Object.freeze({ expedicao_enseada_concluida: true }),
+    }),
+  }),
+  ecos_profundos_enseada: Object.freeze({
+    id: 'ecos_profundos_enseada',
+    title: 'ECOS PROFUNDOS DA ENSEADA',
+    giver: 'ENSEADA DOS ECOS',
+    kind: 'secundária',
+    description: 'Descubra os segredos mais antigos da costa: decifre a Estela dos Navegadores, sintonize o Captador de Ecos e abra o Arcaz à Deriva na baía.',
+    objectives: Object.freeze([
+      Object.freeze({ type: 'interact_enseada', target: 'estela_navegadores_enseada', count: 1, label: 'Decifrar a Estela dos Navegadores [E]' }),
+      Object.freeze({ type: 'interact_enseada', target: 'captador_ecos_enseada', count: 1, label: 'Sintonizar o Captador de Ecos [E]' }),
+      Object.freeze({ type: 'interact_enseada', target: 'bau_deriva_enseada', count: 1, label: 'Abrir o Arcaz à Deriva [E]' }),
+    ]),
+    rewards: Object.freeze({
+      xp: 145,
+      points: 1,
+      items: Object.freeze(['carta_navegadores_enseada']),
+      flags: Object.freeze({ enseada_ecos_profundos_concluida: true }),
     }),
   }),
 });

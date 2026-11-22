@@ -1,6 +1,6 @@
 // Combate básico: dano por arquétipo, crítico, XP e alvos de treino.
-// Inimigos agressivos e dano ao jogador continuam pendentes; aqui o
-// jogador só ataca alvos explícitos de treino.
+// Alvos de treino e infectados da Maré compartilham a detecção de golpes;
+// a IA e a ausência de recompensa de treino dos infectados são separadas.
 import { canStandAt } from './collision.js';
 import { state } from './state.js';
 import { CONFIG } from '../config.js';
@@ -12,9 +12,10 @@ import { pushCombatText, updateCombatFeedback } from './combat-feedback.js';
 import { applyUnlocks } from './unlocks.js';
 import { ARCHETYPE_KITS } from '../data/archetype-kits.js';
 import { chargeFormHit } from './nucleo-form.js';
-import { BRUTA_SMASH } from './abilities.js';
+import { BRUTA_SMASH, getFacingWorldDirection } from './abilities.js';
+import { SIDE_DEPTH_STEP } from '../engine/camera.js';
 import { NUCLEO_FORMS } from '../data/nucleo-forms.js';
-import { checkGate, isGateOpen, openGate } from './gates.js';
+import { checkGate, getGateFailureMessage, isGateOpen, openGate } from './gates.js';
 import { saveGame } from './save.js';
 
 // Compatibilidade: HUD e testes antigos leem rótulo e strain daqui.
@@ -42,7 +43,7 @@ export function updateBasicCombat(player, targets, dt) {
   }
   for (const target of targets) {
     target.hitTimer = Math.max(0, target.hitTimer - dt);
-    if (target.downTimer > 0) {
+    if (!target.cromaticaEnemy && target.downTimer > 0) {
       target.downTimer = Math.max(0, target.downTimer - dt);
       if (target.downTimer === 0) target.health = target.maxHealth;
     }
@@ -63,6 +64,9 @@ function clearLine(map, player, target) {
 // o que aconteceu. Alvo derrotado fica fora de combate por alguns segundos.
 export function applyAttackDamage(target, roll) {
   if (!target || !roll) return null;
+  // Durante reconhecimento das Docas as ameaças ficam inativas e não podem
+  // ser eliminadas antes da confirmação da incursão.
+  if(target.cromaticaEnemy && state.world?.currentMap?.meta?.cromatica && state.progress?.mareCromatica?.versaoCronometro===1 && state.progress.mareCromatica.iniciada===false) return {dealt:0,defeated:false};
   const before = target.health;
   target.health = Math.max(0, target.health - roll.total);
   target.hitTimer = .2;
@@ -81,6 +85,9 @@ function applyMasteryRankUps(player, rankUps) {
 }
 
 function registerDefeat(player, progress, target) {
+  // Infectados não são alvos de treino: não contam para missões nem XP de
+  // treinamento e não renascem automaticamente após quatro segundos.
+  if (target.cromaticaEnemy) return 0;
   let xp = 0;
   // Vitória conta para o eco do arquétipo (maestria), não gasta ponto nenhum.
   applyMasteryRankUps(player, recordMastery(progress, 'resonance'));
@@ -98,6 +105,16 @@ function registerDefeat(player, progress, target) {
     }
   }
   const completed = recordQuestEvent(progress, { type: 'defeat', target: 'training' });
+  if (state.world?.currentMapId === 'ilha_enseada_ecos' && (state.clima?.atual === 'chuva' || state.clima?.atual === 'ressaca')) {
+    progress.flags ??= {};
+    if (!progress.flags.enseada_eco_tempestade_disperso) {
+      progress.flags.enseada_eco_tempestade_disperso = true;
+      const bonus = grantArchetypeXp(progress, 15);
+      if (bonus.gained > 0) {
+        pushCombatText(player.x, player.y - .85, `+${bonus.gained} XP TEMPESTADE`, { color: '#7efce0', kind: 'xp', duration: 1.4 });
+      }
+    }
+  }
   for (const quest of completed) {
     player.ability ??= {};
     player.ability.lastMessage = `MISSÃO CONCLUÍDA • ${quest.title}`;
@@ -178,21 +195,64 @@ export function tryAbilityDamage({ player, progress, targets, abilityId, rng = M
 // A procura é curta e à frente do corpo, como o alcance da marreta; abrir
 // grava a flag do save, então a demolição é permanente.
 function breakWeightGates(player, dx, dy) {
-  const alcance = 1.9;
+  let broke = false;
+  let nearby = null;
+  let nearest = Infinity;
   for (const object of state.objects ?? []) {
-    if (!object?.gate || isGateOpen(object) || !checkGate(object.gate)) continue;
-    if (object.gate.breaksWith !== 'peso') continue;
+    const gate = object?.gate;
+    if (!gate || gate.breaksWith !== 'peso' || isGateOpen(object)) continue;
     if (!Number.isFinite(object.x) || !Number.isFinite(object.y)) continue;
     const ox = object.x - player.x, oy = object.y - player.y;
     const distancia = Math.hypot(ox, oy);
+    const alcance = gate.strikeRadius ?? 1.9;
     if (distancia > alcance || distancia < .001) continue;
-    if ((ox * dx + oy * dy) / distancia < .35) continue;
+    if ((ox * dx + oy * dy) / distancia < .35) {
+      if (distancia < nearest) {
+        nearest = distancia;
+        nearby = { message: 'VIRE DE FRENTE PARA A TRAVA E ACERTE COM [Q]', object };
+      }
+      continue;
+    }
+    // Uma trava perto da marreta SEMPRE responde. Antes, scan/nível/pré-
+    // requisito ausentes faziam `continue` em silêncio e o Q parecia vazio.
+    if (!checkGate(gate)) {
+      if (distancia < nearest) {
+        nearest = distancia;
+        nearby = { message: getGateFailureMessage(gate)[0], object };
+      }
+      continue;
+    }
+    if (gate.requiredLevel && getArchetypeLevel(state.progress) < gate.requiredLevel) {
+      if (distancia < nearest) {
+        nearest = distancia;
+        nearby = { message: gate.promptFalha ?? `PESO INSUFICIENTE • EXIGE NÍVEL ${gate.requiredLevel}`, object };
+      }
+      continue;
+    }
     openGate(object);
-    saveGame();
+    recordQuestEvent(state.progress, { type: 'breach_gate', target: object.id });
+    if (gate.bonusXp > 0 && state.progress.archetype) grantArchetypeXp(state.progress, gate.bonusXp);
+    if (gate.routeFlag) {
+      state.progress.flags ??= {};
+      state.progress.flags[gate.routeFlag] = true;
+    }
     player.ability ??= {};
-    player.ability.lastMessage = 'ESTRUTURA DEMOLIDA • PESO CEDEU';
-    player.ability.messageTimer = 2.2;
+    player.ability.massFlash = { x: object.x, y: object.y, timeLeft: 0.7, duration: 0.7 };
+    player.ultimate ??= {};
+    player.ultimate.shake = { timeLeft: 0.42, duration: 0.42, power: 10.5, source: 'contrapeso' };
+    player.ability.lastMessage = gate.sucesso?.[0] ?? gate.breakMessage ?? 'ESTRUTURA DEMOLIDA • PESO CEDEU';
+    player.ability.messageTimer = 2.8;
+    pushCombatText(object.x, object.y - .7, 'TRAVA PARTIDA', { color: '#ffe18a', kind: 'xp', duration: 1.5 });
+    broke = true;
   }
+  if (!broke && nearby) {
+    player.ability ??= {};
+    player.ability.lastMessage = nearby.message;
+    player.ability.messageTimer = 3;
+    pushCombatText(nearby.object.x, nearby.object.y - .7, 'BLOQUEADO', { color: '#ffc94a', duration: 1.1 });
+  }
+  if (broke) saveGame();
+  return broke;
 }
 
 // =====================================================================
@@ -205,7 +265,8 @@ function breakWeightGates(player, dx, dy) {
 export function executeBrutaSmash({ player, progress, targets, rng = Math.random }) {
   if (!player) return null;
   const perfil = BRUTA_SMASH;
-  const fx = { down: [1, 1], up: [-1, -1], left: [-1, 1], right: [1, -1] }[player.facing] ?? [1, 1];
+  const direction = getFacingWorldDirection(player.facing);
+  const fx = [direction.x, direction.y];
   const comprimento = Math.hypot(fx[0], fx[1]) || 1;
   const centro = {
     x: player.x + (fx[0] / comprimento) * perfil.reach * .6,
@@ -238,6 +299,9 @@ export function executeBrutaSmash({ player, progress, targets, rng = Math.random
   player.ability ??= {};
   player.ability.lastMessage = total > 0 ? `PANCADA DE PESO • ${total} DE DANO` : 'PANCADA DE PESO • CHÃO RACHADO';
   player.ability.messageTimer = 1.4;
+  // A marreta da Quebra também demolia travas de peso no fim do windup do Q,
+  // não só no ataque básico. O helper grava gate/missão/XP e o flash de massa.
+  breakWeightGates(player, fx[0] / comprimento, fx[1] / comprimento);
   return { total, hits, center: centro, knockback: perfil.knockback };
 }
 
@@ -251,24 +315,27 @@ export function tryBasicAttack({ player, progress, map, targets, point, rng = Ma
   if (player.ability?.dash || player.ability?.scanning > 0 || player.ability?.effect?.timeLeft > 0 || (player.combat?.cooldown ?? 0) > 0) return false;
 
   // Um clique na parte alta do holograma deve mirar na base do alvo.
-  const iso = p => ({ x: (p.x - p.y) * CONFIG.TILE_W / 2, y: (p.x + p.y) * CONFIG.TILE_H / 2 });
+  const sideView = !!map.meta?.sideView;
+  const iso = p => sideView
+    ? { x: p.x * CONFIG.TILE_W, y: p.y * SIDE_DEPTH_STEP }
+    : { x: (p.x - p.y) * CONFIG.TILE_W / 2, y: (p.x + p.y) * CONFIG.TILE_H / 2 };
   const click = iso(point);
   const selected = (targets ?? []).find(target => {
     if (target.health <= 0) return false;
     const at = iso(target), dx = click.x - at.x, dy = click.y - at.y;
-    return Math.abs(dx) <= 20 && dy >= -55 && dy <= 10;
+    return Math.abs(dx) <= (target.cromaticaEnemy ? 35 : 20) && dy >= (target.cromaticaEnemy ? -108 : -55) && dy <= 10;
   });
   if (selected) point = selected;
 
   let dx = point.x - player.x, dy = point.y - player.y;
   let length = Math.hypot(dx, dy);
   if (length < .05) {
-    const vectors = { down: [1, 1], up: [-1, -1], left: [-1, 1], right: [1, -1] };
-    [dx, dy] = vectors[player.facing] ?? vectors.down;
-    length = Math.SQRT2;
+    const direction = getFacingWorldDirection(player.facing);
+    dx = direction.x; dy = direction.y;
+    length = Math.hypot(dx, dy) || 1;
   }
   dx /= length; dy /= length;
-  const sx = dx - dy, sy = dx + dy;
+  const sx = sideView ? dx : dx - dy, sy = sideView ? dy * .78 : dx + dy;
   player.facing = Math.abs(sx) > Math.abs(sy) ? (sx > 0 ? 'right' : 'left') : (sy > 0 ? 'down' : 'up');
   player.target = null;
 
@@ -323,6 +390,10 @@ export function tryBasicAttack({ player, progress, map, targets, point, rng = Ma
   }
 
   const roll = rollBasicAttack(stats, rng);
+  if (best && state.world?.currentMapId === 'ilha_enseada_ecos' && player.enseadaBuff === 'fio_ancestral') {
+    roll.total = Math.max(1, Math.round(roll.total * 1.35));
+    roll.hits = roll.hits.map(h => Math.max(1, Math.round(h * 1.35)));
+  }
   if (best) {
     player.combat.damage = roll.total;
     player.combat.crit = roll.crit;

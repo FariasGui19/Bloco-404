@@ -35,7 +35,8 @@ export async function usePortal(portal) {
     return false;
   }
 
-  if (portal.bloqueado) {
+  if (portal.bloqueado || (portal.requiresFlag && state.progress.flags?.[portal.requiresFlag] !== true) ||
+      (portal.requiresArchetype && state.progress.archetype !== portal.requiresArchetype)) {
     return false;
   }
 
@@ -59,7 +60,8 @@ export async function usePortal(portal) {
       ? `VIAJANDO PARA:\n${portal.label}`
       : 'VIAJANDO...';
 
-    await playTransition(message);
+    const mode=portal.id==='travessia_666'?'cidadela-entrada':portal.id==='retorno_cidadela'?'cidadela-retorno':'default';
+    await playTransition(message,mode);
 
     const questRooms = { lamina_dominio_anciao: 'hub_camara_dominio', mare_astral: 'hub_camara_mare', nucleo_dez_forma: 'hub_camara_nucleo' };
     const mapId = portal.id === 'porta_area_carga' ? (questRooms[state.progress.archetype] ?? portal.destino.mapId) : portal.destino.mapId;

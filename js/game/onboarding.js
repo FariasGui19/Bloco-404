@@ -105,6 +105,7 @@ function openQuestion(actor, index) {
       question.text,
     ],
 
+    choicesAfterDialogue: true,
     choices: question.choices.map(choice => ({
       text: choice.text,
 
@@ -247,6 +248,8 @@ function finalizeArchetype(actor, archetypeId) {
   // O Maré Astral já nasce com a missão da maré aberta: é o arquétipo que
   // respira embaixo d'água e o que mais ganha com a praia nova.
   if (archetypeId === 'mare_astral') startQuest(state.progress, 'mare_profunda');
+  if (archetypeId === 'motor_bio_forja') startQuest(state.progress, 'forja_do_propulsor');
+  if (archetypeId === 'lamina_dominio_anciao') startQuest(state.progress, 'prova_da_ruptura');
 
   saveGame();
 
@@ -256,10 +259,10 @@ function finalizeArchetype(actor, archetypeId) {
 
     dialogue: [
       `MÓDULO INSTALADO: ${archetype.nome}.`,
-      'Sua assinatura dimensional foi registrada no Arquivo Central.',
-      'NOVA MISSÃO ATIVA: CALIBRAÇÃO DE ECO.',
-      'Quando estiver pronto, procure uma rota de manutenção ou um terminal instável.',
-      'E tente não explodir nada importante. O orçamento do Bloco 404 não cobre realidades paralelas.',
+      'Sua assinatura foi registrada. Um módulo não determina a realidade que você pode visitar: ele é a forma como você responde a ela.',
+      'A linha do metrô precisa de um Fragmento de Sincronização. No Aeroporto Central, use [R] no Terminal de Manutenção para localizar a carga.',
+      'Recupere o fragmento e instale-o no painel do metrô. Uma rota costeira está tentando nos responder por lá.',
+      'NOVA MISSÃO ATIVA: CALIBRAÇÃO DE ECO. Os treinos e a base do seu módulo são oportunidades, não exigências para embarcar.',
     ],
 
     onFinish: () => {
@@ -314,12 +317,14 @@ function openIntroduction(actor) {
     speakerId: actor.id,
 
     dialogue: [
-      'Operador identificado.',
-      'Seu perfil dimensional ainda não foi calibrado.',
-      'Antes de liberar permissões avançadas, elevadores especiais e rotas externas, preciso executar uma Avaliação de Ressonância de Eco.',
-      'Não se preocupe. Seus dados serão tratados com a menor irresponsabilidade possível.',
+      'Você chegou. Bem-vindo ao Bloco 404, operador. Sou NEXO-04, responsável por manter este saguão e seus passageiros em uma peça.',
+      'O portal registrou sua chegada, mas não encontrou seu ponto de origem. Não vou inventar uma resposta para isso.',
+      'O aeroporto liga realidades diferentes. Quando uma rota se rompe, o que ela deixa para trás chamamos de eco.',
+      'A linha do metrô perdeu a sincronia. Para alcançá-la com segurança, precisamos descobrir qual módulo responde à sua assinatura.',
+      'A avaliação recomenda um caminho; a escolha final é sua. Prometo o mínimo possível de burocracia interdimensional.',
     ],
 
+    choicesAfterDialogue: true,
     choices: [
       {
         text: 'INICIAR AVALIAÇÃO',
@@ -378,6 +383,7 @@ function resumeOnboarding(actor) {
       'Deseja retomar o protocolo?',
     ],
 
+    choicesAfterDialogue: true,
     choices: [
       {
         text: 'RETOMAR AVALIAÇÃO',

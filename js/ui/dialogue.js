@@ -33,6 +33,8 @@ let cancelable = true;
 
 let ignoreInputUntil = 0;
 let keyboardListenerAdded = false;
+let choicesAfterDialogue = false;
+const choicesVisible = () => choices.length > 0 && (!choicesAfterDialogue || lineIndex >= lines.length - 1);
 
 export function initDialogue() {
   el.root = document.getElementById('dialogueBox');
@@ -55,7 +57,7 @@ export function initDialogue() {
         return;
       }
 
-      if (choices.length > 0) return;
+      if (choicesVisible()) return;
 
       advanceDialogue();
     });
@@ -93,7 +95,7 @@ function handleDialogueKeyboard(event) {
   // ---------------------------------------------------------------
   // DIÁLOGO COM ESCOLHAS
   // ---------------------------------------------------------------
-  if (choices.length > 0) {
+  if (choicesVisible()) {
     const selectedByNumber = Number.parseInt(key, 10);
 
     if (
@@ -188,7 +190,7 @@ export function isDialogueOpen() {
 }
 
 export function hasDialogueChoices() {
-  return choices.length > 0;
+  return choicesVisible();
 }
 
 export function openDialogue({
@@ -198,6 +200,7 @@ export function openDialogue({
   choices: newChoices = [],
   onFinish = null,
   cancelable: canCancel = true,
+  choicesAfterDialogue: afterDialogue = false,
 } = {}) {
   if (!el.root || !el.speaker || !el.text || !el.hint || !el.choices) {
     initDialogue();
@@ -227,6 +230,7 @@ export function openDialogue({
 
   selectedChoiceIndex = 0;
   cancelable = canCancel;
+  choicesAfterDialogue = afterDialogue;
 
   open = true;
 
@@ -265,11 +269,12 @@ export function closeDialogue() {
 
 export function advanceDialogue() {
   if (!open) return;
-  if (choices.length > 0) return;
+  if (choicesVisible()) return;
 
   if (lineIndex < lines.length - 1) {
     lineIndex++;
     renderLine();
+    renderChoices();
     return;
   }
 
@@ -305,7 +310,7 @@ function renderLine() {
 
   el.text.textContent = lines[lineIndex];
 
-  if (choices.length > 0) {
+  if (choicesVisible()) {
     el.hint.textContent =
       '[↑ ↓ / W S] NAVEGAR  [E / ENTER] CONFIRMAR';
     return;
@@ -321,7 +326,7 @@ function renderChoices() {
 
   el.choices.innerHTML = '';
 
-  if (choices.length === 0) {
+  if (!choicesVisible()) {
     return;
   }
 

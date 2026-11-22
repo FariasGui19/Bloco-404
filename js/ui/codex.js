@@ -27,6 +27,9 @@ import { getQuest } from '../data/quests.js';
 import { DEGRAUS, PROVAS, resumoDaArvore } from '../game/nado-arvore.js';
 import { ARQUIPELAGO_REGIONS } from '../data/arquipelago-regioes.js';
 import { getItem, listInventory } from '../data/items.js';
+import { isCitadelComplete } from '../game/cidadela-missoes.js';
+import { getArchetypeMissionBriefing, getEnseadaCompassReport } from '../game/bussola-enseada.js';
+import { state as gameState } from '../game/state.js';
 
 const ICONS = 'assets/sprites/ui/codex/icone-';
 const ULTIMATE_ICONS = 'assets/sprites/ui/codex/ultimate-';
@@ -51,6 +54,9 @@ let context = { progress: null, map: null, player: null };
 
 const icon = (name, className = 'codex-icon') =>
   `<img class="${className}" src="${ICONS}${name}.png" alt="" aria-hidden="true" draggable="false">`;
+const itemIcon = (item, className = 'codex-icon') => item?.spritePath
+  ? `<img class="${className}" src="${escapeHtml(item.spritePath)}" alt="" aria-hidden="true" draggable="false">`
+  : icon(item?.icon ?? 'inventario', className);
 
 const pct = value => `${Math.round(Math.max(0, Math.min(1, value)) * 100)}%`;
 
@@ -79,12 +85,16 @@ function mareRoutes(progress, map) {
   const atual = ARQUIPELAGO_REGIONS.find(region => region.mapId && region.mapId === map?.id)
     ?? ARQUIPELAGO_REGIONS.find(region => region.id === 'praia_inicial');
   const vizinhas = ARQUIPELAGO_REGIONS.filter(region => atual.neighbours.includes(region.id));
-  const rota = region => `<li class="codex-route ${region.status === 'jogavel' ? 'pronto' : 'projeto'}">
-      <span class="codex-route-pin" aria-hidden="true">${region.status === 'jogavel' ? '◆' : '◇'}</span>
+  const rota = region => {
+    const aberta = region.status === 'jogavel' && (!region.requiresFlag || progress?.flags?.[region.requiresFlag]);
+    const estado = aberta ? 'ROTA ABERTA' : region.status === 'jogavel' ? 'COMPORTA SELADA' : 'EM PROJETO';
+    return `<li class="codex-route ${aberta ? 'pronto' : 'projeto'}">
+      <span class="codex-route-pin" aria-hidden="true">${aberta ? '◆' : '◇'}</span>
       <strong>${escapeHtml(region.nome)}</strong>
-      <em>${region.status === 'jogavel' ? 'ROTA ABERTA' : 'EM PROJETO'}</em>
+      <em>${estado}</em>
       <small>${escapeHtml(region.biome)}</small>
     </li>`;
+  };
   const lista = vizinhas.length ? vizinhas.map(rota).join('') : '<li class="codex-route projeto"><strong>Nenhuma vizinha mapeada</strong></li>';
   return `<aside class="codex-mare" aria-label="Rotas de maré">
       <span class="codex-tag">ROTAS DE MARÉ</span>
@@ -95,7 +105,7 @@ function mareRoutes(progress, map) {
         <span class="codex-mare-mode projeto"><b>NAVEGAÇÃO</b><em>EM PROJETO</em><small>correntes levam a ilhas e portos</small></span>
         <span class="codex-mare-mode projeto"><b>MISSÕES DE TRAVESSIA</b><em>EM PROJETO</em><small>rotas com carga e pouso</small></span>
       </div>
-      <p class="codex-note">Mapa do arquipélago já registra as ilhas; navegar entre elas fica para o sistema de navegação.</p>
+      <p class="codex-note">A Rota das Marés liga a Enseada à Dársena após abrir a comporta; outras rotas permanecem em projeto.</p>
     </aside>`;
 }
 
@@ -126,46 +136,138 @@ function nadoTree(progress) {
     </aside>`;
 }
 
+function renderArchetypeBriefing(progress, map, player) {
+  const briefing = getArchetypeMissionBriefing(progress, map, player, gameState?.clima);
+  if (!briefing) return '';
+  const level = getArchetypeLevel(progress, briefing.id);
+  const buffPill = briefing.buff
+    ? `<span class="codex-briefing-pill buff" style="--pill:${briefing.buff.cor}"><i></i>${escapeHtml(briefing.buff.label)} · ${escapeHtml(briefing.buff.short)}</span>`
+    : '';
+  const climaPill = briefing.climaLabel
+    ? `<span class="codex-briefing-pill">${escapeHtml(briefing.climaLabel)}</span>`
+    : '';
+  return `<article class="codex-briefing" style="--arch:${briefing.color}">
+    <header>
+      <span class="codex-tag">${escapeHtml(briefing.badge)}</span>
+      <strong>${escapeHtml(briefing.name)} · NÍVEL ${level}</strong>
+      <div class="codex-briefing-pills">${buffPill}${climaPill}</div>
+    </header>
+    <p>${escapeHtml(briefing.directive)}</p>
+  </article>`;
+}
+
+function renderQuestCard(entry) {
+  const def = getQuest(entry.id);
+  if (!def) return '';
+  const doneCount = entry.objectives.filter(o => o.done).length;
+  const totalCount = entry.objectives.length || 1;
+  const overall = doneCount / totalCount;
+  const rewardParts = [];
+  if (def.rewards?.xp) rewardParts.push(`+${def.rewards.xp} XP`);
+  for (const itemId of def.rewards?.items ?? []) {
+    const it = getItem(itemId);
+    if (it?.name) rewardParts.push(it.name);
+  }
+  const objectives = entry.objectives.map(objective => {
+    const ratio = objective.count ? objective.current / objective.count : 0;
+    return `<li class="${objective.done ? 'done' : 'pending'}">
+      <span class="codex-obj-mark" aria-hidden="true">${objective.done ? '◆' : '▸'}</span>
+      <span>${escapeHtml(objective.label)}</span>
+      <span class="codex-quest-count">${objective.current}/${objective.count}</span>
+      <i class="codex-quest-bar live"><b style="width:${pct(ratio)}"></b></i>
+    </li>`;
+  }).join('');
+  return `<article class="codex-quest active">
+    <header>
+      <div class="codex-quest-top">
+        <span class="codex-tag">ATIVA · ${Math.round(overall * 100)}%</span>
+        ${def.giver ? `<em class="codex-quest-giver">${escapeHtml(def.giver)}</em>` : ''}
+      </div>
+      <strong>${escapeHtml(def.title)}</strong>
+    </header>
+    ${def.description ? `<p class="codex-quest-desc">${escapeHtml(def.description)}</p>` : ''}
+    <ul>${objectives}</ul>
+    ${rewardParts.length ? `<footer class="codex-quest-reward">RECOMPENSA: ${escapeHtml(rewardParts.join(' · '))}</footer>` : ''}
+  </article>`;
+}
+
 function renderMissions(progress, map) {
   const quest = progress?.activeQuest;
-  const main = quest
+  const mainDone = quest?.status === 'completed';
+  const main = quest && !mainDone
     ? `<article class="codex-quest codex-quest-main">
          <header><span class="codex-tag">PRINCIPAL</span><strong>${escapeHtml(quest.title ?? 'MISSÃO')}</strong></header>
          <p>${escapeHtml(quest.description ?? 'Sem descrição.')}</p>
        </article>`
-    : `<article class="codex-quest codex-quest-empty"><strong>NENHUMA MISSÃO PRINCIPAL</strong><p>Fale com o NEXO-04 no saguão para receber sua primeira rota.</p></article>`;
+    : !quest
+    ? `<article class="codex-quest codex-quest-empty"><strong>NENHUMA MISSÃO PRINCIPAL</strong><p>Fale com o NEXO-04 no saguão para receber sua primeira rota.</p></article>`
+    : '';
 
   const tracked = listTrackedQuests(progress);
-  const cards = tracked.length
-    ? tracked.map(entry => {
-      const objectives = entry.objectives.map(objective => {
-        const ratio = objective.count ? objective.current / objective.count : 0;
-        return `<li class="${objective.done ? 'done' : ''}">
-          <span>${escapeHtml(objective.label)}</span>
-          <span class="codex-quest-count">${objective.current}/${objective.count}</span>
-          <i class="codex-quest-bar"><b style="width:${pct(ratio)}"></b></i>
-        </li>`;
-      }).join('');
-      return `<article class="codex-quest ${entry.status}">
-        <header><span class="codex-tag">${entry.status === 'completed' ? 'CONCLUÍDA' : 'ATIVA'}</span><strong>${escapeHtml(getQuest(entry.id)?.title ?? '')}</strong></header>
-        <ul>${objectives}</ul>
-      </article>`;
-    }).join('')
-    : `<article class="codex-quest codex-quest-empty"><strong>SEM MISSÕES CONTÁVEIS</strong><p>As rotas paralelas aparecem aqui conforme você as encontra.</p></article>`;
+  const inEnseada = map?.id === 'ilha_enseada_ecos';
+  const activeTracked = tracked
+    .filter(entry => entry.status !== 'completed')
+    .sort((a, b) => {
+      if (!inEnseada) return 0;
+      const aCov = a.id.includes('enseada') || a.id.includes('mare') ? -1 : 0;
+      const bCov = b.id.includes('enseada') || b.id.includes('mare') ? -1 : 0;
+      return aCov - bCov;
+    });
+  const completedTracked = tracked.filter(entry => entry.status === 'completed');
+
+  const cards = activeTracked.length
+    ? activeTracked.map(renderQuestCard).join('')
+    : completedTracked.length || mainDone
+      ? `<article class="codex-quest codex-quest-clear">
+           <header><span class="codex-tag">HORIZONTE LIMPO</span><strong>TODAS AS MISSÕES ATUAIS CONCLUÍDAS</strong></header>
+           <p>As missões já finalizadas foram arquivadas no histórico abaixo para manter seu painel leve. Explore novas rotas ou ilhas para despertar novos contratos.</p>
+         </article>`
+      : `<article class="codex-quest codex-quest-empty"><strong>SEM MISSÕES CONTÁVEIS</strong><p>As rotas paralelas aparecem aqui conforme você as encontra.</p></article>`;
+
+  const completedItems = [
+    ...(mainDone ? [{ title: quest.title ?? 'MISSÃO PRINCIPAL', xp: null }] : []),
+    ...completedTracked.map(entry => {
+      const def = getQuest(entry.id);
+      return { title: def?.title ?? entry.id, xp: def?.rewards?.xp ?? null };
+    }),
+  ];
+  const completedDrawer = completedItems.length
+    ? `<details class="codex-completed-drawer">
+         <summary>
+           <span class="codex-tag">HISTÓRICO CONCLUÍDO</span>
+           <strong>${completedItems.length} missão(ões) concluída(s)</strong>
+           <em>clique para ver</em>
+         </summary>
+         <ul>
+           ${completedItems.map(item => `<li><span>◆ ${escapeHtml(item.title)}</span>${item.xp ? `<em>+${item.xp} XP</em>` : '<em>SELADA</em>'}</li>`).join('')}
+         </ul>
+       </details>`
+    : '';
 
   const flags = progress?.flags ?? {};
   const found = ['mar', 'pedra', 'mata'].filter(id => flags[`collected_enseada_rastro_${id}`]).length;
+  const compass = getEnseadaCompassReport(progress);
   const exploration = `<article class="codex-quest codex-quest-side">
-      <header><span class="codex-tag">EXPLORAÇÃO</span><strong>ENSEADA DOS ECOS</strong></header>
+      <header><span class="codex-tag">EXPLORAÇÃO · ${compass.done}/${compass.total}</span><strong>ENSEADA DOS ECOS</strong></header>
       <p>${map?.id === 'ilha_enseada_ecos' || found > 0
         ? `Vestígios registrados: ${found}/3.`
         : 'A Enseada ainda não foi mapeada.'}</p>
+      <i class="codex-quest-bar live"><b style="width:${pct(compass.done / compass.total)}"></b></i>
+      ${compass.next && (map?.id === 'ilha_enseada_ecos' || found > 0)
+        ? `<p class="codex-note">Próximo marco: ${escapeHtml(compass.next.label)}.</p>`
+        : compass.done === compass.total
+          ? '<p class="codex-note">ENSEADA 100% DESBRAVADA.</p>'
+          : ''}
       ${flags.companheiro_lumeo ? '<p class="codex-note">LÚMEO ACOMPANHA VOCÊ.</p>' : ''}
     </article>`;
 
+  const citadelBadge = (flags.cidadela_100_porcento || isCitadelComplete(progress))
+    ? `<article class="codex-quest codex-quest-complete"><header><img src="assets/sprites/cidadela-404/trofeu-cidadela-404.png" alt="" aria-hidden="true" style="width:22px;height:22px;vertical-align:middle;margin-right:6px">${flags.cidadela_protocolo_concluido ? '<img src="assets/sprites/cidadela-404/reliquia-insignia-vigilia.png" alt="" aria-hidden="true" style="width:22px;height:22px;vertical-align:middle;margin-right:6px">' : ''}<strong>CIDADELA 404 · ${flags.cidadela_protocolo_concluido ? 'CONVERGÊNCIA 100%' : '100% ESTABILIZADA'}</strong></header><p>Reator, Arquivos, CRTs, Ecos, Forja, Rede, Fendas, Vigília e Ronda Setorial concluídos.${flags.cidadela_protocolo_concluido ? ' Protocolo da Vigília selado.' : ''}</p></article>`
+    : '';
   return `<section class="codex-section" aria-label="Missões">
+    ${renderArchetypeBriefing(progress, map, context.player)}
     <div class="codex-columns">
-      <div class="codex-column">${main}${cards}</div>
+      <div class="codex-column">${main}${citadelBadge}${cards}${completedDrawer}</div>
       <aside class="codex-column codex-column-side">${nadoTree(progress)}${exploration}${mareRoutes(progress, map)}</aside>
     </div>
   </section>`;
@@ -390,27 +492,41 @@ function renderInventory(progress) {
   if (currentSelection && !ids.includes(currentSelection)) currentSelection = null;
   const selected = currentSelection ?? ids[0] ?? null;
   currentSelection = selected;
-  const slots = Array.from({ length: 8 }, (_, index) => {
+  const slots = Array.from({ length: Math.max(8, ids.length) }, (_, index) => {
     const id = ids[index];
     if (!id) return '<div class="codex-slot empty" aria-hidden="true"></div>';
     const item = getItem(id);
     return `<button type="button" class="codex-slot${id === selected ? ' selected' : ''}" data-item="${escapeHtml(id)}" aria-label="${escapeHtml(item.name)}">
-      ${icon(item.icon, 'codex-slot-icon')}
+      ${itemIcon(item, 'codex-slot-icon')}
       <span>${escapeHtml(item.name)}</span>
     </button>`;
   }).join('');
   const item = selected ? getItem(selected) : null;
+  const compassBox = selected === 'bussola_mar_ecos'
+    ? (() => {
+      const report = getEnseadaCompassReport(progress);
+      return `<div class="codex-compass-box">
+        <span class="codex-tag">LEITURA DA BÚSSOLA · ${report.done}/${report.total}</span>
+        <p>${escapeHtml(report.summary)}</p>
+      </div>`;
+    })()
+    : '';
   const detail = item
     ? `<article class="codex-item-detail">
-        ${icon(item.icon, 'codex-item-icon')}
-        <div><span class="codex-tag">${escapeHtml(item.kind)}</span><strong>${escapeHtml(item.name)}</strong><p>${escapeHtml(item.description)}</p></div>
+        ${itemIcon(item, 'codex-item-icon')}
+        <div><span class="codex-tag">${escapeHtml(item.kind)}</span><strong>${escapeHtml(item.name)}</strong><p>${escapeHtml(item.description)}</p>${compassBox}</div>
       </article>`
     : `<article class="codex-item-detail empty"><p>Inventário vazio. Recolha vestígios e registros pelo arquipélago.</p></article>`;
+  const mats = progress?.citadelMaterials;
+  const citadelMats = mats && ((mats.sucata_codigo ?? 0) > 0 || (mats.nucleo_estatica ?? 0) > 0)
+    ? `<p class="codex-note">Forja Cidadela 404: <img class="codex-mat-icon" src="assets/sprites/cidadela-404/drop-sucata-hud.png" alt="" aria-hidden="true" style="width:14px;height:14px;vertical-align:middle"> ${mats.sucata_codigo ?? 0} Sucata de Código · <img class="codex-mat-icon" src="assets/sprites/cidadela-404/drop-nucleo-hud.png" alt="" aria-hidden="true" style="width:14px;height:14px;vertical-align:middle"> ${mats.nucleo_estatica ?? 0} Núcleo de Estática</p>`
+    : '';
   return `<section class="codex-section" aria-label="Inventário">
     <div class="codex-columns">
       <div class="codex-column">
         <div class="codex-inventory">${slots}</div>
         ${detail}
+        ${citadelMats}
       </div>
       ${companionBlock(progress)}
     </div>

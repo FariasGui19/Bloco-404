@@ -1,0 +1,29 @@
+<!doctype html><html lang="pt-BR"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Docas — interiores, lote 2</title>
+<style>body{margin:0;background:#0a1020;color:#d5e5e6;font:16px system-ui}main{max-width:1100px;margin:auto;padding:24px}h1{font-size:30px}p{color:#a3b9c8;line-height:1.6}select,button{padding:10px;background:#233747;color:#e3eeee;border:1px solid #526a7b;margin:8px}canvas{display:block;width:100%;max-width:640px;margin:24px auto;border:1px solid #233747;border-radius:10px}img{width:100%;border-radius:8px}a{color:#83d5d1}#status{color:#d0ba83}</style>
+<main><h1>Docas · lote de 10 peças</h1><p>Dez pinturas novas substituem onze móveis existentes (o rack é usado em dois pontos). A quantidade de obstáculos continua em 18. Sem carregar ou gravar saves. Rádio e rack têm emissão animada; madeira e tecido permanecem estáveis.</p>
+<label>Inspecionar <select id="piece"></select></label><label><input type="checkbox" id="reduced"> Movimento reduzido</label><button id="pause">Pausar</button><span id="status">Carregando…</span>
+<canvas width="640" height="360" aria-label="Prévia animada da peça selecionada"></canvas><p id="note"></p>
+<h2>Encaixe nos três interiores — capturas do jogo real</h2><h3>01 · Abrigo dos pescadores</h3><img src="../qa/docas-interior-lote2-cabana_oeste.png" alt="Abrigo com cama, estante, barris e baú pintados"><h3>02 · Posto de escuta</h3><img src="../qa/docas-interior-lote2-cabana_leste.png" alt="Posto com cama, rádio e arquivo novos"><h3>03 · Oficina CRT</h3><img src="../qa/docas-interior-lote2-galpao.png" alt="Oficina com racks, bancada e carrinho pintados"><p><a href="../index.html">Abrir o jogo</a> · <a href="docas-interiores-lote2.md">Relatório do lote</a></p></main>
+<script type="module">
+import {PECAS_INTERIORES_LOTE2 as pieces} from '../js/data/worlds/arquipelago-rotas-perdidas/docas-interiores-lote2.js';
+import {INTERIORES_DOCAS} from '../js/data/worlds/arquipelago-rotas-perdidas/docas-interiores.js';
+import {desenharMobiliaDocas} from '../js/engine/docas-interiores.js';
+import {loadSprites} from '../js/engine/sprites.js';
+import {definirMovimentoDocas} from '../js/engine/docas-animation.js';
+function motion(value){const original=Storage.prototype.setItem;Storage.prototype.setItem=()=>{};try{definirMovimentoDocas(value);}finally{Storage.prototype.setItem=original;}}
+motion('normal');
+const loaded=await loadSprites(pieces.map(p=>({id:p.sprite,src:`../assets/sprites/docas-interiores-lote2/${p.name}.png`})));
+document.querySelector('#status').textContent=loaded.every(Boolean)?'10 peças carregadas':'Falha ao carregar alguma peça';
+const select=document.querySelector('#piece');for(const p of pieces){const option=document.createElement('option');option.value=p.name;option.textContent=p.name.replaceAll('-',' ');select.append(option);}
+const canvas=document.querySelector('canvas'),ctx=canvas.getContext('2d'),state={docasAnimation:{elapsed:0}};let paused=false,last=performance.now();
+document.querySelector('#reduced').onchange=e=>motion(e.target.checked?'reduzido':'normal');
+document.querySelector('#pause').onclick=()=>{paused=!paused;document.querySelector('#pause').textContent=paused?'Retomar':'Pausar';};
+window.samplePiece=(name,t)=>{const p=pieces.find(p=>p.name===name);if(!p)throw new TypeError(name);select.value=name;state.docasAnimation.elapsed=t;
+ const room=Object.values(INTERIORES_DOCAS).find(r=>r.key===p.room),def=room.props.find(a=>a[0]===p.kind);
+ ctx.setTransform(1,0,0,1,0,0);ctx.fillStyle='#0b1522';ctx.fillRect(0,0,640,360);ctx.translate(320,302);ctx.scale(2.7,2.7);
+ desenharMobiliaDocas(ctx,{docasProp:p.kind,docasAsset:p.sprite,docasVisual:p,docasSize:def.slice(3),x:0,y:0},state);
+ document.querySelector('#note').textContent=p.light?'Equipamento energizado: emissão suave, varredura recortada à tela e modo reduzido estável.':'Material sem emissão: sem brilho artificial nem movimento da estrutura.';
+};
+function frame(now){if(!paused)state.docasAnimation.elapsed+=Math.min(.05,(now-last)/1000);last=now;window.samplePiece(select.value,state.docasAnimation.elapsed);requestAnimationFrame(frame);}
+window.ready=true;requestAnimationFrame(frame);
+</script></html>

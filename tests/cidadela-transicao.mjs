@@ -1,0 +1,13 @@
+import assert from 'node:assert/strict';
+import { readFileSync,existsSync } from 'node:fs';
+const set=new Set();const header={textContent:''};
+const overlay={classList:{add(...names){names.forEach(n=>set.add(n))},remove(...names){names.forEach(n=>set.delete(n))}},querySelector:()=>header};
+const text={textContent:''},sub={textContent:''};
+globalThis.document={getElementById:id=>({mapTransitionOverlay:overlay,transitionText:text,transitionSubText:sub}[id]??null)};
+const {playTransition,hideTransition}=await import('../js/ui/transition.js');
+let p=playTransition('TESTE','cidadela-entrada');assert(set.has('active')&&set.has('dimensional-entrada'));assert.match(header.textContent,/66\.6/);assert.match(sub.textContent,/RETORNO/);await p;await hideTransition();assert(!set.has('active')&&!set.has('dimensional'));
+p=playTransition('VOLTANDO','cidadela-retorno');assert(set.has('dimensional-retorno')&&!set.has('dimensional-entrada'));await p;await hideTransition();
+p=playTransition('AEROPORTO');assert(!set.has('dimensional'));assert.match(header.textContent,/HANGAR|COMPORTA/);await p;await hideTransition();
+const css=readFileSync('css/style.css','utf8');assert.match(css,/@keyframes passagem-666/);assert.match(css,/@media \(prefers-reduced-motion: reduce\)[\s\S]*dimensional\.active::before \{ animation:none/);
+for(const f of ['entrada','retorno'])assert(existsSync(`assets/cutscenes/cidadela-transicao-${f}.jpg`));
+console.log('Transições dimensionais, limpeza e movimento reduzido OK.');

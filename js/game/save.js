@@ -15,6 +15,7 @@ import { ensureArchetypeProgress } from './progression.js';
 import { ensureTools } from './tools.js';
 import { applyUnlocks } from './unlocks.js';
 import { ARCHETYPE_KITS } from '../data/archetype-kits.js';
+import { prepararRetornoDocas, lerMareCromatica } from './mare-cromatica.js';
 
 const SAVE_VERSION = 1;
 // 4 personas criáveis: um arquétipo por save, no máximo.
@@ -84,7 +85,8 @@ export function createNewSave(slot, profileName = null) {
       facing: 'down',
     },
 
-    progress: createDefaultProgress(),
+    // Só saves novos recebem a abertura; saves antigos não são reiniciados.
+    progress: { ...createDefaultProgress(), flags: { prologoPendente: true } },
 
     world: {
       lastMapId: 'hub_saguao',
@@ -210,6 +212,17 @@ export function loadSaveIntoState(slot) {
 
   if (state.player.ability?.effect?.id === 'transformacao_10x') state.player.ability.effect = null;
 
+  // Recuperação única e restrita ao save Maré que já chegou às Docas e
+  // colapsou, retornando à Enseada/Limiar. Não afeta outros arquétipos,
+  // finais concluídos nem partidas que ainda não visitaram as Docas.
+  const flags=state.progress.flags??{};
+  if(state.progress.archetype==='mare_astral' && flags.docas_neblina_alcancada && !flags.docas_recuperacao_colapso_v1 &&
+    ['ilha_enseada_ecos','estacao_limiar_666'].includes(save.world.lastMapId) && lerMareCromatica(state.progress).desfecho==='colapso'){
+    if(prepararRetornoDocas(state.progress)){
+      state.progress.flags.docas_recuperacao_colapso_v1=true;
+      save.world.lastMapId='mare_cromatica_docas';save.world.lastSpawnId='inicio';
+    }
+  }
   state.world.currentMapId = save.world.lastMapId;
   state.world.currentSpawnId = save.world.lastSpawnId;
 

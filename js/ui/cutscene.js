@@ -1,0 +1,108 @@
+// Sequências de quadros com avanço deliberado: sem áudio embutido nem timers
+// obrigatórios. O mesmo modal serve à abertura e ao primeiro sinal na enseada.
+import { input } from '../engine/input.js';
+
+export const BOOT_SCENES = [
+  { kind: 'boot', image: 'assets/cutscenes/boot-sistema.png', eyebrow: 'INICIALIZAÇÃO // BLOCO 404', title: 'SISTEMA EM ESCUTA', text: 'Um chiado atravessa o escuro. Alguma coisa tenta estabelecer uma conexão.' },
+  { kind: 'error', image: 'assets/cutscenes/boot-falha.png', eyebrow: 'FALHA DE INDEXAÇÃO', title: 'CRITICAL_ERROR', text: 'REALITY_INDEX_404_NOT_FOUND', note: 'O registro de origem não pôde ser recuperado.' },
+  { image: 'assets/cutscenes/boot-aeroporto.png', eyebrow: 'PONTO 0 // AEROPORTO CENTRAL', title: 'BLOCO 404', text: 'Entre rotas que já não concordam entre si, uma estação continua de pé.' },
+  { image: 'assets/cutscenes/boot-operador.png', eyebrow: 'TRANSMISSÃO DESCONHECIDA', title: 'OPERADOR NULO', text: '“Toda linha de código tem um fim... menos a sua exclusão.”', note: 'A transmissão é interrompida. O portal responde à sua presença.' },
+];
+
+export const SIGNAL_SCENES = [
+  { kind: 'boot', image: 'assets/cutscenes/sinal-receptor.png', eyebrow: 'TERMINAL DE MANUTENÇÃO // ENSEADA', title: '66.6 MHz', text: 'A estática deixa de ser ruído. Uma segunda transmissão responde antes da sua.' },
+  { image: 'assets/cutscenes/frequencia-ruptura.png', eyebrow: 'VISÃO ATRAVÉS DO SINAL', title: 'CIDADELA DO CÓDIGO QUEIMADO', text: 'Por um instante, a tela mostra um corredor que não pertence à praia.', note: 'A imagem se desfaz antes que uma passagem se forme.' },
+  { kind: 'error', image: 'assets/cutscenes/sinal-nexo.png', eyebrow: 'NEXO-04 // CANAL DE EMERGÊNCIA', title: 'FREQUÊNCIA 66.6 MHz', text: '“Não atravesse ainda. Registrei o sinal; a rota para a origem permanece instável.”', note: 'Uma porta de manutenção na enseada conduz à estação que recebia o sinal.' },
+];
+
+// A cena precede a carga real da dimensão; pode ser pulada.
+export const THRESHOLD_SCENES = [
+  { image: 'assets/cutscenes/cidadela-transicao-entrada.jpg', eyebrow: 'ESTAÇÃO 66.6 // JANELA ESTÁVEL', title: 'DO OUTRO LADO', text: 'A água na plataforma treme. No anel, um corredor de metal substitui o reflexo da enseada. Seu módulo terá de se adaptar à nova perspectiva.', note: 'A âncora de retorno continua acesa atrás de você.' },
+  { image: 'assets/cutscenes/cidadela-entrada-corredor.jpg', eyebrow: 'NEXO-04 // CANAL ABERTO', title: 'A RESPOSTA', text: '“A pessoa que pediu ajuda não necessariamente está do outro lado. Mas alguém manteve esta linha viva. Descubra por quê.”', note: 'Três pulsos. Uma resposta antes da pergunta.' },
+  { kind: 'error', image: 'assets/cutscenes/cidadela-travessia-anel.jpg', eyebrow: 'PASSAGEM // 66.6 MHz', title: 'TRAVESSIA PREPARADA', text: 'Você dá o primeiro passo através do anel. A imagem se fecha sobre o corredor; a linha de retorno permanece ancorada.', note: 'O espaço à frente tem outras regras; a estação permanece acessível.' },
+];
+
+// Desfecho: os quadros existentes agora acompanham um evento jogável real.
+export const CITADEL_END_SCENES = [
+  { image:'assets/cutscenes/vigilante-reator.png', eyebrow:'CIDADELA // REFRIGERAÇÃO', title:'O GUARDIÃO', text:'O Vigilante silencia. Atrás da blindagem, o núcleo ainda pulsa: ele estava mantendo o reator vivo.', note:'A origem do pedido de socorro continua desconhecida.' },
+  { image:'assets/cutscenes/cidadela-estavel.png', eyebrow:'NEXO-04 // LINHA DE RETORNO', title:'A ROTA SOBREVIVEU', text:'“O reator respira de novo. Podemos voltar — e alguém, ou alguma coisa, ainda pode nos responder.”', note:'Uma sonda do NEXO aguarda na arena. A linha de retorno está aberta.' },
+  { image:'assets/cutscenes/cidadela-desfecho-vigilante.jpg', eyebrow:'OFICINA DA VIGÍLIA // PORTA ABERTA', title:'O PACTO DA VIGÍLIA', text:'Ao sul, as comportas da Oficina da Vigília cedem à luz da superfície. O chassi do Vigilante repousa em vigília silenciosa ao lado do núcleo estabilizado.', note:'Explore a Rede de Escuta, as Fendas, a Oficina e a Ronda Setorial antes de retornar.' },
+];
+
+export const CITADEL_RETURN_SCENES = [
+  { image:'assets/cutscenes/cidadela-retorno-estavel.jpg', eyebrow:'ESTAÇÃO 66.6 // RETORNO ESTÁVEL', title:'A MARÉ DO OUTRO LADO', text:'Ao cruzar de volta pelo anel, a neblina sobre a plataforma abriu caminho para a maré noturna. A frequência de 66.6 MHz não treme mais — a linha sobreviveu ao apagamento.', note:'A Cidadela 404, a Oficina da Vigília e a Ronda Setorial continuam acessíveis pelo anel.' },
+  { image:'assets/cutscenes/cidadela-aurora-limiar.jpg', eyebrow:'PRÓXIMO HORIZONTE // PORTAL ABERTO', title:'ALÉM DO CÓDIGO QUEIMADO', text:'NEXO-04: “Às margens da estática, o farol da Estação 66.6 aponta agora para rotas que ainda não mapeamos. O Vigilante segurou a porta; você garantiu a travessia.”', note:'A passagem para a próxima dimensão aguarda no console central.' },
+  { image:'assets/cutscenes/cidadela-epilogo-nulo.jpg', eyebrow:'EPÍLOGO // FREQUÊNCIA 66.6', title:'ECOS NA MARÉ', text:'Por um segundo, o anel reflete uma silhueta de linhas sem rosto antes da aurora apagar o ruído. “O Bloco 404 respondeu ao primeiro chamado. As próximas dimensões aguardam.”', note:'Registro arquivado na Estação 66.6. Todo o progresso da Cidadela foi preservado.' },
+];
+
+export const CITADEL_PROTOCOL_SCENES = [
+  { image:'assets/cutscenes/cidadela-protocolo-desperto.jpg', eyebrow:'CONVERGÊNCIA // 66.6 MHz', title:'O PROTOCOLO DA VIGÍLIA', text:'Três feixes harmônicos unem o Reator Estabilizado, a Sonda NEXO-04 e a Baliza da Arena. O Vigilante silencia em repouso definitivo: sua guarda foi assumida pelo Bloco 404.', note:'Relíquia Insígnia da Vigília // 404 integrada ao Códex. A Cidadela 404 está pronta para o salto final.' },
+];
+
+export const CITADEL_MARE_EPILOGUE_SCENES = [
+  { image:'assets/cutscenes/cidadela-mare-desfecho.jpg', eyebrow:'ESTAÇÃO 66.6 // CONVERGÊNCIA CONCLUÍDA', title:'A ÚLTIMA MARÉ DE 66.6 MHz', text:'Diante do anel silencioso e das águas noturnas da Enseada dos Ecos, os monitores da Estação 66.6 registram estabilidade absoluta. O Vigilante descansou; o Bloco 404 fechou o ciclo da Cidadela do Código Queimado.', note:'Dimensão Cidadela 404 concluída. O Selo de Convergência permanece ancorado na Estação 66.6 para os próximos saltos.' },
+];
+
+let open = false;
+export function isCutsceneOpen() { return open; }
+
+export function playCutscene(scenes) {
+  if (open || !scenes?.length || !document.body) return Promise.resolve();
+  open = true;
+  return new Promise(resolve => {
+    const previousFocus = document.activeElement;
+    const root = document.createElement('section');
+    root.className = 'cutscene';
+    root.setAttribute('role', 'dialog');
+    root.setAttribute('aria-modal', 'true');
+    root.setAttribute('aria-label', 'Sequência narrativa');
+    root.innerHTML = '<div class="cutscene-art"></div><div class="cutscene-scanlines"></div><div class="cutscene-content"><div class="cutscene-eyebrow"></div><h1 class="cutscene-title"></h1><p class="cutscene-text"></p><p class="cutscene-note"></p></div><div class="cutscene-controls"><span class="cutscene-count"></span><button type="button" class="cutscene-skip">PULAR [ESC]</button><button type="button" class="cutscene-next">CONTINUAR [ENTER]</button></div>';
+    document.body.appendChild(root);
+    const art = root.querySelector('.cutscene-art');
+    const eyebrow = root.querySelector('.cutscene-eyebrow');
+    const title = root.querySelector('.cutscene-title');
+    const text = root.querySelector('.cutscene-text');
+    const note = root.querySelector('.cutscene-note');
+    const count = root.querySelector('.cutscene-count');
+    const next = root.querySelector('.cutscene-next');
+    const skip = root.querySelector('.cutscene-skip');
+    let index = 0;
+    const render = () => {
+      const scene = scenes[index];
+      root.dataset.kind = scene.kind || 'art';
+      root.dataset.hasImage = scene.image ? 'true' : 'false';
+      art.getAnimations?.().forEach(animation => animation.cancel());
+      art.style.backgroundImage = scene.image ? `url("${scene.image}")` : '';
+      if (scene.image && !window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) {
+        art.animate?.([{ transform: 'scale(1.035)', opacity: .8 }, { transform: 'scale(1)', opacity: 1 }], { duration: 1800, easing: 'ease-out' });
+      }
+      eyebrow.textContent = scene.eyebrow;
+      title.textContent = scene.title;
+      text.textContent = scene.text;
+      note.textContent = scene.note || '';
+      count.textContent = `${String(index + 1).padStart(2, '0')} / ${String(scenes.length).padStart(2, '0')}`;
+      next.textContent = index === scenes.length - 1 ? 'CONCLUIR [ENTER]' : 'CONTINUAR [ENTER]';
+    };
+    const finish = () => {
+      window.removeEventListener('keydown', onKey, true);
+      root.remove(); open = false;
+      // Não deixar a tecla usada na cena acionar movimento/ataque no jogo.
+      for (const key in input.keys) input.keys[key] = false;
+      input.pressed.clear(); input.click = null; input.attackClick = null;
+      previousFocus?.focus?.({ preventScroll: true });
+      resolve();
+    };
+    const advance = () => { if (index + 1 >= scenes.length) finish(); else { index++; render(); } };
+    const onKey = event => {
+      if (event.repeat) return;
+      if (['Escape', 'Enter', ' ', 'e', 'E'].includes(event.key)) {
+        event.preventDefault(); event.stopImmediatePropagation();
+        if (event.key === 'Escape' || (event.key === 'Enter' && event.target === skip)) finish(); else advance();
+      }
+    };
+    next.addEventListener('click', advance);
+    skip.addEventListener('click', finish);
+    window.addEventListener('keydown', onKey, true);
+    render(); next.focus({ preventScroll: true });
+  });
+}

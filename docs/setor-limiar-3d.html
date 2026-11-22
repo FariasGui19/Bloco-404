@@ -1,0 +1,390 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Setor Limiar — laboratório 3D / Bloco 404</title>
+    <style>
+      body {
+        margin: 0;
+        background: #21283e;
+        color: #c9efe4;
+        font: 12px monospace;
+      }
+      #game {
+        width: 100vw;
+        height: 100vh;
+        display: block;
+      }
+      #lab {
+        position: fixed;
+        z-index: 6000;
+        top: 68px;
+        left: 50%;
+        transform: translateX(-50%);
+        display: flex;
+        gap: 7px;
+        align-items: center;
+        background: #192b3edb;
+        border: 1px solid #91d6c56b;
+        padding: 7px 12px;
+        border-radius: 3px;
+        font-size: 9px;
+        max-width: 94vw;
+      }
+      #lab select,
+      #lab button {
+        background: #263b4d;
+        color: #d9fff0;
+        border: 1px solid #91d6c566;
+        padding: 5px;
+        font: 10px monospace;
+      }
+      #sculpt-gallery {
+        width: min(1440px, 96vw);
+        height: 92vh;
+        box-sizing: border-box;
+        padding: 0;
+        border: 1px solid #7eabac;
+        background: #16232e;
+        color: #d2e8e3;
+      }
+      #sculpt-gallery[open] {
+        display: flex;
+        flex-direction: column;
+      }
+      #sculpt-gallery::backdrop {
+        background: #0b131fe8;
+      }
+      .sculpt-toolbar {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        flex-wrap: wrap;
+        padding: 12px 18px;
+      }
+      .sculpt-toolbar h2 {
+        margin: 0 auto 0 0;
+        font: 14px monospace;
+      }
+      .sculpt-toolbar button,
+      .sculpt-toolbar select {
+        color: #d6ece3;
+        background: #263f4a;
+        border: 1px solid #739c9e;
+        padding: 8px;
+        font: 11px monospace;
+      }
+      #sculpt-view {
+        min-height: 160px;
+        flex: 1;
+        overflow: hidden;
+        touch-action: none;
+      }
+      #sculpt-view canvas {
+        display: block;
+        image-rendering: pixelated;
+      }
+      .sculpt-labels {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        text-align: center;
+        padding: 12px;
+        gap: 8px;
+        font-size: 10px;
+      }
+      .sculpt-note {
+        margin: 0;
+        padding: 8px 18px 14px;
+        font-size: 10px;
+        color: #9fbebc;
+      }
+      #lab a {
+        color: #e7d6a4;
+        text-decoration: none;
+      }
+      @media (max-width: 700px) {
+        #lab {
+          top: 60px;
+          font-size: 0;
+        }
+        #lab {
+          flex-wrap: wrap;
+          justify-content: center;
+          width: 94vw;
+          box-sizing: border-box;
+        }
+        .sculpt-labels {
+          grid-template-columns: repeat(2, 1fr);
+          font-size: 8px;
+        }
+        .sculpt-toolbar {
+          padding: 10px;
+          gap: 7px;
+        }
+        #lab a {
+          font-size: 8px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <canvas id="game" width="1100" height="700"></canvas>
+    <nav id="lab" aria-label="Laboratório sem save">
+      LAB / SEM SAVE
+      <select id="archetype" aria-label="Arquétipo experimental">
+        <option value="nucleo_dez_forma">Núcleo X10 · voo</option>
+        <option value="mare_astral">Maré Astral · mergulho</option>
+        <option value="motor_bio_forja">Bio-Forja · armadura</option>
+        <option value="lamina_dominio_anciao">Lâmina · parkour</option></select
+      ><button id="enter">ENTRAR</button
+      ><button id="inspect">GALERIA 3B.2</button
+      ><a href="../index.html">JOGO COMPLETO ↗</a>
+    </nav>
+    <dialog id="sculpt-gallery" aria-labelledby="sculpt-title">
+      <header class="sculpt-toolbar">
+        <h2 id="sculpt-title">IDENTIDADE / FORMAS / ANIMAÇÃO · 3B.2</h2>
+        <button id="sculpt-close">FECHAR</button>
+      </header>
+      <div class="sculpt-toolbar">
+        <label
+          >INSPECIONAR
+          <select id="sculpt-focus">
+            <option value="all">Os quatro arquétipos</option>
+            <option value="nucleo_dez_forma">Núcleo X10</option>
+            <option value="motor_bio_forja">Motor Bio-Forja</option>
+            <option value="mare_astral">Maré Astral</option>
+            <option value="lamina_dominio_anciao">Domínio Ancião</option>
+          </select></label
+        >
+        <label
+          >ENQUADRAMENTO
+          <select id="sculpt-detail">
+            <option value="body">Corpo inteiro</option>
+            <option value="face">Rosto / cabeça</option>
+            <option value="bracelet">Bracelete</option>
+          </select></label
+        >
+        <button data-sculpt-angle="0">FRENTE</button
+        ><button data-sculpt-angle="-0.65">TRÊS-QUARTOS</button
+        ><button data-sculpt-angle="3.14159265">COSTAS</button>
+      </div>
+      <div class="sculpt-toolbar">
+        <label
+          >PRÉVIA X10
+          <select id="sculpt-form">
+            <option value="">Operador base</option>
+            <option value="forma_veloz">Forma Veloz</option>
+            <option value="forma_bruta">
+              Quebra Sistemas · prévia nível 4
+            </option>
+          </select></label
+        >
+        <label
+          >POSE
+          <select id="sculpt-motion">
+            <option value="idle">Repouso vivo</option>
+            <option value="walk">Caminhada</option>
+            <option value="run">Corrida</option>
+            <option value="swim">Nado</option>
+            <option value="flight">Voo</option>
+          </select></label
+        >
+        <button data-performance="primary">J · COMBO</button
+        ><button data-performance="secondary">K · LEITURA</button
+        ><button data-performance="signature">L · ESPECIAL</button
+        ><button data-performance="transform">T · TRANSFORMAÇÃO</button
+        ><button data-performance="select">R · SINTONIA</button
+        ><button data-performance="interact">E · INTERAÇÃO</button>
+      </div>
+      <label
+        >Vestuário
+        <select id="sculpt-clothing">
+          <option value="suit">Trajes equipados (X10 civil)</option>
+          <option value="civilian">Roupa convencional</option>
+        </select></label
+      >
+      <div id="sculpt-view"></div>
+      <div class="sculpt-labels">
+        <span>X10 · BRACELETE</span><span>BIO-FORJA · BIOMECÂNICA</span
+        ><span>MARÉ · DUTOS CIANO</span><span>DOMÍNIO · ANCESTRAL</span>
+      </div>
+      <p class="sculpt-note">
+        Arraste para girar. Prévia artística com os mesmos modelos/animações do
+        jogo. Quebra Sistemas nesta galeria NÃO desbloqueia a forma (nível 4).
+        Feche e use ENTRAR: T ativa/retorna; R seleciona uma forma já
+        disponível. J alterna gestos; L executa a variação especial do mesmo
+        poder (mesma energia e recarga). Nenhum save é alterado.
+      </p>
+    </dialog>
+    <script type="module">
+      import { initDimensionModule } from "../js/dimension/ui.js";
+      import { ARCHETYPE_KITS } from "../js/data/archetype-kits.js";
+      import { ensureHealth } from "../js/game/health.js";
+      const state = {
+        world: { currentMapId: "laboratorio_dimensional" },
+        player: { x: 0, y: 0, facing: "down", energy: 100, maxEnergy: 100 },
+        progress: {
+          archetype: "nucleo_dez_forma",
+          abilities: ["forma_veloz", "eco_scan"],
+          archetypeProgress: {},
+          inventory: [],
+          flags: {},
+        },
+      };
+      ensureHealth(state.player, state.progress);
+      const canvas = document.querySelector("#game"),
+        ctx = canvas.getContext("2d");
+      ctx.fillStyle = "#232b42";
+      ctx.fillRect(0, 0, 1100, 700);
+      ctx.strokeStyle = "#5d838350";
+      for (let i = -20; i < 30; i++) {
+        ctx.beginPath();
+        ctx.moveTo(i * 60, 0);
+        ctx.lineTo(i * 60 + 600, 700);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(i * 60, 700);
+        ctx.lineTo(i * 60 + 600, 0);
+        ctx.stroke();
+      }
+      ctx.fillStyle = "#c8fff0";
+      ctx.font = "26px monospace";
+      ctx.textAlign = "center";
+      ctx.fillText("CONTENÇÃO DIMENSIONAL // NÍVEL 1", 550, 300);
+      ctx.font = "14px monospace";
+      ctx.fillText(
+        "Laboratório isolado. Nenhum save é lido ou alterado.",
+        550,
+        340,
+      );
+      const dimensional = initDimensionModule({
+        state,
+        canvas,
+        developerTools: true,
+        clearInput: () => {},
+        canEnter: () => true,
+        save: () => {},
+      });
+      dimensional.setAvailable(true);
+      document.querySelector("#dimension-entry").style.display = "none";
+      document.querySelector("#enter").onclick = () =>
+        dimensional.manager.enter();
+      document.querySelector("#archetype").onchange = (e) => {
+        state.progress.archetype = e.target.value;
+        state.progress.abilities = [
+          ARCHETYPE_KITS[e.target.value].q,
+          ARCHETYPE_KITS[e.target.value].r,
+        ];
+        state.player.nucleoForm = null;
+        state.player.nucleoRuntime = null;
+        state.player.equippedSuit = null;
+        if (state.player.ability) state.player.ability.effect = null;
+        ensureHealth(state.player, state.progress);
+      };
+      const galleryDialog = document.querySelector("#sculpt-gallery"),
+        inspectButton = document.querySelector("#inspect");
+      let gallery = null,
+        galleryOpening = false;
+      inspectButton.onclick = async () => {
+        if (galleryOpening || gallery) return;
+        galleryOpening = true;
+        inspectButton.disabled = true;
+        try {
+          // Never leave two renderers/gameplay input captures running together.
+          if (dimensional.manager.active) {
+            dimensional.manager.exit();
+            await new Promise((resolve) => {
+              function wait() {
+                if (!dimensional.manager.active) resolve();
+                else requestAnimationFrame(wait);
+              }
+              wait();
+            });
+          }
+          const { createOperatorGallery } =
+            await import("../js/dimension/operator-gallery.js");
+          galleryDialog.showModal();
+          gallery = createOperatorGallery(
+            document.querySelector("#sculpt-view"),
+          );
+          window.labGallery = gallery;
+          document.querySelector("#sculpt-form").value = "";
+          document.querySelector("#sculpt-detail").value = "body";
+          document.querySelector("#sculpt-motion").value = "idle";
+          const selected = innerWidth < 700 ? state.progress.archetype : "all";
+          document.querySelector("#sculpt-focus").value = selected;
+          gallery.setFocus(selected);
+          document.querySelector("#sculpt-clothing").value = "suit";
+          document.querySelector("#sculpt-close").focus();
+        } catch (error) {
+          galleryDialog.close();
+          console.error(error);
+        } finally {
+          galleryOpening = false;
+          inspectButton.disabled = false;
+        }
+      };
+      function closeGallery() {
+        gallery?.dispose();
+        gallery = null;
+        window.labGallery = null;
+        galleryDialog.close();
+        inspectButton.focus();
+      }
+      document.querySelector("#sculpt-close").onclick = closeGallery;
+      galleryDialog.addEventListener("cancel", (event) => {
+        event.preventDefault();
+        closeGallery();
+      });
+      document.querySelector("#sculpt-detail").onchange = (event) =>
+        gallery?.setDetail(event.target.value);
+      document.querySelector("#sculpt-focus").onchange = (event) =>
+        gallery?.setFocus(event.target.value);
+      for (const button of document.querySelectorAll("[data-sculpt-angle]"))
+        button.onclick = () =>
+          gallery?.setAngle(Number(button.dataset.sculptAngle));
+      document.querySelector("#sculpt-form").onchange = (event) => {
+        gallery?.setForm(event.target.value);
+        gallery?.setFocus("nucleo_dez_forma");
+        document.querySelector("#sculpt-focus").value = "nucleo_dez_forma";
+      };
+      document.querySelector("#sculpt-clothing").onchange = (event) =>
+        gallery?.setClothing(event.target.value === "suit");
+      document.querySelector("#sculpt-motion").onchange = (event) =>
+        gallery?.setLocomotion(event.target.value);
+      function previewAction(action) {
+        gallery?.play(action);
+        if (gallery)
+          document.querySelector("#sculpt-form").value =
+            gallery.preview.form ?? "";
+      }
+      for (const button of document.querySelectorAll("[data-performance]"))
+        button.onclick = () => previewAction(button.dataset.performance);
+      galleryDialog.addEventListener("keydown", (event) => {
+        if (event.target instanceof HTMLSelectElement) return;
+        const action = {
+          KeyJ: "primary",
+          KeyK: "secondary",
+          KeyL: "signature",
+          KeyT: "transform",
+          KeyR: "select",
+        }[event.code];
+        if (action) {
+          event.preventDefault();
+          event.stopPropagation();
+          if (!event.repeat) previewAction(action);
+        }
+      });
+      let last = performance.now();
+      function frame(now) {
+        dimensional.manager.tick(Math.min(0.033, (now - last) / 1000));
+        last = now;
+        requestAnimationFrame(frame);
+      }
+      requestAnimationFrame(frame);
+      // Deliberate click starts WebGL; no autoplay audio and no storage writes.
+      window.labDimension = dimensional.manager;
+    </script>
+  </body>
+</html>

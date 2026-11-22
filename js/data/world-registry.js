@@ -1,5 +1,9 @@
 // js/data/world-registry.js
 export const WORLD_REGISTRY = {
+  mare_cromatica_superficie: { nome: 'Maré Cromática — Superfície', dimensao: 'mare_cromatica', load: () => import('./worlds/arquipelago-rotas-perdidas/mare-cromatica.js').then(m => ({map:m.superficie})) },
+  mare_cromatica_contencao: { nome: 'Maré Cromática — Contenção', dimensao: 'mare_cromatica', load: () => import('./worlds/arquipelago-rotas-perdidas/mare-cromatica.js').then(m => ({map:m.contencao})) },
+  mare_cromatica_fenda: { nome: 'Maré Cromática — Fenda', dimensao: 'mare_cromatica', load: () => import('./worlds/arquipelago-rotas-perdidas/mare-cromatica.js').then(m => ({map:m.fenda})) },
+  cidadela_404: { nome: 'Cidadela do Código Queimado', dimensao: 'cidadela_404', load: () => import('./worlds/cidadela-404/cidadela.js') },
   hub_saguao: {
     nome: 'Saguão Central',
     dimensao: 'hub_404',
@@ -14,6 +18,31 @@ export const WORLD_REGISTRY = {
     nome: 'Área de Carga Desativada',
     dimensao: 'hub_404',
     load: () => import('./worlds/hub-404/aeroporto-carga.js'),
+  },
+  sala_bio_forja: {
+    nome: 'Sala de Missão — Motor Bio-Forja',
+    dimensao: 'hub_404',
+    load: () => import('./worlds/hub-404/salas-arquetipos.js').then(m => ({ map: m.salaBioForja })),
+  },
+  sala_dominio: {
+    nome: 'Sala de Missão — Lâminа Domínio',
+    dimensao: 'hub_404',
+    load: () => import('./worlds/hub-404/salas-arquetipos.js').then(m => ({ map: m.salaDominio })),
+  },
+  sala_mare: {
+    nome: 'Sala de Missão — Maré Astral',
+    dimensao: 'hub_404',
+    load: () => import('./worlds/hub-404/salas-arquetipos.js').then(m => ({ map: m.salaMare })),
+  },
+  sala_nucleo: {
+    nome: 'Sala de Missão — Núcleo 10X',
+    dimensao: 'hub_404',
+    load: () => import('./worlds/hub-404/salas-arquetipos.js').then(m => ({ map: m.salaNucleo })),
+  },
+  viaduto_dos_vetores: {
+    nome: 'Viaduto dos Vetores — Núcleo 10X',
+    dimensao: 'hub_404',
+    load: () => import('./worlds/hub-404/viaduto-vetores.js'),
   },
   hub_camara_dominio: { load: () => import('./worlds/hub-404/camara-dominio.js') },
   hub_camara_mare: { load: () => import('./worlds/hub-404/camara-mare.js') },
@@ -37,7 +66,13 @@ export const WORLD_REGISTRY = {
   // ==========================================
     bio_sala_controle: { nome: 'Sala de Controle Bio', dimensao: 'arquipelago', load: () => import('./worlds/arquipelago-rotas-perdidas/bio-sala-controle.js') },
     ilha_estacao_bio: { nome: 'Estação que Respira', dimensao: 'arquipelago', load: () => import('./worlds/arquipelago-rotas-perdidas/estacao-bio.js') },
+    mar_rota_mare_astral: { nome: 'Rota das Marés', dimensao: 'arquipelago', load: () => import('./worlds/arquipelago-rotas-perdidas/rota-mare.js') },
     mar_caminho_das_correntes: { nome: 'Caminho das Correntes', dimensao: 'arquipelago', load: () => import('./worlds/arquipelago-rotas-perdidas/caminho-correntes.js') },
+    mare_cromatica_galpao: {nome:'Galpão CRT',dimensao:'mare_cromatica',load:()=>import('./worlds/arquipelago-rotas-perdidas/docas-neblina.js').then(m=>({map:m.galpao}))},
+    mare_cromatica_docas: {nome:'Docas da Neblina',dimensao:'mare_cromatica',load:()=>import('./worlds/arquipelago-rotas-perdidas/docas-neblina.js').then(m=>({map:m.docas}))},
+    mare_cromatica_cabana_oeste: {nome:'Cabana Oeste',dimensao:'mare_cromatica',load:()=>import('./worlds/arquipelago-rotas-perdidas/docas-neblina.js').then(m=>({map:m.cabanaOeste}))},
+    mare_cromatica_cabana_leste: {nome:'Cabana Leste',dimensao:'mare_cromatica',load:()=>import('./worlds/arquipelago-rotas-perdidas/docas-neblina.js').then(m=>({map:m.cabanaLeste}))},
+    estacao_limiar_666: { nome: 'Estação 66.6 — Limiar', dimensao: 'arquipelago', load: () => import('./worlds/arquipelago-rotas-perdidas/estacao-666.js') },
     ilha_enseada_ecos: { nome: 'Enseada dos Ecos', dimensao: 'arquipelago', load: () => import('./worlds/arquipelago-rotas-perdidas/enseada-ecos.js') },
     ilha_praia_inicial: {
     nome: 'Praia Inicial',

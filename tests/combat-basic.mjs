@@ -12,7 +12,7 @@ state.save.loaded = false; state.save.activeSlot = null;
 state.progress = { flags: {}, inventory: [], activeQuest: { id: 'embarque_dimensional', status: 'active' } };
 await loadMap('ilha_enseada_ecos', 'inicio');
 const map = state.world.currentMap, player = state.player, target = state.trainingTargets[0];
-Object.assign(player, { x: 13, y: 15.5, facing: 'down', ability: {} });
+Object.assign(player, { x: target.x - 1.5, y: target.y, facing: 'down', ability: {} });
 const aim = { x: target.x, y: target.y };
 const expected = { motor_bio_forja: 9, lamina_dominio_anciao: 13, mare_astral: 10, nucleo_dez_forma: 5 };
 

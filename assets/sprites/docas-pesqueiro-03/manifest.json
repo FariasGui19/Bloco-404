@@ -1,0 +1,83 @@
+{
+  "version": 1,
+  "cycleSeconds": 6.4,
+  "provenance": "Pintura aprovada reutilizada. 48 poses de cordame/luz/fumaça e 144 poses de água procedurais; balanço rígido somente no runtime.",
+  "sheets": {
+    "casco-subida": {
+      "w": 640,
+      "h": 616,
+      "frames": 12,
+      "columns": 4,
+      "offset": [
+        15,
+        40
+      ]
+    },
+    "casco-crista": {
+      "w": 640,
+      "h": 616,
+      "frames": 12,
+      "columns": 4,
+      "offset": [
+        15,
+        40
+      ]
+    },
+    "casco-descida": {
+      "w": 640,
+      "h": 616,
+      "frames": 12,
+      "columns": 4,
+      "offset": [
+        15,
+        40
+      ]
+    },
+    "casco-cavado": {
+      "w": 640,
+      "h": 616,
+      "frames": 12,
+      "columns": 4,
+      "offset": [
+        15,
+        40
+      ]
+    },
+    "mar-proa": {
+      "w": 256,
+      "h": 128,
+      "frames": 24,
+      "columns": 4
+    },
+    "mar-popa": {
+      "w": 256,
+      "h": 128,
+      "frames": 24,
+      "columns": 4
+    },
+    "espuma-costado": {
+      "w": 256,
+      "h": 128,
+      "frames": 24,
+      "columns": 4
+    },
+    "reflexo-ambar": {
+      "w": 256,
+      "h": 128,
+      "frames": 24,
+      "columns": 4
+    },
+    "reflexo-violeta": {
+      "w": 256,
+      "h": 128,
+      "frames": 24,
+      "columns": 4
+    },
+    "spray-proa": {
+      "w": 256,
+      "h": 128,
+      "frames": 24,
+      "columns": 4
+    }
+  }
+}

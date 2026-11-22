@@ -158,7 +158,7 @@ export const docas={id:'mare_cromatica_docas',meta:{nome:'DOCAS DA NEBLINA',tipo
  marker('docas_mural_vigia',780,490,'LER MURAL DOS VIGIAS'),marker('docas_fogueira',464,497,'EXAMINAR FOGUEIRA DOS VIGIAS'),
  marker('docas_marca_navegantes',952,553,'EXAMINAR MARCA DOS NAVEGANTES'),marker('docas_diario_pier',710,605,'LER DIÁRIO DO PÍER'),marker('docas_diario_trilha',980,520,'LER AVISO DOS VIGIAS'),
  marker('docas_torre',1330,500,'SUBIR À TORRE DE VIGIA'),marker('docas_resina',720,565,'RASTREAR RESINA • MARÉ ASTRAL'),marker('docas_eletrico',910,545,'PAINEL ELÉTRICO • NÚCLEO X10'),marker('docas_selo',1020,420,'SELO DE NÉVOA • DOMÍNIO ANCIÃO'),marker('docas_biomassa',1120,565,'BIOMASSA • BIO-FORJA')],
- trainingTargets:[{id:'docas_infectado_1',x:Math.floor(18*ESCALA_DOCAS),y:Math.floor(12*ESCALA_DOCAS),maxHealth:65,cromaticaEnemy:true},{id:'docas_infectado_2',x:Math.floor(19*ESCALA_DOCAS),y:Math.floor(10*ESCALA_DOCAS),maxHealth:65,cromaticaEnemy:true}],
+ trainingTargets:[{id:'docas_infectado_1',x:1050*ESCALA_DOCAS/64-.5,y:455*ESCALA_DOCAS/22-.5,maxHealth:65,cromaticaEnemy:true},{id:'docas_infectado_2',x:980*ESCALA_DOCAS/64-.5,y:190*ESCALA_DOCAS/22-.5,maxHealth:65,cromaticaEnemy:true}],
  portals:[portal('docas_galpao',865,490,'ENTRAR NO GALPÃO CRT','mare_cromatica_galpao'),portal('docas_cabana_esq',575,500,'ENTRAR NA CABANA OESTE','mare_cromatica_cabana_oeste'),portal('docas_cabana_dir',1190,525,'ENTRAR NA CABANA LESTE','mare_cromatica_cabana_leste')],
 };
 

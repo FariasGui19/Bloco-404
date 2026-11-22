@@ -1,0 +1,86 @@
+{
+  "batch": 5,
+  "count": 10,
+  "assets": [
+    {
+      "id": "anotacoes-sinal",
+      "size": [
+        512,
+        284
+      ],
+      "sourceSha256": "34bdfc335386b34ff6d9b0b9cb0141d34d71af08826abeeedd20b526b21674f8"
+    },
+    {
+      "id": "boias-antigas",
+      "size": [
+        487,
+        512
+      ],
+      "sourceSha256": "d3bf265b0beefce89493e95ad26b6ad0dbb99c8ee714530a99e8f35693a44819"
+    },
+    {
+      "id": "calendario-mar",
+      "size": [
+        512,
+        268
+      ],
+      "sourceSha256": "098ecd25e97a504bfc0e84c5aa2b00ef68af322f53eba80fd8511a335a5cbdcd"
+    },
+    {
+      "id": "infectado-golpe",
+      "size": [
+        512,
+        286
+      ],
+      "sourceSha256": "fc291123d0847d8532aeab65bea537fb18c76794178d11263e4834a6d93d48fe"
+    },
+    {
+      "id": "infectado-impacto",
+      "size": [
+        263,
+        365
+      ],
+      "sourceSha256": "59070537a7e7539b218cd0e75bb5483a329512b8d68f929307aad03128619228"
+    },
+    {
+      "id": "infectado-preparo",
+      "size": [
+        296,
+        378
+      ],
+      "sourceSha256": "c182b384f139619461b3b8879cd71571ad880b72ea18030637674d0c31abdbaa"
+    },
+    {
+      "id": "medidor-pressao",
+      "size": [
+        359,
+        512
+      ],
+      "sourceSha256": "71664a931950bd644b25c7967447ee2698843361ac548e788d35924645429bb1"
+    },
+    {
+      "id": "osciloscopio-parede",
+      "size": [
+        507,
+        512
+      ],
+      "sourceSha256": "5ebfc8df2cf0d7c574c8b6a5de5bd18c5e1b402706e043a76cb1256465fb3023"
+    },
+    {
+      "id": "rastro-molhado",
+      "size": [
+        512,
+        242
+      ],
+      "sourceSha256": "163eb69aae3de8f9b3deafc46ff7beb05fe15ae4b2ed9ff824157fd4a8196303"
+    },
+    {
+      "id": "ventilador-parede",
+      "size": [
+        511,
+        512
+      ],
+      "sourceSha256": "9790f917fa5e2388a71c548fbd509f2863d5503f89c205966bef629278263346"
+    }
+  ]
+}

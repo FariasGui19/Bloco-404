@@ -8,7 +8,7 @@ else {
   const page=await browser.newPage({viewport:{width:1280,height:800}}),errors=[];
   page.on('pageerror',e=>errors.push(e.message));page.on('response',r=>{if(r.status()>=400&&!r.url().endsWith('/favicon.ico'))errors.push(r.status()+' '+r.url());});
   // Observe actual WebAudio destinations without changing their processing.
-  await page.addInitScript(()=>{window.batchDraws=new Set();window.batch3Draws=new Set();window.batch4Draws=new Set();const draw=CanvasRenderingContext2D.prototype.drawImage;CanvasRenderingContext2D.prototype.drawImage=function(img,...a){if(img instanceof HTMLImageElement&&img.src.includes('/docas-interiores-lote2/'))window.batchDraws.add(img.src.split('/').pop());if(img instanceof HTMLImageElement&&img.src.includes('/docas-interiores-lote3/'))window.batch3Draws.add(img.src.split('/').pop());if(img instanceof HTMLImageElement&&img.src.includes('/docas-interiores-lote4/'))window.batch4Draws.add(img.src.split('/').pop());return draw.call(this,img,...a);};const Native=window.AudioContext;if(!Native)return;window.audioContexts=[];window.AudioContext=class extends Native{constructor(...a){super(...a);window.audioContexts.push(this);}};});
+  await page.addInitScript(()=>{window.batchDraws=new Set();window.batch3Draws=new Set();window.batch4Draws=new Set();window.batch5Draws=new Set();const draw=CanvasRenderingContext2D.prototype.drawImage;CanvasRenderingContext2D.prototype.drawImage=function(img,...a){if(img instanceof HTMLImageElement&&img.src.includes('/docas-interiores-lote2/'))window.batchDraws.add(img.src.split('/').pop());if(img instanceof HTMLImageElement&&img.src.includes('/docas-interiores-lote3/'))window.batch3Draws.add(img.src.split('/').pop());if(img instanceof HTMLImageElement&&img.src.includes('/docas-interiores-lote4/'))window.batch4Draws.add(img.src.split('/').pop());if(img instanceof HTMLImageElement&&img.src.includes('/docas-interiores-lote5/'))window.batch5Draws.add(img.src.split('/').pop());return draw.call(this,img,...a);};const Native=window.AudioContext;if(!Native)return;window.audioContexts=[];window.AudioContext=class extends Native{constructor(...a){super(...a);window.audioContexts.push(this);}};});
   const origin=process.env.PREVIEW_ORIGIN??'http://127.0.0.1:8000';await page.goto(origin+'/index.html');await page.waitForFunction(()=>typeof window.__morfador==='function',null,{timeout:120000});
   assert.equal(await page.evaluate(()=>window.audioContexts.length),0,'no autoplay');
   await page.evaluate(async()=>{const {createNewSave}=await import('/js/game/save.js');const s=createNewSave(1,'QA interiores');s.world={lastMapId:'mare_cromatica_docas',lastSpawnId:'inicio'};s.progress.archetype='mare_astral';s.progress.onboardingCompleted=true;s.progress.flags={docas_neblina_alcancada:true,docas_sinal_interceptado:true};s.progress.mareCromatica={versaoCronometro:1,iniciada:false,restante:600};localStorage.setItem('BLOCO404_SAVE_SLOT_1',JSON.stringify(s));});
@@ -36,7 +36,7 @@ else {
   mkdirSync('qa',{recursive:true});
   for(const [door,name] of [['docas_cabana_esq','cabana_oeste'],['docas_cabana_dir','cabana_leste'],['docas_galpao','galpao']]){
    await walkTo(door);await page.waitForTimeout(750);await page.keyboard.press('e');await page.waitForFunction(name=>import('/js/game/state.js').then(({state})=>state.world.currentMapId==='mare_cromatica_'+name&&!state.world.isLoading),name);
-   await page.waitForFunction(()=>!document.getElementById('mapTransitionOverlay')?.classList.contains('active'));await page.waitForTimeout(650);await page.screenshot({path:'qa/docas-interior-lote4-'+name+'.png'});
+   await page.waitForFunction(()=>!document.getElementById('mapTransitionOverlay')?.classList.contains('active'));await page.waitForTimeout(650);await page.screenshot({path:'qa/docas-interior-lote5-'+name+'.png'});
    const report=await page.evaluate(async()=>{const {state}=await import('/js/game/state.js'),{getSprite}=await import('/js/engine/sprites.js');return {props:state.objects.filter(o=>o.docasProp).length,hero:state.objects.filter(o=>o.docasHero&&getSprite(o.docasAsset)).length,painted:state.objects.filter(o=>o.docasAsset&&getSprite(o.docasAsset)).length,exit:state.portals[0].id,inventory:JSON.stringify(state.progress.inventory),health:state.player.health,energy:state.player.energy};});
    assert(report.props>=5);assert.equal(report.hero,1);assert.equal(report.painted,name==='cabana_oeste'?7:name==='cabana_leste'?6:5);assert.equal(report.inventory,baseline.inventory);assert.equal(report.health,baseline.health);assert.equal(report.energy,baseline.energy);
    await walkTo(report.exit);await page.waitForTimeout(750);await page.keyboard.press('e');await page.waitForFunction(()=>import('/js/game/state.js').then(({state})=>state.world.currentMapId==='mare_cromatica_docas'&&!state.world.isLoading));await page.waitForTimeout(650);
@@ -53,6 +53,12 @@ else {
    });
   });
   for(const fx of effects){assert.equal(fx.moves,fx.lit,fx.name+' only powered equipment animates');assert(fx.still,fx.name+' reduced mode stable');}
+  const combatPaint=await page.evaluate(async()=>{
+   const {desenharInfectadoDocas}=await import('/js/engine/docas-infectados.js');
+   const c=document.createElement('canvas');c.width=600;c.height=200;const ctx=c.getContext('2d');
+   return [{windup:.4},{attackVisual:.15},{hitTimer:.1}].map((fields,i)=>{ctx.clearRect(0,0,600,200);desenharInfectadoDocas(ctx,{health:50,...fields},120,150,false,114);return ctx.getImageData(0,0,600,200).data.some(v=>v>0);});
+  });
+  assert(combatPaint.every(Boolean));assert.equal(await page.evaluate(()=>window.batch5Draws.size),10,'seven details drawn in live rooms plus all three actual combat-pose render paths');
   const surfaceFx=await page.evaluate(async()=>{
    const {desenharSuperficiesDocas}=await import('/js/engine/docas-superficies-interiores.js'),{definirMovimentoDocas}=await import('/js/engine/docas-animation.js');
    const c=document.createElement('canvas');c.width=1100;c.height=700;const ctx=c.getContext('2d');

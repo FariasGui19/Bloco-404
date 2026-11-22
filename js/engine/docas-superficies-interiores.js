@@ -1,3 +1,4 @@
+import {SUPERFICIES_INTERIORES_LOTE5} from '../data/worlds/arquipelago-rotas-perdidas/docas-interiores-lote5.js';
 import {SUPERFICIES_INTERIORES_LOTE4} from '../data/worlds/arquipelago-rotas-perdidas/docas-interiores-lote4.js';
 import {SUPERFICIES_INTERIORES_LOTE3} from '../data/worlds/arquipelago-rotas-perdidas/docas-interiores-lote3.js';
 import {CONFIG} from '../config.js';
@@ -15,7 +16,7 @@ export function planoDetalheDocas(s){
 export function uvPlanoDocas(q,u,v){return [q[0][0]+(q[1][0]-q[0][0])*u+(q[3][0]-q[0][0])*v,q[0][1]+(q[1][1]-q[0][1])*u+(q[3][1]-q[0][1])*v];}
 export function desenharSuperficiesDocas(ctx,map,state,plane){
  const {t,reduced}=tempoVisualDocas(state);
- for(const s of [...SUPERFICIES_INTERIORES_LOTE3,...SUPERFICIES_INTERIORES_LOTE4]){
+ for(const s of [...SUPERFICIES_INTERIORES_LOTE3,...SUPERFICIES_INTERIORES_LOTE4,...SUPERFICIES_INTERIORES_LOTE5]){
   if(s.room!==map.meta?.docasTema||(s.plane==='floor')!==(plane==='floor'))continue;
   const img=getSprite(s.sprite);if(!img)continue;
   const q=planoDetalheDocas(s),[a,b,,d]=q;
@@ -28,6 +29,16 @@ export function desenharSuperficiesDocas(ctx,map,state,plane){
    for(let i=0;i<bands;i++){const f=i/bands,sh=img.height/bands,weight=Math.max(0,(f-.35)/.65)**2,dx=rajadaDocas(t,1.2)*img.width*.018*weight;
     ctx.drawImage(img,0,i*sh,img.width,sh,dx,i*sh,img.width,sh+.05);}
   }else ctx.drawImage(img,0,0);
+  if(s.scope){
+   // Scan is restricted to the phosphor face, never the cabinet/wall.
+   ctx.save();ctx.beginPath();ctx.ellipse(img.width*.51,img.height*.5,img.width*.31,img.height*.3,0,0,Math.PI*2);ctx.clip();
+   const scan=reduced?.5:(t*.19)%1;ctx.fillStyle='rgba(145,235,159,.16)';ctx.fillRect(img.width*.18,img.height*(.2+scan*.6),img.width*.66,Math.max(1,img.height*.008));ctx.restore();
+  }
+  if(s.fan){
+   // Subtle blade occlusion inside the rigid cage; mounts never rotate.
+   ctx.save();ctx.translate(img.width*.5,img.height*.5);ctx.rotate(reduced?0:t*.7);ctx.strokeStyle='rgba(5,12,13,.14)';ctx.lineWidth=img.width*.04;
+   for(let i=0;i<4;i++){ctx.rotate(Math.PI/2);ctx.beginPath();ctx.arc(0,0,img.width*.21,0,.55);ctx.stroke();}ctx.restore();
+  }
   ctx.restore();
   if(s.drip){
    const [x,y]=uvPlanoDocas(q,.55,.45),f=reduced?.4:(t*.27)%1;

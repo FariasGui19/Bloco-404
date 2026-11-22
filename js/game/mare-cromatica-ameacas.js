@@ -23,26 +23,35 @@ export function atualizarAmeacasCromaticas(map, runtime, targets, player, progre
     for(let i=1;i<steps;i++) if(!stand(map,e.x+dx*i/steps,e.y+dy*i/steps,.08,e))return false;
     return true;
   };
+  const freeStep=(e,x,y)=>stand(map,x,y,.22,e)&&(targets??[]).every(other=>other===e||!other.cromaticaEnemy||other.health<=0||Math.hypot(x-other.x,y-other.y)>=.44);
   for(const e of targets ?? []) {
     if(!e.cromaticaEnemy || e.health<=0) continue;
     if(progress?.mareCromatica?.desfecho==='total') {e.health=0;continue;}
     e.cromaticaMovendo=false;
+    e.attackVisual=Math.max(0,(e.attackVisual??0)-dt);
     e.clock=(e.clock??0)+dt;e.cooldown=Math.max(0,(e.cooldown??0)-dt);
     const dx=player.x-e.x,dy=player.y-e.y,dist=Math.hypot(dx,dy);
-    if(dist<6) {perto=true;if(Math.abs(dx)>.05)e.cromaticaFaceDireita=dx>0;}
+    if(dist<6) {perto=true;if(Math.abs(dx)>.05)e.cromaticaFaceDireita=map.meta.sideView?dx>0:dx-dy>0;}
     // A entrada da contenção é um respiro seguro e evita dano durante a transição.
     if(map.id==='mare_cromatica_contencao' && player.x<3.4) {e.windup=0;continue;}
     if(e.windup>0) {
       e.windup=Math.max(0,e.windup-dt);
-      if(!e.windup) {if(dist<1.3 && lineClear(e)) hit(player,progress,8,'infectado_cromatico');e.cooldown=2.3;}
+      if(!e.windup) {if(dist<1.3 && lineClear(e)) hit(player,progress,8,'infectado_cromatico');e.cooldown=2.3;e.attackVisual=.25;}
       continue;
     }
     if(dist<1.1 && e.cooldown<=0 && lineClear(e)) {e.windup=.65;continue;}
     if(dist>6 || dist<.95 || dist<.001) continue;
     const speed=.78, vx=dx/dist*speed*dt,vy=dy/dist*speed*dt;
     const xAnterior=e.x,yAnterior=e.y;
-    if(stand(map,e.x+vx,e.y,.22,e)) e.x+=vx;
-    if(stand(map,e.x,e.y+vy,.22,e)) e.y+=vy;
+    if(freeStep(e,e.x+vx,e.y)) e.x+=vx;
+    if(freeStep(e,e.x,e.y+vy)) e.y+=vy;
+    if(Math.hypot(e.x-xAnterior,e.y-yAnterior)<.00001){
+      for(const angle of [Math.PI/4,-Math.PI/4,Math.PI/2,-Math.PI/2]){
+        const sx=vx*Math.cos(angle)-vy*Math.sin(angle),sy=vx*Math.sin(angle)+vy*Math.cos(angle);
+        let clear=true;for(let k=1;k<=3;k++)if(!freeStep(e,e.x+sx*k/3,e.y+sy*k/3)){clear=false;break;}
+        if(clear){e.x+=sx;e.y+=sy;break;}
+      }
+    }
     e.cromaticaMovendo=Math.hypot(e.x-xAnterior,e.y-yAnterior)>.00001;
     e.flip=dx-dy>0;
   }

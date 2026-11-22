@@ -12,7 +12,7 @@ SURFACES={'esteira-sisal','carta-parede','grelha-piso','capa-parede','lanterna-p
 records={}
 main=(ROOT/'js/main.js').read_text()
 for id,file in re.findall(r"\{ id: '(docas_interior_[^']+)', src: '([^']+)' \}",main):
-    if Path(file).stem in SURFACES or '/docas-interiores-lote4/' in file:continue
+    if Path(file).stem in SURFACES or any('/docas-interiores-lote'+str(n)+'/' in file for n in [4,5]):continue
     im=Image.open(ROOT/file).convert('RGBA');a=np.array(im)[:,:,3];mask=a>128
     ys,xs=np.nonzero(mask);bottom=int(ys.max());row=xs[ys==bottom];x=int(row[np.argmin(abs(row-np.median(row)))])
     front=[round(x/im.width,5),round(bottom/im.height,5)]

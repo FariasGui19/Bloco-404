@@ -1,0 +1,12 @@
+<!doctype html><html lang="pt-BR"><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>Docas — lote 5</title>
+<style>body{background:#10141d;color:#d2dcda;font:16px system-ui;max-width:1100px;margin:30px auto;padding:16px}h1{color:#a4d7d0}section{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:16px}figure{margin:0;background:#1d2530;padding:12px;border:1px solid #35444a}img{display:block;width:100%;height:180px;object-fit:contain;image-rendering:pixelated}figcaption{padding-top:10px}a{color:#99d9d3}canvas{width:100%;background:#161d29}</style>
+<h1>Docas — sinais de vida e combate</h1><p>Sete detalhes de ambiente e três poses de combate. Prévia isolada: não lê nem grava saves.</p>
+<p><a href="../index.html">Abrir jogo</a> · <a href="previa-docas-navegacao.html">Conferir caminhos e colisões</a></p>
+<h2>Preparação · golpe · impacto</h2><canvas width="1000" height="220"></canvas><h2>Dez folhas originais</h2><section></section>
+<script type="module">
+import {loadSprites} from '../js/engine/sprites.js';import {desenharInfectadoDocas} from '../js/engine/docas-infectados.js';
+const names=['infectado-preparo','infectado-golpe','infectado-impacto','boias-antigas','calendario-mar','osciloscopio-parede','anotacoes-sinal','ventilador-parede','medidor-pressao','rastro-molhado'];
+await loadSprites(names.map(n=>({id:'docas_interior_lote5_'+n.replaceAll('-','_'),src:'../assets/sprites/docas-interiores-lote5/'+n+'.png'})));
+const section=document.querySelector('section');for(const n of names){const f=document.createElement('figure'),img=new Image(),caption=document.createElement('figcaption');img.src='../assets/sprites/docas-interiores-lote5/'+n+'.png';img.alt=n;caption.textContent=n.replaceAll('-',' ');f.append(img,caption);section.append(f);}
+const ctx=document.querySelector('canvas').getContext('2d');[{windup:.4},{attackVisual:.2},{hitTimer:.1}].forEach((s,i)=>desenharInfectadoDocas(ctx,{health:50,...s},180+i*320,190,false,160));window.ready=true;
+</script></html>

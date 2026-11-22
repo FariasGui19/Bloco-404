@@ -1,3 +1,4 @@
+import {desenharInfectadoDocas} from './docas-infectados.js';
 import {desenharDegrausFarol} from './docas-escadaria.js';
 import { DECOR_OESTE_REMOVIDO, oestePontualPronto, limparSoloOeste, preservarForaOeste, itensOestePontual, desenharOestePontual, desenharAtmosferaOestePontual } from './docas-oeste-pontual.js';
 import { desenharAcessoFiel, itensMargemFechamento, desenharDetalheMargem, fechamentoPronto, desenharPecaFechamento, desenharMargensFechamento, desenharVidaEncosta, desenharBoiasFechamento } from './docas-fechamento.js';
@@ -261,13 +262,7 @@ export function renderDocas(ctx,map,state,camX,camY,w,h,zoom,dpr,now,drawPlayer)
     const e=item.entidade,x=e.x*CONFIG.TILE_W,y=e.y*SIDE_DEPTH_STEP;
     if(e===state.player){drawPlayer(e,x,y);continue;}
     if(e.renderType==='cromaticaVisao'){const img=getSprite('cromatica_nulo');if(img){ctx.save();ctx.globalAlpha=Math.min(.75,e.tempo/1.2);ctx.drawImage(img,x-18,y-65,36,65);ctx.restore();}continue;}
-    const img=getSprite('cromatica_infectado');ctx.save();ctx.fillStyle='rgba(8,8,18,.6)';ctx.beginPath();ctx.ellipse(x,y,14,5,0,0,Math.PI*2);ctx.fill();
-    if(e.windup>0){const phase=reduced?.5:Math.max(0,Math.min(1,1-e.windup/.65));ctx.fillStyle='rgba(240,120,168,.12)';ctx.strokeStyle='#ffc4e2';ctx.lineWidth=2;ctx.beginPath();ctx.ellipse(x,y,20+phase*4,9+phase*2,0,0,Math.PI*2);ctx.fill();ctx.stroke();}
-    if(img){const fw=img.width/8,clock=e.clock??0,fr=reduced?0:Math.floor(clock*(e.cromaticaMovendo?6:2))%8;
-      const bob=reduced?0:e.cromaticaMovendo?Math.sin(clock*8)*2:Math.sin(clock*1.8)*.8;
-      const lean=reduced?0:e.windup>0?-.035*Math.sin((1-e.windup/.65)*Math.PI):e.cromaticaMovendo?.018*Math.sin(clock*6):0;
-      ctx.translate(x,y);if(e.cromaticaFaceDireita)ctx.scale(-1,1);ctx.rotate(lean);ctx.globalAlpha=e.hitTimer>0?.68:1;ctx.imageSmoothingEnabled=false;ctx.drawImage(img,fr*fw,0,fw,img.height,-36,-96-bob,72,96);
-    }ctx.restore();
+    desenharInfectadoDocas(ctx,e,x,y,reduced,96);
   }
   if(oestePontualPronto(map))desenharAtmosferaOestePontual(ctx,sCais,t,reduced);
   if(fechamentoPronto(map))desenharVidaEncosta(ctx,sCais,t,reduced);

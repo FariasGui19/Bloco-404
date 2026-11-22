@@ -3,7 +3,7 @@ import {CAIS_SUL,plantaCais} from './cais-sul.js';
 // The historical render polygons/layout are deliberately not repainted.
 const area=(id,poly)=>Object.freeze({id,poly:Object.freeze(poly.map(Object.freeze))});
 export const NAVEGACAO_DOCAS=Object.freeze({
- version:2,escala:2.5,
+ version:3,escala:2.5,
  pisos:Object.freeze([
   area('pier',CAIS_SUL.deck.map(plantaCais)),
   area('soleira-oeste',[[564,490],[643,510],[654,543],[607,546],[565,527]]),
@@ -20,15 +20,15 @@ export const NAVEGACAO_DOCAS=Object.freeze({
  obstaculos:Object.freeze([
   area('rochas-praia',[[111,411],[141,396],[174,415],[172,447],[144,461],[115,443]]),
   area('banco-costeiro',[[143,358],[197,336],[220,350],[207,364],[164,385],[143,389]]),
-  area('abrigo-oeste',[[346,428],[401,412],[457,434],[455,460],[403,473],[349,450]]),
+  area('abrigo-oeste',[[346,428],[401,407],[465,431],[465,465],[403,481],[349,450]]),
   area('cristais-oeste',[[265,433],[306,416],[342,438],[339,462],[295,471],[267,457]]),
   area('palmeira-oeste-1',[[238,423],[246,421],[252,431],[244,436],[237,431]]),
   area('palmeira-oeste-2',[[279,400],[289,398],[294,407],[286,413],[279,409]]),
   area('cerca-oeste',[[410,463],[463,478],[466,486],[411,473]]),
-  area('cabana-oeste',[[489,427],[557,406],[670,443],[674,486],[637,508],[537,480],[490,456]]),
+  area('cabana-oeste',[[480,427],[557,401],[680,441],[683,493],[637,517],[531,488],[480,461]]),
   area('cabana-fundos',[[571,313],[650,294],[733,319],[730,354],[673,379],[578,348]]),
   area('console-central',[[810,411],[855,393],[945,423],[947,455],[924,471],[837,449],[810,435]]),
-  area('cabana-leste',[[1118,446],[1198,423],[1281,458],[1281,493],[1218,526],[1134,503]]),
+  area('cabana-leste',[[1110,446],[1198,419],[1290,456],[1290,502],[1218,535],[1126,511]]),
   area('anexo-pier',[[1022,564],[1075,549],[1123,570],[1123,600],[1098,616],[1024,597]]),
   area('vigia',[[1336,453],[1356,447],[1374,457],[1370,467],[1346,469],[1333,462]]),
   area('farol',[[878,175],[911,163],[935,179],[925,195],[889,196]]),

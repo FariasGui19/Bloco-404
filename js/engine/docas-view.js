@@ -1,3 +1,4 @@
+import {desenharDegrausFarol} from './docas-escadaria.js';
 import { DECOR_OESTE_REMOVIDO, oestePontualPronto, limparSoloOeste, preservarForaOeste, itensOestePontual, desenharOestePontual, desenharAtmosferaOestePontual } from './docas-oeste-pontual.js';
 import { desenharAcessoFiel, itensMargemFechamento, desenharDetalheMargem, fechamentoPronto, desenharPecaFechamento, desenharMargensFechamento, desenharVidaEncosta, desenharBoiasFechamento } from './docas-fechamento.js';
 import { desenharMarPerimetral, desenharBrumaCosteira } from './docas-mar-perimetral.js';
@@ -185,6 +186,7 @@ export function renderDocas(ctx,map,state,camX,camY,w,h,zoom,dpr,now,drawPlayer)
     const x1=Math.min(terreno.width,Math.ceil(camX+w/(2*zoom)+4)),y1=Math.min(terreno.height,Math.ceil(camY+(h/2-115)/zoom+4));
     if(x1>x && y1>y)ctx.drawImage(terreno,x,y,x1-x,y1-y,x,y,x1-x,y1-y);
   }
+  desenharDegrausFarol(ctx,map);
   if(oestePontualPronto(map))desenharOestePontual(ctx,'solo',sCais);
   if(fechamentoPronto(map)&&!getSprite('docas_fiel_fundos'))desenharPecaFechamento(ctx,'encosta',sCais,t,reduced);
   // Sulcos de água e espuma deslocam-se pelo mar sem efeito estroboscópico.

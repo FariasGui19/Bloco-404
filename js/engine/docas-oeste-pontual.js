@@ -26,10 +26,15 @@ export function limparSoloOeste(ctx,s){
  const fade=ctx.createLinearGradient(0,380*s,0,438*s);fade.addColorStop(0,'rgba(0,0,0,1)');fade.addColorStop(1,'rgba(0,0,0,0)');ctx.fillStyle=fade;ctx.fillRect(70*s,190*s,470*s,260*s);ctx.restore();
 }
 export function itensOestePontual(s){return Object.entries(PES_OESTE).map(([id,foot])=>({oestePontual:id,y:foot*s}));}
-export function desenharOestePontual(ctx,id,s){
+export function desenharOestePontual(ctx,id,s,t=0,reduced=false){
  const frame=OESTE_PONTUAL_FRAMES[id],img=getSprite('docas_oeste_pontual');if(!frame||!img)return;
  const [x,y,right,bottom]=frame.sourceBox,[px,py,pw,ph]=PLANTA_OESTE,w=right-x,h=bottom-y;
  ctx.save();recortarOeste(ctx,s);ctx.imageSmoothingEnabled=true;ctx.imageSmoothingQuality='high';
+ // Pivot at the registered roots: depth/feet and clipping stay unchanged.
+ if(!reduced&&(id==='palmeiras'||id==='arvore')){
+  const root=PES_OESTE[id]*s,pivot=(id==='palmeiras'?274:412)*s;
+  ctx.translate(pivot,root);ctx.transform(1,0,Math.sin(t*.65+(id==='arvore'?1.7:0))*(id==='palmeiras'?.005:.0018),1,0,0);ctx.translate(-pivot,-root);
+ }
  ctx.drawImage(img,...frame.rect,(px+x*pw/1216)*s,(py+y*ph/864)*s,w*pw/1216*s,h*ph/864*s);ctx.restore();
 }
 export function desenharAtmosferaOestePontual(ctx,s,t,reduced){

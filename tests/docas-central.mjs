@@ -2,14 +2,16 @@ import assert from 'node:assert/strict';
 import {createHash} from 'node:crypto';
 import {docas} from '../js/data/worlds/arquipelago-rotas-perdidas/docas-neblina.js';
 import {poseCentral,JANELAS_CENTRAIS,desenharAcessosCentrais,desenharLuzesCentrais,desenharPatioCentral} from '../js/engine/docas-central.js';
-// Snapshots of protected data from 68ba219. Only presentation may change here.
+// Protected visual/gameplay contracts. Navigation pass intentionally relocates
+// ONLY the three nucleus panel markers onto the current upper platform; their
+// ids, labels, interaction rules and mission effects remain unchanged.
 const protectedData={
  layout:'af4b1cc32691fd0d282bb022505fd95f3b04d265727a1a0233bf4a294e3d44d6',
  geometriaDocas:'05c56bc15dcf165d84819a4237a1843d7e5cf136e13c7c3059a0ba48f092cde7',
  caisSul:'f7945bcf7d8dbad288ca9fe7d12a87f5d0567c72eb977c7ba48bdc2571887ac8',
  costaOeste:'c0c4cefefc4565a7c3ea13ed05a34dc049caae126c82a8221b5d3867a0ca9e83',
  spawnPoints:'016836a1b8becc01a57d3e77c00bd46e5dfab6ec44a4217e8caf8e1c04ead752',
- objects:'c71645905a1ddbe63e04eca66b2225a4806d65dd04f552e4b4167e274a03fe70',
+ objects:'666790e7785aa8d8ea7f30faf44465c401f9d348a46324df20463cc1508906a4',
  portals:'9021533aefca7ecc0a6be8e386bcb6c46e7c405bfbd74b9fc6bbef0e0f441844',
  marDocas:'6bb97ffa85908e9da28a9cf6347a7e1e4e58a99cfd202690392df2ffee4a0ee6',
 };

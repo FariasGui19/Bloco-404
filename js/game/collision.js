@@ -1,3 +1,4 @@
+import { podePisarDocas } from './docas-navigation.js';
 // js/game/collision.js
 // =====================================================================
 //  COLISÃO
@@ -57,6 +58,7 @@ export function isWalkMaskTileWalkable(map, tileX, tileY) {
 
 export function tileAt(map, x, y) {
   if (!map) return TILE.WALL;
+  if (map.navegacaoDocas) return podePisarDocas(map.navegacaoDocas,x,y) ? TILE.FLOOR : TILE.WALL;
 
   const tileX = Math.floor(x);
   const tileY = Math.floor(y);
@@ -124,6 +126,7 @@ export function circleHitsPolygon(x, y, radius, object, polygon) {
 // =====================================================================
 
 export function hitsWall(map, x, y, radius) {
+  if (map?.navegacaoDocas) return !podePisarDocas(map.navegacaoDocas,x,y,radius);
   const minX = Math.floor(x - radius);
   const maxX = Math.floor(x + radius);
   const minY = Math.floor(y - radius);

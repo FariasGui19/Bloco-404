@@ -250,7 +250,7 @@ export function renderDocas(ctx,map,state,camX,camY,w,h,zoom,dpr,now,drawPlayer)
   const pecasOeste=costaVisivel?(encaixeAtivo(map)?pecasCostaAjustadas(oeste):[...oeste.rochas,...oeste.vegetacao]).map(peca=>({pecaOeste:peca,y:(oeste.y+peca.pe*oeste.escala)*sCais})):[];
   const objs=ordenarProfundidadeDocas([...pecasCais,...pecasOeste,...(oestePontualPronto(map)?itensOestePontual(sCais):[]),...(fechamentoPronto(map)?itensMargemFechamento(sCais):[]),...(encaixeAtivo(map)?itensEncaixe(sCais):[]),...map.estruturasDocas.filter(st=>st.camada!=='chao'&&!(encaixeAtivo(map)&&substituidaPeloEncaixe(st))).map(st=>({estrutura:st,y:st.y})),...(state.trainingTargets??[]).filter(e=>e.health>0).map(e=>({entidade:e,y:e.y*SIDE_DEPTH_STEP})),...(state.cromaticaRuntime?.visao?[{entidade:state.cromaticaRuntime.visao,y:state.cromaticaRuntime.visao.y*SIDE_DEPTH_STEP}]:[]),{entidade:state.player,y:state.player.y*SIDE_DEPTH_STEP}]);
   for(const item of objs){
-    if(item.oestePontual){desenharOestePontual(ctx,item.oestePontual,sCais);continue;}
+    if(item.oestePontual){desenharOestePontual(ctx,item.oestePontual,sCais,t,reduced);continue;}
     if(item.fechamentoProp){desenharDetalheMargem(ctx,item.fechamentoProp,sCais,t,reduced);continue;}
     if(item.encaixe){ctx.save();if(oestePontualPronto(map)&&['anexo-oeste','cabana-oeste','arvore-seca','palmeira-a','palmeira-b','palmeira-d','palmeira-e'].includes(item.encaixe))preservarForaOeste(ctx,sCais);desenharEncaixe(ctx,item.encaixe,sCais,t,reduced);ctx.restore();continue;}
     if(item.pecaOeste){ctx.save();if(oestePontualPronto(map)&&(oeste.x+item.pecaOeste.x*oeste.escala)<530)preservarForaOeste(ctx,sCais);desenharPecaCosta(ctx,oeste,item.pecaOeste,sCais,clock);ctx.restore();continue;}

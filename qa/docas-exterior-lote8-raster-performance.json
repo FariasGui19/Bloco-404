@@ -1,0 +1,14 @@
+{
+  "original": {
+    "medianMs": 2,
+    "p95Ms": 2.2000000000116415,
+    "samples": 50,
+    "spritesPerSample": 64
+  },
+  "cache": {
+    "medianMs": 2,
+    "p95Ms": 2.7999999999883585,
+    "samples": 50,
+    "spritesPerSample": 64
+  }
+}

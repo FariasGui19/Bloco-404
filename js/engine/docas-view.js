@@ -1,3 +1,4 @@
+import {itensInterativosExterior,desenharInterativoExterior} from './docas-exterior-interativos.js';
 import {desenharTerrenoDocas} from './docas-terreno-cache.js';
 import {desenharAmbienteLote6} from './docas-ambiente-lote6.js';
 import {desenharMarPerimetralCache} from './docas-mar-cache.js';
@@ -7,7 +8,7 @@ import { DECOR_OESTE_REMOVIDO, oestePontualPronto, limparSoloOeste, preservarFor
 import { desenharAcessoFiel, itensMargemFechamento, desenharDetalheMargem, fechamentoPronto, desenharPecaFechamento, desenharMargensFechamento, desenharVidaEncosta, desenharBoiasFechamento } from './docas-fechamento.js';
 import { desenharMarPerimetral, desenharBrumaCosteira } from './docas-mar-perimetral.js';
 import { desenharMarSuperior } from './docas-mar-superior.js';
-import { repararSoloDireito, repararFacesDireitas, pecasCostaAjustadas, encaixeAtivo, substituidaPeloEncaixe, itensEncaixe, desenharEncaixe, desenharRelevoEncaixe, desenharContatosEncaixe, desenharNevoaEncaixe, desenharBrumaFundoEncaixe } from './docas-encaixe.js';
+import { caixaEncaixe, repararSoloDireito, repararFacesDireitas, pecasCostaAjustadas, encaixeAtivo, substituidaPeloEncaixe, itensEncaixe, desenharEncaixe, desenharRelevoEncaixe, desenharContatosEncaixe, desenharNevoaEncaixe, desenharBrumaFundoEncaixe } from './docas-encaixe.js';
 import { desenharPatioCentral, desenharLuzesCentrais, desenharAcessosCentrais, poseCentral } from './docas-central.js';
 import { tempoVisualDocas } from './docas-animation.js';
 import { desenharTentaculoRessaca, volta } from './docas-ressaca.js';
@@ -196,7 +197,7 @@ export function renderDocas(ctx,map,state,camX,camY,w,h,zoom,dpr,now,drawPlayer)
   if(fechamentoPronto(map)&&!getSprite('docas_fiel_fundos'))desenharPecaFechamento(ctx,'encosta',sCais,t,reduced);
   // Sulcos de água e espuma deslocam-se pelo mar sem efeito estroboscópico.
   ctx.strokeStyle='rgba(87,183,192,.16)';ctx.lineWidth=2;
-  for(let i=0;i<90;i++){const x=(i*137+t*(3+i%3))%(terreno.width+100),y=(i*191)%terreno.height;ctx.beginPath();ctx.arc(x,y,7+i%10,.15,2.5);ctx.stroke();}
+  for(let i=0;i<90;i++){const x=(i*137+t*(3+i%3))%(terreno.width+100),y=(i*191)%terreno.height;if(x+18<esquerda||x-18>direita||y+18<topo||y-18>base)continue;ctx.beginPath();ctx.arc(x,y,7+i%10,.15,2.5);ctx.stroke();}
   // Ondulações quebradas no mar do cais, com geometria e quantidade fixas.
   for(const wave of ondasCais){
     const x=wave.x*sCais,y=wave.y*sCais;if(Math.abs(x-camX)>w/(2*zoom)+100||Math.abs(y-camY)>h/zoom+100)continue;
@@ -255,11 +256,12 @@ export function renderDocas(ctx,map,state,camX,camY,w,h,zoom,dpr,now,drawPlayer)
   if(!encaixeAtivo(map))desenharPatioCentral(ctx,map.geometriaDocas.escala,t,reduced,getSprite('docas_fx_faixas-nevoa'));
   for(const st of map.estruturasDocas)if(st.camada==='chao'&&!(encaixeAtivo(map)&&substituidaPeloEncaixe(st))){if(oestePontualPronto(map)&&st.id===DECOR_OESTE_REMOVIDO.id)continue;ctx.save();if(oestePontualPronto(map)&&st.x/sCais<550)preservarForaOeste(ctx,sCais);desenharEstrutura(ctx,st,t,reduced,state);ctx.restore();}
   const pecasOeste=costaVisivel?(encaixeAtivo(map)?pecasCostaAjustadas(oeste):[...oeste.rochas,...oeste.vegetacao]).map(peca=>({pecaOeste:peca,y:(oeste.y+peca.pe*oeste.escala)*sCais})):[];
-  const objs=ordenarProfundidadeDocas([...pecasCais,...pecasOeste,...(oestePontualPronto(map)?itensOestePontual(sCais):[]),...(fechamentoPronto(map)?itensMargemFechamento(sCais):[]),...(encaixeAtivo(map)?itensEncaixe(sCais):[]),...map.estruturasDocas.filter(st=>st.camada!=='chao'&&!(encaixeAtivo(map)&&substituidaPeloEncaixe(st))).map(st=>({estrutura:st,y:st.y})),...(state.trainingTargets??[]).filter(e=>e.health>0||e.deathVisual>0).map(e=>({entidade:e,y:e.y*SIDE_DEPTH_STEP})),...(state.cromaticaRuntime?.visao?[{entidade:state.cromaticaRuntime.visao,y:state.cromaticaRuntime.visao.y*SIDE_DEPTH_STEP}]:[]),{entidade:state.player,y:state.player.y*SIDE_DEPTH_STEP}]);
+  const objs=ordenarProfundidadeDocas([...itensInterativosExterior(state,{left:esquerda,right:direita,top:topo,bottom:base}),...pecasCais,...pecasOeste,...(oestePontualPronto(map)?itensOestePontual(sCais):[]),...(fechamentoPronto(map)?itensMargemFechamento(sCais):[]),...(encaixeAtivo(map)?itensEncaixe(sCais):[]),...map.estruturasDocas.filter(st=>st.camada!=='chao'&&!(encaixeAtivo(map)&&substituidaPeloEncaixe(st))).map(st=>({estrutura:st,y:st.y})),...(state.trainingTargets??[]).filter(e=>e.health>0||e.deathVisual>0).map(e=>({entidade:e,y:e.y*SIDE_DEPTH_STEP})),...(state.cromaticaRuntime?.visao?[{entidade:state.cromaticaRuntime.visao,y:state.cromaticaRuntime.visao.y*SIDE_DEPTH_STEP}]:[]),{entidade:state.player,y:state.player.y*SIDE_DEPTH_STEP}]);
   for(const item of objs){
+    if(item.interativoExterior){desenharInterativoExterior(ctx,item.interativoExterior,state,t,reduced);continue;}
     if(item.oestePontual){desenharOestePontual(ctx,item.oestePontual,sCais,t,reduced);continue;}
     if(item.fechamentoProp){desenharDetalheMargem(ctx,item.fechamentoProp,sCais,t,reduced);continue;}
-    if(item.encaixe){ctx.save();if(oestePontualPronto(map)&&['anexo-oeste','cabana-oeste','arvore-seca','palmeira-a','palmeira-b','palmeira-d','palmeira-e'].includes(item.encaixe))preservarForaOeste(ctx,sCais);desenharEncaixe(ctx,item.encaixe,sCais,t,reduced);ctx.restore();continue;}
+    if(item.encaixe){const box=caixaEncaixe(item.encaixe,sCais);if(box&&(box.x+box.w+120<esquerda||box.x-120>direita||box.y+box.h+120<topo||box.y-120>base))continue;ctx.save();if(oestePontualPronto(map)&&['anexo-oeste','cabana-oeste','arvore-seca','palmeira-a','palmeira-b','palmeira-d','palmeira-e'].includes(item.encaixe))preservarForaOeste(ctx,sCais);desenharEncaixe(ctx,item.encaixe,sCais,t,reduced);ctx.restore();continue;}
     if(item.pecaOeste){ctx.save();if(oestePontualPronto(map)&&(oeste.x+item.pecaOeste.x*oeste.escala)<530)preservarForaOeste(ctx,sCais);desenharPecaCosta(ctx,oeste,item.pecaOeste,sCais,clock);ctx.restore();continue;}
     if(item.peca){drawCais(item.peca);continue;}
     if(item.estrutura){if(oestePontualPronto(map)&&item.estrutura.id===DECOR_OESTE_REMOVIDO.id)continue;ctx.save();if(oestePontualPronto(map)&&item.estrutura.x/sCais<550)preservarForaOeste(ctx,sCais);const st=item.estrutura,margin=st.largura*4;if(Math.abs(st.x-camX)<w/(2*zoom)+margin&&Math.abs(st.y-camY)<h/zoom+margin)desenharEstrutura(ctx,st,t,reduced,state);ctx.restore();continue;}

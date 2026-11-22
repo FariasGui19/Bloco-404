@@ -1,0 +1,86 @@
+{
+  "batch": 8,
+  "count": 10,
+  "assets": [
+    {
+      "id": "amostra-resina",
+      "size": [
+        512,
+        363
+      ],
+      "sourceSha256": "d42cf9d582b292f4d8befc491b87941eb2da1f9626d6256822bb6e973935bc9a"
+    },
+    {
+      "id": "ancora-controle",
+      "size": [
+        474,
+        512
+      ],
+      "sourceSha256": "b4db30ac156dd77741946f89c56042ea430ea1711c58c292a5213640a71afb4b"
+    },
+    {
+      "id": "aviso-vigia",
+      "size": [
+        436,
+        512
+      ],
+      "sourceSha256": "d4e1a283e0a2f7dade2dca63d6ddd2ea7ac00cd0a4d16122ac8c94aca894caee"
+    },
+    {
+      "id": "biomassa",
+      "size": [
+        512,
+        387
+      ],
+      "sourceSha256": "c9c11137ae5345f38c8a99d15045eb574495695156e6a75b003128061bc573b7"
+    },
+    {
+      "id": "caixa-eletrica",
+      "size": [
+        512,
+        396
+      ],
+      "sourceSha256": "cb80c301f99e9a5a686cdcafe2fbef6f50c37a24c2f22222e91ac42b985ecf5b"
+    },
+    {
+      "id": "diario-pier",
+      "size": [
+        512,
+        272
+      ],
+      "sourceSha256": "a188e8a879077cc2cbb0fd8f05341fee57edf2fb8635a1228b18b56e006dcf34"
+    },
+    {
+      "id": "fragmento-trilha",
+      "size": [
+        512,
+        453
+      ],
+      "sourceSha256": "b936ebdc137fcaf09f9053f0dcfbb02f81c3dcfa133e86996ad9b3ac61284405"
+    },
+    {
+      "id": "mural-vigia",
+      "size": [
+        512,
+        512
+      ],
+      "sourceSha256": "f362299af2750e16fa2dab062b12c192a900e4b6f3b1819cbaf637ff07af7d01"
+    },
+    {
+      "id": "painel-sincronia",
+      "size": [
+        340,
+        512
+      ],
+      "sourceSha256": "8e6ba087d990032325b8ecb905bea86ec7ad89b2c89d83be4c32e67f0fffb7f9"
+    },
+    {
+      "id": "selo-nucleo",
+      "size": [
+        512,
+        295
+      ],
+      "sourceSha256": "652f6dba6dd2ba97840769437a8076b5b2f90e6847a03a1d7682e53e107ad781"
+    }
+  ]
+}

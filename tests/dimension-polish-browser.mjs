@@ -35,6 +35,7 @@ await page.screenshot({path:'.qa/polish-hud-recharge.png'});
 for(const id of ['motor_bio_forja','mare_astral','lamina_dominio_anciao']) {
  await page.selectOption('#archetype',id);
  await page.waitForFunction(id=>window.labDimension.runtime.operator.root.userData.identity.archetype===id,id,{timeout:60000});
+ await page.waitForFunction(()=>!document.querySelector('.dimension-nucleo')?.offsetParent,null,{timeout:10000}).catch(()=>{});
  assert.equal(await page.locator('.dimension-nucleo').isVisible(),false);
  assert.equal(await page.evaluate(()=>window.labDimension.runtime.operator.root.userData.identity.clothing),'civilian');
  await page.locator('.dimension-viewport canvas').focus(); await page.keyboard.press('t');

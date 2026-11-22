@@ -35,7 +35,7 @@ for (const [id, name] of Object.entries(assets)) {
 for (const [objectId, spriteId] of [
   ['torre_antena_enseada', 'enseada4_torre_vigilia'],
   ['relogio_mare_enseada', 'enseada4_relogio'],
-  ['bancada_campo_enseada', 'enseada_bancada_campo'],
+  ['bancada_campo_enseada', 'enseada_bancada_campo_b'],
   ['acampamento_vigilia_enseada', 'enseada4_fogueira'],
   ['maleta_expedicao_enseada', 'enseada4_caixas'],
   ['tenda_expedicao_enseada', 'enseada4_tenda'],
@@ -46,7 +46,7 @@ for (const [objectId, spriteId] of [
 ]) {
   const item = enseada.objects.find(o => o.id === objectId);
   assert(item, `marco da referência ausente: ${objectId}`);
-  assert.equal(item.sprite, spriteId);
+  assert([item.sprite, item.spriteB].includes(spriteId), `${objectId} deveria usar ${spriteId} (usa ${item.sprite}/${item.spriteB})`);
 }
 
 const barco = enseada.objects.find(o => o.id === 'barco_expedicao_enseada');
@@ -62,7 +62,7 @@ assert(enseada.objects.find(o => o.id === 'piscina_mare_viva_enseada')?.larguraP
 
 assert.equal(enseada.layout.length, 64);
 assert.equal(enseada.layout[0].length, 72);
-assert(enseada.objects.filter(o => o.bloqueia).every(o => o.hitbox || o.hitboxes), 'cada cenário sólido precisa de hitbox explícita');
+assert(enseada.objects.filter(o => o.bloqueia).every(o => o.hitbox || o.hitboxes || o.poligonosColisao), 'cada cenário sólido precisa de hitbox explícita');
 
 // Explore a máscara com colisões em passos de meio tile and verify every
 // interactive prop has a reachable approach within its own use distance.

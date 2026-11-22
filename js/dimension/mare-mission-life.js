@@ -33,6 +33,7 @@ export function terrain(m){
 }
 // Animation mapping shared by renderer and tests.
 export function enemyArt(e){
+  if(e.guardian) return e.phase==='hurt'||e.phase==='dissolve' ? 'guardiao-dano' : 'guardiao-mare';
   const hit = e.variant==='alto' ? 'infectado-golpe-alto' : 'infectado-golpe-baixo';
   return e.phase==='dissolve'?'infectado-dissolvido'
     :e.phase==='hurt'?'infectado-dano'

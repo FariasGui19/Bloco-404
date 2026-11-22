@@ -11,7 +11,11 @@ const flat = () => .5;
 state.save.loaded = false; state.save.activeSlot = null;
 state.progress = { flags: {}, inventory: [], activeQuest: { id: 'embarque_dimensional', status: 'active' } };
 await loadMap('ilha_enseada_ecos', 'inicio');
-const map = state.world.currentMap, player = state.player, target = state.trainingTargets[0];
+const map = state.world.currentMap, player = state.player;
+// A Enseada não mantém mais um eco de treino no mapa; este teste de combate
+// cria o alvo efêmero que loadMap produziria em uma arena de treino.
+state.trainingTargets = [{ id: 'alvo_teste', x: 20.5, y: 29.5, maxHealth: 60, health: 60, downTimer: 0, hitTimer: 0, renderType: 'trainingTarget' }];
+const target = state.trainingTargets[0];
 Object.assign(player, { x: target.x - 1.5, y: target.y, facing: 'down', ability: {} });
 const aim = { x: target.x, y: target.y };
 const expected = { motor_bio_forja: 9, lamina_dominio_anciao: 13, mare_astral: 10, nucleo_dez_forma: 5 };

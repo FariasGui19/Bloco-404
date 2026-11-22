@@ -148,6 +148,16 @@ function desenharEstrutura(ctx,st,t,reduced,state){
  if(st.id==='lote10_farolete')glow(st.x,y+h*.23,w*.75,'#ffd395',pulso*.35);
  if(st.id==='lote10_coral')glow(st.x,y+h*.48,w*.35,'#e583ff',pulso*.22);
  if(st.id==='lote10_coral'&&!reduced){for(let i=0;i<2;i++){const phase=(t*.12+i*.5+(st.x%11)*.03)%1;ctx.fillStyle=`rgba(219,150,255,${.28*(1-phase)})`;ctx.fillRect(st.x+(i?1:-1)*w*.15,y+h*.45-phase*h*.3,2,2);}}
+ if(['lote8_lampiao','lote11_lanterna-chao','lote10_farolete','lote12_lampiao'].includes(st.id)){
+   const amber=getSprite('docas_fx_brilho-ambar');
+   if(amber){ctx.save();ctx.globalAlpha=reduced?.16:.16+.05*Math.sin(t*1.7+st.x);ctx.drawImage(amber,st.x-w*.28,y+h*.24,w*.56,w*.56);ctx.restore();}
+ }
+ if(st.id==='galpao'){
+   const crt=getSprite('docas_fx_linha-crt');
+   if(crt){ctx.save();ctx.globalAlpha=reduced?.18:.18+.05*Math.sin(t*2.1);
+     for(const u of [.29,.40,.51])ctx.drawImage(crt,x+w*u,y+h*.52,w*.16,h*.018);
+     ctx.drawImage(crt,x+w*.435,y+h*.60,w*.16,h*.018);ctx.restore();}
+ }
  if(st.id==='lote8_lampiao')glow(st.x,y+h*.5,w*.5,'#ffce85',.14);
  if(st.id==='lote8_ampola'||st.id==='lote8_corais')glow(st.x,y+h*.6,w*.3,st.id==='lote8_ampola'?'#79f8ef':'#da7aff',.10);
  if(st.id==='lote6_cristal-violeta'||st.id==='lote6_corais'||st.id==='lote6_runa')glow(st.x,y+h*.6,w*.32,'#ec7cff',poseCentral(t,reduced,st.x*.01).luz*.33);
@@ -220,7 +230,7 @@ export function renderDocas(ctx,map,state,camX,camY,w,h,zoom,dpr,now,drawPlayer)
   const fogCais=getSprite('docas_fx_faixas-nevoa');
   if(fogCais){const s=map.geometriaDocas.escala;ctx.save();ctx.globalAlpha=.12;for(const [x,y,k] of [[175,730,0],[500,780,1],[780,705,2]]){const dx=reduced?0:Math.sin(t*.12+k)*18;ctx.drawImage(fogCais,x*s+dx,y*s,155*s,28*s);}ctx.restore();}
   // Pequenos reflexos afastados da máscara de terra, sem substituir o mar.
-  for(const [id,mx,my,size,phase] of [...(map.costaOeste?[]:[['onda-magenta',205,555,54,1]]),['redemoinho',1400,590,62,2]]){
+  for(const [id,mx,my,size,phase] of [...(map.costaOeste?[]:[['onda-magenta',205,555,54,1]]),['onda-ciano',1150,660,48,3],['redemoinho',1400,590,62,2]]){
     const img=getSprite('docas_fx_'+id),s=map.geometriaDocas.escala;if(!img)continue;
     const px=mx*s,py=my*s,sz=size*s;if(Math.abs(px-camX)>w/(2*zoom)+sz||Math.abs(py-camY)>h/zoom+sz)continue;
     ctx.save();ctx.globalAlpha=reduced?.18:.17+.035*Math.sin(t*.8+phase);ctx.drawImage(img,px-sz/2,py-sz*.20,sz,sz*.40);ctx.restore();

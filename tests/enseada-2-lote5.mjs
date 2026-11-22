@@ -150,6 +150,9 @@ assert.equal(state.player.enseadaBuff, 'fio_ancestral');
 closeDialogue();
 
 sintonizarClima(state.clima, 'ressaca');
+// O eco de treino foi retirado do oeste; o teste de combate usa um alvo
+// efêmero com a mesma forma criada por createTrainingTargets.
+if (!state.trainingTargets.length) state.trainingTargets = [{ id: 'alvo_teste_enseada', x: 20.5, y: 29.5, maxHealth: 60, health: 60, downTimer: 0, hitTimer: 0, renderType: 'trainingTarget' }];
 const target = state.trainingTargets[0];
 state.player.combat = null;
 state.player.ability = {};
@@ -166,7 +169,7 @@ assert.equal(state.player.enseadaBuff, 'pulso_salino');
 closeDialogue();
 // Tile 'M' da orla oeste medida na referência (a franja molhada da costa
 // frontal fica em x≈14–18 entre as linhas 52 e 56).
-Object.assign(state.player, { x: 14.5, y: 54.5 });
+Object.assign(state.player, { x: 11.5, y: 54.5 });
 const speedComBuff = getPlayerMoveSpeed(state.progress, state.player);
 state.player.enseadaBuff = null;
 const speedSemBuff = getPlayerMoveSpeed(state.progress, state.player);

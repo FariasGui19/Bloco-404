@@ -1,6 +1,7 @@
 import {details,nearestSignal,useDetail,terrain,createPursuit,enemyArt,hurtEnemy,visible} from './mare-mission-life.js';
 import {lore as loreProps,useLore} from './mare-mission-lore.js';
 import {combatProps,isInteractiveCombat,useCombatProp} from './mare-mission-combat.js';
+import {lote5Props,isInteractiveLote5,lote5Complete,lote5Readout,useLote5} from './mare-mission-lote5.js';
 import {
   cell,
   sites,
@@ -35,7 +36,8 @@ export async function createMareMission({
   const extraNames = ["retrato","radio","gerador","boia","armario","rede","sino","valvula","infectado-preparo","infectado-golpe"];
   const lote3Names = ["diario-faroleiro","lente-farol","mapa-evacuacao","maca-quarentena","prontuario-quarentena","caixa-sinal","infectado-busca","infectado-escuta","infectado-atordoado","infectado-erguendo"];
   const lote4Names = ["infectado-golpe-baixo","infectado-golpe-alto","infectado-dano","infectado-dissolvido","casulo-mare","eco-operador","painel-contencao","cabo-energia","lanterna-sinal","porta-fenda"];
-  const artDir = (n) => lote4Names.includes(n) ? "mare-missao-lote4" : lote3Names.includes(n) ? "mare-missao-lote3" : extraNames.includes(n) ? "mare-missao-lote2" : "mare-missao-base";
+  const lote5Names = ["caldeira-sala","tubo-vapor","cristal-mare","valvula-pressao","painel-recompilacao","selo-recompilado","guardiao-mare","guardiao-dano","porta-recompilacao","piso-metal"];
+  const artDir = (n) => lote5Names.includes(n) ? "mare-missao-lote5" : lote4Names.includes(n) ? "mare-missao-lote4" : lote3Names.includes(n) ? "mare-missao-lote3" : extraNames.includes(n) ? "mare-missao-lote2" : "mare-missao-base";
   const names = [
     "madeira-sal",
     "concreto-mar",
@@ -50,7 +52,7 @@ export async function createMareMission({
   ];
   const images = Object.fromEntries(
     await Promise.all(
-      [...names,...extraNames,...lote3Names,...lote4Names].map(async (n) => {
+      [...names,...extraNames,...lote3Names,...lote4Names,...lote5Names].map(async (n) => {
         const im = new Image();
         im.src = new URL(
           `../../assets/sprites/${artDir(n)}/${n}.png`,
@@ -80,7 +82,7 @@ export async function createMareMission({
   const hazardProp=combatProps.find(p=>p.kind==="hazard"), lightProp=combatProps.find(p=>p.kind==="light");
   const enemies = [
     { x: 27, y: 16 },
-    { x: 4, y: 17 },
+    { x: 4, y: 17, guardian: true },
   ];
   let surf = null,
     surfGain = null,
@@ -128,16 +130,18 @@ export async function createMareMission({
     ...details.filter((d) => !m.p.details[d.id] || d.id === "radio" || d.id === "sino"),
     ...loreProps.filter((d) => !m.p.lore.includes(d.id)),
     ...combatProps.filter(isInteractiveCombat),
+    ...lote5Props.filter(isInteractiveLote5),
   ];
   function action() {
     if(m.finished)return;
     const near = nearestSignal(m,signals());
     const beforeLore = m.p.lore.length;
-    message.textContent = near && loreProps.includes(near)
+    const machine = isInteractiveLote5(near) ? useLote5(m, near) : null;
+    message.textContent = machine ?? (near && loreProps.includes(near)
       ? useLore(m, near)
       : near && details.includes(near) ? useDetail(m, near)
       : isInteractiveCombat(near) ? useCombatProp(m, near, enemies)
-      : interact(m, near);
+      : interact(m, near));
     if (loreProps.includes(near) && m.p.lore.length > beforeLore) {
       if (m.p.lore.length === 4) message.textContent += ' NULO: “O farol reconhece você.”';
       if (m.p.lore.length === 6) message.textContent += ' NULO: “Agora você também ouve o sino.”';
@@ -150,6 +154,11 @@ export async function createMareMission({
     if(near?.kind==="light")tone(660,.25,.025,"square");
     if(near?.kind==="mirror")tone(240,.8,.02,"sine");
     if(near?.kind==="panel")tone(420,.18,.02,"square");
+    if(near?.kind==="lote5-valve"){tone(52,.9,.045,"sawtooth");tone(190,.22,.025,"square");}
+    if(near?.art==="tubo-vapor")tone(118,.45,.016,"sine");
+    if(near?.kind==="lote5-seal"){tone(440,.8,.03,"sine");tone(660,.55,.018,"triangle");}
+    if(near?.kind==="lote5-panel")tone(360,.16,.02,"square");
+    if(near?.kind==="lote5-lore")tone(720,.4,.015,"sine");
     tone(near ? 180 : 70);
     save();
   }
@@ -306,6 +315,8 @@ export async function createMareMission({
       ctx.fillRect(0, 0, 384, 108);
       ctx.globalAlpha = 0.12;
       ctx.drawImage(images["madeira-sal"], 0, 0, 384, 108);
+      ctx.globalAlpha = 0.22;
+      ctx.drawImage(images["piso-metal"], 0, 108, 384, 108);
       ctx.globalAlpha = 1;
     }
     ctx.fillStyle = "#111b22";
@@ -378,8 +389,9 @@ export async function createMareMission({
       ...details.map((d) => ({ ...d, scale: d.scale * 0.72 })),
       ...loreProps.map((d) => ({ ...d, scale: d.scale * 0.72 })),
       ...combatProps.map((d) => ({ ...d, scale: d.scale * 0.8 })),
+      ...lote5Props.map((d) => ({ ...d, scale: d.scale * 0.8 })),
       { x: 16, y: 5, art: "nulo" },
-      ...enemies.filter((e) => !e.dead).map((e) => ({ ...e, art: enemyArt(e) })),
+      ...enemies.filter((e) => !e.dead).map((e) => ({ ...e, art: enemyArt(e), scale: e.guardian ? 1.12 : 1 })),
     ].sort(
       (a, b) =>
         Math.hypot(b.x - m.x, b.y - m.y) - Math.hypot(a.x - m.x, a.y - m.y),
@@ -398,10 +410,16 @@ export async function createMareMission({
           108 +
           eye / forward -
           h +
-          (o.art.startsWith("infectado") && !motion.matches
+          ((o.art.startsWith("infectado") || o.art.startsWith("guardiao")) && !motion.matches
             ? Math.sin(t * 7 + o.x) * Math.min(2, h * 0.025)
-            : 0);
+            : 0) +
+          (o.art === "tubo-vapor" && !motion.matches ? Math.sin(t * 2.2 + o.x) * Math.min(3, h * 0.03) : 0);
       ctx.globalAlpha = Math.max(0.1, 1 - forward / (m.p.details.gerador?40:30));
+      if (o.art === "selo-recompilado") ctx.globalAlpha *= 0.72 + 0.28 * Math.sin(t * 2.4);
+      if (o.art === "tubo-vapor") {
+        ctx.fillStyle = `rgba(196,236,229,${0.05 + 0.04 * Math.sin(t * 1.7)})`;
+        ctx.fillRect(sx - 2, top - 5, 4, 4);
+      }
       for (
         let x = Math.max(0, Math.floor(sx - w / 2));
         x < Math.min(384, sx + w / 2);
@@ -480,6 +498,7 @@ export async function createMareMission({
       dt = Math.max(0, Math.min(dt, 0.05));
       t += dt;
       activeFrame=mode==="3d";
+      shell.classList.toggle("recompilado", lote5Complete(m));
       shake=Math.max(0,shake-dt);
       if(activeFrame)intro=Math.max(0,intro-dt);
       if (mode === "3d" && !m.finished) {
@@ -564,7 +583,8 @@ export async function createMareMission({
       }
       if (enabled && audio && activeFrame) {
         if(m.stamina<25&&(breathClock+=dt)>2.6){breathClock=0;tone(190+Math.random()*30,.5,.018,"sine");tone(420,.18,.008,"sine");}
-        if((beatClock+=dt)>(m.stress>30?.4:.85)){beatClock=0;beat++;const notes=[55,65.406,73.416,61.735];tone(notes[Math.floor(beat/8)%4],1.5,.012,"triangle");if(m.stress>20||m.finished)tone(beat%2?42:84,.13,.025,"sine");if(m.finished)tone(220*(1+beat%3),.3,.014,"sawtooth");}
+        if((beatClock+=dt)>(m.stress>30?.4:.85)){beatClock=0;beat++;const notes=[55,65.406,73.416,61.735];tone(notes[Math.floor(beat/8)%4],1.5,.012,"triangle");if(m.stress>20||m.finished)tone(beat%2?42:84,.13,.025,"sine");if(m.finished)tone(220*(1+beat%3),.3,.014,"sawtooth");
+          if(lote5Complete(m)&&beat%4===0)tone(330+beat%3*55,.55,.009,"sine");}
         if (surfGain)
           surfGain.gain.setTargetAtTime(
             0.045 + Math.sin(t * 0.5) * 0.014 + m.stress / 4000,
@@ -591,7 +611,7 @@ export async function createMareMission({
           exit();
         }
       }
-      readout.textContent = `DESCOMPASSO LOCAL ${m.p.rank}/4 · DADOS ${m.p.data.length}/3 · ${Math.max(0, 600 - Math.floor(m.p.elapsed))}s · FÔLEGO ${Math.round(m.stamina)} · ${m.crouched?"SILENCIOSO":m.noise>.8?"PASSOS ALTOS":"CAMINHANDO"} · REGISTROS ${Object.keys(m.p.details).filter(k=>details.some(d=>d.id===k)).length}/8 · LORE ${m.p.lore.length}/6 · TENSÃO ${Math.round(m.stress)} · AMEAÇAS ${enemies.filter(e=>!e.dead&&e.phase!=="dissolve").length}/${enemies.length} · Q ${Math.ceil(m.cooldown)}s`;
+      readout.textContent = `DESCOMPASSO LOCAL ${m.p.rank}/4 · DADOS ${m.p.data.length}/3 · ${Math.max(0, 600 - Math.floor(m.p.elapsed))}s · FÔLEGO ${Math.round(m.stamina)} · ${m.crouched?"SILENCIOSO":m.noise>.8?"PASSOS ALTOS":"CAMINHANDO"} · REGISTROS ${Object.keys(m.p.details).filter(k=>details.some(d=>d.id===k)).length}/8 · LORE ${m.p.lore.length}/6 · TENSÃO ${Math.round(m.stress)} · AMEAÇAS ${enemies.filter(e=>!e.dead&&e.phase!=="dissolve").length}/${enemies.length} · Q ${Math.ceil(m.cooldown)}s · ${lote5Readout(m)}`;
       const near = nearestSignal(m,signals());
       aside.textContent = near
         ? `E · ${near.label}`

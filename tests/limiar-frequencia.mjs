@@ -64,7 +64,7 @@ for (const archetype of ['motor_bio_forja', 'lamina_dominio_anciao', 'mare_astra
     }
     assert.fail(`${obj.id} precisa ser alcançável sem atravessar a máquina`);
   };
-  for (const obj of state.objects.filter(o => o.interacao)) approach(obj);
+  for (const obj of state.objects.filter(o => o.interacao && (!o.showWhenFlag || state.progress.flags?.[o.showWhenFlag]))) approach(obj);
   for (const id of ['arquivo_estacao_666', 'cartografia_estacao_666', 'rack_estacao_666_c', 'reator_estacao_666', 'registro_estacao_666']) {
     const obj = state.objects.find(o => o.id === id);
     approach(obj);

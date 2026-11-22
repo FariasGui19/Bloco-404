@@ -30,7 +30,7 @@ for (const id of ['espelho_arquetipos_enseada','estela_navegadores_enseada','ped
   assert(o.bloqueia && getBlockingObject(o.x,o.y,.1), `${id}: colisão`);
 }
 const piscina = state.objects.find(o=>o.id==='piscina_mare_viva_enseada');
-assert(getBlockingObject(piscina.x-1.5,piscina.y-1.5,.1), 'água termal não é piso plano');
+assert(!getBlockingObject(piscina.x, piscina.y, .1), 'a bacia termal é água rasa transitável');
 // Caminha pela escada real (não apenas verifica os pontos isolados).
 const p={x:16.7,y:32.7};
 for (const [x,y] of [[16.4,32.4],[16.1,32.1],[15.8,31.8],[15.5,31.5],[15.2,31.2],[14.9,30.9],[14.6,30.6]]) {

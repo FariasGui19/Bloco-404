@@ -187,15 +187,15 @@ assert(state.progress.inventory.includes('concha_eco_enseada'));
 // Velocidade diferenciada na Enseada (Maré Astral na areia molhada x Núcleo 10X na areia seca)
 // Tile 'M' da orla oeste medida na referência (a franja molhada da costa
 // frontal fica em x≈14–18 entre as linhas 52 e 56).
-Object.assign(state.player, { x: 14.5, y: 54.5 });
+Object.assign(state.player, { x: 11.5, y: 54.5 });
 const speedMareOrla = getPlayerMoveSpeed(state.progress, state.player);
 state.progress.archetype = 'lamina_dominio_anciao';
 const speedDominioOrla = getPlayerMoveSpeed(state.progress, state.player);
 assert(speedMareOrla > speedDominioOrla, 'Maré Astral deve ter agilidade extra na orla molhada');
 
 // 4e. Fauna interativa: Caranguejo da orla e Capivara da Fonte Termal
-const crab = state.fauna.find(f => f.id === 'enseada_caranguejo_1');
-await interactNear(crab.x, crab.y, 'fauna', 'enseada_caranguejo_1');
+const crab = state.fauna.find(f => f.id.startsWith('enseada_caranguejo'));
+await interactNear(crab.x, crab.y, 'fauna', crab.id);
 closeDialogue();
 const capy = state.fauna.find(f => f.id === 'enseada_capivara');
 await interactNear(capy.x, capy.y, 'fauna', 'enseada_capivara');

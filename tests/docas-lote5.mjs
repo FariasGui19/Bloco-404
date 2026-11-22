@@ -8,6 +8,7 @@ for(const id of [...texturas,...props]){
  else assert(docas.estruturasDocas.some(s=>s.id==='lote5_'+id),`${id} usado no mapa`);
 }
 function inside(x,y,p){let yes=false;for(let i=0,j=p.length-1;i<p.length;j=i++){const [a,b]=p[i],[c,d]=p[j];if((b>y)!==(d>y)&&x<(c-a)*(y-b)/(d-b)+a)yes=!yes;}return yes;}
-for(const st of docas.estruturasDocas){if(['barco','pier'].includes(st.id))continue;const s=docas.geometriaDocas.escala;assert(docas.geometriaDocas.polys.some(p=>inside(st.x/s,st.y/s,p)),`${st.id} deve ter pé sobre terreno`);}
+for(const st of docas.estruturasDocas){if(['barco','pier','central_fundos'].includes(st.id))continue; // backdrops and the off-floor boat/pier
+ const s=docas.geometriaDocas.escala;assert(docas.geometriaDocas.polys.some(p=>inside(st.x/s,st.y/s,p)),`${st.id} deve ter pé sobre terreno`);}
 for(const id of ['docas_diario_pier','docas_diario_trilha'])assert(docas.objects.some(o=>o.id===id&&o.interacao),`${id} disponível`);
 console.log('Docas lote 5: dez peças, pés sobre terreno e diários disponíveis OK.');

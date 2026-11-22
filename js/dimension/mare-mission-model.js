@@ -1,4 +1,5 @@
 import {details} from './mare-mission-details.js';
+import {lore} from './mare-mission-lore.js';
 // Local-only mission simulation: never writes global health, inventory or levels.
 export const MARE_MISSION = "mare-cromatica:baia-v1";
 export const SIZE = 32;
@@ -70,6 +71,7 @@ export function createMission(progress) {
     : [];
   p.rank = Math.max(1, Math.min(4, Number(p.rank) || 1));
   p.elapsed = Number.isFinite(Number(p.elapsed)) ? Math.max(0, Number(p.elapsed)) : 0;
+  p.lore = Array.isArray(p.lore) ? [...new Set(p.lore.filter((id) => lore.some((l) => l.id === id)))] : [];
   p.details = Object.fromEntries(Object.entries(p.details && typeof p.details === 'object' && !Array.isArray(p.details) ? p.details : {}).filter(([k, v]) => v === true && details.some(d => d.id === k)));
   return {
     p,
@@ -95,7 +97,7 @@ export function canStand(x, y) {
     [0.2, -0.2],
     [-0.2, 0.2],
     [0.2, 0.2],
-  ].every(([a, b]) => !cell(x + a, y + b)) && details.every(s=>Math.hypot(x-s.x,y-s.y)>.46);
+  ].every(([a, b]) => !cell(x + a, y + b)) && details.every(s=>Math.hypot(x-s.x,y-s.y)>(s.r??.46)) && lore.every(s=>Math.hypot(x-s.x,y-s.y)>(s.r??.46));
 }
 export function move(m, dx, dy) {
   if(!Number.isFinite(dx)||!Number.isFinite(dy))return;

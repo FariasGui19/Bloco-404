@@ -156,7 +156,7 @@ const lote6Ids = [
 for (const id of lote6Ids) {
   const obj = state.objects.find(o => o.id === id);
   assert(obj, `Objeto ${id} ausente`);
-  const marcoSolido = ['gruta_concha_enseada', 'jardim_pedras_enseada', 'maleta_expedicao_enseada'].includes(id);
+  const marcoSolido = ['gruta_concha_enseada', 'jardim_pedras_enseada', 'maleta_expedicao_enseada', 'estela_navegadores_enseada'].includes(id);
   assert.equal(obj.bloqueia, marcoSolido, `${id} deve respeitar colisão do marco visual`);
   if (marcoSolido) assert(obj.hitbox || obj.hitboxes, `${id} precisa de hitbox precisa`);
   let reached = false;

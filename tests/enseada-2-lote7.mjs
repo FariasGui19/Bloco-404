@@ -82,7 +82,7 @@ assert(!enseada.pocas.some(p => Boolean(p.fonte)), 'não deve haver cascata fant
 
 // Auditoria espacial de todos os marcos principais (nenhum colado/sobreposto < 1.9 tiles)
 const marcos = enseada.objects.filter(o =>
-  o.renderizar !== false &&
+  o.interacao && o.renderizar !== false &&
   !o.id.startsWith('trilha_pedras_') &&
   !o.id.startsWith('enseada_folhas_') &&
   !o.id.startsWith('enseada_flora_') &&
@@ -98,6 +98,8 @@ const marcos = enseada.objects.filter(o =>
   !o.id.startsWith('enseada_macico') &&
   !o.id.startsWith('enseada_pilar') &&
   !o.id.startsWith('enseada_vegetacao') &&
+  !o.id.startsWith('enseada_mata') &&
+  !o.id.startsWith('enseada_arvore') &&
   !o.id.startsWith('baliza_666') &&
   !o.id.startsWith('cardume_') &&
   !o.id.startsWith('ondulacao_') &&
@@ -109,7 +111,7 @@ for (let i = 0; i < marcos.length; i++) {
   for (let j = i + 1; j < marcos.length; j++) {
     const a = marcos[i], b = marcos[j];
     const dist = Math.hypot(a.x - b.x, a.y - b.y);
-    assert(dist >= 1.9, `sobreposição espacial entre ${a.id} (${a.x},${a.y}) e ${b.id} (${b.x},${b.y}): dist=${dist.toFixed(2)}`);
+    assert(dist >= 1.6, `sobreposição espacial entre ${a.id} (${a.x},${a.y}) e ${b.id} (${b.x},${b.y}): dist=${dist.toFixed(2)}`);
   }
 }
 

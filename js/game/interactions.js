@@ -111,8 +111,9 @@ export function findNearestInteraction() {
   }
 
   for (const object of state.objects ?? []) {
+    // Sem interação, o objeto é só colisão/arte de apoio. Um registro
+    // submerso pode ser invisível e ainda assim escutável.
     if (!object.interacao) continue;
-    if (object.invisivel) continue;
     if (object.hideWhenFlag && state.progress.flags?.[object.hideWhenFlag]) continue;
     if (object.showWhenFlag && !state.progress.flags?.[object.showWhenFlag]) continue;
     if (object.interacao.somenteSubmerso && (!player.nado?.ativo || !player.nado.submerso || player.nado.profundidade <= 1.25)) continue;

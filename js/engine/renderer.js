@@ -5168,6 +5168,14 @@ export function getObjectSpriteConfig(spriteId) {
   if (spriteId === 'beach_props') {
     return CONFIG.BEACH_PROPS_SPRITE;
   }
+  // As artes 3.0 e 4.0 da Enseada são peças recortadas, não células de um
+  // atlas: cada PNG conserva a própria transparência e a própria âncora.
+  if (typeof spriteId === 'string' && spriteId.startsWith('enseada3_')) {
+    return { SHEET_COLS: 1, SHEET_ROWS: 1, DEFAULT_SCALE: 1, FEET_ANCHOR_Y: 1 };
+  }
+  if (typeof spriteId === 'string' && spriteId.startsWith('enseada4_')) {
+    return { SHEET_COLS: 1, SHEET_ROWS: 1, DEFAULT_SCALE: 1, FEET_ANCHOR_Y: 1 };
+  }
   return CONFIG.HUB_PROPS_SPRITE;
 }
 // =====================================================================

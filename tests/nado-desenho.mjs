@@ -287,7 +287,7 @@ assert.match(renderer, /export function estadoDosEscalados\(\)/);
 assert.match(renderer, /prepararEscalados\(z\);/, 'o cache precisa ser preparado a cada quadro, com o zoom do quadro');
 assert.match(renderer, /ESCALADOS_MAX_BYTES = \d+ \* 1024 \* 1024/, 'o cache precisa de orçamento de memória');
 const recorte = renderer.slice(renderer.indexOf('function drawCroppedObject('), renderer.indexOf('function drawCroppedObject(') + 5200);
-assert.match(recorte, /escaladosAtivo && !filtro && skewY === 0 && escalaY === 1/,
+assert.match(recorte, /escaladosAtivo && !filtro && skewY === 0 &&[^\n]*escalaY === 1/,
   'peça com filtro, skew ou escalaY não pode vir do cache');
 assert.match(recorte, /ctx\.setTransform\(1, 0, 0, 1, 0, 0\);[\s\S]{0,200}ctx\.setTransform\(mundoZ, 0, 0, mundoZ, mundoTx, mundoTy\);/,
   'a cópia 1:1 precisa devolver a transformação do mundo');

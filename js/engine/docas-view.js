@@ -1,4 +1,4 @@
-import { itensMargemFechamento, desenharDetalheMargem, fechamentoPronto, desenharPecaFechamento, desenharMargensFechamento, desenharVidaEncosta, desenharBoiasFechamento } from './docas-fechamento.js';
+import { desenharAcessoFiel, itensMargemFechamento, desenharDetalheMargem, fechamentoPronto, desenharPecaFechamento, desenharMargensFechamento, desenharVidaEncosta, desenharBoiasFechamento } from './docas-fechamento.js';
 import { desenharMarPerimetral, desenharBrumaCosteira } from './docas-mar-perimetral.js';
 import { desenharMarSuperior } from './docas-mar-superior.js';
 import { repararSoloDireito, repararFacesDireitas, pecasCostaAjustadas, encaixeAtivo, substituidaPeloEncaixe, itensEncaixe, desenharEncaixe, desenharRelevoEncaixe, desenharContatosEncaixe, desenharNevoaEncaixe, desenharBrumaFundoEncaixe } from './docas-encaixe.js';
@@ -183,7 +183,7 @@ export function renderDocas(ctx,map,state,camX,camY,w,h,zoom,dpr,now,drawPlayer)
     const x1=Math.min(terreno.width,Math.ceil(camX+w/(2*zoom)+4)),y1=Math.min(terreno.height,Math.ceil(camY+(h/2-115)/zoom+4));
     if(x1>x && y1>y)ctx.drawImage(terreno,x,y,x1-x,y1-y,x,y,x1-x,y1-y);
   }
-  if(fechamentoPronto(map))desenharPecaFechamento(ctx,'encosta',sCais,t,reduced);
+  if(fechamentoPronto(map)&&!getSprite('docas_fiel_fundos'))desenharPecaFechamento(ctx,'encosta',sCais,t,reduced);
   // Sulcos de água e espuma deslocam-se pelo mar sem efeito estroboscópico.
   ctx.strokeStyle='rgba(87,183,192,.16)';ctx.lineWidth=2;
   for(let i=0;i<90;i++){const x=(i*137+t*(3+i%3))%(terreno.width+100),y=(i*191)%terreno.height;ctx.beginPath();ctx.arc(x,y,7+i%10,.15,2.5);ctx.stroke();}
@@ -236,6 +236,7 @@ export function renderDocas(ctx,map,state,camX,camY,w,h,zoom,dpr,now,drawPlayer)
     if(Math.abs(x-camX)>w/(2*zoom)+peca.w*unit/2 ||
        Math.abs(y-camY)>(h/2+115)/zoom+peca.h*unit/2)continue;
     if(peca.pe===undefined){
+      if(encaixeAtivo(map)&&peca.id==='escada-mare'&&desenharAcessoFiel(ctx,cais,peca,sCais))continue;
       if(oeste && peca.id==='escada-mare')desenharPecaCosta(ctx,cais,ESCADA_OESTE,sCais);
       drawCais(peca);
     }

@@ -97,8 +97,26 @@ if (!process.env.BROWSER_EXECUTABLE) {
       const { closeDialogue } = await import("/js/ui/dialogue.js");
       closeDialogue();
     });
+    // New saves first visit the contained bay; legacy pending ruptures still use
+    // the unmodified bridge contract covered by dimension-rupture.mjs.
+    await page.waitForFunction(() => window.__dimension404.mode === '3d' && !!window.__dimension404.runtime?.mission);
+    assert.equal(await page.evaluate(async () => {
+      const { state } = await import('/js/game/state.js');
+      return state.progress.dimensionalRupture?.status ?? null;
+    }), null);
+    await page.evaluate(async () => {
+      const { sites } = await import('/js/dimension/mare-mission-model.js');
+      const m = window.__dimension404.runtime.mission;
+      // Staged objective positions: this smoke is not a manual traversal claim.
+      for (const id of ['fita','sal','eco','terminal','ancora']) {
+        const s = sites.find(s => s.id === id);
+        m.x=s.x; m.y=s.y; m.vx=m.vy=0;
+        window.dispatchEvent(new KeyboardEvent('keydown',{code:'KeyE'}));
+        window.dispatchEvent(new KeyboardEvent('keyup',{code:'KeyE'}));
+      }
+    });
     await page.waitForFunction(
-      () => window.__dimension404.mode === "entering",
+      () => window.__dimension404.mode === "entering" && !window.__dimension404.runtime?.mission,
       null,
       { timeout: 60000 },
     );

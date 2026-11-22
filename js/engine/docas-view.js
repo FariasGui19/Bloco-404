@@ -1,3 +1,5 @@
+import {desenharAmbienteLote6} from './docas-ambiente-lote6.js';
+import {desenharMarPerimetralCache} from './docas-mar-cache.js';
 import {desenharInfectadoDocas} from './docas-infectados.js';
 import {desenharDegrausFarol} from './docas-escadaria.js';
 import { DECOR_OESTE_REMOVIDO, oestePontualPronto, limparSoloOeste, preservarForaOeste, itensOestePontual, desenharOestePontual, desenharAtmosferaOestePontual } from './docas-oeste-pontual.js';
@@ -177,7 +179,7 @@ export function renderDocas(ctx,map,state,camX,camY,w,h,zoom,dpr,now,drawPlayer)
     desenharReflexosCais(ctx,cais,sCais);
     desenharMarCais(ctx,cais,sCais,clock);
   }
-  if(fechamentoPronto(map))desenharMarPerimetral(ctx,map,sCais,t,reduced,{left:esquerda,right:direita,top:topo,bottom:base});
+  if(fechamentoPronto(map))desenharMarPerimetralCache(ctx,map,sCais,t,reduced,{left:esquerda,right:direita,top:topo,bottom:base},zoom);
   if(encaixeAtivo(map)){
     desenharMarSuperior(ctx,sCais,t,reduced,{left:esquerda,right:direita,top:topo,bottom:base});
     desenharBrumaFundoEncaixe(ctx,sCais,t,reduced);
@@ -189,6 +191,7 @@ export function renderDocas(ctx,map,state,camX,camY,w,h,zoom,dpr,now,drawPlayer)
   }
   desenharDegrausFarol(ctx,map);
   if(oestePontualPronto(map))desenharOestePontual(ctx,'solo',sCais);
+  desenharAmbienteLote6(ctx,map,sCais,t,reduced,{left:esquerda,right:direita,top:topo,bottom:base});
   if(fechamentoPronto(map)&&!getSprite('docas_fiel_fundos'))desenharPecaFechamento(ctx,'encosta',sCais,t,reduced);
   // Sulcos de água e espuma deslocam-se pelo mar sem efeito estroboscópico.
   ctx.strokeStyle='rgba(87,183,192,.16)';ctx.lineWidth=2;

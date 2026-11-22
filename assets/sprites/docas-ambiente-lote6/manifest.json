@@ -1,0 +1,86 @@
+{
+  "batch": 6,
+  "count": 10,
+  "assets": [
+    {
+      "id": "algas-encalhadas",
+      "size": [
+        512,
+        256
+      ],
+      "sourceSha256": "b39cf1e8cf124c4619a4271097ddd9b8048e262d792c7060c02fd8362b7bf87e"
+    },
+    {
+      "id": "argola-cais",
+      "size": [
+        512,
+        324
+      ],
+      "sourceSha256": "77cc95d2c9760dd4d4734073ebba9cbf0f7cf98f31191e24b85cb12a0c063027"
+    },
+    {
+      "id": "bandeira-rasgada",
+      "size": [
+        512,
+        255
+      ],
+      "sourceSha256": "fe78260e012577dfb549b3d0a343953cc10fbe44888e91b317f79190e6ba5cb1"
+    },
+    {
+      "id": "bussola-quebrada",
+      "size": [
+        512,
+        300
+      ],
+      "sourceSha256": "742407df9650e24d9a6f013667b23ba687036f9ecdcfbaa5909e3ba2e3fbf7a4"
+    },
+    {
+      "id": "caranguejo",
+      "size": [
+        512,
+        320
+      ],
+      "sourceSha256": "3f64d8f05c6a80cc65471dc1fa6c904ca900122e49061c9b9d71aacf933a30fb"
+    },
+    {
+      "id": "conchas-partidas",
+      "size": [
+        512,
+        280
+      ],
+      "sourceSha256": "2f4cc50e1772ab2223b9a1cd10be71652b9d5370fe66faab3b0b5fb9c050617c"
+    },
+    {
+      "id": "garrafa-recado",
+      "size": [
+        512,
+        256
+      ],
+      "sourceSha256": "2b949c3866dedb6e03e3890a5ac69c9ed5bcf76101b50b615fd85304f531fb4d"
+    },
+    {
+      "id": "penas-negras",
+      "size": [
+        512,
+        226
+      ],
+      "sourceSha256": "5bcb9e6b657f422914127e8213c5169781736b8958dc8fcf8bc204c196584758"
+    },
+    {
+      "id": "rede-rasgada",
+      "size": [
+        512,
+        260
+      ],
+      "sourceSha256": "952fe3ab3cdb239078f67ef3ced336b8b9d9415c467b330a4edf74fcb42fa188"
+    },
+    {
+      "id": "velas-votivas",
+      "size": [
+        512,
+        279
+      ],
+      "sourceSha256": "f96a79169d2f613fb3b86d4d61500eb838001c121564b5fe1ae9625542143489"
+    }
+  ]
+}

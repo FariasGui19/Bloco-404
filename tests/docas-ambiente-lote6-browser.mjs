@@ -1,0 +1,12 @@
+import assert from 'node:assert/strict';import{mkdirSync}from'node:fs';
+if(!process.env.BROWSER_EXECUTABLE)console.log('Lote 6 browser: skipped; BROWSER_EXECUTABLE required.');else{
+ const{chromium}=await import(process.env.PLAYWRIGHT_MODULE??'playwright-core');const browser=await chromium.launch({executablePath:process.env.BROWSER_EXECUTABLE,args:['--no-sandbox'],env:{...process.env,LD_LIBRARY_PATH:process.env.BROWSER_LIBRARY_PATH??''}});
+ try{const page=await browser.newPage({viewport:{width:1568,height:1160}}),errors=[];page.on('pageerror',e=>errors.push(e.message));
+ await page.addInitScript(()=>{window.lote6Draws=new Set();const draw=CanvasRenderingContext2D.prototype.drawImage;CanvasRenderingContext2D.prototype.drawImage=function(img,...args){if(img instanceof HTMLImageElement&&img.src.includes('/docas-ambiente-lote6/'))window.lote6Draws.add(img.src.split('/').pop());return draw.call(this,img,...args);};});
+ await page.goto((process.env.PREVIEW_ORIGIN??'http://127.0.0.1:8000')+'/docs/previa-docas-navegacao.html');await page.waitForFunction(()=>window.ready);await page.click('#pause');await page.uncheck('#collision');await page.evaluate(()=>window.sampleCentral(0));assert.equal(await page.evaluate(()=>window.lote6Draws.size),10,'all ten ground details drawn in actual exterior');
+ const storage=await page.evaluate(()=>JSON.stringify(localStorage));
+ const a=await page.evaluate(()=>{window.sampleCentral(0);return document.querySelector('canvas').toDataURL();});const b=await page.evaluate(()=>{window.sampleCentral(4);return document.querySelector('canvas').toDataURL();});assert.notEqual(a,b,'exterior continues animating after caching');
+ await page.check('#reduced');const c=await page.evaluate(()=>{window.sampleCentral(0);return document.querySelector('canvas').toDataURL();});const d=await page.evaluate(()=>{window.sampleCentral(40);return document.querySelector('canvas').toDataURL();});assert.equal(c,d,'reduced mode stable');assert.equal(await page.evaluate(()=>JSON.stringify(localStorage)),storage);
+ await page.uncheck('#reduced');await page.evaluate(()=>window.sampleCentral(2));mkdirSync('qa',{recursive:true});await page.screenshot({path:'qa/docas-ambiente-lote6-exterior.png'});assert.deepEqual(errors,[]);console.log('Lote 6 Chromium: ten actual exterior draws, animated sea/crab, stable reduced motion, no storage mutation or page errors.');
+ }finally{await browser.close();}
+}

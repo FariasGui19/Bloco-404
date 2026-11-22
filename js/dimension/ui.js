@@ -1,4 +1,5 @@
-import { createRuptureBridge, RUPTURE_ID } from "./rupture.js";
+import { createRuptureBridge, RUPTURE_ID, requestRupture, canRequestRupture } from "./rupture.js";
+import { MARE_MISSION } from './mare-mission-model.js';
 import { DimensionManager } from "./dimension-manager.js";
 import { ensureHealth } from "../game/health.js";
 
@@ -86,6 +87,12 @@ export function initDimensionModule({
     clearInput,
     canEnter,
     createWorld: async (options) => {
+      if (options.reason === MARE_MISSION) {
+        const { createMareMission } = await import('./mare-mission.js');
+        return createMareMission({ ...options, mount: root, save,
+          complete: () => { requestRupture(state); save(); },
+        });
+      }
       const { createSpatialWorld } = await import("./runtime.js");
       ensureHealth(state.player, state.progress);
       root.dataset.narrative = String(options.reason === RUPTURE_ID);
@@ -165,7 +172,14 @@ export function initDimensionModule({
   window.__dimension404 = manager;
   return {
     manager,
-    tickRupture: () => rupture.tick(),
+    tickRupture: () => {
+      if (state.progress.mareMissionRequested && !manager.active && manager.canEnter() && canRequestRupture(state)) {
+        state.progress.mareMissionRequested = false;
+        save();
+        manager.enter({ reason: MARE_MISSION });
+      }
+      rupture.tick();
+    },
     setAvailable(available) {
       entry.hidden = !available;
     },

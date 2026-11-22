@@ -447,6 +447,12 @@ function interactWithObject(object) {
       openDialogue({speaker:'NÚCLEO DE ÂNCORA',dialogue:result ? [result==='total'?'A ÂNCORA FOI PURIFICADA. AS DUAS FITAS E A RECOMPILAÇÃO COMPLETA PERMITIRAM ISOLAR A PRAGA.':'ÂNCORA SALVA, MAS A CONTENÇÃO PERMANECE FRATURADA. A INFECÇÃO AINDA RESISTE NAS ZONAS BAIXAS.','A SOBRECARGA ABRIU UMA FENDA ATRÁS DA CÂMARA. O HUB ESTÁ SEGURO.'] : [d.ancoraEstavel?'A ÂNCORA PERMANECE ESTÁVEL.':'A ÂNCORA AINDA OSCILA. ALINHE OS TRÊS PAINÉIS ANTES DE TENTAR.']});return;
     }
     if(id==='cromatica_limiar_final') {
+      if (!state.progress.mareMission?.completed && !state.progress.dimensionalRupture) {
+        state.progress.mareMissionRequested = true;
+        saveGame();
+        openDialogue({speaker:'NEXO-04 // BAÍA INFECTADA',dialogue:['O PORTAL ESTÁ ESTÁVEL. A ÂNCORA PRIMÁRIA DO HUB AINDA NÃO RESPONDE.', 'ATRAVESSE A BAÍA, RECUPERE TRÊS MEMÓRIAS E RECOMPILE NO TERMINAL CENTRAL. SUA IDENTIDADE PERMANECE; O DOMÍNIO LOCAL COMEÇA EM 1.', 'WASD: MOVER. SETAS OU ARRASTAR: OLHAR. E: INTERAGIR. Q: HABILIDADE. ESC: RETORNO SEGURO.']});
+        return;
+      }
       const requested=requestRupture(state);if(requested)saveGame();
       openDialogue({speaker:'NEXO-04 // FENDA',dialogue:requested ? ['OPERADOR NULO: VOCÊ ESTABILIZOU A ÂNCORA. NÃO A SAÍDA.','INTERFERÊNCIA DIRETA DETECTADA. A CONTENÇÃO DO PLANO ESTÁ FALHANDO — ISTO NÃO É UMA DERROTA.','PRESERVANDO MEMÓRIA, EQUIPAMENTO E LINHA DE RETORNO. DESTINO: SETOR LIMIAR.'] : ['A LINHA DE RETORNO PERMANECE ABERTA.','A ÂNCORA ESTÁVEL PRESERVA SUA MEMÓRIA. O SETOR LIMIAR CONTINUA ACESSÍVEL PELO MÓDULO 3D.']});return;}
   }

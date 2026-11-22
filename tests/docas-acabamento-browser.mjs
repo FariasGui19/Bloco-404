@@ -29,7 +29,8 @@ else{
   });
   for(const [side,n] of Object.entries(result.sea))assert(n>100,`${side}: magenta visible in isolated sea (${n})`);
   assert(result.stable&&result.moves,'mist animates but reduced motion is stable');assert(result.fogProtected,'new fog does not repaint upper cyan portal');assert.equal(result.banks,8);
-  assert.equal(result.urls.filter(s=>s.endsWith('/docas-acabamento/promontorio.png')).length,2,'both rock supports rendered');assert(result.colors>50,'repair is detailed texture, not a flat fill');assert.deepEqual(errors,[]);
+  assert.equal(result.urls.filter(s=>s.endsWith('/docas-acabamento/promontorio.png')).length,1,'watchtower support preserved');
+  assert.equal(result.urls.filter(s=>s.endsWith('/docas-fidelidade/costa-sudeste.png')).length,1,'continuous coast replaces oval annex platform');assert(result.colors>50,'repair is detailed texture, not a flat fill');assert.deepEqual(errors,[]);
   console.log('Chromium acabamento: magenta isolated on four sides, eight fog banks, protected top, reduced motion, textured soil and two rock supports OK.');
  }finally{await browser.close();}
 }

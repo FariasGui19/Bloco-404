@@ -1,6 +1,7 @@
 // Same authored swell, caustic and mist sheets as the working dock. World
 // grid is viewport bounded and independent of camera/mission/save time.
 import { desenharFolhaRessaca, faseRessaca } from './docas-ressaca.js';
+import { getSprite } from './sprites.js';
 import { fxDocas, faseDocas } from './docas-vivas.js';
 
 function dentro(x,y,poly){let inside=false;for(let i=0,j=poly.length-1;i<poly.length;j=i++){
@@ -41,9 +42,15 @@ export function desenharMarPerimetral(ctx,map,s,t,reduced,bounds){
  for(const [x,y,r,color] of [[1100,550,750,'rgba(29,79,138,.20)'],[280,90,450,'rgba(30,63,129,.18)'],[1370,610,420,'rgba(90,36,143,.27)'],[700,70,880,'rgba(77,34,123,.20)']]){
   const g=ctx.createRadialGradient(x,y,0,x,y,r);g.addColorStop(0,color);g.addColorStop(1,'rgba(14,38,80,0)');ctx.fillStyle=g;ctx.fillRect(x-r,y-r,r*2,r*2);
  }
+ const mar=getSprite('docas_fiel_mar');
  for(const c of celulasMarPerimetral(b)){
   const gain=ganhoMarPerimetral(c.x,c.y);if(gain<.01||!aguaLivreDocas(map,c.x,c.y,c.w*.42))continue;
   const p=clock===null?.27:faseRessaca(c.x,c.y,clock),drift=reduced?0:Math.sin(t*.48+c.n*7)*3;
+  if(mar){
+   const variant=Math.floor(c.n*4),width=180+c.n*115,height=width*.43;
+   ctx.save();ctx.translate(c.x+drift,c.y-p*3);ctx.scale(c.n>.5?-1:1,1);ctx.rotate((c.n-.5)*.18);ctx.globalAlpha=gain*(.23+.08*Math.sin(p*Math.PI));
+   ctx.drawImage(mar,variant%2*400,Math.floor(variant/2)*200,400,200,-width/2,-height/2,width,height);ctx.restore();
+  }
   const alpha=gain*(reduced?.23:.36*Math.sin(p*Math.PI));
   // Translucent mineral reflections follow the same swell as the painted
   // crest. Curves stay in world coordinates and are clipped off all land.
@@ -57,10 +64,16 @@ export function desenharMarPerimetral(ctx,map,s,t,reduced,bounds){
    const u=j/20,x=c.x+(u-.5)*c.w*1.3;
    const y=c.y+Math.sin(u*13+c.n*11+p*2)*2.4+Math.sin(u*5+c.n)*4-p*4;
    if(j===0||Math.sin(j*2.7+c.n*37)>.6)ctx.moveTo(x,y);else ctx.lineTo(x,y);
-  }ctx.stroke();ctx.restore();
+  }if(!mar)ctx.stroke();ctx.restore();
   desenharFolhaRessaca(ctx,'onda',c.x+drift+p*12,c.y-p*4,c.w,c.w*.24,p,alpha,.05);
   if(c.n>.51){const cp=faseDocas(clock,5.3,c.n);fxDocas(ctx,'caustica',c.x,c.y+9,c.w*.95,c.w*.28,cp,gain*.13);}
   if(c.n>.79)fxDocas(ctx,'nevoa',c.x+(reduced?0:Math.sin(t*.16+c.n)*15),c.y-12,225,50,faseDocas(clock,13,c.n),gain*.12);
+ }
+ if(getSprite('docas_fiel_costa'))for(const [x,y,w] of [[992,739,130],[1126,774,174]]){
+  const gain=ganhoMarPerimetral(x,y),p=faseRessaca(x,y,clock);
+  ctx.save();ctx.translate(x,y);ctx.scale(w/2,w*.13);
+  const g=ctx.createRadialGradient(0,0,0,0,0,1);g.addColorStop(0,`rgba(207,31,229,${gain*.23})`);g.addColorStop(1,'rgba(158,20,208,0)');ctx.fillStyle=g;ctx.fillRect(-1,-1,2,2);ctx.restore();
+  desenharFolhaRessaca(ctx,'onda',x,y,w,w*.25,p,gain*.55,-.07);
  }
  ctx.restore();
 }

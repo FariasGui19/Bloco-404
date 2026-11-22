@@ -7,6 +7,23 @@ export const APOIOS_FECHAMENTO=Object.freeze({
  margemSul:Object.freeze({frame:'margem-rochosa',x:1053,y:600,w:197,h:56,foot:643}),
  margemLeste:Object.freeze({frame:'margem-rochosa',x:1280,y:539,w:128,h:55,foot:581}),
 });
+export const PECAS_FIEIS=Object.freeze({
+ abrigo:Object.freeze({sprite:'docas_fiel_abrigo',box:Object.freeze([337,369,123,88]),foot:451}),
+ fundos:Object.freeze({sprite:'docas_fiel_fundos',box:Object.freeze([374,142,480,258]),foot:385}),
+ costa:Object.freeze({sprite:'docas_fiel_costa',box:Object.freeze([807,567,390,205]),foot:620}),
+});
+export function costaFielPronta(){return !!getSprite(PECAS_FIEIS.costa.sprite)&&!!getSprite('docas_acabamento_rocha');}
+export function desenharCostaFiel(ctx,s){
+ const p=PECAS_FIEIS.costa,img=getSprite(p.sprite);if(!img)return false;
+ ctx.save();ctx.scale(s,s);ctx.imageSmoothingEnabled=true;ctx.imageSmoothingQuality='high';ctx.drawImage(img,...p.box);ctx.restore();return true;
+}
+// Only the flawed shore connection is replaced; deck, boats, collision and
+// world registration continue to use CAIS_SUL unchanged.
+export function desenharAcessoFiel(ctx,cais,peca,s){
+ const img=getSprite('docas_fiel_acesso');if(!img)return false;
+ const u=cais.escala*s;ctx.save();ctx.imageSmoothingEnabled=true;ctx.imageSmoothingQuality='high';
+ ctx.drawImage(img,cais.x*s+peca.x*u,cais.y*s+peca.y*u,peca.w*u,peca.h*u);ctx.restore();return true;
+}
 export const BOIAS_FECHAMENTO=Object.freeze([
  Object.freeze({x:1214,y:696,size:35,phase:0}),
  Object.freeze({x:1274,y:766,size:34,phase:1.6}),
@@ -17,14 +34,22 @@ export function desenharPecaFechamento(ctx,id,s,t=0,reduced=false){
  const p=APOIOS_FECHAMENTO[id],frame=p&&FRAMES_FECHAMENTO[p.frame],img=getSprite('docas_fechamento');
  if(!frame||!img)return false;
  ctx.save();ctx.scale(s,s);ctx.imageSmoothingEnabled=true;ctx.imageSmoothingQuality='high';
- if(id==='encosta'&&!reduced){ctx.translate(p.x+p.w/2,p.foot);ctx.transform(1,0,Math.sin(t*.7)*.0035,1,0,0);ctx.translate(-p.x-p.w/2,-p.foot);}
+ if(id==='encosta'&&!getSprite('docas_fiel_fundos')&&!reduced){ctx.translate(p.x+p.w/2,p.foot);ctx.transform(1,0,Math.sin(t*.7)*.0035,1,0,0);ctx.translate(-p.x-p.w/2,-p.foot);}
  if(id==='casinha'){
   ctx.fillStyle='rgba(8,12,24,.32)';ctx.beginPath();ctx.ellipse(p.x+p.w*.51,p.foot-1,53,10,-.04,0,Math.PI*2);ctx.fill();
  }
- const cabana=id==='casinha'&&getSprite('docas_acabamento_cabana');
- if(cabana)ctx.drawImage(cabana,p.x,p.y,p.w,p.h);
+ const fundos=id==='encosta'&&getSprite('docas_fiel_fundos');
+ const cabana=id==='casinha'&&(getSprite('docas_fiel_abrigo')||getSprite('docas_acabamento_cabana'));
+ if(fundos){
+  ctx.drawImage(fundos,...PECAS_FIEIS.fundos.box);
+  const pulse=reduced?.14:.14+.035*Math.sin(t*1.4);ctx.fillStyle=`rgba(164,255,205,${pulse})`;
+  for(const x of [639,666,697]){ctx.beginPath();ctx.ellipse(x,327,5,6,0,0,Math.PI*2);ctx.fill();}
+ }else if(cabana)ctx.drawImage(cabana,p.x,p.y,p.w,p.h);
  else ctx.drawImage(img,...frame.rect,p.x,p.y,p.w,p.h);
- if(id==='casinha'){
+ if(id==='casinha'&&getSprite('docas_fiel_abrigo')){
+  const a=reduced?.06:.06+.025*Math.sin(t*1.4);const g=ctx.createRadialGradient(344,429,0,344,429,26);g.addColorStop(0,`rgba(222,60,242,${a})`);g.addColorStop(1,'rgba(190,32,220,0)');ctx.fillStyle=g;ctx.fillRect(318,403,52,52);
+ }
+ if(id==='casinha'&&!getSprite('docas_fiel_abrigo')){
   ctx.globalAlpha=reduced?.14:.14+.035*Math.sin(t*1.4);ctx.fillStyle='#e6dd96';
   for(const [x,y] of [[.77,.66]]){const g=ctx.createRadialGradient(p.x+p.w*x,p.y+p.h*y,0,p.x+p.w*x,p.y+p.h*y,10);g.addColorStop(0,'#d5ffc2');g.addColorStop(1,'rgba(139,255,190,0)');ctx.fillStyle=g;ctx.fillRect(p.x+p.w*x-10,p.y+p.h*y-10,20,20);}
  }
@@ -38,7 +63,7 @@ export function desenharMargensFechamento(ctx,s){
  // front face down to the water. Neither piece adds collision geometry.
  ctx.drawImage(img,1276,444,129,76);
  // Continuous southern bank supporting the annex, behind its pilings.
- ctx.drawImage(img,1013,595,151,58);
+ if(!desenharCostaFiel(ctx,1))ctx.drawImage(img,1013,595,151,58);
  ctx.restore();
 }
 export function desenharVidaEncosta(ctx,s,t,reduced){

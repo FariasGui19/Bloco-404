@@ -1,4 +1,4 @@
-import { desenharPecaFechamento } from './docas-fechamento.js';
+import { desenharPecaFechamento, costaFielPronta } from './docas-fechamento.js';
 import { PECAS_ENCAIXE } from '../data/worlds/arquipelago-rotas-perdidas/docas-encaixe.js';
 import { getSprite } from './sprites.js';
 import { poseCentral } from './docas-central.js';
@@ -56,6 +56,7 @@ function halo(ctx,x,y,r,color,alpha){
  ctx.save();ctx.globalAlpha=alpha;ctx.fillStyle=g;ctx.fillRect(x-r,y-r,r*2,r*2);ctx.restore();
 }
 export function desenharEncaixe(ctx,id,s,t,reduced){
+ if(id==='central_fundos'&&getSprite('docas_fiel_fundos'))return desenharPecaFechamento(ctx,'encosta',s,t,reduced);
  if(id==='anexo-oeste'&&getSprite('docas_fechamento'))return desenharPecaFechamento(ctx,'casinha',s,t,reduced);
  const frame=PECAS_ENCAIXE[id],img=frame&&getSprite(`docas_encaixe_${frame.sheet}`);if(!img)return false;
  const dest=registroEncaixe(id);if(dest.oculta)return true;
@@ -64,6 +65,7 @@ export function desenharEncaixe(ctx,id,s,t,reduced){
  const foliage=id.startsWith('palmeira');
  if(foliage){ctx.translate(x+w*.5,foot);ctx.transform(1,0,p.vento*.6,1,0,0);ctx.translate(-x-w*.5,-foot);}
  ctx.imageSmoothingEnabled=true;ctx.imageSmoothingQuality='high';
+ if(id==='margem-direita'&&costaFielPronta()){ctx.beginPath();ctx.rect(1197,0,500,900);ctx.clip();}
  ctx.drawImage(img,sx,sy,sw,sh,x,y,w,h);ctx.restore();
  ctx.save();ctx.scale(s,s);
  const source=frame.sourcePlant??(id==='cristal-c'?[frame.plant[0],frame.plant[1]+181,frame.plant[2],frame.plant[3]]:frame.plant);
@@ -118,13 +120,11 @@ function materialReparo(ctx,id,s){
 // This pass is INSIDE the existing terrain clip. It colours only the exposed
 // grey joins; the dock and the water are never turned into new dry floor.
 export function repararSoloDireito(ctx,s){
- const img=getSprite('docas_acabamento_solo');
- if(!img)return;
+ const soil=getSprite('docas_fiel_solo'),old=getSprite('docas_acabamento_solo');if(!old)return;
  ctx.save();ctx.scale(s,s);
- // Authored small-scale stones, not a flat paint fill or magnified cutout.
- const pattern=ctx.createPattern(img,'repeat');
- pattern.setTransform(new DOMMatrix().scale(.5));ctx.fillStyle=pattern;
+ const original=ctx.createPattern(old,'repeat');original.setTransform(new DOMMatrix().scale(.5));ctx.fillStyle=original;
  ctx.fillRect(840,520,560,122);ctx.fillRect(1280,435,125,110);
+ if(soil){const pattern=ctx.createPattern(soil,'repeat');pattern.setTransform(new DOMMatrix().scale(.35));ctx.fillStyle=pattern;ctx.fillRect(840,550,357,92);}
  ctx.restore();
 }
 export function repararFacesDireitas(ctx,map){
@@ -137,7 +137,7 @@ export function repararFacesDireitas(ctx,map){
  ctx.save();ctx.fillStyle=material;
  for(const poly of polys)for(let i=0;i<poly.length;i++){
   const a=poly[i],b=poly[(i+1)%poly.length],mx=(a[0]+b[0])/2,my=(a[1]+b[1])/2;
-  if(mx<850||my<510||onLand(mx,my+8))continue;
+  if(mx<850||my<510||onLand(mx,my+8)||(costaFielPronta()&&mx<1197))continue;
   ctx.beginPath();ctx.moveTo(a[0]*s,a[1]*s);ctx.lineTo(b[0]*s,b[1]*s);ctx.lineTo(b[0]*s,(b[1]+24)*s);ctx.lineTo(a[0]*s,(a[1]+24)*s);ctx.closePath();ctx.fill();
  }ctx.restore();
 }

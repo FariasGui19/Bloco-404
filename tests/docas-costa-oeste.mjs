@@ -31,19 +31,22 @@ for(const {id,src} of SPRITES_COSTA_OESTE){
 }
 state.world.currentMap=docas;state.objects=[];state.actors=[];
 const player={...docas.spawnPoints.inicio};
-const grade=(p)=>plantaCosta(p).map((v,i)=>v*ESCALA_DOCAS/(i?22:64));
-for(const point of [costa.tentaculo.base,[140,380],[175,307],[452,387],[791,457]]){
+// Current approved west nook replaced the old coastal boulders. Probe its
+// registered footprints in the shared plant, while retaining all atlas checks.
+const grade=(p)=>p.map((v,i)=>v*ESCALA_DOCAS/(i?22:64));
+for(const point of [[100,500],[145,430],[300,450],[402,445],[600,780]]){
   assert(!canStandAt(docas,...grade(point),.25,player),`água/rocha não vira piso: ${point}`);
 }
-for(const point of [[470,340],[345,283],[275,270],[259,203],[699,459]]){
+for(const point of [[220,460],[380,490],[465,475]]){
   assert(canStandAt(docas,...grade(point),.25,player),`faixa de areia navegável: ${point}`);
 }
-const start=[Math.floor(player.x),Math.floor(player.y)],fim=grade([275,270]).map(Math.floor);
+const step=.25;
+const start=[Math.floor(player.x/step),Math.floor(player.y/step)],fim=grade([220,460]).map(v=>Math.floor(v/step));
 const key=([x,y])=>`${x},${y}`,queue=[start],cameFrom=new Map([[key(start),null]]);
 for(let i=0;i<queue.length && !cameFrom.has(key(fim));i++){
   const [x,y]=queue[i];
   for(const next of [[x,y-1],[x-1,y],[x,y+1],[x+1,y]]){
-    if(cameFrom.has(key(next))||!canStandAt(docas,next[0]+.5,next[1]+.5,.25,player))continue;
+    if(cameFrom.has(key(next))||!canStandAt(docas,(next[0]+.5)*step,(next[1]+.5)*step,.25,player))continue;
     cameFrom.set(key(next),queue[i]);queue.push(next);
   }
 }
@@ -51,7 +54,7 @@ assert(cameFrom.has(key(fim)),'deve existir um caminho entre o cais e o extremo 
 const rota=[];
 for(let item=fim;item;item=cameFrom.get(key(item)))rota.unshift(item);
 for(const [x,y] of [...rota,...rota.slice(0,-1).reverse()]){
-  moveWithCollision(docas,player,x+.5-player.x,y+.5-player.y,.25);
-  assert(Math.hypot(player.x-x-.5,player.y-y-.5)<.01);
+  moveWithCollision(docas,player,(x+.5)*step-player.x,(y+.5)*step-player.y,.25);
+  assert(Math.hypot(player.x-(x+.5)*step,player.y-(y+.5)*step)<.01);
 }
 console.log('Costa oeste: registro da referência, borda bloqueada e ida/volta entre areia e cais OK.');

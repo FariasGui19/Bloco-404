@@ -1,3 +1,4 @@
+import { NAVEGACAO_DOCAS } from './docas-navegacao.js';
 import { CAIS_SUL, plantaCais } from './cais-sul.js';
 import { COSTA_OESTE, plantaCosta } from './costa-oeste-docas.js';
 
@@ -54,6 +55,7 @@ const ponto=(x,y)=>({x:x*ESCALA_DOCAS/64,y:y*ESCALA_DOCAS/22});
 const estrutura=(id,x,y,largura,camada='objeto')=>({id,x:x*ESCALA_DOCAS,y:y*ESCALA_DOCAS,largura:largura*ESCALA_DOCAS,camada});
 export const docas={id:'mare_cromatica_docas',meta:{nome:'DOCAS DA NEBLINA',tipo:'exterior',dimensao:'mare_cromatica',sideView:true,docasCamadas:true,docasEncaixe:true,cromatica:true,initialZoom:.8,corFundo:'#090f20'},layout,
  // O primeiro polígono é o deck caminhável, não terra sob o píer.
+ navegacaoDocas:NAVEGACAO_DOCAS,
  geometriaDocas:{polys,terraPolys,deckPoly,escadaPoly,bloqueios,escala:ESCALA_DOCAS},
  caisSul:CAIS_SUL,costaOeste:COSTA_OESTE,
  // Peças do terreno em coordenadas da planta. As peças não criam piso novo:
@@ -149,7 +151,7 @@ export const docas={id:'mare_cromatica_docas',meta:{nome:'DOCAS DA NEBLINA',tipo
  spawnPoints:{inicio:ponto(620,650),cabana_esq:ponto(610,535),cabana_dir:ponto(1190,535),galpao:ponto(875,490),torre:ponto(1320,510)},actors:[],fauna:[],collectibles:[],hazards:[],
  objects:[marker('docas_barco',586,656,'BARCO • INICIAR / DESCANSAR'),
  marker('cromatica_fragmento_estacao',1050,365,'RECOLHER FRAGMENTO • TRILHA'),marker('cromatica_selo',1110,275,'ESTABILIZAR O ACESSO AO NÚCLEO'),
- marker('cromatica_painel_origem',1190,220,'ALINHAR ORIGEM'),marker('cromatica_painel_retorno',1240,250,'ALINHAR RETORNO'),marker('cromatica_painel_memoria',1300,210,'ALINHAR MEMÓRIA'),marker('cromatica_ancora',1250,185,'ESTABILIZAR ÂNCORA'),
+ marker('cromatica_painel_origem',1185,193,'ALINHAR ORIGEM'),marker('cromatica_painel_retorno',1240,206,'ALINHAR RETORNO'),marker('cromatica_painel_memoria',1300,187,'ALINHAR MEMÓRIA'),marker('cromatica_ancora',1250,185,'ESTABILIZAR ÂNCORA'),
  marker('docas_poca_mare',329,449,'EXAMINAR POÇA DE MARÉ'),
  marker('docas_totem_mares',960,465,'EXAMINAR MARCA DAS MARÉS'),
  marker('docas_mural_vigia',780,490,'LER MURAL DOS VIGIAS'),marker('docas_fogueira',464,497,'EXAMINAR FOGUEIRA DOS VIGIAS'),

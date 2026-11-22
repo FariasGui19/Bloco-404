@@ -1,0 +1,55 @@
+<!doctype html><html lang="pt-BR"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Docas — navegação contínua</title>
+<style>body{margin:0;background:#090f20;color:#d5e3eb;font:15px system-ui}header{padding:18px}button,select{background:#26374a;color:white;padding:8px;margin:6px}canvas{width:100%;display:block}#position{display:block;padding-top:8px}</style>
+<header><h1>Docas — navegação e animação</h1><p>WASD ou setas: mover o marcador de pé com a colisão real. Verde: união dos pisos; vermelho: sólidos. Prévia isolada, sem carregar/gravar saves. E não executa missões aqui; abra o jogo para jogar.</p><label><input id="collision" type="checkbox" checked> Mostrar colisões</label><button id="view">Área central</button><button id="north">Norte</button><select id="sector"><option value="full">Mapa completo</option><option value="pontual">Oeste</option><option value="center">Centro</option><option value="north">Norte</option><option value="east">Leste</option><option value="south">Sul</option></select><button id="pause">Pausar</button><label><input id="reduced" type="checkbox"> Movimento reduzido</label><input id="before" type="checkbox" hidden><span id="status">Carregando…</span><output id="position"></output><a href="../index.html">Jogar</a></header><canvas width="1568" height="880"></canvas><script type="module">
+import {state as gameState} from '../js/game/state.js';
+import {moveWithCollision} from '../js/game/collision.js';
+import {findNearestInteraction} from '../js/game/interactions.js';
+import {SPRITES_ENCAIXE} from '../js/data/worlds/arquipelago-rotas-perdidas/docas-encaixe.js';
+import {loadSprites} from '../js/engine/sprites.js';
+import {docas} from '../js/data/worlds/arquipelago-rotas-perdidas/docas-neblina.js';
+import {SPRITES_CAIS_SUL} from '../js/data/worlds/arquipelago-rotas-perdidas/cais-sul.js';
+import {SPRITES_COSTA_OESTE} from '../js/data/worlds/arquipelago-rotas-perdidas/costa-oeste-docas.js';
+import {SPRITES_CASCOS} from '../js/engine/docas-cascos.js';
+import {SPRITES_PESQUEIRO_03} from '../js/engine/docas-pesqueiro-03.js';
+import {SPRITES_DOCAS_VIVAS} from '../js/engine/docas-vivas.js';
+import {SPRITES_RESSACA} from '../js/engine/docas-ressaca.js';
+import {SPRITES_TENTACULO_02} from '../js/engine/docas-tentaculo-02.js';
+import {renderDocas} from '../js/engine/docas-view.js';
+import {definirMovimentoDocas} from '../js/engine/docas-animation.js';
+// Preview changes the visual preference in memory only, never localStorage.
+const originalStorage=Storage.prototype.setItem;
+function motion(value){Storage.prototype.setItem=()=>{};try{definirMovimentoDocas(value);}finally{Storage.prototype.setItem=originalStorage;}}
+motion('normal');
+const source=await(await fetch('../js/main.js')).text();
+const explicit=Array.from(source.matchAll(/\{ id: '([^']+)', src: '([^']+)' \}/g),m=>({id:m[1],src:m[2]})).filter(s=>s.id.startsWith('docas_')).filter(s=>!new URLSearchParams(location.search).has('baseline')||s.id!=='docas_oeste_pontual');
+const loaded=await loadSprites([...SPRITES_ENCAIXE,...explicit,...SPRITES_CAIS_SUL,...SPRITES_COSTA_OESTE,...SPRITES_CASCOS,...SPRITES_PESQUEIRO_03,...SPRITES_DOCAS_VIVAS,...SPRITES_RESSACA,...SPRITES_TENTACULO_02].map(s=>({...s,src:'../'+s.src})));
+document.querySelector('#status').textContent=loaded.every(Boolean)?'Artes carregadas':'Falha ao carregar arte';
+const state=gameState;
+Object.assign(state,{objects:docas.objects.map(o=>({...o,x:o.x+.5,y:o.y+.5})),portals:docas.portals,actors:[],fauna:[],collectibles:[],trainingTargets:[],progress:{flags:{},archetype:'mare_astral'},docasAnimation:{elapsed:0}});
+state.world.currentMap=docas;state.world.currentMapId=docas.id;Object.assign(state.player,docas.spawnPoints.inicio);
+const keys=new Set();window.addEventListener('keydown',e=>{if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.key))e.preventDefault();keys.add(e.key.toLowerCase());});window.addEventListener('keyup',e=>keys.delete(e.key.toLowerCase()));window.addEventListener('blur',()=>keys.clear());
+const canvas=document.querySelector('canvas'),ctx=canvas.getContext('2d');
+let paused=false,last=performance.now();
+const sector=document.querySelector('#sector');
+document.querySelector('#north').onclick=()=>{sector.value=sector.value==='north'?'full':'north';};
+document.querySelector('#view').onclick=()=>{sector.value=sector.value==='center'?'full':'center';};
+const views={pontual:[762.5,1062.5,.8,920,690],full:[1960,1387.5,.4],center:[2320,1190,.66],north:[1100,250,.48],east:[3680,1430,.58],south:[2490,2120,.55],west:[380,1210,.6],recorte1:[862.5,1075,.8,620,510],recorte2:[2506.25,1781.25,.8,870,600],recorte3:[1537.5,831.25,.8,1000,540]};
+document.querySelector('#pause').onclick=()=>{paused=!paused;document.querySelector('#pause').textContent=paused?'Retomar':'Pausar';};
+document.querySelector('#reduced').onchange=e=>motion(e.target.checked?'reduzido':'normal');
+const beforeMap={...docas,meta:{...docas.meta,docasEncaixe:false}};
+window.sampleCentral=t=>{state.docasAnimation.elapsed=t;const [x,y,z,cw=1568,ch=880]=views[sector.value];if(canvas.width!==cw||canvas.height!==ch){canvas.width=cw;canvas.height=ch;canvas.style.width=cw+'px';canvas.style.maxWidth='100%';}renderDocas(ctx,document.querySelector('#before').checked?beforeMap:docas,state,x,y,cw,ch,z,1,t*1000,(_e,px,py)=>{ctx.save();ctx.fillStyle='#fff6b6';ctx.beginPath();ctx.ellipse(px,py,10,4,0,0,Math.PI*2);ctx.fill();ctx.fillRect(px-5,py-25,10,22);ctx.restore();});
+if(document.querySelector('#collision').checked){
+ ctx.save();ctx.setTransform(z,0,0,z,cw/2-x*z,ch/2+115-y*z);ctx.scale(2.5,2.5);
+ for(const [areas,color] of [[docas.navegacaoDocas.pisos,'rgba(40,255,180,.14)'],[docas.navegacaoDocas.obstaculos,'rgba(255,60,100,.45)']])for(const a of areas){ctx.beginPath();a.poly.forEach(([px,py],i)=>i?ctx.lineTo(px,py):ctx.moveTo(px,py));ctx.closePath();ctx.fillStyle=color;ctx.fill();ctx.strokeStyle=color;ctx.stroke();}
+ ctx.restore();
+}
+const near=findNearestInteraction();document.querySelector('#position').textContent=`Pé: ${(state.player.x*64/2.5).toFixed(1)}, ${(state.player.y*22/2.5).toFixed(1)} · ${near?.data?.id??'sem interação próxima'}`;};
+window.sampleSetor=(t,id)=>{if(!(id in views))throw new TypeError('Setor inválido');sector.value=id;window.sampleCentral(t);};
+function frame(now){const dt=Math.min(.05,(now-last)/1000);last=now;if(!paused)state.docasAnimation.elapsed+=dt;
+ const dx=Number(keys.has('d')||keys.has('arrowright'))-Number(keys.has('a')||keys.has('arrowleft')),dy=Number(keys.has('s')||keys.has('arrowdown'))-Number(keys.has('w')||keys.has('arrowup')),len=Math.hypot(dx,dy)||1;
+ if(dx||dy)moveWithCollision(docas,state.player,dx/len*4*dt,dy/len*4*dt,.25);
+ window.sampleCentral(state.docasAnimation.elapsed);requestAnimationFrame(frame);
+}
+window.navigationState=state;
+window.ready=true;requestAnimationFrame(frame);
+</script></html>

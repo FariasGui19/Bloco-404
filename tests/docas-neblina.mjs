@@ -7,8 +7,9 @@ import {CROMATICA_MAPS,iniciarMareCromatica,registrarMareCromatica,recompilarMar
 for(const map of [docas,cabanaOeste,cabanaLeste,galpao]){
  assert(CROMATICA_MAPS.includes(map.id));state.world.currentMap=map;state.world.currentMapId=map.id;state.objects=map.objects.map(o=>({...o,x:o.x+.5,y:o.y+.5}));state.portals=map.portals;state.actors=[];state.collectibles=[];state.fauna=[];state.progress={flags:{},archetype:'mare_astral'};
  const spawn=map.spawnPoints.inicio;assert(canStandAt(map,spawn.x,spawn.y,.25,state.player),`${map.id}: spawn seguro`);
- const queue=[[Math.floor(spawn.x),Math.floor(spawn.y)]],seen=new Set([queue[0].join(',')]),hits=new Set();
- for(let i=0;i<queue.length;i++){const [x,y]=queue[i];state.player.x=x+.5;state.player.y=y+.5;const n=findNearestInteraction();if(n)hits.add(n.data.id);for(const [dx,dy] of [[0,1],[0,-1],[1,0],[-1,0]]){const X=x+dx,Y=y+dy,k=X+','+Y;if(!seen.has(k)&&canStandAt(map,X+.5,Y+.5,.25,state.player)){queue.push([X,Y]);seen.add(k);}}}
+ const step=map.navegacaoDocas?.25:1;
+ const queue=[[Math.floor(spawn.x/step),Math.floor(spawn.y/step)]],seen=new Set([queue[0].join(',')]),hits=new Set();
+ for(let i=0;i<queue.length;i++){const [x,y]=queue[i];state.player.x=(x+.5)*step;state.player.y=(y+.5)*step;const n=findNearestInteraction();if(n)hits.add(n.data.id);for(const [dx,dy] of [[0,1],[0,-1],[1,0],[-1,0]]){const X=x+dx,Y=y+dy,k=X+','+Y;if(!seen.has(k)&&canStandAt(map,(X+.5)*step,(Y+.5)*step,.25,state.player)){queue.push([X,Y]);seen.add(k);}}}
  for(const o of [...state.objects,...state.portals])assert(hits.has(o.id),`${map.id}: ${o.id} inacessível por colisão/prioridade`);
  for(const [key,pos] of Object.entries(map.spawnPoints))assert(canStandAt(map,pos.x,pos.y,.25,state.player),`${map.id}: spawn ${key}`);
 }

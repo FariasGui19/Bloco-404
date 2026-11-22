@@ -1,3 +1,4 @@
+import {visualInterativoDocas} from './docas-interativos-lote7.js';
 import {pecaInteriorLote3} from './docas-interiores-lote3.js';
 import {pecaInteriorLote2} from './docas-interiores-lote2.js';
 // Accessible interiors only. The watchtower remains storm-closed and the
@@ -24,5 +25,5 @@ export function mobiliarInteriorDocas(map){
    hitbox:{offsetX:-w/2,offsetY:-h/2,width:w,height:h},docasSize:[w,h],
   };
  });
- return {...map,meta:{...map.meta,docasTema:room.key},objects:[...map.objects,...furniture]};
+ return {...map,meta:{...map.meta,docasTema:room.key},objects:[...map.objects.map(o=>({...o,docasInterativo:visualInterativoDocas(o)})),...furniture]};
 }

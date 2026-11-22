@@ -1,3 +1,4 @@
+import {desenharTerrenoDocas} from './docas-terreno-cache.js';
 import {desenharAmbienteLote6} from './docas-ambiente-lote6.js';
 import {desenharMarPerimetralCache} from './docas-mar-cache.js';
 import {desenharInfectadoDocas} from './docas-infectados.js';
@@ -187,7 +188,7 @@ export function renderDocas(ctx,map,state,camX,camY,w,h,zoom,dpr,now,drawPlayer)
   if(terreno){
     const x=Math.max(0,Math.floor(camX-w/(2*zoom)-4)),y=Math.max(0,Math.floor(camY-(h/2+115)/zoom-4));
     const x1=Math.min(terreno.width,Math.ceil(camX+w/(2*zoom)+4)),y1=Math.min(terreno.height,Math.ceil(camY+(h/2-115)/zoom+4));
-    if(x1>x && y1>y)ctx.drawImage(terreno,x,y,x1-x,y1-y,x,y,x1-x,y1-y);
+    if(x1>x && y1>y)desenharTerrenoDocas(ctx,terreno,x,y,x1-x,y1-y,zoom,dpr);
   }
   desenharDegrausFarol(ctx,map);
   if(oestePontualPronto(map))desenharOestePontual(ctx,'solo',sCais);
@@ -254,7 +255,7 @@ export function renderDocas(ctx,map,state,camX,camY,w,h,zoom,dpr,now,drawPlayer)
   if(!encaixeAtivo(map))desenharPatioCentral(ctx,map.geometriaDocas.escala,t,reduced,getSprite('docas_fx_faixas-nevoa'));
   for(const st of map.estruturasDocas)if(st.camada==='chao'&&!(encaixeAtivo(map)&&substituidaPeloEncaixe(st))){if(oestePontualPronto(map)&&st.id===DECOR_OESTE_REMOVIDO.id)continue;ctx.save();if(oestePontualPronto(map)&&st.x/sCais<550)preservarForaOeste(ctx,sCais);desenharEstrutura(ctx,st,t,reduced,state);ctx.restore();}
   const pecasOeste=costaVisivel?(encaixeAtivo(map)?pecasCostaAjustadas(oeste):[...oeste.rochas,...oeste.vegetacao]).map(peca=>({pecaOeste:peca,y:(oeste.y+peca.pe*oeste.escala)*sCais})):[];
-  const objs=ordenarProfundidadeDocas([...pecasCais,...pecasOeste,...(oestePontualPronto(map)?itensOestePontual(sCais):[]),...(fechamentoPronto(map)?itensMargemFechamento(sCais):[]),...(encaixeAtivo(map)?itensEncaixe(sCais):[]),...map.estruturasDocas.filter(st=>st.camada!=='chao'&&!(encaixeAtivo(map)&&substituidaPeloEncaixe(st))).map(st=>({estrutura:st,y:st.y})),...(state.trainingTargets??[]).filter(e=>e.health>0).map(e=>({entidade:e,y:e.y*SIDE_DEPTH_STEP})),...(state.cromaticaRuntime?.visao?[{entidade:state.cromaticaRuntime.visao,y:state.cromaticaRuntime.visao.y*SIDE_DEPTH_STEP}]:[]),{entidade:state.player,y:state.player.y*SIDE_DEPTH_STEP}]);
+  const objs=ordenarProfundidadeDocas([...pecasCais,...pecasOeste,...(oestePontualPronto(map)?itensOestePontual(sCais):[]),...(fechamentoPronto(map)?itensMargemFechamento(sCais):[]),...(encaixeAtivo(map)?itensEncaixe(sCais):[]),...map.estruturasDocas.filter(st=>st.camada!=='chao'&&!(encaixeAtivo(map)&&substituidaPeloEncaixe(st))).map(st=>({estrutura:st,y:st.y})),...(state.trainingTargets??[]).filter(e=>e.health>0||e.deathVisual>0).map(e=>({entidade:e,y:e.y*SIDE_DEPTH_STEP})),...(state.cromaticaRuntime?.visao?[{entidade:state.cromaticaRuntime.visao,y:state.cromaticaRuntime.visao.y*SIDE_DEPTH_STEP}]:[]),{entidade:state.player,y:state.player.y*SIDE_DEPTH_STEP}]);
   for(const item of objs){
     if(item.oestePontual){desenharOestePontual(ctx,item.oestePontual,sCais,t,reduced);continue;}
     if(item.fechamentoProp){desenharDetalheMargem(ctx,item.fechamentoProp,sCais,t,reduced);continue;}

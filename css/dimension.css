@@ -750,3 +750,8 @@ body.dimension-active {
 .mare-mission label { display:inline-flex;align-items:center;gap:6px;vertical-align:middle; }
 .mare-mission input[type="range"] { width:92px;accent-color:#72cabc; }
 @media(max-width:700px) { .mare-mission input[type="range"]{width:64px} }
+.mare-mission.recompilado canvas { filter:saturate(1.08) contrast(1.03); }
+.mare-mission.recompilado footer { box-shadow:inset 0 0 46px rgba(110,226,210,.10); }
+.mare-mission.recompilado::after { content:""; position:absolute; inset:0; pointer-events:none; background:radial-gradient(circle at 50% 54%,rgba(112,230,211,.13),transparent 38%); animation:mare-recompilacao-pulso 2.4s ease-in-out infinite; }
+@keyframes mare-recompilacao-pulso { 0%,100%{opacity:.35} 50%{opacity:.8} }
+@media (prefers-reduced-motion: reduce) { .mare-mission.recompilado::after { animation:none; opacity:.4; } }

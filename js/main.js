@@ -449,6 +449,7 @@ await loadSprites([
   { id: 'docas_camara', src: 'assets/sprites/docas-reconstrucao/camara.png' },
   { id: 'docas_porta', src: 'assets/sprites/docas-reconstrucao/porta.png' },
   { id: 'cromatica_ancora', src: 'assets/sprites/mare-cromatica/ancora.png' },
+  { id: 'cromatica_porta_fenda', src: 'assets/sprites/mare-missao-lote4/porta-fenda.png' },
   { id: 'cromatica_infectado', src: 'assets/sprites/mare-cromatica/infectado-folha.png' },
   { id: 'cromatica_nulo', src: 'assets/sprites/mare-cromatica/nulo.png' },
   { id: 'freq666_portal', src: 'assets/sprites/frequencia-666/limiar-industrial.png' },

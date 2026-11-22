@@ -12,4 +12,6 @@ export const INTERATIVOS_EXTERIORES_DOCAS=Object.freeze({
  docas_resina:piece('amostra-resina',26,'ressonancia'),
  docas_eletrico:piece('caixa-eletrica',30,'ressonancia'),
  docas_biomassa:piece('biomassa',27,'ressonancia'),
+ // Portal de eco: usa a arte do lote 4 da missão, sem duplicar interação.
+ docas_portal_fenda_visual:{name:'portal-fenda',width:62,kind:'portal',sprite:'cromatica_porta_fenda'},
 });

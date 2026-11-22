@@ -15,9 +15,9 @@ import { ensureArchetypeProgress } from './progression.js';
 import { ensureTools } from './tools.js';
 import { applyUnlocks } from './unlocks.js';
 import { ARCHETYPE_KITS } from '../data/archetype-kits.js';
-import { prepararRetornoDocas, lerMareCromatica } from './mare-cromatica.js';
+import { prepararRetornoDocas, lerMareCromatica, concluirIncursaoLegado } from './mare-cromatica.js';
 
-const SAVE_VERSION = 1;
+const SAVE_VERSION = 2;
 // 4 personas criáveis: um arquétipo por save, no máximo.
 // (O criador pediu para poder criar um de cada.)
 const SLOT_COUNT = 4;
@@ -153,6 +153,16 @@ function migrateSave(save, slot) {
 
   ensureArchetypeProgress(safeSave.progress);
   ensureTools(safeSave.progress);
+  // Save antigo (v1) do Maré Astral parado nas Docas: a incursão das Docas é
+  // registrada como concluída uma única vez, liberando o portal de eco para a
+  // fenda. Saves novos (v2) continuam jogando a incursão normalmente.
+  if ((save.version ?? 1) < 2
+    && safeSave.progress.archetype === 'mare_astral'
+    && safeSave.world.lastMapId === 'mare_cromatica_docas'
+    && safeSave.progress.flags?.docas_neblina_alcancada) {
+    concluirIncursaoLegado(safeSave.progress);
+  }
+  safeSave.version = SAVE_VERSION;
   return safeSave;
 }
 

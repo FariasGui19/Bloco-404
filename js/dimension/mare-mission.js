@@ -1,5 +1,6 @@
-import {details,nearestSignal,useDetail,terrain,createPursuit,enemyArt} from './mare-mission-life.js';
+import {details,nearestSignal,useDetail,terrain,createPursuit,enemyArt,hurtEnemy,visible} from './mare-mission-life.js';
 import {lore as loreProps,useLore} from './mare-mission-lore.js';
+import {combatProps,isInteractiveCombat,useCombatProp} from './mare-mission-combat.js';
 import {
   cell,
   sites,
@@ -24,7 +25,7 @@ export async function createMareMission({
   mount.dataset.mission = "true";
   const shell = document.createElement("section");
   shell.className = "mare-mission";
-  shell.innerHTML = `<canvas width="384" height="216" tabindex="0" aria-label="Baía infectada em primeira pessoa"></canvas><header><small>MARÉ CROMÁTICA / BAÍA DE QUARENTENA</small><h1>A ÂNCORA NÃO RESPONDE</h1></header><aside aria-live="polite"></aside><footer><p class="mare-readout"></p><p class="mare-message">Recupere 3 memórias nas cabanas. Recompile no terminal central; alcance a âncora a sudeste. Nulo ameaça romper a contenção em 10 minutos.</p><p>WASD mover · ← → / arrastar olhar · E interagir · Q habilidade · SHIFT correr · C agachar · ESC retornar sem perdas</p><button data-audio>ÁUDIO: OFF</button><button data-action>INTERAGIR</button><button data-power>HABILIDADE</button><button data-exit>RETORNAR</button><label> VOLUME <input data-volume type="range" min="0" max="100" value="55" aria-label="Volume da missão"></label></footer><nav aria-label="Movimento"><button data-key="KeyW">↑</button><button data-key="KeyA">←</button><button data-key="KeyS">↓</button><button data-key="KeyD">→</button><button data-key="ArrowLeft">↶</button><button data-key="ArrowRight">↷</button><button data-key="ShiftLeft">CORRER</button><button data-key="KeyC">BAIXAR</button></nav>`;
+  shell.innerHTML = `<canvas width="384" height="216" tabindex="0" aria-label="Baía infectada em primeira pessoa"></canvas><header><small>MARÉ CROMÁTICA / BAÍA DE QUARENTENA</small><h1>A ÂNCORA NÃO RESPONDE</h1></header><aside aria-live="polite"></aside><footer><p class="mare-readout"></p><p class="mare-message">Recupere 3 memórias nas cabanas. Recompile no terminal central; alcance a âncora a sudeste. Nulo ameaça romper a contenção em 10 minutos.</p><p>WASD mover · ← → / arrastar olhar · E interagir · F golpe · Q pulso (fere e dissolve) · SHIFT correr · C agachar · ESC retornar sem perdas</p><button data-audio>ÁUDIO: OFF</button><button data-action>INTERAGIR</button><button data-power>HABILIDADE</button><button data-attack>GOLPE</button><button data-exit>RETORNAR</button><label> VOLUME <input data-volume type="range" min="0" max="100" value="55" aria-label="Volume da missão"></label></footer><nav aria-label="Movimento"><button data-key="KeyW">↑</button><button data-key="KeyA">←</button><button data-key="KeyS">↓</button><button data-key="KeyD">→</button><button data-key="ArrowLeft">↶</button><button data-key="ArrowRight">↷</button><button data-key="ShiftLeft">CORRER</button><button data-key="KeyC">BAIXAR</button></nav>`;
   mount.append(shell);
   const canvas = shell.querySelector("canvas"),
     ctx = canvas.getContext("2d", { alpha: false }),
@@ -33,7 +34,8 @@ export async function createMareMission({
   ctx.imageSmoothingEnabled = false;
   const extraNames = ["retrato","radio","gerador","boia","armario","rede","sino","valvula","infectado-preparo","infectado-golpe"];
   const lote3Names = ["diario-faroleiro","lente-farol","mapa-evacuacao","maca-quarentena","prontuario-quarentena","caixa-sinal","infectado-busca","infectado-escuta","infectado-atordoado","infectado-erguendo"];
-  const artDir = (n) => lote3Names.includes(n) ? "mare-missao-lote3" : extraNames.includes(n) ? "mare-missao-lote2" : "mare-missao-base";
+  const lote4Names = ["infectado-golpe-baixo","infectado-golpe-alto","infectado-dano","infectado-dissolvido","casulo-mare","eco-operador","painel-contencao","cabo-energia","lanterna-sinal","porta-fenda"];
+  const artDir = (n) => lote4Names.includes(n) ? "mare-missao-lote4" : lote3Names.includes(n) ? "mare-missao-lote3" : extraNames.includes(n) ? "mare-missao-lote2" : "mare-missao-base";
   const names = [
     "madeira-sal",
     "concreto-mar",
@@ -48,7 +50,7 @@ export async function createMareMission({
   ];
   const images = Object.fromEntries(
     await Promise.all(
-      [...names,...extraNames,...lote3Names].map(async (n) => {
+      [...names,...extraNames,...lote3Names,...lote4Names].map(async (n) => {
         const im = new Image();
         im.src = new URL(
           `../../assets/sprites/${artDir(n)}/${n}.png`,
@@ -73,8 +75,9 @@ export async function createMareMission({
     lastX = 0,
     audio = null,
     enabled = false,
-    drone = null, master=null, activeFrame=false, beatClock=0, beat=0, breathClock=0, shake=0, intro=1.6;
+    drone = null, master=null, activeFrame=false, beatClock=0, beat=0, breathClock=0, shake=0, intro=1.6, pulse=0, hurtFlash=0, hazardClock=0, attackClock=0, swing=0;
   const pursuit=createPursuit(), motion=matchMedia("(prefers-reduced-motion: reduce)"), aside=shell.querySelector("aside");
+  const hazardProp=combatProps.find(p=>p.kind==="hazard"), lightProp=combatProps.find(p=>p.kind==="light");
   const enemies = [
     { x: 27, y: 16 },
     { x: 4, y: 17 },
@@ -124,6 +127,7 @@ export async function createMareMission({
     ...sites.filter((s) => !m.p.data.includes(s.id)),
     ...details.filter((d) => !m.p.details[d.id] || d.id === "radio" || d.id === "sino"),
     ...loreProps.filter((d) => !m.p.lore.includes(d.id)),
+    ...combatProps.filter(isInteractiveCombat),
   ];
   function action() {
     if(m.finished)return;
@@ -131,7 +135,9 @@ export async function createMareMission({
     const beforeLore = m.p.lore.length;
     message.textContent = near && loreProps.includes(near)
       ? useLore(m, near)
-      : near && details.includes(near) ? useDetail(m, near) : interact(m, near);
+      : near && details.includes(near) ? useDetail(m, near)
+      : isInteractiveCombat(near) ? useCombatProp(m, near, enemies)
+      : interact(m, near);
     if (loreProps.includes(near) && m.p.lore.length > beforeLore) {
       if (m.p.lore.length === 4) message.textContent += ' NULO: “O farol reconhece você.”';
       if (m.p.lore.length === 6) message.textContent += ' NULO: “Agora você também ouve o sino.”';
@@ -140,8 +146,32 @@ export async function createMareMission({
     if(near?.id==="valvula")tone(110,.8,.03,"sawtooth");
     if(near?.id==="gerador")tone(45,1,.04,"triangle");
     if(loreProps.includes(near))tone(near.id==="lente"?740:520,.5,.02,"sine");
+    if(near?.kind==="hazard")tone(90,1.1,.04,"sawtooth");
+    if(near?.kind==="light")tone(660,.25,.025,"square");
+    if(near?.kind==="mirror")tone(240,.8,.02,"sine");
+    if(near?.kind==="panel")tone(420,.18,.02,"square");
     tone(near ? 180 : 70);
     save();
+  }
+  function attack() {
+    if (m.finished || attackClock > 0) return;
+    attackClock = .55;
+    swing = .18;
+    let hits = 0;
+    for (const e of enemies) {
+      if (e.dead || e.phase === "dissolve") continue;
+      if (Math.hypot(e.x - m.x, e.y - m.y) > 2.0 || !visible(e, m)) continue;
+      if (hurtEnemy(e, 1)) hits++;
+    }
+    if (hits) {
+      tone(340, .16, .03, "square");
+      tone(180, .22, .02, "triangle");
+      shake = Math.max(shake, .14);
+      message.textContent = "GOLPE CURTO — a resina cede. O casulo ainda vai reformá-la em 30s.";
+    } else {
+      tone(150, .1, .015, "triangle");
+      message.textContent = "O golpe corta apenas a névoa. Aproxime-se ou use o pulso Q.";
+    }
   }
   function power() {
     if (m.finished || m.cooldown > 0) return;
@@ -163,7 +193,18 @@ export async function createMareMission({
           (s) => `${s.label}: ${Math.round(Math.hypot(s.x - m.x, s.y - m.y))}m`,
         )
         .join(" · ");
+    const radius=3.2+m.p.rank*.35, hits=[];
+    for(const e of enemies){
+      if(e.dead||e.phase==="dissolve")continue;
+      if(Math.hypot(e.x-m.x,e.y-m.y)>radius||!visible(e,m))continue;
+      const result=hurtEnemy(e,a==="motor_bio_forja"?2:1);
+      if(result)hits.push(result);
+    }
+    m.pulse=.6;
+    if(hits.length){tone(520,.35,.03,"square");tone(260,.5,.02,"triangle");shake=.18;}
     message.textContent = `${abilities[a] ?? "Pulso de identidade"}: ${a === "mare_astral" ? "sinais revelados" : a === "nucleo_dez_forma" ? "perseguidores cegados" : a === "dominio_anciao" ? "barreira ativa" : "biomassa estabilizada"}. Potência local ${m.p.rank}/4.`;
+    if(hits.includes("defeated"))message.textContent+=" Uma forma se dissolveu; o casulo vai chamá-la de volta em 30s.";
+    else if(hits.length)message.textContent+=" O pulso queimou a resina.";
     tone(330, 0.5);
   }
   const listen = (el, event, fn) =>
@@ -188,6 +229,7 @@ export async function createMareMission({
     }
     if (e.code === "KeyE") action();
     if (e.code === "KeyQ") power();
+    if (e.code === "KeyF") attack();
   });
   listen(window, "keyup", (e) => keys.delete(e.code));
   listen(window, "blur", () => keys.clear());
@@ -216,6 +258,7 @@ export async function createMareMission({
   }
   shell.querySelector("[data-action]").onclick = action;
   shell.querySelector("[data-power]").onclick = power;
+  shell.querySelector("[data-attack]").onclick = attack;
   shell.querySelector("[data-exit]").onclick = exit;
   shell.querySelector("[data-volume]").oninput=e=>{if(master)master.gain.value=Number(e.target.value)/100;};
   shell.querySelector("[data-audio]").onclick = async (e) => {
@@ -334,8 +377,9 @@ export async function createMareMission({
       ...sites.filter((s) => !m.p.data.includes(s.id)),
       ...details.map((d) => ({ ...d, scale: d.scale * 0.72 })),
       ...loreProps.map((d) => ({ ...d, scale: d.scale * 0.72 })),
+      ...combatProps.map((d) => ({ ...d, scale: d.scale * 0.8 })),
       { x: 16, y: 5, art: "nulo" },
-      ...enemies.map((e) => ({ ...e, art: enemyArt(e) })),
+      ...enemies.filter((e) => !e.dead).map((e) => ({ ...e, art: enemyArt(e) })),
     ].sort(
       (a, b) =>
         Math.hypot(b.x - m.x, b.y - m.y) - Math.hypot(a.x - m.x, a.y - m.y),
@@ -403,6 +447,15 @@ export async function createMareMission({
       ctx.fillStyle = "#72cabc30";
       ctx.fillRect(0, (t * 39) % 216, 384, 3);
     }
+    if(pulse>0){
+      const k=1-pulse/.6;
+      ctx.strokeStyle=`rgba(120,230,220,${(1-k)*.55})`;ctx.lineWidth=2;
+      ctx.beginPath();ctx.arc(192,122,12+k*188,0,Math.PI*2);ctx.stroke();
+      ctx.fillStyle=`rgba(120,230,220,${(1-k)*.08})`;ctx.fillRect(0,0,384,216);
+    }
+    if(hurtFlash>0){ctx.fillStyle=`rgba(170,18,52,${.3*hurtFlash/.32})`;ctx.fillRect(0,0,384,216);}
+    if(swing>0){const k=swing/.18;ctx.strokeStyle=`rgba(198,242,231,${.65*k})`;ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(118,186);ctx.lineTo(206,140);ctx.lineTo(268,72);ctx.stroke();ctx.strokeStyle=`rgba(198,242,231,${.22*k})`;ctx.lineWidth=6;ctx.stroke();}
+    if(m.p.containment.lanterna){ctx.fillStyle="rgba(104,206,170,.035)";ctx.fillRect(0,0,384,216);}
     if(m.finished){
       const detailCount=Object.keys(m.p.details).filter(k=>details.some(d=>d.id===k)).length;
       ctx.fillStyle="rgba(3,9,13,.94)";ctx.fillRect(52,46,280,120);
@@ -433,6 +486,10 @@ export async function createMareMission({
         m.p.elapsed += dt;
         m.cooldown = Math.max(0, m.cooldown - dt);
         m.ward = Math.max(0, m.ward - dt);
+        pulse=Math.max(0,pulse-dt);
+        hurtFlash=Math.max(0,hurtFlash-dt);
+        attackClock=Math.max(0,attackClock-dt);
+        swing=Math.max(0,swing-dt);
         m.angle +=
           ((keys.has("ArrowRight") ? 1 : 0) - (keys.has("ArrowLeft") ? 1 : 0)) *
           dt *
@@ -459,6 +516,14 @@ export async function createMareMission({
             m.vy) *
           gain;
         move(m, m.vx * dt, m.vy * dt);
+        // Containment hazards and the lantern are local trade-offs, never global health.
+        if(hazardProp&&!m.p.containment.cabo&&Math.hypot(hazardProp.x-m.x,hazardProp.y-m.y)<1.3){
+          m.stress=Math.min(100,m.stress+dt*13);
+          if((hazardClock+=dt)>1.1){hazardClock=0;tone(120+Math.random()*40,.18,.02,"sawtooth");}
+        }
+        if(lightProp&&m.p.containment.lanterna&&Math.hypot(lightProp.x-m.x,lightProp.y-m.y)<6)
+          m.stress=Math.max(0,m.stress-dt*2.6);
+        const stressBefore=m.stress;
         if (m.p.elapsed > 45) {
           const phases=enemies.map(e=>e.phase);
           pursuit.update(m,enemies,dt,state.progress.archetype);
@@ -468,8 +533,12 @@ export async function createMareMission({
             if(e.phase==='stunned')tone(90,.3,.03,'triangle');
             if(e.phase==='rise')tone(70,.5,.02,'sawtooth');
             if(e.phase==='strike'){tone(60,.12,.045,'triangle');if(Math.hypot(e.x-m.x,e.y-m.y)<2.2)shake=.24;}
+            if(e.phase==='hurt')tone(210,.16,.025,'square');
+            if(e.phase==='dissolve'){tone(140,.9,.03,'sine');tone(70,.6,.02,'triangle');message.textContent="A forma perde a coesão e escorre para o casulo. Nenhum item ou dado se perde.";}
+            if(e.phase==='dead')message.textContent="O casulo já está trabalhando. Uma nova forma sobe em 30s.";
           }});
         }
+        if(m.stress>stressBefore+2){hurtFlash=.32;shake=Math.max(shake,.2);}
         if (m.stress >= 100) {
           m.x =m.p.checkpoint==="boia"?17.5:16;
           m.y = m.p.checkpoint==="boia"?24.5:19;
@@ -522,7 +591,7 @@ export async function createMareMission({
           exit();
         }
       }
-      readout.textContent = `DESCOMPASSO LOCAL ${m.p.rank}/4 · DADOS ${m.p.data.length}/3 · ${Math.max(0, 600 - Math.floor(m.p.elapsed))}s · FÔLEGO ${Math.round(m.stamina)} · ${m.crouched?"SILENCIOSO":m.noise>.8?"PASSOS ALTOS":"CAMINHANDO"} · REGISTROS ${Object.keys(m.p.details).filter(k=>details.some(d=>d.id===k)).length}/8 · LORE ${m.p.lore.length}/6 · TENSÃO ${Math.round(m.stress)} · Q ${Math.ceil(m.cooldown)}s`;
+      readout.textContent = `DESCOMPASSO LOCAL ${m.p.rank}/4 · DADOS ${m.p.data.length}/3 · ${Math.max(0, 600 - Math.floor(m.p.elapsed))}s · FÔLEGO ${Math.round(m.stamina)} · ${m.crouched?"SILENCIOSO":m.noise>.8?"PASSOS ALTOS":"CAMINHANDO"} · REGISTROS ${Object.keys(m.p.details).filter(k=>details.some(d=>d.id===k)).length}/8 · LORE ${m.p.lore.length}/6 · TENSÃO ${Math.round(m.stress)} · AMEAÇAS ${enemies.filter(e=>!e.dead&&e.phase!=="dissolve").length}/${enemies.length} · Q ${Math.ceil(m.cooldown)}s`;
       const near = nearestSignal(m,signals());
       aside.textContent = near
         ? `E · ${near.label}`

@@ -48,6 +48,20 @@ try {
   assert.ok(await page.evaluate(() => d.manager.runtime.mission.y < 22));
   mkdirSync("qa", { recursive: true });
   await page.screenshot({ path: "qa/mare-mission-baia.png" });
+  // Interactive props: real proximity + line of sight, one reservoir use, no data/rank effect.
+  await page.evaluate(async () => {
+    const m = d.manager.runtime.mission;
+    m.x = 9.8; m.y = 7.9; m.angle = -Math.PI / 2; m.stamina = 20;
+    d.manager.tick(0.05);
+  });
+  assert.match(await page.locator(".mare-mission aside").innerText(), /Rádio de emergência/);
+  await page.locator("[data-action]").click();
+  assert.match(await page.locator(".mare-message").innerText(), /RÁDIO/);
+  assert.equal(await page.evaluate(() => d.manager.runtime.mission.p.details.radio), true);
+  assert.equal(await page.evaluate(() => d.manager.runtime.mission.p.data.length), 0);
+  await page.evaluate(() => { d.manager.tick(0.05); });
+  assert.match(await page.locator(".mare-readout").innerText(), /REGISTROS 1\/8/);
+  await page.screenshot({ path: "qa/mare-detail-radio.png" });
   // Stage each objective; route connectivity/radius collision is checked separately in Node.
   for (const id of ["fita", "sal", "eco", "terminal", "ancora"]) {
     await page.evaluate(async (id) => {

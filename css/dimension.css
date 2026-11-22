@@ -747,3 +747,6 @@ body.dimension-active {
 .mare-mission button { background:#091a24dd;border:1px solid #537379;color:#d8e3cf;padding:12px;min-width:44px;touch-action:none; }
 .mare-mission nav { position:absolute;right:4%;top:20%;display:flex;flex-wrap:wrap;width:150px;gap:3px;opacity:.7; }
 @media(max-width:700px) { .mare-mission h1{font-size:12px}.mare-mission footer{font-size:10px;bottom:0}.mare-mission nav{top:15%;right:1%} }
+.mare-mission label { display:inline-flex;align-items:center;gap:6px;vertical-align:middle; }
+.mare-mission input[type="range"] { width:92px;accent-color:#72cabc; }
+@media(max-width:700px) { .mare-mission input[type="range"]{width:64px} }

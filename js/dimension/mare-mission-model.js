@@ -1,3 +1,4 @@
+import {details} from './mare-mission-details.js';
 // Local-only mission simulation: never writes global health, inventory or levels.
 export const MARE_MISSION = "mare-cromatica:baia-v1";
 export const SIZE = 32;
@@ -68,7 +69,8 @@ export function createMission(progress) {
     ? [...new Set(p.data.filter((id) => ["fita", "sal", "eco"].includes(id)))]
     : [];
   p.rank = Math.max(1, Math.min(4, Number(p.rank) || 1));
-  p.elapsed = Math.max(0, Number(p.elapsed) || 0);
+  p.elapsed = Number.isFinite(Number(p.elapsed)) ? Math.max(0, Number(p.elapsed)) : 0;
+  p.details = Object.fromEntries(Object.entries(p.details && typeof p.details === 'object' && !Array.isArray(p.details) ? p.details : {}).filter(([k, v]) => v === true && details.some(d => d.id === k)));
   return {
     p,
     x: 16,
@@ -81,6 +83,10 @@ export function createMission(progress) {
     cooldown: 0,
     ward: 0,
     finished: false,
+    stamina:100,
+    noise:0,
+    decoy:null,
+    crouched:false,
   };
 }
 export function canStand(x, y) {
@@ -89,11 +95,17 @@ export function canStand(x, y) {
     [0.2, -0.2],
     [-0.2, 0.2],
     [0.2, 0.2],
-  ].every(([a, b]) => !cell(x + a, y + b));
+  ].every(([a, b]) => !cell(x + a, y + b)) && details.every(s=>Math.hypot(x-s.x,y-s.y)>.46);
 }
 export function move(m, dx, dy) {
-  if (canStand(m.x + dx, m.y)) m.x += dx;
-  if (canStand(m.x, m.y + dy)) m.y += dy;
+  if(!Number.isFinite(dx)||!Number.isFinite(dy))return;
+  const length=Math.hypot(dx,dy),factor=length>8?8/length:1;
+  dx*=factor;dy*=factor;
+  const steps=Math.max(1,Math.ceil(Math.max(Math.abs(dx),Math.abs(dy))/.08));
+  for(let i=0;i<steps;i++){
+    if (canStand(m.x + dx/steps, m.y)) m.x += dx/steps;else if('vx' in m)m.vx=0;
+    if (canStand(m.x, m.y + dy/steps)) m.y += dy/steps;else if('vy' in m)m.vy=0;
+  }
 }
 export function interact(m, site) {
   if (!site || Math.hypot(m.x - site.x, m.y - site.y) > 1.8)

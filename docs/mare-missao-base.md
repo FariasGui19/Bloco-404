@@ -40,3 +40,7 @@ Retratos corrompidos próprios, variedade de cabanas e mobiliário, costa com re
 A suíte completa histórica não foi executada nesta rodada; falhas antigas registradas em tarefas anteriores não são declaradas resolvidas.
 
 Resultado desta rodada: quatro suites Node e duas suites Chromium passaram. A tentativa de executar os dois Chromium simultaneamente excedeu o timeout de captura; os testes foram repetidos **sequencialmente** e passaram. Não foi considerado sucesso da execução paralela.
+
+## Continuação
+
+O lote 2 (`docs/mare-missao-lote2.md`) adiciona dez originais, props opcionais, perseguição compartilhada, fôlego/tração e camadas de áudio sem alterar o contrato desta base.

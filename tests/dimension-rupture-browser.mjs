@@ -30,9 +30,14 @@ if (!process.env.BROWSER_EXECUTABLE) {
       }),
       errors = [];
     const snap = async (path) => {
-      // Artifact capture must not fail the functional smoke when the headless
-      // compositor is slow; assertions below remain authoritative.
-      try { await page.screenshot({ path, timeout: 8000 }); } catch {}
+      // The mission now casts a textured floor; in headless SwiftShader the
+      // compositor snapshot can stall rAF for the whole timeout window. The
+      // geometry assertions are authoritative, so capture best-effort on the
+      // mission canvas instead.
+      try {
+        const data = await page.evaluate(() => document.querySelector('.mare-mission canvas')?.toDataURL('image/png'));
+        if (data) writeFileSync(path, Buffer.from(data.split(',')[1], 'base64'));
+      } catch {}
     };
     let expectedContextFailure = false;
     page.on("console", (m) => {

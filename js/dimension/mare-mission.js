@@ -1,4 +1,5 @@
-import {details,nearestSignal,useDetail,terrain,createPursuit} from './mare-mission-life.js';
+import {details,nearestSignal,useDetail,terrain,createPursuit,enemyArt} from './mare-mission-life.js';
+import {lore as loreProps,useLore} from './mare-mission-lore.js';
 import {
   cell,
   sites,
@@ -31,6 +32,8 @@ export async function createMareMission({
     message = shell.querySelector(".mare-message");
   ctx.imageSmoothingEnabled = false;
   const extraNames = ["retrato","radio","gerador","boia","armario","rede","sino","valvula","infectado-preparo","infectado-golpe"];
+  const lote3Names = ["diario-faroleiro","lente-farol","mapa-evacuacao","maca-quarentena","prontuario-quarentena","caixa-sinal","infectado-busca","infectado-escuta","infectado-atordoado","infectado-erguendo"];
+  const artDir = (n) => lote3Names.includes(n) ? "mare-missao-lote3" : extraNames.includes(n) ? "mare-missao-lote2" : "mare-missao-base";
   const names = [
     "madeira-sal",
     "concreto-mar",
@@ -45,10 +48,10 @@ export async function createMareMission({
   ];
   const images = Object.fromEntries(
     await Promise.all(
-      [...names,...extraNames].map(async (n) => {
+      [...names,...extraNames,...lote3Names].map(async (n) => {
         const im = new Image();
         im.src = new URL(
-          `../../assets/sprites/${extraNames.includes(n)?"mare-missao-lote2":"mare-missao-base"}/${n}.png`,
+          `../../assets/sprites/${artDir(n)}/${n}.png`,
           import.meta.url,
         ).href;
         await im.decode();
@@ -70,7 +73,7 @@ export async function createMareMission({
     lastX = 0,
     audio = null,
     enabled = false,
-    drone = null, master=null, activeFrame=false, beatClock=0, beat=0, breathClock=0, shake=0;
+    drone = null, master=null, activeFrame=false, beatClock=0, beat=0, breathClock=0, shake=0, intro=1.6;
   const pursuit=createPursuit(), motion=matchMedia("(prefers-reduced-motion: reduce)"), aside=shell.querySelector("aside");
   const enemies = [
     { x: 27, y: 16 },
@@ -120,14 +123,23 @@ export async function createMareMission({
   const signals = () => [
     ...sites.filter((s) => !m.p.data.includes(s.id)),
     ...details.filter((d) => !m.p.details[d.id] || d.id === "radio" || d.id === "sino"),
+    ...loreProps.filter((d) => !m.p.lore.includes(d.id)),
   ];
   function action() {
     if(m.finished)return;
     const near = nearestSignal(m,signals());
-    message.textContent = near&&details.includes(near)?useDetail(m,near):interact(m, near);
+    const beforeLore = m.p.lore.length;
+    message.textContent = near && loreProps.includes(near)
+      ? useLore(m, near)
+      : near && details.includes(near) ? useDetail(m, near) : interact(m, near);
+    if (loreProps.includes(near) && m.p.lore.length > beforeLore) {
+      if (m.p.lore.length === 4) message.textContent += ' NULO: “O farol reconhece você.”';
+      if (m.p.lore.length === 6) message.textContent += ' NULO: “Agora você também ouve o sino.”';
+    }
     if(near?.id==="sino") {tone(440,2,.045);tone(659,1.4,.015);}
     if(near?.id==="valvula")tone(110,.8,.03,"sawtooth");
     if(near?.id==="gerador")tone(45,1,.04,"triangle");
+    if(loreProps.includes(near))tone(near.id==="lente"?740:520,.5,.02,"sine");
     tone(near ? 180 : 70);
     save();
   }
@@ -321,8 +333,9 @@ export async function createMareMission({
     const objects = [
       ...sites.filter((s) => !m.p.data.includes(s.id)),
       ...details.map((d) => ({ ...d, scale: d.scale * 0.72 })),
+      ...loreProps.map((d) => ({ ...d, scale: d.scale * 0.72 })),
       { x: 16, y: 5, art: "nulo" },
-      ...enemies.map((e) => ({ ...e, art: e.phase==="windup"?"infectado-preparo":e.phase==="strike"?"infectado-golpe":"infectado" })),
+      ...enemies.map((e) => ({ ...e, art: enemyArt(e) })),
     ].sort(
       (a, b) =>
         Math.hypot(b.x - m.x, b.y - m.y) - Math.hypot(a.x - m.x, a.y - m.y),
@@ -390,6 +403,20 @@ export async function createMareMission({
       ctx.fillStyle = "#72cabc30";
       ctx.fillRect(0, (t * 39) % 216, 384, 3);
     }
+    if(m.finished){
+      const detailCount=Object.keys(m.p.details).filter(k=>details.some(d=>d.id===k)).length;
+      ctx.fillStyle="rgba(3,9,13,.94)";ctx.fillRect(52,46,280,120);
+      ctx.strokeStyle="#537379";ctx.strokeRect(52.5,46.5,279,119);
+      ctx.font="11px monospace";ctx.fillStyle="#c0e7da";ctx.fillText("RELATÓRIO DE ECO",68,64);
+      ctx.font="9px monospace";ctx.fillStyle="#9bbdb6";
+      ctx.fillText(`DESCOMPASSO ${m.p.rank}/4 · MEMÓRIAS ${m.p.data.length}/3`,68,82);
+      ctx.fillText(`REGISTROS ${detailCount}/8 · LORE ${m.p.lore.length}/6`,68,96);
+      ctx.fillText(`BALIZA ${m.p.checkpoint==="boia"?"VINCULADA":"NÃO VINCULADA"} · FÔLEGO ${Math.round(m.stamina)}`,68,110);
+      ctx.fillStyle="#e0b56a";ctx.fillText(m.p.lore.length>=4?'NULO: “O farol reconhece você.”':'NULO: “O silêncio também é um registro.”',68,128);
+      ctx.fillStyle="#c0e7da";ctx.fillText("A ponte do Limiar aceitará seu eco.",68,146);
+    }
+    if(intro>0){ctx.fillStyle=`rgba(0,0,0,${Math.min(1,intro/1.6)})`;ctx.fillRect(0,0,384,216);}
+    if(m.finished&&endClock>3.15){ctx.fillStyle=`rgba(0,0,0,${Math.min(1,(endClock-3.15)/.85)})`;ctx.fillRect(0,0,384,216);}
     ctx.restore();
   }
   return {
@@ -401,6 +428,7 @@ export async function createMareMission({
       t += dt;
       activeFrame=mode==="3d";
       shake=Math.max(0,shake-dt);
+      if(activeFrame)intro=Math.max(0,intro-dt);
       if (mode === "3d" && !m.finished) {
         m.p.elapsed += dt;
         m.cooldown = Math.max(0, m.cooldown - dt);
@@ -436,6 +464,9 @@ export async function createMareMission({
           pursuit.update(m,enemies,dt,state.progress.archetype);
           enemies.forEach((e,i)=>{if(e.phase!==phases[i]){
             if(e.phase==='windup')tone(145,.4,.03,'sawtooth');
+            if(e.phase==='listen')tone(300,.3,.01,'sine');
+            if(e.phase==='stunned')tone(90,.3,.03,'triangle');
+            if(e.phase==='rise')tone(70,.5,.02,'sawtooth');
             if(e.phase==='strike'){tone(60,.12,.045,'triangle');if(Math.hypot(e.x-m.x,e.y-m.y)<2.2)shake=.24;}
           }});
         }
@@ -491,7 +522,7 @@ export async function createMareMission({
           exit();
         }
       }
-      readout.textContent = `DESCOMPASSO LOCAL ${m.p.rank}/4 · DADOS ${m.p.data.length}/3 · ${Math.max(0, 600 - Math.floor(m.p.elapsed))}s · FÔLEGO ${Math.round(m.stamina)} · ${m.crouched?"SILENCIOSO":m.noise>.8?"PASSOS ALTOS":"CAMINHANDO"} · REGISTROS ${Object.keys(m.p.details).filter(k=>details.some(d=>d.id===k)).length}/8 · TENSÃO ${Math.round(m.stress)} · Q ${Math.ceil(m.cooldown)}s`;
+      readout.textContent = `DESCOMPASSO LOCAL ${m.p.rank}/4 · DADOS ${m.p.data.length}/3 · ${Math.max(0, 600 - Math.floor(m.p.elapsed))}s · FÔLEGO ${Math.round(m.stamina)} · ${m.crouched?"SILENCIOSO":m.noise>.8?"PASSOS ALTOS":"CAMINHANDO"} · REGISTROS ${Object.keys(m.p.details).filter(k=>details.some(d=>d.id===k)).length}/8 · LORE ${m.p.lore.length}/6 · TENSÃO ${Math.round(m.stress)} · Q ${Math.ceil(m.cooldown)}s`;
       const near = nearestSignal(m,signals());
       aside.textContent = near
         ? `E · ${near.label}`

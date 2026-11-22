@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { mkdirSync } from "node:fs";
+import { mkdirSync, writeFileSync } from "node:fs";
 import { chromium } from "../.qa/node_modules/playwright-core/index.mjs";
 import binary from "../.qa/node_modules/@sparticuz/chromium/build/index.js";
 const browser = await chromium.launch({
@@ -47,7 +47,14 @@ try {
   await page.keyboard.up("w");
   assert.ok(await page.evaluate(() => d.manager.runtime.mission.y < 22));
   mkdirSync("qa", { recursive: true });
-  await page.screenshot({ path: "qa/mare-mission-baia.png" });
+  const capture = async (path) => {
+    const data = await page.evaluate(() =>
+      document.querySelector(".mare-mission canvas").toDataURL("image/png"),
+    );
+    mkdirSync("qa", { recursive: true });
+    writeFileSync(path, Buffer.from(data.split(",")[1], "base64"));
+  };
+  await capture("qa/mare-mission-baia.png");
   // Interactive props: real proximity + line of sight, one reservoir use, no data/rank effect.
   await page.evaluate(async () => {
     const m = d.manager.runtime.mission;
@@ -61,7 +68,35 @@ try {
   assert.equal(await page.evaluate(() => d.manager.runtime.mission.p.data.length), 0);
   await page.evaluate(() => { d.manager.tick(0.05); });
   assert.match(await page.locator(".mare-readout").innerText(), /REGISTROS 1\/8/);
-  await page.screenshot({ path: "qa/mare-detail-radio.png" });
+  await capture("qa/mare-detail-radio.png");
+  // Lore records are optional, persistent and visible in the echo report.
+  await page.evaluate(() => {
+    const m = d.manager.runtime.mission;
+    m.x = 7.1; m.y = 9.9; m.angle = -2.356;
+    d.manager.tick(0.05);
+  });
+  assert.match(await page.locator(".mare-mission aside").innerText(), /Diário do faroleiro/);
+  await page.locator("[data-action]").click();
+  assert.match(await page.locator(".mare-message").innerText(), /Nulo aprendeu a voz do faroleiro/);
+  assert.equal(await page.evaluate(() => d.manager.runtime.mission.p.lore.join(",")), "diario");
+  await page.evaluate(() => { d.manager.tick(0.05); });
+  assert.match(await page.locator(".mare-readout").innerText(), /LORE 1\/6/);
+  assert.equal(await page.evaluate(() => d.manager.runtime.mission.p.data.length), 0);
+  await capture("qa/mare-lore-diario.png");
+  await page.evaluate(() => {
+    const m = d.manager.runtime.mission;
+    m.x = 18.8; m.y = 13.4; m.angle = -Math.PI / 2;
+    d.manager.tick(0.05);
+  });
+  assert.match(await page.locator(".mare-mission aside").innerText(), /Lente Fresnel/);
+  await capture("qa/mare-lore-lente.png");
+  await page.evaluate(() => {
+    const m = d.manager.runtime.mission;
+    m.x = 11.2; m.y = 23.9; m.angle = Math.PI / 2;
+    d.manager.tick(0.05);
+  });
+  assert.match(await page.locator(".mare-mission aside").innerText(), /Maca de quarentena/);
+  await capture("qa/mare-lore-maca.png");
   // Stage each objective; route connectivity/radius collision is checked separately in Node.
   for (const id of ["fita", "sal", "eco", "terminal", "ancora"]) {
     await page.evaluate(async (id) => {
@@ -75,7 +110,7 @@ try {
     }, id);
     if (id === "fita") {
       await page.evaluate(() => d.manager.tick(0.05));
-      await page.screenshot({ path: "qa/mare-mission-cabana.png" });
+      await capture("qa/mare-mission-cabana.png");
     }
     await page.keyboard.press("e");
   }
@@ -123,6 +158,8 @@ try {
     await page.evaluate(() => d.manager.runtime.mission.finished),
     true,
   );
+  await page.evaluate(() => { d.manager.tick(0.05); d.manager.tick(0.05); });
+  await capture("qa/mare-echo-report.png");
   await page.locator("[data-audio]").click();
   await page.evaluate(() => {
     for (let i = 0; i < 110; i++) d.manager.tick(0.05);

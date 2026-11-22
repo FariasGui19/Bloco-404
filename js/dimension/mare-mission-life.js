@@ -30,29 +30,71 @@ export function terrain(m){
  if(cabin)return 'madeira';
  return !m.p.details.valvula&&m.x>13&&m.x<19&&m.y>8&&m.y<14?'resina':'pedra';
 }
+// Animation mapping shared by renderer and tests.
+export function enemyArt(e){
+  return e.phase==='windup'?'infectado-preparo'
+    :e.phase==='strike'?'infectado-golpe'
+    :e.phase==='stunned'?'infectado-atordoado'
+    :e.phase==='rise'||e.phase==='recover'?'infectado-erguendo'
+    :e.phase==='listen'?'infectado-escuta'
+    :e.phase==='search'?'infectado-busca'
+    :'infectado';
+}
+
 // One shared, bounded flow field for both pursuers; never a path search per frame/enemy.
 export function createPursuit(){
- const field=new Int16Array(1024),queue=new Int16Array(1024);let timer=0,targetKey=-1;
+ const field=new Int16Array(1024),queue=new Int16Array(1024);
+ let timer=0,targetKey=-1,track=null,ping=18;
  function rebuild(target){field.fill(-1);const tx=Math.floor(target.x),ty=Math.floor(target.y),start=ty*32+tx;if(start<0||start>=1024)return;
  let head=0,tail=1;queue[0]=start;field[start]=0;
  while(head<tail){const index=queue[head++],x=index%32,y=Math.floor(index/32);
  for(const [dx,dy] of [[1,0],[-1,0],[0,1],[0,-1]]){const a=x+dx,b=y+dy,k=b*32+a;if(a<1||b<1||a>=31||b>=31||field[k]!==-1||!canStand(a+.5,b+.5))continue;field[k]=field[index]+1;queue[tail++]=k;}}
  }
+ const clear=(a,b)=>{const n=Math.max(1,Math.ceil(Math.hypot(b.x-a.x,b.y-a.y)/.1));for(let j=1;j<=n;j++)if(!canStand(a.x+(b.x-a.x)*j/n,a.y+(b.y-a.y)*j/n))return false;return true;};
  return {field,update(m,enemies,dt,archetype){
    if(m.decoy){m.decoy.left-=dt;if(m.decoy.left<=0)m.decoy=null;}
-   const target=m.decoy??m,k=Math.floor(target.y)*32+Math.floor(target.x);timer-=dt;
-   if(timer<=0){rebuild(target);timer=.5;targetKey=k;}
-   for(let i=0;i<enemies.length;i++){const e=enemies[i];e.phase??='hunt';e.clock??=0;e.clock=Math.max(0,e.clock-dt);
-     if(m.ward>0){e.phase='stunned';e.clock=.35;continue;}
-     if(e.phase==='stunned'){if(e.clock<=0)e.phase='hunt';continue;}
-     const dist=Math.hypot(m.x-e.x,m.y-e.y),sight=visible(e,m);
-     if(e.phase==='windup'){if(e.clock<=0){e.phase='strike';e.clock=.2;if(dist<1.45&&sight)m.stress+=22;}continue;}
+   // Perception is shared and deliberately fallible: sight + footstep noise + a
+   // periodic Nulo "ping" that hints at the player's pattern. Without any of
+   // these, the pair patrols and searches instead of omnisciently homing.
+   const range=m.crouched?9:16;
+   let sighted=false,heard=false;
+   for(const e of enemies){
+     const dist=Math.hypot(m.x-e.x,m.y-e.y);
+     if(dist<range&&visible(e,m))sighted=true;
+     if(m.noise>0&&dist<(m.noise>.8?7:m.noise>.3?3.5:.9))heard=true;
+   }
+   if(!m.decoy&&(sighted||heard))track={x:m.x,y:m.y,age:0};
+   else if(track){track.age+=dt;if(track.age>7)track=null;}
+   ping-=dt;
+   if(ping<=0){ping=18;if(!m.decoy)track={x:m.x,y:m.y,age:0};}
+   const target=m.decoy??track;
+   if(target){timer-=dt;if(timer<=0){rebuild(target);timer=.5;targetKey=Math.floor(target.y)*32+Math.floor(target.x);}}
+   for(let i=0;i<enemies.length;i++){
+     const e=enemies[i];e.phase??='hunt';e.clock??=0;e.clock=Math.max(0,e.clock-dt);
+     if(m.ward>0){e.phase='stunned';e.clock=.32;e.waypoint=null;continue;}
+     if(e.phase==='stunned'){if(e.clock<=0){e.phase='rise';e.clock=.8;}continue;}
+     if(e.phase==='rise'){if(e.clock<=0)e.phase='hunt';continue;}
+     const dist=Math.hypot(m.x-e.x,m.y-e.y),sight=dist<range&&visible(e,m);
+     if(e.phase==='windup'){if(e.clock<=0){e.phase='strike';e.clock=.2;if(dist<1.45&&visible(e,m))m.stress+=22;}continue;}
      if(e.phase==='strike'){if(e.clock<=0){e.phase='recover';e.clock=1.15;}continue;}
      if(e.phase==='recover'){if(e.clock<=0)e.phase='hunt';continue;}
+     if(e.phase==='listen'){if(e.clock<=0){e.phase='hunt';if(track&&track.age>1.2)track=null;}continue;}
      if(dist<1.25&&sight&&!m.decoy){e.phase='windup';e.clock=.7;continue;}
-     // Distance flow handles cabin doorways, direct steering handles the last tile.
+     const adaptation=archetype==='mare_astral'?.1:archetype==='motor_bio_forja'?.06:0;
+     if(!target){
+       // Idle patrol around the spawn anchor; no wall-free omniscience.
+       e.anchor??={x:e.x,y:e.y};
+       const swing=(Number(m.p?.elapsed)||0)*.22+e.anchor.x;
+       e.phase='hunt';
+       const wx=e.anchor.x+Math.cos(swing)*.9,wy=e.anchor.y+Math.sin(swing*.8)*.7;
+       const dx=wx-e.x,dy=wy-e.y,d=Math.hypot(dx,dy)||1;
+       if(d>.05)move(e,dx/d*.3*dt,dy/d*.3*dt);
+       continue;
+     }
+     const distTarget=Math.hypot(target.x-e.x,target.y-e.y);
+     if(!sighted&&!m.decoy&&distTarget<.9){e.phase='listen';e.clock=1.7;e.waypoint=null;continue;}
+     e.phase='search';
      let dest=target;const ex=Math.floor(e.x),ey=Math.floor(e.y),index=ey*32+ex;
-     const clear=(a,b)=>{const n=Math.max(1,Math.ceil(Math.hypot(b.x-a.x,b.y-a.y)/.1));for(let j=1;j<=n;j++)if(!canStand(a.x+(b.x-a.x)*j/n,a.y+(b.y-a.y)*j/n))return false;return true;};
      if(!clear(e,target)){
        if(!e.waypoint||Math.hypot(e.x-e.waypoint.x,e.y-e.waypoint.y)<.22||!clear(e,e.waypoint)){
          let best=field[index];e.waypoint={x:ex+.5,y:ey+.5};
@@ -61,11 +103,10 @@ export function createPursuit(){
        dest=e.waypoint;
      }else e.waypoint=null;
      const dx=dest.x-e.x,dy=dest.y-e.y,d=Math.hypot(dx,dy)||1;
-     const adaptation=archetype==='mare_astral'?.1:archetype==='motor_bio_forja'?.06:0;
-     const speed=(m.idle>12?.95:.58)+adaptation+m.noise*.12;
+     const speed=(sighted?(m.idle>12?.8:.62):.46)+adaptation+m.noise*.12;
      if(d>.03)move(e,dx/d*speed*dt,dy/d*speed*dt);
    }
    // Loose pursuit spacing: two bodies never occupy the same silhouette.
    for(let i=0;i<enemies.length;i++)for(let j=i+1;j<enemies.length;j++){const a=enemies[i],b=enemies[j];if(a.phase==='stunned'||b.phase==='stunned')continue;const dx=b.x-a.x,dy=b.y-a.y,d=Math.hypot(dx,dy);if(d>0&&d<.55){const push=(.55-d)/2;move(a,-dx/d*push,-dy/d*push);move(b,dx/d*push,dy/d*push);}}
- },get targetKey(){return targetKey;}};
+ },get targetKey(){return targetKey;},get track(){return track;}};
 }

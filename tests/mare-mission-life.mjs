@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { cell, canStand, move, createMission, sites } from "../js/dimension/mare-mission-model.js";
-import { details, visible, nearestSignal, useDetail, terrain, createPursuit } from "../js/dimension/mare-mission-life.js";
+import { details, visible, nearestSignal, useDetail, terrain, createPursuit, enemyArt } from "../js/dimension/mare-mission-life.js";
 
 // Props: exactly eight, unique ids, empty tiles, reachable from the dock.
 assert.equal(details.length, 8);
@@ -86,4 +86,45 @@ assert.equal(sim.decoy.left < 12, true);
 sim.ward = 0.5;
 pursuit.update(sim, enemies, 1 / 30, "mare_astral");
 assert.equal(enemies[0].phase, "stunned");
+// Animation states stay legible and distinct.
+assert.equal(enemyArt({ phase: "windup" }), "infectado-preparo");
+assert.equal(enemyArt({ phase: "strike" }), "infectado-golpe");
+assert.equal(enemyArt({ phase: "stunned" }), "infectado-atordoado");
+assert.equal(enemyArt({ phase: "rise" }), "infectado-erguendo");
+assert.equal(enemyArt({ phase: "listen" }), "infectado-escuta");
+assert.equal(enemyArt({ phase: "search" }), "infectado-busca");
+
+// Stealth: before any Nulo ping or noise, the pair patrols instead of homing.
+const hidden = createMission({});
+hidden.x = 16.5; hidden.y = 28.5; hidden.idle = 0;
+const guards = [{ x: 27, y: 16 }, { x: 4, y: 17 }], calm = createPursuit();
+for (let i = 0; i < 6 * 30; i++) calm.update(hidden, guards, 1 / 30, "mare_astral");
+assert.equal(calm.track, null);
+assert.ok(guards.every((e) => Math.hypot(e.x - hidden.x, e.y - hidden.y) > 10), "no omniscient chase");
+assert.ok(guards.every((e) => !["windup", "strike"].includes(e.phase)));
+// Footstep noise is a real lure even without sight.
+hidden.x = 24.5; hidden.y = 17.5; hidden.noise = 1;
+const beforeNoise = Math.hypot(guards[0].x - hidden.x, guards[0].y - hidden.y);
+calm.update(hidden, guards, 1 / 30, "mare_astral");
+assert.ok(calm.track, "noise creates a track");
+for (let i = 0; i < 90; i++) calm.update(hidden, guards, 1 / 30, "mare_astral");
+assert.ok(Math.hypot(guards[0].x - hidden.x, guards[0].y - hidden.y) < beforeNoise - 0.4, "pursuer follows the sound");
+assert.ok(["search", "listen", "windup", "strike", "recover"].includes(guards[0].phase), "audible pursuit becomes search: " + guards[0].phase);
+// Crouching shortens the detection range without changing the close attack range.
+const low = createMission({});
+low.x = 16.5; low.y = 27.5; low.crouched = true; low.idle = 0;
+const distant = [{ x: 16.5, y: 17.6 }], scout = createPursuit();
+scout.update(low, distant, 1 / 30, "mare_astral");
+assert.equal(scout.track, null, "crouched silhouette hides a distant player");
+low.crouched = false; scout.update(low, distant, 1 / 30, "mare_astral");
+assert.ok(scout.track, "standing in the open is seen");
+// Ward: stunned -> rising -> hunt, with distinct sprites.
+const shock = createMission({});
+shock.x = 16; shock.y = 28; const near = [{ x: 16, y: 26.8 }], ward = createPursuit();
+shock.ward = 0.4; ward.update(shock, near, 1 / 30, "mare_astral");
+assert.equal(near[0].phase, "stunned");
+shock.ward = 0; ward.update(shock, near, 0.5, "mare_astral");
+assert.equal(near[0].phase, "rise");
+ward.update(shock, near, 1, "mare_astral");
+assert.equal(near[0].phase, "hunt");
 console.log("Maré life: eight grounded props, LOS targeting, one-shot reserves, terrain, substepped collision and shared-field pursuit OK");

@@ -55,3 +55,7 @@ Capturas: `qa/mare-mission-baia.png`, `qa/mare-mission-cabana.png`, `qa/mare-det
 - A suíte histórica completa não foi reexecutada; permanecem as falhas herdadas documentadas em trabalhos anteriores (23 arquivos legados). Nenhuma falha nova foi observada nas cinco suítes acima.
 - O campo de fluxo é compartilhado e limitado, mas cantos estreitos ainda dependem da histerese de waypoint; os quatro pontos testados (cabanas e cais) convergem, sem garantia formal para toda posição possível.
 - O áudio procedural é uma camada de atmosfera, não uma trilha composta ou premiada; o áudio 2D existente segue sendo a trilha do jogo.
+
+## Continuação
+
+O lote 3 (`docs/mare-missao-lote3.md`) adiciona dez originais, seis registros de lore e perseguição com memória/percepção, preservando este contrato.

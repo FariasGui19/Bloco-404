@@ -33,6 +33,7 @@ export function terrain(m){
 }
 // Animation mapping shared by renderer and tests.
 export function enemyArt(e){
+  if(e.hunter) return e.phase==='hurt'||e.phase==='dissolve' ? 'cacador-dano' : 'cacador-mare';
   if(e.guardian) return e.phase==='hurt'||e.phase==='dissolve' ? 'guardiao-dano' : 'guardiao-mare';
   const hit = e.variant==='alto' ? 'infectado-golpe-alto' : 'infectado-golpe-baixo';
   return e.phase==='dissolve'?'infectado-dissolvido'
@@ -93,12 +94,12 @@ export function createPursuit(){
      if(e.phase==='stunned'){if(e.clock<=0){e.phase='rise';e.clock=.8;}continue;}
      if(e.phase==='rise'){if(e.clock<=0)e.phase='hunt';continue;}
      const dist=Math.hypot(m.x-e.x,m.y-e.y),sight=dist<range&&visible(e,m);
-     if(e.phase==='windup'){if(e.clock<=0){e.phase='strike';e.clock=.22;if(dist<1.55&&visible(e,m))m.stress+=e.variant==='alto'?26:16;}continue;}
+     if(e.phase==='windup'){if(e.clock<=0){e.phase='strike';e.clock=.22;if(dist<1.55&&visible(e,m))m.stress+=e.hunter?(e.variant==='alto'?18:11):(e.variant==='alto'?26:16);}continue;}
      if(e.phase==='strike'){if(e.clock<=0){e.phase='recover';e.clock=1.15;}continue;}
      if(e.phase==='recover'){if(e.clock<=0)e.phase='hunt';continue;}
      if(e.phase==='listen'){if(e.clock<=0){e.phase='hunt';if(track&&track.age>1.2)track=null;}continue;}
      if(dist<1.25&&sight&&!m.decoy){
-       e.variant=dist<.75?'baixo':'alto';e.phase='windup';e.clock=e.variant==='baixo'?.55:.85;continue;
+       e.variant=dist<.75?'baixo':'alto';e.phase='windup';e.clock=(e.hunter?.36: e.variant==='baixo'?.55:.85);continue;
      }
      const adaptation=archetype==='mare_astral'?.1:archetype==='motor_bio_forja'?.06:0;
      if(!target){
@@ -123,7 +124,7 @@ export function createPursuit(){
        dest=e.waypoint;
      }else e.waypoint=null;
      const dx=dest.x-e.x,dy=dest.y-e.y,d=Math.hypot(dx,dy)||1;
-     const speed=(sighted?(m.idle>12?.8:.62):.46)+adaptation+m.noise*.12;
+     const speed=(sighted?(m.idle>12?.8:.62):.46)+adaptation+m.noise*.12+(e.hunter?.18:0);
      if(d>.03)move(e,dx/d*speed*dt,dy/d*speed*dt);
    }
    // Loose pursuit spacing: two bodies never occupy the same silhouette.

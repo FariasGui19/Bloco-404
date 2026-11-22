@@ -55,6 +55,19 @@ try {
     writeFileSync(path, Buffer.from(data.split(",")[1], "base64"));
   };
   await capture("qa/mare-mission-baia.png");
+  // Nulo is a physical encounter: proximity, authored speech, one-shot log.
+  await page.evaluate(() => {
+    const m = d.manager.runtime.mission;
+    m.x = 16; m.y = 6.5; m.angle = -Math.PI / 2; m.stress = 30;
+    d.manager.tick(0.05);
+  });
+  assert.match(await page.locator(".mare-mission aside").innerText(), /Nulo/);
+  await page.locator("[data-action]").click();
+  assert.match(await page.locator(".mare-message").innerText(), /NULO:/);
+  assert.equal(await page.evaluate(() => d.manager.runtime.mission.p.nulo.join(",")), "primeiro");
+  await page.evaluate(() => { d.manager.tick(0.05); });
+  assert.match(await page.locator(".mare-readout").innerText(), /NULO 1\/4/);
+  await capture("qa/mare-lote6-nulo-encontro.png");
   // Interactive props: real proximity + line of sight, one reservoir use, no data/rank effect.
   await page.evaluate(async () => {
     const m = d.manager.runtime.mission;

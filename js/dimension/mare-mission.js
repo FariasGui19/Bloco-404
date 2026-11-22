@@ -2,6 +2,7 @@ import {details,nearestSignal,useDetail,terrain,createPursuit,enemyArt,hurtEnemy
 import {lore as loreProps,useLore} from './mare-mission-lore.js';
 import {combatProps,isInteractiveCombat,useCombatProp} from './mare-mission-combat.js';
 import {lote5Props,isInteractiveLote5,lote5Complete,lote5Readout,useLote5} from './mare-mission-lote5.js';
+import {lote6Props,isInteractiveLote6,lote6Readout,nuloEntity,nuloReportLine,objectiveLine,useLote6,useNulo,fendaOpen} from './mare-mission-lote6.js';
 import {
   cell,
   sites,
@@ -26,18 +27,20 @@ export async function createMareMission({
   mount.dataset.mission = "true";
   const shell = document.createElement("section");
   shell.className = "mare-mission";
-  shell.innerHTML = `<canvas width="384" height="216" tabindex="0" aria-label="Baía infectada em primeira pessoa"></canvas><header><small>MARÉ CROMÁTICA / BAÍA DE QUARENTENA</small><h1>A ÂNCORA NÃO RESPONDE</h1></header><aside aria-live="polite"></aside><footer><p class="mare-readout"></p><p class="mare-message">Recupere 3 memórias nas cabanas. Recompile no terminal central; alcance a âncora a sudeste. Nulo ameaça romper a contenção em 10 minutos.</p><p>WASD mover · ← → / arrastar olhar · E interagir · F golpe · Q pulso (fere e dissolve) · SHIFT correr · C agachar · ESC retornar sem perdas</p><button data-audio>ÁUDIO: OFF</button><button data-action>INTERAGIR</button><button data-power>HABILIDADE</button><button data-attack>GOLPE</button><button data-exit>RETORNAR</button><label> VOLUME <input data-volume type="range" min="0" max="100" value="55" aria-label="Volume da missão"></label></footer><nav aria-label="Movimento"><button data-key="KeyW">↑</button><button data-key="KeyA">←</button><button data-key="KeyS">↓</button><button data-key="KeyD">→</button><button data-key="ArrowLeft">↶</button><button data-key="ArrowRight">↷</button><button data-key="ShiftLeft">CORRER</button><button data-key="KeyC">BAIXAR</button></nav>`;
+  shell.innerHTML = `<canvas width="384" height="216" tabindex="0" aria-label="Baía infectada em primeira pessoa"></canvas><header><small>MARÉ CROMÁTICA / BAÍA DE QUARENTENA</small><h1>A ÂNCORA NÃO RESPONDE</h1></header><aside aria-live="polite"></aside><footer><p class="mare-readout"></p><p class="mare-objective"></p><p class="mare-message">Recupere 3 memórias nas cabanas. Recompile no terminal central; alcance a âncora a sudeste. Nulo ameaça romper a contenção em 10 minutos.</p><p>WASD mover · ← → / arrastar olhar · E interagir · F golpe · Q pulso (fere e dissolve) · SHIFT correr · C agachar · ESC retornar sem perdas</p><button data-audio>ÁUDIO: OFF</button><button data-action>INTERAGIR</button><button data-power>HABILIDADE</button><button data-attack>GOLPE</button><button data-exit>RETORNAR</button><label> VOLUME <input data-volume type="range" min="0" max="100" value="55" aria-label="Volume da missão"></label></footer><nav aria-label="Movimento"><button data-key="KeyW">↑</button><button data-key="KeyA">←</button><button data-key="KeyS">↓</button><button data-key="KeyD">→</button><button data-key="ArrowLeft">↶</button><button data-key="ArrowRight">↷</button><button data-key="ShiftLeft">CORRER</button><button data-key="KeyC">BAIXAR</button></nav>`;
   mount.append(shell);
   const canvas = shell.querySelector("canvas"),
     ctx = canvas.getContext("2d", { alpha: false }),
     readout = shell.querySelector(".mare-readout"),
+    objective = shell.querySelector(".mare-objective"),
     message = shell.querySelector(".mare-message");
   ctx.imageSmoothingEnabled = false;
   const extraNames = ["retrato","radio","gerador","boia","armario","rede","sino","valvula","infectado-preparo","infectado-golpe"];
   const lote3Names = ["diario-faroleiro","lente-farol","mapa-evacuacao","maca-quarentena","prontuario-quarentena","caixa-sinal","infectado-busca","infectado-escuta","infectado-atordoado","infectado-erguendo"];
   const lote4Names = ["infectado-golpe-baixo","infectado-golpe-alto","infectado-dano","infectado-dissolvido","casulo-mare","eco-operador","painel-contencao","cabo-energia","lanterna-sinal","porta-fenda"];
   const lote5Names = ["caldeira-sala","tubo-vapor","cristal-mare","valvula-pressao","painel-recompilacao","selo-recompilado","guardiao-mare","guardiao-dano","porta-recompilacao","piso-metal"];
-  const artDir = (n) => lote5Names.includes(n) ? "mare-missao-lote5" : lote4Names.includes(n) ? "mare-missao-lote4" : lote3Names.includes(n) ? "mare-missao-lote3" : extraNames.includes(n) ? "mare-missao-lote2" : "mare-missao-base";
+  const lote6Names = ["nulo-operador","nulo-operador-voz","cacador-mare","cacador-dano","parede-azulejo","parede-ferrugem","chao-grade","turbina-sala","escada-servico","transicao-fenda"];
+  const artDir = (n) => lote6Names.includes(n) ? "mare-missao-lote6" : lote5Names.includes(n) ? "mare-missao-lote5" : lote4Names.includes(n) ? "mare-missao-lote4" : lote3Names.includes(n) ? "mare-missao-lote3" : extraNames.includes(n) ? "mare-missao-lote2" : "mare-missao-base";
   const names = [
     "madeira-sal",
     "concreto-mar",
@@ -52,7 +55,7 @@ export async function createMareMission({
   ];
   const images = Object.fromEntries(
     await Promise.all(
-      [...names,...extraNames,...lote3Names,...lote4Names,...lote5Names].map(async (n) => {
+      [...names,...extraNames,...lote3Names,...lote4Names,...lote5Names,...lote6Names].map(async (n) => {
         const im = new Image();
         im.src = new URL(
           `../../assets/sprites/${artDir(n)}/${n}.png`,
@@ -68,10 +71,27 @@ export async function createMareMission({
       throw error;
     }),
   );
+  // Two opaque 64x64 tiles are sampled into a 192x108 floor layer. The
+  // half-resolution buffer keeps the perspective cast cheap and reads as
+  // deliberately chunky next to the 384x216 walls.
+  const floorLayer = document.createElement("canvas");
+  floorLayer.width = 192;
+  floorLayer.height = 108;
+  const floorCtx = floorLayer.getContext("2d");
+  const floorImage = floorCtx.createImageData(192, 108);
+  function tileData(name) {
+    const c = document.createElement("canvas");
+    c.width = c.height = 64;
+    const g = c.getContext("2d");
+    g.drawImage(images[name], 0, 0, 64, 64);
+    return g.getImageData(0, 0, 64, 64).data;
+  }
+  const floorTiles = { out: tileData("chao-grade"), in: tileData("piso-metal") };
   let disposed = false,
     t = 0,
     saveClock = 0,
     lastStep = 0,
+    lastRank = m.p.rank,
     endClock = 0,
     drag = false,
     lastX = 0,
@@ -81,7 +101,7 @@ export async function createMareMission({
   const pursuit=createPursuit(), motion=matchMedia("(prefers-reduced-motion: reduce)"), aside=shell.querySelector("aside");
   const hazardProp=combatProps.find(p=>p.kind==="hazard"), lightProp=combatProps.find(p=>p.kind==="light");
   const enemies = [
-    { x: 27, y: 16 },
+    { x: 27, y: 16, hunter: true },
     { x: 4, y: 17, guardian: true },
   ];
   let surf = null,
@@ -131,12 +151,16 @@ export async function createMareMission({
     ...loreProps.filter((d) => !m.p.lore.includes(d.id)),
     ...combatProps.filter(isInteractiveCombat),
     ...lote5Props.filter(isInteractiveLote5),
+    ...lote6Props.filter(isInteractiveLote6),
+    nuloEntity(m, t),
   ];
   function action() {
     if(m.finished)return;
     const near = nearestSignal(m,signals());
     const beforeLore = m.p.lore.length;
-    const machine = isInteractiveLote5(near) ? useLote5(m, near) : null;
+    const machine = isInteractiveLote5(near) ? useLote5(m, near)
+      : isInteractiveLote6(near) ? useLote6(m, near)
+      : near?.kind === 'nulo' ? useNulo(m, near) : null;
     message.textContent = machine ?? (near && loreProps.includes(near)
       ? useLore(m, near)
       : near && details.includes(near) ? useDetail(m, near)
@@ -159,6 +183,10 @@ export async function createMareMission({
     if(near?.kind==="lote5-seal"){tone(440,.8,.03,"sine");tone(660,.55,.018,"triangle");}
     if(near?.kind==="lote5-panel")tone(360,.16,.02,"square");
     if(near?.kind==="lote5-lore")tone(720,.4,.015,"sine");
+    if(near?.kind==="lote6-turbine"){tone(64,.8,.035,"sawtooth");tone(310,.5,.018,"triangle");}
+    if(near?.kind==="lote6-rift"){tone(660,.9,.025,"sine");tone(110,.6,.02,"sawtooth");}
+    if(near?.kind==="lote6-stairs")tone(150,.22,.014,"triangle");
+    if(near?.kind==="nulo"){tone(95,.45,.02,"sine");tone(190,.2,.01,"square");}
     tone(near ? 180 : 70);
     save();
   }
@@ -321,10 +349,32 @@ export async function createMareMission({
     }
     ctx.fillStyle = "#111b22";
     ctx.fillRect(0, 108, 384, 108);
-    // Wet ground texture with bounded strips; cyan tide ripples animate without allocations.
-    ctx.globalAlpha = 0.2;
-    ctx.drawImage(images["piso-resina"], 0, 110, 384, 106);
-    ctx.globalAlpha = 1;
+    {
+      const tile = indoors ? floorTiles.in : floorTiles.out, data = floorImage.data;
+      for (let y = 0; y < 108; y++) {
+        const distance = Math.max(0.55, 88 / (y + 1));
+        const fog = Math.min(0.84, distance / 21);
+        const rowShade = Math.max(0.18, 0.82 - distance / 20);
+        for (let x = 0; x < 192; x++) {
+          const a = m.angle + Math.atan(((x + 0.5) / 96 - 1) * 0.72);
+          const wx = m.x + Math.cos(a) * distance, wy = m.y + Math.sin(a) * distance;
+          const tx = ((wx * 32) | 0) & 63, ty = ((wy * 32) | 0) & 63;
+          const src = (ty * 64 + tx) * 4, out = (y * 192 + x) * 4;
+          const ripple = !indoors && Math.sin(wx * 5.4 + t * 2.1) + Math.sin(wy * 4.7 - t * 1.5) > 1.62 ? 1.24 : 1;
+          const shade = rowShade * ripple;
+          const warm = indoors ? 1.08 : 0.92;
+          data[out] = tile[src] * shade * warm * (1 - fog) + 8 * fog;
+          data[out + 1] = tile[src + 1] * shade * (1 - fog) + 13 * fog;
+          data[out + 2] = tile[src + 2] * shade * (1 - fog) + 17 * fog;
+          data[out + 3] = 255;
+        }
+      }
+      floorCtx.putImageData(floorImage, 0, 0);
+      ctx.drawImage(floorLayer, 0, 108, 384, 108);
+      ctx.globalAlpha = 0.1;
+      ctx.drawImage(images["piso-resina"], 0, 110, 384, 106);
+      ctx.globalAlpha = 1;
+    }
     for (let y = 124; y < 216; y += 16) {
       ctx.fillStyle = `rgba(30,130,145,${0.04 + 0.02 * Math.sin(t + y)})`;
       ctx.fillRect(Math.sin(t * 0.3 + y) * 12, y, 384, 1);
@@ -368,8 +418,9 @@ export async function createMareMission({
       const u = edgeX < edgeY ? wy % 1 : wx % 1;
       const im =
         images[
-          hit === 1 ? "madeira-sal" : hit === 3 ? "porta-ferro" : "concreto-mar"
+          hit === 1 ? "parede-azulejo" : hit === 3 ? "porta-ferro" : "parede-ferrugem"
         ];
+      const wallTop = 108 - (190-eye) / corrected;
       ctx.drawImage(
         im,
         Math.floor(u * im.width),
@@ -377,12 +428,18 @@ export async function createMareMission({
         1,
         im.height,
         x,
-        108 - (190-eye) / corrected,
+        wallTop,
         2,
         h,
       );
-      ctx.fillStyle = `rgba(3,8,17,${Math.min(0.94, (m.p.details.gerador?0.14:0.2) + corrected / 27 + (edgeX < edgeY ? 0.12 : 0))})`;
-      ctx.fillRect(x, 108 - (190-eye) / corrected, 2, h);
+      // A single lit rim and a dark baseboard make the new materials read as
+      // built walls instead of repeating stripes.
+      ctx.fillStyle = `rgba(133,221,205,${Math.max(0.035, 0.12 - corrected / 90)})`;
+      ctx.fillRect(x, wallTop, 2, 1);
+      ctx.fillStyle = "rgba(2,7,11,.34)";
+      ctx.fillRect(x, wallTop + h - Math.max(1, h * 0.035), 2, Math.max(1, h * 0.035));
+      ctx.fillStyle = `rgba(3,8,17,${Math.min(0.94, (m.p.details.gerador?0.2:0.26) + corrected / 33 + (edgeX < edgeY ? 0.1 : 0))})`;
+      ctx.fillRect(x, wallTop, 2, h);
     }
     const objects = [
       ...sites.filter((s) => !m.p.data.includes(s.id)),
@@ -390,8 +447,9 @@ export async function createMareMission({
       ...loreProps.map((d) => ({ ...d, scale: d.scale * 0.72 })),
       ...combatProps.map((d) => ({ ...d, scale: d.scale * 0.8 })),
       ...lote5Props.map((d) => ({ ...d, scale: d.scale * 0.8 })),
-      { x: 16, y: 5, art: "nulo" },
-      ...enemies.filter((e) => !e.dead).map((e) => ({ ...e, art: enemyArt(e), scale: e.guardian ? 1.12 : 1 })),
+      ...lote6Props.map((d) => ({ ...d, scale: d.scale * 0.8 })),
+      nuloEntity(m, t),
+      ...enemies.filter((e) => !e.dead).map((e) => ({ ...e, art: enemyArt(e), scale: e.hunter ? 0.58 : e.guardian ? 1.12 : 1 })),
     ].sort(
       (a, b) =>
         Math.hypot(b.x - m.x, b.y - m.y) - Math.hypot(a.x - m.x, a.y - m.y),
@@ -413,12 +471,29 @@ export async function createMareMission({
           ((o.art.startsWith("infectado") || o.art.startsWith("guardiao")) && !motion.matches
             ? Math.sin(t * 7 + o.x) * Math.min(2, h * 0.025)
             : 0) +
-          (o.art === "tubo-vapor" && !motion.matches ? Math.sin(t * 2.2 + o.x) * Math.min(3, h * 0.03) : 0);
+          (o.art === "tubo-vapor" && !motion.matches ? Math.sin(t * 2.2 + o.x) * Math.min(3, h * 0.03) : 0) +
+          ((o.art === "nulo-operador" || o.art === "nulo-operador-voz") && !motion.matches ? Math.sin(t * 1.25) * Math.min(2, h * 0.02) : 0) +
+          (o.art.startsWith("cacador") && !motion.matches ? Math.sin(t * 9 + o.x) * Math.min(2, h * 0.025) : 0);
       ctx.globalAlpha = Math.max(0.1, 1 - forward / (m.p.details.gerador?40:30));
       if (o.art === "selo-recompilado") ctx.globalAlpha *= 0.72 + 0.28 * Math.sin(t * 2.4);
       if (o.art === "tubo-vapor") {
         ctx.fillStyle = `rgba(196,236,229,${0.05 + 0.04 * Math.sin(t * 1.7)})`;
         ctx.fillRect(sx - 2, top - 5, 4, 4);
+      }
+      if (o.art === "nulo-operador-voz") {
+        ctx.globalAlpha *= 0.68 + 0.18 * Math.sin(t * 8.7);
+        ctx.fillStyle = `rgba(112,232,220,${0.08 + 0.04 * Math.sin(t * 5)})`;
+        ctx.fillRect(sx - w * 0.32, top + h * 0.1, w * 0.64, h * 0.8);
+      }
+      if (o.art === "transicao-fenda") ctx.globalAlpha *= 0.8 + 0.2 * Math.sin(t * 2.6);
+      if ((o.kind === "nulo" || o.art === "transicao-fenda" || o.art === "turbina-sala") && forward <= depth[Math.max(0, Math.min(383, Math.floor(sx)))] + 0.25) {
+        const glow = ctx.createRadialGradient(sx, top + h * 0.45, 1, sx, top + h * 0.45, Math.max(8, w * 0.55));
+        const tone = o.art === "turbina-sala" ? "255,178,92" : o.art === "transicao-fenda" ? "255,197,117" : "113,231,218";
+        glow.addColorStop(0, `rgba(${tone},${o.kind === "nulo" ? ".28" : ".16"})`);
+        glow.addColorStop(1, `rgba(${tone},0)`);
+        ctx.fillStyle = glow;
+        ctx.fillRect(sx - w, top - h * 0.08, w * 2, h * 1.05);
+        if (o.kind === "nulo") { ctx.fillStyle = "rgba(255,198,110,.55)"; ctx.fillRect(sx - 1, top + h * 0.13, 2, 2); }
       }
       for (
         let x = Math.max(0, Math.floor(sx - w / 2));
@@ -444,6 +519,21 @@ export async function createMareMission({
           1,
           h,
         );
+      }
+      if (o.art === "transicao-fenda" && forward <= depth[Math.max(0, Math.min(383, Math.floor(sx)))] + 0.25) {
+        ctx.save();
+        ctx.globalCompositeOperation = "lighter";
+        ctx.globalAlpha = (motion.matches ? 0.62 : 0.55 + 0.2 * Math.sin(t * 3.4)) * (0.55 + 0.45 * (1 - forward / 30));
+        const rift = ctx.createRadialGradient(sx, top + h * 0.45, 1, sx, top + h * 0.45, Math.max(10, w * 0.8));
+        rift.addColorStop(0, "rgba(180,255,240,.9)");
+        rift.addColorStop(0.32, "rgba(125,246,229,.55)");
+        rift.addColorStop(0.62, "rgba(255,184,96,.28)");
+        rift.addColorStop(1, "rgba(125,246,229,0)");
+        ctx.fillStyle = rift;
+        ctx.fillRect(sx - w, top - h * 0.2, w * 2, h * 1.4);
+        ctx.fillStyle = "rgba(198,255,242,.68)";
+        ctx.fillRect(sx - Math.max(1, w * 0.035), top + h * 0.1, Math.max(2, w * 0.07), h * 0.8);
+        ctx.restore();
       }
       ctx.globalAlpha = 1;
     }
@@ -475,15 +565,19 @@ export async function createMareMission({
     if(swing>0){const k=swing/.18;ctx.strokeStyle=`rgba(198,242,231,${.65*k})`;ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(118,186);ctx.lineTo(206,140);ctx.lineTo(268,72);ctx.stroke();ctx.strokeStyle=`rgba(198,242,231,${.22*k})`;ctx.lineWidth=6;ctx.stroke();}
     if(m.p.containment.lanterna){ctx.fillStyle="rgba(104,206,170,.035)";ctx.fillRect(0,0,384,216);}
     if(m.finished){
+      const k=Math.min(1,endClock/2.4);
+      ctx.globalAlpha=0.55*(1-k*0.45);
+      ctx.drawImage(images["transicao-fenda"],192-50-k*26,108-90-k*34,100+k*52,180+k*68);
+      ctx.globalAlpha=1;
       const detailCount=Object.keys(m.p.details).filter(k=>details.some(d=>d.id===k)).length;
       ctx.fillStyle="rgba(3,9,13,.94)";ctx.fillRect(52,46,280,120);
       ctx.strokeStyle="#537379";ctx.strokeRect(52.5,46.5,279,119);
       ctx.font="11px monospace";ctx.fillStyle="#c0e7da";ctx.fillText("RELATÓRIO DE ECO",68,64);
       ctx.font="9px monospace";ctx.fillStyle="#9bbdb6";
       ctx.fillText(`DESCOMPASSO ${m.p.rank}/4 · MEMÓRIAS ${m.p.data.length}/3`,68,82);
-      ctx.fillText(`REGISTROS ${detailCount}/8 · LORE ${m.p.lore.length}/6`,68,96);
+      ctx.fillText(`REGISTROS ${detailCount}/8 · LORE ${m.p.lore.length}/6 · NULO ${m.p.nulo.length}/4`,68,96);
       ctx.fillText(`BALIZA ${m.p.checkpoint==="boia"?"VINCULADA":"NÃO VINCULADA"} · FÔLEGO ${Math.round(m.stamina)}`,68,110);
-      ctx.fillStyle="#e0b56a";ctx.fillText(m.p.lore.length>=4?'NULO: “O farol reconhece você.”':'NULO: “O silêncio também é um registro.”',68,128);
+      ctx.fillStyle="#e0b56a";ctx.fillText(nuloReportLine(m),68,128);
       ctx.fillStyle="#c0e7da";ctx.fillText("A ponte do Limiar aceitará seu eco.",68,146);
     }
     if(intro>0){ctx.fillStyle=`rgba(0,0,0,${Math.min(1,intro/1.6)})`;ctx.fillRect(0,0,384,216);}
@@ -499,8 +593,13 @@ export async function createMareMission({
       t += dt;
       activeFrame=mode==="3d";
       shell.classList.toggle("recompilado", lote5Complete(m));
+      shell.classList.toggle("fenda-aberta", fendaOpen(m));
       shake=Math.max(0,shake-dt);
       if(activeFrame)intro=Math.max(0,intro-dt);
+      if(activeFrame&&!m.finished&&m.p.rank!==lastRank){
+        lastRank=m.p.rank;
+        if(m.p.rank>=4){message.textContent+=" A FENDA DE RECOMPILAÇÃO ABRIU A SUDESTE.";tone(660,.9,.024,"sine");tone(110,.5,.02,"sawtooth");}
+      }
       if (mode === "3d" && !m.finished) {
         m.p.elapsed += dt;
         m.cooldown = Math.max(0, m.cooldown - dt);
@@ -611,7 +710,8 @@ export async function createMareMission({
           exit();
         }
       }
-      readout.textContent = `DESCOMPASSO LOCAL ${m.p.rank}/4 · DADOS ${m.p.data.length}/3 · ${Math.max(0, 600 - Math.floor(m.p.elapsed))}s · FÔLEGO ${Math.round(m.stamina)} · ${m.crouched?"SILENCIOSO":m.noise>.8?"PASSOS ALTOS":"CAMINHANDO"} · REGISTROS ${Object.keys(m.p.details).filter(k=>details.some(d=>d.id===k)).length}/8 · LORE ${m.p.lore.length}/6 · TENSÃO ${Math.round(m.stress)} · AMEAÇAS ${enemies.filter(e=>!e.dead&&e.phase!=="dissolve").length}/${enemies.length} · Q ${Math.ceil(m.cooldown)}s · ${lote5Readout(m)}`;
+      readout.textContent = `DESCOMPASSO LOCAL ${m.p.rank}/4 · DADOS ${m.p.data.length}/3 · ${Math.max(0, 600 - Math.floor(m.p.elapsed))}s · FÔLEGO ${Math.round(m.stamina)} · ${m.crouched?"SILENCIOSO":m.noise>.8?"PASSOS ALTOS":"CAMINHANDO"} · REGISTROS ${Object.keys(m.p.details).filter(k=>details.some(d=>d.id===k)).length}/8 · LORE ${m.p.lore.length}/6 · TENSÃO ${Math.round(m.stress)} · AMEAÇAS ${enemies.filter(e=>!e.dead&&e.phase!=="dissolve").length}/${enemies.length} · Q ${Math.ceil(m.cooldown)}s · ${lote5Readout(m)} · ${lote6Readout(m)}`;
+      objective.textContent = objectiveLine(m);
       const near = nearestSignal(m,signals());
       aside.textContent = near
         ? `E · ${near.label}`

@@ -2,6 +2,7 @@ import {details} from './mare-mission-details.js';
 import {lore} from './mare-mission-lore.js';
 import {combatProps} from './mare-mission-combat.js';
 import {lote5Props} from './mare-mission-lote5.js';
+import {lote6Props} from './mare-mission-lote6.js';
 // Local-only mission simulation: never writes global health, inventory or levels.
 export const MARE_MISSION = "mare-cromatica:baia-v1";
 export const SIZE = 32;
@@ -75,6 +76,8 @@ export function createMission(progress) {
   p.elapsed = Number.isFinite(Number(p.elapsed)) ? Math.max(0, Number(p.elapsed)) : 0;
   p.containment = Object.fromEntries(Object.entries(p.containment && typeof p.containment === 'object' && !Array.isArray(p.containment) ? p.containment : {}).filter(([k, v]) => typeof v === 'boolean' && ['cabo','lanterna','eco','painel'].includes(k)));
   p.lote5 = Object.fromEntries(Object.entries(p.lote5 && typeof p.lote5 === 'object' && !Array.isArray(p.lote5) ? p.lote5 : {}).filter(([k, v]) => v === true && ['valvula','painel','selo','cristal','caldeira','tubo'].includes(k)));
+  p.nulo = Array.isArray(p.nulo) ? [...new Set(p.nulo.filter((id) => ['primeiro','segundo','terceiro','ultimo'].includes(id)))] : [];
+  p.lote6 = Object.fromEntries(Object.entries(p.lote6 && typeof p.lote6 === 'object' && !Array.isArray(p.lote6) ? p.lote6 : {}).filter(([k, v]) => v === true && ['turbina','escada','fenda'].includes(k)));
   p.lore = Array.isArray(p.lore) ? [...new Set(p.lore.filter((id) => lore.some((l) => l.id === id)))] : [];
   p.details = Object.fromEntries(Object.entries(p.details && typeof p.details === 'object' && !Array.isArray(p.details) ? p.details : {}).filter(([k, v]) => v === true && details.some(d => d.id === k)));
   return {
@@ -101,7 +104,7 @@ export function canStand(x, y) {
     [0.2, -0.2],
     [-0.2, 0.2],
     [0.2, 0.2],
-  ].every(([a, b]) => !cell(x + a, y + b)) && details.every(s=>Math.hypot(x-s.x,y-s.y)>(s.r??.46)) && lore.every(s=>Math.hypot(x-s.x,y-s.y)>(s.r??.46)) && combatProps.every(s=>Math.hypot(x-s.x,y-s.y)>(s.r??.46)) && lote5Props.every(s=>Math.hypot(x-s.x,y-s.y)>(s.r??.46));
+  ].every(([a, b]) => !cell(x + a, y + b)) && details.every(s=>Math.hypot(x-s.x,y-s.y)>(s.r??.46)) && lore.every(s=>Math.hypot(x-s.x,y-s.y)>(s.r??.46)) && combatProps.every(s=>Math.hypot(x-s.x,y-s.y)>(s.r??.46)) && lote5Props.every(s=>Math.hypot(x-s.x,y-s.y)>(s.r??.46)) && lote6Props.every(s=>Math.hypot(x-s.x,y-s.y)>(s.r??.46));
 }
 export function move(m, dx, dy) {
   if(!Number.isFinite(dx)||!Number.isFinite(dy))return;

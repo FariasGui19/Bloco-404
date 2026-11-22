@@ -362,6 +362,8 @@ await loadSprites([
   { id: 'docas_fiel_abrigo', src: 'assets/sprites/docas-fidelidade/abrigo-oeste.png' },
   { id: 'docas_fiel_fundos', src: 'assets/sprites/docas-fidelidade/fundos-enraizados.png' },
   { id: 'docas_fiel_costa', src: 'assets/sprites/docas-fidelidade/costa-sudeste.png' },
+  { id: 'docas_oeste_pontual_fundos', src: 'assets/sprites/docas-oeste-pontual/fundos-preservados.png' },
+  { id: 'docas_oeste_pontual', src: 'assets/sprites/docas-oeste-pontual/atlas.png' },
   { id: 'docas_fechamento', src: 'assets/sprites/docas-fechamento/atlas.png' },
   { id: 'docas_cabana-oeste', src: 'assets/sprites/docas-vila-04/cabana-oeste.png' },
   { id: 'docas_cabana-leste', src: 'assets/sprites/docas-vila-04/cabana-leste.png' },

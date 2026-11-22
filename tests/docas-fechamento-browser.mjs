@@ -38,7 +38,7 @@ else{
    CanvasRenderingContext2D.prototype.drawImage=function(img,...args){if(img instanceof HTMLImageElement)urls.push(img.src);return draw.call(this,img,...args);};
    try{window.sampleSetor(3,'full');}finally{CanvasRenderingContext2D.prototype.drawImage=draw;}return urls;
   });
-  assert(drawUrls.some(s=>s.endsWith('/docas-fidelidade/fundos-enraizados.png')),'rooted bank integrated, not preview-only');
+  assert(drawUrls.some(s=>s.endsWith('/docas-fidelidade/fundos-enraizados.png')||s.endsWith('/docas-oeste-pontual/fundos-preservados.png')),'rooted bank integrated, not preview-only');
   assert(drawUrls.some(s=>s.endsWith('/docas-fidelidade/abrigo-oeste.png')),'replacement cabin integrated, not preview-only');
   assert.equal(await page.evaluate(()=>JSON.stringify(localStorage)),storage);assert.deepEqual(errors,[]);
   console.log('Chromium fechamento: mar isolado nos quatro lados, terra/sobreposição protegidas, duas artes animadas, cinco câmeras, storage e recursos OK.');

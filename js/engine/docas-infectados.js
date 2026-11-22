@@ -14,7 +14,10 @@ export function desenharInfectadoDocas(ctx,e,x,y,reduced=false,height=96){
  ctx.save();ctx.fillStyle='rgba(8,8,18,.5)';ctx.beginPath();ctx.ellipse(x,y,14,5,0,0,Math.PI*2);ctx.fill();
  if(e.windup>0){const progress=Math.max(0,Math.min(1,1-e.windup/.65));ctx.strokeStyle='#ffc4e2';ctx.lineWidth=2;ctx.beginPath();ctx.ellipse(x,y,20+progress*4,9+progress*2,0,0,Math.PI*2);ctx.stroke();}
  if(pose.phase==='queda')ctx.globalAlpha=Math.min(1,e.deathVisual/.35);
- ctx.translate(x,y);if(e.cromaticaFaceDireita??e.flip)ctx.scale(-1,1);ctx.imageSmoothingEnabled=false;
+ ctx.translate(x,y);if(e.cromaticaFaceDireita??e.flip)ctx.scale(-1,1);
+ // Lean is rooted at the opaque foot contact, never an independent bob.
+ if(!reduced){const clock=e.clock??0,lean=pose.phase==='preparo'?.024*Math.max(0,Math.min(1,1-e.windup/.65)):pose.phase==='recuperacao'?-.014*Math.sin(Math.max(0,2.3-(e.cooldown??0))*5):pose.phase==='passo'?.006*Math.sin(clock*12):0;ctx.transform(1,0,lean,1,0,0);}
+ ctx.imageSmoothingEnabled=false;
  if(paint){const drawH=pose.phase==='queda'?height*.48:height,w=drawH*paint.width/paint.height,[u,v]=APOIOS_INTERATIVOS_DOCAS['infectado-'+pose.phase]??APOIOS_POSES_INFECTADO['infectado-'+pose.phase];ctx.drawImage(paint,-u*w,-v*drawH,w,drawH);}
  else if(sheet){const fw=sheet.width/8,[u,v]=APOIOS_PASSOS_INFECTADO[pose.frame],w=height*.75;ctx.scale(1,1+pose.breath);ctx.drawImage(sheet,pose.frame*fw,0,fw,sheet.height,-u*w,-v*height,w,height);}
  else {ctx.fillStyle='#8e4d83';ctx.fillRect(-8,-34,16,34);}

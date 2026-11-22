@@ -1,3 +1,4 @@
+import { fundosForaDoAjuste } from './docas-oeste-pontual.js';
 import { FRAMES_FECHAMENTO } from '../data/worlds/arquipelago-rotas-perdidas/docas-fechamento.js';
 import { getSprite } from './sprites.js';
 
@@ -41,7 +42,7 @@ export function desenharPecaFechamento(ctx,id,s,t=0,reduced=false){
  const fundos=id==='encosta'&&getSprite('docas_fiel_fundos');
  const cabana=id==='casinha'&&(getSprite('docas_fiel_abrigo')||getSprite('docas_acabamento_cabana'));
  if(fundos){
-  ctx.drawImage(fundos,...PECAS_FIEIS.fundos.box);
+  ctx.drawImage(fundosForaDoAjuste(fundos),...PECAS_FIEIS.fundos.box);
   const pulse=reduced?.14:.14+.035*Math.sin(t*1.4);ctx.fillStyle=`rgba(164,255,205,${pulse})`;
   for(const x of [639,666,697]){ctx.beginPath();ctx.ellipse(x,327,5,6,0,0,Math.PI*2);ctx.fill();}
  }else if(cabana)ctx.drawImage(cabana,p.x,p.y,p.w,p.h);

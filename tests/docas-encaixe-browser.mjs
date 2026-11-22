@@ -23,7 +23,7 @@ else{
    const animated={};for(const id of ['galpao','torre','cristal-a','palmeira-c','camara'])animated[id]={moves:pixels(id,0,false)!==pixels(id,2,false),stable:pixels(id,0,true)===pixels(id,9,true)};
    const original=CanvasRenderingContext2D.prototype.drawImage,sequence=[];
    CanvasRenderingContext2D.prototype.drawImage=function(img,...args){
-    if(img instanceof HTMLImageElement&&img.src.endsWith('/docas-fidelidade/fundos-enraizados.png'))sequence.push('central_fundos');
+    if(img instanceof HTMLImageElement&&(img.src.endsWith('/docas-fidelidade/fundos-enraizados.png')||img.src.endsWith('/docas-oeste-pontual/fundos-preservados.png')))sequence.push('central_fundos');
     if(img instanceof HTMLImageElement&&img.src.includes('/docas-encaixe/')){
      const entry=Object.entries(PECAS_ENCAIXE).find(([,p])=>img.src.endsWith(`/${p.sheet}.png`)&&p.rect.every((v,i)=>args[i]===v));
      sequence.push(entry?.[0]??'INVALID_UV');

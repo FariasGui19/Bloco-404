@@ -25,13 +25,20 @@ export function atualizarAmeacasCromaticas(map, runtime, targets, player, progre
   };
   const freeStep=(e,x,y)=>stand(map,x,y,.22,e)&&(targets??[]).every(other=>other===e||!other.cromaticaEnemy||other.health<=0||Math.hypot(x-other.x,y-other.y)>=.44);
   for(const e of targets ?? []) {
-    if(!e.cromaticaEnemy || e.health<=0) continue;
+    if(!e.cromaticaEnemy)continue;
+    if(e.health<=0){
+      if(progress?.mareCromatica?.desfecho==='total'){e.deathVisual=0;continue;}
+      if(!e.deathInitialized){e.deathInitialized=true;e.deathVisual=.8;}
+      else e.deathVisual=Math.max(0,(e.deathVisual??0)-dt);
+      continue;
+    }
     if(progress?.mareCromatica?.desfecho==='total') {e.health=0;continue;}
     e.cromaticaMovendo=false;
+    e.alertVisual=Math.max(0,(e.alertVisual??0)-dt);
     e.attackVisual=Math.max(0,(e.attackVisual??0)-dt);
     e.clock=(e.clock??0)+dt;e.cooldown=Math.max(0,(e.cooldown??0)-dt);
     const dx=player.x-e.x,dy=player.y-e.y,dist=Math.hypot(dx,dy);
-    if(dist<6) {perto=true;if(Math.abs(dx)>.05)e.cromaticaFaceDireita=map.meta.sideView?dx>0:dx-dy>0;}
+    if(dist<6) {if(!e.alertSeen){e.alertSeen=true;e.alertVisual=.4;}perto=true;if(Math.abs(dx)>.05)e.cromaticaFaceDireita=map.meta.sideView?dx>0:dx-dy>0;}
     // A entrada da contenção é um respiro seguro e evita dano durante a transição.
     if(map.id==='mare_cromatica_contencao' && player.x<3.4) {e.windup=0;continue;}
     if(e.windup>0) {

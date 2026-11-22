@@ -1,0 +1,86 @@
+{
+  "batch": 7,
+  "count": 10,
+  "assets": [
+    {
+      "id": "chave-trilha",
+      "size": [
+        512,
+        330
+      ],
+      "sourceSha256": "fff4a7d5daca7791d92c99316358db57143a407dfa653dd1cd23de8467e2e089"
+    },
+    {
+      "id": "fragmento-costa",
+      "size": [
+        512,
+        369
+      ],
+      "sourceSha256": "9bb968a3c88288d40284c34c810a8a941ae46c50b69e545987ee516c46775637"
+    },
+    {
+      "id": "fragmento-vigia",
+      "size": [
+        512,
+        348
+      ],
+      "sourceSha256": "752b135c5d2c014173fd0eb62b7f399da898b993b1b4aa27b648b88e74cf6b5b"
+    },
+    {
+      "id": "fusivel-nucleo",
+      "size": [
+        512,
+        344
+      ],
+      "sourceSha256": "231150dd3e14688c8919765e2aa8393eea17e07af88a23de6f3fd97f21c1cf88"
+    },
+    {
+      "id": "gravador-leste",
+      "size": [
+        512,
+        446
+      ],
+      "sourceSha256": "38e586940ebfec2a54668dc8b3db1e75010aed6e539e2c3d2f4ad76aa04e6ef4"
+    },
+    {
+      "id": "gravador-oeste",
+      "size": [
+        512,
+        303
+      ],
+      "sourceSha256": "fc9b9b4bd173a9b6cb389352409598d26744eaeffc4793fa818cd9bd719cb8cd"
+    },
+    {
+      "id": "infectado-alerta",
+      "size": [
+        399,
+        512
+      ],
+      "sourceSha256": "68cab0b7557e873a0e573871e487e9812ced203f0f6e143337b7815a4d0b628a"
+    },
+    {
+      "id": "infectado-queda",
+      "size": [
+        512,
+        465
+      ],
+      "sourceSha256": "dc8922af3cdbe14399c27bb496a238b8d0c23c871e36559fca75353caf563c37"
+    },
+    {
+      "id": "infectado-recuperacao",
+      "size": [
+        398,
+        512
+      ],
+      "sourceSha256": "b53d9d4f5e4ed6fd46b2f298d7d121f3af8eca525f11f617bd42034ae6e1aa16"
+    },
+    {
+      "id": "terminal-crt",
+      "size": [
+        405,
+        512
+      ],
+      "sourceSha256": "f28548742889bdfefb6c8211f9d15ef938a25723395056e3275a7217d4d4c20b"
+    }
+  ]
+}

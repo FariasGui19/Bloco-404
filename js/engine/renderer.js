@@ -1,3 +1,4 @@
+import {desenharInterativoDocas} from './docas-interativos.js';
 import {movimentoDocasReduzido} from './docas-animation.js';
 import {desenharInfectadoDocas} from './docas-infectados.js';
 import { desenharPisoInteriorDocas, desenharParedesInteriorDocas, desenharChaoInteriorDocas, desenharMobiliaDocas } from './docas-interiores.js';
@@ -5373,6 +5374,7 @@ function drawMapObject(object, state) {
   if (object.invisivel || object.renderizar === false) return;
   if (object.hideWhenFlag && state.progress.flags?.[object.hideWhenFlag]) return;
   if (object.showWhenFlag && !state.progress.flags?.[object.showWhenFlag]) return; // NOVO
+  if(object.docasInterativo && desenharInterativoDocas(ctx,object,state)) return;
   if(object.docasProp && desenharMobiliaDocas(ctx,object,state)) return;
 
   if (['rocha_rachada', 'travessia_mare_eco', 'passagem_mare_eco', 'caverna_alagada', 'fenda_estreita', 'teleferico_quebrado'].includes(object.id)) { drawBridgeThreshold(object, state.world?.currentMap, state); return; }

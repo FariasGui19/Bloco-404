@@ -63,7 +63,7 @@ export function desenharEncaixe(ctx,id,s,t,reduced){
  const [sx,sy,sw,sh]=frame.rect,{x,y,w,h,foot}=dest,p=poseCentral(t,reduced,x*.03);
  ctx.save();ctx.scale(s,s);
  const foliage=id.startsWith('palmeira');
- if(foliage){ctx.translate(x+w*.5,foot);ctx.transform(1,0,p.vento*.6,1,0,0);ctx.translate(-x-w*.5,-foot);}
+ if(foliage){ctx.translate(x+w*.5,foot);ctx.transform(1,0,p.vento*3,1,0,0);ctx.translate(-x-w*.5,-foot);}
  ctx.imageSmoothingEnabled=true;ctx.imageSmoothingQuality='high';
  if(id==='margem-direita'&&costaFielPronta()){ctx.beginPath();ctx.rect(1197,0,500,900);ctx.clip();}
  ctx.drawImage(img,sx,sy,sw,sh,x,y,w,h);ctx.restore();

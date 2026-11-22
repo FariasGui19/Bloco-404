@@ -1,3 +1,4 @@
+import { desenharPisoInteriorDocas, desenharParedesInteriorDocas, desenharChaoInteriorDocas, desenharMobiliaDocas } from './docas-interiores.js';
 import { desenharEmbarquePesqueiro } from './docas-cascos.js';
 import { renderDocas } from './docas-view.js';
 import { perspectivaSubmersa } from './perspectiva-submersa.js';
@@ -230,6 +231,7 @@ export function render(map, state, frameNow = performance.now()) {
     if (map.meta?.estiloSala === 'nucleo_10x') drawNucleo10xUnderlay(map, state);
     if (map.meta?.estiloSala === 'carga_eco' || map.meta?.estiloSala === 'frequencia_limiar') drawCargoEcoUnderlay(map, state);
     drawFloors(map, state);
+    if(map.meta?.docasInterior) desenharChaoInteriorDocas(ctx,map,state);
     drawHazards(state.hazards);
     if (map.id === 'hub_saguao') drawHubFloorMarkings();
     if (map.id === 'ilha_praia_inicial') drawBeachStation(map);
@@ -1291,6 +1293,7 @@ function drawCostao(x, y, tx, ty, map) {
 }
 
 function drawFloorTile(type, x, y, map) {
+  if(map.meta?.docasInterior && desenharPisoInteriorDocas(ctx,map,x,y)) return;
   const tx = (x - y) * HW;
   const ty = (x + y) * HH;
 
@@ -2831,7 +2834,8 @@ function drawWorld(map, state) {
   if (map.meta?.estiloSala === 'mare_astral') drawMareAstralOuterWallShell(map);
   if (map.meta?.estiloSala === 'nucleo_10x') drawNucleo10xOuterWallShell(map);
   if (map.meta?.estiloSala === 'carga_eco' && map.meta?.useBackgroundWalls) drawCargoEcoWallShell(map);
-  if (map.meta?.estiloSala === 'frequencia_limiar' && map.meta?.useBackgroundWalls) drawFrequencyStationWalls(map);
+  if(map.meta?.docasInterior) desenharParedesInteriorDocas(ctx,map,state);
+  else if (map.meta?.estiloSala === 'frequencia_limiar' && map.meta?.useBackgroundWalls) drawFrequencyStationWalls(map);
   // Camada de fundo (trilho, trem, painéis murais): atrás de tudo, só acima do chão.
   for (const o of backList) if ((o.ordem ?? 0) >= 0) drawMapObject(o, state);
   if (map.meta?.estiloSala === 'mare_astral') drawMareAstralWindowLife(map, state);
@@ -5374,6 +5378,7 @@ function drawMapObject(object, state) {
   if (object.invisivel || object.renderizar === false) return;
   if (object.hideWhenFlag && state.progress.flags?.[object.hideWhenFlag]) return;
   if (object.showWhenFlag && !state.progress.flags?.[object.showWhenFlag]) return; // NOVO
+  if(object.docasProp && desenharMobiliaDocas(ctx,object,state)) return;
 
   if (['rocha_rachada', 'travessia_mare_eco', 'passagem_mare_eco', 'caverna_alagada', 'fenda_estreita', 'teleferico_quebrado'].includes(object.id)) { drawBridgeThreshold(object, state.world?.currentMap, state); return; }
 

@@ -29,7 +29,14 @@ else{
   const seq=result.sequence,find=file=>seq.findIndex(r=>r.url.endsWith(file));
   assert(seq.findIndex(r=>r.url.endsWith('/docas-fidelidade/fundos-enraizados.png')||r.url.endsWith('/docas-oeste-pontual/fundos-preservados.png'))<find('PLAYER'),'rear cabin obeys foot385, behind actor at420');
   assert(find('PLAYER')<find('/docas-fidelidade/abrigo-oeste.png'),'actor at420 is behind porch at451');
-  assert.equal(seq.filter(r=>(r.url.endsWith('/docas-fidelidade/fundos-enraizados.png')||r.url.endsWith('/docas-oeste-pontual/fundos-preservados.png'))).length,1,'no duplicate cabin/bank or early background draw');
+  const rear=seq.filter(r=>(r.url.endsWith('/docas-fidelidade/fundos-enraizados.png')||r.url.endsWith('/docas-oeste-pontual/fundos-preservados.png')));
+  // Revision: 32 animated crown strips plus ONE rigid lower cabin band.
+  // Do not mistake the crown-only crops for duplicate complete buildings.
+  assert.equal(rear.length,33,'one crown pass and one rigid cabin pass');
+  assert.equal(rear.filter(r=>r.args[5]>=238).length,1,'cabin/bank is drawn exactly once');
+  assert(rear.slice(0,32).every(r=>r.args.length===8&&r.args[5]<238),'all other draws crop only the canopy');
+  assert.equal(rear.at(-1).args[5],238,'roofline/roots remain rigid');
+
   assert.equal(seq.filter(r=>r.url.endsWith('/docas-fidelidade/acesso-cais.png')).length,1,'one crisp shore connection');
   assert(!seq.some(r=>r.url.endsWith('/escada-mare.png')||r.url.endsWith('/escada-oeste.png')),'old double stair block is not drawn');
   assert.equal(seq.filter(r=>r.url.endsWith('/docas-fidelidade/costa-sudeste.png')).length,1,'one continuous coastline');

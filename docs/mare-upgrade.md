@@ -278,3 +278,33 @@ Evidência: `qa/upgrade/operador-civil-estudio-{frontal,lateral,costas,tresquart
 `qa/upgrade/operador-civil-hud.png`.
 Verificação: `node --test tests/dimension-identity.mjs tests/dimension-performance.mjs tests/dimension-sculpt.mjs`
 → **3/3**.
+
+## Lote 8 — dez props novos da orla
+
+A orla ganhou ofício: guindaste, rede, caixotes, tubulação, energia, sinalização,
+boia, poste de luz e dois corais. As dez fontes são **arte própria** em
+`assets/source-art/mare-missao-lote8/` (pintadas em 1408 px, fundo magenta
+chapado) e o preparo fica em `tools/preparar-mare-lote8.py`:
+
+- chave magenta → alfa, recorte no bbox **antes** da redução (cada sprite usa os
+  192 px inteiros), `NEAREST`, `MinFilter(5)` para tirar a franja e novo recorte;
+- a concha recebe um **duotone magenta/ciano** para continuar cromática;
+- o script ainda sabe desenhar as dez fontes proceduralmente (`build_sources`)
+  quando a pasta está vazia — o pipeline nunca fica sem arte.
+
+Integração:
+
+- `js/dimension/mare-mission-lote8.js` declara `lote8Names`, onze instâncias de
+  cenário e a **concha cromática** interativa (`lote8Props`);
+- `mare-mission.js` carrega o diretório novo, passa os props para o 3D e para o
+  fallback 2D, inclui a concha na lista de alvos e no readout (`CONCHA 0/1`);
+- arte do lote 8 é **opcional no decode**: se faltar um PNG, o prop cai no
+  fallback sem derrubar a entrada da missão (arte-base continua obrigatória);
+- `mare-mission-world3d.js` ganhou altura própria por prop e duas luzes locais:
+  o **poste** pisca como filamento velho e a **concha** pulsa no compasso do eco;
+- `mare-mission-model.js` inclui os props na colisão e sanitiza `p.lote8.concha`.
+
+Evidência: `qa/upgrade/lote8-patio.png`, `qa/upgrade/lote8-guindaste.png`,
+`qa/upgrade/lote8-concha.png`.
+Verificação: `tests/mare-mission-lote8.mjs` (contrato das dez artes, interação,
+colisão, alturas e fallback) + suíte `tests/mare-*.mjs` completa.

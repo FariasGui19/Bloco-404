@@ -1345,13 +1345,30 @@ export async function createMareWorld3D({
 
   // ---------- sprites de objetos ----------
   const propSprites = new Map();
+  // Lote 8: luzes locais que dão ofício à orla (poste e concha).
+  const lote8Lights = [];
   const propShadowMat = new THREE.MeshBasicMaterial({
     color: 0x000000,
     transparent: true,
     opacity: 0.38,
     depthWrite: false,
   });
-  const artHeight = { boia: 0.58, "porta-recompilacao": 1.05, "portal-mare": 1.2, "selo-recompilado": 0.8 };
+  const artHeight = {
+    boia: 0.58,
+    "porta-recompilacao": 1.05,
+    "portal-mare": 1.2,
+    "selo-recompilado": 0.8,
+    "poste-luz": 1.95,
+    "guindaste-baia": 1.5,
+    "rede-pesca": 0.85,
+    "caixa-energia": 0.8,
+    "tubo-corrosivo": 0.62,
+    "placa-ferrugem": 1.0,
+    "concha-cromatica": 0.5,
+    "coral-magenta": 0.45,
+    "boia-sinalizadora": 0.62,
+    "caixote-madeira": 0.5,
+  };
   const addProp = (o) => {
     const art = o.art === "terminal" ? "terminal-recompilacao" : o.art === "cristal-mare" ? "cristal-cluster" : o.art;
     const tex = spriteTexture(art);
@@ -1380,6 +1397,23 @@ export async function createMareWorld3D({
     );
     shadow.rotation.x = -Math.PI / 2;
     shadow.scale.set(1, 0.55, 1);
+    if (art === "poste-luz" || art === "concha-cromatica") {
+      const lamp = art === "poste-luz";
+      const light = new THREE.PointLight(
+        lamp ? 0xffb066 : 0xe04ce6,
+        lamp ? 9 : 3.2,
+        lamp ? 8.5 : 3.4,
+        2,
+      );
+      light.position.set(o.x, lamp ? h * 0.88 : 0.3, o.y);
+      light.userData = {
+        kind: lamp ? "lamp" : "shell",
+        base: lamp ? 9 : 3.2,
+        phase: hash(o.x, o.y, 9) * TAU,
+      };
+      scene.add(light);
+      lote8Lights.push(light);
+    }
     const key = `${o.art}@${o.x.toFixed(2)},${o.y.toFixed(2)}`;
     propSprites.set(key, { sprite, shadow, prop: o });
   };
@@ -1676,6 +1710,14 @@ export async function createMareWorld3D({
     state.interference = interference;
     state.flashlight = m.finished ? false : true;
     if (active) syncProps(activeProps);
+    // Poste com filamento instável; concha respirando no compasso do eco.
+    for (const light of lote8Lights) {
+      const d = light.userData;
+      light.intensity =
+        d.kind === "lamp"
+          ? d.base * (0.8 + Math.sin(t * 5.4 + d.phase) * 0.12 + Math.sin(t * 17.3) * 0.05)
+          : d.base * (0.68 + Math.sin(t * 2.1 + d.phase) * 0.3);
+    }
 
     // respiração + passada: o eixo vertical da câmera nunca fica morto.
     const speed = Math.hypot(m.vx || 0, m.vy || 0);

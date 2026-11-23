@@ -82,7 +82,7 @@ export function createPursuit(){
    // Perception is shared and deliberately fallible: sight + footstep noise + a
    // periodic Nulo "ping" that hints at the player's pattern. Without any of
    // these, the pair patrols and searches instead of omnisciently homing.
-   const range=(m.crouched?9:16)+(m.p?.containment?.lanterna?4:0);
+   const range=((m.crouched?9:16)+(m.p?.containment?.lanterna?4:0))*(m.lampOn===false?0.6:1);
    let sighted=false,heard=false;
    for(const e of enemies){
      const dist=Math.hypot(m.x-e.x,m.y-e.y);

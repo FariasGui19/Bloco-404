@@ -4,6 +4,8 @@ import {combatProps,isInteractiveCombat,useCombatProp} from './mare-mission-comb
 import {lote5Props,isInteractiveLote5,lote5Complete,lote5Readout,useLote5} from './mare-mission-lote5.js';
 import {lote6Props,isInteractiveLote6,lote6Readout,nuloEntity,nuloReportLine,objectiveLine,useLote6,useNulo,fendaOpen} from './mare-mission-lote6.js';
 import {lote7Decor,lote7Props,isInteractiveLote7,lampOn,lote7Readout,useLote7} from './mare-mission-lote7.js';
+import {lote8Decor,lote8Names,lote8Props,lote8Readout,isInteractiveLote8,useLote8} from './mare-mission-lote8.js';
+import {lote9Decor,lote9Names,lote9Props,lote9Cue,lote9Readout,isInteractiveLote9,useLote9} from './mare-mission-lote9.js';
 import {createMareWorld3D} from './mare-mission-world3d.js';
 import {
   cell,
@@ -80,7 +82,7 @@ export async function createMareMission({
     "nulo-sobrecarga","cristal-cluster","vegetacao-duna",
     "caranguejo","gaivota","peixe","onda",
   ];
-  const artDir = (n) => coastNames.includes(n) ? "mare-coast" : upgradeNames.includes(n) ? "mare-upgrade" : lote7Names.includes(n) ? "mare-missao-lote7" : lote6Names.includes(n) ? "mare-missao-lote6" : lote5Names.includes(n) ? "mare-missao-lote5" : lote4Names.includes(n) ? "mare-missao-lote4" : lote3Names.includes(n) ? "mare-missao-lote3" : extraNames.includes(n) ? "mare-missao-lote2" : "mare-missao-base";
+  const artDir = (n) => coastNames.includes(n) ? "mare-coast" : upgradeNames.includes(n) ? "mare-upgrade" : lote9Names.includes(n) ? "mare-missao-lote9" : lote8Names.includes(n) ? "mare-missao-lote8" : lote7Names.includes(n) ? "mare-missao-lote7" : lote6Names.includes(n) ? "mare-missao-lote6" : lote5Names.includes(n) ? "mare-missao-lote5" : lote4Names.includes(n) ? "mare-missao-lote4" : lote3Names.includes(n) ? "mare-missao-lote3" : extraNames.includes(n) ? "mare-missao-lote2" : "mare-missao-base";
   const names = [
     "madeira-sal",
     "concreto-mar",
@@ -95,13 +97,21 @@ export async function createMareMission({
   ];
   const images = Object.fromEntries(
     await Promise.all(
-      [...names,...extraNames,...lote3Names,...lote4Names,...lote5Names,...lote6Names,...lote7Names,...upgradeNames,...coastNames].map(async (n) => {
+      [...names,...extraNames,...lote3Names,...lote4Names,...lote5Names,...lote6Names,...lote7Names,...lote8Names,...lote9Names,...upgradeNames,...coastNames].map(async (n) => {
         const im = new Image();
         im.src = new URL(
           `../../assets/sprites/${artDir(n)}/${n}.png`,
           import.meta.url,
         ).href;
-        await im.decode();
+        // Decoração do lote 8 é opcional: se a arte faltar, o prop cai no
+        // fallback e o resto da orla continua. Arte de missão continua
+        // obrigatória e derruba a entrada com rollback (contrato do browser).
+        try {
+          await im.decode();
+        } catch (error) {
+          if (lote8Decor.some((d) => d.art === n)) return [n, null];
+          throw error;
+        }
         return [n, im];
       }),
     ).catch((error) => {
@@ -155,7 +165,11 @@ export async function createMareMission({
     ...lote5Props,
     ...lote6Props,
     ...lote7Props,
+    ...lote8Props,
+    ...lote9Props,
     ...lote7Decor.map((d) => ({ ...d, decor: true })),
+    ...lote8Decor.map((d) => ({ ...d, decor: true })),
+    ...lote9Decor.map((d) => ({ ...d, decor: true })),
   ];
   const world3d = await createMareWorld3D({
     images,
@@ -395,6 +409,8 @@ export async function createMareMission({
     ...lote5Props.filter(isInteractiveLote5),
     ...lote6Props.filter(isInteractiveLote6),
     ...lote7Props.filter(isInteractiveLote7),
+    ...lote8Props.filter(isInteractiveLote8),
+    ...lote9Props.filter(isInteractiveLote9),
     nuloEntity(m, t),
   ];
   function dash() {
@@ -417,7 +433,14 @@ export async function createMareMission({
     const machine = isInteractiveLote5(near) ? useLote5(m, near)
       : isInteractiveLote6(near) ? useLote6(m, near)
       : isInteractiveLote7(near) ? useLote7(m, near)
+      : isInteractiveLote8(near) ? useLote8(m, near)
+      : isInteractiveLote9(near) ? useLote9(m, near)
       : near?.kind === 'nulo' ? useNulo(m, near) : null;
+    // Resposta sonora curta para o prop do lote 9 usado.
+    if (machine && isInteractiveLote9(near)) {
+      const cue = lote9Cue(near.kind);
+      if (cue) tone(cue.hz, cue.dur, cue.gain, cue.wave);
+    }
     message.textContent = machine ?? (near && loreProps.includes(near)
       ? useLore(m, near)
       : near && details.includes(near) ? useDetail(m, near)
@@ -859,7 +882,11 @@ export async function createMareMission({
       ...lote5Props.map((d) => ({ ...d, scale: d.scale * 0.8 })),
       ...lote6Props.map((d) => ({ ...d, scale: d.scale * 0.8 })),
       ...lote7Props.map((d) => ({ ...d, scale: d.scale * 0.8 })),
+      ...lote8Props.map((d) => ({ ...d, scale: d.scale * 0.8 })),
+      ...lote9Props.map((d) => ({ ...d, scale: d.scale * 0.8 })),
       ...lote7Decor.map((d) => ({ ...d, scale: d.scale * 0.8 })),
+      ...lote8Decor.map((d) => ({ ...d, scale: d.scale * 0.8 })),
+      ...lote9Decor.map((d) => ({ ...d, scale: d.scale * 0.8 })),
       nuloEntity(m, t),
       ...enemies.filter((e) => !e.dead).map((e) => ({ ...e, art: enemyArt(e), scale: e.hunter ? 1.08 : e.guardian ? 1.12 : 1 })),
     ].sort(
@@ -1367,7 +1394,7 @@ export async function createMareMission({
           exit();
         }
       }
-      readout.textContent = `DESCOMPASSO LOCAL ${m.p.rank}/4 · DADOS ${m.p.data.length}/3 · ${Math.max(0, 600 - Math.floor(m.p.elapsed))}s · FÔLEGO ${Math.round(m.stamina)} · ${m.crouched?"SILENCIOSO":m.noise>.8?"PASSOS ALTOS":"CAMINHANDO"} · REGISTROS ${Object.keys(m.p.details).filter(k=>details.some(d=>d.id===k)).length}/8 · LORE ${m.p.lore.length}/6 · TENSÃO ${Math.round(m.stress)} · AMEAÇAS ${enemies.filter(e=>!e.dead&&e.phase!=="dissolve").length}/${enemies.length} · Q ${Math.ceil(m.cooldown)}s · LANTERNA ${m.lampOn ? Math.round(m.lamp) + "%" : "OFF"} · ESQUIVA ${m.dashCd > 0 ? Math.ceil(m.dashCd) + "s" : "PRONTA"} · ${lote5Readout(m)} · ${lote6Readout(m)} · ${lote7Readout(m)}`;
+      readout.textContent = `DESCOMPASSO LOCAL ${m.p.rank}/4 · DADOS ${m.p.data.length}/3 · ${Math.max(0, 600 - Math.floor(m.p.elapsed))}s · FÔLEGO ${Math.round(m.stamina)} · ${m.crouched?"SILENCIOSO":m.noise>.8?"PASSOS ALTOS":"CAMINHANDO"} · REGISTROS ${Object.keys(m.p.details).filter(k=>details.some(d=>d.id===k)).length}/8 · LORE ${m.p.lore.length}/6 · TENSÃO ${Math.round(m.stress)} · AMEAÇAS ${enemies.filter(e=>!e.dead&&e.phase!=="dissolve").length}/${enemies.length} · Q ${Math.ceil(m.cooldown)}s · LANTERNA ${m.lampOn ? Math.round(m.lamp) + "%" : "OFF"} · ESQUIVA ${m.dashCd > 0 ? Math.ceil(m.dashCd) + "s" : "PRONTA"} · ${lote5Readout(m)} · ${lote6Readout(m)} · ${lote7Readout(m)} · ${lote8Readout(m)} · ${lote9Readout(m)}`;
       objective.textContent = objectiveLine(m);
       const near = nearestSignal(m,signals());
       const nearLabel = typeof near?.label === "string" ? near.label.trim() : "";

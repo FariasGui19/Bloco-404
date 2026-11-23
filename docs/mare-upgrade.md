@@ -242,3 +242,109 @@ fauna no `world3d`.
 Verificação: `node --test tests/mare-*.mjs` → **14/14**;
 `tests/mare-upgrade-3d-browser.mjs` e `tests/mare-mission-browser.mjs` → **1/1**
 cada, sem `pageerror`.
+
+## Operador civil — ficha + Tripo3D `c4343c10`
+
+O operador sem traje agora nasce do rig civil (`js/dimension/operator-civilian.js`)
+em vez do traje padrão. A referência é a ficha tática anexada e o modelo Tripo3D
+do autor (`6018` faces / `5372` vértices, prompt: homem musculoso, cabelo escuro
+ondulado, óculos, regata preta, calça cargo cinza e tênis preto com tatuagens
+escuras nos dois braços). O GLB é geometria estática, então o rig segmentado
+recria o modelo peça por peça.
+
+- **Texturas** (`tools/preparar-operador.py`): `pele-operador`, `tatuagem-manga`
+  (pele recolorida para `(136,92,64)` e tinta `(38,46,48)` só nas linhas
+  escuras), `tecido-regata`, `tecido-carga` e `cabelo-cachos` (recorte da nuca da
+  ficha em `918,68→1014,142`), todas `256²`, `NearestFilter` e ≤56 cores. Pele e
+  tatuagem usam bump leve; cabelo usa `MirroredRepeatWrapping` + bump `0.02`.
+- **Cabeça**: crânio loft com occipital, arcada, maçãs e queixo; óculos de aro
+  fino com lentes translúcidas, bigode grosso e mandíbula em tom de barba. O
+  cabelo é um casco curto (fade) + 40 cachos em espiral de Fibonacci + franja,
+  com nuca preenchida.
+- **Regata paramétrica** (`tankGeometry`): perfil de raio por altura, borda
+  superior em U contínuo no decote (sem degraus), cavas recortadas por `f` e
+  `|x|`, e alças em tubo ligando o painel da frente ao das costas. Material
+  `DoubleSide` para o interior aparecer no decote.
+- **Pernas**: pelve cargo sem “avental”, coxa/joelho com afunilamento de
+  panturrilha, faixa lateral escura, cargo rebaixado e tênis com solado loft,
+  cabedal elíptico, biqueira clara e faixa laranja.
+- **HUD**: o cartão `OPERADOR / ECO ATIVO` recebeu retrato 66×66 que troca de
+  humor com o estado real (`ferido` <34% de vida, `cansado` <22% de energia,
+  `alerta` em mira/velocidade, senão `neutro`).
+- **Contrato**: `textures.size === 3` sem forma, `sculpt.revision = '4.0'`,
+  `moustache/glasses/tattoos` truthy e bracelete só em `nucleo_dez_forma`.
+
+Evidência: `qa/upgrade/operador-civil-estudio-{frontal,lateral,costas,tresquartos}.png`,
+`qa/upgrade/operador-civil-hud.png`.
+Verificação: `node --test tests/dimension-identity.mjs tests/dimension-performance.mjs tests/dimension-sculpt.mjs`
+→ **3/3**.
+
+## Lote 8 — dez props novos da orla
+
+A orla ganhou ofício: guindaste, rede, caixotes, tubulação, energia, sinalização,
+boia, poste de luz e dois corais. As dez fontes são **arte própria** em
+`assets/source-art/mare-missao-lote8/` (pintadas em 1408 px, fundo magenta
+chapado) e o preparo fica em `tools/preparar-mare-lote8.py`:
+
+- chave magenta → alfa, recorte no bbox **antes** da redução (cada sprite usa os
+  192 px inteiros), `NEAREST`, `MinFilter(5)` para tirar a franja e novo recorte;
+- a concha recebe um **duotone magenta/ciano** para continuar cromática;
+- o script ainda sabe desenhar as dez fontes proceduralmente (`build_sources`)
+  quando a pasta está vazia — o pipeline nunca fica sem arte.
+
+Integração:
+
+- `js/dimension/mare-mission-lote8.js` declara `lote8Names`, onze instâncias de
+  cenário e a **concha cromática** interativa (`lote8Props`);
+- `mare-mission.js` carrega o diretório novo, passa os props para o 3D e para o
+  fallback 2D, inclui a concha na lista de alvos e no readout (`CONCHA 0/1`);
+- arte do lote 8 é **opcional no decode**: se faltar um PNG, o prop cai no
+  fallback sem derrubar a entrada da missão (arte-base continua obrigatória);
+- `mare-mission-world3d.js` ganhou altura própria por prop e duas luzes locais:
+  o **poste** pisca como filamento velho e a **concha** pulsa no compasso do eco;
+- `mare-mission-model.js` inclui os props na colisão e sanitiza `p.lote8.concha`.
+
+Evidência: `qa/upgrade/lote8-patio.png`, `qa/upgrade/lote8-guindaste.png`,
+`qa/upgrade/lote8-concha.png`.
+Verificação: `tests/mare-mission-lote8.mjs` (contrato das dez artes, interação,
+colisão, alturas e fallback) + suíte `tests/mare-*.mjs` completa.
+
+## Lote 9 — socorro na baía, texturas e respiração do cenário
+
+Dez fontes novas em `assets/source-art/mare-missao-lote9/`: **três texturas
+tileable** (metal corroído, lona encardida, pedra molhada) e **sete props**
+(lanterna de querosene, bote de salvamento, guincho manual, drusa cromática,
+peixe morto, bandeira de sinal e cogumelo de sal). O preparo vive em
+`tools/preparar-mare-lote9.py`: texturas viram tiles 256 px quantizados em 56
+cores; props usam chave magenta, recorte no bbox antes da redução, `NEAREST`,
+`MinFilter(5)` e novo recorte.
+
+Materiais e ambientação:
+
+- `metal-corroido` substitui o metal escuro das estruturas e dos contêineres do
+  píer; `lona-encardida` cobre os telhados das cabanas; `pedra-molhada` entra nas
+  rochas que encostam na água (`waterAt` em cruz), secando o resto da duna;
+- a **lanterna** ganhou luz quente com halo aditivo e tremulação de pavio; a
+  **drusa** ganhou luz magenta com halo respirando em 1.7 Hz.
+
+Mecânica (quatro props interativos, um uso cada):
+
+- lanterna: +55% de carga, mas **recusa** se o tanque está acima de 90% ("guarde
+  o combustível"); ao ser usada, a luz do prop cai para 12%;
+- bote: move o checkpoint do eco e devolve 70 de fôlego;
+- guincho: fôlego cheio e −28 de tensão;
+- drusa: registra o eco de 66.6 Hz (readout `DRUSA 0/1`).
+
+Extras da leva:
+
+- cada uso dispara um **cue** próprio (`lote9Cue`: triângulo 392 Hz, sino 146 Hz,
+  serra 98 Hz, senoide 528 Hz);
+- props leves (boia, bote, rede, bandeira, cogumelo, lanterna) agora **balançam**
+  com vento determinístico no `render`;
+- `sanitize` guarda `p.lote9` com as quatro flags; colisão inclui os quatro props.
+
+Evidência: `qa/upgrade/lote9-lanterna.png`, `lote9-lanterna-acesa.png`,
+`lote9-bote.png`, `lote9-guincho.png`, `lote9-drusa.png`,
+`lote9-panorama.png`.
+Verificação: `tests/mare-mission-lote9.mjs` (contrato das dez artes, alcance,
+flags, readout e cues) somado à suíte `tests/mare-*.mjs` (25 testes).

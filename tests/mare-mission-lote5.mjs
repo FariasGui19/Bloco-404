@@ -62,7 +62,7 @@ assert.equal(enemyArt({guardian: true, phase: 'hunt'}), 'guardiao-mare');
 assert.equal(enemyArt({guardian: true, phase: 'hurt'}), 'guardiao-dano');
 assert.equal(enemyArt({guardian: true, phase: 'dissolve'}), 'guardiao-dano');
 assert.match(missionSource, /guardian: true/);
-assert.match(missionSource, /scale: e\.hunter \? 0\.58 : e\.guardian \? 1\.12 : 1/);
+assert.match(missionSource, /scale: e\.hunter \? 1\.08 : e\.guardian \? 1\.12 : 1/);
 
 // Transition, ambience and audio hooks are wired without gating progression.
 const css = fs.readFileSync(path.join(root, 'css/dimension.css'), 'utf8');

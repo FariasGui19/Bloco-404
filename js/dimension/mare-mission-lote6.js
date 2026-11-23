@@ -7,7 +7,7 @@
 export const lote6Props = Object.freeze([
   { id: 'turbina6', x: 12.4, y: 13.4, art: 'turbina-sala', scale: 1.35, r: 0.55, kind: 'lote6-turbine', label: 'Turbina da baía' },
   { id: 'escada6', x: 26.5, y: 12.8, art: 'escada-servico', scale: 1.15, r: 0.5, kind: 'lote6-stairs', label: 'Escada de serviço' },
-  { id: 'fenda6', x: 27.5, y: 22.5, art: 'transicao-fenda', scale: 1.9, r: 0.6, kind: 'lote6-rift', label: 'Fenda de recompilação' },
+  { id: 'fenda6', x: 25.2, y: 19.4, art: 'portal-mare', scale: 2.35, r: 0.6, kind: 'lote6-rift', label: 'Fenda de recompilação' },
 ]);
 
 export const isInteractiveLote6 = (prop) => Boolean(prop && prop.kind?.startsWith('lote6-'));

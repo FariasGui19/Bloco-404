@@ -10,8 +10,10 @@ texturas e a transição da fenda.
 | --- | --- |
 | `nulo-operador.png` | Nulo físico, pose de arquivo |
 | `nulo-operador-voz.png` | variante de estática para a voz do Nulo |
-| `cacador-mare.png` | caçador rastejante, novo inimigo rápido |
-| `cacador-dano.png` | quadro de dano/dissolução do caçador |
+| `cacador-mare.png` | caçador do lote 6, substituído visualmente no lote 7 |
+| `cacador-dano.png` | quadro de dano/dissolução do caçador do lote 6 |
+
+> **Lote 7:** o caçador agora usa `afogado-mare`/`afogado-dano`; continua sendo `enemy[0]` e as duas ameaças não mudaram. Veja `docs/mare-missao-lote7.md`.
 | `parede-azulejo.png` | parede interna, 64×64 tileável |
 | `parede-ferrugem.png` | parede externa, 64×64 tileável |
 | `chao-grade.png` | piso industrial gradeado, 64×64 tileável |

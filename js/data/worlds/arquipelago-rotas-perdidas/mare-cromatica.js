@@ -30,7 +30,22 @@ export const contencao={id:'mare_cromatica_contencao',meta:{nome:'ESTAÇÃO 66.6
   portals:[{id:'cromatica_subir',tipo:'door',x:1,y:7,label:'VOLTAR À SUPERFÍCIE',interactionDistance:1.1,destino:{mapId:'mare_cromatica_superficie',spawnId:'vindo_da_estacao'}},
     {id:'cromatica_portal',tipo:'door',x:18,y:7,label:'ATRAVESSAR A FENDA',requiresFlag:'cromatica_ancora_estavel',lockedLabel:'FENDA INSTÁVEL • ESTABILIZE A ÂNCORA',interactionDistance:1.1,destino:{mapId:'mare_cromatica_fenda',spawnId:'inicio'}}],
 };
+// A fenda não é uma sala vazia: é uma câmara de contenção com anteparos,
+// lâmpadas de serviço e um limiar grande o bastante para o corpo atravessar.
 const fendaLayout=Array.from({length:9},(_,y)=>Array.from({length:11},(_,x)=>x===0||y===0||x===10||y===8?1:0));
-export const fenda={id:'mare_cromatica_fenda',meta:{nome:'FENDA CROMÁTICA — LIMIAR',tipo:'interior',dimensao:'mare_cromatica',corFundo:'#190c25',corTema:'#df79e0',cromatica:true},corChao:'#281b30',layout:fendaLayout,spawnPoints:{inicio:{x:5.5,y:6.5}},actors:[],fauna:[],collectibles:[],hazards:[],
- objects:[machine('cromatica_limiar_final',5,3,'EXAMINAR O OUTRO LADO','freq666_portal')],
+for(const x of [1,2,3,4,7,8,9]) fendaLayout[5][x]=1;
+for(const [x,y] of [[2,2],[8,2],[2,6],[8,6]]) fendaLayout[y][x]=1;
+const fendaDecor=(id,nome,x,y,sprite,larguraPx,cor='#ffbe6a')=>({id,nome,tipo:'decoracao',x,y,sprite,useCrop:true,larguraPx,pivotX:.5,pivotY:.95,bloqueia:false,brilho:{cor,raio:.7,forca:.2}});
+export const fenda={id:'mare_cromatica_fenda',meta:{nome:'FENDA CROMÁTICA — LIMIAR',tipo:'interior',dimensao:'mare_cromatica',corFundo:'#190c25',corTema:'#df79e0',cromatica:true,useBackgroundWalls:true,estiloSala:'frequencia_limiar',initialZoom:1.18},corChao:'#281b30',layout:fendaLayout,spawnPoints:{inicio:{x:5.5,y:6.5}},actors:[],fauna:[],collectibles:[],hazards:[],
+ objects:[
+  {...machine('cromatica_limiar_final',5.5,4.4,'EXAMINAR O OUTRO LADO','cromatica_porta_fenda'),useCrop:false,scale:0.8,brilho:{cor:'#8ef4e5',raio:1.6,forca:.32}},
+  fendaDecor('fenda_lampada_esq','LÂMPADA DE SERVIÇO',2,3,'fenda_lampada',34),
+  fendaDecor('fenda_lampada_dir','LÂMPADA DE SERVIÇO',8,3,'fenda_lampada',34),
+  fendaDecor('fenda_console','CONSOLE DO LIMIAR',8,6,'freq666_console',42,'#e46de1'),
+  fendaDecor('fenda_caixa','CAIXA DE CONTENÇÃO',2,6,'freq666_memoria',38,'#e46de1'),
+  fendaDecor('fenda_porta','PORTA DE CONTENÇÃO',9,2,'fenda_porta',54,'#ff9e58'),
+  fendaDecor('fenda_rack','RACK DO LIMIAR',1.7,4.0,'freq666_rack',42,'#8ef4e5'),
+  fendaDecor('fenda_baliza','BALIZA DE RETORNO',9.2,4.3,'freq666_baliza',36,'#ffbe6a'),
+  fendaDecor('fenda_mesa','MESA DE ESCUTA',4.3,1.9,'freq666_mesa',42,'#e46de1'),
+ ],
  portals:[{id:'cromatica_voltar_contencao',tipo:'door',x:5,y:7,label:'RETORNAR À CONTENÇÃO',interactionDistance:1.1,destino:{mapId:'mare_cromatica_contencao',spawnId:'retorno'}}]};

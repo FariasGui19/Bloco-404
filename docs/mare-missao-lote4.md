@@ -45,7 +45,7 @@ A tensão continua sendo o único caminho de falha: ao chegar a 100 o operador d
 
 Saves novos (v2), outros arquétipos e interiores cromáticos parciais não recebem o atalho. A regra está testada em `tests/mare-legado-docas.mjs`.
 
-Nas Docas, a saída agora existe no mundo: um portal de eco no píer (`23.72, 67.68`), com a arte `porta-fenda`, rótulo `[E] PORTAL DE ECO`, aviso `SELADO` enquanto a âncora não estiver estável e transição própria `mare-fenda` até `mare_cromatica_fenda`. O portal fica ao lado do barco e do diário do píer, sem criar piso novo, nova colisão ou mudar os três acessos interiores existentes. `tests/docas-vila-04.mjs` passou a fixar quatro portais (três interiores + eco) e o teste de navegador percorre menu → save v1 → Docas → portal → fenda.
+Nas Docas, a saída agora existe no mundo: um portal de eco no píer (`23.72, 67.68`), com a arte `porta-fenda`, rótulo `[E] PORTAL DE ECO`, aviso `SELADO` enquanto a âncora não estiver estável e transição própria `mare-fenda` até `mare_cromatica_fenda`. O portal ficava ao lado do barco e do diário do píer. **Atualização do lote 7:** ele foi movido para o pátio central (`877, 566`; célula `33.76, 63.82`), recebeu a arte `portal-mare` com 280 unidades e halo pulsante; a topologia, a flag e o destino não mudaram. Veja `docs/mare-missao-lote7.md`. `tests/docas-vila-04.mjs` passou a fixar quatro portais (três interiores + eco) e o teste de navegador percorre menu → save v1 → Docas → portal → fenda.
 
 ## Verificação executada
 

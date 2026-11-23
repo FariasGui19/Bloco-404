@@ -87,6 +87,8 @@ export function createMission(progress) {
     : [];
   p.rank = Math.max(1, Math.min(4, Number(p.rank) || 1));
   p.elapsed = Number.isFinite(Number(p.elapsed)) ? Math.max(0, Number(p.elapsed)) : 0;
+  p.lamp = Number.isFinite(Number(p.lamp)) ? Math.max(0, Math.min(100, Number(p.lamp))) : 100;
+  p.lampOn = p.lampOn !== false;
   p.containment = Object.fromEntries(Object.entries(p.containment && typeof p.containment === 'object' && !Array.isArray(p.containment) ? p.containment : {}).filter(([k, v]) => typeof v === 'boolean' && ['cabo','lanterna','eco','painel'].includes(k)));
   p.lote5 = Object.fromEntries(Object.entries(p.lote5 && typeof p.lote5 === 'object' && !Array.isArray(p.lote5) ? p.lote5 : {}).filter(([k, v]) => v === true && ['valvula','painel','selo','cristal','caldeira','tubo'].includes(k)));
   p.nulo = Array.isArray(p.nulo) ? [...new Set(p.nulo.filter((id) => ['primeiro','segundo','terceiro','ultimo'].includes(id)))] : [];
@@ -110,6 +112,8 @@ export function createMission(progress) {
     noise:0,
     decoy:null,
     crouched:false,
+    lamp:p.lamp,
+    lampOn:p.lampOn,
   };
 }
 export function canStand(x, y) {

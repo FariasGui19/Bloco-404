@@ -56,8 +56,9 @@ O gargalo era GPU/SwiftShader, não a lógica (`manager.tick` media 2,5–8 ms):
 - paredes agrupadas em 4 `BufferGeometry` com cor por vértice (concreto, madeira,
   metal, container), mais batches separados de `trim` (montantes/cintas) e
   `window` (`MeshBasicMaterial` para janelas acesas/apagadas);
-- **nenhum `PointLight`**: postes são bulbo emissivo + halo, o farol é geometria
-  + sprite, o cristal usa `emissive`;
+- **quase nenhum `PointLight`**: postes são bulbo emissivo + halo, o farol é
+  geometria + sprite, o cristal usa `emissive`; só a sobrecarga da âncora acende
+  um `PointLight` magenta temporário;
 - `MeshPhongMaterial` trocado por `MeshLambertMaterial` e
   `preserveDrawingBuffer` removido;
 - iluminação de leitura: hemisfério `0x9fc3d4/0x131820 @4.0`, ambiente
@@ -138,9 +139,106 @@ fecham a área, os píeres são caminháveis e as cabanas ficaram isoladas.
 Contratos novos cobertos por teste: `cell(28.5,28.5)==0` (píer sudeste),
 `cell(29,16)==4` (mar) e `terrain()` devolvendo `agua`/`madeira` nesses pontos.
 
-### Lote 2 de arte
+### Lote 2 de arte — implementado
 
-Os prompts e nomes já estão definidos em `tools/preparar-mare-coast.py`
-(`nulo/afogado/guardiao-sheet.png` + 7 singles). A geração de imagens bateu no
-limite de 10 por turno antes de gravar os arquivos; o pipeline mantém o fallback
-procedural nítido até que os originais sejam gerados e o script reexecutado.
+As 10 imagens restantes foram geradas e passaram pelo pipeline
+(`tools/preparar-mare-coast.py`, agora com `key_white`, `background_is_light`,
+`SHEETS` de 4 tuplas e `rows` por folha):
+
+- folhas de animação: `afogado-sheet` (4 frames), `guardiao-sheet` (4 frames) e
+  `nulo-sheet` (4 frames), recortadas em 148×320 / 124–144×320;
+- singles: `ancora-cromatica`, `barco-destroco`, `cristal-cluster`,
+  `nulo-sobrecarga`, `pier-zero`, `terminal-recompilacao` e `vegetacao-duna`.
+
+Resultado: **10 texturas** em `assets/textures/mare-coast/` e **19 sprites** em
+`assets/sprites/mare-coast/`, todos carregados por `coastNames`/`artDir` e usados
+em `world3d` (inimigos animados por família, âncora, terminal, bote, cristais,
+dunas e sobrecarga). O fallback procedural deixou de ser necessário.
+
+### Lote 3 de arte — orla viva
+
+Dez novas imagens entraram no pipeline (`tools/preparar-mare-coast.py`), que
+agora fecha em **16 texturas, 12 frames animados e 11 sprites de marco**:
+
+- **Texturas**: `espuma-mar`, `agua-rasa-caustica`, `parede-concreto-sal`,
+  `piso-pier-molhado`, `areia-conchas` e `parede-azulejo-mar`;
+- **Sprites**: `caranguejo`, `gaivota`, `peixe` e `onda` (fundo claro, tratado
+  por `background_is_light` + `key_white`).
+
+Todas têm fallback procedural próprio, então uma imagem corrompida não derruba
+o carregamento. `areia-conchas` recebe contraste 0,62 e desfoque leve depois do
+unsharp: a arte original tinha conchas brancas/negras que viravam chuvisco no
+chão em ângulo rasante.
+
+No mundo (`mare-mission-world3d.js`):
+
+- **Concreto salgado**: fundação de 0,2 m sob cada cabana e base do terminal;
+  `concreteDark` fecha as quinas.
+- **Azulejo**: rodapé de 0,95 m nos dois lados da porta das cabanas
+  (`doorX = a + 3,5`, `repeat(pw/1,6, 0,62)`), além do gabinete do terminal.
+  O azulejo é Lambert em `0xb9d0c8`, sem brilho especular.
+- **Piso do píer**: `piso-pier-molhado` com repeat baixo (`w/6,2`, `d/6,2`) e
+  cor `0xd6c1a2`; repeat alto voltava a produzir riscos pretos.
+- **Areia de conchas**: língua de 9×6 m no spit do spawn, onde ficam os
+  caranguejos.
+- **Espuma**: 12 faixas pequenas de `espuma-mar` deitadas na arrebentação
+  (`y = 0,13`, opacidade 0,12–0,30, yaw variado). Usam **só `alphaMap`** — o
+  mesmo mapa em `map` + `alphaMap` virava blocos escuros.
+- **Ondas**: quatro folhas horizontais de `onda` correm para a praia com fade
+  `sin(p·π)`, opacidade até 0,6 e escala 0,8→1,15.
+- **Poças de maré**: `agua-rasa-caustica` em nove poças menores, cor `0x1d3036`
+  e opacidade 0,52; sem reflexo, só a caustica fria.
+
+**Fauna ambiente** animada no `render()`, em sprites de névoa com
+`depthWrite:false`:
+
+- 5 caranguejos andam de lado pela areia (0,17–0,22 m), com flip de `scale.x`;
+- 3 gaivotas orbitam entre 6,2 e 8,5 m de raio, a 6,8–8,4 m de altura;
+- 3 peixes saltam em arco perto de `shoreX(z)`, inclinando o sprite conforme
+  sobem/descem; ficam ocultos em ~38% do ciclo;
+- 4 folhas de espuma escorrem da arrebentação para a areia.
+
+### Evidência do lote 3
+
+- `qa/upgrade/depois-orla-fauna.png` — peixes saltando sobre o píer;
+- `qa/upgrade/depois-orla-gaivota.png` — gaivota em órbita contra o céu;
+- `qa/upgrade/depois-orla-conchas.png` — passarela de areia de conchas, azulejo
+  e terminal;
+- `qa/upgrade/depois-orla-azulejo.png` — rodapé azulejado e fundação de concreto;
+- `qa/upgrade/depois-orla-caranguejo.png` — caranguejo no cais e gaivota ao fundo;
+- `qa/upgrade/depois-orla-poca.png` — poças de caustica e areia de conchas.
+
+Contrato: `tests/mare-coast-lote3.mjs` confere os 10 originais, os 6 mapas
+256×256, os 4 sprites RGBA, a presença dos nomes no pipeline/`coastNames` e a
+fauna no `world3d`.
+
+### HUD, lanterna, esquiva e trilha
+
+- **Lanterna com carga**: `L` alterna; 100% drena em `0,32/s` e recarrega a
+  `16/s` a menos de 4,2 m do terminal central. Ao zerar, desliga sozinha e o HUD
+  mostra `FALHA`. Com a lanterna apagada o hemisfério/ambiente caem para 50%,
+  o alcance de detecção dos inimigos cai para 60% e o feixe some.
+- **Esquiva**: `Espaço` gasta 28 de fôlego, desloca 6,4 m/s por 0,17 s e recarrega
+  em 0,9 s; o readout mostra `ESQUIVA PRONTA/1s` e o frame ganha `mare-esquiva`.
+- **Tensão legível**: quatro barras (`mare-threat`) sobem pela distância do
+  inimigo vivo + estresse; agachar longe de caça (<11 m) reduz o estresse a
+  `1,6/s`. A lanterna apagada é uma troca real: menos detecção, menos visão.
+- **HUD**: zona ao vivo a cada frame (`PONTO ZERO`, `TERMINAL`, `ÂNCORA`,
+  `ARREBENTAÇÃO`, `PRAIA`, `FENDA`) com animação `mare-virada`;
+  `mare-steps` mostra MEMÓRIAS/TERMINAL/ÂNCORA; um marcador magenta na bússola
+  aponta a âncora e fica ciano ao chegar. A abertura usa letterbox dedicado
+  (`.mare-letterbox`, 11%) que fecha em 0,55 s.
+- **Trilha**: drone aditivo em 55/82,41/110/164,81 Hz filtrado por lowpass
+  (200→800 Hz conforme estresse/zona/fim), motivos a cada 9–16 s (3,2 s no fim),
+  sinos de boia, madeira do píer e lamento da âncora. Passos variam por piso,
+  respiração de inimigos tem pan estéreo e o coração acelera com ameaça próxima.
+
+### Evidência desta iteração
+
+- `qa/upgrade/depois-orla-hud.png` — terminal, passos, zona e barras de ameaça;
+- `qa/upgrade/depois-orla-lanterna.png` — lanterna OFF, ambiente fechado e HUD;
+- `qa/upgrade/depois-orla-abertura.png` — letterbox da entrada.
+
+Verificação: `node --test tests/mare-*.mjs` → **14/14**;
+`tests/mare-upgrade-3d-browser.mjs` e `tests/mare-mission-browser.mjs` → **1/1**
+cada, sem `pageerror`.

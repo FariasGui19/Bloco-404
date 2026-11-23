@@ -5,6 +5,7 @@ import {lote5Props} from './mare-mission-lote5.js';
 import {lote6Props} from './mare-mission-lote6.js';
 import {lote7Props,lote7Walls} from './mare-mission-lote7.js';
 import {lote8Props} from './mare-mission-lote8.js';
+import {lote9Props} from './mare-mission-lote9.js';
 // Local-only mission simulation: never writes global health, inventory or levels.
 export const MARE_MISSION = "mare-cromatica:baia-v1";
 export const SIZE = 32;
@@ -96,6 +97,7 @@ export function createMission(progress) {
   p.lote6 = Object.fromEntries(Object.entries(p.lote6 && typeof p.lote6 === 'object' && !Array.isArray(p.lote6) ? p.lote6 : {}).filter(([k, v]) => v === true && ['turbina','escada','fenda'].includes(k)));
   p.lote7 = Object.fromEntries(Object.entries(p.lote7 && typeof p.lote7 === 'object' && !Array.isArray(p.lote7) ? p.lote7 : {}).filter(([k, v]) => v === true && ['lampada'].includes(k)));
   p.lote8 = Object.fromEntries(Object.entries(p.lote8 && typeof p.lote8 === 'object' && !Array.isArray(p.lote8) ? p.lote8 : {}).filter(([k, v]) => v === true && ['concha'].includes(k)));
+  p.lote9 = Object.fromEntries(Object.entries(p.lote9 && typeof p.lote9 === 'object' && !Array.isArray(p.lote9) ? p.lote9 : {}).filter(([k, v]) => v === true && ['lanterna', 'bote', 'guincho', 'drusa'].includes(k)));
   p.lore = Array.isArray(p.lore) ? [...new Set(p.lore.filter((id) => lore.some((l) => l.id === id)))] : [];
   p.details = Object.fromEntries(Object.entries(p.details && typeof p.details === 'object' && !Array.isArray(p.details) ? p.details : {}).filter(([k, v]) => v === true && details.some(d => d.id === k)));
   return {
@@ -124,7 +126,7 @@ export function canStand(x, y) {
     [0.2, -0.2],
     [-0.2, 0.2],
     [0.2, 0.2],
-  ].every(([a, b]) => !cell(x + a, y + b)) && details.every(s=>Math.hypot(x-s.x,y-s.y)>(s.r??.46)) && lore.every(s=>Math.hypot(x-s.x,y-s.y)>(s.r??.46)) && combatProps.every(s=>Math.hypot(x-s.x,y-s.y)>(s.r??.46)) && lote5Props.every(s=>Math.hypot(x-s.x,y-s.y)>(s.r??.46)) && lote6Props.every(s=>Math.hypot(x-s.x,y-s.y)>(s.r??.46)) && lote7Props.every(s=>Math.hypot(x-s.x,y-s.y)>(s.r??.46)) && lote8Props.every(s=>Math.hypot(x-s.x,y-s.y)>(s.r??.46));
+  ].every(([a, b]) => !cell(x + a, y + b)) && details.every(s=>Math.hypot(x-s.x,y-s.y)>(s.r??.46)) && lore.every(s=>Math.hypot(x-s.x,y-s.y)>(s.r??.46)) && combatProps.every(s=>Math.hypot(x-s.x,y-s.y)>(s.r??.46)) && lote5Props.every(s=>Math.hypot(x-s.x,y-s.y)>(s.r??.46)) && lote6Props.every(s=>Math.hypot(x-s.x,y-s.y)>(s.r??.46)) && lote7Props.every(s=>Math.hypot(x-s.x,y-s.y)>(s.r??.46)) && lote8Props.every(s=>Math.hypot(x-s.x,y-s.y)>(s.r??.46)) && lote9Props.every(s=>Math.hypot(x-s.x,y-s.y)>(s.r??.46));
 }
 export function move(m, dx, dy) {
   if(!Number.isFinite(dx)||!Number.isFinite(dy))return;

@@ -308,3 +308,43 @@ Evidência: `qa/upgrade/lote8-patio.png`, `qa/upgrade/lote8-guindaste.png`,
 `qa/upgrade/lote8-concha.png`.
 Verificação: `tests/mare-mission-lote8.mjs` (contrato das dez artes, interação,
 colisão, alturas e fallback) + suíte `tests/mare-*.mjs` completa.
+
+## Lote 9 — socorro na baía, texturas e respiração do cenário
+
+Dez fontes novas em `assets/source-art/mare-missao-lote9/`: **três texturas
+tileable** (metal corroído, lona encardida, pedra molhada) e **sete props**
+(lanterna de querosene, bote de salvamento, guincho manual, drusa cromática,
+peixe morto, bandeira de sinal e cogumelo de sal). O preparo vive em
+`tools/preparar-mare-lote9.py`: texturas viram tiles 256 px quantizados em 56
+cores; props usam chave magenta, recorte no bbox antes da redução, `NEAREST`,
+`MinFilter(5)` e novo recorte.
+
+Materiais e ambientação:
+
+- `metal-corroido` substitui o metal escuro das estruturas e dos contêineres do
+  píer; `lona-encardida` cobre os telhados das cabanas; `pedra-molhada` entra nas
+  rochas que encostam na água (`waterAt` em cruz), secando o resto da duna;
+- a **lanterna** ganhou luz quente com halo aditivo e tremulação de pavio; a
+  **drusa** ganhou luz magenta com halo respirando em 1.7 Hz.
+
+Mecânica (quatro props interativos, um uso cada):
+
+- lanterna: +55% de carga, mas **recusa** se o tanque está acima de 90% ("guarde
+  o combustível"); ao ser usada, a luz do prop cai para 12%;
+- bote: move o checkpoint do eco e devolve 70 de fôlego;
+- guincho: fôlego cheio e −28 de tensão;
+- drusa: registra o eco de 66.6 Hz (readout `DRUSA 0/1`).
+
+Extras da leva:
+
+- cada uso dispara um **cue** próprio (`lote9Cue`: triângulo 392 Hz, sino 146 Hz,
+  serra 98 Hz, senoide 528 Hz);
+- props leves (boia, bote, rede, bandeira, cogumelo, lanterna) agora **balançam**
+  com vento determinístico no `render`;
+- `sanitize` guarda `p.lote9` com as quatro flags; colisão inclui os quatro props.
+
+Evidência: `qa/upgrade/lote9-lanterna.png`, `lote9-lanterna-acesa.png`,
+`lote9-bote.png`, `lote9-guincho.png`, `lote9-drusa.png`,
+`lote9-panorama.png`.
+Verificação: `tests/mare-mission-lote9.mjs` (contrato das dez artes, alcance,
+flags, readout e cues) somado à suíte `tests/mare-*.mjs` (25 testes).

@@ -180,6 +180,12 @@ export async function createMareWorld3D({
     texture("parede-azulejo-mar", 1, "mare-coast"),
   ]);
 
+  // Lote 9: materiais pintados (metal, lona, pedra molhada).
+  const [metalCorroidoTex, lonaTex, pedraMolhadaTex] = await Promise.all([
+    texture("metal-corroido", 1, "mare-missao-lote9"),
+    texture("lona-encardida", 1.2, "mare-missao-lote9"),
+    texture("pedra-molhada", 2, "mare-missao-lote9"),
+  ]);
   const lambert = (map, color = 0xffffff) =>
     new THREE.MeshLambertMaterial({ map, color });
   const mat = {
@@ -227,6 +233,14 @@ export async function createMareWorld3D({
     rust: new THREE.MeshLambertMaterial({ color: 0x58402f }),
     plastic: new THREE.MeshLambertMaterial({ color: 0x1f3234 }),
   };
+  // Texturas do lote 9 substituem telhado, metal escuro e pedras molhadas.
+  mat.roof.map = lonaTex;
+  mat.roof.color.setHex(0xa89079);
+  mat.roof.needsUpdate = true;
+  mat.metalDark.map = metalCorroidoTex;
+  mat.metalDark.color.setHex(0x93a8a2);
+  mat.metalDark.needsUpdate = true;
+  mat.rockWet = lambert(pedraMolhadaTex, 0x87999a);
   mat.black.fog = true;
   for (const key of ["concrete", "concreteDark", "wood", "woodDark", "metal", "metalDark", "container", "containerRust"])
     if (mat[key]) mat[key].userData.kind = key;
@@ -803,7 +817,13 @@ export async function createMareWorld3D({
     [28.2, 27.8, 0.7], [3.3, 28.8, 0.62],
   ]) {
     if (cell(x, z) || waterAt(x, z)) continue;
-    const rockMesh = new THREE.Mesh(new THREE.DodecahedronGeometry(r, 0), mat.rock);
+    const nearWater =
+      waterAt(x + 1.5, z) || waterAt(x - 1.5, z) ||
+      waterAt(x, z + 1.5) || waterAt(x, z - 1.5);
+    const rockMesh = new THREE.Mesh(
+      new THREE.DodecahedronGeometry(r, 0),
+      nearWater ? mat.rockWet : mat.rock,
+    );
     rockMesh.position.set(x, r * 0.42, z);
     rockMesh.rotation.set(hash(x, z, 5) * TAU, hash(x, z, 6) * TAU, hash(x, z, 7) * TAU);
     rockMesh.scale.set(1.4, 0.5, 1);
@@ -1345,14 +1365,23 @@ export async function createMareWorld3D({
 
   // ---------- sprites de objetos ----------
   const propSprites = new Map();
-  // Lote 8: luzes locais que dão ofício à orla (poste e concha).
-  const lote8Lights = [];
+  // Lotes 8/9: luzes locais que dão ofício à orla.
+  const propLights = [];
   const propShadowMat = new THREE.MeshBasicMaterial({
     color: 0x000000,
     transparent: true,
     opacity: 0.38,
     depthWrite: false,
   });
+  // Vento/água: props leves balançam de forma determinística.
+  const propBob = {
+    "boia-sinalizadora": [0.042, 1.3],
+    "bote-salva-vidas": [0.028, 1.05],
+    "rede-pesca": [0.012, 1.5],
+    "bandeira-sinal": [0.02, 2.35],
+    "cogumelo-sal": [0.005, 1.8],
+    "lanterna-querosene": [0.008, 1.2],
+  };
   const artHeight = {
     boia: 0.58,
     "porta-recompilacao": 1.05,
@@ -1368,6 +1397,13 @@ export async function createMareWorld3D({
     "coral-magenta": 0.45,
     "boia-sinalizadora": 0.62,
     "caixote-madeira": 0.5,
+    "lanterna-querosene": 0.62,
+    "bote-salva-vidas": 0.55,
+    "guincho-manual": 0.6,
+    "cristal-drusa": 0.55,
+    "peixe-morto": 0.28,
+    "bandeira-sinal": 1.35,
+    "cogumelo-sal": 0.35,
   };
   const addProp = (o) => {
     const art = o.art === "terminal" ? "terminal-recompilacao" : o.art === "cristal-mare" ? "cristal-cluster" : o.art;
@@ -1397,25 +1433,54 @@ export async function createMareWorld3D({
     );
     shadow.rotation.x = -Math.PI / 2;
     shadow.scale.set(1, 0.55, 1);
-    if (art === "poste-luz" || art === "concha-cromatica") {
-      const lamp = art === "poste-luz";
+    const lightSpec = {
+      "poste-luz": { color: 0xffb066, base: 9, dist: 8.5, kind: "lamp" },
+      "concha-cromatica": { color: 0xe04ce6, base: 3.2, dist: 3.4, kind: "shell" },
+      "lanterna-querosene": { color: 0xffc07a, base: 4.6, dist: 5.2, kind: "lantern" },
+      "cristal-drusa": { color: 0xc94dde, base: 3.4, dist: 4, kind: "drusa" },
+    }[art];
+    if (lightSpec) {
       const light = new THREE.PointLight(
-        lamp ? 0xffb066 : 0xe04ce6,
-        lamp ? 9 : 3.2,
-        lamp ? 8.5 : 3.4,
+        lightSpec.color,
+        lightSpec.base,
+        lightSpec.dist,
         2,
       );
-      light.position.set(o.x, lamp ? h * 0.88 : 0.3, o.y);
+      const high = lightSpec.kind === "lamp" || lightSpec.kind === "lantern";
+      light.position.set(o.x, high ? h * 0.86 : h * 0.45, o.y);
+      let halo = null;
+      if (lightSpec.kind === "lantern" || lightSpec.kind === "drusa") {
+        const warm = lightSpec.kind === "lantern";
+        halo = new THREE.Sprite(
+          new THREE.SpriteMaterial({
+            map: glowTexture(warm ? "255,190,110" : "214,88,226"),
+            transparent: true,
+            blending: THREE.AdditiveBlending,
+            depthWrite: false,
+            fog: true,
+            opacity: warm ? 0.55 : 0.45,
+          }),
+        );
+        halo.scale.setScalar(warm ? 1.05 : 0.9);
+        halo.position.set(o.x, warm ? h * 0.5 : h * 0.45, o.y);
+        scene.add(halo);
+      }
       light.userData = {
-        kind: lamp ? "lamp" : "shell",
-        base: lamp ? 9 : 3.2,
+        kind: lightSpec.kind,
+        base: lightSpec.base,
         phase: hash(o.x, o.y, 9) * TAU,
+        halo,
       };
       scene.add(light);
-      lote8Lights.push(light);
+      propLights.push(light);
     }
     const key = `${o.art}@${o.x.toFixed(2)},${o.y.toFixed(2)}`;
-    propSprites.set(key, { sprite, shadow, prop: o });
+    propSprites.set(key, {
+      sprite,
+      shadow,
+      prop: o,
+      bob: propBob[art] ?? null,
+    });
   };
   props.forEach(addProp);
   const activeKeys = (list) => new Set(list.map((o) => `${o.art}@${o.x.toFixed(2)},${o.y.toFixed(2)}`));
@@ -1710,13 +1775,30 @@ export async function createMareWorld3D({
     state.interference = interference;
     state.flashlight = m.finished ? false : true;
     if (active) syncProps(activeProps);
-    // Poste com filamento instável; concha respirando no compasso do eco.
-    for (const light of lote8Lights) {
+    // Poste/lanterna com filamento instável; concha e drusa respirando.
+    for (const light of propLights) {
       const d = light.userData;
-      light.intensity =
-        d.kind === "lamp"
-          ? d.base * (0.8 + Math.sin(t * 5.4 + d.phase) * 0.12 + Math.sin(t * 17.3) * 0.05)
-          : d.base * (0.68 + Math.sin(t * 2.1 + d.phase) * 0.3);
+      if (d.kind === "lamp" || d.kind === "lantern") {
+        const spent =
+          d.kind === "lantern" && m.p?.lote9?.lanterna ? 0.12 : 1;
+        light.intensity =
+          d.base *
+          spent *
+          (0.8 + Math.sin(t * 5.4 + d.phase) * 0.12 + Math.sin(t * 17.3) * 0.05);
+        if (d.halo) d.halo.material.opacity = spent * (0.42 + Math.sin(t * 5.4 + d.phase) * 0.12);
+      } else if (d.kind === "drusa") {
+        light.intensity = d.base * (0.7 + Math.sin(t * 1.7 + d.phase) * 0.3);
+        if (d.halo) d.halo.material.opacity = 0.34 + Math.sin(t * 1.7 + d.phase) * 0.16;
+      } else {
+        light.intensity = d.base * (0.68 + Math.sin(t * 2.1 + d.phase) * 0.3);
+      }
+    }
+    for (const entry of propSprites.values()) {
+      if (!entry.bob || !entry.sprite.visible) continue;
+      const [amp, speed] = entry.bob;
+      entry.sprite.position.y =
+        0.025 +
+        Math.sin(t * speed + (entry.prop.x + entry.prop.y) * 0.7) * amp;
     }
 
     // respiração + passada: o eixo vertical da câmera nunca fica morto.

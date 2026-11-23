@@ -806,6 +806,17 @@ body.dimension-active {
 .mare-mission.fenda-aberta .mare-signal-text { color:#e3bb78; }
 .mare-fim .mare-hud-foot { background:linear-gradient(transparent,rgba(13,5,10,.78) 38%,rgba(8,3,7,.96)); }
 .mare-fim .mare-frame::after { background:radial-gradient(ellipse at 50% 45%,transparent 24%,rgba(18,2,10,.46) 100%); }
+.mare-perto .mare-frame::after { background:radial-gradient(ellipse at 50% 45%,transparent 26%,rgba(40,3,18,.44) 100%); }
+.mare-perto .mare-rec { background:#ff3b3b;box-shadow:0 0 10px #ff3b3b; }
+.mare-perto canvas { filter:contrast(1.1) saturate(.88) hue-rotate(-5deg); }
+.mare-overload .mare-frame::before { opacity:.82;background:repeating-linear-gradient(0deg,rgba(120,0,66,.2) 0 1px,transparent 1px 2px); }
+.mare-overload .mare-frame::after { background:radial-gradient(ellipse at 50% 45%,transparent 18%,rgba(48,0,30,.58) 100%); }
+.mare-overload canvas { filter:contrast(1.2) saturate(1.35) hue-rotate(-10deg); }
+.mare-overload .mare-message { color:#f0a7dc; }
+.mare-overload .mare-vitals { color:#f0a7dc; }
+@keyframes mare-threat-jitter { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-1px)} 75%{transform:translateX(1px)} }
+.mare-perto .mare-hud { animation:mare-threat-jitter .22s steps(2,end) infinite; }
+@media(prefers-reduced-motion:reduce){ .mare-perto .mare-hud{animation:none} }
 @keyframes mare-hud-in { from{opacity:0;transform:translateY(4px)} to{opacity:1;transform:none} }
 @keyframes mare-prompt-in { from{opacity:0;transform:translate(-50%,3px)} to{opacity:1;transform:translate(-50%,0)} }
 @keyframes mare-rec { 0%,58%{opacity:1} 59%,100%{opacity:.25} }

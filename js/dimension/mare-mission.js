@@ -69,7 +69,14 @@ export async function createMareMission({
   const lote6Names = ["nulo-operador","nulo-operador-voz","cacador-mare","cacador-dano","parede-azulejo","parede-ferrugem","chao-grade","turbina-sala","escada-servico","transicao-fenda"];
   const lote7Names = ["parede-concreto-umido","parede-azulejo-quebrado","chao-concreto-umido","chao-agua-rasa","teto-metal-escuro","portal-mare","porta-pesada","lampada-industrial","afogado-mare","afogado-dano"];
   const upgradeNames = ["terminal-baia","cristal-magenta","farol-lanterna"];
-  const artDir = (n) => upgradeNames.includes(n) ? "mare-upgrade" : lote7Names.includes(n) ? "mare-missao-lote7" : lote6Names.includes(n) ? "mare-missao-lote6" : lote5Names.includes(n) ? "mare-missao-lote5" : lote4Names.includes(n) ? "mare-missao-lote4" : lote3Names.includes(n) ? "mare-missao-lote3" : extraNames.includes(n) ? "mare-missao-lote2" : "mare-missao-base";
+  const coastNames = [
+    "nulo-0","nulo-1","nulo-2","nulo-3",
+    "afogado-0","afogado-1","afogado-2","afogado-3",
+    "guardiao-0","guardiao-1","guardiao-2","guardiao-3",
+    "terminal-recompilacao","ancora-cromatica","pier-zero","barco-destroco",
+    "nulo-sobrecarga","cristal-cluster","vegetacao-duna",
+  ];
+  const artDir = (n) => coastNames.includes(n) ? "mare-coast" : upgradeNames.includes(n) ? "mare-upgrade" : lote7Names.includes(n) ? "mare-missao-lote7" : lote6Names.includes(n) ? "mare-missao-lote6" : lote5Names.includes(n) ? "mare-missao-lote5" : lote4Names.includes(n) ? "mare-missao-lote4" : lote3Names.includes(n) ? "mare-missao-lote3" : extraNames.includes(n) ? "mare-missao-lote2" : "mare-missao-base";
   const names = [
     "madeira-sal",
     "concreto-mar",
@@ -84,7 +91,7 @@ export async function createMareMission({
   ];
   const images = Object.fromEntries(
     await Promise.all(
-      [...names,...extraNames,...lote3Names,...lote4Names,...lote5Names,...lote6Names,...lote7Names,...upgradeNames].map(async (n) => {
+      [...names,...extraNames,...lote3Names,...lote4Names,...lote5Names,...lote6Names,...lote7Names,...upgradeNames,...coastNames].map(async (n) => {
         const im = new Image();
         im.src = new URL(
           `../../assets/sprites/${artDir(n)}/${n}.png`,
@@ -157,7 +164,10 @@ export async function createMareMission({
         noiseBurst(0.22, 0.012, 2400, -pan);
       }
     },
-  }).catch(() => ({ available: false }));
+  }).catch((error) => {
+    console.error("Maré 3D indisponível:", error);
+    return { available: false };
+  });
   m.pitch ??= 0;
   m.lookVel = 0;
   let disposed = false,
@@ -187,6 +197,9 @@ export async function createMareMission({
     noiseBuffer = null,
     radioClock = 0,
     enemyClock = 0,
+    ambientClock = 0,
+    overloadClock = 0,
+    coastZone = "praia",
     lampClock = 0,
     portalClock = 0,
     dripClock = 0,
@@ -251,6 +264,38 @@ export async function createMareMission({
     gain.gain.exponentialRampToValueAtTime(0.0001, audio.currentTime + duration);
     src.connect(filter); filter.connect(gain); gain.connect(panner); panner.connect(master);
     src.start(); src.stop(audio.currentTime + duration);
+  }
+  // Ambientes distintos por marco: cada ponto da missão tem seu próprio pulso.
+  function coastAmbient(dt, m) {
+    ambientClock -= dt;
+    if (ambientClock > 0 || !activeFrame) return;
+    ambientClock = 2.8 + Math.random() * 1.4;
+    const near = (x, y) => Math.hypot(m.x - x, m.y - y);
+    const zone = near(16, 27.5) < 4.4 ? "pier"
+      : near(16, 16) < 3.4 ? "terminal"
+        : near(24.5, 24.5) < 3.6 ? "anchor"
+          : m.x > 25.1 ? "surf" : "praia";
+    coastZone = zone;
+    shell.dataset.zone = zone;
+    if (zone === "pier") {
+      noiseBurst(0.85, 0.0035, 320, -0.2);
+      tone(46, 1.4, 0.009, "sine");
+      if (Math.random() > 0.55) tone(392, 0.7, 0.005, "triangle");
+    } else if (zone === "terminal") {
+      tone(55, 0.75, 0.012, "sawtooth");
+      tone(110, 0.4, 0.004, "sine");
+      if (Math.random() > 0.6) tone(880, 0.12, 0.004, "square");
+    } else if (zone === "anchor") {
+      tone(38, 1.8, 0.016, "sine");
+      tone(76, 0.9, 0.007, "triangle");
+      if (Math.random() > 0.5) tone(228 + Math.random() * 90, 0.5, 0.005, "sine");
+    } else if (zone === "surf") {
+      noiseBurst(0.7, 0.006, 520, 0.25);
+      tone(58, 1.1, 0.008, "sine");
+    } else {
+      noiseBurst(0.55, 0.0025, 240, -0.45);
+      if (Math.random() > 0.66) tone(174, 0.9, 0.004, "triangle");
+    }
   }
   const signals = () => [
     ...sites.filter((s) => !m.p.data.includes(s.id)),
@@ -573,9 +618,7 @@ export async function createMareMission({
     }
     const indoors = [
       [5, 5, 7, 6],
-      [19, 5, 7, 7],
       [6, 20, 7, 7],
-      [21, 21, 6, 6],
     ].some(
       ([x, y, w, h]) =>
         m.x > x + 1 && m.x < x + w - 1 && m.y > y + 1 && m.y < y + h - 1,
@@ -993,6 +1036,7 @@ export async function createMareMission({
       }
       if (mode === "3d" && !m.finished) {
         m.p.elapsed += dt;
+        coastAmbient(dt, m);
         m.cooldown = Math.max(0, m.cooldown - dt);
         m.ward = Math.max(0, m.ward - dt);
         pulse=Math.max(0,pulse-dt);
@@ -1062,7 +1106,9 @@ export async function createMareMission({
         }
         if (Math.hypot(m.vx, m.vy) > 0.4 && t - lastStep > (sprint?.32:crouch?.8:.55)) {
           lastStep = t;
-          tone(surface==="madeira"?90:surface==="resina"?38:60, .09,crouch?.006:.018, "triangle");
+          tone(surface==="madeira"?90:surface==="resina"?38:surface==="agua"?36:surface==="areia"?54:60, .09,crouch?.006:.018, "triangle");
+          if(surface==="agua")noiseBurst(.14,crouch?.004:.012,900,.2);
+          if(surface==="areia")noiseBurst(.11,crouch?.002:.006,520,-.1);
         }
         if (m.p.elapsed >= 600) {
           m.finished = true;
@@ -1139,6 +1185,26 @@ export async function createMareMission({
       }
       if (m.finished && mode === "3d") {
         endClock += dt;
+        shell.classList.toggle("mare-overload", endClock > 0.2 && endClock < 3.4);
+        if (endClock > 0.2 && overloadClock === 0) {
+          overloadClock = 0.21;
+          message.textContent = "SOBRECARGA — o Operador Nulo dobra a própria silhueta. Não solte o eco.";
+          tone(44, 2.2, 0.03, "sawtooth");
+          tone(88, 1.1, 0.018, "triangle");
+        }
+        if (endClock > 1.15 && overloadClock < 1.2) {
+          overloadClock = 1.21;
+          message.textContent = "NULO: “Você não abre a porta. Você vira a porta.”";
+          noiseBurst(0.8, 0.02, 1600, 0);
+          tone(233, 0.9, 0.022, "square");
+        }
+        if (endClock > 2.4 && overloadClock < 2.5) {
+          overloadClock = 2.51;
+          message.textContent = "A fenda aceita o registro. Ruptura dimensional em curso.";
+          tone(660, 1.2, 0.025, "sine");
+          tone(1320, 0.8, 0.008, "triangle");
+        }
+        if (Math.random() < dt * 6) tone(60 + Math.random() * 900, 0.12, 0.006, "square");
         if (endClock > 4) {
           m.p.completed = true;
           save();
@@ -1187,6 +1253,9 @@ export async function createMareMission({
       if (hud.signalText) hud.signalText.textContent = m.finished ? "ROMPIDO" : barsOn >= 3 ? "FORTE" : barsOn === 2 ? "INSTÁVEL" : "FRACO";
       shell.classList.toggle("mare-tenso", m.stress > 62);
       shell.classList.toggle("mare-fim", m.finished);
+      const threat = world3d?.state?.threat ?? 0;
+      shell.classList.toggle("mare-perto", threat > 0.55 && !m.finished);
+      shell.dataset.zone = coastZone;
       render();
     },
     dispose() {

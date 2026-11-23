@@ -103,3 +103,44 @@ banido pela luz, canvas composto e colapso final.
   na lógica da missão.
 - O teste headless depende de SwiftShader; números de FPS variam bastante entre
   máquinas, por isso não há assert de framerate.
+
+## Orla aberta — iteração final
+
+O corredor foi de fato substituído por uma orla: o mar profundo e o nevoeiro
+fecham a área, os píeres são caminháveis e as cabanas ficaram isoladas.
+
+- **Layout**: removidas as cabanas leste `[19,5,7,7]` e sudeste `[21,21,6,6]`
+  (a sudeste cercava a Âncora). Restaram duas cabanas de madeira separadas, o
+  píer do Ponto Zero, a passarela de serviço e o píer sudeste caminhável
+  (`DOCKS` em `mare-mission-model.js`, `pierDeck` em `world3d`).
+- **Água viva**: ribbon de água rasa animado no contorno da praia, mar com
+  ondas de vértice, espuma, faixas de brilho e reflexos do farol/cristais.
+  As faixas de brilho agora usam Euler `YXZ`; antes o yaw aplicado depois do
+  `rotateX` deixava 12 planos **em pé**, cortando o céu.
+- **Farol**: `cliffIsland` + torre em ilha, halo de Fresnel com textura de
+  gradiente em filtro linear (sem anéis de `NearestFilter`) e feixe volumétrico
+  removido — o halo e os reflexos bastam e não atravessam a câmera.
+- **Sprites integrados**: iluminação por distância/cone reduzida (0,18–0,76),
+  então caixas e botes não parecem adesivos claros; lâmpada de serviço virou
+  lanterna pequena, mapa de evacuação e escada saíram do meio da passagem.
+- **Marcos**: o Terminal de Recompilação, a Âncora e o Ponto Zero têm anéis,
+  halos, cabos e luz própria; a sobrecarga do Operador Nulo continua disparando
+  o colapso e a ruptura pelo `DimensionManager`.
+
+### Evidência da orla
+
+- `qa/upgrade/antes-corredor.png` → `qa/upgrade/depois-orla-spawn.png`
+- `qa/upgrade/antes-baia.png` → `qa/upgrade/depois-orla-pier.png`
+- `qa/upgrade/depois-orla-farol.png` — ilha, mar e píer;
+- `qa/upgrade/depois-orla-marcos.png` — Âncora Cromática e Terminal;
+- `qa/upgrade/depois-orla-ancora.png` — Ponto Zero e cabanas.
+
+Contratos novos cobertos por teste: `cell(28.5,28.5)==0` (píer sudeste),
+`cell(29,16)==4` (mar) e `terrain()` devolvendo `agua`/`madeira` nesses pontos.
+
+### Lote 2 de arte
+
+Os prompts e nomes já estão definidos em `tools/preparar-mare-coast.py`
+(`nulo/afogado/guardiao-sheet.png` + 7 singles). A geração de imagens bateu no
+limite de 10 por turno antes de gravar os arquivos; o pipeline mantém o fallback
+procedural nítido até que os originais sejam gerados e o script reexecutado.

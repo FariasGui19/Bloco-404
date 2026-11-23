@@ -4,39 +4,23 @@
 // large echo portal. Textures live in the mission renderer; this module keeps
 // the interactive lamp independent from the mission model.
 export const lote7Props = Object.freeze([
-  { id: 'lampada7', x: 16.6, y: 20.4, art: 'lampada-industrial', scale: 0.62, r: 0.16, kind: 'lote7-lamp', label: 'Lâmpada de serviço' },
+  { id: 'lampada7', x: 18.4, y: 19.6, art: 'lanterna-sinal', scale: 0.42, r: 0.16, kind: 'lote7-lamp', label: 'Lâmpada de serviço' },
 ]);
 
-// Broken service partitions: they cut sightlines and create chokepoints without
-// inventing a maze or blocking any authored interaction. The gap in the south
-// wall is the only entrance from the spawn ledge.
+// Barreiras costeiras baixas e dunas: o pátio virou orla aberta. Estes
+// volumes continuam com colisão (e o teste do lote 7 continua válido), mas são
+// desenhados como rochas de 0,7-1,1 m, nunca como corredores de muro alto.
 export const lote7Walls = Object.freeze([
   [1, 27, 7, 1],
   [11, 27, 2, 1],
   [18, 27, 5, 1],
   [26, 27, 4, 1],
-  [13, 25, 1, 3],
-  [18, 25, 1, 3],
-  [2, 13, 1, 5],
-  [29, 8, 1, 7],
-  [11, 11, 4, 1],
-  [20, 16, 3, 1],
-  [6, 17, 3, 1],
-  [24, 20, 1, 2],
-  [14, 23, 1, 2],
-  [8, 13, 3, 1],
-  [21, 15, 3, 1],
-  [12, 17, 2, 1],
-  [20, 17, 2, 1],
-  [15, 18, 1, 1],
-  [17, 19, 1, 1],
-  [14, 20, 1, 1],
-  [18, 20, 1, 1],
-  [8, 18, 2, 1],
-  [14, 13, 3, 1],
-  [19, 24, 3, 1],
-  [10, 20, 1, 1],
-  [22, 20, 1, 1],
+  [2, 4, 1, 4],
+  [28, 6, 1, 4],
+  [4, 17, 2, 1],
+  [24, 11, 2, 1],
+  [9, 13, 2, 1],
+  [20, 18, 2, 1],
 ]);
 
 // Non-blocking set dressing: silhouette, rust and clutter at knee height.

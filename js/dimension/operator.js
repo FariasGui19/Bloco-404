@@ -7,6 +7,7 @@ import { createOperatorVFX } from "./operator-vfx.js";
 import { batchStatic } from "./sector-meshes.js";
 
 import { createSculptTools, loftGeometry } from "./operator-sculpt.js";
+import { createCivilianOperator } from "./operator-civilian.js";
 
 export const OPERATOR_STYLES = Object.freeze({
   nucleo_dez_forma: { suit: 0x536b6d, accent: 0x64ffa3, trim: 0x9aaead },
@@ -46,6 +47,9 @@ export function createOperator(progress, player = {}) {
     x10 = id === "nucleo_dez_forma";
   const form = x10 ? player.nucleoForm : null,
     brute = form === "forma_bruta";
+  // Fora do traje, o operador é a ficha civil canônica (Tripo c4343c10):
+  // regata preta, cargo cinza, tênis preto/laranja, cachos e óculos.
+  if (!equipped && !form && !x10) return createCivilianOperator(progress, player);
   const root = new T.Group(),
     body = new T.Group();
   root.name = "operator";

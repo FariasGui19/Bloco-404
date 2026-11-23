@@ -534,6 +534,23 @@ export function createSpatialWorld({
           `SINCRONIZAÇÃO ${getArchetypeLevel(state.progress)} · ${c.mode}${lock ? " · MIRA: ÂNCORA" : ""}`;
         el(".dimension-vitals").textContent =
           `VIDA ${Math.ceil(state.player.health ?? 0)}/${state.player.maxHealth ?? 0}   ENERGIA ${Math.ceil(state.player.energy ?? 100)}/${state.player.maxEnergy ?? 100}`;
+        // Retrato do operador: muda com o estado real do jogador.
+        const hpRatio =
+            (state.player.health ?? 0) / Math.max(1, state.player.maxHealth ?? 100),
+          energyRatio =
+            (state.player.energy ?? 100) / Math.max(1, state.player.maxEnergy ?? 100),
+          mood =
+            hpRatio < 0.34
+              ? "ferido"
+              : energyRatio < 0.22
+                ? "cansado"
+                : lock || c.speed > 4.4
+                  ? "alerta"
+                  : "neutro",
+          portrait = el(".dimension-portrait"),
+          portraitSrc = `/assets/sprites/operador/operador-${mood}.png`;
+        if (portrait && portrait.getAttribute("src") !== portraitSrc)
+          portrait.src = portraitSrc;
         el(".dimension-flight").textContent =
           `ALT ${Math.max(0, c.y).toFixed(1)} m   PROF ${Math.max(0, -c.y).toFixed(1)} m   VEL ${(c.speed * 3.6).toFixed(0)} km/h`;
         el(".dimension-heading").textContent =

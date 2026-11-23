@@ -174,11 +174,33 @@ body.dimension-active {
   flex-direction: column;
   gap: 7px;
   padding: 18px 21px;
-  width: 323px;
+  width: 384px;
   background: linear-gradient(90deg, #172b3ce8, #223244a8);
   border-left: 2px solid #a1f4d9;
   border-top: 1px solid #bad5dc36;
   box-shadow: 0 10px 35px #1020362b;
+}
+.dimension-status {
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 14px;
+}
+.dimension-status-text {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  min-width: 0;
+  flex: 1;
+}
+.dimension-portrait {
+  width: 66px;
+  height: 66px;
+  flex: 0 0 66px;
+  object-fit: cover;
+  border: 1px solid #a1f4d966;
+  background: #0d1b27;
+  box-shadow: 0 0 0 1px #0b1822 inset;
+  filter: saturate(0.92) contrast(1.03);
 }
 .dimension-label {
   font-size: 8px;

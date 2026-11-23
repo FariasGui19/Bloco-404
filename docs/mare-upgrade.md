@@ -242,3 +242,39 @@ fauna no `world3d`.
 Verificação: `node --test tests/mare-*.mjs` → **14/14**;
 `tests/mare-upgrade-3d-browser.mjs` e `tests/mare-mission-browser.mjs` → **1/1**
 cada, sem `pageerror`.
+
+## Operador civil — ficha + Tripo3D `c4343c10`
+
+O operador sem traje agora nasce do rig civil (`js/dimension/operator-civilian.js`)
+em vez do traje padrão. A referência é a ficha tática anexada e o modelo Tripo3D
+do autor (`6018` faces / `5372` vértices, prompt: homem musculoso, cabelo escuro
+ondulado, óculos, regata preta, calça cargo cinza e tênis preto com tatuagens
+escuras nos dois braços). O GLB é geometria estática, então o rig segmentado
+recria o modelo peça por peça.
+
+- **Texturas** (`tools/preparar-operador.py`): `pele-operador`, `tatuagem-manga`
+  (pele recolorida para `(136,92,64)` e tinta `(38,46,48)` só nas linhas
+  escuras), `tecido-regata`, `tecido-carga` e `cabelo-cachos` (recorte da nuca da
+  ficha em `918,68→1014,142`), todas `256²`, `NearestFilter` e ≤56 cores. Pele e
+  tatuagem usam bump leve; cabelo usa `MirroredRepeatWrapping` + bump `0.02`.
+- **Cabeça**: crânio loft com occipital, arcada, maçãs e queixo; óculos de aro
+  fino com lentes translúcidas, bigode grosso e mandíbula em tom de barba. O
+  cabelo é um casco curto (fade) + 40 cachos em espiral de Fibonacci + franja,
+  com nuca preenchida.
+- **Regata paramétrica** (`tankGeometry`): perfil de raio por altura, borda
+  superior em U contínuo no decote (sem degraus), cavas recortadas por `f` e
+  `|x|`, e alças em tubo ligando o painel da frente ao das costas. Material
+  `DoubleSide` para o interior aparecer no decote.
+- **Pernas**: pelve cargo sem “avental”, coxa/joelho com afunilamento de
+  panturrilha, faixa lateral escura, cargo rebaixado e tênis com solado loft,
+  cabedal elíptico, biqueira clara e faixa laranja.
+- **HUD**: o cartão `OPERADOR / ECO ATIVO` recebeu retrato 66×66 que troca de
+  humor com o estado real (`ferido` <34% de vida, `cansado` <22% de energia,
+  `alerta` em mira/velocidade, senão `neutro`).
+- **Contrato**: `textures.size === 3` sem forma, `sculpt.revision = '4.0'`,
+  `moustache/glasses/tattoos` truthy e bracelete só em `nucleo_dez_forma`.
+
+Evidência: `qa/upgrade/operador-civil-estudio-{frontal,lateral,costas,tresquartos}.png`,
+`qa/upgrade/operador-civil-hud.png`.
+Verificação: `node --test tests/dimension-identity.mjs tests/dimension-performance.mjs tests/dimension-sculpt.mjs`
+→ **3/3**.

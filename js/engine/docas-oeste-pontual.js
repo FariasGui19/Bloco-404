@@ -1,3 +1,4 @@
+import {rajadaDocas} from './docas-animation.js';
 import { getSprite } from './sprites.js';
 import { OESTE_PONTUAL_FRAMES } from '../data/worlds/arquipelago-rotas-perdidas/docas-oeste-pontual.js';
 import { fxDocas, faseDocas } from './docas-vivas.js';
@@ -33,7 +34,7 @@ export function desenharOestePontual(ctx,id,s,t=0,reduced=false){
  // Pivot at the registered roots: depth/feet and clipping stay unchanged.
  if(!reduced&&(id==='palmeiras'||id==='arvore')){
   const root=PES_OESTE[id]*s,pivot=(id==='palmeiras'?274:412)*s;
-  ctx.translate(pivot,root);ctx.transform(1,0,Math.sin(t*.65+(id==='arvore'?1.7:0))*(id==='palmeiras'?.024:.011),1,0,0);ctx.translate(-pivot,-root);
+  ctx.translate(pivot,root);ctx.transform(1,0,rajadaDocas(t,id==='arvore'?1.7:0)*(id==='palmeiras'?.024:.011),1,0,0);ctx.translate(-pivot,-root);
  }
  ctx.drawImage(img,...frame.rect,(px+x*pw/1216)*s,(py+y*ph/864)*s,w*pw/1216*s,h*ph/864*s);ctx.restore();
 }

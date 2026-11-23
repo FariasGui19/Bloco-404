@@ -46,13 +46,15 @@ export async function playTransition(text = 'VIAJANDO...', mode = 'default') {
   if (!transitionEl) initTransition();
 
   const dimensional=mode==='cidadela-entrada' || mode==='cidadela-retorno';
-  transitionEl?.classList?.remove('dimensional','dimensional-entrada','dimensional-retorno');
+  const fenda=mode==='mare-fenda';
+  transitionEl?.classList?.remove('dimensional','dimensional-entrada','dimensional-retorno','mare-fenda');
   if(dimensional) transitionEl?.classList?.add('dimensional',`dimensional-${mode==='cidadela-entrada'?'entrada':'retorno'}`);
-  if(headerEl) headerEl.textContent=dimensional?'FREQUÊNCIA 66.6 // MUDANÇA DE DIMENSÃO':'SYS.ZONA-X10 // COMPORTA DE TRANSFERÊNCIA';
+  if(fenda) transitionEl?.classList?.add('dimensional','mare-fenda');
+  if(headerEl) headerEl.textContent=fenda?'FENDA CROMÁTICA // TRAVESSIA DE ECO':dimensional?'FREQUÊNCIA 66.6 // MUDANÇA DE DIMENSÃO':'SYS.ZONA-X10 // COMPORTA DE TRANSFERÊNCIA';
   if (textEl) textEl.textContent = text;
   if (subTextEl) {
     const isAirport = /AEROPORTO|SALA|CARGA/i.test(text);
-    subTextEl.textContent = dimensional ? 'SINCRONIZANDO PERSPECTIVA · LINHA DE RETORNO ATIVA' : isAirport
+    subTextEl.textContent = fenda ? 'ÂNCORA ESTÁVEL · SINCRONIZANDO A MARÉ' : dimensional ? 'SINCRONIZANDO PERSPECTIVA · LINHA DE RETORNO ATIVA' : isAirport
       ? 'COMPORTA DE HANGAR · CALIBRANDO PERSPECTIVA ZONA X10'
       : 'TRANSFERÊNCIA DE SETOR EM ANDAMENTO...';
   }
@@ -68,5 +70,5 @@ export async function hideTransition() {
   transitionEl.classList?.remove('active');
   // Aguarda a comporta de hangar abrir
   await new Promise(resolve => setTimeout(resolve, 400));
-  transitionEl?.classList?.remove('dimensional','dimensional-entrada','dimensional-retorno');
+  transitionEl?.classList?.remove('dimensional','dimensional-entrada','dimensional-retorno','mare-fenda');
 }

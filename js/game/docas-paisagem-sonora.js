@@ -32,9 +32,9 @@ export function sintetizarPartitura(rate=RATE) {
 
 // Foley: surf uses band-shaped white noise with separate wash/hiss, low
 // hull resonance is a flexing two-tone groan, and water calls are rare.
-export const DOCAS_FOLEY=['ondas','madeira','sino','abismo','pressagio','interior'];
+export const DOCAS_FOLEY=['ondas','madeira','sino','abismo','pressagio','interior','cordame','interferencia','goteira'];
 export function sintetizarFoley(kind,rate=RATE) {
-  const duration={ondas:12,madeira:16,sino:24,abismo:18,pressagio:40,interior:28}[kind];
+  const duration={ondas:12,madeira:16,sino:24,abismo:18,pressagio:40,interior:28,cordame:32,interferencia:36,goteira:30}[kind];
   const data=new Float32Array(duration*rate);
   let seed=49405, slow=0, fast=0;
   for(let i=0;i<data.length;i++){
@@ -70,6 +70,18 @@ export function sintetizarFoley(kind,rate=RATE) {
       data[i]=(.065*Math.sin(TAU*49*t)+.026*Math.sin(TAU*98.3*t)+slow*.32)*breathe;
       for(const at of [3.1,10.8,19.6,25.3]){const q=t-at;if(q>0&&q<.36)data[i]+=.11*Math.exp(-q*23)*Math.sin(TAU*(980*q-310*q*q))*env(q,.36,.006,.1);}
     }
+    if(kind==='cordame'){
+      const q=t-11.3;
+      if(q>0&&q<3.1)data[i]=.1*env(q,3.1,.7,1.3)*(Math.sin(TAU*(87*q+2.7*q*q))+.32*Math.sin(TAU*132.1*q));
+      const knock=t-23.7;if(knock>0&&knock<.25)data[i]+=.16*Math.exp(-knock*26)*Math.sin(TAU*171*knock);
+    }else if(kind==='interferencia'){
+      // Unintelligible radio carrier, never a spoken hint or jump scare.
+      for(const at of [6.2,21.4]){const q=t-at;if(q>0&&q<2.8)data[i]+=.13*env(q,2.8,.4,.9)*(fast-slow)*(.5+.5*Math.sin(TAU*3.2*q));}
+      data[i]+=.015*Math.sin(TAU*151.7*t)*(.5+.5*Math.sin(t*.6));
+    }else if(kind==='goteira'){
+      for(const at of [2.1,7.6,17.8,18.2,26.7]){const q=t-at;if(q>0&&q<.7)data[i]+=.13*env(q,.7,.008,.3)*Math.exp(-q*9)*Math.sin(TAU*(870*q-160*q*q));}
+      data[i]+=.012*Math.sin(TAU*61*t)+slow*.035;
+    }
     // Join both ends at zero to avoid a hard seam in the texture loop.
     data[i]*=env(t,duration,.075,.075);
   }
@@ -77,7 +89,7 @@ export function sintetizarFoley(kind,rate=RATE) {
 }
 
 const canais=['trilha',...DOCAS_FOLEY];
-const niveis=[.32,.38,.24,.20,.22,.16,.25];
+const niveis=[.32,.38,.24,.20,.22,.16,.25,.18,.16,.20];
 export function criarPaisagemDocas(context,mix) {
   // A small deterministic room tail is built only at opt-in. No network,
   // per-frame buffers, timers, feedback loops or additional AudioContexts.

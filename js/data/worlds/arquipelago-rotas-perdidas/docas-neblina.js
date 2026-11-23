@@ -108,6 +108,7 @@ export const docas={id:'mare_cromatica_docas',meta:{nome:'DOCAS DA NEBLINA',tipo
   ...[[1270,570,20]].map(([x,y,w])=>estrutura('lote5_conchas',x,y,w)),
   ...[[450,520,38],[1010,570,36]].map(([x,y,w])=>estrutura('lote5_destrocos',x,y,w)),
   ...[[1090,540,24]].map(([x,y,w])=>estrutura('lote5_cordas',x,y,w)),
+  estrutura('lote5_ancora',900,615,24),
   ...[[980,520,28],[1160,270,28]].map(([x,y,w])=>estrutura('lote5_poste',x,y,w)),
   ...[[480,410,35],[1010,470,35],[1280,545,35]].map(([x,y,w])=>estrutura('lote5_capim',x,y,w)),
   // Pequenos vestígios inspirados na referência, sem alterar portas/missão.
@@ -128,29 +129,39 @@ export const docas={id:'mare_cromatica_docas',meta:{nome:'DOCAS DA NEBLINA',tipo
   estrutura('lote12_flora',470,410,31),estrutura('lote12_corais',1290,555,24),
   estrutura('lote12_residuos',329,449,28),
   estrutura('lote12_vasilhame',1230,540,22),estrutura('lote12_lampiao',535,545,7),
+  estrutura('lote12_caixote',815,520,22),estrutura('lote12_estacas',890,555,24),
+  estrutura('lote12_rede',760,590,30),estrutura('lote12_rocha-musgo',430,470,34),
   // Lote 11: reforços costeiros e sinais de navegação, próximos dos conjuntos existentes.
   estrutura('lote11_arbusto-costeiro',460,400,43),
   estrutura('lote11_gramineas',1130,440,34),estrutura('lote11_cogumelos',1275,560,26),
   estrutura('lote11_sucata',1080,555,31),estrutura('lote11_bandeirola',1340,505,20),
   estrutura('lote11_lanterna-chao',750,500,14),estrutura('lote11_totem',960,465,24),
+  estrutura('lote11_cais-lateral',600,650,34),estrutura('lote11_correntes',1200,600,30),
+  estrutura('lote11_rocha-costeira',510,560,34),
   // Vestígios próximos a pontos de uso: cais, abrigo, vigia e margem.
   estrutura('lote10_bau',645,520,26),
   estrutura('lote10_barricada',760,465,42),estrutura('lote10_placa-lore',780,490,28),
   estrutura('lote10_fogueira',464,497,35),estrutura('lote10_farolete',1300,505,20),
   estrutura('lote10_coral',1250,580,33),
+  estrutura('lote10_algas',570,620,30),estrutura('lote10_ancoradouro',930,610,34),
+  estrutura('lote10_guincho',1000,570,30),estrutura('lote10_tambores',1150,530,26),
   // Lote 9: agrupamentos junto às atividades, não espalhados pelo caminho.
   estrutura('lote9_banco',513,522,32),estrutura('lote9_vasos',540,492,25),
   estrutura('lote9_flores',485,510,33),estrutura('lote9_tronco',390,469,39),
+  estrutura('lote9_boias',1235,595,24),estrutura('lote9_pescaria',1050,605,28),estrutura('lote9_postes',760,470,22),
   estrutura('lote9_anfora',1180,535,24),
   estrutura('lote9_engrenagem',910,490,30),estrutura('lote9_placa',1010,465,22),
   // Vestígios discretos, ancorados no piso e fora dos corredores centrais.
   estrutura('lote8_mastro',490,460,25),
+  estrutura('lote8_boia-antiga',600,560,22),estrutura('lote8_rede-pesca',860,580,30),
+  estrutura('lote8_cesto',700,515,18),estrutura('lote8_placa',690,470,20),estrutura('lote8_lampiao',810,540,12),
   estrutura('lote8_madeiras',1115,550,25),estrutura('lote8_ampola',940,510,14),
   ...[[435,480,26],[1250,540,26]].map(([x,y,w])=>estrutura('lote8_arbusto',x,y,w)),
   ...[[1280,575,24]].map(([x,y,w])=>estrutura('lote8_corais',x,y,w)),
  ],
  spawnPoints:{inicio:ponto(620,650),cabana_esq:ponto(610,535),cabana_dir:ponto(1190,535),galpao:ponto(875,490),torre:ponto(1320,510)},actors:[],fauna:[],collectibles:[],hazards:[],
- objects:[marker('docas_barco',586,656,'BARCO • INICIAR / DESCANSAR'),
+ objects:[{id:'docas_portal_fenda_visual',nome:'PORTAL DE ECO',tipo:'decoracao',x:877*ESCALA_DOCAS/64-.5,y:566*ESCALA_DOCAS/22-.5,renderizar:false,bloqueia:false},
+ marker('docas_barco',586,656,'BARCO • INICIAR / DESCANSAR'),
  marker('cromatica_fragmento_estacao',1050,365,'RECOLHER FRAGMENTO • TRILHA'),marker('cromatica_selo',1110,275,'ESTABILIZAR O ACESSO AO NÚCLEO'),
  marker('cromatica_painel_origem',1185,193,'ALINHAR ORIGEM'),marker('cromatica_painel_retorno',1240,206,'ALINHAR RETORNO'),marker('cromatica_painel_memoria',1300,187,'ALINHAR MEMÓRIA'),marker('cromatica_ancora',1250,185,'ESTABILIZAR ÂNCORA'),
  marker('docas_poca_mare',329,449,'EXAMINAR POÇA DE MARÉ'),
@@ -158,13 +169,13 @@ export const docas={id:'mare_cromatica_docas',meta:{nome:'DOCAS DA NEBLINA',tipo
  marker('docas_mural_vigia',780,490,'LER MURAL DOS VIGIAS'),marker('docas_fogueira',464,497,'EXAMINAR FOGUEIRA DOS VIGIAS'),
  marker('docas_marca_navegantes',952,553,'EXAMINAR MARCA DOS NAVEGANTES'),marker('docas_diario_pier',710,605,'LER DIÁRIO DO PÍER'),marker('docas_diario_trilha',980,520,'LER AVISO DOS VIGIAS'),
  marker('docas_torre',1330,500,'SUBIR À TORRE DE VIGIA'),marker('docas_resina',720,565,'RASTREAR RESINA • MARÉ ASTRAL'),marker('docas_eletrico',910,545,'PAINEL ELÉTRICO • NÚCLEO X10'),marker('docas_selo',1020,420,'SELO DE NÉVOA • DOMÍNIO ANCIÃO'),marker('docas_biomassa',1120,565,'BIOMASSA • BIO-FORJA')],
- trainingTargets:[{id:'docas_infectado_1',x:Math.floor(18*ESCALA_DOCAS),y:Math.floor(12*ESCALA_DOCAS),maxHealth:65,cromaticaEnemy:true},{id:'docas_infectado_2',x:Math.floor(19*ESCALA_DOCAS),y:Math.floor(10*ESCALA_DOCAS),maxHealth:65,cromaticaEnemy:true}],
- portals:[portal('docas_galpao',865,490,'ENTRAR NO GALPÃO CRT','mare_cromatica_galpao'),portal('docas_cabana_esq',575,500,'ENTRAR NA CABANA OESTE','mare_cromatica_cabana_oeste'),portal('docas_cabana_dir',1190,525,'ENTRAR NA CABANA LESTE','mare_cromatica_cabana_leste')],
+ trainingTargets:[{id:'docas_infectado_1',x:1050*ESCALA_DOCAS/64-.5,y:455*ESCALA_DOCAS/22-.5,maxHealth:65,cromaticaEnemy:true},{id:'docas_infectado_2',x:980*ESCALA_DOCAS/64-.5,y:190*ESCALA_DOCAS/22-.5,maxHealth:65,cromaticaEnemy:true}],
+ portals:[portal('docas_galpao',865,490,'ENTRAR NO GALPÃO CRT','mare_cromatica_galpao'),portal('docas_cabana_esq',575,500,'ENTRAR NA CABANA OESTE','mare_cromatica_cabana_oeste'),portal('docas_cabana_dir',1190,525,'ENTRAR NA CABANA LESTE','mare_cromatica_cabana_leste'),portal('docas_portal_fenda',877,566,'ATRAVESSAR O PORTAL DE ECO • FENDA ESTÁVEL','mare_cromatica_fenda','inicio',{requiresFlag:'cromatica_ancora_estavel',lockedLabel:'PORTAL DE ECO • CONCLUA A INCURSÃO DAS DOCAS'})],
 };
 
 function sala(id,nome,fragmento,fita,volta,spawn) {
  const w=13,h=10,layout=Array.from({length:h},(_,y)=>Array.from({length:w},(_,x)=>x===0||y===0||x===w-1||y===h-1?1:0));
- const obj=(id,x,y,label,sprite)=>({id,nome:label,tipo:'painel',x,y,sprite,useCrop:true,larguraPx:48,pivotX:.5,pivotY:.95,bloqueia:false,interacao:{label,distancia:1.4}});
+ const obj=(id,x,y,label,sprite)=>({id,nome:label,tipo:'painel',x,y,sprite,useCrop:true,larguraPx:34,pivotX:.5,pivotY:1,sombra:[12,4],bloqueia:false,interacao:{label,distancia:1.4}});
  return {id,meta:{nome,tipo:'interior',dimensao:'mare_cromatica',cromatica:true,docasInterior:true,estiloSala:'frequencia_limiar',corFundo:'#100e1d',useBackgroundWalls:true,initialZoom:1.1},corChao:'#25212c',layout,spawnPoints:{inicio:{x:6.5,y:8.2}},actors:[],fauna:[],collectibles:[],hazards:[],
  objects:[obj('cromatica_fragmento_'+fragmento,4,3,'RECOLHER FRAGMENTO MNEMÔNICO','freq666_memoria'),obj('cromatica_fita_'+fita,8,3,'OUVIR FITA CASSETE','freq666_receptor'),obj(fragmento==='costa'?'docas_chave':'docas_fusivel',fragmento==='costa'?2:10,6,fragmento==='costa'?'RECOLHER CHAVE DA TRILHA':'RECOLHER FUSÍVEL DO NÚCLEO','freq666_origem')],
  trainingTargets:[{id:id+'_infectado',x:6,y:4,maxHealth:55,cromaticaEnemy:true}],
@@ -175,7 +186,7 @@ export const cabanaLeste=mobiliarInteriorDocas(sala('mare_cromatica_cabana_leste
 
 const gLayout=Array.from({length:9},(_,y)=>Array.from({length:11},(_,x)=>x===0||y===0||x===10||y===8?1:0));
 export const galpao=mobiliarInteriorDocas({id:'mare_cromatica_galpao',meta:{nome:'GALPÃO CRT • DOCAS',tipo:'interior',dimensao:'mare_cromatica',cromatica:true,docasInterior:true,estiloSala:'frequencia_limiar',corFundo:'#0b1118',useBackgroundWalls:true,initialZoom:1.25},layout:gLayout,corChao:'#1d2c30',spawnPoints:{inicio:{x:5.5,y:7.2}},actors:[],fauna:[],collectibles:[],hazards:[],
-objects:[{id:'cromatica_terminal',nome:'TERMINAL CRT',tipo:'painel',x:5,y:3,sprite:'freq666_console',useCrop:true,larguraPx:65,pivotY:.95,bloqueia:false,interacao:{label:'RECOMPILAR TRAJE',distancia:1.5}},
+objects:[{id:'cromatica_terminal',nome:'TERMINAL CRT',tipo:'painel',x:5,y:3,sprite:'freq666_console',useCrop:true,larguraPx:56,pivotY:1,sombra:[18,5],bloqueia:false,interacao:{label:'RECOMPILAR TRAJE',distancia:1.5}},
 {id:'cromatica_fita_casa',tipo:'painel',nome:'GRAVADOR OESTE',x:2,y:4,sprite:'freq666_receptor',useCrop:true,larguraPx:42,bloqueia:false,interacao:{label:'OUVIR FITA DA CABANA OESTE',distancia:1.3}},
 {id:'cromatica_fita_vigilia',tipo:'painel',nome:'GRAVADOR LESTE',x:8,y:4,sprite:'freq666_receptor',useCrop:true,larguraPx:42,bloqueia:false,interacao:{label:'OUVIR FITA DA CABANA LESTE',distancia:1.3}}],
 portals:[{id:'docas_sair_galpao',tipo:'door',x:5,y:7,label:'SAIR DO GALPÃO',interactionDistance:1.1,destino:{mapId:'mare_cromatica_docas',spawnId:'galpao'}}]});

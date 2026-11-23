@@ -1,0 +1,16 @@
+import assert from 'node:assert/strict';import{mkdirSync}from'node:fs';
+if(!process.env.BROWSER_EXECUTABLE)console.log('Lote 8 browser: skipped; BROWSER_EXECUTABLE required.');else{
+ const{chromium}=await import(process.env.PLAYWRIGHT_MODULE??'playwright-core');const browser=await chromium.launch({executablePath:process.env.BROWSER_EXECUTABLE,args:['--no-sandbox'],env:{...process.env,LD_LIBRARY_PATH:process.env.BROWSER_LIBRARY_PATH??''}});
+ try{const page=await browser.newPage({viewport:{width:1568,height:1160}}),errors=[];page.on('pageerror',e=>errors.push(e.message));
+ await page.addInitScript(()=>{window.lote8Draws=new Set();const draw=CanvasRenderingContext2D.prototype.drawImage;CanvasRenderingContext2D.prototype.drawImage=function(img,...args){if(img instanceof HTMLImageElement&&img.src.includes('/docas-exterior-lote8/'))window.lote8Draws.add(img.src.split('/').pop());return draw.call(this,img,...args);};});
+ await page.goto((process.env.PREVIEW_ORIGIN??'http://127.0.0.1:8000')+'/docs/previa-docas-navegacao.html');await page.waitForFunction(()=>window.ready);await page.click('#pause');await page.uncheck('#collision');await page.evaluate(()=>window.sampleCentral(0));assert.equal(await page.evaluate(()=>window.lote8Draws.size),10,'all ten interaction arts drawn in actual exterior');
+ const storage=await page.evaluate(()=>JSON.stringify(localStorage));
+ const a=await page.evaluate(()=>{window.sampleCentral(0);return document.querySelector('canvas').toDataURL();});const b=await page.evaluate(()=>{window.sampleCentral(4);return document.querySelector('canvas').toDataURL();});assert.notEqual(a,b,'exterior continues animating after caching');
+ await page.check('#reduced');const c=await page.evaluate(()=>{window.sampleCentral(0);return document.querySelector('canvas').toDataURL();});const d=await page.evaluate(()=>{window.sampleCentral(40);return document.querySelector('canvas').toDataURL();});assert.equal(c,d,'reduced mode stable');assert.equal(await page.evaluate(()=>JSON.stringify(localStorage)),storage);
+ const statusFX=await page.evaluate(async()=>{
+  const {INTERATIVOS_EXTERIORES_DOCAS:pieces}=await import('/js/data/worlds/arquipelago-rotas-perdidas/docas-exterior-lote8.js'),{desenharInterativoExterior}=await import('/js/engine/docas-exterior-interativos.js');const c=document.createElement('canvas');c.width=400;c.height=300;const ctx=c.getContext('2d');
+  return Object.entries(pieces).map(([id,v])=>{const sample=(t,reduced)=>{ctx.setTransform(1,0,0,1,70,150);ctx.clearRect(-70,-150,400,300);desenharInterativoExterior(ctx,{id,x:1,y:1},{progress:{flags:{},mareCromatica:{}},player:{x:50,y:50}},t,reduced);return c.toDataURL();};return{id,moves:sample(0,false)!==sample(2,false),stable:sample(0,true)===sample(20,true),powered:v.kind!=='registro'};});
+ });for(const f of statusFX){assert.equal(f.moves,f.powered,f.id+' only devices breathe');assert(f.stable,f.id+' reduced status stable');}
+ await page.uncheck('#reduced');await page.evaluate(()=>window.sampleCentral(2));mkdirSync('qa',{recursive:true});await page.screenshot({path:'qa/docas-exterior-lote8.png'});assert.deepEqual(errors,[]);console.log('Lote 8 Chromium: ten actual interactive exterior draws, animated world and powered markers, stable reduced motion, no storage mutation or page errors.');
+ }finally{await browser.close();}
+}

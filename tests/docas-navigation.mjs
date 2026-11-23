@@ -22,7 +22,7 @@ for(let i=0;i<queue.length;i++){
   assert(canStandAt(docas,actor.x,actor.y,r,actor));moves++;seen.add(k);queue.push([X,Y]);
  }
 }
-for(const o of [...state.objects,...state.portals])assert(hits.has(o.id),o.id+' reachable by real substepped movement');
+for(const o of [...state.objects.filter(o=>o.interacao),...state.portals])assert(hits.has(o.id),o.id+' reachable by real substepped movement');
 assert.equal(sectors.size,7,JSON.stringify([...sectors]));
 for(const p of nav.obstaculos){
  const x=p.poly.reduce((v,a)=>v+a[0],0)/p.poly.length*nav.escala/64,y=p.poly.reduce((v,a)=>v+a[1],0)/p.poly.length*nav.escala/22;

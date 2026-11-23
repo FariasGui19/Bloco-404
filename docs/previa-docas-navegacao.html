@@ -21,7 +21,7 @@ const originalStorage=Storage.prototype.setItem;
 function motion(value){Storage.prototype.setItem=()=>{};try{definirMovimentoDocas(value);}finally{Storage.prototype.setItem=originalStorage;}}
 motion('normal');
 const source=await(await fetch('../js/main.js')).text();
-const explicit=Array.from(source.matchAll(/\{ id: '([^']+)', src: '([^']+)' \}/g),m=>({id:m[1],src:m[2]})).filter(s=>s.id.startsWith('docas_')).filter(s=>!new URLSearchParams(location.search).has('baseline')||s.id!=='docas_oeste_pontual');
+const explicit=Array.from(source.matchAll(/\{ id: '([^']+)', src: '([^']+)' \}/g),m=>({id:m[1],src:m[2]})).filter(s=>s.id.startsWith('docas_')||s.id==='cromatica_porta_fenda').filter(s=>!new URLSearchParams(location.search).has('baseline')||s.id!=='docas_oeste_pontual');
 const loaded=await loadSprites([...SPRITES_ENCAIXE,...explicit,...SPRITES_CAIS_SUL,...SPRITES_COSTA_OESTE,...SPRITES_CASCOS,...SPRITES_PESQUEIRO_03,...SPRITES_DOCAS_VIVAS,...SPRITES_RESSACA,...SPRITES_TENTACULO_02].map(s=>({...s,src:'../'+s.src})));
 document.querySelector('#status').textContent=loaded.every(Boolean)?'Artes carregadas':'Falha ao carregar arte';
 const state=gameState;

@@ -1,8 +1,14 @@
+import {itensInterativosExterior,desenharInterativoExterior} from './docas-exterior-interativos.js';
+import {desenharTerrenoDocas} from './docas-terreno-cache.js';
+import {desenharAmbienteLote6} from './docas-ambiente-lote6.js';
+import {desenharMarPerimetralCache} from './docas-mar-cache.js';
+import {desenharInfectadoDocas} from './docas-infectados.js';
+import {desenharDegrausFarol} from './docas-escadaria.js';
 import { DECOR_OESTE_REMOVIDO, oestePontualPronto, limparSoloOeste, preservarForaOeste, itensOestePontual, desenharOestePontual, desenharAtmosferaOestePontual } from './docas-oeste-pontual.js';
 import { desenharAcessoFiel, itensMargemFechamento, desenharDetalheMargem, fechamentoPronto, desenharPecaFechamento, desenharMargensFechamento, desenharVidaEncosta, desenharBoiasFechamento } from './docas-fechamento.js';
 import { desenharMarPerimetral, desenharBrumaCosteira } from './docas-mar-perimetral.js';
 import { desenharMarSuperior } from './docas-mar-superior.js';
-import { repararSoloDireito, repararFacesDireitas, pecasCostaAjustadas, encaixeAtivo, substituidaPeloEncaixe, itensEncaixe, desenharEncaixe, desenharRelevoEncaixe, desenharContatosEncaixe, desenharNevoaEncaixe, desenharBrumaFundoEncaixe } from './docas-encaixe.js';
+import { caixaEncaixe, repararSoloDireito, repararFacesDireitas, pecasCostaAjustadas, encaixeAtivo, substituidaPeloEncaixe, itensEncaixe, desenharEncaixe, desenharRelevoEncaixe, desenharContatosEncaixe, desenharNevoaEncaixe, desenharBrumaFundoEncaixe } from './docas-encaixe.js';
 import { desenharPatioCentral, desenharLuzesCentrais, desenharAcessosCentrais, poseCentral } from './docas-central.js';
 import { tempoVisualDocas } from './docas-animation.js';
 import { desenharTentaculoRessaca, volta } from './docas-ressaca.js';
@@ -142,6 +148,16 @@ function desenharEstrutura(ctx,st,t,reduced,state){
  if(st.id==='lote10_farolete')glow(st.x,y+h*.23,w*.75,'#ffd395',pulso*.35);
  if(st.id==='lote10_coral')glow(st.x,y+h*.48,w*.35,'#e583ff',pulso*.22);
  if(st.id==='lote10_coral'&&!reduced){for(let i=0;i<2;i++){const phase=(t*.12+i*.5+(st.x%11)*.03)%1;ctx.fillStyle=`rgba(219,150,255,${.28*(1-phase)})`;ctx.fillRect(st.x+(i?1:-1)*w*.15,y+h*.45-phase*h*.3,2,2);}}
+ if(['lote8_lampiao','lote11_lanterna-chao','lote10_farolete','lote12_lampiao'].includes(st.id)){
+   const amber=getSprite('docas_fx_brilho-ambar');
+   if(amber){ctx.save();ctx.globalAlpha=reduced?.16:.16+.05*Math.sin(t*1.7+st.x);ctx.drawImage(amber,st.x-w*.28,y+h*.24,w*.56,w*.56);ctx.restore();}
+ }
+ if(st.id==='galpao'){
+   const crt=getSprite('docas_fx_linha-crt');
+   if(crt){ctx.save();ctx.globalAlpha=reduced?.18:.18+.05*Math.sin(t*2.1);
+     for(const u of [.29,.40,.51])ctx.drawImage(crt,x+w*u,y+h*.52,w*.16,h*.018);
+     ctx.drawImage(crt,x+w*.435,y+h*.60,w*.16,h*.018);ctx.restore();}
+ }
  if(st.id==='lote8_lampiao')glow(st.x,y+h*.5,w*.5,'#ffce85',.14);
  if(st.id==='lote8_ampola'||st.id==='lote8_corais')glow(st.x,y+h*.6,w*.3,st.id==='lote8_ampola'?'#79f8ef':'#da7aff',.10);
  if(st.id==='lote6_cristal-violeta'||st.id==='lote6_corais'||st.id==='lote6_runa')glow(st.x,y+h*.6,w*.32,'#ec7cff',poseCentral(t,reduced,st.x*.01).luz*.33);
@@ -175,7 +191,7 @@ export function renderDocas(ctx,map,state,camX,camY,w,h,zoom,dpr,now,drawPlayer)
     desenharReflexosCais(ctx,cais,sCais);
     desenharMarCais(ctx,cais,sCais,clock);
   }
-  if(fechamentoPronto(map))desenharMarPerimetral(ctx,map,sCais,t,reduced,{left:esquerda,right:direita,top:topo,bottom:base});
+  if(fechamentoPronto(map))desenharMarPerimetralCache(ctx,map,sCais,t,reduced,{left:esquerda,right:direita,top:topo,bottom:base},zoom);
   if(encaixeAtivo(map)){
     desenharMarSuperior(ctx,sCais,t,reduced,{left:esquerda,right:direita,top:topo,bottom:base});
     desenharBrumaFundoEncaixe(ctx,sCais,t,reduced);
@@ -183,13 +199,15 @@ export function renderDocas(ctx,map,state,camX,camY,w,h,zoom,dpr,now,drawPlayer)
   if(terreno){
     const x=Math.max(0,Math.floor(camX-w/(2*zoom)-4)),y=Math.max(0,Math.floor(camY-(h/2+115)/zoom-4));
     const x1=Math.min(terreno.width,Math.ceil(camX+w/(2*zoom)+4)),y1=Math.min(terreno.height,Math.ceil(camY+(h/2-115)/zoom+4));
-    if(x1>x && y1>y)ctx.drawImage(terreno,x,y,x1-x,y1-y,x,y,x1-x,y1-y);
+    if(x1>x && y1>y)desenharTerrenoDocas(ctx,terreno,x,y,x1-x,y1-y,zoom,dpr);
   }
+  desenharDegrausFarol(ctx,map);
   if(oestePontualPronto(map))desenharOestePontual(ctx,'solo',sCais);
+  desenharAmbienteLote6(ctx,map,sCais,t,reduced,{left:esquerda,right:direita,top:topo,bottom:base});
   if(fechamentoPronto(map)&&!getSprite('docas_fiel_fundos'))desenharPecaFechamento(ctx,'encosta',sCais,t,reduced);
   // Sulcos de água e espuma deslocam-se pelo mar sem efeito estroboscópico.
   ctx.strokeStyle='rgba(87,183,192,.16)';ctx.lineWidth=2;
-  for(let i=0;i<90;i++){const x=(i*137+t*(3+i%3))%(terreno.width+100),y=(i*191)%terreno.height;ctx.beginPath();ctx.arc(x,y,7+i%10,.15,2.5);ctx.stroke();}
+  for(let i=0;i<90;i++){const x=(i*137+t*(3+i%3))%(terreno.width+100),y=(i*191)%terreno.height;if(x+18<esquerda||x-18>direita||y+18<topo||y-18>base)continue;ctx.beginPath();ctx.arc(x,y,7+i%10,.15,2.5);ctx.stroke();}
   // Ondulações quebradas no mar do cais, com geometria e quantidade fixas.
   for(const wave of ondasCais){
     const x=wave.x*sCais,y=wave.y*sCais;if(Math.abs(x-camX)>w/(2*zoom)+100||Math.abs(y-camY)>h/zoom+100)continue;
@@ -212,7 +230,7 @@ export function renderDocas(ctx,map,state,camX,camY,w,h,zoom,dpr,now,drawPlayer)
   const fogCais=getSprite('docas_fx_faixas-nevoa');
   if(fogCais){const s=map.geometriaDocas.escala;ctx.save();ctx.globalAlpha=.12;for(const [x,y,k] of [[175,730,0],[500,780,1],[780,705,2]]){const dx=reduced?0:Math.sin(t*.12+k)*18;ctx.drawImage(fogCais,x*s+dx,y*s,155*s,28*s);}ctx.restore();}
   // Pequenos reflexos afastados da máscara de terra, sem substituir o mar.
-  for(const [id,mx,my,size,phase] of [...(map.costaOeste?[]:[['onda-magenta',205,555,54,1]]),['redemoinho',1400,590,62,2]]){
+  for(const [id,mx,my,size,phase] of [...(map.costaOeste?[]:[['onda-magenta',205,555,54,1]]),['onda-ciano',1150,660,48,3],['redemoinho',1400,590,62,2]]){
     const img=getSprite('docas_fx_'+id),s=map.geometriaDocas.escala;if(!img)continue;
     const px=mx*s,py=my*s,sz=size*s;if(Math.abs(px-camX)>w/(2*zoom)+sz||Math.abs(py-camY)>h/zoom+sz)continue;
     ctx.save();ctx.globalAlpha=reduced?.18:.17+.035*Math.sin(t*.8+phase);ctx.drawImage(img,px-sz/2,py-sz*.20,sz,sz*.40);ctx.restore();
@@ -248,24 +266,19 @@ export function renderDocas(ctx,map,state,camX,camY,w,h,zoom,dpr,now,drawPlayer)
   if(!encaixeAtivo(map))desenharPatioCentral(ctx,map.geometriaDocas.escala,t,reduced,getSprite('docas_fx_faixas-nevoa'));
   for(const st of map.estruturasDocas)if(st.camada==='chao'&&!(encaixeAtivo(map)&&substituidaPeloEncaixe(st))){if(oestePontualPronto(map)&&st.id===DECOR_OESTE_REMOVIDO.id)continue;ctx.save();if(oestePontualPronto(map)&&st.x/sCais<550)preservarForaOeste(ctx,sCais);desenharEstrutura(ctx,st,t,reduced,state);ctx.restore();}
   const pecasOeste=costaVisivel?(encaixeAtivo(map)?pecasCostaAjustadas(oeste):[...oeste.rochas,...oeste.vegetacao]).map(peca=>({pecaOeste:peca,y:(oeste.y+peca.pe*oeste.escala)*sCais})):[];
-  const objs=ordenarProfundidadeDocas([...pecasCais,...pecasOeste,...(oestePontualPronto(map)?itensOestePontual(sCais):[]),...(fechamentoPronto(map)?itensMargemFechamento(sCais):[]),...(encaixeAtivo(map)?itensEncaixe(sCais):[]),...map.estruturasDocas.filter(st=>st.camada!=='chao'&&!(encaixeAtivo(map)&&substituidaPeloEncaixe(st))).map(st=>({estrutura:st,y:st.y})),...(state.trainingTargets??[]).filter(e=>e.health>0).map(e=>({entidade:e,y:e.y*SIDE_DEPTH_STEP})),...(state.cromaticaRuntime?.visao?[{entidade:state.cromaticaRuntime.visao,y:state.cromaticaRuntime.visao.y*SIDE_DEPTH_STEP}]:[]),{entidade:state.player,y:state.player.y*SIDE_DEPTH_STEP}]);
+  const objs=ordenarProfundidadeDocas([...itensInterativosExterior(state,{left:esquerda,right:direita,top:topo,bottom:base}),...pecasCais,...pecasOeste,...(oestePontualPronto(map)?itensOestePontual(sCais):[]),...(fechamentoPronto(map)?itensMargemFechamento(sCais):[]),...(encaixeAtivo(map)?itensEncaixe(sCais):[]),...map.estruturasDocas.filter(st=>st.camada!=='chao'&&!(encaixeAtivo(map)&&substituidaPeloEncaixe(st))).map(st=>({estrutura:st,y:st.y})),...(state.trainingTargets??[]).filter(e=>e.health>0||e.deathVisual>0).map(e=>({entidade:e,y:e.y*SIDE_DEPTH_STEP})),...(state.cromaticaRuntime?.visao?[{entidade:state.cromaticaRuntime.visao,y:state.cromaticaRuntime.visao.y*SIDE_DEPTH_STEP}]:[]),{entidade:state.player,y:state.player.y*SIDE_DEPTH_STEP}]);
   for(const item of objs){
+    if(item.interativoExterior){desenharInterativoExterior(ctx,item.interativoExterior,state,t,reduced);continue;}
     if(item.oestePontual){desenharOestePontual(ctx,item.oestePontual,sCais,t,reduced);continue;}
     if(item.fechamentoProp){desenharDetalheMargem(ctx,item.fechamentoProp,sCais,t,reduced);continue;}
-    if(item.encaixe){ctx.save();if(oestePontualPronto(map)&&['anexo-oeste','cabana-oeste','arvore-seca','palmeira-a','palmeira-b','palmeira-d','palmeira-e'].includes(item.encaixe))preservarForaOeste(ctx,sCais);desenharEncaixe(ctx,item.encaixe,sCais,t,reduced);ctx.restore();continue;}
+    if(item.encaixe){const box=caixaEncaixe(item.encaixe,sCais);if(box&&(box.x+box.w+120<esquerda||box.x-120>direita||box.y+box.h+120<topo||box.y-120>base))continue;ctx.save();if(oestePontualPronto(map)&&['anexo-oeste','cabana-oeste','arvore-seca','palmeira-a','palmeira-b','palmeira-d','palmeira-e'].includes(item.encaixe))preservarForaOeste(ctx,sCais);desenharEncaixe(ctx,item.encaixe,sCais,t,reduced);ctx.restore();continue;}
     if(item.pecaOeste){ctx.save();if(oestePontualPronto(map)&&(oeste.x+item.pecaOeste.x*oeste.escala)<530)preservarForaOeste(ctx,sCais);desenharPecaCosta(ctx,oeste,item.pecaOeste,sCais,clock);ctx.restore();continue;}
     if(item.peca){drawCais(item.peca);continue;}
     if(item.estrutura){if(oestePontualPronto(map)&&item.estrutura.id===DECOR_OESTE_REMOVIDO.id)continue;ctx.save();if(oestePontualPronto(map)&&item.estrutura.x/sCais<550)preservarForaOeste(ctx,sCais);const st=item.estrutura,margin=st.largura*4;if(Math.abs(st.x-camX)<w/(2*zoom)+margin&&Math.abs(st.y-camY)<h/zoom+margin)desenharEstrutura(ctx,st,t,reduced,state);ctx.restore();continue;}
     const e=item.entidade,x=e.x*CONFIG.TILE_W,y=e.y*SIDE_DEPTH_STEP;
     if(e===state.player){drawPlayer(e,x,y);continue;}
     if(e.renderType==='cromaticaVisao'){const img=getSprite('cromatica_nulo');if(img){ctx.save();ctx.globalAlpha=Math.min(.75,e.tempo/1.2);ctx.drawImage(img,x-18,y-65,36,65);ctx.restore();}continue;}
-    const img=getSprite('cromatica_infectado');ctx.save();ctx.fillStyle='rgba(8,8,18,.6)';ctx.beginPath();ctx.ellipse(x,y,14,5,0,0,Math.PI*2);ctx.fill();
-    if(e.windup>0){const phase=reduced?.5:Math.max(0,Math.min(1,1-e.windup/.65));ctx.fillStyle='rgba(240,120,168,.12)';ctx.strokeStyle='#ffc4e2';ctx.lineWidth=2;ctx.beginPath();ctx.ellipse(x,y,20+phase*4,9+phase*2,0,0,Math.PI*2);ctx.fill();ctx.stroke();}
-    if(img){const fw=img.width/8,clock=e.clock??0,fr=reduced?0:Math.floor(clock*(e.cromaticaMovendo?6:2))%8;
-      const bob=reduced?0:e.cromaticaMovendo?Math.sin(clock*8)*2:Math.sin(clock*1.8)*.8;
-      const lean=reduced?0:e.windup>0?-.035*Math.sin((1-e.windup/.65)*Math.PI):e.cromaticaMovendo?.018*Math.sin(clock*6):0;
-      ctx.translate(x,y);if(e.cromaticaFaceDireita)ctx.scale(-1,1);ctx.rotate(lean);ctx.globalAlpha=e.hitTimer>0?.68:1;ctx.imageSmoothingEnabled=false;ctx.drawImage(img,fr*fw,0,fw,img.height,-36,-96-bob,72,96);
-    }ctx.restore();
+    desenharInfectadoDocas(ctx,e,x,y,reduced,96);
   }
   if(oestePontualPronto(map))desenharAtmosferaOestePontual(ctx,sCais,t,reduced);
   if(fechamentoPronto(map))desenharVidaEncosta(ctx,sCais,t,reduced);

@@ -4294,6 +4294,14 @@ body.retro-fps #ui, body.retro-fps #controls, body.retro-fps #elevatorPrompt { d
   to { transform:translate(-50%,-50%) scale(1.25) rotate(45deg); opacity:.18; }
 }
 #mapTransitionOverlay.dimensional .hangar-terminal-hud { margin-top:min(65vh,430px); background:rgba(5,14,19,.88); }
+/* Fenda cromática: mesma comporta dimensional, tintura de salmoura e sem
+   imagens da Cidadela para não misturar as duas rotas. */
+#mapTransitionOverlay.mare-fenda { background:radial-gradient(circle at 50% 46%,#0d3a3a 0%,#04141a 48%,#02080c 100%); }
+#mapTransitionOverlay.mare-fenda::before { border-color:rgba(126,232,206,.85); box-shadow:0 0 26px #58d9c4, inset 0 0 30px #58d9c4, 0 0 0 22px rgba(35,140,126,.14); }
+#mapTransitionOverlay.mare-fenda::after { border-color:rgba(126,232,206,.34); border-left-color:transparent; border-right-color:transparent; }
+#mapTransitionOverlay.mare-fenda .dimensional-ring { display:none; }
+#mapTransitionOverlay.mare-fenda .hangar-terminal-hud { border-color:rgba(126,232,206,.4); box-shadow:0 0 26px rgba(62,190,168,.18); }
+
 @keyframes passagem-666 {
   0% {transform:translate(-50%,-50%) scale(.35);opacity:0;}
   35% {opacity:.65;}

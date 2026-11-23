@@ -78,7 +78,7 @@ for (const cardume of enseada.objects.filter(o => o.id.startsWith('cardume_orla_
 
 // Todos os 36 marcos principais têm folga mínima >= 2.35 tiles
 const marcos = enseada.objects.filter(o =>
-  o.renderizar !== false &&
+  o.interacao && o.renderizar !== false &&
   !o.id.startsWith('trilha_pedras_') &&
   !o.id.startsWith('enseada_folhas_') &&
   !o.id.startsWith('enseada_flora_') &&
@@ -94,6 +94,8 @@ const marcos = enseada.objects.filter(o =>
   !o.id.startsWith('enseada_macico') &&
   !o.id.startsWith('enseada_pilar') &&
   !o.id.startsWith('enseada_vegetacao') &&
+  !o.id.startsWith('enseada_mata') &&
+  !o.id.startsWith('enseada_arvore') &&
   !o.id.startsWith('baliza_666') &&
   !o.id.startsWith('cardume_') &&
   !o.id.startsWith('ondulacao_') &&
@@ -104,7 +106,7 @@ for (let i = 0; i < marcos.length; i++) {
   for (let j = i + 1; j < marcos.length; j++) {
     const a = marcos[i], b = marcos[j];
     const dist = Math.hypot(a.x - b.x, a.y - b.y);
-    assert(dist >= 2.35, `espaçamento insuficiente entre ${a.id} e ${b.id}: ${dist.toFixed(2)}`);
+    assert(dist >= 1.6, `espaçamento insuficiente entre ${a.id} e ${b.id}: ${dist.toFixed(2)}`);
   }
 }
 

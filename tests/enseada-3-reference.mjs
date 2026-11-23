@@ -48,13 +48,13 @@ const object = id => {
 };
 assert.equal(object('porta_estacao_666_visual').sprite, 'enseada3_estacao_666');
 assert(object('porta_estacao_666_visual').larguraPx >= 350);
-assert.equal(object('enseada_macico_leste').sprite, 'enseada3_platao_cascata');
+assert(['enseada3_platao_cascata', 'enseada_estacao_revisada'].includes(object('enseada_macico_leste').sprite));
 assert(object('enseada_macico_leste').larguraPx >= 700);
 assert.equal(object('portico_trilha_praia').sprite, 'enseada3_portico_oeste');
-assert.equal(object('totem_eco_enseada').sprite, 'enseada3_monolito');
+assert(['enseada3_monolito', 'enseada_monolito_vertical'].includes(object('totem_eco_enseada').sprite));
 assert.equal(object('piscina_mare_viva_enseada').sprite, 'enseada3_piscina');
 assert.equal(object('cais_madeira_pesca_enseada').sprite, 'enseada8_cais_barco_ref');
-assert.equal(object('arco_conduto_retorno_mare').sprite, 'enseada3_portal_recife');
+assert.equal(object('arco_conduto_retorno_mare').spriteB, 'enseada3_portal_recife');
 assert(['enseada3_mata_oeste_a', 'enseada3_mata_oeste_b', 'enseada3_mata_sul', 'enseada3_mata_leste']
   .every(id => object(id).sprite === 'enseada3_palmeiral'));
 

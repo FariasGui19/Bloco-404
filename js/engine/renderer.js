@@ -1,3 +1,6 @@
+import {desenharInterativoDocas} from './docas-interativos.js';
+import {movimentoDocasReduzido} from './docas-animation.js';
+import {desenharInfectadoDocas} from './docas-infectados.js';
 import { desenharPisoInteriorDocas, desenharParedesInteriorDocas, desenharChaoInteriorDocas, desenharMobiliaDocas } from './docas-interiores.js';
 import { desenharEmbarquePesqueiro } from './docas-cascos.js';
 import { renderDocas } from './docas-view.js';
@@ -3046,15 +3049,8 @@ function drawBioRail(rail) {
 
 // Aparição e infectados vivem no mesmo espaço/profundidade dos objetos.
 function drawCromaticaInfectado(target) {
-  if (target.health <= 0) return;
-  const x=(target.x-target.y)*HW,y=(target.x+target.y)*HH,img=getSprite('cromatica_infectado');
-  ctx.save();ctx.fillStyle='rgba(18,8,28,.32)';ctx.beginPath();ctx.ellipse(x,y+1,17,6,0,0,Math.PI*2);ctx.fill();
-  if (target.windup>0) {ctx.strokeStyle='#ffb3dc';ctx.lineWidth=2;ctx.beginPath();ctx.ellipse(x,y,21,9,0,0,Math.PI*2);ctx.stroke();}
-  if(img) {const fw=img.width/8,fh=img.height,frame=Math.floor((target.clock??0)*5)%8;
-    ctx.translate(x,y);if(target.flip)ctx.scale(-1,1);ctx.imageSmoothingEnabled=false;
-    ctx.globalAlpha=target.hitTimer>0?.65:1;ctx.drawImage(img,frame*fw,0,fw,fh,-45,-114,90,114);
-  } else {ctx.fillStyle='#8e4d83';ctx.fillRect(x-8,y-34,16,34);}
-  ctx.restore();
+  const x=(target.x-target.y)*HW,y=(target.x+target.y)*HH;
+  desenharInfectadoDocas(ctx,target,x,y,movimentoDocasReduzido(),114);
 }
 function drawCromaticaNulo(vision) {
   const img=getSprite('cromatica_nulo');if(!img)return;
@@ -5135,7 +5131,8 @@ function drawWallProcedural(x, y, front) {
 export function getObjectSpriteConfig(spriteId) {
   if (typeof spriteId === 'string' && (
     spriteId.startsWith('freq666_') || spriteId.startsWith('oceano_vivo_') ||
-    /^enseada(?:\d+)?_/.test(spriteId)
+    /^enseada(?:\d+)?_/.test(spriteId) ||
+    ['cromatica_porta_fenda', 'fenda_lampada', 'fenda_porta'].includes(spriteId)
   )) return { SHEET_COLS: 1, SHEET_ROWS: 1, DEFAULT_SCALE: 1, FEET_ANCHOR_Y: 1 };
   if (typeof spriteId === 'string' && (spriteId.startsWith('bio_sala_') || spriteId.startsWith('dom_sala_') || spriteId.startsWith('mare_sala_') || spriteId.startsWith('nucleo_sala_') || spriteId.startsWith('viaduto_'))) return { SHEET_COLS: 1, SHEET_ROWS: 1, DEFAULT_SCALE: 1, FEET_ANCHOR_Y: 1 };
   if (['sala_bio_maquina', 'sala_bio_grade', 'sala_dominio_lacre', 'sala_mare_fluxo', 'sala_nucleo_malha', 'aero_painel_partidas', 'aero_carrinho_bagagem', 'aero_totem_holo', 'aero_planta_aliena'].includes(spriteId)) return { SHEET_COLS: 1, SHEET_ROWS: 1, DEFAULT_SCALE: 1, FEET_ANCHOR_Y: 1 };
@@ -5171,6 +5168,14 @@ export function getObjectSpriteConfig(spriteId) {
   }
   if (spriteId === 'beach_props') {
     return CONFIG.BEACH_PROPS_SPRITE;
+  }
+  // As artes 3.0 e 4.0 da Enseada são peças recortadas, não células de um
+  // atlas: cada PNG conserva a própria transparência e a própria âncora.
+  if (typeof spriteId === 'string' && spriteId.startsWith('enseada3_')) {
+    return { SHEET_COLS: 1, SHEET_ROWS: 1, DEFAULT_SCALE: 1, FEET_ANCHOR_Y: 1 };
+  }
+  if (typeof spriteId === 'string' && spriteId.startsWith('enseada4_')) {
+    return { SHEET_COLS: 1, SHEET_ROWS: 1, DEFAULT_SCALE: 1, FEET_ANCHOR_Y: 1 };
   }
   return CONFIG.HUB_PROPS_SPRITE;
 }
@@ -5378,6 +5383,7 @@ function drawMapObject(object, state) {
   if (object.invisivel || object.renderizar === false) return;
   if (object.hideWhenFlag && state.progress.flags?.[object.hideWhenFlag]) return;
   if (object.showWhenFlag && !state.progress.flags?.[object.showWhenFlag]) return; // NOVO
+  if(object.docasInterativo && desenharInterativoDocas(ctx,object,state)) return;
   if(object.docasProp && desenharMobiliaDocas(ctx,object,state)) return;
 
   if (['rocha_rachada', 'travessia_mare_eco', 'passagem_mare_eco', 'caverna_alagada', 'fenda_estreita', 'teleferico_quebrado'].includes(object.id)) { drawBridgeThreshold(object, state.world?.currentMap, state); return; }

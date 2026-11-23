@@ -20,5 +20,5 @@ for(const [id,x,y,w] of [['cabana-oeste',585,478,150],['cabana-leste',1200,510,1
  const st=docas.estruturasDocas.find(s=>s.id===id);
  assert.deepEqual([st.x,st.y,st.largura],[x,y,w].map(n=>n*ESCALA_DOCAS),'âncoras e dimensões mantidas');
 }
-assert.equal(docas.portals.length,3,'três interiores continuam acessíveis');
+assert.equal(docas.portals.length,4,'três interiores e o portal de eco da fenda');
 console.log('Vila 04: dez PNGs RGBA registrados, carga estática sem atlas, prédios e portas preservados.');

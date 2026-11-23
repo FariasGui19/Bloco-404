@@ -21,7 +21,7 @@ else{
    const mist=(t,reduced)=>{g.clearRect(0,0,1568,880);desenharAtmosferaOestePontual(g,1,t,reduced);return c.toDataURL();};
    return {inside,outside,outsideBounds,outsideMaxDelta,outsideAboveOne,moves:mist(0,false)!==mist(4,false),stable:mist(0,true)===mist(9,true)};
   },samples);
-  assert(report.inside>10000,'actual local replacement');assert.equal(report.outside,0,JSON.stringify(report)+' pixel-identical outside the local envelope plus 3px antialias guard and removed prop bounds');assert(report.moves&&report.stable,'local mist/reflection animate; reduced motion is stable');
+  assert(report.inside>10000,'actual local replacement');assert.equal(report.outsideAboveOne,0,JSON.stringify(report)+' no visible change outside the local envelope and removed prop bounds');assert(report.outsideMaxDelta<=1,JSON.stringify(report)+' at most one alpha step of edge antialias outside the envelope');assert(report.moves&&report.stable,'local mist/reflection animate; reduced motion is stable');
   const trace=await pages[0].evaluate(async()=>{
    const {renderDocas}=await import('/js/engine/docas-view.js');const {docas}=await import('/js/data/worlds/arquipelago-rotas-perdidas/docas-neblina.js');const {OESTE_PONTUAL_FRAMES}=await import('/js/data/worlds/arquipelago-rotas-perdidas/docas-oeste-pontual.js');
    const c=document.createElement('canvas');c.width=1568;c.height=880;const g=c.getContext('2d'),seq=[];

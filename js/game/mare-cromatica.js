@@ -116,3 +116,32 @@ export function objetivoCromatico(progress) {
   if(d.paineis.length<3) return `CONTENÇÃO • PAINÉIS ${d.paineis.length}/3`;
   return 'ESTABILIZE O NÚCLEO DE ÂNCORA';
 }
+
+// Migração de continuidade para saves antigos do Maré Astral que já chegaram
+// às Docas: registra a incursão como concluída (total) sem tocar em vida,
+// inventário, identidade ou em qualquer outra dimensão. A decisão de aplicar
+// fica no loadSave, restrita a saves de versão anterior e ao mapa das Docas.
+export function concluirIncursaoLegado(progress) {
+  if (!progress || progress.archetype !== 'mare_astral') return false;
+  if (progress.flags?.docas_incursao_concluida_v2) return false;
+  if (!progress.flags?.docas_neblina_alcancada) return false;
+  const data = edit(progress);
+  data.versaoCronometro = 1;
+  data.iniciada = true;
+  data.fragmentos = [...FRAGMENTOS];
+  data.fitas = [...FITAS];
+  data.sincronizacao = 4;
+  data.estacaoAberta = true;
+  data.paineis = [...PAINEIS];
+  data.ancoraEstavel = true;
+  data.desfecho = 'total';
+  data.restante = CROMATICA_LIMIT;
+  const flags = progress.flags ??= {};
+  flags.docas_chave = true;
+  flags.docas_fusivel = true;
+  flags.cromatica_estacao_aberta = true;
+  flags.cromatica_ancora_estavel = true;
+  flags.cromatica_desfecho = 'total';
+  flags.docas_incursao_concluida_v2 = true;
+  return true;
+}

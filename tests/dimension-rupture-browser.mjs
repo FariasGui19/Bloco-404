@@ -29,6 +29,16 @@ if (!process.env.BROWSER_EXECUTABLE) {
         viewport: { width: 1440, height: 900 },
       }),
       errors = [];
+    const snap = async (path) => {
+      // The mission now casts a textured floor; in headless SwiftShader the
+      // compositor snapshot can stall rAF for the whole timeout window. The
+      // geometry assertions are authoritative, so capture best-effort on the
+      // mission canvas instead.
+      try {
+        const data = await page.evaluate(() => document.querySelector('.mare-mission canvas')?.toDataURL('image/png'));
+        if (data) writeFileSync(path, Buffer.from(data.split(',')[1], 'base64'));
+      } catch {}
+    };
     let expectedContextFailure = false;
     page.on("console", (m) => {
       if (
@@ -92,17 +102,42 @@ if (!process.env.BROWSER_EXECUTABLE) {
       await checkInteractions(true);
     });
     assert.equal(await page.evaluate(() => window.__dimension404.mode), "2d");
-    await page.screenshot({ path: ".qa/rupture-dialogue.png" });
+    await snap(".qa/rupture-dialogue.png");
     await page.evaluate(async () => {
       const { closeDialogue } = await import("/js/ui/dialogue.js");
       closeDialogue();
     });
+    // New saves first visit the contained bay; legacy pending ruptures still use
+    // the unmodified bridge contract covered by dimension-rupture.mjs.
+    await page.waitForFunction(() => window.__dimension404.mode === '3d' && !!window.__dimension404.runtime?.mission);
+    assert.equal(await page.evaluate(async () => {
+      const { state } = await import('/js/game/state.js');
+      return state.progress.dimensionalRupture?.status ?? null;
+    }), null);
+    const staged = await page.evaluate(async () => {
+      const { sites } = await import('/js/dimension/mare-mission-model.js');
+      const m = window.__dimension404.runtime.mission;
+      // Staged objective positions: this smoke is not a manual traversal claim.
+      for (const id of ['fita','sal','eco','terminal','ancora']) {
+        const s = sites.find(s => s.id === id);
+        m.x=s.x; m.y=s.y; m.vx=m.vy=0;
+        window.dispatchEvent(new KeyboardEvent('keydown',{code:'KeyE'}));
+        window.dispatchEvent(new KeyboardEvent('keyup',{code:'KeyE'}));
+      }
+      return { finished: m.finished, rank: m.p.rank, data: m.p.data.length };
+    });
+    assert.deepEqual(staged, { finished: true, rank: 4, data: 3 });
+    await page.evaluate(() => {
+      for (let i = 0; i < 90; i++) window.__dimension404.tick(0.1);
+    });
+    // The intermediate "entering" beat can be shorter than a polling frame on
+    // slow software renderers; the handoff itself is the contract.
     await page.waitForFunction(
-      () => window.__dimension404.mode === "entering",
+      () => !window.__dimension404.runtime?.mission,
       null,
-      { timeout: 60000 },
+      { timeout: 120000 },
     );
-    await page.screenshot({ path: ".qa/rupture-entering.png" });
+    await snap(".qa/rupture-entering.png");
     await page.waitForFunction(
       () => window.__dimension404.mode === "3d",
       null,

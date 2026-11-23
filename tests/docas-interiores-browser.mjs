@@ -8,7 +8,7 @@ else {
   const page=await browser.newPage({viewport:{width:1280,height:800}}),errors=[];
   page.on('pageerror',e=>errors.push(e.message));page.on('response',r=>{if(r.status()>=400&&!r.url().endsWith('/favicon.ico'))errors.push(r.status()+' '+r.url());});
   // Observe actual WebAudio destinations without changing their processing.
-  await page.addInitScript(()=>{const Native=window.AudioContext;if(!Native)return;window.audioContexts=[];window.AudioContext=class extends Native{constructor(...a){super(...a);window.audioContexts.push(this);}};});
+  await page.addInitScript(()=>{window.batchDraws=new Set();window.batch3Draws=new Set();window.batch4Draws=new Set();window.batch5Draws=new Set();window.batch7Draws=new Set();const draw=CanvasRenderingContext2D.prototype.drawImage;CanvasRenderingContext2D.prototype.drawImage=function(img,...a){if(img instanceof HTMLImageElement&&img.src.includes('/docas-interiores-lote2/'))window.batchDraws.add(img.src.split('/').pop());if(img instanceof HTMLImageElement&&img.src.includes('/docas-interiores-lote3/'))window.batch3Draws.add(img.src.split('/').pop());if(img instanceof HTMLImageElement&&img.src.includes('/docas-interiores-lote4/'))window.batch4Draws.add(img.src.split('/').pop());if(img instanceof HTMLImageElement&&img.src.includes('/docas-interiores-lote5/'))window.batch5Draws.add(img.src.split('/').pop());if(img instanceof HTMLImageElement&&img.src.includes('/docas-interativos-lote7/'))window.batch7Draws.add(img.src.split('/').pop());return draw.call(this,img,...a);};const Native=window.AudioContext;if(!Native)return;window.audioContexts=[];window.AudioContext=class extends Native{constructor(...a){super(...a);window.audioContexts.push(this);}};});
   const origin=process.env.PREVIEW_ORIGIN??'http://127.0.0.1:8000';await page.goto(origin+'/index.html');await page.waitForFunction(()=>typeof window.__morfador==='function',null,{timeout:120000});
   assert.equal(await page.evaluate(()=>window.audioContexts.length),0,'no autoplay');
   await page.evaluate(async()=>{const {createNewSave}=await import('/js/game/save.js');const s=createNewSave(1,'QA interiores');s.world={lastMapId:'mare_cromatica_docas',lastSpawnId:'inicio'};s.progress.archetype='mare_astral';s.progress.onboardingCompleted=true;s.progress.flags={docas_neblina_alcancada:true,docas_sinal_interceptado:true};s.progress.mareCromatica={versaoCronometro:1,iniciada:false,restante:600};localStorage.setItem('BLOCO404_SAVE_SLOT_1',JSON.stringify(s));});
@@ -36,14 +36,58 @@ else {
   mkdirSync('qa',{recursive:true});
   for(const [door,name] of [['docas_cabana_esq','cabana_oeste'],['docas_cabana_dir','cabana_leste'],['docas_galpao','galpao']]){
    await walkTo(door);await page.waitForTimeout(750);await page.keyboard.press('e');await page.waitForFunction(name=>import('/js/game/state.js').then(({state})=>state.world.currentMapId==='mare_cromatica_'+name&&!state.world.isLoading),name);
-   await page.waitForTimeout(800);await page.screenshot({path:'qa/docas-interior-'+name+'.png'});
-   const report=await page.evaluate(async()=>{const {state}=await import('/js/game/state.js'),{getSprite}=await import('/js/engine/sprites.js');return {props:state.objects.filter(o=>o.docasProp).length,hero:state.objects.filter(o=>o.docasAsset&&getSprite(o.docasAsset)).length,exit:state.portals[0].id,inventory:JSON.stringify(state.progress.inventory),health:state.player.health,energy:state.player.energy};});
-   assert(report.props>=5);assert.equal(report.hero,1);assert.equal(report.inventory,baseline.inventory);assert.equal(report.health,baseline.health);assert.equal(report.energy,baseline.energy);
+   await page.waitForFunction(()=>!document.getElementById('mapTransitionOverlay')?.classList.contains('active'));await page.waitForTimeout(650);await page.screenshot({path:'qa/docas-interior-lote7-'+name+'.png'});
+   const report=await page.evaluate(async()=>{const {state}=await import('/js/game/state.js'),{getSprite}=await import('/js/engine/sprites.js');return {props:state.objects.filter(o=>o.docasProp).length,hero:state.objects.filter(o=>o.docasHero&&getSprite(o.docasAsset)).length,painted:state.objects.filter(o=>o.docasAsset&&getSprite(o.docasAsset)).length,exit:state.portals[0].id,inventory:JSON.stringify(state.progress.inventory),health:state.player.health,energy:state.player.energy};});
+   assert(report.props>=5);assert.equal(report.hero,1);assert.equal(report.painted,name==='cabana_oeste'?7:name==='cabana_leste'?6:5);assert.equal(report.inventory,baseline.inventory);assert.equal(report.health,baseline.health);assert.equal(report.energy,baseline.energy);
    await walkTo(report.exit);await page.waitForTimeout(750);await page.keyboard.press('e');await page.waitForFunction(()=>import('/js/game/state.js').then(({state})=>state.world.currentMapId==='mare_cromatica_docas'&&!state.world.isLoading));await page.waitForTimeout(650);
   }
+  assert.equal(await page.evaluate(()=>window.batchDraws.size),10,'all ten new pieces drawn by the live renderer');
+  assert.equal(await page.evaluate(()=>window.batch3Draws.size),10,'all ten batch-3 elements drawn in the three live interiors');
+  assert.equal(await page.evaluate(()=>window.batch4Draws.size),10,'all ten batch-4 authored details drawn in the live interiors');
+  const effects=await page.evaluate(async()=>{
+   const {PECAS_INTERIORES_LOTE2}=await import('/js/data/worlds/arquipelago-rotas-perdidas/docas-interiores-lote2.js'),{desenharLuzMobiliaDocas}=await import('/js/engine/docas-interiores.js');
+   const c=document.createElement('canvas');c.width=160;c.height=160;const ctx=c.getContext('2d');
+   return PECAS_INTERIORES_LOTE2.map(visual=>{
+    const sample=(t,reduced)=>{ctx.clearRect(0,0,160,160);desenharLuzMobiliaDocas(ctx,{x:2,y:3,docasVisual:visual},20,20,90,110,t,reduced);return c.toDataURL();};
+    return {name:visual.name,lit:!!visual.light,moves:sample(0,false)!==sample(2,false),still:sample(0,true)===sample(20,true)};
+   });
+  });
+  for(const fx of effects){assert.equal(fx.moves,fx.lit,fx.name+' only powered equipment animates');assert(fx.still,fx.name+' reduced mode stable');}
+  const combatPaint=await page.evaluate(async()=>{
+   const {desenharInfectadoDocas}=await import('/js/engine/docas-infectados.js');
+   const c=document.createElement('canvas');c.width=600;c.height=200;const ctx=c.getContext('2d');
+   return [{windup:.4},{attackVisual:.15},{hitTimer:.1}].map((fields,i)=>{ctx.clearRect(0,0,600,200);desenharInfectadoDocas(ctx,{health:50,...fields},120,150,false,114);return ctx.getImageData(0,0,600,200).data.some(v=>v>0);});
+  });
+  assert(combatPaint.every(Boolean));assert.equal(await page.evaluate(()=>window.batch5Draws.size),10,'seven details drawn in live rooms plus all three actual combat-pose render paths');
+  const extraPoses=await page.evaluate(async()=>{
+   const {desenharInfectadoDocas}=await import('/js/engine/docas-infectados.js');const c=document.createElement('canvas');c.width=400;c.height=220;const ctx=c.getContext('2d');
+   return [{health:50,alertVisual:.3},{health:50,cooldown:2.1},{health:0,deathVisual:.4}].map(e=>{ctx.clearRect(0,0,400,220);desenharInfectadoDocas(ctx,e,180,180,false,114);return ctx.getImageData(0,0,400,220).data.some(v=>v>0);});
+  });assert(extraPoses.every(Boolean));assert.equal(await page.evaluate(()=>window.batch7Draws.size),10,'seven actual interactive arts in rooms and three combat poses');
+  const interactiveFx=await page.evaluate(async()=>{
+   const {desenharInterativoDocas}=await import('/js/engine/docas-interativos.js'),{INTERATIVOS_DOCAS_LOTE7:pieces}=await import('/js/data/worlds/arquipelago-rotas-perdidas/docas-interativos-lote7.js'),{definirMovimentoDocas}=await import('/js/engine/docas-animation.js');
+   const c=document.createElement('canvas');c.width=400;c.height=400;const ctx=c.getContext('2d');
+   const sample=(id,t,reduced,done)=>{definirMovimentoDocas(reduced?'reduzido':'normal');ctx.setTransform(1,0,0,1,200,0);ctx.clearRect(-200,0,400,400);desenharInterativoDocas(ctx,{id,x:3,y:3,docasInterativo:pieces[id]},{player:{x:0,y:0},world:{currentMapId:'mare_cromatica_cabana_oeste'},docasAnimation:{elapsed:t},progress:{flags:{docas_chave:done},mareCromatica:{fragmentos:done?['costa','acampamento']:[],fitas:done?['casa','vigilia']:[],sincronizacao:done?4:1}}});return c.toDataURL();};
+   const result=Object.keys(pieces).map(id=>({id,moves:sample(id,0,false,false)!==sample(id,2,false,false),reduced:sample(id,0,true,false)===sample(id,20,true,false)}));definirMovimentoDocas('normal');return result;
+  });for(const f of interactiveFx){assert(f.moves,f.id+' pending indicator animates');assert(f.reduced,f.id+' reduced indicator stable');}
+  const surfaceFx=await page.evaluate(async()=>{
+   const {desenharSuperficiesDocas}=await import('/js/engine/docas-superficies-interiores.js'),{definirMovimentoDocas}=await import('/js/engine/docas-animation.js');
+   const c=document.createElement('canvas');c.width=1100;c.height=700;const ctx=c.getContext('2d');
+   return ['pescador','vigia','crt'].map(room=>{
+    const sample=(time,mode)=>{definirMovimentoDocas(mode);ctx.setTransform(1,0,0,1,550,150);ctx.clearRect(-550,-150,1100,700);for(const plane of ['wall','floor'])desenharSuperficiesDocas(ctx,{meta:{docasTema:room}},{docasAnimation:{elapsed:time}},plane);return c.toDataURL();};
+    const moving=sample(0,'normal')!==sample(2,'normal'),stable=sample(0,'reduzido')===sample(18,'reduzido');definirMovimentoDocas('normal');return {room,moving,stable};
+   });
+  });
+  for(const f of surfaceFx){assert(f.moving,f.room+' authored surface FX visible');assert(f.stable,f.room+' surface FX freeze in reduced mode');}
   await page.click('#cromaticaSound');assert.equal(await page.locator('#cromaticaSound').getAttribute('aria-pressed'),'false');await page.waitForFunction(()=>window.audioContexts[0].state==='suspended');
   await page.click('#cromaticaSound');assert.equal(await page.evaluate(()=>window.audioContexts.length),1,'sources/context reused');
+  const preview=await browser.newPage();preview.on('pageerror',e=>errors.push(e.message));
+  await preview.goto(origin+'/docs/previa-docas-interiores-lote2.html');await preview.waitForFunction(()=>window.ready);await preview.click('#pause');
+  assert.equal(await preview.locator('#status').textContent(),'10 peças carregadas');
+  const storage=await preview.evaluate(()=>JSON.stringify(localStorage));
+  const moving=await preview.evaluate(()=>{window.samplePiece('radio-vigia',0);const a=document.querySelector('canvas').toDataURL();window.samplePiece('radio-vigia',2);return a!==document.querySelector('canvas').toDataURL();});assert(moving);
+  await preview.check('#reduced');const still=await preview.evaluate(()=>{window.samplePiece('rack-crt',0);const a=document.querySelector('canvas').toDataURL();window.samplePiece('rack-crt',9);return a===document.querySelector('canvas').toDataURL();});assert(still);
+  assert.equal(await preview.evaluate(()=>JSON.stringify(localStorage)),storage,'asset preview does not write saves/preferences');
   assert.deepEqual(errors,[]);
-  console.log('Chromium: real keyboard E entry/exit for all three interiors, actual collision routes, 18 props/three loaded hero assets, untouched inventory/vitals, opt-in suspend/resume/reuse audio, no page errors OK.');
+  console.log('Chromium: real keyboard E entry/exit for all three interiors, actual collision routes, 18 props/18 painted placements including three hero assets, untouched inventory/vitals, opt-in suspend/resume/reuse audio, no page errors OK.');
  }finally{await browser.close();}
 }

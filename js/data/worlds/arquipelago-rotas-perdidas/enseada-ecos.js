@@ -46,6 +46,14 @@ function hash(x, y, seed = 0) {
 }
 
 const ehTerra = c => c !== undefined && 'SMT'.includes(c);
+const pontoEmPoligonoGrade = (x, y, poly) => {
+  let dentro = false;
+  for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
+    const [ax, ay] = poly[j], [bx, by] = poly[i];
+    if ((ay > y) !== (by > y) && x < (bx - ax) * (y - ay) / (by - ay) + ax) dentro = !dentro;
+  }
+  return dentro;
+};
 
 // Silhueta da costa — traçada sobre a arte de referência, não desenhada a mão.
 //
@@ -131,6 +139,43 @@ for (let y = 0; y < ROWS; y++) for (let x = 0; x < COLS; x++) {
   const {px, py} = imagemDaGrade(x + .5, y + .5);
   if (dentroPoligono(px, py, corteOeste) || dentroPoligono(px, py, corteSul)
       || dentroPoligono(px, py, cortePraiaSul) || dentroPoligono(px, py, corteLeste)) grid[y][x] = 'W';
+}
+
+// Contornos 3.1 medidos na prancha final. A costa leste e a praia sudoeste
+// existem na arte, mas os cortes antigos paravam antes delas: o resultado era
+// uma ilha com menos de 1.600 tiles e toda a metade leste caminhável apenas
+// no desenho. Estes polígonos são a silhueta da referência em coordenadas de
+// grade; a água, a franja molhada e os pisos são recalculados logo abaixo,
+// como para qualquer outra célula.
+const EXTENSOES_31 = [
+  // Promontório leste: recebe o portal de recife, o farolete e a mata alta.
+  [[41,25],[45,15],[53,11],[60,14],[65,17],[66,26],[63,34],[57,37],[47,36],[42,31]],
+  // Praia sudoeste larga, mantendo livre a enseada do cais (x>=42, y 39..54).
+  [[4,44],[10,40],[20,41],[30,44],[40,47],[42,53],[38,58],[24,59],[12,56],[6,49]],
+  // Bosque noroeste entre o acampamento e a estação.
+  [[8,19],[14,16],[22,19],[27,25],[25,31],[17,33],[9,28]],
+  // Alargamento da praia sul, abaixo da linha da maré; mantém o cardume
+  // equatorial em água profunda mais ao largo.
+  [[11,54],[20,55],[30,56],[34,59],[26,61],[16,60],[10,58]],
+];
+for (let y = 0; y < ROWS; y++) {
+  for (let x = 0; x < COLS; x++) {
+    if (EXTENSOES_31.some(poly => pontoEmPoligonoGrade(x + .5, y + .5, poly))) grid[y][x] = 'S';
+  }
+}
+
+// A laje de chegada do Caminho das Correntes fica no fim da passagem de
+// pedras. É rocha molhada (M), não vazio: o portal pode ser usado e a água ao
+// redor continua nadável.
+grid[9][28] = 'M';
+// Enseada aberta do promontório: o arco do conduto fica na ponta rochosa e a
+// água precisa continuar entre ele e a mata leste. Sem esta cova o portal
+// automático nascia em terra e o farolete perdia o reflexo.
+for (let y = 23; y <= 33; y++) {
+  for (let x = 54; x <= 65; x++) {
+    const dx = (x + .5 - 59.5) / 4.8, dy = (y + .5 - 28.0) / 4.2;
+    if (dx * dx + dy * dy <= 1) grid[y][x] = 'W';
+  }
 }
 
 // Retira a língua isolada de areia atrás do promontório sudeste; o mar
@@ -219,6 +264,20 @@ for (const key of passarelaCorrentes) {
   const row = ground.walkMask[y];
   ground.walkMask[y] = row.slice(0, x) + '.' + row.slice(x + 1);
 }
+// As pranchas do cais e da travessia de pedras são piso de verdade: sem esta
+// máscara o jogador via o deck, mas era barrado pela água dois tiles antes de
+// alcançar o barco, o embarcadouro e o baú de deriva.
+const passarelaCais = new Set();
+for (let y = 42; y <= 53; y++) { passarelaCais.add(`44,${y}`); passarelaCais.add(`45,${y}`); }
+for (let x = 42; x <= 47; x++) passarelaCais.add(`${x},51`);
+for (const [x, y] of [[46,50],[47,50],[46,49]]) passarelaCais.add(`${x},${y}`);
+for (let y = 46; y <= 52; y++) { passarelaCais.add(`43,${y}`); passarelaCais.add(`44,${y}`); }
+for (const key of passarelaCais) {
+  const [x, y] = key.split(',').map(Number);
+  if (!grid[y]?.[x] || ehTerra(grid[y][x])) continue;
+  const row = ground.walkMask[y];
+  ground.walkMask[y] = row.slice(0, x) + '.' + row.slice(x + 1);
+}
 
 const layout = rows.map(row => [...row].map(c => ('SMT'.includes(c) ? 0 : 1)));
 for (let y = 0; y < ROWS; y++) {
@@ -267,7 +326,7 @@ export const map = {
     // Chão da Enseada é AREIA. A camada global de grama pintava um tapete
     // verde sobre a praia inteira (a "faixa" que aparecia em todos os setores).
     // Grama agora só nasce onde uma `zonasGrama` mandar.
-    gramaInterior: false,
+    gramaInterior: true,
     useBackgroundWalls: true,
     sandSprite: 'beach_novas_artes',
     ambiente: { poeira: 18, cor: '#ffd98a' },
@@ -367,7 +426,7 @@ export const map = {
     inicio: { x: 19.9, y: 51.7 },
     vindo_da_praia: { x: 19.9, y: 51.7 },
     vindo_da_estacao_666: { x: 19.3, y: 19.3 },
-    vindo_do_mar: { x: 28.5, y: 11.5 },
+    vindo_do_mar: { x: 20.5, y: 12.5 },
     vindo_das_docas: { x: 43.6, y: 41.8 },
     vindo_da_darsena_mare: { x: 57.0, y: 24.0 },
   },
@@ -412,15 +471,17 @@ export const map = {
     // mapa, na areia da praia leste, perto do veleiro e do píer
     // (pôster 1042,535 e 1072,523). O que estava na areia do sudeste e o da
     // escada do acampamento não existem na referência.
-    { id: 'enseada_caranguejo_areia_1', species: 'caranguejo', x: 52.35, y: 31.55 },
-    { id: 'enseada_caranguejo_areia_2', species: 'caranguejo', x: 53.19, y: 31.16 },
+    { id: 'enseada_caranguejo_areia_1', species: 'caranguejo', x: 52.35, y: 31.55,
+      interacao: { speaker: 'CARANGUEJO DA AREIA', distancia: 1.4, dialogue: ['O CARANGUEJO ERGUEM AS PINÇAS, MEDE O VISITANTE E VOLTA A CORRER PARA AS PEDRAS.'] } },
+    { id: 'enseada_caranguejo_areia_2', species: 'caranguejo', x: 53.19, y: 31.16,
+      interacao: { speaker: 'CARANGUEJO DA AREIA', distancia: 1.4, dialogue: ['OUTRO CARANGUEJO SOME ENTRE AS CONCHAS, LEVANDO UMA PATA DE CARANGUEJO NA CARAPAÇA.'] } },
     { id: 'enseada_gaivota', species: 'gaivota', x: 23.4, y: 37 },
     { id: 'enseada_trinta_reis', species: 'trinta_reis', x: 27.1, y: 35.7 },
-    { id: 'enseada_peixes', species: 'peixes', x: 10.9, y: 53.2 },
-    { id: 'enseada_tartaruga_sudeste', species: 'tartaruga', x: 54.5, y: 25.5, raioPasseio: 0.45 },
-    { id: 'enseada_golfinho_sudeste', species: 'golfinho', x: 54.5, y: 20.5, raioPasseio: 0.6 },
+    { id: 'enseada_peixes', species: 'peixes', x: 8.5, y: 55.5 },
+    { id: 'enseada_tartaruga_sudeste', species: 'tartaruga', x: 66.5, y: 28.5, raioPasseio: 0.45 },
+    { id: 'enseada_golfinho_sudeste', species: 'golfinho', x: 57.5, y: 11.5, raioPasseio: 0.6 },
     { id: 'enseada_tartaruga_1', species: 'tartaruga', x: 4.2, y: 42.5 },
-    { id: 'enseada_golfinho_1', species: 'golfinho', x: 50.4, y: 12.4 },
+    { id: 'enseada_golfinho_1', species: 'golfinho', x: 50.5, y: 10.5 },
     { id: 'enseada_golfinho_oeste', species: 'golfinho', x: 2.5, y: 30.5 },
     { id: 'enseada_golfinho_leste', species: 'golfinho', x: 60.5, y: 38.5 },
     // Golfinhos saltando junto ao píer e à laje das pedras rúnicas, como a
@@ -1400,7 +1461,7 @@ export const map = {
       interactionDistance: 1.2, destino: { mapId: 'estacao_limiar_666', spawnId: 'vindo_da_enseada' }, transition: 'fade',
     },
     {
-      id: 'rota_correntes', tipo: 'door', x: 28.0, y: 9.0, label: 'NAVEGAR: CAMINHO DAS CORRENTES',
+      id: 'rota_correntes', tipo: 'door', x: 28.0, y: 9.5, label: 'NAVEGAR: CAMINHO DAS CORRENTES',
       interactionDistance: 1.4, destino: { mapId: 'mar_caminho_das_correntes', spawnId: 'vindo_da_enseada' }, transition: 'fade',
     },
     {
@@ -1416,3 +1477,158 @@ export const map = {
     },
   ],
 };
+
+// ---------------------------------------------------------------------------
+// Acabamento 3.1: vínculos de animação, marcos da costa ampliada e pisos das
+// pranchas. Ficam fora do literal para que a geometria continue legível e para
+// que cada peça nova compartilhe a mesma validação de sprite do resto do mapa.
+// ---------------------------------------------------------------------------
+const ANIMACOES_B = {
+  acampamento_vigilia_enseada: 'enseada4_fogueira',
+  tenda_expedicao_enseada: 'enseada4_tenda',
+  rede_treino_praia_enseada: 'enseada4_rede',
+  portal_caminho_correntes: 'enseada_portal_correntes_b',
+  farolete_baia_enseada: 'enseada_farolete_baia_b',
+  totem_eco_enseada: 'enseada3_monolito',
+  carrilhao_vento_enseada: 'enseada_carrilhao_vento_b',
+  algas_douradas_enseada: 'enseada_algas_douradas_b',
+  barco_expedicao_enseada: 'enseada_barco_expedicao_b',
+  piscina_mare_viva_enseada: 'enseada3_piscina',
+  fonte_termal_enseada: 'enseada_fonte_termal_b',
+  espelho_arquetipos_enseada: 'enseada_espelho_arquetipo_b',
+  coral_luminescente_enseada: 'enseada_coral_azul_b',
+  captador_ecos_enseada: 'enseada_rede_cristal_b',
+  lanterna_marinha_norte: 'enseada_lanterna_marinha_b',
+  lanterna_marinha_sul: 'enseada_lanterna_marinha_b',
+  baliza_mare_boia_1: 'enseada_baliza_boia_b',
+  baliza_mare_boia_2: 'enseada_baliza_boia_b',
+  cais_madeira_pesca_enseada: 'enseada8_cais_barco_ref',
+  portico_trilha_praia: 'enseada3_portico_oeste',
+  relogio_mare_enseada: 'enseada4_relogio',
+  torre_antena_enseada: 'enseada4_torre_vigilia',
+  bancada_campo_enseada: 'enseada_bancada_campo_b',
+  santuario_lumeo_enseada: 'enseada_santuario_lumeo_b',
+  estela_navegadores_enseada: 'enseada_estela_navegadores_b',
+  gruta_concha_enseada: 'enseada4_gruta',
+  banco_ostras_enseada: 'enseada_banco_ostras_b',
+  bau_deriva_enseada: 'enseada_bau_deriva_b',
+  maleta_expedicao_enseada: 'enseada4_caixas',
+  bandeirola_vento_enseada: 'enseada_bandeirola_vento_b',
+  jardim_pedras_enseada: 'enseada4_cairn',
+  borboletas_fonte_enseada: 'enseada_borboletas_vivas_b',
+  borboletas_jardim_enseada: 'enseada_borboletas_vivas_b',
+  banco_conchas_enseada: 'enseada_banco_conchas_b',
+  poleiro_aves_enseada: 'enseada_poleiro_aves_b',
+  ninho_tartarugas_enseada: 'enseada_ninho_tartarugas_b',
+  embarcadouro_mare_astral: 'enseada_embarcadouro_mare_b',
+  cardume_orla_norte: 'enseada_cardume_vivo_b',
+  cardume_orla_sul: 'enseada_cardume_vivo_b',
+  arco_conduto_retorno_mare: 'enseada3_portal_recife',
+};
+for (const object of map.objects) {
+  const spriteB = ANIMACOES_B[object.id];
+  if (!spriteB) continue;
+  object.spriteB = spriteB;
+  object.animPeriodo ??= 0.64;
+}
+
+const objeto = id => map.objects.find(object => object.id === id);
+// A biruta da referência usa a arte viva dedicada; o nome antigo permanece
+// apenas como apelido de compatibilidade em saves.
+if (objeto('bandeirola_vento_enseada')) { objeto('bandeirola_vento_enseada').sprite = 'enseada_bandeirola_vento'; objeto('bandeirola_vento_enseada').oscilaBrisa = true; }
+const caisPesca = objeto('cais_madeira_pesca_enseada');
+if (caisPesca) caisPesca.larguraPx = 370;
+if (objeto('estela_navegadores_enseada')) { objeto('estela_navegadores_enseada').bloqueia = true; objeto('estela_navegadores_enseada').hitbox ??= { offsetX: -0.16, offsetY: -0.16, width: 0.32, height: 0.32 }; }
+if (objeto('barco_expedicao_enseada')) objeto('barco_expedicao_enseada').spriteB = 'enseada_barco_expedicao_b';
+const cardumeNorte = objeto('cardume_orla_norte');
+const cardumeSul = objeto('cardume_orla_sul');
+if (cardumeSul) Object.assign(cardumeSul, { x: 23.5, y: 63.5 });
+const farolete = objeto('farolete_baia_enseada');
+for (const [id, x, y] of [['cristais_azuis_mar', 64.5, 36.5], ['lanterna_coral_sudeste', 60.5, 24.5]]) {
+  const peca = objeto(id);
+  if (peca) Object.assign(peca, { x, y });
+}
+if (farolete) Object.assign(farolete, { x: 50.4, y: 22.5 });
+if (cardumeNorte) Object.assign(cardumeNorte, { x: 49.5, y: 9.5 });
+
+// A bacia é água rasa: o jogador entra nela para conversar com a capivara e
+// não deve ser barrado por uma caixa invisível dois tiles à frente da arte.
+const piscina = objeto('piscina_mare_viva_enseada');
+if (piscina) {
+  piscina.bloqueia = false;
+  piscina.larguraPx = 250;
+  delete piscina.hitbox;
+  piscina.interacao = { ...piscina.interacao, distancia: 1.85 };
+}
+
+map.objects.push({
+  id: 'porta_estacao_666_visual', nome: 'PORTÃO DA ESTAÇÃO 66.6', tipo: 'decoracao',
+  x: 18.259 + ESTACAO_DX, y: 13.370 + ESTACAO_DY, sprite: 'enseada3_estacao_666',
+  useCrop: true, larguraPx: 430, pivotX: 0.5, pivotY: 0.98,
+  renderizar: false, bloqueia: false,
+});
+
+for (const [id, x, y, larguraPx, espelhar] of [
+  ['enseada3_mata_oeste_a', 12.4, 45.6, 210, false],
+  ['enseada3_mata_oeste_b', 17.8, 47.9, 196, true],
+  ['enseada3_mata_sul', 28.5, 56.2, 230, false],
+  ['enseada3_mata_leste', 58.2, 31.0, 214, true],
+]) {
+  map.objects.push({
+    id, nome: 'MATA DA ENSEADA', tipo: 'decoracao', x, y,
+    sprite: 'enseada3_palmeiral', useCrop: true, larguraPx, espelhar,
+    pivotX: 0.5, pivotY: 0.98, bloqueia: false, oscilaBrisa: true,
+  });
+}
+
+// O deck da escada de pedras e a prancha do cais são áreas de uso: o sprite já
+// desenha as tábuas, então a colisão de chão acompanha a mesma silhueta.
+map.passarelaCais = [...passarelaCais].map(key => key.split(',').map(Number));
+// A chegada do mar é uma laje de pouso sobre a água rasa: o barco pode
+// aportar, o jogador retorna nadando e a laje liga a costa à passagem.
+{
+  const row = map.walkMask[12];
+  map.walkMask[12] = row.slice(0, 20) + '.' + row.slice(21);
+  map.layout[12][20] = 0;
+}
+
+// Calçada contínua entre o acampamento, a praça, o cais e a ponta leste. Cada
+// laje é desenhada abaixo dos personagens e não bloqueia: é leitura de
+// caminho, não uma parede.
+const TRILHAS_PEDRAS = [
+  [14.5,42.5],[22.5,40.6],[24.5,39.9],
+  [26.5,39.1],[28.5,38.2],[30.5,37.1],[32.5,36.1],[34.5,35.3],[36.5,34.5],
+  [38.5,33.7],[40.5,32.9],[42.5,32.1],[44.5,31.3],[46.5,30.5],[48.5,29.7],
+  [50.5,28.9],[54.5,27.2],[24.5,43.5],[26.5,45.5],
+  [28.5,47.5],[30.5,48.5],[33.5,48.5],[36.5,47.5],[39.5,46.5],[42.5,47.5],
+  [31.0,54.5],[35.0,53.5],[39.0,52.5],[43.0,52.0],[46.0,51.0],
+];
+for (const [x, y] of TRILHAS_PEDRAS) {
+  map.objects.push({
+    id: `trilha_pedras_${String(map.objects.length).padStart(2, '0')}`,
+    nome: 'CALÇADA DE PEDRAS', tipo: 'decoracao', x, y,
+    sprite: 'enseada_trilha_pedras', useCrop: true, larguraPx: 42,
+    pivotX: 0.5, pivotY: 0.6, depthOffset: -0.35, bloqueia: false,
+  });
+}
+
+map.objects.push(
+  { id: 'baliza_mare_boia_1', nome: 'BALIZA DA BAÍA', tipo: 'decoracao', x: 55.5, y: 13.5,
+    sprite: 'enseada_baliza_boia', spriteB: 'enseada_baliza_boia_b', animPeriodo: .9,
+    useCrop: true, larguraPx: 46, pivotX: .5, pivotY: .8, bloqueia: false, flutuacaoSuave: true },
+  { id: 'baliza_mare_boia_2', nome: 'BALIZA DA BAÍA', tipo: 'decoracao', x: 59.5, y: 18.0,
+    sprite: 'enseada_baliza_boia', spriteB: 'enseada_baliza_boia_b', animPeriodo: 1.1,
+    useCrop: true, larguraPx: 46, pivotX: .5, pivotY: .8, bloqueia: false, flutuacaoSuave: true },
+  { id: 'enseada_falesia_norte', nome: 'FALÉSIA NORTE', tipo: 'decoracao', x: 10.5, y: 9.0,
+    sprite: 'enseada_ne_parede', useCrop: true, larguraPx: 430, pivotX: .5, pivotY: .98,
+    bloqueia: false, camada: 'fundo', ordem: -1 },
+  { id: 'enseada_pilar_noroeste', nome: 'PILAR NOROESTE', tipo: 'decoracao', x: 7.5, y: 20.0,
+    sprite: 'relevo_pilar_samambaias', useCrop: true, larguraPx: 150, pivotX: .5, pivotY: .98,
+    bloqueia: false, camada: 'fundo', ordem: -1 },
+  { id: 'enseada_recife_conduto_a', nome: 'RECIFE DO CONDUTO', tipo: 'decoracao', x: 52.2, y: 29.1,
+    sprite: 'enseada_correntes_recife_revisado', useCrop: true, larguraPx: 92, pivotX: .5, pivotY: .92,
+    bloqueia: false, camada: 'fundo', ordem: -1 },
+  { id: 'enseada_recife_conduto_b', nome: 'RECIFE DO CONDUTO', tipo: 'decoracao', x: 55.9, y: 26.6,
+    sprite: 'enseada_correntes_recife_revisado', useCrop: true, larguraPx: 76, espelhar: true, pivotX: .5, pivotY: .92,
+    bloqueia: false, camada: 'fundo', ordem: -1 },
+);

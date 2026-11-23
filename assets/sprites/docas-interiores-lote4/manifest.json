@@ -1,0 +1,86 @@
+{
+  "batch": 4,
+  "count": 10,
+  "assets": [
+    {
+      "id": "alto-falante",
+      "size": [
+        512,
+        511
+      ],
+      "sourceSha256": "555b0e2a18d802e8569bbcc27db4b4687fb478fcce79f856640d94ed49597970"
+    },
+    {
+      "id": "cabos-parede",
+      "size": [
+        512,
+        277
+      ],
+      "sourceSha256": "13ba971c9b6fd52cfbf7cc9327bed3f04aa6069e0fe74514471fd9631f18c341"
+    },
+    {
+      "id": "cortina-vigia",
+      "size": [
+        362,
+        512
+      ],
+      "sourceSha256": "f0c5c196b8e8109c16f10ba5c45b92c627234a440df7cb9f6708b054d0a2feb0"
+    },
+    {
+      "id": "ex-votos",
+      "size": [
+        325,
+        512
+      ],
+      "sourceSha256": "823f165b83b063390dc563f1e1f85526051cf569d2fac922dd6839820c78d16d"
+    },
+    {
+      "id": "fotos-desaparecidos",
+      "size": [
+        512,
+        298
+      ],
+      "sourceSha256": "725a53648580338b0ebea7087cf40042071bdc30fcd55c381b72977dd986880f"
+    },
+    {
+      "id": "mancha-sal",
+      "size": [
+        512,
+        279
+      ],
+      "sourceSha256": "9fb2b9223c58a12aad640199401885b99f7eba7fa6f7b0c4a8a4f54a4620f8aa"
+    },
+    {
+      "id": "peixes-secos",
+      "size": [
+        512,
+        296
+      ],
+      "sourceSha256": "ef58e9c93c44a2331600e92e33f60ed0c991cf4fe95181ba0c220818ed7aab44"
+    },
+    {
+      "id": "quadro-fusiveis",
+      "size": [
+        512,
+        298
+      ],
+      "sourceSha256": "d548fff8d02275b317d5073a194cd212bc6d5d3047f66d64719cfc555564a163"
+    },
+    {
+      "id": "sino-nevoa",
+      "size": [
+        325,
+        512
+      ],
+      "sourceSha256": "6a637c61ca54e78f77be1f48e66f67e12154912483d9cbb904a8ca2c66df0afd"
+    },
+    {
+      "id": "vazamento",
+      "size": [
+        512,
+        367
+      ],
+      "sourceSha256": "39722c687b6b65990e1c8d7734ab8a9e8c1e1e14fffc748af2740aa4a80d2b37"
+    }
+  ]
+}

@@ -4,6 +4,7 @@ import {combatProps,isInteractiveCombat,useCombatProp} from './mare-mission-comb
 import {lote5Props,isInteractiveLote5,lote5Complete,lote5Readout,useLote5} from './mare-mission-lote5.js';
 import {lote6Props,isInteractiveLote6,lote6Readout,nuloEntity,nuloReportLine,objectiveLine,useLote6,useNulo,fendaOpen} from './mare-mission-lote6.js';
 import {lote7Decor,lote7Props,isInteractiveLote7,lampOn,lote7Readout,useLote7} from './mare-mission-lote7.js';
+import {createMareWorld3D} from './mare-mission-world3d.js';
 import {
   cell,
   sites,
@@ -28,7 +29,32 @@ export async function createMareMission({
   mount.dataset.mission = "true";
   const shell = document.createElement("section");
   shell.className = "mare-mission";
-  shell.innerHTML = `<canvas width="384" height="216" tabindex="0" aria-label="Baía infectada em primeira pessoa"></canvas><header><small>MARÉ CROMÁTICA / BAÍA DE QUARENTENA</small><h1>A ÂNCORA NÃO RESPONDE</h1></header><aside aria-live="polite"></aside><footer><p class="mare-readout"></p><p class="mare-objective"></p><p class="mare-message">Recupere 3 memórias nas cabanas. Recompile no terminal central; alcance a âncora a sudeste. Nulo ameaça romper a contenção em 10 minutos.</p><p>WASD mover · mouse / ← → olhar · E interagir · F golpe · Q pulso · SHIFT correr · C agachar · M mapa · ESC retornar sem perdas</p><button data-audio>ÁUDIO: OFF</button><button data-action>INTERAGIR</button><button data-power>HABILIDADE</button><button data-attack>GOLPE</button><button data-map>MAPA</button><button data-exit>RETORNAR</button><label> VOLUME <input data-volume type="range" min="0" max="100" value="55" aria-label="Volume da missão"></label></footer><nav aria-label="Movimento"><button data-key="KeyW">↑</button><button data-key="KeyA">←</button><button data-key="KeyS">↓</button><button data-key="KeyD">→</button><button data-key="ArrowLeft">↶</button><button data-key="ArrowRight">↷</button><button data-key="ShiftLeft">CORRER</button><button data-key="KeyC">BAIXAR</button></nav>`;
+  shell.innerHTML = `<canvas width="384" height="216" tabindex="0" aria-label="Baía de quarentena em primeira pessoa"></canvas><div class="mare-frame" aria-hidden="true"></div>
+<header class="mare-hud">
+  <div class="mare-brand"><span class="mare-rec" aria-hidden="true"></span><div><small>MARÉ CROMÁTICA <i>// BAÍA DE QUARENTENA</i></small><h1>A ÂNCORA NÃO RESPONDE</h1></div></div>
+  <div class="mare-compass" aria-label="Bússola"><span class="mare-heading">N</span><div class="mare-compass-track"><i></i><b></b><i></i></div><span class="mare-bearing">000°</span></div>
+  <div class="mare-signal"><small>SINAL</small><div class="mare-signal-bars" aria-hidden="true"><i></i><i></i><i></i><i></i></div><b class="mare-signal-text">FRACO</b></div>
+</header>
+<aside aria-live="polite"></aside>
+<nav class="mare-move" aria-label="Movimento"><button data-key="KeyW" aria-label="Frente">W</button><button data-key="KeyA" aria-label="Esquerda">A</button><button data-key="KeyS" aria-label="Trás">S</button><button data-key="KeyD" aria-label="Direita">D</button><button data-key="ShiftLeft">CORRER</button><button data-key="KeyC">AGACHAR</button></nav>
+<nav class="mare-look" aria-label="Câmera"><button data-key="ArrowUp" aria-label="Olhar para cima">▲</button><button data-key="ArrowLeft" aria-label="Olhar à esquerda">◀</button><button data-key="ArrowDown" aria-label="Olhar para baixo">▼</button><button data-key="ArrowRight" aria-label="Olhar à direita">▶</button></nav>
+<footer class="mare-hud-foot">
+  <div class="mare-objective-row"><span>OBJETIVO</span><p class="mare-objective"></p></div>
+  <div class="mare-vitals">
+    <div class="mare-vital"><small>TENSÃO</small><div class="mare-meter"><i class="mare-tension"></i></div><b class="mare-tension-value">0</b></div>
+    <div class="mare-vital"><small>FÔLEGO</small><div class="mare-meter"><i class="mare-stamina"></i></div></div>
+    <div class="mare-vital"><small>LANTERNA</small><b class="mare-torch">ON</b></div>
+    <div class="mare-vital"><small>TEMPO</small><b class="mare-clock">10:00</b></div>
+    <div class="mare-vital"><small>RUÍDO</small><b class="mare-noise">QUIETO</b></div>
+  </div>
+  <p class="mare-message">Recupere 3 memórias nas cabanas. Recompile no terminal central e alcance a âncora a sudeste.</p>
+  <div class="mare-controls">
+    <button data-audio>ÁUDIO: OFF</button><button data-action><b>E</b> INTERAGIR</button><button data-power><b>Q</b> PULSO</button><button data-attack><b>F</b> GOLPE</button><button data-map><b>M</b> MAPA</button><button data-exit>SAIR</button>
+    <label class="mare-volume">VOL <input data-volume type="range" min="0" max="100" value="55" aria-label="Volume da missão"></label>
+  </div>
+  <p class="mare-readout"></p>
+  <p class="mare-keys">WASD mover · mouse/arrastar olhar · E interagir · F golpe · Q pulso · SHIFT correr · C agachar · M mapa · ESC sair</p>
+</footer>`;
   mount.append(shell);
   const canvas = shell.querySelector("canvas"),
     ctx = canvas.getContext("2d", { alpha: false }),
@@ -42,7 +68,8 @@ export async function createMareMission({
   const lote5Names = ["caldeira-sala","tubo-vapor","cristal-mare","valvula-pressao","painel-recompilacao","selo-recompilado","guardiao-mare","guardiao-dano","porta-recompilacao","piso-metal"];
   const lote6Names = ["nulo-operador","nulo-operador-voz","cacador-mare","cacador-dano","parede-azulejo","parede-ferrugem","chao-grade","turbina-sala","escada-servico","transicao-fenda"];
   const lote7Names = ["parede-concreto-umido","parede-azulejo-quebrado","chao-concreto-umido","chao-agua-rasa","teto-metal-escuro","portal-mare","porta-pesada","lampada-industrial","afogado-mare","afogado-dano"];
-  const artDir = (n) => lote7Names.includes(n) ? "mare-missao-lote7" : lote6Names.includes(n) ? "mare-missao-lote6" : lote5Names.includes(n) ? "mare-missao-lote5" : lote4Names.includes(n) ? "mare-missao-lote4" : lote3Names.includes(n) ? "mare-missao-lote3" : extraNames.includes(n) ? "mare-missao-lote2" : "mare-missao-base";
+  const upgradeNames = ["terminal-baia","cristal-magenta","farol-lanterna"];
+  const artDir = (n) => upgradeNames.includes(n) ? "mare-upgrade" : lote7Names.includes(n) ? "mare-missao-lote7" : lote6Names.includes(n) ? "mare-missao-lote6" : lote5Names.includes(n) ? "mare-missao-lote5" : lote4Names.includes(n) ? "mare-missao-lote4" : lote3Names.includes(n) ? "mare-missao-lote3" : extraNames.includes(n) ? "mare-missao-lote2" : "mare-missao-base";
   const names = [
     "madeira-sal",
     "concreto-mar",
@@ -57,7 +84,7 @@ export async function createMareMission({
   ];
   const images = Object.fromEntries(
     await Promise.all(
-      [...names,...extraNames,...lote3Names,...lote4Names,...lote5Names,...lote6Names,...lote7Names].map(async (n) => {
+      [...names,...extraNames,...lote3Names,...lote4Names,...lote5Names,...lote6Names,...lote7Names,...upgradeNames].map(async (n) => {
         const im = new Image();
         im.src = new URL(
           `../../assets/sprites/${artDir(n)}/${n}.png`,
@@ -89,6 +116,50 @@ export async function createMareMission({
     return g.getImageData(0, 0, 64, 64).data;
   }
   const floorTiles = { base: tileData("chao-concreto-umido"), water: tileData("chao-agua-rasa") };
+  const hud = {
+    heading: shell.querySelector(".mare-heading"),
+    bearing: shell.querySelector(".mare-bearing"),
+    signalText: shell.querySelector(".mare-signal-text"),
+    signalBars: [...shell.querySelectorAll(".mare-signal-bars i")],
+    tension: shell.querySelector(".mare-tension"),
+    tensionValue: shell.querySelector(".mare-tension-value"),
+    stamina: shell.querySelector(".mare-stamina"),
+    torch: shell.querySelector(".mare-torch"),
+    clock: shell.querySelector(".mare-clock"),
+    noise: shell.querySelector(".mare-noise"),
+    rec: shell.querySelector(".mare-rec"),
+  };
+  // A cena 3D é construída uma vez. Se o WebGL falhar, o raycaster legado
+  // continua como plano B e a missão nunca fica sem imagem.
+  const worldProps = [
+    ...sites,
+    ...details,
+    ...loreProps,
+    ...combatProps,
+    ...lote5Props,
+    ...lote6Props,
+    ...lote7Props,
+    ...lote7Decor.map((d) => ({ ...d, decor: true })),
+  ];
+  const world3d = await createMareWorld3D({
+    images,
+    props: worldProps,
+    onFear: ({ kind, x, z }) => {
+      if (!enabled) return;
+      const dx = x - m.x, dy = z - m.y, dist = Math.hypot(dx, dy) || 1;
+      const pan = Math.max(-1, Math.min(1, (-dx * Math.sin(m.angle) + dy * Math.cos(m.angle)) / dist));
+      if (kind === "silhouette") {
+        tone(58, 1.6, 0.018, "sine");
+        noiseBurst(0.45, 0.008, 900, pan);
+        tone(176, 0.5, 0.007, "triangle");
+      } else {
+        tone(92, 0.8, 0.02, "sawtooth");
+        noiseBurst(0.22, 0.012, 2400, -pan);
+      }
+    },
+  }).catch(() => ({ available: false }));
+  m.pitch ??= 0;
+  m.lookVel = 0;
   let disposed = false,
     t = 0,
     saveClock = 0,
@@ -97,11 +168,13 @@ export async function createMareMission({
     endClock = 0,
     drag = false,
     lastX = 0,
+    lastY = 0,
     lookVel = 0,
+    pitchVel = 0,
     mapOpen = false,
     audio = null,
     enabled = false,
-    drone = null, master=null, activeFrame=false, beatClock=0, beat=0, breathClock=0, shake=0, intro=1.6, pulse=0, hurtFlash=0, hazardClock=0, attackClock=0, swing=0;
+    drone = null, master=null, activeFrame=false, beatClock=0, beat=0, breathClock=0, shake=0, intro=2.0, pulse=0, hurtFlash=0, hazardClock=0, attackClock=0, swing=0, frameDt=1/60;
   const pursuit=createPursuit(), motion=matchMedia("(prefers-reduced-motion: reduce)"), aside=shell.querySelector("aside");
   const hazardProp=combatProps.find(p=>p.kind==="hazard"), lightProp=combatProps.find(p=>p.kind==="light");
   const enemies = [
@@ -116,7 +189,9 @@ export async function createMareMission({
     enemyClock = 0,
     lampClock = 0,
     portalClock = 0,
-    dripClock = 0;
+    dripClock = 0,
+    creakClock = 0,
+    staticClock = 0;
   function ocean() {
     const buffer = audio.createBuffer(
         1,
@@ -163,17 +238,18 @@ export async function createMareMission({
     }
     return noiseBuffer;
   }
-  function noiseBurst(duration = 0.1, volume = 0.01, cutoff = 700) {
+  function noiseBurst(duration = 0.1, volume = 0.01, cutoff = 700, pan = 0) {
     if (!enabled || !audio || !master) return;
     const buffer = ensureNoise();
     if (!buffer) return;
-    const src = audio.createBufferSource(), gain = audio.createGain(), filter = audio.createBiquadFilter();
+    const src = audio.createBufferSource(), gain = audio.createGain(), filter = audio.createBiquadFilter(), panner = audio.createStereoPanner();
     src.buffer = buffer;
     filter.type = "lowpass";
     filter.frequency.value = cutoff;
+    panner.pan.value = Math.max(-1, Math.min(1, pan));
     gain.gain.setValueAtTime(volume, audio.currentTime);
     gain.gain.exponentialRampToValueAtTime(0.0001, audio.currentTime + duration);
-    src.connect(filter); filter.connect(gain); gain.connect(master);
+    src.connect(filter); filter.connect(gain); gain.connect(panner); panner.connect(master);
     src.start(); src.stop(audio.currentTime + duration);
   }
   const signals = () => [
@@ -184,7 +260,6 @@ export async function createMareMission({
     ...lote5Props.filter(isInteractiveLote5),
     ...lote6Props.filter(isInteractiveLote6),
     ...lote7Props.filter(isInteractiveLote7),
-    ...lote7Decor.map((d) => ({ ...d, decor: true })),
     nuloEntity(m, t),
   ];
   function action() {
@@ -291,6 +366,8 @@ export async function createMareMission({
         "KeyD",
         "ArrowLeft",
         "ArrowRight",
+        "ArrowUp",
+        "ArrowDown",
         "KeyE",
         "KeyQ",
         "Space", "ShiftLeft", "ShiftRight", "KeyC", "KeyM",
@@ -309,18 +386,24 @@ export async function createMareMission({
   listen(canvas, "pointerdown", (e) => {
     drag = true;
     lastX = e.clientX;
-    canvas.setPointerCapture(e.pointerId);
+    lastY = e.clientY;
+    try { canvas.setPointerCapture(e.pointerId); } catch { /* ponteiro sintético */ }
     canvas.focus();
     canvas.requestPointerLock?.();
   });
   listen(canvas, "pointermove", (e) => {
     if (drag && !document.pointerLockElement) {
       m.angle += (e.clientX - lastX) * 0.005;
+      m.pitch = Math.max(-0.92, Math.min(0.92, m.pitch - (e.clientY - lastY) * 0.0035));
       lastX = e.clientX;
+      lastY = e.clientY;
     }
   });
   listen(document, "mousemove", (e) => {
-    if (document.pointerLockElement === canvas && !mapOpen) m.angle += (e.movementX || 0) * 0.0022;
+    if (document.pointerLockElement === canvas && !mapOpen) {
+      m.angle += (e.movementX || 0) * 0.0022;
+      m.pitch = Math.max(-0.92, Math.min(0.92, m.pitch - (e.movementY || 0) * 0.0022));
+    }
   });
   listen(canvas, "pointerup", () => (drag = false));
   listen(canvas, "pointercancel", () => (drag = false));
@@ -328,7 +411,7 @@ export async function createMareMission({
   for (const b of shell.querySelectorAll("[data-key]")) {
     listen(b, "pointerdown", (e) => {
       e.preventDefault();
-      b.setPointerCapture(e.pointerId);
+      try { b.setPointerCapture(e.pointerId); } catch { /* ponteiro sintético */ }
       keys.add(b.dataset.key);
     });
     for (const ev of ["pointerup", "pointercancel", "lostpointercapture"])
@@ -421,7 +504,7 @@ export async function createMareMission({
     ctx.fillStyle = "#9bbdb6";
     ctx.fillText("M FECHA", 222, 178);
   }
-  function render() {
+  function renderLegacy() {
     ctx.save();
     if(shake>0&&!motion.matches)ctx.translate(Math.round(Math.sin(t*73)*shake*10),Math.round(Math.cos(t*59)*shake*6));
     if(!motion.matches&&m.noise>0)ctx.translate(0,Math.round(Math.sin(t*(m.noise>.8?12:7.5))*m.noise*1.6));
@@ -851,18 +934,59 @@ export async function createMareMission({
     if(mapOpen) drawMap();
     ctx.restore();
   }
+  function render() {
+    if (world3d?.available) {
+      m.shake = shake;
+      world3d.syncProps(signals().filter((s) => s.label && s.kind !== "nulo"));
+      world3d.render({
+        ctx,
+        m,
+        t,
+        dt: frameDt,
+        mode: activeFrame ? "3d" : "entering",
+        intro,
+        endClock,
+        enemies,
+        nulo: nuloEntity(m, t),
+        activeProps: signals().filter((s) => s.label && s.kind !== "nulo"),
+        reducedMotion: motion.matches,
+      });
+      if (intro > 0.55 && !m.finished && !mapOpen) {
+        const alpha = Math.min(1, (2.0 - intro) * 4) * Math.min(1, (intro - 0.55) / 0.7);
+        ctx.save();
+        ctx.textAlign = "center";
+        ctx.fillStyle = `rgba(206,236,227,${0.92 * alpha})`;
+        ctx.font = "12px monospace";
+        ctx.fillText("B A Í A   D E   Q U A R E N T E N A", 192, 100);
+        ctx.fillStyle = `rgba(232,190,132,${0.85 * alpha})`;
+        ctx.font = "7px monospace";
+        ctx.fillText("03:12 // A ÂNCORA NÃO RESPONDE", 192, 114);
+        ctx.strokeStyle = `rgba(168,217,206,${0.35 * alpha})`;
+        ctx.beginPath();
+        ctx.moveTo(130, 121.5);
+        ctx.lineTo(254, 121.5);
+        ctx.stroke();
+        ctx.restore();
+      }
+      if (mapOpen) drawMap();
+      return;
+    }
+    renderLegacy();
+  }
   return {
     mission: m,
     enemies,
+    world3d,
     frame(dt, { mode }) {
       if (disposed) return;
       dt = Math.max(0, Math.min(dt, 0.05));
+      frameDt = dt;
       t += dt;
       activeFrame=mode==="3d";
       shell.classList.toggle("recompilado", lote5Complete(m));
       shell.classList.toggle("fenda-aberta", fendaOpen(m));
       shake=Math.max(0,shake-dt);
-      if(activeFrame)intro=Math.max(0,intro-dt);
+      if(mode!=="2d")intro=Math.max(0,intro-dt);
       if(activeFrame&&!m.finished&&m.p.rank!==lastRank){
         lastRank=m.p.rank;
         if(m.p.rank>=4){message.textContent+=" A FENDA DE RECOMPILAÇÃO ABRIU A SUDESTE.";tone(660,.9,.024,"sine");tone(110,.5,.02,"sawtooth");}
@@ -878,6 +1002,10 @@ export async function createMareMission({
         const lookTarget = ((keys.has("ArrowRight") ? 1 : 0) - (keys.has("ArrowLeft") ? 1 : 0)) * 1.9;
         lookVel += (lookTarget - lookVel) * Math.min(1, dt * 11);
         m.angle += lookVel * dt;
+        m.lookVel = lookVel;
+        const pitchTarget = ((keys.has("ArrowUp") ? 1 : 0) - (keys.has("ArrowDown") ? 1 : 0)) * 1.15;
+        pitchVel += (pitchTarget - pitchVel) * Math.min(1, dt * 10);
+        m.pitch = Math.max(-0.92, Math.min(0.92, m.pitch + pitchVel * dt));
         const f = Number(keys.has("KeyW")) - Number(keys.has("KeyS")),
           s = Number(keys.has("KeyD")) - Number(keys.has("KeyA")),
           norm = Math.max(1, Math.hypot(f, s)),
@@ -947,7 +1075,30 @@ export async function createMareMission({
         }
       }
       if (enabled && audio && activeFrame) {
-        if(m.stamina<25&&(breathClock+=dt)>2.6){breathClock=0;tone(190+Math.random()*30,.5,.018,"sine");tone(420,.18,.008,"sine");}
+        // respiração diegética: acelera com tensão, fôlego baixo e proximidade.
+        const threat = Math.min(
+          ...[...enemies.filter((e) => !e.dead).map((e) => Math.hypot(e.x - m.x, e.y - m.y)), Math.hypot(nuloEntity(m, t).x - m.x, nuloEntity(m, t).y - m.y), 24],
+        );
+        const breathEvery = Math.max(1.15, 4.1 - m.stress * 0.026 - Math.max(0, 8 - threat) * 0.08);
+        if ((breathClock += dt) > breathEvery) {
+          breathClock = 0;
+          noiseBurst(0.34, m.crouched ? 0.003 : 0.0055, 620);
+          if (m.stress > 45 || m.stamina < 25) tone(184 + Math.random() * 34, 0.46, 0.012, "sine");
+          if (m.stress > 74) tone(360, 0.15, 0.005, "sine");
+        }
+        if ((creakClock += dt) > 8.5 + Math.random() * 5) {
+          creakClock = 0;
+          const a = Math.random() * Math.PI * 2;
+          const sx = m.x + Math.cos(a) * 6.5,
+            sy = m.y + Math.sin(a) * 6.5;
+          const pan = Math.max(-1, Math.min(1, (-(sx - m.x) * Math.sin(m.angle) + (sy - m.y) * Math.cos(m.angle)) / 6.5));
+          noiseBurst(0.6, 0.007, 280, pan);
+          tone(74 + Math.random() * 24, 0.8, 0.009, "triangle");
+        }
+        if ((staticClock += dt) > Math.max(1.1, 5.5 - m.stress * 0.045)) {
+          staticClock = 0;
+          noiseBurst(0.06, 0.004 + m.stress / 26000, 2600, Math.random() * 2 - 1);
+        }
         if((beatClock+=dt)>(m.stress>30?.4:.85)){beatClock=0;beat++;const notes=[55,65.406,73.416,61.735];tone(notes[Math.floor(beat/8)%4],1.5,.012,"triangle");if(m.stress>20||m.finished)tone(beat%2?42:84,.13,.025,"sine");if(m.finished)tone(220*(1+beat%3),.3,.014,"sawtooth");
           if(lote5Complete(m)&&beat%4===0)tone(330+beat%3*55,.55,.009,"sine");}
         if (surfGain)
@@ -998,8 +1149,11 @@ export async function createMareMission({
       readout.textContent = `DESCOMPASSO LOCAL ${m.p.rank}/4 · DADOS ${m.p.data.length}/3 · ${Math.max(0, 600 - Math.floor(m.p.elapsed))}s · FÔLEGO ${Math.round(m.stamina)} · ${m.crouched?"SILENCIOSO":m.noise>.8?"PASSOS ALTOS":"CAMINHANDO"} · REGISTROS ${Object.keys(m.p.details).filter(k=>details.some(d=>d.id===k)).length}/8 · LORE ${m.p.lore.length}/6 · TENSÃO ${Math.round(m.stress)} · AMEAÇAS ${enemies.filter(e=>!e.dead&&e.phase!=="dissolve").length}/${enemies.length} · Q ${Math.ceil(m.cooldown)}s · ${lote5Readout(m)} · ${lote6Readout(m)} · ${lote7Readout(m)}`;
       objective.textContent = objectiveLine(m);
       const near = nearestSignal(m,signals());
-      aside.textContent = near
-        ? `E · ${near.label}`
+      const nearLabel = typeof near?.label === "string" ? near.label.trim() : "";
+      aside.textContent = m.finished
+        ? ""
+        : nearLabel
+        ? `[E] ${nearLabel}`
         : m.ward > 0
           ? state.progress.archetype === "mare_astral"
             ? sites
@@ -1013,6 +1167,26 @@ export async function createMareMission({
           : m.idle > 12
             ? "NULO: eu sei onde você espera."
             : "";
+      const secs = Math.max(0, 600 - Math.floor(m.p.elapsed));
+      const headingIndex = ((Math.round(m.angle / (Math.PI / 2)) % 4) + 4) % 4;
+      const dirs = ["L", "S", "O", "N"];
+      if (hud.heading) hud.heading.textContent = dirs[headingIndex];
+      if (hud.bearing) hud.bearing.textContent = `${String(Math.round(((90 + m.angle * 180 / Math.PI) % 360 + 360) % 360)).padStart(3, "0")}°`;
+      if (hud.tension) hud.tension.style.width = `${Math.max(0, Math.min(100, m.stress))}%`;
+      if (hud.tensionValue) hud.tensionValue.textContent = String(Math.round(m.stress));
+      if (hud.stamina) hud.stamina.style.width = `${Math.max(0, Math.min(100, m.stamina))}%`;
+      if (hud.clock) hud.clock.textContent = `${String(Math.floor(secs / 60)).padStart(2, "0")}:${String(secs % 60).padStart(2, "0")}`;
+      if (hud.torch) {
+        hud.torch.textContent = m.finished ? "FALHA" : m.p.details.gerador ? "ESTÁVEL" : "ON";
+        hud.torch.classList.toggle("falha", m.finished || m.stress > 82);
+      }
+      if (hud.noise) hud.noise.textContent = m.crouched ? "SILÊNCIO" : m.noise > 0.8 ? "ALTO" : m.noise > 0.2 ? "PASSOS" : "QUIETO";
+      const nearestSite = Math.min(...sites.filter((s) => !m.p.data.includes(s.id)).map((s) => Math.hypot(s.x - m.x, s.y - m.y)), 30);
+      const barsOn = Math.max(1, Math.min(4, Math.round((1 - nearestSite / 30) * 4)));
+      hud.signalBars.forEach((bar, i) => bar.classList.toggle("on", i < barsOn));
+      if (hud.signalText) hud.signalText.textContent = m.finished ? "ROMPIDO" : barsOn >= 3 ? "FORTE" : barsOn === 2 ? "INSTÁVEL" : "FRACO";
+      shell.classList.toggle("mare-tenso", m.stress > 62);
+      shell.classList.toggle("mare-fim", m.finished);
       render();
     },
     dispose() {
@@ -1022,6 +1196,7 @@ export async function createMareMission({
       drone?.stop();
       surf?.stop();
       audio?.close().catch(() => {});
+      world3d?.dispose?.();
       save();
       shell.remove();
       if (old === undefined) delete mount.dataset.mission;

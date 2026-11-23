@@ -22,6 +22,7 @@ export class DimensionManager {
     this.ticket = 0;
     this.error = "";
     this.saved = null;
+    this.enteringDuration = 1.8;
   }
   get active() {
     return this.mode !== "2d";
@@ -46,6 +47,12 @@ export class DimensionManager {
     this.state.world.dimensionActive = true;
     this.clearInput();
     this.setMode("loading");
+    // A missão da Maré conduz o próprio prólogo visual (estática, drone e
+    // revelação do nevoeiro). O portão do manager pode abrir antes sem cortar
+    // a cena: 0.9s poupa o loop em renderizadores de software lentos.
+    this.enteringDuration = String(reason).startsWith("mare-cromatica:baia")
+      ? 0.9
+      : 1.8;
     let runtime;
     try {
       runtime = await this.createWorld({
@@ -86,7 +93,7 @@ export class DimensionManager {
         mode: this.mode,
         progress: Math.min(1, this.elapsed / 1.8),
       });
-      if (this.mode === "entering" && this.elapsed >= 1.8) this.setMode("3d");
+      if (this.mode === "entering" && this.elapsed >= this.enteringDuration) this.setMode("3d");
       else if (this.mode === "exiting" && this.elapsed >= 0.65) this.finish();
     } catch (e) {
       this.abort(e);

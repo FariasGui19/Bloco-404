@@ -336,6 +336,35 @@ body.dimension-active {
   padding: 20px;
   z-index: 3;
 }
+.dimension-rupture:before {
+  content: "";
+  position: absolute;
+  inset: -12%;
+  background: url("../assets/textures/setor-limiar-lote10/ruptura-veu.png")
+    center / cover;
+  opacity: 0.34;
+  mix-blend-mode: screen;
+  animation: rupture-veil 1.6s linear infinite;
+  pointer-events: none;
+}
+@keyframes rupture-veil {
+  0% {
+    transform: translate3d(-2%, 1%, 0) scale(1.04);
+    opacity: 0.28;
+  }
+  50% {
+    opacity: 0.55;
+  }
+  100% {
+    transform: translate3d(2%, -1%, 0) scale(1.1);
+    opacity: 0.28;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .dimension-rupture:before {
+    animation: none;
+  }
+}
 .dimension-rupture small {
   font-size: 10px;
   letter-spacing: 4px;

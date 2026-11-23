@@ -26,6 +26,19 @@ export function buildScenery(layout, chunkAt, m) {
       );
       rock.scale.set(0.9 * s, 0.65 * s, 0.725 * s);
       rock.rotation.y = p.seed * 0.73;
+      // Mancha de musgo no pé da pedra (textura pintada do lote 10).
+      if (m.moss && m.moss.map) {
+        const moss = addMesh(
+          parent,
+          new T.CircleGeometry(1.15 * s, 9),
+          m.moss,
+          p.x,
+          p.y + 0.02,
+          p.z,
+        );
+        moss.rotation.x = -Math.PI / 2;
+        moss.rotation.z = p.seed * 0.31;
+      }
       // Smaller companion stones read as an intentional outcrop.
       const chip = addMesh(
         parent,

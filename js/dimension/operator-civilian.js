@@ -80,8 +80,15 @@ function loadMap(path, fallback, repeat) {
   return tex;
 }
 
+const KIND_BY_ARCHETYPE = {
+  motor_bio_forja: "bio",
+  mare_astral: "mare",
+  lamina_dominio_anciao: "ancient",
+  nucleo_dez_forma: "human",
+};
 export function createCivilianOperator(progress = {}, player = {}) {
   const id = progress?.archetype ?? "mare_astral";
+  const kind = KIND_BY_ARCHETYPE[id] ?? "human";
   const x10 = id === "nucleo_dez_forma";
   const root = new T.Group();
   root.name = "operator";
@@ -119,7 +126,7 @@ export function createCivilianOperator(progress = {}, player = {}) {
   // Três mapas canônicos. O bump de pele/cabelo não entra como `map` para não
   // inflar o contrato de texturas do rig.
   const tattooMap = loadMap(
-    "../../assets/textures/operador/tatuagem-manga.png",
+    "../../assets/textures/setor-limiar-lote10/tatuagem-traco.png",
     armFallback,
     [1, 1],
   );
@@ -150,29 +157,42 @@ export function createCivilianOperator(progress = {}, player = {}) {
   }
   const skin = new T.MeshLambertMaterial({
     color: SKIN,
-    flatShading: true,
+    flatShading: false,
     bumpMap: skinBump,
     bumpScale: 0.012,
   });
-  const skinDark = new T.MeshLambertMaterial({ color: SKIN_DARK, flatShading: true });
+  const skinDark = new T.MeshLambertMaterial({ color: SKIN_DARK });
   const tattoo = new T.MeshLambertMaterial({
     map: tattooMap,
-    flatShading: true,
+    flatShading: false,
+    bumpMap: skinBump,
+    bumpScale: 0.01,
+  });
+  // Padrão mais fino para membros esféricos (sem esticar as formas grandes).
+  let tattooWrap = tattooMap;
+  if (tattooMap?.clone) {
+    tattooWrap = tattooMap.clone();
+    tattooWrap.repeat.set(2.4, 2.4);
+    tattooWrap.needsUpdate = true;
+  }
+  const tattooOrb = new T.MeshLambertMaterial({
+    map: tattooWrap,
+    flatShading: false,
     bumpMap: skinBump,
     bumpScale: 0.01,
   });
   const tank = new T.MeshLambertMaterial({
     map: tankMap,
     color: 0xffffff,
-    flatShading: true,
+    flatShading: false,
     side: T.DoubleSide,
   });
-  const pants = new T.MeshLambertMaterial({ map: cargoMap, color: 0xffffff, flatShading: true });
-  const pantsDark = new T.MeshLambertMaterial({ color: PANTS_DARK, flatShading: true });
-  const belt = new T.MeshLambertMaterial({ color: BELT, flatShading: true });
+  const pants = new T.MeshLambertMaterial({ map: cargoMap, color: 0xd3d0c7 });
+  const pantsDark = new T.MeshLambertMaterial({ color: PANTS_DARK });
+  const belt = new T.MeshLambertMaterial({ color: BELT });
   const metal = new T.MeshLambertMaterial({ color: METAL, flatShading: true });
-  const sole = new T.MeshLambertMaterial({ color: SOLE, flatShading: true });
-  const orange = new T.MeshLambertMaterial({ color: ORANGE, flatShading: true });
+  const sole = new T.MeshLambertMaterial({ color: SOLE });
+  const orange = new T.MeshLambertMaterial({ color: ORANGE });
   const hair = new T.MeshLambertMaterial({
     color: HAIR,
     flatShading: false,
@@ -180,20 +200,25 @@ export function createCivilianOperator(progress = {}, player = {}) {
     bumpScale: 0.02,
   });
   const hairHi = new T.MeshLambertMaterial({ color: HAIR_HI, flatShading: false });
-  const eyeWhite = new T.MeshLambertMaterial({ color: 0xd9d0be, flatShading: true });
-  const iris = new T.MeshLambertMaterial({ color: 0x4b2f1d, flatShading: true });
-  const ink = new T.MeshLambertMaterial({ color: INK, flatShading: true });
+  const eyeWhite = new T.MeshLambertMaterial({ color: 0xd9d0be });
+  const iris = new T.MeshLambertMaterial({ color: 0x4b2f1d });
+  const ink = new T.MeshLambertMaterial({ color: INK });
   const lens = new T.MeshLambertMaterial({
     color: LENS,
     transparent: true,
     opacity: 0.13,
     depthWrite: false,
-    flatShading: true,
   });
 
   const { mesh, loft, ellipsoid, tube, ring } = createSculptTools();
   const box = (parent, material, w, h, d, x = 0, y = 0, z = 0) =>
     mesh(parent, material, new T.BoxGeometry(w, h, d), x, y, z);
+  // Esferas suaves (não icosaedros) para rosto, cachos, mãos e articulações.
+  const orb = (parent, material, rx, ry, rz, x = 0, y = 0, z = 0, w = 14, h = 10) => {
+    const o = mesh(parent, material, new T.SphereGeometry(1, w, h), x, y, z);
+    o.scale.set(rx, ry, rz);
+    return o;
+  };
   // Regata real: painel paramétrico com decote em U e cavas recortadas. Uma
   // malha fechada com "pele por cima" parecia um colete com peitoral solto.
   const tankGeometry = () => {
@@ -238,7 +263,7 @@ export function createCivilianOperator(progress = {}, player = {}) {
       for (let i = 0; i < sides; i++) {
         const a = (i / sides) * Math.PI * 2;
         const front = Math.abs(wrap(a));
-        const scoop = front < 0.6 ? 1.375 + 0.1 * smooth(front / 0.6) : top;
+        const scoop = front < 0.6 ? 1.462 + 0.026 * smooth(front / 0.6) : top;
         const y = hem + f * (scoop - hem);
         const side = Math.abs(front - Math.PI / 2);
         pos.push(Math.sin(a) * rx, y, Math.cos(a) * rz);
@@ -276,11 +301,12 @@ export function createCivilianOperator(progress = {}, player = {}) {
       [1.36, 0.25, 0.148],
       [1.46, 0.262, 0.155],
       [1.53, 0.205, 0.128],
+      [1.55, 0.196, 0.124],
     ],
     0,
     0,
     0,
-    12,
+    22,
   ).name = "torso-skin";
   // Regata preta com decote em U e cavas; a pele do torso aparece nos recortes.
   const tankBody = mesh(body, tank, tankGeometry());
@@ -291,13 +317,13 @@ export function createCivilianOperator(progress = {}, player = {}) {
       body,
       tank,
       [
-        [side * 0.146, 1.438, 0.15],
-        [side * 0.152, 1.49, 0.1],
-        [side * 0.156, 1.516, 0.015],
-        [side * 0.152, 1.49, -0.09],
-        [side * 0.146, 1.44, -0.145],
+        [side * 0.146, 1.432, 0.15],
+        [side * 0.150, 1.478, 0.1],
+        [side * 0.153, 1.500, 0.015],
+        [side * 0.150, 1.478, -0.09],
+        [side * 0.146, 1.434, -0.145],
       ],
-      0.022,
+      0.0175,
     ).name = "tank-strap";
   // Cós inferior, agora sem costura diagonal atravessando o peito.
   loft(
@@ -334,7 +360,19 @@ export function createCivilianOperator(progress = {}, player = {}) {
       0.0045,
     );
     // Preenche a junta do ombro sem deixar um vão entre torso e deltoide.
-    ellipsoid(body, tattoo, 0.056, 0.05, 0.05, side * 0.19, 1.438, 0);
+    loft(
+      body,
+      tattooOrb,
+      [
+        [1.487, 0.043, 0.041],
+        [1.455, 0.056, 0.052],
+        [1.418, 0.050, 0.047],
+      ],
+      side * 0.188,
+      0,
+      0,
+      16,
+    ).name = "deltoid";
   }
 
   // ---------- pescoço, gola e tatuagem do pescoço em geometria ----------
@@ -345,38 +383,27 @@ export function createCivilianOperator(progress = {}, player = {}) {
       [1.5, 0.072, 0.068],
       [1.58, 0.068, 0.064],
       [1.63, 0.062, 0.06],
+      [1.66, 0.058, 0.056],
     ],
     0,
     0,
     0,
-    10,
+    16,
   ).name = "neck";
   // Rosa + linhas geométricas do lado direito (mesmo lado da ficha).
   const neckTattoo = new T.Group();
   neckTattoo.name = "neck-tattoo";
   body.add(neckTattoo);
-  ellipsoid(neckTattoo, ink, 0.018, 0.02, 0.003, 0.062, 1.565, 0.055);
-  ring(neckTattoo, ink, 0.014, 0.0022, 0.062, 1.565, 0.058).rotation.x = Math.PI / 2;
+  // Traço fino de tinta na nuca, encostado na pele (sem virar pinta solta).
   tube(
     neckTattoo,
     ink,
     [
-      [0.055, 1.61, 0.05],
-      [0.076, 1.59, 0.035],
-      [0.083, 1.55, 0.025],
-      [0.07, 1.52, 0.04],
+      [0.048, 1.585, 0.0435],
+      [0.058, 1.578, 0.0480],
+      [0.052, 1.566, 0.0505],
     ],
-    0.0028,
-  );
-  tube(
-    neckTattoo,
-    ink,
-    [
-      [0.07, 1.55, 0.06],
-      [0.09, 1.53, 0.045],
-      [0.088, 1.5, 0.035],
-    ],
-    0.0022,
+    0.0016,
   );
 
   // ---------- cintura, cinto e calça cargo ----------
@@ -392,7 +419,7 @@ export function createCivilianOperator(progress = {}, player = {}) {
     0,
     0,
     0,
-    12,
+    20,
   );
   pelvis.name = "cargo-pelvis";
   loft(
@@ -431,216 +458,254 @@ export function createCivilianOperator(progress = {}, player = {}) {
     box(body, metal, 0.007, 0.007, 0.003, px, 0.875, 0.057);
   }
 
-  // ---------- cabeça: crânio, mandíbula, olhos, óculos e bigode ----------
+  // ---------- cabeça: crânio orgânico, olhos, óculos e bigode ----------
   const head = new T.Group();
   head.name = "operator-head";
   head.position.y = proportions.headY;
   head.scale.setScalar(1.07);
   body.add(head);
+  // Um único loft de 24 lados desenha crânio, maçãs, mandíbula e queixo. Não há
+  // mais peças soltas empilhadas no rosto.
   const skull = loft(
     head,
     skin,
     [
-      [-0.1, 0.062, 0.058, 0.008],
-      [-0.086, 0.082, 0.083, 0.01],
-      [-0.06, 0.094, 0.096, 0.006],
-      [0, 0.098, 0.1, 0],
-      [0.055, 0.092, 0.094, -0.006],
-      [0.1, 0.066, 0.072, -0.012],
+      [-0.132, 0.024, 0.032, 0.012],
+      [-0.118, 0.046, 0.056, 0.014],
+      [-0.098, 0.061, 0.071, 0.012],
+      [-0.074, 0.075, 0.083, 0.008],
+      [-0.046, 0.084, 0.091, 0.004],
+      [-0.014, 0.090, 0.097, 0.001],
+      [0.020, 0.094, 0.100, 0],
+      [0.056, 0.094, 0.099, -0.004],
+      [0.094, 0.084, 0.090, -0.008],
+      [0.126, 0.056, 0.062, -0.010],
+      [0.146, 0.014, 0.018, -0.010],
     ],
     0,
     0,
     0,
-    12,
+    24,
   );
   skull.name = "sculpted-face";
-  ellipsoid(head, skinDark, 0.084, 0.04, 0.072, 0, -0.07, 0.018);
-  // Arcada, maçãs e queixo: dão perfil ao rosto na vista lateral.
-  ellipsoid(head, skin, 0.072, 0.013, 0.014, 0, 0.05, 0.09);
+  // Orelhas discretas: o loft já resolve maçãs e perfil.
   for (const side of [-1, 1]) {
-    ellipsoid(head, skin, 0.03, 0.022, 0.026, side * 0.056, -0.018, 0.07);
-    ellipsoid(head, skin, 0.02, 0.016, 0.014, side * 0.048, -0.036, 0.082);
+    const ear = orb(head, skin, 0.009, 0.021, 0.015, side * 0.093, -0.004, -0.010, 12, 9);
+    ear.rotation.y = side * 0.24;
+    ear.name = "ear";
   }
-  ellipsoid(head, skin, 0.032, 0.024, 0.02, 0, -0.106, 0.078);
-  // Occipital: sem isso o perfil lateral do crânio era uma tábua reta.
-  ellipsoid(head, skin, 0.088, 0.078, 0.038, 0, 0.028, -0.074);
-  ellipsoid(head, skin, 0.072, 0.05, 0.03, 0, -0.03, -0.062);
-  for (const side of [-1, 1]) {
-    ellipsoid(head, skin, 0.06, 0.038, 0.062, side * 0.045, -0.05, 0.045);
-    ellipsoid(head, skin, 0.017, 0.028, 0.011, side * 0.102, -0.005, 0.005).rotation.y =
-      side * 0.25;
-  }
+  // Nariz: loft curto, ponta suave e narinas contidas.
   const nose = loft(
     head,
     skin,
     [
-      [-0.012, 0.011, 0.012, 0.1],
-      [-0.028, 0.016, 0.016, 0.106],
-      [-0.041, 0.021, 0.014, 0.101],
+      [0.044, 0.0080, 0.0075, 0.0935],
+      [0.014, 0.0100, 0.0105, 0.1010],
+      [-0.010, 0.0140, 0.0150, 0.1080],
+      [-0.028, 0.0190, 0.0135, 0.1055],
+      [-0.039, 0.0160, 0.0090, 0.0985],
     ],
     0,
     0,
     0,
-    8,
+    16,
   );
   nose.name = "nose";
+  const eyelids = [];
   for (const side of [-1, 1]) {
-    ellipsoid(head, eyeWhite, 0.0135, 0.0075, 0.005, side * 0.043, 0.017, 0.092);
-    ellipsoid(head, skin, 0.016, 0.0055, 0.004, side * 0.043, 0.025, 0.091);
-    ellipsoid(head, iris, 0.006, 0.006, 0.004, side * 0.043, 0.017, 0.097);
-    ellipsoid(head, belt, 0.0032, 0.0032, 0.003, side * 0.043, 0.017, 0.101);
+    const ex = side * 0.0435,
+      ey = 0.0115;
+    orb(head, eyeWhite, 0.0150, 0.0088, 0.0048, ex, ey, 0.0852, 14, 10);
+    orb(head, iris, 0.0058, 0.0058, 0.0026, ex, ey, 0.0884, 12, 8);
+    orb(head, ink, 0.0026, 0.0026, 0.0014, ex, ey, 0.0902, 10, 8);
+    const lid = orb(head, skin, 0.0172, 0.0082, 0.0072, ex, ey + 0.0068, 0.0866, 14, 10);
+    lid.name = "eyelid";
+    eyelids.push(lid);
     const brow = tube(
       head,
       hair,
       [
-        [side * 0.018, 0.052, 0.099],
-        [side * 0.045, 0.058, 0.1],
-        [side * 0.072, 0.052, 0.09],
+        [side * 0.012, 0.0395, 0.0925],
+        [side * 0.041, 0.0442, 0.0958],
+        [side * 0.069, 0.0388, 0.0862],
       ],
-      0.008,
+      0.0046,
     );
     brow.name = "brow";
+    brow.rotation.z = side * -0.05;
   }
-  // Óculos: aro retangular fino, ponte e hastes até a orelha.
-  for (const side of [-1, 1]) {
-    const cx = side * 0.045,
-      cy = 0.019;
-    box(head, belt, 0.052, 0.0032, 0.005, cx, cy + 0.0178, 0.107);
-    box(head, belt, 0.052, 0.0032, 0.005, cx, cy - 0.0178, 0.107);
-    box(head, belt, 0.0032, 0.035, 0.005, cx - 0.0244, cy, 0.107);
-    box(head, belt, 0.0032, 0.035, 0.005, cx + 0.0244, cy, 0.107);
-    box(head, lens, 0.046, 0.032, 0.0015, cx, cy, 0.1045);
-    tube(
-      head,
-      belt,
-      [
-        [side * 0.069, cy + 0.012, 0.105],
-        [side * 0.094, cy + 0.008, 0.062],
-        [side * 0.1005, cy - 0.002, 0.004],
-      ],
-      0.0028,
-    );
-  }
-  box(head, belt, 0.021, 0.0045, 0.005, 0, 0.036, 0.107);
-  // Bigode fino, narinas e boca.
-  for (const side of [-1, 1]) {
+  // Bigode fino, quase reto, logo abaixo do nariz; boca discreta abaixo.
+  for (const side of [-1, 1])
     tube(
       head,
       hair,
       [
-        [0, -0.042, 0.109],
-        [side * 0.024, -0.047, 0.111],
-        [side * 0.046, -0.056, 0.1],
+        [0, -0.0300, 0.0975],
+        [side * 0.0145, -0.0318, 0.0958],
+        [side * 0.0275, -0.0362, 0.0905],
       ],
-      0.0075,
-    );
-    ellipsoid(head, skinDark, 0.004, 0.003, 0.003, side * 0.014, -0.03, 0.109);
-  }
-  const mouth = tube(
+      0.0031,
+    ).name = "moustache";
+  tube(
     head,
     skinDark,
     [
-      [-0.026, -0.062, 0.099],
-      [0, -0.066, 0.106],
-      [0.026, -0.062, 0.099],
+      [-0.0195, -0.0535, 0.0930],
+      [0, -0.0555, 0.0952],
+      [0.0195, -0.0535, 0.0930],
     ],
-    0.0036,
-  );
-  mouth.name = "mouth";
-  const eyelids = [];
+    0.0022,
+  ).name = "mouth";
+  // Óculos: aro arredondado contínuo, lente fina e hastes até a orelha.
+  const glasses = new T.Group();
+  glasses.name = "glasses";
+  head.add(glasses);
   for (const side of [-1, 1]) {
-    const lid = ellipsoid(head, skin, 0.023, 0.009, 0.009, side * 0.043, 0.026, 0.096);
-    lid.name = "eyelid";
-    eyelids.push(lid);
+    const cx = side * 0.0445,
+      cy = 0.0115,
+      cz = 0.0925,
+      w = 0.0262,
+      h = 0.0182,
+      r = 0.0072,
+      tilt = -side * 0.17;
+    const ringPts = [
+      [-w + r, -h],
+      [w - r, -h],
+      [w, -h + r],
+      [w, h - r],
+      [w - r, h],
+      [-w + r, h],
+      [-w, h - r],
+      [-w, -h + r],
+    ].map(([x, y]) => new T.Vector3(x, y, 0));
+    const frame = new T.Mesh(
+      new T.TubeGeometry(
+        new T.CatmullRomCurve3(ringPts, true, "catmullrom", 0.25),
+        48,
+        0.0026,
+        6,
+        true,
+      ),
+      belt,
+    );
+    frame.position.set(cx, cy, cz);
+    frame.rotation.y = tilt;
+    frame.name = "glasses-frame";
+    glasses.add(frame);
+    const glassLens = new T.Mesh(
+      new T.PlaneGeometry(w * 1.78, h * 1.78),
+      lens,
+    );
+    glassLens.position.set(cx, cy, cz - 0.0012);
+    glassLens.rotation.y = tilt;
+    glassLens.name = "glasses-lens";
+    glasses.add(glassLens);
+    tube(
+      glasses,
+      belt,
+      [
+        [side * 0.0712, cy + 0.0055, cz - 0.0035],
+        [side * 0.0885, cy + 0.0035, 0.0505],
+        [side * 0.0965, cy - 0.0015, 0.0015],
+      ],
+      0.0024,
+    ).name = "glasses-temple";
   }
+  tube(
+    glasses,
+    belt,
+    [
+      [-0.0195, 0.0145, 0.0955],
+      [0, 0.0165, 0.0972],
+      [0.0195, 0.0145, 0.0955],
+    ],
+    0.0024,
+  ).name = "glasses-bridge";
 
-  // ---------- cabelo: fade curto + cacho volumoso em tufos ----------
+  // ---------- cabelo: base raspada + cachos volumosos no topo ----------
   const hairRig = new T.Group();
   hairRig.name = "layered-hair";
   head.add(hairRig);
-  hairRig.position.set(0, -0.052, 0.006);
-  // Base raspada nas laterais.
-  // Base raspada (fade), curta e opaca; não é um capacete de cabelo.
-  const fadeMat = new T.MeshLambertMaterial({ color: 0x4a342c, flatShading: true });
-  const hairCap = new T.Mesh(
-    new T.SphereGeometry(1, 14, 7, 0, Math.PI * 2, 0, 1.7),
-    fadeMat,
-  );
-  hairCap.scale.set(0.106, 0.058, 0.105);
-  hairCap.position.set(0, 0.145, -0.012);
-  hairRig.add(hairCap);
-  for (const side of [-1, 1])
-    box(hairRig, hair, 0.009, 0.055, 0.028, side * 0.096, 0.02, 0.026);
-  // Tufos determinísticos: 30 cachos, sem depender de random.
+  const fadeMat = new T.MeshLambertMaterial({ color: 0x3f2c24 });
+  // Base colada no crânio: evita vãos entre os cachos e desenha o fade.
+  orb(hairRig, fadeMat, 0.0938, 0.0720, 0.0905, 0, 0.0525, -0.0235, 22, 14).name =
+    "hair-cap";
   let seed = 7;
   const rand = () => {
     seed = (seed * 16807) % 2147483647;
     return seed / 2147483647;
   };
-  for (let i = 0; i < 40; i++) {
-    const theta = 0.16 + (i / 40) * 1.05;
-    const phi = i * 2.399 + (i % 3) * 0.35;
-    const radius = 0.134 + rand() * 0.014;
-    const r = 0.027 + rand() * 0.016;
-    const curl = ellipsoid(
+  // 52 cachos em espiral de Fibonacci: volume orgânico, nada de blocos.
+  for (let i = 0; i < 64; i++) {
+    const theta = 0.08 + (i / 64) * 0.80;
+    const phi = i * 2.399963;
+    const rad = 0.094 + rand() * 0.010;
+    const cr = 0.0135 + rand() * 0.0095;
+    const curl = orb(
       hairRig,
-      i % 3 === 0 ? hairHi : hair,
-      r,
-      r * (0.85 + rand() * 0.55),
-      r,
-      Math.sin(theta) * Math.cos(phi) * radius,
-      0.108 + Math.cos(theta) * 0.088,
-      -0.008 + Math.sin(theta) * Math.sin(phi) * radius,
+      i % 4 === 0 ? hairHi : hair,
+      cr,
+      cr * (0.85 + rand() * 0.5),
+      cr,
+      Math.sin(theta) * Math.cos(phi) * rad,
+      0.058 + Math.cos(theta) * 0.084,
+      -0.010 + Math.sin(theta) * Math.sin(phi) * rad,
+      12,
+      9,
     );
-    curl.rotation.set(rand() * 1.4, rand() * 1.4, rand() * 1.4);
+    curl.rotation.set(rand() * 1.3, rand() * 1.3, rand() * 1.3);
     curl.name = "curl";
   }
-  // Nuca: massa de cabelo baixa, cobrindo o occipital.
-  ellipsoid(hairRig, hair, 0.088, 0.078, 0.045, 0, 0.045, -0.078);
-  ellipsoid(hairRig, hairHi, 0.062, 0.04, 0.035, 0, -0.012, -0.086);
-  // Segunda camada nas laterais e nuca, para o cabelo não virar topete.
-  for (let i = 0; i < 16; i++) {
-    const theta = 1.16 + (i / 16) * 0.42;
-    const phi = i * 2.2;
-    const curl = ellipsoid(
+  // Laterais e nuca raspadas: cerdas curtas só atrás das têmporas.
+  for (let i = 0; i < 22; i++) {
+    const a = (i / 22) * Math.PI * 2;
+    if (Math.cos(a) > 0.25) continue;
+    orb(
       hairRig,
-      i % 2 ? hairHi : hair,
-      0.026 + (i % 3) * 0.005,
-      0.03,
-      0.026,
-      Math.sin(theta) * Math.cos(phi) * 0.134,
-      0.108 + Math.cos(theta) * 0.088,
-      -0.006 + Math.sin(theta) * Math.sin(phi) * 0.13,
-    );
-    curl.rotation.set(i * 0.5, i * 0.9, i * 0.3);
-    curl.name = "curl-side";
+      fadeMat,
+      0.0115,
+      0.0155,
+      0.0095,
+      Math.sin(a) * 0.0925,
+      -0.008 + (i % 3) * 0.021,
+      Math.cos(a) * 0.0905,
+      8,
+      6,
+    ).name = "fade-stubble";
   }
-  // Franja: cachos que caem sobre a testa, como na ficha.
-  for (let i = 0; i < 7; i++) {
-    const curl = ellipsoid(
+  // Linha da testa: fileira baixa de cachos escondendo a costura da base.
+  for (let i = 0; i < 9; i++) {
+    const t = i / 8;
+    orb(
+      hairRig,
+      i % 2 ? hair : hairHi,
+      0.0145,
+      0.0125,
+      0.0145,
+      -0.062 + t * 0.124,
+      0.1015 - Math.abs(t - 0.5) * 0.012,
+      0.0625,
+      12,
+      9,
+    ).name = "hairline-curls";
+  }
+  // Franja curta: cachos que caem só até a linha da testa.
+  for (let i = 0; i < 9; i++) {
+    const curl = orb(
       hairRig,
       i % 2 ? hairHi : hair,
-      0.028 + (i % 2) * 0.006,
-      0.023,
-      0.026,
-      -0.096 + i * 0.032,
-      0.152 - (i % 3) * 0.004,
-      0.102,
+      0.0155 + (i % 2) * 0.0035,
+      0.0145,
+      0.0155,
+      -0.062 + i * 0.0155,
+      0.0885 - (i % 3) * 0.0035,
+      0.0775,
+      12,
+      9,
     );
     curl.rotation.set(0.4, i * 0.4, 0.3);
     curl.name = "fringe";
   }
-  for (let i = 0; i < 7; i++)
-    ring(
-      hairRig,
-      hairHi,
-      0.022 + (i % 3) * 0.005,
-      0.0065,
-      -0.05 + (i % 4) * 0.033,
-      0.155 + (i % 2) * 0.012,
-      0.055 + (i % 3) * 0.012,
-      Math.PI * (1.5 + (i % 3) * 0.2),
-    ).rotation.set(0.3, 0.2, 0.4);
 
   // ---------- braços: tatuagem nos dois, mão e dedos ----------
   const limbs = [];
@@ -662,7 +727,7 @@ export function createCivilianOperator(progress = {}, player = {}) {
       0,
       0,
       0,
-      12,
+      18,
     );
     // Faixas de tinta em relevo, visíveis mesmo antes do PNG carregar.
     ring(arm, ink, 0.073, 0.004, 0, -0.12, 0).rotation.x = Math.PI / 2;
@@ -682,11 +747,11 @@ export function createCivilianOperator(progress = {}, player = {}) {
       0,
       0,
       0,
-      10,
+      16,
     );
     ring(elbow, ink, 0.063, 0.0035, 0, -0.09, 0).rotation.x = Math.PI / 2;
     ring(elbow, ink, 0.043, 0.003, 0, -0.235, 0).rotation.x = Math.PI / 2;
-    const palm = ellipsoid(elbow, skin, 0.048, 0.062, 0.027, 0, -0.302, 0.008);
+    const palm = orb(elbow, skin, 0.048, 0.062, 0.027, 0, -0.302, 0.008, 16, 12);
     palm.rotation.x = 0.08;
     for (let f = 0; f < 4; f++)
       box(
@@ -727,7 +792,7 @@ export function createCivilianOperator(progress = {}, player = {}) {
       0,
       0,
       0,
-      10,
+      16,
     );
     // Faixa lateral escura, como a costura da ficha.
     tube(
@@ -761,22 +826,22 @@ export function createCivilianOperator(progress = {}, player = {}) {
       0,
       0,
       0,
-      10,
+      16,
     );
     // Alça preta logo abaixo do joelho, com fivela.
     loft(
       knee,
       belt,
       [
-        [-0.02, 0.098, 0.103],
-        [-0.056, 0.098, 0.103],
+        [-0.028, 0.0955, 0.1005],
+        [-0.048, 0.0955, 0.1005],
       ],
       0,
       0,
       0,
       10,
     );
-    box(knee, metal, 0.022, 0.022, 0.008, side * 0.04, -0.04, 0.096);
+    box(knee, metal, 0.018, 0.018, 0.007, side * 0.038, -0.038, 0.094);
     const foot = new T.Group();
     foot.position.y = -0.385;
     foot.scale.set(1.22, 1.16, 1.22);
@@ -794,7 +859,7 @@ export function createCivilianOperator(progress = {}, player = {}) {
       0,
       0,
       0,
-      12,
+      18,
     );
     ellipsoid(foot, belt, 0.057, 0.06, 0.104, 0, -0.004, 0.02);
     ellipsoid(foot, belt, 0.052, 0.04, 0.072, 0, -0.026, 0.086);
@@ -858,6 +923,11 @@ export function createCivilianOperator(progress = {}, player = {}) {
   energyTrail.name = "energy-trail";
   energyTrail.visible = false;
   body.add(energyTrail);
+  // Nó de arma sempre presente (oculto no civil): contrato com as formas.
+  const energyBlade = new T.Group();
+  energyBlade.name = "energy-blade";
+  energyBlade.visible = false;
+  body.add(energyBlade);
   const gaze = new T.Group();
   gaze.name = "gaze";
   head.add(gaze);
@@ -867,11 +937,14 @@ export function createCivilianOperator(progress = {}, player = {}) {
     blink: 1,
     expression: 0.5,
     civilian: true,
-    identity: "mare-civil",
+    identity: kind,
   };
   // Os grupos animados precisam continuar separados; o resto entra em batches.
   for (const pivot of [body, head, hairRig, ...limbs.map((l) => l.arm), ...limbs.map((l) => l.elbow), ...legRig.map((l) => l.leg), ...legRig.map((l) => l.knee), ...legRig.map((l) => l.foot)])
-    batchStatic(pivot, new Set([...eyelids, gaze, ...(pivot === body ? [] : [])]));
+    batchStatic(
+      pivot,
+      new Set([...eyelids, gaze, skull, nose]),
+    );
   // Crânio e nariz já são volumes; nenhum billboard de rosto foi usado.
 
   const animate = (c, t, options = {}) => {
@@ -913,9 +986,13 @@ export function createCivilianOperator(progress = {}, player = {}) {
       );
       limb.elbow.rotation.x =
         pose.elbows[i] * 0.9 + (p.elbows?.[i] ?? 0) * blend;
-      const { leg, knee } = legRig[i];
+      const { leg, knee, foot } = legRig[i];
       leg.rotation.x = pose.legs[i] * 0.82 + (p.legs?.[i] ?? 0) * blend;
       knee.rotation.x = pose.knees[i] * 0.85 + (p.knees?.[i] ?? 0) * blend;
+      // Tornozelo compensa quadril+joelho: a sola fica paralela ao chão e o pé
+      // não afunda nem flutua durante a passada.
+      const ankle = -(leg.rotation.x + knee.rotation.x) * 0.92;
+      foot.rotation.x = ankle + Math.min(0, Math.sin(pose.phase + i * Math.PI)) * 0.06;
     }
     hairRig.rotation.set(
       (options.reducedMotion ? 0 : Math.sin(t * 2.1 + 1) * 0.006) +
@@ -939,7 +1016,7 @@ export function createCivilianOperator(progress = {}, player = {}) {
       variant: p.variant ?? 0,
       beat: p.beat ?? 0,
       blend,
-      identity: "mare-civil",
+      identity: kind,
       civilian: true,
       clothing: "civilian",
     };

@@ -51,6 +51,34 @@ export function createSectorMaterials() {
   const wall = tile("masonry"),
     wood = tile("wood"),
     floor = tile("flagstone");
+  // Lote 10: texturas pintadas substituem os tiles procedurais quando há DOM.
+  // Sem document (testes em Node) o fallback procedural continua valendo.
+  function painted(file, fallback, repeat) {
+    if (typeof document === "undefined" || typeof Image === "undefined")
+      return fallback;
+    const tex = new T.Texture();
+    const img = new Image();
+    img.onload = () => {
+      tex.image = img;
+      tex.needsUpdate = true;
+    };
+    img.src = new URL(
+      `../../assets/textures/setor-limiar-lote10/${file}.png`,
+      import.meta.url,
+    ).href;
+    tex.colorSpace = T.SRGBColorSpace;
+    tex.wrapS = tex.wrapT = T.RepeatWrapping;
+    tex.repeat.set(repeat, repeat);
+    tex.magFilter = tex.minFilter = T.NearestFilter;
+    tex.generateMipmaps = false;
+    tex.name = "limiar-" + file;
+    textures.push(tex);
+    return tex;
+  }
+  const wallPainting = painted("parede-ruina", wall, 3);
+  const floorPainting = painted("piso-ruina", floor, 4);
+  const gratePainting = painted("grade-limiar", null, 3);
+  const mossPainting = painted("musgo-limiar", null, 2);
   const lambert = (color, map = null) =>
     new T.MeshLambertMaterial({ color, map, flatShading: true });
   const wind = { value: 0 },
@@ -90,12 +118,13 @@ export function createSectorMaterials() {
       windStrength.value = reduced ? 0 : 1;
     },
     textures,
-    masonry: lambert(0xcbd2da, wall),
-    floor: lambert(0xb7c5ce, floor),
+    masonry: lambert(0xcbd2da, wallPainting),
+    floor: lambert(0xb7c5ce, floorPainting),
+    moss: mossPainting ? lambert(0xa9c6b5, mossPainting) : lambert(0x6f9c83),
     wood: lambert(0xc8b9a4, wood),
     trim: lambert(0x3c4b60),
     copper: lambert(0xba8e68),
-    iron: lambert(0x263748),
+    iron: lambert(gratePainting ? 0x8fa4ac : 0x263748, gratePainting),
     foliage,
     rock: new T.MeshLambertMaterial({ vertexColors: true, flatShading: true }),
     teal: new T.MeshBasicMaterial({ color: 0x8df4d7 }),

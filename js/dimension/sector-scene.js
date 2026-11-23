@@ -62,6 +62,77 @@ export function createSector({ environmentProfile } = {}) {
       chunks.push({ group, x: cx + 16, z: cz + 16 });
     }
   buildScenery(SECTOR_LAYOUT, chunkAt, materials);
+  buildFlora();
+  // Lote 10: vegetação e totens pintados como billboards (browser apenas).
+  function billboard(file) {
+    if (typeof document === "undefined" || typeof Image === "undefined")
+      return null;
+    const tex = new T.Texture();
+    const img = new Image();
+    img.onload = () => {
+      tex.image = img;
+      tex.needsUpdate = true;
+    };
+    img.src = new URL(
+      `../../assets/sprites/setor-limiar-lote10/${file}.png`,
+      import.meta.url,
+    ).href;
+    tex.colorSpace = T.SRGBColorSpace;
+    tex.magFilter = tex.minFilter = T.NearestFilter;
+    tex.generateMipmaps = false;
+    tex.userData = { image: img };
+    materials.textures.push(tex);
+    return tex;
+  }
+  function buildFlora() {
+    const grass = billboard("vegetacao-limiar"),
+      totem = billboard("totem-limiar");
+    const place = (tex, x, z, h, tint) => {
+      if (!tex) return;
+      const sprite = new T.Sprite(
+        new T.SpriteMaterial({
+          map: tex,
+          transparent: true,
+          alphaTest: 0.12,
+          depthWrite: true,
+          fog: true,
+          color: tint,
+        }),
+      );
+      const y = terrainHeight(x, z);
+      sprite.position.set(x, y + 0.02, z);
+      sprite.center.set(0.5, 0);
+      // A imagem chega depois: ajusta a proporção quando ela carrega.
+      const fit = () => {
+        const iw = tex.image?.width || 1,
+          ih = tex.image?.height || 1;
+        sprite.scale.set(h * (iw / ih), h, 1);
+      };
+      fit();
+      const img = tex.userData?.image;
+      if (img && !img.complete) img.addEventListener("load", fit, { once: true });
+      else if (img) img.onload = () => {
+        fit();
+      };
+      scene.add(sprite);
+    };
+    let seed = 11;
+    const rnd = () => {
+      seed = (seed * 16807) % 2147483647;
+      return seed / 2147483647;
+    };
+    for (let i = 0; i < 26; i++) {
+      const a = i * 2.399963 + rnd() * 0.6,
+        r = 9 + rnd() * 22;
+      place(grass, Math.cos(a) * r, Math.sin(a) * r, 0.7 + rnd() * 0.6, 0xd8e6d4);
+    }
+    for (const [x, z] of [
+      [7.5, -6.5],
+      [-9.5, 5.5],
+      [3.5, 12.5],
+    ])
+      place(totem, x, z, 2.4, 0xf2fff8);
+  }
   // Depth-aware pixel water: GPU waves, foam and sky glints, no CPU vertex uploads.
   const waterGeo = new T.PlaneGeometry(850, 850, 40, 40);
   waterGeo.rotateX(-Math.PI / 2);

@@ -6,6 +6,7 @@ import {lote6Props,isInteractiveLote6,lote6Readout,nuloEntity,nuloReportLine,obj
 import {lote7Decor,lote7Props,isInteractiveLote7,lampOn,lote7Readout,useLote7} from './mare-mission-lote7.js';
 import {lote8Decor,lote8Names,lote8Props,lote8Readout,isInteractiveLote8,useLote8} from './mare-mission-lote8.js';
 import {lote9Decor,lote9Names,lote9Props,lote9Cue,lote9Readout,isInteractiveLote9,useLote9} from './mare-mission-lote9.js';
+import {lote10Names,lote10Readout} from './mare-mission-lote10.js';
 import {createMareWorld3D} from './mare-mission-world3d.js';
 import {
   cell,
@@ -82,7 +83,7 @@ export async function createMareMission({
     "nulo-sobrecarga","cristal-cluster","vegetacao-duna",
     "caranguejo","gaivota","peixe","onda",
   ];
-  const artDir = (n) => coastNames.includes(n) ? "mare-coast" : upgradeNames.includes(n) ? "mare-upgrade" : lote9Names.includes(n) ? "mare-missao-lote9" : lote8Names.includes(n) ? "mare-missao-lote8" : lote7Names.includes(n) ? "mare-missao-lote7" : lote6Names.includes(n) ? "mare-missao-lote6" : lote5Names.includes(n) ? "mare-missao-lote5" : lote4Names.includes(n) ? "mare-missao-lote4" : lote3Names.includes(n) ? "mare-missao-lote3" : extraNames.includes(n) ? "mare-missao-lote2" : "mare-missao-base";
+  const artDir = (n) => coastNames.includes(n) ? "mare-coast" : upgradeNames.includes(n) ? "mare-upgrade" : lote10Names.includes(n) ? "mare-missao-lote10" : lote9Names.includes(n) ? "mare-missao-lote9" : lote8Names.includes(n) ? "mare-missao-lote8" : lote7Names.includes(n) ? "mare-missao-lote7" : lote6Names.includes(n) ? "mare-missao-lote6" : lote5Names.includes(n) ? "mare-missao-lote5" : lote4Names.includes(n) ? "mare-missao-lote4" : lote3Names.includes(n) ? "mare-missao-lote3" : extraNames.includes(n) ? "mare-missao-lote2" : "mare-missao-base";
   const names = [
     "madeira-sal",
     "concreto-mar",
@@ -97,7 +98,7 @@ export async function createMareMission({
   ];
   const images = Object.fromEntries(
     await Promise.all(
-      [...names,...extraNames,...lote3Names,...lote4Names,...lote5Names,...lote6Names,...lote7Names,...lote8Names,...lote9Names,...upgradeNames,...coastNames].map(async (n) => {
+      [...names,...extraNames,...lote3Names,...lote4Names,...lote5Names,...lote6Names,...lote7Names,...lote8Names,...lote9Names,...lote10Names,...upgradeNames,...coastNames].map(async (n) => {
         const im = new Image();
         im.src = new URL(
           `../../assets/sprites/${artDir(n)}/${n}.png`,
@@ -1394,7 +1395,7 @@ export async function createMareMission({
           exit();
         }
       }
-      readout.textContent = `DESCOMPASSO LOCAL ${m.p.rank}/4 · DADOS ${m.p.data.length}/3 · ${Math.max(0, 600 - Math.floor(m.p.elapsed))}s · FÔLEGO ${Math.round(m.stamina)} · ${m.crouched?"SILENCIOSO":m.noise>.8?"PASSOS ALTOS":"CAMINHANDO"} · REGISTROS ${Object.keys(m.p.details).filter(k=>details.some(d=>d.id===k)).length}/8 · LORE ${m.p.lore.length}/6 · TENSÃO ${Math.round(m.stress)} · AMEAÇAS ${enemies.filter(e=>!e.dead&&e.phase!=="dissolve").length}/${enemies.length} · Q ${Math.ceil(m.cooldown)}s · LANTERNA ${m.lampOn ? Math.round(m.lamp) + "%" : "OFF"} · ESQUIVA ${m.dashCd > 0 ? Math.ceil(m.dashCd) + "s" : "PRONTA"} · ${lote5Readout(m)} · ${lote6Readout(m)} · ${lote7Readout(m)} · ${lote8Readout(m)} · ${lote9Readout(m)}`;
+      readout.textContent = `DESCOMPASSO LOCAL ${m.p.rank}/4 · DADOS ${m.p.data.length}/3 · ${Math.max(0, 600 - Math.floor(m.p.elapsed))}s · FÔLEGO ${Math.round(m.stamina)} · ${m.crouched?"SILENCIOSO":m.noise>.8?"PASSOS ALTOS":"CAMINHANDO"} · REGISTROS ${Object.keys(m.p.details).filter(k=>details.some(d=>d.id===k)).length}/8 · LORE ${m.p.lore.length}/6 · TENSÃO ${Math.round(m.stress)} · AMEAÇAS ${enemies.filter(e=>!e.dead&&e.phase!=="dissolve").length}/${enemies.length} · Q ${Math.ceil(m.cooldown)}s · LANTERNA ${m.lampOn ? Math.round(m.lamp) + "%" : "OFF"} · ESQUIVA ${m.dashCd > 0 ? Math.ceil(m.dashCd) + "s" : "PRONTA"} · ${lote5Readout(m)} · ${lote6Readout(m)} · ${lote7Readout(m)} · ${lote8Readout(m)} · ${lote9Readout(m)} · ${lote10Readout(enemies)}`;
       objective.textContent = objectiveLine(m);
       const near = nearestSignal(m,signals());
       const nearLabel = typeof near?.label === "string" ? near.label.trim() : "";

@@ -160,7 +160,7 @@ export const docas={id:'mare_cromatica_docas',meta:{nome:'DOCAS DA NEBLINA',tipo
   ...[[1280,575,24]].map(([x,y,w])=>estrutura('lote8_corais',x,y,w)),
  ],
  spawnPoints:{inicio:ponto(620,650),cabana_esq:ponto(610,535),cabana_dir:ponto(1190,535),galpao:ponto(875,490),torre:ponto(1320,510)},actors:[],fauna:[],collectibles:[],hazards:[],
- objects:[{id:'docas_portal_fenda_visual',nome:'PORTAL DE ECO',tipo:'decoracao',x:620*ESCALA_DOCAS/64-.5,y:600*ESCALA_DOCAS/22-.5,renderizar:false,bloqueia:false},
+ objects:[{id:'docas_portal_fenda_visual',nome:'PORTAL DE ECO',tipo:'decoracao',x:877*ESCALA_DOCAS/64-.5,y:566*ESCALA_DOCAS/22-.5,renderizar:false,bloqueia:false},
  marker('docas_barco',586,656,'BARCO • INICIAR / DESCANSAR'),
  marker('cromatica_fragmento_estacao',1050,365,'RECOLHER FRAGMENTO • TRILHA'),marker('cromatica_selo',1110,275,'ESTABILIZAR O ACESSO AO NÚCLEO'),
  marker('cromatica_painel_origem',1185,193,'ALINHAR ORIGEM'),marker('cromatica_painel_retorno',1240,206,'ALINHAR RETORNO'),marker('cromatica_painel_memoria',1300,187,'ALINHAR MEMÓRIA'),marker('cromatica_ancora',1250,185,'ESTABILIZAR ÂNCORA'),
@@ -170,7 +170,7 @@ export const docas={id:'mare_cromatica_docas',meta:{nome:'DOCAS DA NEBLINA',tipo
  marker('docas_marca_navegantes',952,553,'EXAMINAR MARCA DOS NAVEGANTES'),marker('docas_diario_pier',710,605,'LER DIÁRIO DO PÍER'),marker('docas_diario_trilha',980,520,'LER AVISO DOS VIGIAS'),
  marker('docas_torre',1330,500,'SUBIR À TORRE DE VIGIA'),marker('docas_resina',720,565,'RASTREAR RESINA • MARÉ ASTRAL'),marker('docas_eletrico',910,545,'PAINEL ELÉTRICO • NÚCLEO X10'),marker('docas_selo',1020,420,'SELO DE NÉVOA • DOMÍNIO ANCIÃO'),marker('docas_biomassa',1120,565,'BIOMASSA • BIO-FORJA')],
  trainingTargets:[{id:'docas_infectado_1',x:1050*ESCALA_DOCAS/64-.5,y:455*ESCALA_DOCAS/22-.5,maxHealth:65,cromaticaEnemy:true},{id:'docas_infectado_2',x:980*ESCALA_DOCAS/64-.5,y:190*ESCALA_DOCAS/22-.5,maxHealth:65,cromaticaEnemy:true}],
- portals:[portal('docas_galpao',865,490,'ENTRAR NO GALPÃO CRT','mare_cromatica_galpao'),portal('docas_cabana_esq',575,500,'ENTRAR NA CABANA OESTE','mare_cromatica_cabana_oeste'),portal('docas_cabana_dir',1190,525,'ENTRAR NA CABANA LESTE','mare_cromatica_cabana_leste'),portal('docas_portal_fenda',620,600,'ATRAVESSAR O PORTAL DE ECO • FENDA ESTÁVEL','mare_cromatica_fenda','inicio',{requiresFlag:'cromatica_ancora_estavel',lockedLabel:'PORTAL DE ECO • CONCLUA A INCURSÃO DAS DOCAS'})],
+ portals:[portal('docas_galpao',865,490,'ENTRAR NO GALPÃO CRT','mare_cromatica_galpao'),portal('docas_cabana_esq',575,500,'ENTRAR NA CABANA OESTE','mare_cromatica_cabana_oeste'),portal('docas_cabana_dir',1190,525,'ENTRAR NA CABANA LESTE','mare_cromatica_cabana_leste'),portal('docas_portal_fenda',877,566,'ATRAVESSAR O PORTAL DE ECO • FENDA ESTÁVEL','mare_cromatica_fenda','inicio',{requiresFlag:'cromatica_ancora_estavel',lockedLabel:'PORTAL DE ECO • CONCLUA A INCURSÃO DAS DOCAS'})],
 };
 
 function sala(id,nome,fragmento,fita,volta,spawn) {

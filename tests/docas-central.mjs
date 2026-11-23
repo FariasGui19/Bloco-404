@@ -4,7 +4,7 @@ import {docas} from '../js/data/worlds/arquipelago-rotas-perdidas/docas-neblina.
 import {poseCentral,JANELAS_CENTRAIS,desenharAcessosCentrais,desenharLuzesCentrais,desenharPatioCentral} from '../js/engine/docas-central.js';
 // Protected visual/gameplay contracts. Navigation pass intentionally relocates
 // ONLY the three nucleus panel markers onto the current upper platform, plus the
-// echo-portal visual/exit added by the Maré lot 4; their
+// echo-portal visual/exit added by the Maré lot 4 and relocated by lot 7; their
 // ids, labels, interaction rules and mission effects remain unchanged.
 const protectedData={
  layout:'af4b1cc32691fd0d282bb022505fd95f3b04d265727a1a0233bf4a294e3d44d6',
@@ -12,8 +12,8 @@ const protectedData={
  caisSul:'f7945bcf7d8dbad288ca9fe7d12a87f5d0567c72eb977c7ba48bdc2571887ac8',
  costaOeste:'c0c4cefefc4565a7c3ea13ed05a34dc049caae126c82a8221b5d3867a0ca9e83',
  spawnPoints:'016836a1b8becc01a57d3e77c00bd46e5dfab6ec44a4217e8caf8e1c04ead752',
- objects:'43da1d5ef02dbd9e2da9b1da8624923e98a5f06274b927c2a275cc8befd56b74',
- portals:'7e1ea178c10fe5c9e79194caf8e221a247d3a5fb3d4b92dc0fe35eb8d9b14a2c',
+ objects:'2c13710e18def1b46b639ee22b65e0fa9daa0b161a5a1e726ff3b1dac0313f0a',
+ portals:'803a243e6023854b41a291d44811d543bb5426f237824791ba2b3a9cf95d5336',
  marDocas:'6bb97ffa85908e9da28a9cf6347a7e1e4e58a99cfd202690392df2ffee4a0ee6',
 };
 for(const [key,hash] of Object.entries(protectedData))assert.equal(createHash('sha256').update(JSON.stringify(docas[key])).digest('hex'),hash,`${key} unchanged`);

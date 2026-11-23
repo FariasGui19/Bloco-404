@@ -21,6 +21,14 @@ export function desenharInterativoExterior(ctx,o,state,t,reduced){
  const v=pieces[o.id],img=v&&getSprite(v.sprite);if(!img)return;
  const x=o.x*CONFIG.TILE_W,y=o.y*SIDE_DEPTH_STEP,[u,bottom]=supports[v.name],w=v.width*1.55,h=w*img.height/img.width,done=estadoInterativoExterior(o,state);
  ctx.save();ctx.fillStyle='rgba(3,8,14,.28)';ctx.beginPath();ctx.ellipse(x,y,w*.28,2.5,0,0,Math.PI*2);ctx.fill();
+ if(v.kind==='portal'){
+  const pulse=reduced?1:.86+.14*Math.sin(t*1.8);
+  const halo=ctx.createRadialGradient(x,y-h*.44,2,x,y-h*.44,w*.46*pulse);
+  halo.addColorStop(0,'rgba(118,255,230,.28)');
+  halo.addColorStop(.45,'rgba(60,210,190,.12)');
+  halo.addColorStop(1,'rgba(20,100,96,0)');
+  ctx.fillStyle=halo;ctx.beginPath();ctx.ellipse(x,y-h*.44,w*.5,h*.48,0,0,Math.PI*2);ctx.fill();
+ }
  desenharRasterDocas(ctx,img,0,0,img.width,img.height,x-u*w,y-bottom*h,w,h);
  // Status only on powered devices; books and notices never glow.
  if(v.kind!=='registro'){

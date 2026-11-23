@@ -96,11 +96,11 @@ assert.match(source, /objectiveLine\(m\)/);
 assert.match(source, /A FENDA DE RECOMPILAÇÃO ABRIU A SUDESTE/);
 
 // Hunter and guardian keep distinct silhouettes; both still use two enemies.
-assert.equal(enemyArt({hunter: true, phase: 'hunt'}), 'cacador-mare');
-assert.equal(enemyArt({hunter: true, phase: 'hurt'}), 'cacador-dano');
+assert.equal(enemyArt({hunter: true, phase: 'hunt'}), 'afogado-mare');
+assert.equal(enemyArt({hunter: true, phase: 'hurt'}), 'afogado-dano');
 assert.equal(enemyArt({guardian: true, phase: 'hunt'}), 'guardiao-mare');
 assert.match(source, /hunter: true/);
-assert.match(source, /scale: e\.hunter \? 0\.58/);
+assert.match(source, /scale: e\.hunter \? 1\.08/);
 
 // Stage/audio/transition hooks remain wired to the main mission.
 assert.match(source, /nuloEntity\(m, t\)/);

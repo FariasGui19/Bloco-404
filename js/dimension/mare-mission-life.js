@@ -33,7 +33,7 @@ export function terrain(m){
 }
 // Animation mapping shared by renderer and tests.
 export function enemyArt(e){
-  if(e.hunter) return e.phase==='hurt'||e.phase==='dissolve' ? 'cacador-dano' : 'cacador-mare';
+  if(e.hunter) return e.phase==='hurt'||e.phase==='dissolve' ? 'afogado-dano' : 'afogado-mare';
   if(e.guardian) return e.phase==='hurt'||e.phase==='dissolve' ? 'guardiao-dano' : 'guardiao-mare';
   const hit = e.variant==='alto' ? 'infectado-golpe-alto' : 'infectado-golpe-baixo';
   return e.phase==='dissolve'?'infectado-dissolvido'
@@ -57,7 +57,7 @@ export function hurtEnemy(e, damage=1){
 // One shared, bounded flow field for both pursuers; never a path search per frame/enemy.
 export function createPursuit(){
  const field=new Int16Array(1024),queue=new Int16Array(1024);
- let timer=0,targetKey=-1,track=null,ping=18;
+ let timer=0,targetKey=-1,track=null,ping=12;
  function rebuild(target){field.fill(-1);const tx=Math.floor(target.x),ty=Math.floor(target.y),start=ty*32+tx;if(start<0||start>=1024)return;
  let head=0,tail=1;queue[0]=start;field[start]=0;
  while(head<tail){const index=queue[head++],x=index%32,y=Math.floor(index/32);
@@ -77,9 +77,9 @@ export function createPursuit(){
      if(m.noise>0&&dist<(m.noise>.8?7:m.noise>.3?3.5:.9))heard=true;
    }
    if(!m.decoy&&(sighted||heard))track={x:m.x,y:m.y,age:0};
-   else if(track){track.age+=dt;if(track.age>7)track=null;}
+   else if(track){track.age+=dt;if(track.age>13)track=null;}
    ping-=dt;
-   if(ping<=0){ping=18;if(!m.decoy)track={x:m.x,y:m.y,age:0};}
+   if(ping<=0){ping=12;if(!m.decoy)track={x:m.x,y:m.y,age:0};}
    const target=m.decoy??track;
    if(target){timer-=dt;if(timer<=0){rebuild(target);timer=.5;targetKey=Math.floor(target.y)*32+Math.floor(target.x);}}
    for(let i=0;i<enemies.length;i++){

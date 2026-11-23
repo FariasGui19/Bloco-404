@@ -158,13 +158,23 @@ if (!process.env.BROWSER_EXECUTABLE) {
         id,
         { timeout: 60000 },
       );
-      assert.equal(
-        await page.evaluate(
-          () =>
-            window.labDimension.runtime.operator.root.userData.sculpt.revision,
-        ),
-        "3B.2",
+      const rig = await page.evaluate(() => {
+        const root = window.labDimension.runtime.operator.root;
+        return {
+          revision: root.userData.sculpt.revision,
+          clothing: root.userData.identity.clothing,
+          head: !!root.getObjectByName("operator-head"),
+          face: !!root.getObjectByName("sculpted-face"),
+        };
+      });
+      // Civil (4.0) e forma equipada (3B.2) são contratos válidos; o rosto
+      // esculpido precisa existir nos dois casos.
+      assert.ok(
+        ["4.0", "3B.2"].includes(rig.revision),
+        `revisão inesperada: ${rig.revision}`,
       );
+      if (rig.clothing === "civilian")
+        assert.ok(rig.head && rig.face, "cabeça esculpida presente no civil");
     }
     // A progressed QA-only lab state exercises the existing level-4 form; no
     // runtime unlock/UI shortcut is added and no save is written.

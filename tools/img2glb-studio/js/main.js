@@ -15,13 +15,13 @@ renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 renderer.outputColorSpace = THREE.SRGBColorSpace;
 viewport.prepend(renderer.domElement);
-const orbit = new OrbitControls(camera, renderer.domElement); orbit.target.set(0, 1.05, 0); orbit.enableDamping = true; orbit.minDistance = 2; orbit.maxDistance = 12; orbit.maxPolarAngle = Math.PI / 2 - 0.03; orbit.update(); orbit.saveState();
+const orbit = new OrbitControls(camera, renderer.domElement); orbit.target.set(0, 1.15, 0); orbit.enableDamping = true; orbit.minDistance = 2; orbit.maxDistance = 12; orbit.maxPolarAngle = Math.PI / 2 - 0.03; orbit.update(); orbit.saveState();
 scene.add(new THREE.HemisphereLight('#e4f1db', '#545e50', 2.1));
 const light = new THREE.DirectionalLight('#fff5dd', 2.5); light.position.set(3, 6, 4); light.castShadow = true; light.shadow.mapSize.set(1024, 1024); light.shadow.camera.left = -4; light.shadow.camera.right = 4; light.shadow.camera.top = 4; light.shadow.camera.bottom = -4; light.shadow.bias = -0.0003; scene.add(light);
 const floor = new THREE.Mesh(new THREE.PlaneGeometry(200, 200), new THREE.MeshStandardMaterial({ color: '#252c27', roughness: 1 })); floor.rotation.x = -Math.PI / 2; floor.receiveShadow = true; floor.position.y = -0.012; scene.add(floor);
 const grid = new THREE.GridHelper(20, 40, '#61725b', '#445045'); grid.position.y = -0.005; grid.material.transparent = true; grid.material.opacity = 0.38; scene.add(grid);
 
-let character, helper, jointMarkers, rigVisible = true, imageUrl = null, imageRequest = 0;
+let character, helper, jointMarkers, rigVisible = true, imageUrl = null, imageRequest = 0, referenceSource = null;
 const state = () => ({ head: +$('head').value, width: +$('width').value, legs: +$('legs').value, colors: { body: $('color-body').value, clothes: $('color-clothes').value, detail: $('color-detail').value } });
 function rebuild() {
   if (character) {
@@ -46,7 +46,12 @@ function updateOutputs() {
   for (const id of ['scale', 'head', 'width', 'legs']) document.querySelector(`output[for="${id}"]`).value = `${Math.round(+$(id).value * 100)}%`;
   for (const id of ['arms', 'stance']) document.querySelector(`output[for="${id}"]`).value = `${$(id).value}°`;
 }
-for (const id of ['head', 'width', 'legs', 'color-body', 'color-clothes', 'color-detail']) $(id).addEventListener('input', () => { updateOutputs(); rebuild(); });
+for (const id of ['head', 'width', 'legs']) $(id).addEventListener('input', () => { updateOutputs(); rebuild(); });
+const colorSlots = { body: 0, clothes: 1, detail: 2 };
+function updateColors() {
+  for (const [name, index] of Object.entries(colorSlots)) character.mesh.material[index].color.set($(`color-${name}`).value);
+}
+for (const name of Object.keys(colorSlots)) $(`color-${name}`).addEventListener('input', updateColors);
 for (const id of ['scale', 'arms', 'stance']) $(id).addEventListener('input', () => { updateOutputs(); updatePose(); });
 $('toggle-rig').addEventListener('click', () => { rigVisible = !rigVisible; helper.visible = jointMarkers.visible = rigVisible; $('toggle-rig').classList.toggle('active', rigVisible); $('toggle-rig').setAttribute('aria-pressed', String(rigVisible)); $('rig-label').textContent = rigVisible ? 'Ocultar rig' : 'Mostrar rig'; });
 $('reset-camera').addEventListener('click', () => orbit.reset());
@@ -57,7 +62,7 @@ $('reset-all').addEventListener('click', () => {
 let statusTimer;
 function notify(message) { $('status').textContent = message; $('status').classList.add('visible'); clearTimeout(statusTimer); statusTimer = setTimeout(() => $('status').classList.remove('visible'), 3500); }
 function removeImage() {
-  imageRequest++; if (imageUrl) URL.revokeObjectURL(imageUrl); imageUrl = null;
+  imageRequest++; if (imageUrl) URL.revokeObjectURL(imageUrl); imageUrl = null; referenceSource = null;
   $('reference-image').removeAttribute('src'); $('reference-image').hidden = true; $('upload-placeholder').hidden = false; $('change-image').hidden = true; $('image-info').hidden = true; $('image-input').value = ''; $('extract').disabled = true;
 }
 $('remove-image').addEventListener('click', removeImage);
@@ -68,7 +73,7 @@ $('image-input').addEventListener('change', () => {
   const request = ++imageRequest, url = URL.createObjectURL(file), image = new Image();
   image.onload = () => {
     if (request !== imageRequest) { URL.revokeObjectURL(url); return; }
-    if (imageUrl) URL.revokeObjectURL(imageUrl); imageUrl = url;
+    if (imageUrl) URL.revokeObjectURL(imageUrl); imageUrl = url; referenceSource = image;
     $('reference-image').src = url; $('reference-image').hidden = false; $('upload-placeholder').hidden = true; $('change-image').hidden = false; $('image-info').hidden = false; $('image-name').textContent = file.name; $('extract').disabled = false;
   };
   image.onerror = () => { URL.revokeObjectURL(url); if (request === imageRequest) { $('image-input').value = ''; notify('Não foi possível abrir esta imagem.'); } };
@@ -76,9 +81,12 @@ $('image-input').addEventListener('change', () => {
 });
 $('extract').addEventListener('click', () => {
   try {
-    const palette = extractPalette($('reference-image'));
-    if (!palette.length) { notify('A imagem não tem pixels visíveis para extrair.'); return; }
-    ['color-body', 'color-clothes', 'color-detail'].forEach((id, i) => { $(id).value = palette[i % palette.length]; }); rebuild(); notify('Cores dominantes aplicadas.');
+    const palette = extractPalette(referenceSource);
+    const entries = Object.entries(palette);
+    if (!entries.length) { notify('Nenhuma cor clara o suficiente encontrada; as cores atuais foram mantidas.'); return; }
+    for (const [name, color] of entries) $(`color-${name}`).value = color;
+    updateColors();
+    notify(entries.length < 3 ? 'Poucas cores distintas: as demais foram mantidas.' : 'Cores representativas aplicadas.');
   } catch (error) { console.error(error); notify('Não foi possível extrair as cores.'); }
 });
 $('export').addEventListener('click', async () => {

@@ -11,7 +11,7 @@ export function createHumanoid({ head, width, legs, colors }) {
     if (parent) parent.add(bone);
     bones.push(bone); return bone;
   };
-  const legLength = 0.86 * legs;
+  const legLength = 0.98 * legs;
   const footY = 0.11;
   const hips = makeBone('Hips', null, 0, footY + legLength);
   const spine = makeBone('Spine', hips, 0, 0.14);
@@ -32,7 +32,13 @@ export function createHumanoid({ head, width, legs, colors }) {
   const geometries = [];
   const materials = [colors.body, colors.clothes, colors.detail, '#171c1a'].map(color => new THREE.MeshStandardMaterial({ color, roughness: 0.86 }));
   const part = (bone, shape, center, size, material) => {
-    let geometry = shape === 'box' ? new THREE.BoxGeometry(1, 1, 1, 2, 2, 2) : new THREE.SphereGeometry(1, 20, 14);
+    const torsoProfile = [
+      [0, -0.10], [0.21, -0.09], [0.25, -0.02], [0.26, 0.18],
+      [0.30, 0.39], [0.32, 0.48], [0.28, 0.55], [0.17, 0.60], [0, 0.61],
+    ];
+    const geometry = shape === 'torso'
+      ? new THREE.LatheGeometry(torsoProfile.map(([radius, y]) => new THREE.Vector2(radius, y)), 24)
+      : new THREE.SphereGeometry(1, 20, 14);
     const pos = new THREE.Vector3(); bone.getWorldPosition(pos);
     geometry.scale(...size); geometry.translate(pos.x + center[0], pos.y + center[1], pos.z + center[2]);
     const count = geometry.attributes.position.count;
@@ -43,20 +49,19 @@ export function createHumanoid({ head, width, legs, colors }) {
     geometries.push({ geometry, material });
   };
   // As peças se sobrepõem levemente para manter uma silhueta contínua nas juntas.
-  part(hips, 'sphere', [0, 0.06, 0], [0.30 * width, 0.20, 0.19], 2);
-  part(spine, 'sphere', [0, 0.22, 0], [0.36 * width, 0.37, 0.20], 1);
-  part(chest, 'sphere', [0, 0.04, 0], [0.39 * width, 0.24, 0.21], 1);
+  part(hips, 'sphere', [0, 0.06, 0], [0.25 * width, 0.16, 0.15], 2);
+  part(spine, 'torso', [0, 0, 0], [width, 1, 0.55], 1);
   part(neck, 'sphere', [0, 0.07, 0], [0.105, 0.13, 0.105], 0);
-  part(headBone, 'sphere', [0, 0.20 * head, 0], [0.235 * head, 0.27 * head, 0.21 * head], 0);
-  part(headBone, 'sphere', [0, 0.36 * head, -0.015 * head], [0.235 * head, 0.12 * head, 0.205 * head], 2);
-  for (const sign of [-1, 1]) part(headBone, 'sphere', [sign * 0.08 * head, 0.22 * head, 0.197 * head], [0.018 * head, 0.025 * head, 0.012 * head], 3);
+  part(headBone, 'sphere', [0, 0.20 * head, 0], [0.215 * head, 0.245 * head, 0.195 * head], 0);
+  part(headBone, 'sphere', [0, 0.34 * head, -0.015 * head], [0.215 * head, 0.105 * head, 0.19 * head], 2);
+  for (const sign of [-1, 1]) part(headBone, 'sphere', [sign * 0.08 * head, 0.22 * head, 0.186 * head], [0.018 * head, 0.025 * head, 0.012 * head], 3);
   for (const side of ['Left', 'Right']) {
     const { shoulder, elbow, hand, thigh, shin, foot } = joints[side];
-    part(shoulder, 'sphere', [0, -0.16, 0], [0.145, 0.23, 0.15], 1);
+    part(shoulder, 'sphere', [0, -0.16, 0], [0.13, 0.23, 0.13], 2);
     part(elbow, 'sphere', [0, -0.14, 0], [0.105, 0.20, 0.11], 0);
     part(hand, 'sphere', [0, -0.05, 0], [0.105, 0.13, 0.075], 0);
-    part(thigh, 'sphere', [0, -legLength * 0.23, 0], [0.16, legLength * 0.30, 0.16], 2);
-    part(shin, 'sphere', [0, -legLength * 0.24, 0], [0.125, legLength * 0.30, 0.13], 2);
+    part(thigh, 'sphere', [0, -legLength * 0.23, 0], [0.145, legLength * 0.30, 0.145], 1);
+    part(shin, 'sphere', [0, -legLength * 0.24, 0], [0.115, legLength * 0.30, 0.12], 1);
     part(foot, 'sphere', [0, 0, 0.09], [0.14, 0.11, 0.23], 2);
   }
   const merged = mergeGeometries(geometries.map(p => p.geometry), true);

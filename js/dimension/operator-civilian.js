@@ -142,7 +142,7 @@ export function createCivilianOperator(progress = {}, player = {}) {
   );
 
   // Bump sutil de pele/cabelo: detalhe de close sem virar um quarto `map`.
-  let skinBump = null, hairBump = null;
+  let hairBump = null;
   if (typeof document !== "undefined") {
     const bump = (path) => {
       const tex = new T.TextureLoader().load(new URL(path, import.meta.url).href);
@@ -152,21 +152,16 @@ export function createCivilianOperator(progress = {}, player = {}) {
       tex.colorSpace = T.SRGBColorSpace;
       return tex;
     };
-    skinBump = bump("../../assets/textures/operador/pele-operador.png");
     hairBump = bump("../../assets/textures/operador/cabelo-cachos.png");
   }
   const skin = new T.MeshLambertMaterial({
     color: SKIN,
     flatShading: false,
-    bumpMap: skinBump,
-    bumpScale: 0.012,
   });
   const skinDark = new T.MeshLambertMaterial({ color: SKIN_DARK });
   const tattoo = new T.MeshLambertMaterial({
     map: tattooMap,
     flatShading: false,
-    bumpMap: skinBump,
-    bumpScale: 0.01,
   });
   // Padrão mais fino para membros esféricos (sem esticar as formas grandes).
   let tattooWrap = tattooMap;
@@ -178,8 +173,6 @@ export function createCivilianOperator(progress = {}, player = {}) {
   const tattooOrb = new T.MeshLambertMaterial({
     map: tattooWrap,
     flatShading: false,
-    bumpMap: skinBump,
-    bumpScale: 0.01,
   });
   const tank = new T.MeshLambertMaterial({
     map: tankMap,
@@ -219,24 +212,22 @@ export function createCivilianOperator(progress = {}, player = {}) {
     o.scale.set(rx, ry, rz);
     return o;
   };
-  // Regata real: painel paramétrico com decote em U e cavas recortadas. Uma
-  // malha fechada com "pele por cima" parecia um colete com peitoral solto.
+  // Regata real: painel fechado cuja borda superior segue o decote em U na
+  // frente, desce nas cavas e sobe nas costas. A borda é calculada por vértice
+  // (não por anel), então não sobra degrau entre a alça e o peito.
   const tankGeometry = () => {
-    // Perfil de raio por altura e uma borda superior que varia com o ângulo:
-    // decote em U na frente e cavas afundadas nas laterais, deixando alças
-    // contínuas sobre o ombro. Sem quads apagados, a borda não vira degrau.
     const profile = [
-      [0.965, 0.176, 0.123],
+      [1.0, 0.176, 0.123],
       [1.02, 0.181, 0.127],
       [1.1, 0.191, 0.133],
       [1.2, 0.212, 0.144],
-      [1.3, 0.24, 0.155],
-      [1.36, 0.256, 0.162],
-      [1.4, 0.264, 0.166],
-      [1.44, 0.27, 0.169],
-      [1.475, 0.266, 0.166],
+      [1.3, 0.238, 0.162],
+      [1.38, 0.252, 0.168],
+      [1.44, 0.259, 0.171],
+      [1.5, 0.243, 0.159],
+      [1.53, 0.212, 0.14],
+      [1.552, 0.16, 0.11],
     ];
-    const smooth = (t) => (t <= 0 ? 0 : t >= 1 ? 1 : t * t * (3 - 2 * t));
     const radiusAt = (h) => {
       for (let i = 1; i < profile.length; i++)
         if (h <= profile[i][0]) {
@@ -248,39 +239,43 @@ export function createCivilianOperator(progress = {}, player = {}) {
       const last = profile[profile.length - 1];
       return [last[1], last[2]];
     };
-    const sides = 40,
-      levels = 12,
-      top = 1.475,
-      hem = 0.965,
+    // Borda superior por ângulo: 1.522 nas costas, 1.475 no meio do peito e 1.335
+    // nas cavas. A queda lateral é a cava; nada é apagado depois.
+    // Decote em U na frente e uma cava estreita centrada na lateral, onde o
+    // braço passa. O resto da borda fica alto, encostado na clavícula.
+    const neckAt = (a) => {
+      const ang = Math.abs(Math.atan2(Math.sin(a), Math.cos(a)));
+      const side = Math.sin(ang) * Math.sin(ang);
+      const scoop = Math.max(0, 1 - (ang / 0.74) ** 2);
+      return 1.522 - 0.09 * side - 0.115 * Math.pow(scoop, 1.1);
+    };
+    const sides = 44,
+      levels = 14,
+      hem = 1.006,
       pos = [],
       uv = [],
-      hole = [],
       index = [];
-    const wrap = (a) => Math.atan2(Math.sin(a), Math.cos(a));
+    const topAt = [];
+    for (let i = 0; i < sides; i++) topAt.push(neckAt((i / sides) * Math.PI * 2));
     for (let r = 0; r <= levels; r++) {
       const f = r / levels;
-      const [rx, rz] = radiusAt(hem + f * (top - hem));
       for (let i = 0; i < sides; i++) {
         const a = (i / sides) * Math.PI * 2;
-        const front = Math.abs(wrap(a));
-        const scoop = front < 0.6 ? 1.462 + 0.026 * smooth(front / 0.6) : top;
-        const y = hem + f * (scoop - hem);
-        const side = Math.abs(front - Math.PI / 2);
-        pos.push(Math.sin(a) * rx, y, Math.cos(a) * rz);
+        const y = hem + (topAt[i] - hem) * f;
+        const [rx, rz] = radiusAt(y);
+        // O tecido acompanha o corpo mas mantém uma folga mínima de 1,5 mm.
+        pos.push(Math.sin(a) * (rx + 0.0015), y, Math.cos(a) * (rz + 0.0015));
         uv.push(i / sides, f);
-        // Cava retangular: o ombro e a alça ficam acima dela.
-        hole.push(f > 0.8 && Math.abs(Math.sin(a) * rx) > 0.165);
       }
     }
     for (let r = 0; r < levels; r++)
       for (let i = 0; i < sides; i++) {
-        const j = (i + 1) % sides;
+        const next = (i + 1) % sides;
         const a = r * sides + i,
-          b = r * sides + j,
-          c = (r + 1) * sides + i,
-          d = (r + 1) * sides + j;
-        if (hole[a] && hole[b] && hole[c] && hole[d]) continue;
-        index.push(a, c, b, b, c, d);
+          b = (r + 1) * sides + i,
+          c = r * sides + next,
+          d = (r + 1) * sides + next;
+        index.push(a, b, c, c, b, d);
       }
     const geo = new T.BufferGeometry();
     geo.setAttribute("position", new T.Float32BufferAttribute(pos, 3));
@@ -298,10 +293,13 @@ export function createCivilianOperator(progress = {}, player = {}) {
       [0.98, 0.155, 0.105],
       [1.08, 0.165, 0.112],
       [1.22, 0.195, 0.125],
-      [1.36, 0.25, 0.148],
-      [1.46, 0.262, 0.155],
-      [1.53, 0.205, 0.128],
-      [1.55, 0.196, 0.124],
+      [1.36, 0.25, 0.156],
+      [1.44, 0.258, 0.162],
+      [1.49, 0.243, 0.153],
+      [1.518, 0.208, 0.134],
+      [1.539, 0.16, 0.11],
+      [1.552, 0.112, 0.086],
+      [1.562, 0.074, 0.064],
     ],
     0,
     0,
@@ -317,61 +315,31 @@ export function createCivilianOperator(progress = {}, player = {}) {
       body,
       tank,
       [
-        [side * 0.146, 1.432, 0.15],
-        [side * 0.150, 1.478, 0.1],
-        [side * 0.153, 1.500, 0.015],
-        [side * 0.150, 1.478, -0.09],
-        [side * 0.146, 1.434, -0.145],
+        [side * 0.163, 1.481, 0.118],
+        [side * 0.158, 1.516, 0.062],
+        [side * 0.152, 1.535, 0.014],
+        [side * 0.152, 1.537, -0.026],
+        [side * 0.157, 1.522, -0.078],
+        [side * 0.162, 1.494, -0.122],
+        [side * 0.16, 1.458, -0.142],
       ],
-      0.0175,
+      0.013,
     ).name = "tank-strap";
-  // Cós inferior, agora sem costura diagonal atravessando o peito.
-  loft(
-    body,
-    tank,
-    [
-      [1.005, 0.17, 0.12],
-      [1.032, 0.172, 0.122],
-    ],
-    0,
-    0,
-    0,
-    14,
-  );
   for (const side of [-1, 1]) {
-    tube(
-      body,
-      skin,
-      [
-        [side * 0.012, 1.508, 0.132],
-        [side * 0.07, 1.502, 0.118],
-        [side * 0.132, 1.482, 0.084],
-      ],
-      0.0085,
-    );
-    tube(
-      body,
-      skin,
-      [
-        [side * 0.02, 1.492, 0.126],
-        [side * 0.062, 1.486, 0.118],
-        [side * 0.104, 1.474, 0.096],
-      ],
-      0.0045,
-    );
     // Preenche a junta do ombro sem deixar um vão entre torso e deltoide.
+    // Mesmo material do braço: sem corte de "manga" na junta do ombro.
     loft(
       body,
-      tattooOrb,
+      tattoo,
       [
-        [1.487, 0.043, 0.041],
-        [1.455, 0.056, 0.052],
-        [1.418, 0.050, 0.047],
+        [1.496, 0.046, 0.044],
+        [1.468, 0.06, 0.056],
+        [1.434, 0.057, 0.053],
       ],
-      side * 0.188,
+      side * 0.192,
       0,
       0,
-      16,
+      18,
     ).name = "deltoid";
   }
 
@@ -380,16 +348,21 @@ export function createCivilianOperator(progress = {}, player = {}) {
     body,
     skin,
     [
-      [1.5, 0.072, 0.068],
-      [1.58, 0.068, 0.064],
-      [1.63, 0.062, 0.06],
-      [1.66, 0.058, 0.056],
+      [1.48, 0.088, 0.082],
+      [1.54, 0.079, 0.073],
+      [1.6, 0.071, 0.067],
+      [1.65, 0.064, 0.061],
+      [1.685, 0.06, 0.058],
     ],
     0,
     0,
     0,
-    16,
+    18,
   ).name = "neck";
+  // Trapézio: fecha o vão entre a cúpula do ombro e a base do pescoço.
+  for (const side of [-1, 1])
+    orb(body, skin, 0.068, 0.028, 0.056, side * 0.058, 1.499, 0.006, 16, 10)
+      .rotation.z = side * 0.18;
   // Rosa + linhas geométricas do lado direito (mesmo lado da ficha).
   const neckTattoo = new T.Group();
   neckTattoo.name = "neck-tattoo";
@@ -470,17 +443,17 @@ export function createCivilianOperator(progress = {}, player = {}) {
     head,
     skin,
     [
-      [-0.132, 0.024, 0.032, 0.012],
-      [-0.118, 0.046, 0.056, 0.014],
-      [-0.098, 0.061, 0.071, 0.012],
-      [-0.074, 0.075, 0.083, 0.008],
-      [-0.046, 0.084, 0.091, 0.004],
-      [-0.014, 0.090, 0.097, 0.001],
-      [0.020, 0.094, 0.100, 0],
-      [0.056, 0.094, 0.099, -0.004],
-      [0.094, 0.084, 0.090, -0.008],
-      [0.126, 0.056, 0.062, -0.010],
-      [0.146, 0.014, 0.018, -0.010],
+      [-0.117, 0.027, 0.034, 0.012],
+      [-0.104, 0.048, 0.058, 0.014],
+      [-0.086, 0.063, 0.073, 0.012],
+      [-0.063, 0.077, 0.085, 0.008],
+      [-0.038, 0.087, 0.093, 0.004],
+      [-0.008, 0.093, 0.098, 0.001],
+      [0.024, 0.097, 0.101, 0],
+      [0.058, 0.097, 0.100, -0.004],
+      [0.094, 0.086, 0.091, -0.008],
+      [0.126, 0.058, 0.063, -0.010],
+      [0.146, 0.015, 0.019, -0.010],
     ],
     0,
     0,
@@ -515,8 +488,8 @@ export function createCivilianOperator(progress = {}, player = {}) {
   for (const side of [-1, 1]) {
     const ex = side * 0.0435,
       ey = 0.0115;
-    orb(head, eyeWhite, 0.0150, 0.0088, 0.0048, ex, ey, 0.0852, 14, 10);
-    orb(head, iris, 0.0058, 0.0058, 0.0026, ex, ey, 0.0884, 12, 8);
+    orb(head, eyeWhite, 0.0138, 0.0084, 0.0046, ex, ey, 0.0852, 14, 10);
+    orb(head, iris, 0.0064, 0.0064, 0.0028, ex, ey, 0.0882, 12, 8);
     orb(head, ink, 0.0026, 0.0026, 0.0014, ex, ey, 0.0902, 10, 8);
     const lid = orb(head, skin, 0.0172, 0.0082, 0.0072, ex, ey + 0.0068, 0.0866, 14, 10);
     lid.name = "eyelid";
@@ -525,14 +498,15 @@ export function createCivilianOperator(progress = {}, player = {}) {
       head,
       hair,
       [
-        [side * 0.012, 0.0395, 0.0925],
-        [side * 0.041, 0.0442, 0.0958],
-        [side * 0.069, 0.0388, 0.0862],
+        [side * 0.015, 0.0472, 0.0928],
+        [side * 0.031, 0.0504, 0.0958],
+        [side * 0.051, 0.0502, 0.0934],
+        [side * 0.066, 0.0456, 0.0866],
       ],
-      0.0046,
+      0.003,
     );
     brow.name = "brow";
-    brow.rotation.z = side * -0.05;
+    brow.rotation.z = side * -0.04;
   }
   // Bigode fino, quase reto, logo abaixo do nariz; boca discreta abaixo.
   for (const side of [-1, 1])
@@ -540,11 +514,11 @@ export function createCivilianOperator(progress = {}, player = {}) {
       head,
       hair,
       [
-        [0, -0.0300, 0.0975],
-        [side * 0.0145, -0.0318, 0.0958],
-        [side * 0.0275, -0.0362, 0.0905],
+        [side * 0.0015, -0.0272, 0.0982],
+        [side * 0.0135, -0.0288, 0.0966],
+        [side * 0.0262, -0.0324, 0.0912],
       ],
-      0.0031,
+      0.0024,
     ).name = "moustache";
   tube(
     head,
@@ -627,51 +601,63 @@ export function createCivilianOperator(progress = {}, player = {}) {
   hairRig.name = "layered-hair";
   head.add(hairRig);
   const fadeMat = new T.MeshLambertMaterial({ color: 0x3f2c24 });
-  // Base colada no crânio: evita vãos entre os cachos e desenha o fade.
-  orb(hairRig, fadeMat, 0.0938, 0.0720, 0.0905, 0, 0.0525, -0.0235, 22, 14).name =
+  // Base colada no crânio: desenha o fade e tapa o couro entre os cachos.
+  orb(hairRig, fadeMat, 0.0955, 0.0785, 0.0925, 0, 0.05, -0.02, 22, 14).name =
     "hair-cap";
   let seed = 7;
   const rand = () => {
     seed = (seed * 16807) % 2147483647;
     return seed / 2147483647;
   };
-  // 52 cachos em espiral de Fibonacci: volume orgânico, nada de blocos.
-  for (let i = 0; i < 64; i++) {
-    const theta = 0.08 + (i / 64) * 0.80;
-    const phi = i * 2.399963;
-    const rad = 0.094 + rand() * 0.010;
-    const cr = 0.0135 + rand() * 0.0095;
+  // Cachos distribuídos em espiral de Fibonacci sobre o topo do crânio: cobrem
+  // a coroa inteira (inclusive o centro) e param antes das têmporas raspadas.
+  const HAIR_X = 0.0995,
+    HAIR_Y = 0.0905,
+    HAIR_Z = 0.0975,
+    HAIR_CY = 0.047,
+    HAIR_CZ = -0.016;
+  const curlAt = (cosTheta, phi, r, mat, jitter = 0.0035) => {
+    const theta = Math.acos(Math.max(-1, Math.min(1, cosTheta)));
+    const st = Math.sin(theta);
+    const x = Math.sin(phi) * st * HAIR_X + (rand() - 0.5) * jitter;
+    const z =
+      HAIR_CZ + Math.cos(phi) * st * HAIR_Z + (rand() - 0.5) * jitter;
+    const y = HAIR_CY + cosTheta * HAIR_Y + (rand() - 0.5) * jitter * 0.7;
     const curl = orb(
       hairRig,
-      i % 4 === 0 ? hairHi : hair,
-      cr,
-      cr * (0.85 + rand() * 0.5),
-      cr,
-      Math.sin(theta) * Math.cos(phi) * rad,
-      0.058 + Math.cos(theta) * 0.084,
-      -0.010 + Math.sin(theta) * Math.sin(phi) * rad,
-      12,
-      9,
-    );
-    curl.rotation.set(rand() * 1.3, rand() * 1.3, rand() * 1.3);
-    curl.name = "curl";
-  }
-  // Laterais e nuca raspadas: cerdas curtas só atrás das têmporas.
-  for (let i = 0; i < 22; i++) {
-    const a = (i / 22) * Math.PI * 2;
-    if (Math.cos(a) > 0.25) continue;
-    orb(
-      hairRig,
-      fadeMat,
-      0.0115,
-      0.0155,
-      0.0095,
-      Math.sin(a) * 0.0925,
-      -0.008 + (i % 3) * 0.021,
-      Math.cos(a) * 0.0905,
+      mat,
+      r,
+      r * (0.82 + rand() * 0.32),
+      r,
+      x,
+      y,
+      z,
+      10,
       8,
-      6,
-    ).name = "fade-stubble";
+    );
+    curl.rotation.set(rand() * 1.1, rand() * 1.1, rand() * 1.1);
+    curl.name = "curl";
+    return curl;
+  };
+  const CURLS = 62;
+  for (let i = 0; i < CURLS; i++) {
+    const cosTheta = 1 - ((i + 0.5) / CURLS) * 0.66;
+    curlAt(
+      cosTheta,
+      i * 2.399963,
+      0.0125 + rand() * 0.0052,
+      i % 5 === 0 ? hairHi : hair,
+    );
+  }
+  // Coroa: dois cachos grandes fecham o centro do topo, que ficava raso.
+  for (let i = 0; i < 4; i++) {
+    const phi = i * 1.9 + 0.6;
+    curlAt(0.93 + rand() * 0.05, phi, 0.0165 + rand() * 0.0025, i % 2 ? hair : hairHi, 0.002);
+  }
+  // Anel extra na nuca, mais baixo: fecha o volume atrás sem virar coroa.
+  for (let i = 0; i < 10; i++) {
+    const phi = Math.PI * 0.62 + (i / 9) * Math.PI * 0.76;
+    curlAt(0.3 + rand() * 0.06, phi, 0.0135 + rand() * 0.0035, i % 3 ? hair : hairHi);
   }
   // Linha da testa: fileira baixa de cachos escondendo a costura da base.
   for (let i = 0; i < 9; i++) {
@@ -679,29 +665,45 @@ export function createCivilianOperator(progress = {}, player = {}) {
     orb(
       hairRig,
       i % 2 ? hair : hairHi,
-      0.0145,
-      0.0125,
-      0.0145,
-      -0.062 + t * 0.124,
-      0.1015 - Math.abs(t - 0.5) * 0.012,
-      0.0625,
-      12,
-      9,
+      0.0135,
+      0.0118,
+      0.0135,
+      -0.063 + t * 0.126,
+      0.0795 - Math.abs(t - 0.5) * 0.009,
+      0.0795,
+      10,
+      8,
     ).name = "hairline-curls";
   }
-  // Franja curta: cachos que caem só até a linha da testa.
+  // Nuca: cerdas curtas para o fade não terminar numa linha reta.
   for (let i = 0; i < 9; i++) {
+    const t = i / 8;
+    orb(
+      hairRig,
+      fadeMat,
+      0.0095,
+      0.0125,
+      0.008,
+      -0.062 + t * 0.124,
+      0.0245 - Math.abs(t - 0.5) * 0.008,
+      -0.086 - Math.cos((t - 0.5) * Math.PI) * 0.004,
+      8,
+      6,
+    ).name = "nape-stubble";
+  }
+  // Franja curta: cachos que caem só até a linha da testa.
+  for (let i = 0; i < 8; i++) {
     const curl = orb(
       hairRig,
       i % 2 ? hairHi : hair,
-      0.0155 + (i % 2) * 0.0035,
+      0.0145 + (i % 2) * 0.003,
+      0.0135,
       0.0145,
-      0.0155,
-      -0.062 + i * 0.0155,
-      0.0885 - (i % 3) * 0.0035,
-      0.0775,
-      12,
-      9,
+      -0.058 + i * 0.0165,
+      0.0915 - (i % 3) * 0.0035,
+      0.0705,
+      10,
+      8,
     );
     curl.rotation.set(0.4, i * 0.4, 0.3);
     curl.name = "fringe";
@@ -729,9 +731,6 @@ export function createCivilianOperator(progress = {}, player = {}) {
       0,
       18,
     );
-    // Faixas de tinta em relevo, visíveis mesmo antes do PNG carregar.
-    ring(arm, ink, 0.073, 0.004, 0, -0.12, 0).rotation.x = Math.PI / 2;
-    ring(arm, ink, 0.059, 0.0035, 0, -0.27, 0).rotation.x = Math.PI / 2;
     const elbow = new T.Group();
     elbow.position.y = -0.3;
     arm.add(elbow);
@@ -749,8 +748,6 @@ export function createCivilianOperator(progress = {}, player = {}) {
       0,
       16,
     );
-    ring(elbow, ink, 0.063, 0.0035, 0, -0.09, 0).rotation.x = Math.PI / 2;
-    ring(elbow, ink, 0.043, 0.003, 0, -0.235, 0).rotation.x = Math.PI / 2;
     const palm = orb(elbow, skin, 0.048, 0.062, 0.027, 0, -0.302, 0.008, 16, 12);
     palm.rotation.x = 0.08;
     for (let f = 0; f < 4; f++)

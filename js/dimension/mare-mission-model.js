@@ -6,6 +6,7 @@ import {lote6Props} from './mare-mission-lote6.js';
 import {lote7Props,lote7Walls} from './mare-mission-lote7.js';
 import {lote8Props} from './mare-mission-lote8.js';
 import {lote9Props} from './mare-mission-lote9.js';
+import {lote11Props} from './mare-mission-lote11.js';
 // Local-only mission simulation: never writes global health, inventory or levels.
 export const MARE_MISSION = "mare-cromatica:baia-v1";
 export const SIZE = 32;
@@ -126,7 +127,7 @@ export function canStand(x, y) {
     [0.2, -0.2],
     [-0.2, 0.2],
     [0.2, 0.2],
-  ].every(([a, b]) => !cell(x + a, y + b)) && details.every(s=>Math.hypot(x-s.x,y-s.y)>(s.r??.46)) && lore.every(s=>Math.hypot(x-s.x,y-s.y)>(s.r??.46)) && combatProps.every(s=>Math.hypot(x-s.x,y-s.y)>(s.r??.46)) && lote5Props.every(s=>Math.hypot(x-s.x,y-s.y)>(s.r??.46)) && lote6Props.every(s=>Math.hypot(x-s.x,y-s.y)>(s.r??.46)) && lote7Props.every(s=>Math.hypot(x-s.x,y-s.y)>(s.r??.46)) && lote8Props.every(s=>Math.hypot(x-s.x,y-s.y)>(s.r??.46)) && lote9Props.every(s=>Math.hypot(x-s.x,y-s.y)>(s.r??.46));
+  ].every(([a, b]) => !cell(x + a, y + b)) && details.every(s=>Math.hypot(x-s.x,y-s.y)>(s.r??.46)) && lore.every(s=>Math.hypot(x-s.x,y-s.y)>(s.r??.46)) && combatProps.every(s=>Math.hypot(x-s.x,y-s.y)>(s.r??.46)) && lote5Props.every(s=>Math.hypot(x-s.x,y-s.y)>(s.r??.46)) && lote6Props.every(s=>Math.hypot(x-s.x,y-s.y)>(s.r??.46)) && lote7Props.every(s=>Math.hypot(x-s.x,y-s.y)>(s.r??.46)) && lote8Props.every(s=>Math.hypot(x-s.x,y-s.y)>(s.r??.46)) && lote9Props.every(s=>Math.hypot(x-s.x,y-s.y)>(s.r??.46)) && lote11Props.every(s=>Math.hypot(x-s.x,y-s.y)>(s.r??.46));
 }
 export function move(m, dx, dy) {
   if(!Number.isFinite(dx)||!Number.isFinite(dy))return;

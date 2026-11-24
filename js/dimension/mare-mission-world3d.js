@@ -5,6 +5,7 @@
 import * as THREE from "../vendor/three.module.js";
 import { cell, waterAt, shoreX } from "./mare-mission-model.js";
 import { lote7Walls } from "./mare-mission-lote7.js";
+import { LOTE11_BEACON, lote11RingPulse } from "./mare-mission-lote11.js";
 import { enemyFamily, enemyFrame } from "./mare-mission-life.js";
 
 const TAU = Math.PI * 2;
@@ -186,6 +187,12 @@ export async function createMareWorld3D({
     texture("lona-encardida", 1.2, "mare-missao-lote9"),
     texture("pedra-molhada", 2, "mare-missao-lote9"),
   ]);
+  // Lote 11: papel de carta, vidro de Fresnel e corda alcatroada.
+  const [papelCartaTex, vidroFarolTex, cordaTex] = await Promise.all([
+    texture("papel-carta", 1, "mare-missao-lote11"),
+    texture("vidro-farol", 1, "mare-missao-lote11"),
+    texture("corda-alcatrao", 4, "mare-missao-lote11"),
+  ]);
   const lambert = (map, color = 0xffffff) =>
     new THREE.MeshLambertMaterial({ map, color });
   const mat = {
@@ -232,6 +239,19 @@ export async function createMareWorld3D({
     black: new THREE.MeshLambertMaterial({ color: 0x182226 }),
     rust: new THREE.MeshLambertMaterial({ color: 0x58402f }),
     plastic: new THREE.MeshLambertMaterial({ color: 0x1f3234 }),
+    chartPaper: new THREE.MeshLambertMaterial({
+      map: papelCartaTex,
+      color: 0xc9b794,
+      side: THREE.DoubleSide,
+    }),
+    lensGlass: new THREE.MeshBasicMaterial({
+      map: vidroFarolTex,
+      color: 0xc8fff2,
+      transparent: true,
+      opacity: 0.92,
+      fog: true,
+    }),
+    rope: lambert(cordaTex, 0xc9b394),
   };
   // Texturas do lote 9 substituem telhado, metal escuro e pedras molhadas.
   mat.roof.map = lonaTex;
@@ -1043,6 +1063,7 @@ export async function createMareWorld3D({
   const lantern = new THREE.Mesh(
     new THREE.CylinderGeometry(1.18, 1.4, 1.8, 8),
     new THREE.MeshLambertMaterial({
+      map: vidroFarolTex,
       color: 0x3b4136,
       emissive: 0x8a5a20,
       emissiveIntensity: 0.9,
@@ -1381,6 +1402,10 @@ export async function createMareWorld3D({
     "bandeira-sinal": [0.02, 2.35],
     "cogumelo-sal": [0.005, 1.8],
     "lanterna-querosene": [0.008, 1.2],
+    "boia-cromatica": [0.05, 1.18],
+    "rede-deriva": [0.011, 1.42],
+    "sino-neblina": [0.007, 1.55],
+    "lente-farolim": [0.004, 0.95],
   };
   const artHeight = {
     boia: 0.58,
@@ -1404,6 +1429,13 @@ export async function createMareWorld3D({
     "peixe-morto": 0.28,
     "bandeira-sinal": 1.35,
     "cogumelo-sal": 0.35,
+    "mesa-cartas": 0.62,
+    "sino-neblina": 1.35,
+    "gerador-quarentena": 0.72,
+    "boia-cromatica": 0.58,
+    "rede-deriva": 0.5,
+    "placa-quarentena": 1.15,
+    "lente-farolim": 1.05,
   };
   const addProp = (o) => {
     const art = o.art === "terminal" ? "terminal-recompilacao" : o.art === "cristal-mare" ? "cristal-cluster" : o.art;
@@ -1422,7 +1454,7 @@ export async function createMareWorld3D({
     const h = (o.scale ?? 0.8) * (o.decor ? 1.05 : 1.7) * (artHeight[art] ?? 1);
     sprite.scale.set((h * tex.image.width) / tex.image.height, h, 1);
     sprite.center.set(0.5, 0);
-    sprite.position.set(o.x, 0.025, o.y);
+    sprite.position.set(o.x, 0.025 + (o.lift ?? 0), o.y);
     scene.add(sprite);
     const shadow = mesh(
       new THREE.CircleGeometry(Math.max(0.22, h * 0.26), 10),
@@ -1438,6 +1470,8 @@ export async function createMareWorld3D({
       "concha-cromatica": { color: 0xe04ce6, base: 3.2, dist: 3.4, kind: "shell" },
       "lanterna-querosene": { color: 0xffc07a, base: 4.6, dist: 5.2, kind: "lantern" },
       "cristal-drusa": { color: 0xc94dde, base: 3.4, dist: 4, kind: "drusa" },
+      "mesa-cartas": { color: 0xffc07a, base: 2.6, dist: 3.6, kind: "chart" },
+      "gerador-quarentena": { color: 0x8fe0c0, base: 1.8, dist: 3.2, kind: "gen" },
     }[art];
     if (lightSpec) {
       const light = new THREE.PointLight(
@@ -1483,6 +1517,124 @@ export async function createMareWorld3D({
     });
   };
   props.forEach(addProp);
+
+  // ---------- lote 11: farolim, sino e gerador ----------
+  // Feixe do farolim: só existe aceso. O grupo gira para varrer a água.
+  const beaconGroup = new THREE.Group();
+  beaconGroup.position.set(LOTE11_BEACON.x, 0, LOTE11_BEACON.y);
+  scene.add(beaconGroup);
+  // Pedestal de pedra: o farolim é um lampião de Fresnel sobre uma base, não
+  // uma lâmpada flutuando no chão.
+  const beaconPedestal = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.4, 0.54, 1.12, 8),
+    mat.cliff,
+  );
+  beaconPedestal.position.set(0, 0.56, 0);
+  beaconGroup.add(beaconPedestal);
+  const beaconCap = new THREE.Mesh(new THREE.CylinderGeometry(0.48, 0.48, 0.12, 8), mat.metalDark);
+  beaconCap.position.set(0, 1.15, 0);
+  beaconGroup.add(beaconCap);
+  const beaconLight = new THREE.PointLight(0xa8fff0, 0, 12, 2);
+  beaconLight.position.set(0, 2.2, 0);
+  beaconGroup.add(beaconLight);
+  const beaconGlow = new THREE.Sprite(
+    new THREE.SpriteMaterial({
+      map: glowTexture("190,255,238"),
+      transparent: true,
+      opacity: 0,
+      depthWrite: false,
+      blending: THREE.AdditiveBlending,
+      fog: true,
+    }),
+  );
+  beaconGlow.scale.setScalar(1.9);
+  beaconGlow.position.set(0, 2.15, 0);
+  beaconGroup.add(beaconGlow);
+  // Poça de luz no chão: barata, sem plano aditivo cortando a cena, e lê de
+  // longe que o farolim está aceso.
+  const beaconPool = new THREE.Mesh(
+    new THREE.CircleGeometry(3.4, 24),
+    new THREE.MeshBasicMaterial({
+      color: 0x7fe6d0,
+      transparent: true,
+      opacity: 0,
+      depthWrite: false,
+      blending: THREE.AdditiveBlending,
+      fog: true,
+    }),
+  );
+  beaconPool.rotation.x = -Math.PI / 2;
+  beaconPool.position.set(0, 0.05, 0);
+  beaconGroup.add(beaconPool);
+
+  // Sino: a onda de som no chão acompanha o pulso do bronze.
+  const bellRing = new THREE.Mesh(
+    new THREE.RingGeometry(0.2, 0.24, 20),
+    new THREE.MeshBasicMaterial({
+      color: 0xbdfbee,
+      transparent: true,
+      opacity: 0,
+      depthWrite: false,
+      side: THREE.DoubleSide,
+    }),
+  );
+  bellRing.rotation.x = -Math.PI / 2;
+  bellRing.position.set(26.6, 0.06, 11.8);
+  scene.add(bellRing);
+
+  // Faíscas do gerador: pontos baratos que só brilham com o motor ligado.
+  const sparkCount = 26;
+  const sparkPositions = new Float32Array(sparkCount * 3);
+  for (let i = 0; i < sparkCount; i++) {
+    sparkPositions[i * 3] = 22.8 + (hash(i, 7) - 0.5) * 1.3;
+    sparkPositions[i * 3 + 1] = 0.3 + hash(i, 8) * 0.8;
+    sparkPositions[i * 3 + 2] = 28.1 + (hash(i, 9) - 0.5) * 0.9;
+  }
+  const genSparkGeo = new THREE.BufferGeometry();
+  genSparkGeo.setAttribute("position", new THREE.BufferAttribute(sparkPositions, 3));
+  const genSpark = new THREE.Points(
+    genSparkGeo,
+    new THREE.PointsMaterial({
+      color: 0xa8ffe0,
+      size: 0.06,
+      transparent: true,
+      opacity: 0,
+      depthWrite: false,
+      fog: true,
+    }),
+  );
+  scene.add(genSpark);
+
+  // Quadro de marés atrás da mesa de cartas e cordame no píer.
+  // A carta de maré fica num cavalete atrás da mesa, virada para quem chega
+  // do acampamento. É pequena de propósito: não tapa a mesa que ela explica.
+  const chartBoard = new THREE.Mesh(new THREE.PlaneGeometry(0.64, 0.48), mat.chartPaper);
+  chartBoard.position.set(11.6, 1.0, 28.86);
+  chartBoard.rotation.y = Math.PI - 0.06;
+  scene.add(chartBoard);
+  for (const x of [11.3, 11.9]) {
+    const post = new THREE.Mesh(new THREE.CylinderGeometry(0.028, 0.034, 1.0, 5), mat.woodDark);
+    post.position.set(x, 0.5, 28.9);
+    scene.add(post);
+  }
+  // Cordame de proteção na ponta sul do píer, virado para a água.
+  const dockRopes = [];
+  for (const x of [26.4, 28.2, 30.0]) {
+    const post = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.075, 1.02, 5), mat.woodDark);
+    post.position.set(x, 0.51, 30.15);
+    scene.add(post);
+  }
+  for (const y of [0.55, 0.92]) {
+    const rope = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.035, 0.035, 3.7, 5),
+      mat.rope,
+    );
+    rope.rotation.z = Math.PI / 2;
+    rope.position.set(28.2, y, 30.15);
+    scene.add(rope);
+    dockRopes.push(rope);
+  }
+
   const activeKeys = (list) => new Set(list.map((o) => `${o.art}@${o.x.toFixed(2)},${o.y.toFixed(2)}`));
   let active = null;
   const syncProps = (list) => {
@@ -1505,7 +1657,10 @@ export async function createMareWorld3D({
     sprite.material.color.setRGB(shade * 0.9, shade * 0.94, shade * 0.9);
     // Sprite colado na câmera vira uma parede de textura: desvanece antes.
     if (sprite.userData.baseOpacity === undefined) sprite.userData.baseOpacity = sprite.material.opacity;
-    const near = clamp((d - 1.7) / 3.6, 0, 1);
+    // A partir de 1,15 m o adereço começa a aparecer: antes disso ele é a
+    // própria parede da câmera. O ramo curto mantém os props legíveis já na
+    // distância de interação, sem sumir quando o jogador chega perto.
+    const near = clamp((d - 0.9) / 0.85, 0, 1);
     sprite.material.opacity = sprite.userData.baseOpacity * near;
     sprite.material.transparent = true;
   };
@@ -1798,6 +1953,7 @@ export async function createMareWorld3D({
       const [amp, speed] = entry.bob;
       entry.sprite.position.y =
         0.025 +
+        (entry.prop.lift ?? 0) +
         Math.sin(t * speed + (entry.prop.x + entry.prop.y) * 0.7) * amp;
     }
 
@@ -1910,6 +2066,29 @@ export async function createMareWorld3D({
     }
     // farol varrendo a baía
     lighthouseGlow.material.opacity = 0.3 + Math.sin(t * 2.2) * 0.08;
+    // Lote 11: farolim aceso, sino pulsando e gerador faiscando.
+    const lote11 = m.p?.lote11 ?? {};
+    const powered = Boolean(lote11.power);
+    const bellPulse = lote11RingPulse(m);
+    beaconGroup.rotation.y = powered ? t * 0.95 : t * 0.14;
+    beaconPool.material.opacity = powered ? 0.2 + Math.sin(t * 2.2) * 0.05 : 0;
+    beaconLight.intensity = powered ? 7.4 + Math.sin(t * 7.3) * 1.3 : 0;
+    beaconGlow.material.opacity = powered
+      ? 0.46 + Math.sin(t * 2.4) * 0.1
+      : 0.06 + Math.sin(t * 0.8) * 0.02;
+    bellRing.material.opacity = bellPulse * 0.22;
+    bellRing.scale.setScalar(1 + (1 - bellPulse) * 5.5);
+    // A neblina abre um pouco quando o sino toca, e volta devagar.
+    fog.density = 0.054 - bellPulse * 0.018;
+    genSpark.material.opacity = powered ? 0.3 + Math.sin(t * 19.3) * 0.22 : 0;
+    genSpark.rotation.y = t * 0.6;
+    chartBoard.material.color.setRGB(
+      0.9 + Math.sin(t * 1.3) * 0.05,
+      0.86 + Math.sin(t * 1.3) * 0.05,
+      0.74,
+    );
+    for (let i = 0; i < dockRopes.length; i++)
+      dockRopes[i].position.y = (i ? 0.92 : 0.55) + Math.sin(t * 1.1 + i) * 0.012;
     // marcos: terminal responde ao rank, âncora ao desfecho.
     terminalRings.forEach((ring, i) => {
       ring.rotation.z += dt * (0.4 + i * 0.25) * (m.p.rank > 1 ? 1.6 : 0.7);

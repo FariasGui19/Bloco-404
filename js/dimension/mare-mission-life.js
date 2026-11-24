@@ -1,4 +1,4 @@
-import {cell, canStand, move} from './mare-mission-model.js';
+import {cell, canStand, move, waterAt} from './mare-mission-model.js';
 
 import {details} from './mare-mission-details.js';
 import {pods} from './mare-mission-combat.js';
@@ -27,9 +27,22 @@ export function useDetail(m,site){
  return 'A rede guarda etiquetas de embarque do Núcleo X10. A evacuação começou antes do primeiro alarme.';
 }
 export function terrain(m){
- const cabin=[[5,5,7,6],[19,5,7,7],[6,20,7,7],[21,21,6,6]].some(([x,y,w,h])=>m.x>x+1&&m.x<x+w-1&&m.y>y+1&&m.y<y+h-1);
- if(cabin)return 'madeira';
- return !m.p.details.valvula&&m.x>13&&m.x<19&&m.y>8&&m.y<14?'resina':'pedra';
+ const cabin=[[5,5,7,6],[6,20,7,7]].some(([x,y,w,h])=>m.x>x+1&&m.x<x+w-1&&m.y>y+1&&m.y<y+h-1);
+ if(waterAt(m.x,m.y))return 'agua';
+ if(cabin||(m.x>22&&m.y>10&&m.y<22))return 'madeira';
+ return !m.p.details.valvula&&m.x>13&&m.x<19&&m.y>8&&m.y<14?'resina':'areia';
+}
+// Folhas de animação: mundo 3D troca os frames; testes e fallback continuam
+// usando enemyArt() para a pose canônica.
+export const enemyFamily = (e) => e?.hunter ? 'afogado' : e?.guardian ? 'guardiao' : null;
+export function enemyFrame(e, t = 0) {
+  if (!enemyFamily(e)) return 0;
+  if (e.phase === 'windup' || e.phase === 'strike' || e.phase === 'hurt') return 3;
+  if (e.phase === 'stunned' || e.phase === 'dissolve') return 2;
+  if (e.phase === 'hunt' || e.phase === 'search' || e.phase === 'rise') {
+    return 1 + (Math.floor((Number(t) || 0) * 3.4) % 2);
+  }
+  return Math.floor((Number(t) || 0) * 1.4) % 2;
 }
 // Animation mapping shared by renderer and tests.
 export function enemyArt(e){
@@ -69,7 +82,7 @@ export function createPursuit(){
    // Perception is shared and deliberately fallible: sight + footstep noise + a
    // periodic Nulo "ping" that hints at the player's pattern. Without any of
    // these, the pair patrols and searches instead of omnisciently homing.
-   const range=(m.crouched?9:16)+(m.p?.containment?.lanterna?4:0);
+   const range=((m.crouched?9:16)+(m.p?.containment?.lanterna?4:0))*(m.lampOn===false?0.6:1);
    let sighted=false,heard=false;
    for(const e of enemies){
      const dist=Math.hypot(m.x-e.x,m.y-e.y);

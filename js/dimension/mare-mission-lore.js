@@ -3,7 +3,7 @@
 export const lore = Object.freeze([
   { id: 'diario', x: 6.4, y: 9.2, art: 'diario-faroleiro', scale: .4, r: .4, label: 'Diário do faroleiro' },
   { id: 'lente', x: 18.8, y: 12.2, art: 'lente-farol', scale: .95, r: .7, label: 'Lente Fresnel abandonada' },
-  { id: 'mapa', x: 26.2, y: 8.8, art: 'mapa-evacuacao', scale: .82, r: .6, label: 'Mapa de evacuação' },
+  { id: 'mapa', x: 21.2, y: 10.4, art: 'mapa-evacuacao', scale: .82, r: .6, label: 'Mapa de evacuação' },
   { id: 'maca', x: 11.2, y: 25.2, art: 'maca-quarentena', scale: .95, r: .8, label: 'Maca de quarentena' },
   { id: 'prontuario', x: 7.4, y: 25.2, art: 'prontuario-quarentena', scale: .52, r: .45, label: 'Prontuário 07' },
   { id: 'caixa', x: 22.4, y: 22.4, art: 'caixa-sinal', scale: .56, r: .6, label: 'Caixa de sinalização' },

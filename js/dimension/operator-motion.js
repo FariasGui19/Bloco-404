@@ -60,7 +60,8 @@ export function createOperatorMotion() {
       if (c.grounded && !wasGrounded) impact = 0.13;
       wasGrounded = c.grounded;
       impact *= Math.exp(-dt * 13);
-      phase += dt * gait * (swim ? 5 : climb ? 6 : Math.min(18, speed * 1.9));
+      // Passada contida: acima de ~9 rad/s o |sin| do bob virava quique.
+      phase += dt * gait * (swim ? 5 : climb ? 6 : Math.min(9, speed * 1.15));
       pose.phase = phase;
       const a = 1 - Math.exp(-dt * 12),
         moving = Math.min(1, speed / 5),
@@ -84,13 +85,19 @@ export function createOperatorMotion() {
         flight && !reducedMotion ? clamp(-turn * 0.08, -0.42, 0.42) : 0,
         a,
       );
+      // Bob senoidal filtrado: sem cúspide, com amplitude caindo no sprint.
+      const bobTarget = reducedMotion
+        ? 0
+        : state === "walk"
+          ? (0.5 - 0.5 * Math.cos(phase * 2)) *
+            (0.017 - 0.005 * Math.min(1, speed / 8)) *
+            moving
+          : state === "idle"
+            ? Math.sin(time * 1.7) * 0.005 + Math.sin(time * 0.83) * 0.003
+            : 0;
       pose.bob = reducedMotion
         ? 0
-        : (state === "walk"
-            ? Math.abs(Math.sin(phase)) * 0.045 * moving
-            : state === "idle"
-              ? Math.sin(time * 1.7) * 0.007 + Math.sin(time * 0.83) * 0.003
-              : 0) - impact;
+        : mix(pose.bob, bobTarget, 1 - Math.exp(-dt * 22)) - impact;
       const weight =
         archetype === "motor_bio_forja"
           ? 0.7

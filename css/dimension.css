@@ -174,11 +174,33 @@ body.dimension-active {
   flex-direction: column;
   gap: 7px;
   padding: 18px 21px;
-  width: 323px;
+  width: 384px;
   background: linear-gradient(90deg, #172b3ce8, #223244a8);
   border-left: 2px solid #a1f4d9;
   border-top: 1px solid #bad5dc36;
   box-shadow: 0 10px 35px #1020362b;
+}
+.dimension-status {
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 14px;
+}
+.dimension-status-text {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  min-width: 0;
+  flex: 1;
+}
+.dimension-portrait {
+  width: 66px;
+  height: 66px;
+  flex: 0 0 66px;
+  object-fit: cover;
+  border: 1px solid #a1f4d966;
+  background: #0d1b27;
+  box-shadow: 0 0 0 1px #0b1822 inset;
+  filter: saturate(0.92) contrast(1.03);
 }
 .dimension-label {
   font-size: 8px;
@@ -228,6 +250,82 @@ body.dimension-active {
   width: 144px;
   height: 144px;
   image-rendering: pixelated;
+}
+/* Trilha do Limiar: leitura linear do caminho e do que já foi feito. */
+.dimension-trail {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  width: 144px;
+  padding: 6px 8px 7px;
+  border: 1px solid #7fd8c033;
+  border-radius: 3px;
+  background: linear-gradient(180deg, #152231cc, #0f1a26dd);
+  color: #cfe6e1;
+  font-size: 7px;
+  letter-spacing: 1.2px;
+}
+.dimension-trail-label {
+  color: #8df4d7aa;
+}
+.dimension-trail-next {
+  white-space: nowrap;
+  letter-spacing: 0.9px;
+}
+.dimension-trail-track {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  width: 100%;
+}
+.dimension-trail-track::before,
+.dimension-trail-track::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: #8df4d733;
+}
+.dimension-trail-pip {
+  width: 9px;
+  height: 9px;
+  flex: 0 0 auto;
+  border: 1px solid #7d93a0;
+  background: #1b2a35;
+  transform: rotate(45deg);
+  transition:
+    background 160ms ease,
+    border-color 160ms ease,
+    box-shadow 160ms ease;
+}
+.dimension-trail-pip.done {
+  background: #8df4d7;
+  border-color: #b8ffe9;
+  box-shadow: 0 0 6px #8df4d788;
+}
+.dimension-trail-pip.next {
+  border-color: #ffd27a;
+  box-shadow: 0 0 7px #ffd27a99;
+  animation: limiar-trail-next 1.4s steps(2, end) infinite;
+}
+.dimension-trail-pip[data-goal="true"] {
+  border-radius: 50%;
+  transform: none;
+}
+.dimension-trail-pip[data-goal="true"].done {
+  background: #ffd27a;
+  border-color: #fff0c8;
+}
+@keyframes limiar-trail-next {
+  50% {
+    border-color: #ffe6b0;
+    box-shadow: 0 0 2px #ffd27a55;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .dimension-trail-pip.next {
+    animation: none;
+  }
 }
 .dimension-objective {
   position: absolute;
@@ -313,6 +411,35 @@ body.dimension-active {
   background: linear-gradient(transparent, #25304b99, transparent);
   padding: 20px;
   z-index: 3;
+}
+.dimension-rupture:before {
+  content: "";
+  position: absolute;
+  inset: -12%;
+  background: url("../assets/textures/setor-limiar-lote10/ruptura-veu.png")
+    center / cover;
+  opacity: 0.34;
+  mix-blend-mode: screen;
+  animation: rupture-veil 1.6s linear infinite;
+  pointer-events: none;
+}
+@keyframes rupture-veil {
+  0% {
+    transform: translate3d(-2%, 1%, 0) scale(1.04);
+    opacity: 0.28;
+  }
+  50% {
+    opacity: 0.55;
+  }
+  100% {
+    transform: translate3d(2%, -1%, 0) scale(1.1);
+    opacity: 0.28;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .dimension-rupture:before {
+    animation: none;
+  }
 }
 .dimension-rupture small {
   font-size: 10px;
@@ -666,6 +793,30 @@ body.dimension-active {
   opacity: 0.55;
   cursor: wait;
 }
+/* Telas baixas: a coluna direita precisa caber abaixo do card do núcleo. */
+@media (max-height: 720px) {
+  .dimension-navigation {
+    bottom: 92px;
+    gap: 4px;
+  }
+  .dimension-map {
+    width: 72px;
+    height: 72px;
+  }
+  .dimension-landmark-list {
+    display: none;
+  }
+  .dimension-trail {
+    width: 140px;
+    padding: 4px 6px 5px;
+    font-size: 6px;
+    gap: 3px;
+  }
+  .dimension-trail-pip {
+    width: 7px;
+    height: 7px;
+  }
+}
 @media (max-width: 520px) {
   .dimension-nucleo {
     top: 174px;
@@ -756,6 +907,8 @@ body.dimension-active {
 .mare-compass-track i:first-child { left:8%; }
 .mare-compass-track i:nth-of-type(2) { right:8%; }
 .mare-compass-track b { position:absolute;left:50%;top:-3px;width:1px;height:7px;background:var(--mare-amber); }
+.mare-compass-track .mare-target { position:absolute;top:-4px;width:3px;height:9px;transform:translateX(-50%);background:var(--mare-magenta);box-shadow:0 0 5px rgba(212,91,216,.8);display:none; }
+.mare-compass-track .mare-target.chegou { background:#8fd8c6;box-shadow:0 0 6px rgba(143,216,198,.9); }
 .mare-signal { text-align:right;text-shadow:0 1px 3px #000; }
 .mare-signal small { display:block;font:7px/1.2 "Courier New",monospace;letter-spacing:.22em;color:#6f8982; }
 .mare-signal-bars { display:flex;gap:2px;justify-content:flex-end;margin:3px 0 2px; }
@@ -771,7 +924,7 @@ body.dimension-active {
 .mare-objective-row { grid-column:1;display:flex;align-items:baseline;gap:9px;min-width:0; }
 .mare-objective-row > span { flex:0 0 auto;font:7px/1 "Courier New",monospace;letter-spacing:.22em;color:#68827c; }
 .mare-mission .mare-objective { margin:0;color:#e3c283;font:10px/1.35 "Courier New",monospace;letter-spacing:.045em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap; }
-.mare-vitals { grid-column:2;grid-row:1;display:flex;align-items:center;gap:14px;font:8px/1 "Courier New",monospace;letter-spacing:.1em;color:#9fb7af; }
+.mare-vitals { grid-column:2;grid-row:1;display:flex;align-items:center;gap:10px;font:8px/1 "Courier New",monospace;letter-spacing:.1em;color:#9fb7af; }
 .mare-vital { display:flex;align-items:center;gap:5px; }
 .mare-vital small { font:7px/1 "Courier New",monospace;letter-spacing:.16em;color:#647f78; }
 .mare-vital b { color:#c6d8cb;font-weight:400;min-width:16px; }
@@ -792,8 +945,8 @@ body.dimension-active {
 .mare-readout { position:absolute!important;width:1px!important;height:1px!important;padding:0!important;margin:-1px!important;overflow:hidden!important;clip-path:inset(50%)!important;white-space:nowrap!important;border:0!important; }
 .mare-keys { grid-column:1/-1;margin:4px 0 0;font:7px/1.4 "Courier New",monospace;letter-spacing:.055em;color:#546c66;white-space:nowrap;overflow:hidden;text-overflow:ellipsis; }
 .mare-move,.mare-look { position:absolute;z-index:6;right:16px;display:grid;grid-template-columns:repeat(4,24px);gap:3px;opacity:.36;transition:opacity .2s; }
-.mare-move { bottom:112px;grid-template-columns:repeat(6,auto); }
-.mare-look { bottom:84px;grid-template-columns:repeat(4,24px); }
+.mare-move { bottom:196px;grid-template-columns:repeat(6,auto); }
+.mare-look { bottom:168px;grid-template-columns:repeat(4,24px); }
 .mare-move:hover,.mare-look:hover,.mare-move:focus-within,.mare-look:focus-within { opacity:.95; }
 .mare-move button,.mare-look button { padding:0!important;width:auto;height:21px;font-size:8px;background:rgba(4,12,16,.52);border-color:rgba(71,104,99,.4); }
 .mare-look button { width:24px; }
@@ -806,6 +959,44 @@ body.dimension-active {
 .mare-mission.fenda-aberta .mare-signal-text { color:#e3bb78; }
 .mare-fim .mare-hud-foot { background:linear-gradient(transparent,rgba(13,5,10,.78) 38%,rgba(8,3,7,.96)); }
 .mare-fim .mare-frame::after { background:radial-gradient(ellipse at 50% 45%,transparent 24%,rgba(18,2,10,.46) 100%); }
+.mare-perto .mare-frame::after { background:radial-gradient(ellipse at 50% 45%,transparent 26%,rgba(40,3,18,.44) 100%); }
+.mare-perto .mare-rec { background:#ff3b3b;box-shadow:0 0 10px #ff3b3b; }
+.mare-perto canvas { filter:contrast(1.1) saturate(.88) hue-rotate(-5deg); }
+.mare-overload .mare-frame::before { opacity:.82;background:repeating-linear-gradient(0deg,rgba(120,0,66,.2) 0 1px,transparent 1px 2px); }
+.mare-overload .mare-frame::after { background:radial-gradient(ellipse at 50% 45%,transparent 18%,rgba(48,0,30,.58) 100%); }
+.mare-overload canvas { filter:contrast(1.2) saturate(1.35) hue-rotate(-10deg); }
+.mare-overload .mare-message { color:#f0a7dc; }
+.mare-overload .mare-vitals { color:#f0a7dc; }
+.mare-threat { display:flex;gap:2px;justify-content:flex-end;margin-top:4px; }
+.mare-threat i { width:11px;height:2px;background:#241719;border:1px solid #47302f; }
+.mare-threat i.on { background:#c8444a;border-color:#e6796f;box-shadow:0 0 5px rgba(200,68,74,.75); }
+.mare-zone-name { display:block;margin-top:3px;font:7px/1 "Courier New",monospace;letter-spacing:.18em;color:#7c9a91;font-weight:400; }
+.mare-steps { grid-column:1/-1;display:flex;gap:5px;margin-top:4px;flex-wrap:wrap; }
+.mare-steps span { padding:2px 6px;border:1px solid #2c403c;background:rgba(4,12,16,.55);color:#688078;font:7px/1 "Courier New",monospace;letter-spacing:.12em; }
+.mare-steps span.ativo { color:#e0b56a;border-color:#8a6b3c;box-shadow:inset 0 -1px #8a6b3c; }
+.mare-steps span.feito { color:#8fd8c6;border-color:#3f6e66;background:rgba(24,58,52,.5); }
+.mare-steps span.feito::before { content:"✓ "; }
+.mare-letterbox { position:absolute;inset:0;z-index:3;pointer-events:none; }
+.mare-letterbox::before,.mare-letterbox::after { content:"";position:absolute;left:0;right:0;height:0;background:#000;transition:height .55s ease-out; }
+.mare-letterbox::before { top:0; }
+.mare-letterbox::after { bottom:0; }
+.mare-abertura .mare-letterbox::before,.mare-abertura .mare-letterbox::after { height:11%; }
+.mare-abertura .mare-hud { opacity:.28; }
+.mare-abertura .mare-frame::before { opacity:.75; }
+.mare-abertura .mare-rec { background:#d8b070;box-shadow:0 0 6px #d8b070; }
+.mare-mapa .mare-frame::after { box-shadow:inset 0 0 0 2px rgba(111,201,187,.22), inset 0 0 120px rgba(1,6,10,.5); }
+.mare-virada .mare-zone-name { animation:mare-zone-in 1.8s ease-out both; }
+.mare-cansado .mare-frame::after { background:radial-gradient(ellipse at 50% 45%,transparent 22%,rgba(25,3,8,.52) 100%); }
+.mare-escuro .mare-frame::after { background:radial-gradient(ellipse at 50% 45%,transparent 18%,rgba(0,2,5,.62) 100%); }
+.mare-esquiva canvas { filter:contrast(1.16) saturate(.9) brightness(1.08); }
+.mare-esquiva .mare-frame::after { background:radial-gradient(ellipse at 50% 45%,transparent 30%,rgba(90,190,180,.12) 100%); }
+.mare-colapso canvas { filter:contrast(1.32) saturate(1.5) hue-rotate(-16deg); }
+.mare-colapso .mare-frame::before { opacity:.9;background:repeating-linear-gradient(0deg,rgba(170,0,90,.28) 0 1px,transparent 1px 2px); }
+.mare-colapso .mare-zone-name { color:#f0a7dc; }
+@keyframes mare-zone-in { 0%{opacity:0;transform:translateY(3px);letter-spacing:.5em} 18%{opacity:1;transform:none;letter-spacing:.18em} 80%{opacity:1} 100%{opacity:.85} }
+@keyframes mare-threat-jitter { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-1px)} 75%{transform:translateX(1px)} }
+.mare-perto .mare-hud { animation:mare-threat-jitter .22s steps(2,end) infinite; }
+@media(prefers-reduced-motion:reduce){ .mare-perto .mare-hud{animation:none} }
 @keyframes mare-hud-in { from{opacity:0;transform:translateY(4px)} to{opacity:1;transform:none} }
 @keyframes mare-prompt-in { from{opacity:0;transform:translate(-50%,3px)} to{opacity:1;transform:translate(-50%,0)} }
 @keyframes mare-rec { 0%,58%{opacity:1} 59%,100%{opacity:.25} }
@@ -819,6 +1010,9 @@ body.dimension-active {
  .mare-hud-foot{padding:26px 11px 8px;gap:2px 10px}
  .mare-vitals{gap:8px;font-size:7px}
  .mare-meter{width:30px}
+ .mare-steps span{padding:2px 4px;font-size:6px;letter-spacing:.06em}
+ .mare-threat i{width:7px}
+ .mare-zone-name{font-size:6px}
  .mare-keys{display:none}
  .mare-controls button{padding:5px 6px;font-size:7px}
  .mare-mission aside{bottom:31%;font-size:9px}

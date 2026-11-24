@@ -29,8 +29,8 @@ export function initDimensionModule({
   root.innerHTML = `<div class="dimension-viewport"></div><div class="dimension-scanlines" aria-hidden="true"></div>
  <header class="dimension-header"><div class="dimension-brand">BLOCO <b>404</b> <span>EVOLUÇÃO DIMENSIONAL / 01</span></div><div class="dimension-heading">N · 000° · S</div><button class="dimension-exit" type="button">ESC · VOLTAR AO 2D</button></header>
  <div class="dimension-title"><span>ARQUIPÉLAGO DAS ROTAS PERDIDAS</span><h1>SETOR LIMIAR</h1><p>Além do plano. A mesma consciência.</p></div>
- <aside class="dimension-status"><span class="dimension-label">OPERADOR / ECO ATIVO</span><strong class="dimension-suit"></strong><span class="dimension-level"></span><div class="dimension-rule"></div><span class="dimension-vitals"></span><span class="dimension-flight"></span><small class="dimension-performance"></small></aside>
- <aside class="dimension-navigation"><canvas class="dimension-map" width="144" height="144" aria-label="Minimapa: A âncora, F farol, R ruínas, P píer, O anel; operador branco"></canvas><div class="dimension-landmark-list" aria-label="Marcos do setor"></div></aside>
+ <aside class="dimension-status"><img class="dimension-portrait" alt="Retrato do operador" width="66" height="66" src="/assets/sprites/operador/operador-neutro.png"><div class="dimension-status-text"><span class="dimension-label">OPERADOR / ECO ATIVO</span><strong class="dimension-suit"></strong><span class="dimension-level"></span><div class="dimension-rule"></div><span class="dimension-vitals"></span><span class="dimension-flight"></span><small class="dimension-performance"></small></div></aside>
+ <aside class="dimension-navigation"><canvas class="dimension-map" width="144" height="144" aria-label="Minimapa: A âncora, F farol, R ruínas, P píer, O anel; operador branco"></canvas><div class="dimension-trail" aria-label="Trilha do Limiar"><span class="dimension-trail-label">TRILHA DO LIMIAR</span><div class="dimension-trail-track" aria-hidden="true"></div><span class="dimension-trail-next" aria-live="polite">PILAR 1</span></div><div class="dimension-landmark-list" aria-label="Marcos do setor"></div></aside>
  <div class="dimension-rupture" role="status"><small>FREQUÊNCIA 66.6 // DESCOMPRESSÃO</small><strong>CONTENÇÃO DIMENSIONAL ROMPIDA</strong><span>ESPAÇO TRIDIMENSIONAL DESBLOQUEADO</span></div>
  <div class="dimension-objective"><span>OBJETIVO EXPERIMENTAL</span><p class="dimension-notice" aria-live="polite">Alcance o Núcleo de Âncora no cume. O plano isométrico era uma contenção para estabilizar a consciência do operador.</p></div>
  <div class="dimension-prompt"></div>
@@ -51,25 +51,36 @@ export function initDimensionModule({
       audio ??= new (window.AudioContext || window.webkitAudioContext)();
       audio.resume().catch(() => {});
       const now = audio.currentTime;
-      for (let i = 0; i < 3; i++) {
+      // Presets curtos: passo do operador, pilar ativado e âncora estável.
+      const presets = {
+        step: { base: 96, top: 62, gain: 0.012, hz: 0.16, voices: 1, type: "triangle" },
+        pillar: { base: 320, top: 640, gain: 0.028, hz: 0.7, voices: 2, type: "sine" },
+        anchor: { base: 180, top: 720, gain: 0.032, hz: 1.2, voices: 3, type: "sine" },
+        rupture: { base: 110, top: 440, gain: 0.035, hz: 1.4, voices: 3, type: "sine" },
+        lantern: { base: 520, top: 780, gain: 0.02, hz: 0.5, voices: 2, type: "triangle" },
+        crate: { base: 140, top: 90, gain: 0.03, hz: 0.22, voices: 1, type: "triangle" },
+        shrine: { base: 240, top: 960, gain: 0.03, hz: 1.6, voices: 3, type: "sine" },
+      };
+      const preset = presets[kind] ?? presets.anchor;
+      for (let i = 0; i < preset.voices; i++) {
         const oscillator = audio.createOscillator(),
           gain = audio.createGain();
-        oscillator.type = "sine";
+        oscillator.type = preset.type;
         oscillator.frequency.setValueAtTime(
-          (kind === "rupture" ? 110 : 220) * [1, 1.5, 2][i],
+          preset.base * [1, 1.5, 2][i],
           now,
         );
         oscillator.frequency.exponentialRampToValueAtTime(
-          (kind === "rupture" ? 440 : 660) * [1, 1.25, 1.5][i],
-          now + 1,
+          preset.top * [1, 1.25, 1.5][i],
+          now + preset.hz,
         );
         gain.gain.setValueAtTime(0.0001, now);
-        gain.gain.exponentialRampToValueAtTime(0.035, now + 0.08);
-        gain.gain.exponentialRampToValueAtTime(0.0001, now + 1.4);
+        gain.gain.exponentialRampToValueAtTime(preset.gain, now + 0.06);
+        gain.gain.exponentialRampToValueAtTime(0.0001, now + preset.hz + 0.4);
         oscillator.connect(gain);
         gain.connect(audio.destination);
         oscillator.start(now);
-        oscillator.stop(now + 1.5);
+        oscillator.stop(now + preset.hz + 0.5);
       }
     } catch {
       /* Silent mode is always a valid fallback. */

@@ -7,9 +7,11 @@ export function loftGeometry(rings, sides = 10, { faceUV = false } = {}) {
     uv = [],
     front = [],
     back = [];
+  // Um vértice por lado, fechando o anel em módulo: a costura deixa de duplicar
+  // normais e some a linha vertical que cortava rosto, pescoço e peito.
   for (let j = 0; j < rings.length; j++) {
     const [y, rx, rz, cz = 0] = rings[j];
-    for (let i = 0; i <= sides; i++) {
+    for (let i = 0; i < sides; i++) {
       const a = (i / sides) * Math.PI * 2,
         x = Math.sin(a) * rx,
         z = Math.cos(a) * rz + cz;
@@ -22,13 +24,16 @@ export function loftGeometry(rings, sides = 10, { faceUV = false } = {}) {
   }
   for (let j = 0; j < rings.length - 1; j++)
     for (let i = 0; i < sides; i++) {
-      const a = j * (sides + 1) + i,
-        b = a + sides + 1,
+      const next = (i + 1) % sides,
+        a = j * sides + i,
+        b = (j + 1) * sides + i,
+        c = j * sides + next,
+        d = (j + 1) * sides + next,
         target =
           faceUV && Math.cos(((i + 0.5) / sides) * Math.PI * 2) > 0.35
             ? front
             : back;
-      target.push(a, a + 1, b, a + 1, b + 1, b);
+      target.push(a, c, b, c, d, b);
     }
   // Close both ends without a blocky flat silhouette at the chin/crown.
   for (const [j, reverse] of [
@@ -40,8 +45,9 @@ export function loftGeometry(rings, sides = 10, { faceUV = false } = {}) {
     positions.push(0, y, cz);
     uv.push(0.5, j ? 1 : 0);
     for (let i = 0; i < sides; i++) {
-      const a = j * (sides + 1) + i;
-      back.push(...(reverse ? [index, a + 1, a] : [index, a, a + 1]));
+      const a = j * sides + i,
+        next = j * sides + ((i + 1) % sides);
+      back.push(...(reverse ? [index, next, a] : [index, a, next]));
     }
   }
   const g = new T.BufferGeometry();

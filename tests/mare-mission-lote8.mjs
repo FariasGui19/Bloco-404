@@ -1,0 +1,79 @@
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import path from 'node:path';
+import {fileURLToPath} from 'node:url';
+import {createMission, canStand} from '../js/dimension/mare-mission-model.js';
+import {
+  lote8Names, lote8Decor, lote8Props, isInteractiveLote8,
+  useLote8, lote8Readout, conchaRegistrada,
+} from '../js/dimension/mare-mission-lote8.js';
+
+const root = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
+const read = (...p) => fs.readFileSync(path.join(root, ...p), 'utf8');
+const spriteDir = path.join(root, 'assets/sprites/mare-missao-lote8');
+const sourceDir = path.join(root, 'assets/source-art/mare-missao-lote8');
+const mission = read('js/dimension/mare-mission.js');
+const world = read('js/dimension/mare-mission-world3d.js');
+const model = read('js/dimension/mare-mission-model.js');
+const prep = read('tools/preparar-mare-lote8.py');
+
+// 1. Dez sprites próprios, RGBA, PSX-size, com fonte autoral.
+assert.equal(lote8Names.length, 10, 'lote 8 entrega dez artes');
+for (const name of lote8Names) {
+  const file = path.join(spriteDir, `${name}.png`);
+  assert.ok(fs.existsSync(file), `sprite ausente: ${name}`);
+  assert.ok(fs.existsSync(path.join(sourceDir, `${name}.png`)), `fonte ausente: ${name}`);
+  const png = fs.readFileSync(file);
+  assert.equal(png.toString('ascii', 1, 4), 'PNG');
+  assert.equal(png[25], 6, `${name} é RGBA`);
+  const width = png.readUInt32BE(16), height = png.readUInt32BE(20);
+  assert.ok(width <= 192 && height <= 192, `${name} cabe no sprite PSX`);
+  assert.ok(width >= 40 && height >= 40, `${name} tem silhueta legível`);
+  assert.ok(png.length > 600, `${name} tem detalhe suficiente`);
+}
+assert.match(prep, /NEAREST/);
+assert.match(prep, /MinFilter\(5\)/);
+assert.match(prep, /MAGENTA|magenta/);
+
+// 2. Nada reutilizado do lote 7 e distribuição real pela orla.
+const lote7 = read('js/dimension/mare-mission-lote7.js');
+for (const name of lote8Names) assert.ok(!lote7.includes(`'${name}'`), `${name} não vem do lote 7`);
+assert.ok(lote8Decor.length >= 10);
+for (const d of lote8Decor) {
+  assert.ok(d.x >= 0 && d.x <= 30 && d.y >= 0 && d.y <= 30, `${d.art} dentro do setor`);
+  assert.ok(lote8Names.includes(d.art), `${d.art} tem arte declarada`);
+}
+const arts = new Set(lote8Decor.map((d) => d.art));
+assert.ok(arts.size >= 8, 'a orla usa quase todas as artes novas');
+
+// 3. Concha interativa: persiste, dá leitura e não trava a passagem.
+assert.equal(lote8Props.length, 1);
+const concha = lote8Props[0];
+assert.ok(isInteractiveLote8(concha));
+assert.ok(!isInteractiveLote8(lote8Decor[0]));
+assert.ok(canStand(concha.x + 0.9, concha.y), 'concha não fecha o caminho');
+assert.ok([[0.8,0],[-0.8,0],[0,0.8],[0,-0.8]].some(([dx,dy]) => canStand(concha.x+dx, concha.y+dy)));
+const m = createMission({});
+assert.equal(conchaRegistrada(m), false);
+assert.match(lote8Readout(m), /0\/1/);
+m.x = concha.x; m.y = concha.y - 1;
+assert.match(useLote8(m, concha), /CONCHA CROMÁTICA/);
+assert.equal(m.p.lote8.concha, true);
+assert.match(useLote8(m, concha), /já está registrada/);
+assert.match(lote8Readout(m), /1\/1/);
+assert.deepEqual(createMission({mareMission: {lote8: {concha: true, lixo: true}}}).p.lote8, {concha: true});
+
+// 4. Integração: carregamento, mundo 3D, lista de alvos e fallback 2D.
+assert.match(mission, /mare-mission-lote8\.js/);
+assert.match(mission, /lote8Names\.includes\(n\) \? "mare-missao-lote8"/);
+assert.match(mission, /\.\.\.lote8Props/);
+assert.match(mission, /\.\.\.lote8Decor\.map/);
+assert.match(mission, /\.\.\.lote8Props\.filter\(isInteractiveLote8\)/);
+assert.match(mission, /isInteractiveLote8\(near\) \? useLote8/);
+assert.match(mission, /lote8Readout\(m\)/);
+assert.match(mission, /if \(lote8Decor\.some\(\(d\) => d\.art === n\)\) return \[n, null\];/);
+assert.match(model, /lote8Props/);
+for (const name of lote8Names) assert.match(world, new RegExp(`"${name}":`), `altura 3D de ${name}`);
+assert.match(world, /if \(!tex\) return null;/);
+
+console.log('Maré lote 8: 10 props autorais, concha interativa, alturas 3D e fallback OK');

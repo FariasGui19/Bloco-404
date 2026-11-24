@@ -45,7 +45,9 @@ assert.equal(m.stamina, 40); // once per run: no farming stamina
 m.x = 16.5; m.y = 10.5;
 assert.equal(terrain(m), "resina");
 assert.match(useDetail(m, details.find((d) => d.id === "valvula")), /Resina drenada/);
-assert.equal(terrain(m), "pedra");
+assert.equal(terrain(m), "areia");
+assert.equal(terrain({ x: 24, y: 20, p: m.p }), "madeira"); // píer de serviço
+assert.equal(terrain({ x: 29, y: 16, p: m.p }), "agua"); // mar aberto
 assert.equal(terrain({ x: 7.5, y: 22.5, p: m.p }), "madeira");
 m.x = 17.5; m.y = 23.4;
 assert.match(useDetail(m, details.find((d) => d.id === "boia")), /Baliza/);
@@ -70,7 +72,7 @@ assert.deepEqual({ x: w.x, y: w.y }, before);
 // Pursuit: flow field routes both enemies around cabin walls, states wind up/strike/recover.
 const sim = createMission({});
 sim.x = 16.5; sim.y = 28.5; sim.idle = 0;
-const enemies = [{ x: 27, y: 16 }, { x: 4, y: 17 }];
+const enemies = [{ x: 23, y: 18 }, { x: 10, y: 18 }];
 const pursuit = createPursuit();
 const start = enemies.map((e) => Math.hypot(e.x - sim.x, e.y - sim.y));
 for (let i = 0; i < 30 * 45; i++) {
@@ -99,7 +101,7 @@ assert.equal(enemyArt({ phase: "search" }), "infectado-busca");
 // Stealth: before any Nulo ping or noise, the pair patrols instead of homing.
 const hidden = createMission({});
 hidden.x = 16.5; hidden.y = 28.5; hidden.idle = 0;
-const guards = [{ x: 27, y: 16 }, { x: 4, y: 17 }], calm = createPursuit();
+const guards = [{ x: 26, y: 10 }, { x: 4, y: 10 }], calm = createPursuit();
 for (let i = 0; i < 6 * 30; i++) calm.update(hidden, guards, 1 / 30, "mare_astral");
 assert.equal(calm.track, null);
 assert.ok(guards.every((e) => Math.hypot(e.x - hidden.x, e.y - hidden.y) > 10), "no omniscient chase");

@@ -7,6 +7,7 @@ import { createCameraMotion } from "./camera-motion.js";
 import { navigationBearing } from "./sector-layout.js";
 import * as T from "../vendor/three.module.js";
 import { createSector } from "./sector-scene.js";
+import { createWayfinding } from "./sector-wayfinding.js";
 import { createOperator } from "./operator.js";
 import { SpatialController } from "./controller.js";
 import {
@@ -56,8 +57,16 @@ export function createSpatialWorld({
     events = { signal: listener.signal };
   let world, masterMorpher, morpherPanel;
   try {
-    world = createSector();
+    world = createSector({ state });
     const anchorPOI = world.layout.pois.find((p) => p.id === "limiar.anchor");
+    // Trilha de pilares: orienta o caminho e responde visualmente ao E.
+    const wayfinding = createWayfinding({
+      scene: world.scene,
+      heightAt: terrainHeight,
+      state,
+      trailMaterial: world.materials?.trail ?? null,
+      sigilMap: world.materials?.sigilTexture ?? null,
+    });
     const camera = new T.PerspectiveCamera(58, 1, 0.12, 420),
       controller = new SpatialController(state);
     let operator = createOperator(state.progress, state.player),
@@ -312,6 +321,29 @@ export function createSpatialWorld({
       landmarkRows.set(poi.id, row);
     }
 
+    // Trilha linear: quatro pilares e o núcleo, com o próximo destino em âmbar.
+    const trailTrack = el(".dimension-trail-track"),
+      trailNext = el(".dimension-trail-next"),
+      trailPips = Array.from({ length: wayfinding.pylons.length + 1 }, (_, i) => {
+        const pip = document.createElement("span");
+        pip.className = "dimension-trail-pip";
+        pip.dataset.step = String(i + 1);
+        if (i === wayfinding.pylons.length) pip.dataset.goal = "true";
+        trailTrack.append(pip);
+        return pip;
+      });
+    let trailState = "";
+    function updateTrail(c) {
+      const goal = wayfinding.objective(c),
+        key = `${wayfinding.progress.lit}:${goal.index}`;
+      trailNext.textContent = `${goal.label} · ${Math.round(goal.distance)} m`;
+      if (key === trailState) return;
+      trailState = key;
+      trailPips.forEach((pip, i) => {
+        pip.classList.toggle("done", i < wayfinding.progress.lit);
+        pip.classList.toggle("next", i === goal.index);
+      });
+    }
     function drawMap() {
       mapContext.drawImage(minimap, 0, 0);
       const dot = (x, z, color, r) => {
@@ -337,6 +369,52 @@ export function createSpatialWorld({
           (poi.z / 256 + 0.5) * 144 + 2.4,
         );
       }
+      // Trilha do Limiar: linha guia e pilares acesos no minimapa.
+      const route = wayfinding.trail.map((pad) => [pad.position.x, pad.position.z]);
+      mapContext.strokeStyle = "#8df4d766";
+      mapContext.lineWidth = 1.5;
+      mapContext.beginPath();
+      route.forEach(([rx, rz], i) => {
+        const a = (rx / 256 + 0.5) * 144,
+          b = (rz / 256 + 0.5) * 144;
+        i ? mapContext.lineTo(a, b) : mapContext.moveTo(a, b);
+      });
+      mapContext.stroke();
+      for (const pylon of wayfinding.dots())
+        dot(
+          pylon.x,
+          pylon.z,
+          pylon.on ? "#9cf7dc" : "#39505c",
+          pylon.on ? 3.4 : 2.4,
+        );
+      // Adereços: o que ainda responde ao E aparece âmbar; o já usado, apagado.
+      for (const prop of world.props?.dots?.() ?? [])
+        dot(
+          prop.x,
+          prop.z,
+          prop.on ? "#5b6a70" : prop.kind === "shrine" ? "#c3a0eb" : "#ffc887",
+          prop.kind === "shrine" ? 2.8 : 2,
+        );
+      // Rota até o próximo objetivo: linha tracejada + anel pulsante.
+      const goal = wayfinding.objective(controller);
+      const gx = (goal.x / 256 + 0.5) * 144,
+        gy = (goal.z / 256 + 0.5) * 144,
+        px = (controller.x / 256 + 0.5) * 144,
+        py = (controller.z / 256 + 0.5) * 144;
+      mapContext.save();
+      mapContext.setLineDash([3, 3]);
+      mapContext.strokeStyle = "#ffd27a";
+      mapContext.lineWidth = 1.2;
+      mapContext.beginPath();
+      mapContext.moveTo(px, py);
+      mapContext.lineTo(gx, gy);
+      mapContext.stroke();
+      mapContext.restore();
+      mapContext.strokeStyle = "#ffd27a";
+      mapContext.lineWidth = 1.4;
+      mapContext.beginPath();
+      mapContext.arc(gx, gy, 5 + Math.sin(Date.now() / 260) * 1.2, 0, Math.PI * 2);
+      mapContext.stroke();
       dot(controller.x, controller.z, "white", 3);
       mapContext.strokeStyle = "white";
       const x = (controller.x / 256 + 0.5) * 144,
@@ -346,12 +424,57 @@ export function createSpatialWorld({
       mapContext.lineTo(x - Math.sin(yaw) * 8, z - Math.cos(yaw) * 8);
       mapContext.stroke();
     }
+    // Entre pilar e adereço, responde o que estiver mais perto do operador.
+    function nearestSignal(c) {
+      const pylon = wayfinding.nearest(c),
+        prop = world.props?.nearest(c) ?? null;
+      if (!pylon) return prop ? { kind: "prop", target: prop } : null;
+      if (!prop) return { kind: "pylon", target: pylon };
+      const dPylon = Math.hypot(c.x - pylon.def.x, c.z - pylon.def.z),
+        dProp = Math.hypot(c.x - prop.def.x, c.z - prop.def.z);
+      return dPylon <= dProp
+        ? { kind: "pylon", target: pylon }
+        : { kind: "prop", target: prop };
+    }
+    function signalPrompt(c) {
+      const signal = nearestSignal(c);
+      if (!signal) return "";
+      return signal.kind === "pylon"
+        ? wayfinding.prompt(c)
+        : (world.props?.prompt(c) ?? "");
+    }
     function interact() {
       actions.presentInteraction();
-      const c = controller,
-        nearAnchor =
-          Math.hypot(c.x - anchorPOI.x, c.z - anchorPOI.z) < 5 &&
-          Math.abs(c.y - terrainHeight(anchorPOI.x, anchorPOI.z)) < 4;
+      const c = controller;
+      const signal = nearestSignal(c);
+      const pylon =
+        signal?.kind === "pylon" ? wayfinding.activate(signal.target) : null;
+      if (pylon) {
+        const p = wayfinding.progress;
+        sound("pillar");
+        notice.textContent = p.complete
+          ? "NÚCLEO DE ÂNCORA ACESO · os quatro pilares abriram o caminho."
+          : `PILAR ${p.lit}/${p.total} ACESO · a runa aponta para o núcleo.`;
+        return;
+      }
+      // Adereços do lote 11: lanterna acende, caixote abre, estátua desperta.
+      const prop =
+        signal?.kind === "prop" ? world.props.activate(signal.target) : null;
+      if (prop) {
+        const { kind } = prop.def;
+        sound(kind === "crate" ? "crate" : kind === "shrine" ? "shrine" : "lantern");
+        const seen = `${world.props.lit}/${world.props.total}`;
+        notice.textContent =
+          kind === "lantern"
+            ? `LANTERNA ACESA · ${seen} sinais do Limiar.`
+            : kind === "crate"
+              ? `CAIXOTE ABERTO · suprimentos recuperados · ${seen} sinais do Limiar.`
+              : "ESTÁTUA DESPERTA · a runa do Limiar reconhece o operador.";
+        return;
+      }
+      const nearAnchor =
+        Math.hypot(c.x - anchorPOI.x, c.z - anchorPOI.z) < 5 &&
+        Math.abs(c.y - terrainHeight(anchorPOI.x, anchorPOI.z)) < 4;
       const nearBoat =
         Math.hypot(c.x - world.boat.position.x, c.z - world.boat.position.z) <
           5 && Math.abs(c.y) < 7;
@@ -434,8 +557,13 @@ export function createSpatialWorld({
       pressed.clear();
       const c = controller;
       const reducedMotion = motionPreference.matches;
-      operator.animate(c, time, { reducedMotion, action: actions.action });
-      world.update(c, time, reducedMotion);
+      operator.animate(c, time, {
+        reducedMotion,
+        action: actions.action,
+        onStep: () => sound("step"),
+      });
+      world.update(c, time, reducedMotion, dt);
+      wayfinding.update(time, reducedMotion);
       const framing = cameraMotion.update(c, dt, {
         reducedMotion,
         stature: state.player.nucleoForm === "forma_bruta" ? 1.28 : 1,
@@ -526,6 +654,7 @@ export function createSpatialWorld({
       if (hudTime > 0.1) {
         hudTime = 0;
         drawMap();
+        updateTrail(c);
         nucleoHUD.update();
         morpherPanel.update();
         el(".dimension-suit").textContent = profileFor(state.progress).name;
@@ -579,9 +708,13 @@ export function createSpatialWorld({
           : anchorDistance < 5 &&
               Math.abs(c.y - terrainHeight(anchorPOI.x, anchorPOI.z)) < 4
             ? "E · ESTABILIZAR NÚCLEO DE ÂNCORA"
-            : boatDistance < 5 && Math.abs(c.y) < 7
-              ? "E · PILOTAR EMBARCAÇÃO"
-              : `◆ NÚCLEO DE ÂNCORA · ${Math.round(anchorDistance)} m`;
+            : signalPrompt(c) ||
+              (boatDistance < 5 && Math.abs(c.y) < 7
+                ? "E · PILOTAR EMBARCAÇÃO"
+                : (() => {
+                    const goal = wayfinding.objective(c);
+                    return `◆ ${goal.label} · ${Math.round(goal.distance)} m`;
+                  })());
         el(".dimension-capability").textContent = profileFor(state.progress).fly
           ? "F · alternar voo | espaço / ctrl · altitude"
           : profileFor(state.progress).dive

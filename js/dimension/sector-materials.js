@@ -53,7 +53,7 @@ export function createSectorMaterials() {
     floor = tile("flagstone");
   // Lote 10: texturas pintadas substituem os tiles procedurais quando há DOM.
   // Sem document (testes em Node) o fallback procedural continua valendo.
-  function painted(file, fallback, repeat) {
+  function painted(file, fallback, repeat, folder = "setor-limiar-lote10") {
     if (typeof document === "undefined" || typeof Image === "undefined")
       return fallback;
     const tex = new T.Texture();
@@ -63,7 +63,7 @@ export function createSectorMaterials() {
       tex.needsUpdate = true;
     };
     img.src = new URL(
-      `../../assets/textures/setor-limiar-lote10/${file}.png`,
+      `../../assets/textures/${folder}/${file}.png`,
       import.meta.url,
     ).href;
     tex.colorSpace = T.SRGBColorSpace;
@@ -79,6 +79,12 @@ export function createSectorMaterials() {
   const floorPainting = painted("piso-ruina", floor, 4);
   const gratePainting = painted("grade-limiar", null, 3);
   const mossPainting = painted("musgo-limiar", null, 2);
+  // Lote 11: trilha, ponte, água e a runa que acende os pilares.
+  const lot11 = "setor-limiar-lote11";
+  const trailPainting = painted("piso-trilha", null, 1, lot11);
+  const plankPainting = painted("ponte-madeira", null, 2, lot11);
+  const waterPainting = painted("agua-limiar", null, 26, lot11);
+  const sigilPainting = painted("runa-brilho", null, 1, lot11);
   const lambert = (color, map = null) =>
     new T.MeshLambertMaterial({ color, map, flatShading: true });
   const wind = { value: 0 },
@@ -118,10 +124,23 @@ export function createSectorMaterials() {
       windStrength.value = reduced ? 0 : 1;
     },
     textures,
+    // Texturas do lote 11 que outros módulos usam direto (sprites aditivos).
+    sigilTexture: sigilPainting,
     masonry: lambert(0xcbd2da, wallPainting),
     floor: lambert(0xb7c5ce, floorPainting),
     moss: mossPainting ? lambert(0xa9c6b5, mossPainting) : lambert(0x6f9c83),
     wood: lambert(0xc8b9a4, wood),
+    // Prancha pintada da ponte: só assume o mapa quando a imagem carregou.
+    plank: lambert(0xc2ab90, plankPainting),
+    trail: trailPainting
+      ? new T.MeshLambertMaterial({
+          color: 0xffffff,
+          map: trailPainting,
+          emissive: 0x33413c,
+          flatShading: true,
+        })
+      : lambert(0xd6dee0),
+    seabed: lambert(0x8fb0b4, waterPainting),
     trim: lambert(0x3c4b60),
     copper: lambert(0xba8e68),
     iron: lambert(gratePainting ? 0x8fa4ac : 0x263748, gratePainting),

@@ -947,6 +947,8 @@ export function createCivilianOperator(progress = {}, player = {}) {
     );
   // Crânio e nariz já são volumes; nenhum billboard de rosto foi usado.
 
+  let stepClock = 0,
+    lastStepSign = 0;
   const animate = (c, t, options = {}) => {
     const pose = motion.update(c, t, { ...options, archetype: id });
     const p = samplePerformance(
@@ -992,8 +994,17 @@ export function createCivilianOperator(progress = {}, player = {}) {
       // Tornozelo compensa quadril+joelho: a sola fica paralela ao chão e o pé
       // não afunda nem flutua durante a passada.
       const ankle = -(leg.rotation.x + knee.rotation.x) * 0.92;
-      foot.rotation.x = ankle + Math.min(0, Math.sin(pose.phase + i * Math.PI)) * 0.06;
+      foot.rotation.x = ankle + Math.sin(pose.phase + i * Math.PI + 0.7) * 0.038;
     }
+    // Passo: avisa o runtime quando o pé troca de lado (som de pisada).
+    const stepSign = Math.sign(Math.sin(pose.phase)) || 0;
+    if (pose.state === "walk" && stepSign !== lastStepSign && stepSign !== 0) {
+      if (t - stepClock > 0.16) {
+        stepClock = t;
+        options.onStep?.(stepSign);
+      }
+      lastStepSign = stepSign;
+    } else if (stepSign !== 0) lastStepSign = stepSign;
     hairRig.rotation.set(
       (options.reducedMotion ? 0 : Math.sin(t * 2.1 + 1) * 0.006) +
         (pose.pitch + (p.lean ?? 0)) * 0.05,

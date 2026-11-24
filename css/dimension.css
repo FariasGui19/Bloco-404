@@ -251,6 +251,82 @@ body.dimension-active {
   height: 144px;
   image-rendering: pixelated;
 }
+/* Trilha do Limiar: leitura linear do caminho e do que já foi feito. */
+.dimension-trail {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  width: 144px;
+  padding: 6px 8px 7px;
+  border: 1px solid #7fd8c033;
+  border-radius: 3px;
+  background: linear-gradient(180deg, #152231cc, #0f1a26dd);
+  color: #cfe6e1;
+  font-size: 7px;
+  letter-spacing: 1.2px;
+}
+.dimension-trail-label {
+  color: #8df4d7aa;
+}
+.dimension-trail-next {
+  white-space: nowrap;
+  letter-spacing: 0.9px;
+}
+.dimension-trail-track {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  width: 100%;
+}
+.dimension-trail-track::before,
+.dimension-trail-track::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: #8df4d733;
+}
+.dimension-trail-pip {
+  width: 9px;
+  height: 9px;
+  flex: 0 0 auto;
+  border: 1px solid #7d93a0;
+  background: #1b2a35;
+  transform: rotate(45deg);
+  transition:
+    background 160ms ease,
+    border-color 160ms ease,
+    box-shadow 160ms ease;
+}
+.dimension-trail-pip.done {
+  background: #8df4d7;
+  border-color: #b8ffe9;
+  box-shadow: 0 0 6px #8df4d788;
+}
+.dimension-trail-pip.next {
+  border-color: #ffd27a;
+  box-shadow: 0 0 7px #ffd27a99;
+  animation: limiar-trail-next 1.4s steps(2, end) infinite;
+}
+.dimension-trail-pip[data-goal="true"] {
+  border-radius: 50%;
+  transform: none;
+}
+.dimension-trail-pip[data-goal="true"].done {
+  background: #ffd27a;
+  border-color: #fff0c8;
+}
+@keyframes limiar-trail-next {
+  50% {
+    border-color: #ffe6b0;
+    box-shadow: 0 0 2px #ffd27a55;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .dimension-trail-pip.next {
+    animation: none;
+  }
+}
 .dimension-objective {
   position: absolute;
   right: 32px;
@@ -716,6 +792,30 @@ body.dimension-active {
 .dimension-nucleo button:disabled {
   opacity: 0.55;
   cursor: wait;
+}
+/* Telas baixas: a coluna direita precisa caber abaixo do card do núcleo. */
+@media (max-height: 720px) {
+  .dimension-navigation {
+    bottom: 92px;
+    gap: 4px;
+  }
+  .dimension-map {
+    width: 72px;
+    height: 72px;
+  }
+  .dimension-landmark-list {
+    display: none;
+  }
+  .dimension-trail {
+    width: 140px;
+    padding: 4px 6px 5px;
+    font-size: 6px;
+    gap: 3px;
+  }
+  .dimension-trail-pip {
+    width: 7px;
+    height: 7px;
+  }
 }
 @media (max-width: 520px) {
   .dimension-nucleo {

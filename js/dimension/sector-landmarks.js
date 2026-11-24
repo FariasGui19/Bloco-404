@@ -16,6 +16,8 @@ import {
 } from "./sector-meshes.js";
 
 export function buildLandmarks(scene, layout, m) {
+  // Lote 11: o tabuleiro do píer usa a prancha pintada quando disponível.
+  const deck = m.plank ?? m.wood;
   const ornaments = [];
   const roots = new Map(),
     cameraSurfaces = [];
@@ -44,9 +46,9 @@ export function buildLandmarks(scene, layout, m) {
   pier.add(rampProxy);
   cameraSurfaces.push(rampProxy); // walkable authored bridge ramp, not a terrain deformation
 
-  chamferSlab(pier, m.wood, 7, 0.5, 24, -16, 5.05, 52, 0.15);
+  chamferSlab(pier, deck, 7, 0.5, 24, -16, 5.05, 52, 0.15);
   for (let z = 40.5; z < 64; z += 0.7) {
-    const plank = box(pier, m.wood, 6.96, 0.07, 0.65, -16, 5.285, z),
+    const plank = box(pier, deck, 6.96, 0.07, 0.65, -16, 5.285, z),
       p = plank.geometry.attributes.position,
       n = plank.geometry.attributes.normal,
       uv = plank.geometry.attributes.uv;

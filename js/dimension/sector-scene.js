@@ -3,6 +3,7 @@ import { buildLandmarks } from "./sector-landmarks.js";
 import { buildScenery, batchScenery } from "./sector-scenery.js";
 import { batchStatic, addCollisionProxies } from "./sector-meshes.js";
 import { createEnvironment } from "./environment-view.js";
+import { createLimiarProps } from "./sector-props.js";
 import * as T from "../vendor/three.module.js";
 import {
   SECTOR,
@@ -15,13 +16,15 @@ import {
   clamp,
 } from "./sector-data.js";
 
-export function createSector({ environmentProfile } = {}) {
+export function createSector({ environmentProfile, state = null } = {}) {
   const scene = new T.Scene();
   const environment = createEnvironment(scene, {
     heightAt: terrainHeight,
     profile: environmentProfile,
   });
   const materials = createSectorMaterials();
+  // Uma textura pintada por arquivo, compartilhada entre todos os billboards.
+  const billboards = new Map();
   const terrainMat = environment.terrainMaterial;
   const stone = materials.masonry,
     wood = materials.wood,
@@ -63,10 +66,13 @@ export function createSector({ environmentProfile } = {}) {
     }
   buildScenery(SECTOR_LAYOUT, chunkAt, materials);
   buildFlora();
-  // Lote 10: vegetação e totens pintados como billboards (browser apenas).
-  function billboard(file) {
+  // Lotes 10 e 11: vegetação, totens e adereços pintados como billboards
+  // (browser apenas). Uma textura por arquivo, compartilhada entre sprites.
+  function billboard(file, folder = "setor-limiar-lote10") {
     if (typeof document === "undefined" || typeof Image === "undefined")
       return null;
+    const key = `${folder}/${file}`;
+    if (billboards.has(key)) return billboards.get(key);
     const tex = new T.Texture();
     const img = new Image();
     img.onload = () => {
@@ -74,7 +80,7 @@ export function createSector({ environmentProfile } = {}) {
       tex.needsUpdate = true;
     };
     img.src = new URL(
-      `../../assets/sprites/setor-limiar-lote10/${file}.png`,
+      `../../assets/sprites/${folder}/${file}.png`,
       import.meta.url,
     ).href;
     tex.colorSpace = T.SRGBColorSpace;
@@ -82,6 +88,7 @@ export function createSector({ environmentProfile } = {}) {
     tex.generateMipmaps = false;
     tex.userData = { image: img };
     materials.textures.push(tex);
+    billboards.set(key, tex);
     return tex;
   }
   function buildFlora() {
@@ -133,6 +140,15 @@ export function createSector({ environmentProfile } = {}) {
     ])
       place(totem, x, z, 2.4, 0xf2fff8);
   }
+  // Lote 11: adereços de sinalização, luz e saque ao longo da trilha.
+  const props = createLimiarProps({
+    scene,
+    heightAt: terrainHeight,
+    state,
+    billboard: (file) => billboard(file, "setor-limiar-lote11"),
+    sigil: materials.sigilTexture,
+    postMaterial: materials.plank,
+  });
   // Depth-aware pixel water: GPU waves, foam and sky glints, no CPU vertex uploads.
   const waterGeo = new T.PlaneGeometry(850, 850, 40, 40);
   waterGeo.rotateX(-Math.PI / 2);
@@ -141,7 +157,7 @@ export function createSector({ environmentProfile } = {}) {
   // Visible seabed, kelp and motes make depth readable below the surface.
   const sand = mesh(
     new T.PlaneGeometry(820, 820),
-    new T.MeshLambertMaterial({ color: 0x517581 }),
+    materials.seabed || new T.MeshLambertMaterial({ color: 0x517581 }),
     scene,
     0,
     -13.5,
@@ -265,10 +281,11 @@ export function createSector({ environmentProfile } = {}) {
   batchScenery(chunks);
   batchStatic(scene, new Set([shadow, water]));
   scene.updateMatrixWorld(true);
-  function update(c, t, reducedMotion = false) {
+  function update(c, t, reducedMotion = false, dt = 0) {
     for (const chunk of chunks)
       chunk.group.visible = Math.hypot(c.x - chunk.x, c.z - chunk.z) < 112;
     landmarks.update(t, reducedMotion);
+    props.update(t, dt, reducedMotion);
     materials.update(t, reducedMotion);
     environment.update(t);
     const ground =
@@ -294,7 +311,9 @@ export function createSector({ environmentProfile } = {}) {
     boat,
     anchor,
     landmarks,
+    props,
     layout: SECTOR_LAYOUT,
+    materials,
     update,
     environment,
     textures: [...materials.textures, ...environment.textures],

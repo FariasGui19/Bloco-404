@@ -12,7 +12,7 @@
   <header class="topbar">
     <a class="brand" href="./" aria-label="Img2GLB Studio, início"><span class="brand-mark">B<span>·</span></span><span class="brand-copy">BLOCO <b>404</b><small>FERRAMENTAS INTERNAS</small></span></a>
     <div class="top-divider"></div><div class="project-name">Img2GLB Studio <span> / </span> <em>Editor de personagem</em></div>
-    <div class="top-actions"><span class="version"><i></i> VERSÃO 01</span><button id="export" class="export-button"><span>↓</span> Exportar GLB</button></div>
+    <div class="top-actions"><span class="version"><i></i> VERSÃO 02</span><button id="export" class="export-button"><span>↓</span> Exportar GLB</button></div>
   </header>
 
   <main class="workspace">
@@ -23,11 +23,14 @@
         <div class="viewport-side-label">BLOCO 404 <span> / </span> CHARACTER STUDIO</div>
         <div class="viewport-bottom"><div class="view-badge"><span class="axis x">X</span><span class="axis y">Y</span><span class="axis z">Z</span></div><div class="view-help"><span>◉</span> Arraste para girar <b>·</b> Scroll para zoom <b>·</b> Botão direito para mover</div><button id="reset-camera" class="camera-button" title="Reiniciar câmera" aria-label="Reiniciar câmera">↻</button></div>
       </div>
-      <div class="editor-footer"><span><i></i> MODELO BASE HUMANOIDE</span><span>PRONTO PARA CRIAR <b>✳</b></span></div>
+      <div class="editor-footer"><span><i></i> <span id="entity-label">MODELO BASE HUMANOIDE</span></span><span>PRONTO PARA CRIAR <b>✳</b></span></div>
     </section>
 
     <aside class="sidebar" aria-label="Configurações do personagem">
       <div class="sidebar-title"><div><span class="eyebrow">PERSONAGEM</span><h2>Configurações</h2></div><button id="reset-all" class="reset-button" title="Restaurar configurações">↺ <span>Resetar</span></button></div>
+      <section class="panel-section preset-section"><div class="section-heading"><div><span class="section-number">00</span><h3>Tipo de entidade</h3></div><span class="section-tag">PRESET</span></div><p class="section-description">Selecione uma base para começar.</p>
+        <label class="select-label" for="entity">Modelo base</label><select id="entity"><option value="human">Operador / NPC humanoide</option><option value="creature">Monstro / criatura</option></select>
+      </section>
       <section class="panel-section reference-section"><div class="section-heading"><div><span class="section-number">01</span><h3>Imagem de referência</h3></div><span class="section-tag">OPCIONAL</span></div><p class="section-description">Use uma imagem para inspirar as cores.</p>
         <label class="upload" id="upload-label" for="image-input" tabindex="0" role="button"><img id="reference-image" alt="Imagem de referência escolhida" hidden><span id="upload-placeholder"><span class="upload-icon">↑</span><strong>Adicionar imagem</strong><small>Clique para selecionar um arquivo</small><span class="file-types">PNG ou JPG</span></span><span id="change-image" hidden>Alterar imagem ↗</span></label><input id="image-input" type="file" accept="image/png,image/jpeg" hidden>
         <div id="image-info" class="image-info" hidden><span id="image-name"></span><button id="remove-image" type="button">Remover</button></div>
@@ -37,15 +40,20 @@
           <label class="range-control">Escala geral <output for="scale">100%</output><input id="scale" type="range" min="0.65" max="1.4" step="0.01" value="1"></label>
           <label class="range-control">Cabeça <output for="head">100%</output><input id="head" type="range" min="0.7" max="1.4" step="0.01" value="1"></label>
           <label class="range-control">Largura do tronco <output for="width">100%</output><input id="width" type="range" min="0.7" max="1.4" step="0.01" value="1"></label>
+          <label class="range-control">Comprimento dos braços <output for="limbs">100%</output><input id="limbs" type="range" min="0.7" max="1.4" step="0.01" value="1"></label>
           <label class="range-control">Comprimento das pernas <output for="legs">100%</output><input id="legs" type="range" min="0.7" max="1.35" step="0.01" value="1"></label>
         </div>
       </section>
-      <section class="panel-section"><div class="section-heading"><div><span class="section-number">03</span><h3>Cores</h3></div><span class="section-tag">PALETA</span></div><p class="section-description">Corpo: pele · Roupa: tronco e calça · Detalhes: cabelo, mangas e botas.</p>
-        <div class="color-grid"><label><input type="color" id="color-body" value="#d28a6b"><span>Corpo</span></label><label><input type="color" id="color-clothes" value="#d3c2a7"><span>Roupa</span></label><label><input type="color" id="color-detail" value="#514b47"><span>Detalhes</span></label></div>
+      <section class="panel-section"><div class="section-heading"><div><span class="section-number">03</span><h3>Cores</h3></div><span class="section-tag">PALETA</span></div><p class="section-description">Corpo: pele · Roupa / Carapaça: tronco e pernas · Detalhes: cabeça, mangas e pés.</p>
+        <div class="color-grid"><label><input type="color" id="color-body" value="#d28a6b"><span>Corpo</span></label><label><input type="color" id="color-clothes" value="#d3c2a7"><span>Roupa / Carapaça</span></label><label><input type="color" id="color-detail" value="#514b47"><span>Detalhes</span></label></div>
         <button class="extract-button" id="extract" disabled><span>✳</span> Extrair cores da imagem <span>↗</span></button>
       </section>
       <section class="panel-section rig-section"><div class="section-heading"><div><span class="section-number">04</span><h3>Rig &amp; pose</h3></div><span class="section-tag">HUMANOIDE</span></div><p class="section-description">Ajustes simétricos das articulações.</p>
         <div class="controls"><label class="range-control">Abertura dos braços <output for="arms">12°</output><input id="arms" type="range" min="0" max="75" step="1" value="12"></label><label class="range-control">Abertura das pernas <output for="stance">0°</output><input id="stance" type="range" min="0" max="25" step="1" value="0"></label></div>
+      </section>
+      <section class="panel-section"><div class="section-heading"><div><span class="section-number">05</span><h3>Animação</h3></div><span class="section-tag">EM LOOP</span></div><p class="section-description">Os quatro clipes acompanham o GLB.</p>
+        <label class="select-label" for="animation">Prévia</label><div class="animation-controls"><select id="animation"><option value="Idle">Idle</option><option value="Walk">Walk</option><option value="Run">Run</option><option value="Action">Action</option></select><button id="play-pause" type="button" aria-pressed="true">❚❚ Pausar</button></div>
+        <div class="controls animation-speed"><label class="range-control">Velocidade <output for="speed">1.0×</output><input id="speed" type="range" min="0.25" max="2" step="0.05" value="1"></label></div>
       </section>
       <div class="sidebar-foot"><span>✳</span><p>Comece com uma base.<br><strong>Crie algo único.</strong></p><span>404</span></div>
     </aside>

@@ -2,7 +2,8 @@ import * as THREE from 'three';
 import { mergeGeometries } from '../vendor/BufferGeometryUtils.js';
 
 // Cada peça tem peso 1 em um osso: é um skin rígido, simples de animar no GLB.
-export function createHumanoid({ head, width, legs, colors }) {
+export function createHumanoid({ head, width, legs, limbs = 1, entity = 'human', colors }) {
+  const creature = entity === 'creature';
   const model = new THREE.Group();
   model.name = 'Personagem_404';
   const bones = [];
@@ -21,8 +22,8 @@ export function createHumanoid({ head, width, legs, colors }) {
   const joints = {};
   for (const [side, sign] of [['Left', 1], ['Right', -1]]) {
     const shoulder = makeBone(`${side}UpperArm`, chest, sign * 0.38 * width, 0.12);
-    const elbow = makeBone(`${side}LowerArm`, shoulder, 0, -0.36);
-    const hand = makeBone(`${side}Hand`, elbow, 0, -0.31);
+    const elbow = makeBone(`${side}LowerArm`, shoulder, 0, -0.36 * limbs);
+    const hand = makeBone(`${side}Hand`, elbow, 0, -0.31 * limbs);
     const thigh = makeBone(`${side}UpperLeg`, hips, sign * 0.18 * width, 0);
     const shin = makeBone(`${side}LowerLeg`, thigh, 0, -legLength * 0.5);
     const foot = makeBone(`${side}Foot`, shin, 0, -legLength * 0.5);
@@ -53,13 +54,18 @@ export function createHumanoid({ head, width, legs, colors }) {
   part(spine, 'torso', [0, 0, 0], [width, 1, 0.55], 1);
   part(neck, 'sphere', [0, 0.07, 0], [0.105, 0.13, 0.105], 0);
   part(headBone, 'sphere', [0, 0.20 * head, 0], [0.215 * head, 0.245 * head, 0.195 * head], 0);
-  part(headBone, 'sphere', [0, 0.34 * head, -0.015 * head], [0.215 * head, 0.105 * head, 0.19 * head], 2);
+  if (creature) {
+    // Chifres e carapaça continuam rigidamente ligados aos mesmos ossos do rig.
+    for (const sign of [-1, 1]) part(headBone, 'sphere', [sign * 0.16 * head, 0.42 * head, -0.02 * head], [0.055 * head, 0.18 * head, 0.065 * head], 2);
+  } else {
+    part(headBone, 'sphere', [0, 0.34 * head, -0.015 * head], [0.215 * head, 0.105 * head, 0.19 * head], 2);
+  }
   for (const sign of [-1, 1]) part(headBone, 'sphere', [sign * 0.08 * head, 0.22 * head, 0.186 * head], [0.018 * head, 0.025 * head, 0.012 * head], 3);
   for (const side of ['Left', 'Right']) {
     const { shoulder, elbow, hand, thigh, shin, foot } = joints[side];
-    part(shoulder, 'sphere', [0, -0.16, 0], [0.13, 0.23, 0.13], 2);
-    part(elbow, 'sphere', [0, -0.14, 0], [0.105, 0.20, 0.11], 0);
-    part(hand, 'sphere', [0, -0.05, 0], [0.105, 0.13, 0.075], 0);
+    part(shoulder, 'sphere', [0, -0.16 * limbs, 0], [creature ? 0.16 : 0.13, 0.23 * limbs, creature ? 0.16 : 0.13], 2);
+    part(elbow, 'sphere', [0, -0.14 * limbs, 0], [creature ? 0.13 : 0.105, 0.20 * limbs, creature ? 0.13 : 0.11], 0);
+    part(hand, 'sphere', [0, -0.05, 0], [creature ? 0.14 : 0.105, 0.13, creature ? 0.11 : 0.075], 0);
     part(thigh, 'sphere', [0, -legLength * 0.23, 0], [0.145, legLength * 0.30, 0.145], 1);
     part(shin, 'sphere', [0, -legLength * 0.24, 0], [0.115, legLength * 0.30, 0.12], 1);
     part(foot, 'sphere', [0, 0, 0.09], [0.14, 0.11, 0.23], 2);
@@ -70,19 +76,34 @@ export function createHumanoid({ head, width, legs, colors }) {
   const mesh = new THREE.SkinnedMesh(merged, materials);
   mesh.name = 'Corpo'; mesh.add(hips); mesh.bind(new THREE.Skeleton(bones));
   mesh.castShadow = true; mesh.receiveShadow = true; model.add(mesh);
-  return { model, mesh, bones, joints };
+  const feet = new Set([bones.indexOf(joints.Left.foot), bones.indexOf(joints.Right.foot)]);
+  const footVertices = [];
+  for (let i = 0; i < merged.attributes.position.count; i++) {
+    if (feet.has(merged.attributes.skinIndex.getX(i))) footVertices.push(i);
+  }
+  return { model, mesh, bones, joints, footVertices };
+}
+
+// Menor vértice dos pés no espaço local, independentemente de braços compridos.
+export function footMinY(character) {
+  const point = new THREE.Vector3();
+  let min = Infinity;
+  for (const index of character.footVertices) {
+    character.mesh.getVertexPosition(index, point);
+    min = Math.min(min, point.y);
+  }
+  return min;
 }
 
 export function poseAndGround(character, scale, arms, stance) {
-  const { model, mesh, joints } = character;
+  const { model, joints } = character;
   model.position.set(0, 0, 0); model.scale.setScalar(scale);
   joints.Left.shoulder.rotation.z = THREE.MathUtils.degToRad(arms);
   joints.Right.shoulder.rotation.z = -THREE.MathUtils.degToRad(arms);
   joints.Left.thigh.rotation.z = THREE.MathUtils.degToRad(stance);
   joints.Right.thigh.rotation.z = -THREE.MathUtils.degToRad(stance);
   model.updateMatrixWorld(true);
-  mesh.computeBoundingBox();
-  // A caixa está no espaço local da malha; a escala do grupo é aplicada ao chão.
-  model.position.y = -mesh.boundingBox.min.y * scale;
+  // A geometria dos pés está no espaço local da malha.
+  model.position.y = -footMinY(character) * scale;
   model.updateMatrixWorld(true);
 }

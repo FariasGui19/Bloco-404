@@ -83,4 +83,5 @@ quem disso depende não perde nada.
   sem folhas. `tests/dimension-lote12-browser.mjs` cobre carregamento real (zero
   404 de `lote12`), halo/neblina/máscara com imagem, dois estandartes e quatro
   chamas ligadas, poeira ao andar e o teto de chamadas.
-- Capturas: `qa/upgrade/lote12-01-entrada.png` … `lote12-11-vento-b.png`.
+- Capturas: `qa/upgrade/lote12-00-folhas.png` (as dez folhas lado a lado),
+  `qa/upgrade/lote12-01-entrada.png` … `lote12-11-vento-b.png`.

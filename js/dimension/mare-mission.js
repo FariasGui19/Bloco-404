@@ -7,6 +7,7 @@ import {lote7Decor,lote7Props,isInteractiveLote7,lampOn,lote7Readout,useLote7} f
 import {lote8Decor,lote8Names,lote8Props,lote8Readout,isInteractiveLote8,useLote8} from './mare-mission-lote8.js';
 import {lote9Decor,lote9Names,lote9Props,lote9Cue,lote9Readout,isInteractiveLote9,useLote9} from './mare-mission-lote9.js';
 import {lote10Names,lote10Readout} from './mare-mission-lote10.js';
+import {LOTE13_FRAMES,curateDecor,lote13Cue,lote13Names,nextObjective,pathGuides,promptFor} from './mare-mission-lote13.js';
 import {LOTE11_BEACON,lote11BeaconOn,lote11Count,lote11Decor,lote11Hint,lote11Names,lote11Props,lote11Cue,lote11Readout,isInteractiveLote11,useLote11} from './mare-mission-lote11.js';
 import {createMareWorld3D} from './mare-mission-world3d.js';
 import {
@@ -42,6 +43,7 @@ export async function createMareMission({
     <b class="mare-zone-name">PRAIA</b></div>
 </header>
 <aside aria-live="polite"></aside>
+<div class="mare-next" hidden><span class="mare-next-glyph" aria-hidden="true">◆</span><div class="mare-next-body"><small>PRÓXIMO PASSO</small><b class="mare-next-action">—</b><span class="mare-next-detail"></span></div><span class="mare-next-count"></span><span class="mare-next-dist"></span><i class="mare-next-arrow" aria-hidden="true"></i></div>
 <nav class="mare-move" aria-label="Movimento"><button data-key="KeyW" aria-label="Frente">W</button><button data-key="KeyA" aria-label="Esquerda">A</button><button data-key="KeyS" aria-label="Trás">S</button><button data-key="KeyD" aria-label="Direita">D</button><button data-key="ShiftLeft">CORRER</button><button data-key="KeyC">AGACHAR</button></nav>
 <nav class="mare-look" aria-label="Câmera"><button data-key="ArrowUp" aria-label="Olhar para cima">▲</button><button data-key="ArrowLeft" aria-label="Olhar à esquerda">◀</button><button data-key="ArrowDown" aria-label="Olhar para baixo">▼</button><button data-key="ArrowRight" aria-label="Olhar à direita">▶</button></nav>
 <footer class="mare-hud-foot">
@@ -84,7 +86,8 @@ export async function createMareMission({
     "nulo-sobrecarga","cristal-cluster","vegetacao-duna",
     "caranguejo","gaivota","peixe","onda",
   ];
-  const artDir = (n) => coastNames.includes(n) ? "mare-coast" : upgradeNames.includes(n) ? "mare-upgrade" : lote10Names.includes(n) ? "mare-missao-lote10" : lote11Names.includes(n) ? "mare-missao-lote11" : lote9Names.includes(n) ? "mare-missao-lote9" : lote8Names.includes(n) ? "mare-missao-lote8" : lote7Names.includes(n) ? "mare-missao-lote7" : lote6Names.includes(n) ? "mare-missao-lote6" : lote5Names.includes(n) ? "mare-missao-lote5" : lote4Names.includes(n) ? "mare-missao-lote4" : lote3Names.includes(n) ? "mare-missao-lote3" : extraNames.includes(n) ? "mare-missao-lote2" : "mare-missao-base";
+  const lote13Set = new Set(lote13Names);
+  const artDir = (n) => lote13Set.has(n) ? "mare-missao-lote13" : coastNames.includes(n) ? "mare-coast" : upgradeNames.includes(n) ? "mare-upgrade" : lote10Names.includes(n) ? "mare-missao-lote10" : lote11Names.includes(n) ? "mare-missao-lote11" : lote9Names.includes(n) ? "mare-missao-lote9" : lote8Names.includes(n) ? "mare-missao-lote8" : lote7Names.includes(n) ? "mare-missao-lote7" : lote6Names.includes(n) ? "mare-missao-lote6" : lote5Names.includes(n) ? "mare-missao-lote5" : lote4Names.includes(n) ? "mare-missao-lote4" : lote3Names.includes(n) ? "mare-missao-lote3" : extraNames.includes(n) ? "mare-missao-lote2" : "mare-missao-base";
   const names = [
     "madeira-sal",
     "concreto-mar",
@@ -99,7 +102,7 @@ export async function createMareMission({
   ];
   const images = Object.fromEntries(
     await Promise.all(
-      [...names,...extraNames,...lote3Names,...lote4Names,...lote5Names,...lote6Names,...lote7Names,...lote8Names,...lote9Names,...lote10Names,...lote11Names,...upgradeNames,...coastNames].map(async (n) => {
+      [...names,...extraNames,...lote3Names,...lote4Names,...lote5Names,...lote6Names,...lote7Names,...lote8Names,...lote9Names,...lote10Names,...lote11Names,...lote13Names,...upgradeNames,...coastNames].map(async (n) => {
         const im = new Image();
         im.src = new URL(
           `../../assets/sprites/${artDir(n)}/${n}.png`,
@@ -156,6 +159,13 @@ export async function createMareMission({
     steps: [...shell.querySelectorAll(".mare-steps [data-step]")],
     lampBtn: shell.querySelector("[data-lamp]"),
     target: shell.querySelector(".mare-target"),
+    next: shell.querySelector(".mare-next"),
+    nextAction: shell.querySelector(".mare-next-action"),
+    nextDetail: shell.querySelector(".mare-next-detail"),
+    nextCount: shell.querySelector(".mare-next-count"),
+    nextDist: shell.querySelector(".mare-next-dist"),
+    nextArrow: shell.querySelector(".mare-next-arrow"),
+    nextGlyph: shell.querySelector(".mare-next-glyph"),
   };
   // A cena 3D é construída uma vez. Se o WebGL falhar, o raycaster legado
   // continua como plano B e a missão nunca fica sem imagem.
@@ -170,14 +180,21 @@ export async function createMareMission({
     ...lote8Props,
     ...lote9Props,
     ...lote11Props,
-    ...lote7Decor.map((d) => ({ ...d, decor: true })),
-    ...lote8Decor.map((d) => ({ ...d, decor: true })),
-    ...lote9Decor.map((d) => ({ ...d, decor: true })),
-    ...lote11Decor.map((d) => ({ ...d, decor: true })),
+    // Curadoria: o decorativo solto some, o que sobra marca referência.
+    ...curateDecor(
+      [
+        ...lote7Decor,
+        ...lote8Decor,
+        ...lote9Decor,
+        ...lote11Decor,
+      ].map((d) => ({ ...d, decor: true })),
+      { keep: 3.2, spacing: 1.6 },
+    ),
   ];
   const world3d = await createMareWorld3D({
     images,
     props: worldProps,
+    path: pathGuides(),
     onFear: ({ kind, x, z }) => {
       if (!enabled) return;
       const dx = x - m.x, dy = z - m.y, dist = Math.hypot(dx, dy) || 1;
@@ -218,6 +235,7 @@ export async function createMareMission({
     audio = null,
     enabled = false,
     drone = null, master=null, activeFrame=false, beatClock=0, beat=0, breathClock=0, shake=0, intro=2.0, pulse=0, hurtFlash=0, hazardClock=0, attackClock=0, swing=0, frameDt=1/60;
+  let lastTerminalStep = -1;
   const pursuit=createPursuit(), motion=matchMedia("(prefers-reduced-motion: reduce)"), aside=shell.querySelector("aside");
   const hazardProp=combatProps.find(p=>p.kind==="hazard"), lightProp=combatProps.find(p=>p.kind==="light");
   const enemies = [
@@ -435,6 +453,8 @@ export async function createMareMission({
     if(m.finished)return;
     const near = nearestSignal(m,signals());
     const beforeLore = m.p.lore.length;
+    const beforeData = m.p.data.length;
+    const beforeDetails = Object.keys(m.p.details).length;
     const machine = isInteractiveLote5(near) ? useLote5(m, near)
       : isInteractiveLote6(near) ? useLote6(m, near)
       : isInteractiveLote7(near) ? useLote7(m, near)
@@ -479,6 +499,20 @@ export async function createMareMission({
     if(near?.kind==="nulo"){tone(95,.45,.02,"sine");tone(190,.2,.01,"square");}
     if(near?.kind==="lote7-lamp"){tone(140,.16,.018,"square");tone(280,.08,.008,"sawtooth");}
     tone(near ? 180 : 70);
+    // Resposta no mundo: onda no objeto tocado. Sem texto, sem HUD extra.
+    const cue = near ? promptFor(near) : null;
+    if (cue) world3d.pulse?.(near.x, near.y, cue.wave);
+    const advanced =
+      m.p.data.length > beforeData ||
+      m.p.lore.length > beforeLore ||
+      Object.keys(m.p.details).length > beforeDetails;
+    if (advanced && hud.next) {
+      hud.next.classList.remove("avancou");
+      void hud.next.offsetWidth;
+      hud.next.classList.add("avancou");
+      tone(880, .14, .014, "triangle");
+      if (m.p.data.length > beforeData) world3d.ringBeacon?.();
+    }
     save();
   }
   function attack() {
@@ -1422,15 +1456,31 @@ export async function createMareMission({
         }
       }
       readout.textContent = `DESCOMPASSO LOCAL ${m.p.rank}/4 · DADOS ${m.p.data.length}/3 · ${Math.max(0, 600 - Math.floor(m.p.elapsed))}s · FÔLEGO ${Math.round(m.stamina)} · ${m.crouched?"SILENCIOSO":m.noise>.8?"PASSOS ALTOS":"CAMINHANDO"} · REGISTROS ${Object.keys(m.p.details).filter(k=>details.some(d=>d.id===k)).length}/8 · LORE ${m.p.lore.length}/6 · TENSÃO ${Math.round(m.stress)} · AMEAÇAS ${enemies.filter(e=>!e.dead&&e.phase!=="dissolve").length}/${enemies.length} · Q ${Math.ceil(m.cooldown)}s · LANTERNA ${m.lampOn ? Math.round(m.lamp) + "%" : "OFF"} · ESQUIVA ${m.dashCd > 0 ? Math.ceil(m.dashCd) + "s" : "PRONTA"} · ${lote5Readout(m)} · ${lote6Readout(m)} · ${lote7Readout(m)} · ${lote8Readout(m)} · ${lote9Readout(m)} · ${lote11Readout(m)} · ${lote10Readout(enemies)}`;
-      // A carta de maré acrescenta um alvo concreto à linha de objetivo.
+      // Próximo passo: um chip, uma ação, uma distância. O resto é silêncio.
       const hint = lote11Hint(m);
+      const next = nextObjective(m, { fendaOpen: fendaOpen(m), side: hint });
+      if (hud.next) {
+        if (next) {
+          hud.next.hidden = false;
+          hud.nextAction.textContent = next.action;
+          hud.nextDetail.textContent = next.label ?? "";
+          hud.nextCount.textContent = next.need > 1 ? `${next.have}/${next.need}` : "";
+          hud.nextDist.textContent = next.distance != null ? `${next.distance}m` : "";
+          hud.nextGlyph.textContent = next.have >= next.need ? "▲" : "◆";
+        } else hud.next.hidden = true;
+      }
+      world3d.setMarker?.(next?.target ?? null);
+      // A carta de maré acrescenta um alvo concreto à linha de objetivo.
       objective.textContent = hint ? `${objectiveLine(m)} · ${hint}` : objectiveLine(m);
       const near = nearestSignal(m,signals());
-      const nearLabel = typeof near?.label === "string" ? near.label.trim() : "";
+      const nearCue = near ? promptFor(near) : null;
+      aside.dataset.kind = nearCue?.kind ?? "";
       aside.textContent = m.finished
         ? ""
-        : nearLabel
-        ? `[E] ${nearLabel}`
+        : nearCue
+        ? nearCue.detail
+          ? `${nearCue.line} — ${nearCue.detail}`
+          : nearCue.line
         : m.ward > 0
           ? state.progress.archetype === "mare_astral"
             ? sites
@@ -1450,7 +1500,7 @@ export async function createMareMission({
       if (hud.heading) hud.heading.textContent = dirs[headingIndex];
       if (hud.bearing) hud.bearing.textContent = `${String(Math.round(((90 + m.angle * 180 / Math.PI) % 360 + 360) % 360)).padStart(3, "0")}°`;
       if (hud.target) {
-        const goal = m.finished ? null : { x: 24.5, y: 24.5 };
+        const goal = m.finished ? null : next?.target ?? { x: 24.5, y: 24.5 };
         if (goal) {
           const bearingDeg = Math.atan2(goal.y - m.y, goal.x - m.x) * 180 / Math.PI;
           const relative = ((bearingDeg - (90 + m.angle * 180 / Math.PI) + 540) % 360) - 180;
@@ -1458,6 +1508,20 @@ export async function createMareMission({
           hud.target.style.left = `${50 + Math.max(-50, Math.min(50, (relative / 92) * 50))}%`;
           hud.target.classList.toggle("chegou", Math.hypot(goal.x - m.x, goal.y - m.y) < 4);
         } else hud.target.style.display = "none";
+      }
+      if (hud.nextArrow) {
+        if (next?.target) {
+          const bearingDeg = Math.atan2(next.target.y - m.y, next.target.x - m.x) * 180 / Math.PI;
+          const relative = ((bearingDeg - (90 + m.angle * 180 / Math.PI) + 540) % 360) - 180;
+          hud.nextArrow.style.opacity = Math.abs(relative) < 26 ? "1" : "0.62";
+          hud.nextArrow.style.transform = `rotate(${Math.max(-90, Math.min(90, relative))}deg)`;
+        } else hud.nextArrow.style.opacity = "0";
+      }
+      // O terminal muda de cara conforme as memórias entram.
+      const terminalStep = m.p.rank >= 4 || fendaOpen(m) ? 3 : Math.min(3, m.p.data.length);
+      if (terminalStep !== lastTerminalStep) {
+        lastTerminalStep = terminalStep;
+        world3d.setTerminalState?.(terminalStep);
       }
       if (hud.tension) hud.tension.style.width = `${Math.max(0, Math.min(100, m.stress))}%`;
       if (hud.tensionValue) hud.tensionValue.textContent = String(Math.round(m.stress));

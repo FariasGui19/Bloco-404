@@ -41,7 +41,9 @@ export function detectRegions(image) {
 
 // Remove somente fundo parecido com os cantos e conectado às bordas; sem IA.
 // A máscara pode falhar quando roupa e fundo têm a mesma cor, por isso é opcional.
+const maskCache = new WeakMap();
 function backgroundMask(image) {
+  if (maskCache.has(image)) return maskCache.get(image);
   const canvas = document.createElement('canvas');
   const scale = Math.min(1, 512 / Math.max(image.naturalWidth, image.naturalHeight));
   canvas.width = Math.max(2, Math.round(image.naturalWidth * scale)); canvas.height = Math.max(2, Math.round(image.naturalHeight * scale));
@@ -65,7 +67,7 @@ function backgroundMask(image) {
     if (x > 0) add(index - 1); if (x + 1 < w) add(index + 1); if (y > 0) add(index - w); if (y + 1 < h) add(index + w);
   }
   for (let i = 0; i < w * h; i++) { data.data[i * 4] = data.data[i * 4 + 1] = data.data[i * 4 + 2] = 255; data.data[i * 4 + 3] = isBg[i] ? 0 : 255; }
-  ctx.putImageData(data, 0, 0); return canvas;
+  ctx.putImageData(data, 0, 0); maskCache.set(image, canvas); return canvas;
 }
 
 export function createRegionTextures(image, regions, enabled, colors, strength, removeBackground = true) {

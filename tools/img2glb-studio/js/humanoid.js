@@ -89,6 +89,8 @@ export function createHumanoid({ head, width, legs, limbs = 1, entity = 'human',
   part(neck, 'neck', [0, 0, 0], [1, 1, 0.85], 0);
   part(headBone, 'sphere', [0, 0.20 * head, 0], [0.215 * head, 0.245 * head, 0.195 * head], 0, 'face');
   const ds = details.scale ?? 1, dy = details.offset ?? 0;
+  const faceScale = details.faceScale ?? 1, fx = (details.faceX ?? 0) * head, fy = (details.faceY ?? 0) * head;
+  const facial = (shape, center, size, material) => part(headBone, shape, [center[0] + fx, center[1] + fy + dy, center[2]], size.map(n => n * faceScale * ds), material);
   if (details.hair !== false && creature) {
     for (const sign of [-1, 1]) part(headBone, 'sphere', [sign * 0.16 * head, 0.42 * head + dy, -0.02 * head], [0.055 * head * ds, 0.18 * head * ds, 0.065 * head * ds], 17);
   } else if (details.hair !== false) {
@@ -110,12 +112,12 @@ export function createHumanoid({ head, width, legs, limbs = 1, entity = 'human',
   }
   if (details.face !== false && !creature) {
     // Relevo facial separado da textura projetada; pode ser desligado se necessário.
-    part(headBone, 'detail', [0, 0.125 * head, 0.19 * head], [0.027 * head, 0.048 * head, 0.038 * head], 0);
+    facial('detail', [0, 0.125 * head, 0.19 * head], [0.027 * head, 0.048 * head, 0.038 * head], 0);
     for (const sign of [-1, 1]) {
-      part(headBone, 'detail', [sign * 0.08 * head, 0.215 * head, 0.184 * head], [0.047 * head, 0.009 * head, 0.009 * head], 17);
-      part(headBone, 'detail', [sign * 0.026 * head, 0.067 * head, 0.191 * head], [0.035 * head, 0.012 * head, 0.009 * head], 17);
+      facial('detail', [sign * 0.08 * head, 0.215 * head, 0.184 * head], [0.047 * head, 0.009 * head, 0.009 * head], 17);
+      facial('detail', [sign * 0.026 * head, 0.067 * head, 0.191 * head], [0.035 * head, 0.012 * head, 0.009 * head], 17);
     }
-    part(headBone, 'detail', [0, 0.020 * head, 0.173 * head], [0.025 * head, 0.022 * head, 0.009 * head], 17);
+    facial('detail', [0, 0.020 * head, 0.173 * head], [0.025 * head, 0.022 * head, 0.009 * head], 17);
   }
   if (!creature) {
     // Alças, gola e barra acompanham os ossos do tronco.
@@ -149,10 +151,10 @@ export function createHumanoid({ head, width, legs, limbs = 1, entity = 'human',
   const accessory = (bone, shape, center, size, material = 2) => part(bone, shape, [center[0], center[1] + dy, center[2]], size.map(n => n * ds), material);
   if (details.glasses) {
     for (const sign of [-1, 1]) {
-      accessory(headBone, 'ring', [sign * 0.081 * head, 0.18 * head, 0.207 * head], [0.064 * head, 0.045 * head, 0.026], 17);
-      accessory(headBone, 'box', [sign * 0.147 * head, 0.18 * head, 0.11 * head], [0.014, 0.014, 0.19 * head], 17);
+      facial('ring', [sign * 0.081 * head, 0.18 * head, 0.207 * head], [0.064 * head, 0.045 * head, 0.026], 17);
+      facial('box', [sign * 0.147 * head, 0.18 * head, 0.11 * head], [0.014, 0.014, 0.19 * head], 17);
     }
-    accessory(headBone, 'box', [0, 0.18 * head, 0.216 * head], [0.055 * head, 0.012, 0.018], 17);
+    facial('box', [0, 0.18 * head, 0.216 * head], [0.055 * head, 0.012, 0.018], 17);
   }
   if (details.gear) {
     // Cós, cinto, fivela e passadores.

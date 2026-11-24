@@ -65,18 +65,19 @@ export function createAnimations(character, { scale, arms, stance }) {
     // sem depender de uma rotina de chão executada apenas pelo editor.
     const mixer = new THREE.AnimationMixer(model);
     mixer.clipAction(clip).play();
-    const ground = [], footPosition = new THREE.Vector3(), baseFootZ = {};
+    const ground = [], footPosition = new THREE.Vector3(), baseFoot = {};
     for (let i = 0; i < times.length; i++) {
       mixer.setTime(times[i]); model.position.set(0, 0, 0); model.updateMatrixWorld(true);
-      if (i === 0) for (const side of ['Left', 'Right']) baseFootZ[side] = joints[side].foot.getWorldPosition(footPosition).z;
-      let z = 0;
+      if (i === 0) for (const side of ['Left', 'Right']) baseFoot[side] = joints[side].foot.getWorldPosition(new THREE.Vector3()).clone();
+      let x = 0, z = 0;
       if (name === 'Walk' || name === 'Run') {
-        // Em cada meia passada, estabiliza o tornozelo da perna de apoio no eixo
-        // longitudinal. O deslocamento oscila e retorna a zero no fim do ciclo.
-        const side = Math.sin(Math.PI * 2 * i / samples) >= 0 ? 'Left' : 'Right';
-        z = baseFootZ[side] - joints[side].foot.getWorldPosition(footPosition).z;
+        // Em cada meia passada, estabiliza o tornozelo da perna de apoio nos eixos
+        // horizontal e longitudinal. O deslocamento oscila e retorna a zero no fim do ciclo.
+        const side = Math.sin(Math.PI * 2 * i / samples) >= 0 ? 'Right' : 'Left';
+        joints[side].foot.getWorldPosition(footPosition);
+        x = baseFoot[side].x - footPosition.x; z = baseFoot[side].z - footPosition.z;
       }
-      ground.push(0, -footMinY(character) * scale, z);
+      ground.push(x, -footMinY(character) * scale, z);
     }
     mixer.stopAllAction(); mixer.uncacheRoot(model);
     clip.tracks.push(new THREE.VectorKeyframeTrack(`${model.name}.position`, times, ground));

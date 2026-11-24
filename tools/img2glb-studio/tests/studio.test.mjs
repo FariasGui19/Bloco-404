@@ -4,6 +4,7 @@ import { AnimationMixer, Box3, Vector3 } from '../../../js/vendor/three.module.j
 import { GLTFExporter } from '../vendor/GLTFExporter.js';
 import { createHumanoid, poseAndGround, footMinY } from '../js/humanoid.js';
 import { createAnimations } from '../js/animations.js';
+import { makeExportScene } from '../js/export-scene.js';
 import { defaultRegionsFromPixels } from '../js/textures.js';
 import { paletteFromPixels, regionalColorsFromPixels } from '../js/palette.js';
 
@@ -181,13 +182,18 @@ test('passadas mantêm tornozelo de apoio estável no eixo longitudinal', () => 
   for (const clip of clips.filter(c => c.name === 'Walk' || c.name === 'Run')) {
     const mixer = new AnimationMixer(c.model); mixer.clipAction(clip).play();
     mixer.setTime(0); c.model.updateMatrixWorld(true);
-    const leftZ = c.joints.Left.foot.getWorldPosition(new Vector3()).z;
-    const rightZ = c.joints.Right.foot.getWorldPosition(new Vector3()).z;
+    const left = c.joints.Left.foot.getWorldPosition(new Vector3());
+    const right = c.joints.Right.foot.getWorldPosition(new Vector3());
     for (let i = 1; i < 32; i++) {
       mixer.setTime(clip.duration * i / 32); c.model.updateMatrixWorld(true);
-      const side = i <= 16 ? 'Left' : 'Right';
+      const side = i <= 16 ? 'Right' : 'Left';
       const position = c.joints[side].foot.getWorldPosition(new Vector3());
-      assert.ok(Math.abs(position.z - (side === 'Left' ? leftZ : rightZ)) < 0.002, `${clip.name} ${side}: ${position.z}`);
+      const original = side === 'Left' ? left : right;
+      assert.ok(Math.abs(position.z - original.z) < 0.002 && Math.abs(position.x - original.x) < 0.002, `${clip.name} ${side}: ${position.toArray()}`);
+      const index = c.bones.indexOf(c.joints[side].foot), skin = c.mesh.geometry.attributes.skinIndex, point = new Vector3();
+      let min = Infinity;
+      for (const vertex of c.footVertices) if (skin.getX(vertex) === index) { c.mesh.getVertexPosition(vertex, point); min = Math.min(min, point.y + c.model.position.y); }
+      assert.ok(Math.abs(min) < 0.003, `pé de apoio fora do chão: ${min}`);
     }
     mixer.stopAllAction();
   }
@@ -202,4 +208,23 @@ test('dedos possuem ossos e se flexionam na ação sem perder o rig', () => {
   mixer.setTime(clip.duration / 2);
   assert.ok(rest.angleTo(c.joints.Right.fingers.Index.quaternion) > 0.3);
   assert.ok(clip.tracks.some(t => t.name === 'RightIndexFinger.quaternion'));
+});
+
+test('cena exportada separa skin e armature sem alterar pose, escala ou rig', async () => {
+  globalThis.FileReader = class { readAsArrayBuffer(blob) { blob.arrayBuffer().then(result => { this.result = result; this.onloadend(); }); } };
+  const c = createHumanoid({ ...defaults, details: { gear: true, glasses: true } });
+  const clips = createAnimations(c, { scale: 1.25, arms: 24, stance: 12 });
+  const mixer = new AnimationMixer(c.model); mixer.clipAction(clips[1]).play(); mixer.setTime(0.3); c.model.updateMatrixWorld(true);
+  const original = new Box3().setFromObject(c.model, true), scene = makeExportScene(c);
+  const cloneBox = new Box3().setFromObject(scene, true);
+  assert.ok(original.min.distanceTo(cloneBox.min) < 1e-6 && original.max.distanceTo(cloneBox.max) < 1e-6);
+  assert.equal(c.mesh.parent, c.model); assert.equal(c.bones[0].parent, c.mesh);
+  const buffer = await new GLTFExporter().parseAsync(scene, { binary: true, animations: clips });
+  const view = new DataView(buffer), json = JSON.parse(new TextDecoder().decode(new Uint8Array(buffer, 20, view.getUint32(12, true))).trim());
+  const roots = json.scenes[json.scene].nodes;
+  const meshNode = roots.find(i => json.nodes[i].skin !== undefined);
+  const rigNode = roots.find(i => json.nodes[i].name === 'Personagem_404');
+  assert.ok(meshNode !== undefined && rigNode !== undefined && meshNode !== rigNode);
+  assert.equal(json.skins[0].joints.length, 27);
+  assert.ok(json.animations.every(animation => animation.channels.every(channel => channel.target.node !== meshNode)));
 });

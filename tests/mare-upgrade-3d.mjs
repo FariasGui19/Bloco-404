@@ -77,8 +77,9 @@ assert.match(mission, /idle|breath/);
 // 4. HUD limpo: o prompt só aparece com nome real, sem `E - undefined`.
 const signalsBlock = mission.slice(mission.indexOf("const signals = () => ["), mission.indexOf("function action()"));
 assert.ok(!signalsBlock.includes("lote7Decor"), "decoração não pode virar alvo interativo");
-assert.match(mission, /const nearLabel = typeof near\?\.label === "string"/);
-assert.match(mission, /`\[E\] \$\{nearLabel\}`/);
+assert.match(mission, /const nearCue = near \? promptFor\(near\) : null/);
+assert.match(mission, /nearCue\.line/);
+assert.match(mission, /aside\.dataset\.kind = nearCue\?\.kind \?\? ""/);
 assert.match(css, /\.mare-readout \{ position:absolute!important/);
 assert.match(css, /\.mare-mission aside:empty \{ display:none; \}/);
 assert.match(css, /\.mare-compass/);

@@ -104,6 +104,8 @@ function silhouetteTexture() {
 export async function createMareWorld3D({
   images = {},
   props = [],
+  // Lote 13: percurso calculado fora daqui (dado puro, testável em Node).
+  path = null,
   width = 384,
   height = 216,
   onFear = () => {},
@@ -186,6 +188,11 @@ export async function createMareWorld3D({
     texture("metal-corroido", 1, "mare-missao-lote9"),
     texture("lona-encardida", 1.2, "mare-missao-lote9"),
     texture("pedra-molhada", 2, "mare-missao-lote9"),
+  ]);
+  // Lote 13: tábua da passarela e a lona do cabo-guia.
+  const [trilhaTex, caboTex] = await Promise.all([
+    texture("trilha-tabua", 1, "mare-missao-lote13"),
+    texture("cabo-guia", 1, "mare-missao-lote13"),
   ]);
   // Lote 11: papel de carta, vidro de Fresnel e corda alcatroada.
   const [papelCartaTex, vidroFarolTex, cordaTex] = await Promise.all([
@@ -1518,6 +1525,250 @@ export async function createMareWorld3D({
   };
   props.forEach(addProp);
 
+  // ---------- lote 13: percurso, marcador e resposta ----------
+  // A passarela é uma fita de quads com a tábua pintada: um único draw call
+  // cobre o caminho inteiro. Setas são decals no chão (alphaTest), não sprites
+  // em pé, para não parecerem placas flutuando.
+  const walkway = (() => {
+    const planks = path?.planks ?? [];
+    if (!planks.length) return null;
+    const half = 0.85;
+    const geometry = new THREE.BufferGeometry();
+    const vertices = [],
+      uvs = [],
+      indices = [];
+    planks.forEach((plank, index) => {
+      const dx = Math.cos(plank.angle),
+        dy = Math.sin(plank.angle);
+      const nx = -dy,
+        ny = dx;
+      const length = 2.55;
+      const base = index * 4;
+      for (const [along, across] of [
+        [-length / 2, -half],
+        [-length / 2, half],
+        [length / 2, half],
+        [length / 2, -half],
+      ]) {
+        vertices.push(
+          plank.x + dx * along + nx * across,
+          0.035,
+          plank.y + dy * along + ny * across,
+        );
+      }
+      uvs.push(0, 0, 0, 1, 1, 1, 1, 0);
+      indices.push(base, base + 1, base + 2, base, base + 2, base + 3);
+    });
+    geometry.setAttribute("position", new THREE.Float32BufferAttribute(vertices, 3));
+    geometry.setAttribute("uv", new THREE.Float32BufferAttribute(uvs, 2));
+    geometry.setIndex(indices);
+    geometry.computeVertexNormals();
+    const meshWalk = new THREE.Mesh(
+      geometry,
+      new THREE.MeshLambertMaterial({
+        map: trilhaTex,
+        color: 0x74807a,
+        side: THREE.DoubleSide,
+        polygonOffset: true,
+        polygonOffsetFactor: -2,
+      }),
+    );
+    meshWalk.name = "lote13-walkway";
+    scene.add(meshWalk);
+    return meshWalk;
+  })();
+
+  // Postes + cabo: o cabo é um tubo fino com catenária, então lê de qualquer
+  // ângulo (um sprite inclinado só funcionaria de uma câmera).
+  const guidePosts = [];
+  for (const post of path?.posts ?? []) {
+    const sprite = new THREE.Sprite(
+      new THREE.SpriteMaterial({
+        map: spriteTexture("poste-sinalizador"),
+        color: 0xcbbd9c,
+        transparent: true,
+        alphaTest: 0.12,
+        depthWrite: true,
+        fog: true,
+      }),
+    );
+    const height = 1.58;
+    sprite.scale.set(height * 0.58, height, 1);
+    sprite.center.set(0.5, 0);
+    sprite.position.set(post.x, 0.03, post.y);
+    scene.add(sprite);
+    const light = new THREE.PointLight(0xffc07a, 3.2, 5.4, 2);
+    light.position.set(post.x, height * 0.92, post.y);
+    light.userData = {
+      kind: "lamp",
+      base: 3.2,
+      phase: hash(post.x, post.y, 13) * TAU,
+      halo: null,
+    };
+    scene.add(light);
+    propLights.push(light);
+    guidePosts.push(post);
+  }
+  const guideCableMat = new THREE.MeshLambertMaterial({
+    map: caboTex,
+    color: 0x6f6a63,
+  });
+  for (const [a, b] of path?.cables ?? []) {
+    const from = guidePosts[a],
+      to = guidePosts[b];
+    if (!from || !to) continue;
+    const span = Math.hypot(to.x - from.x, to.y - from.y);
+    const sag = Math.min(0.55, span * 0.075);
+    const curve = new THREE.CatmullRomCurve3([
+      new THREE.Vector3(from.x, 1.72, from.y),
+      new THREE.Vector3((from.x + to.x) / 2, 1.72 - sag, (from.y + to.y) / 2),
+      new THREE.Vector3(to.x, 1.72, to.y),
+    ]);
+    const tube = new THREE.Mesh(
+      new THREE.TubeGeometry(curve, 10, 0.022, 4, false),
+      guideCableMat,
+    );
+    scene.add(tube);
+  }
+  if (guideCableMat.map) guideCableMat.map.repeat.set(6, 1);
+
+  const arrowSprites = [];
+  for (const arrow of path?.arrows ?? []) {
+    const sprite = new THREE.Mesh(
+      new THREE.PlaneGeometry(1.5, 1.5),
+      new THREE.MeshBasicMaterial({
+        map: spriteTexture("seta-chao"),
+        transparent: true,
+        alphaTest: 0.08,
+        depthWrite: false,
+        fog: true,
+        opacity: 0.72,
+      }),
+    );
+    sprite.rotation.set(-Math.PI / 2, 0, -arrow.angle + Math.PI / 2);
+    sprite.position.set(arrow.x, 0.045, arrow.y);
+    sprite.renderOrder = 2;
+    scene.add(sprite);
+    arrowSprites.push(sprite);
+  }
+  if (path?.board) {
+    const board = new THREE.Sprite(
+      new THREE.SpriteMaterial({
+        map: spriteTexture("placa-missao"),
+        transparent: true,
+        alphaTest: 0.12,
+        depthWrite: true,
+        fog: true,
+      }),
+    );
+    const height = 1.5;
+    board.scale.set((height * 192) / 192, height, 1);
+    board.center.set(0.5, 0);
+    board.position.set(path.board.x, 0.03, path.board.y);
+    scene.add(board);
+  }
+
+  // Marcador do objetivo: a mesma tira de quatro quadros do lote 13. Ele é o
+  // "para onde ir" no mundo; o chip da HUD só repete a informação em texto.
+  const markerFrames = Array.from({ length: 4 }, (_, index) =>
+    spriteTexture(`marcador-objetivo-${index}`),
+  ).filter(Boolean);
+  const marker = markerFrames.length
+    ? new THREE.Sprite(
+        new THREE.SpriteMaterial({
+          map: markerFrames[0],
+          transparent: true,
+          depthWrite: false,
+          blending: THREE.AdditiveBlending,
+          fog: true,
+          opacity: 0.9,
+        }),
+      )
+    : null;
+  if (marker) {
+    marker.center.set(0.5, 0.5);
+    marker.scale.setScalar(0.9);
+    marker.visible = false;
+    marker.renderOrder = 6;
+    scene.add(marker);
+  }
+  let markerTarget = null;
+  let markerState = { visible: false, done: false };
+
+  // Ondas de interação: pool de seis sprites, nada é criado em jogo.
+  const waveFrames = Array.from({ length: 6 }, (_, index) =>
+    spriteTexture(`interacao-onda-${index}`),
+  ).filter(Boolean);
+  const interactWaves = [];
+  for (let i = 0; i < 4; i++) {
+    if (!waveFrames.length) break;
+    const sprite = new THREE.Sprite(
+      new THREE.SpriteMaterial({
+        map: waveFrames[0],
+        transparent: true,
+        opacity: 0,
+        depthWrite: false,
+        fog: true,
+      }),
+    );
+    sprite.center.set(0.5, 0.5);
+    sprite.visible = false;
+    sprite.renderOrder = 5;
+    scene.add(sprite);
+    interactWaves.push({ sprite, age: 1, frame: 0 });
+  }
+  let waveCursor = 0;
+  const pulse = (x, y, color = 0xffcf87, size = 1.15) => {
+    if (!interactWaves.length) return;
+    const wave = interactWaves[waveCursor++ % interactWaves.length];
+    wave.age = 0;
+    wave.frame = 0;
+    wave.size = size;
+    wave.sprite.material.color.setHex(color);
+    wave.sprite.material.map = waveFrames[0];
+    wave.sprite.position.set(x, 0.09, y);
+    wave.sprite.visible = true;
+  };
+
+  // Pulso do farolim: anel grande, lento, visível de longe quando um sinal cai.
+  let beaconPulse = null;
+  const beaconPulseFrames = Array.from({ length: 6 }, (_, index) =>
+    spriteTexture(`farol-pulso-${index}`),
+  ).filter(Boolean);
+  if (beaconPulseFrames.length) {
+    beaconPulse = new THREE.Sprite(
+      new THREE.SpriteMaterial({
+        map: beaconPulseFrames[0],
+        transparent: true,
+        opacity: 0,
+        depthWrite: false,
+        blending: THREE.AdditiveBlending,
+        fog: true,
+      }),
+    );
+    beaconPulse.center.set(0.5, 0.5);
+    beaconPulse.position.set(LOTE11_BEACON.x, 2.3, LOTE11_BEACON.y);
+    beaconPulse.scale.setScalar(4.6);
+    beaconPulse.visible = false;
+    scene.add(beaconPulse);
+  }
+  let beaconClock = -1;
+  const ringBeacon = () => {
+    beaconClock = 0;
+    if (beaconPulse) beaconPulse.visible = true;
+  };
+
+  // Terminal: quatro estados pintados. O sprite troca de arte conforme a
+  // missão avança, então o objeto responde antes de qualquer texto.
+  const setTerminalState = (index) => {
+    const tex = spriteTexture(`terminal-estados-${Math.max(0, Math.min(3, index))}`);
+    if (!tex) return;
+    for (const entry of propSprites.values()) {
+      if (entry.prop?.id !== "terminal" && entry.prop?.art !== "terminal") continue;
+      entry.sprite.material.map = tex;
+    }
+  };
+
   // ---------- lote 11: farolim, sino e gerador ----------
   // Feixe do farolim: só existe aceso. O grupo gira para varrer a água.
   const beaconGroup = new THREE.Group();
@@ -1957,6 +2208,57 @@ export async function createMareWorld3D({
         Math.sin(t * speed + (entry.prop.x + entry.prop.y) * 0.7) * amp;
     }
 
+    // Lote 13: marcador do objetivo, ondas de interação e pulso do farolim.
+    if (marker) {
+      if (markerState.visible && markerTarget) {
+        marker.visible = true;
+        const bob = reducedMotion ? 0 : Math.sin(t * 1.7) * 0.11;
+        const dist = Math.hypot(markerTarget.x - m.x, markerTarget.y - m.y);
+        marker.position.set(markerTarget.x, 1.72 + bob, markerTarget.y);
+        const index = reducedMotion
+          ? 0
+          : Math.floor(t * 5) % markerFrames.length;
+        if (marker.material.map !== markerFrames[index])
+          marker.material.map = markerFrames[index];
+        marker.material.opacity =
+          (0.5 + Math.sin(t * 2.6) * 0.14) *
+          Math.max(0, Math.min(1, (23 - dist) / 8));
+        marker.scale.setScalar(dist < 3 ? 0.42 : 0.6);
+        marker.visible = dist < 23;
+      } else marker.visible = false;
+    }
+    for (const wave of interactWaves) {
+      if (!wave.sprite.visible) continue;
+      wave.age = Math.min(1, wave.age + dt * 2.6);
+      const indexFrame = Math.min(
+        waveFrames.length - 1,
+        Math.floor(wave.age * waveFrames.length),
+      );
+      if (indexFrame !== wave.frame) {
+        wave.frame = indexFrame;
+        wave.sprite.material.map = waveFrames[indexFrame];
+      }
+      wave.sprite.scale.setScalar(wave.size * (0.9 + wave.age * 1.05));
+      wave.sprite.material.opacity = 0.9 * (1 - wave.age) ** 1.6;
+      if (wave.age >= 1) wave.sprite.visible = false;
+    }
+    if (beaconPulse && beaconClock >= 0) {
+      beaconClock += dt;
+      const span = 2.4;
+      const progress = Math.min(1, beaconClock / span);
+      const frame = Math.min(
+        beaconPulseFrames.length - 1,
+        Math.floor(progress * beaconPulseFrames.length),
+      );
+      beaconPulse.material.map = beaconPulseFrames[frame];
+      beaconPulse.scale.setScalar(4.4 + progress * 3.4);
+      beaconPulse.material.opacity = 0.62 * (1 - progress);
+      if (progress >= 1) {
+        beaconClock = -1;
+        beaconPulse.visible = false;
+      }
+    }
+
     // respiração + passada: o eixo vertical da câmera nunca fica morto.
     const speed = Math.hypot(m.vx || 0, m.vy || 0);
     const breathRate = 1.55 + tension * 1.9 + interference * 0.5;
@@ -2345,6 +2647,15 @@ export async function createMareWorld3D({
     camera,
     render,
     syncProps,
+    // Lote 13: orientação e resposta, sem tocar na simulação.
+    setMarker(target, { visible = true, done = false } = {}) {
+      markerTarget = target ? { x: target.x, y: target.y } : null;
+      markerState = { visible: Boolean(target) && visible, done };
+    },
+    pulse,
+    ringBeacon,
+    setTerminalState,
+    guidePosts,
     resize() {},
     dispose() {
       scene.traverse((o) => {

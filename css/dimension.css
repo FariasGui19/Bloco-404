@@ -920,6 +920,22 @@ body.dimension-active {
 .mare-signal-text { font:7px/1 "Courier New",monospace;letter-spacing:.18em;color:#8fada4;font-weight:400; }
 .mare-mission aside { position:absolute;z-index:5;left:50%;bottom:25%;transform:translateX(-50%);margin:0;padding:5px 10px 5px 9px;background:rgba(3,9,13,.72);border:1px solid rgba(111,160,150,.42);border-left:2px solid var(--mare-amber);color:#e5e9d9;font:10px/1.2 "Courier New",monospace;letter-spacing:.06em;text-shadow:0 1px 2px #000;white-space:nowrap;pointer-events:none;animation:mare-prompt-in .18s ease-out both; }
 .mare-mission aside:empty { display:none; }
+/* Lote 13: chip do próximo passo, discreto e sincronizado com a missão. */
+.mare-next { position:absolute;z-index:5;left:20px;top:64px;display:flex;align-items:center;gap:9px;max-width:min(46ch,44vw);padding:5px 10px 5px 8px;background:linear-gradient(90deg,rgba(4,11,15,.82),rgba(4,11,15,.46));border:1px solid rgba(111,160,150,.3);border-left:2px solid var(--mare-amber);font:9px/1.15 "Courier New",monospace;letter-spacing:.07em;color:#d5e2da;text-shadow:0 1px 2px #000;pointer-events:none;animation:mare-hud-in 1s .9s both; }
+.mare-next[hidden] { display:none; }
+.mare-next-glyph { flex:0 0 auto;color:var(--mare-amber);font-size:12px;line-height:1; }
+.mare-next-body { display:flex;flex-direction:column;gap:2px;min-width:0; }
+.mare-next small { font:6px/1 "Courier New",monospace;letter-spacing:.26em;color:#64807a; }
+.mare-next-action { color:#f0d3a0;font-weight:400;font-size:9.5px;letter-spacing:.12em;white-space:nowrap; }
+.mare-next-detail { color:#93aaa3;font-size:8px;max-width:24ch;overflow:hidden;text-overflow:ellipsis;white-space:nowrap; }
+.mare-next-count { flex:0 0 auto;color:#e6cd9a;font-size:10px;letter-spacing:.06em; }
+.mare-next-dist { flex:0 0 auto;min-width:3.2ch;text-align:right;color:#86a49d;font-size:8.5px; }
+.mare-next-arrow { flex:0 0 auto;width:0;height:0;border:4px solid transparent;border-left:7px solid var(--mare-amber);transform-origin:1px 50%;opacity:0;transition:opacity .2s linear,transform .12s linear;filter:drop-shadow(0 0 3px rgba(224,181,106,.55)); }
+.mare-next.avancou { animation:mare-next-pop .6s ease-out; }
+@keyframes mare-next-pop { 0%{border-left-color:#9dffc8;box-shadow:0 0 0 rgba(157,255,200,0)} 28%{box-shadow:0 0 11px rgba(157,255,200,.5)} 100%{box-shadow:none} }
+.mare-mission aside[data-kind="lore"] { border-left-color:#9fd8ff; }
+.mare-mission aside[data-kind="collect"] { border-left-color:#9dffc8; }
+.mare-mission aside[data-kind="inspect"] { border-left-color:#d8d2c4; }
 .mare-hud-foot { position:absolute;z-index:4;left:0;right:0;bottom:0;padding:34px 20px 11px;background:linear-gradient(transparent,rgba(2,7,11,.72) 36%,rgba(2,7,11,.94));display:grid;grid-template-columns:minmax(0,1fr) auto;gap:3px 26px;pointer-events:none;animation:mare-hud-in 1.2s .7s both; }
 .mare-objective-row { grid-column:1;display:flex;align-items:baseline;gap:9px;min-width:0; }
 .mare-objective-row > span { flex:0 0 auto;font:7px/1 "Courier New",monospace;letter-spacing:.22em;color:#68827c; }
@@ -1016,6 +1032,9 @@ body.dimension-active {
  .mare-keys{display:none}
  .mare-controls button{padding:5px 6px;font-size:7px}
  .mare-mission aside{bottom:31%;font-size:9px}
+ .mare-next{left:11px;top:46px;gap:7px;max-width:64vw;padding:4px 8px 4px 6px}
+ .mare-next-detail{display:none}
+ .mare-next small{display:none}
  .mare-move{bottom:104px;grid-template-columns:repeat(3,22px)}
  .mare-look{bottom:76px;right:11px}
  .mare-move{right:11px}

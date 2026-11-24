@@ -60,3 +60,43 @@ export function extractPalette(image, entity = 'human') {
   ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
   return paletteFromPixels(ctx.getImageData(0, 0, canvas.width, canvas.height).data, entity);
 }
+
+// Amostras regionais opcionais para o preset de operador. A posição das regiões
+// é editável; não há segmentação semântica ou reconhecimento de roupa por IA.
+export function regionalColorsFromPixels(pixels, width, height, regions) {
+  const sample = (rect, window, predicate) => {
+    const [x0, y0, x1, y1] = window;
+    const left = Math.max(0, Math.floor((rect.x + rect.w * x0) * width));
+    const right = Math.min(width, Math.ceil((rect.x + rect.w * x1) * width));
+    const top = Math.max(0, Math.floor((rect.y + rect.h * y0) * height));
+    const bottom = Math.min(height, Math.ceil((rect.y + rect.h * y1) * height));
+    const buckets = new Map();
+    for (let y = top; y < bottom; y++) for (let x = left; x < right; x++) {
+      const i = (y * width + x) * 4, color = { r: pixels[i], g: pixels[i + 1], b: pixels[i + 2] };
+      if (pixels[i + 3] < 128 || !predicate(color)) continue;
+      const key = [color.r, color.g, color.b].map(v => Math.floor(v / 32)).join(',');
+      const bucket = buckets.get(key) || { r: 0, g: 0, b: 0, count: 0 };
+      bucket.r += color.r; bucket.g += color.g; bucket.b += color.b; bucket.count++; buckets.set(key, bucket);
+    }
+    const best = [...buckets.values()].sort((a, b) => b.count - a.count)[0];
+    return best ? hex({ r: best.r / best.count, g: best.g / best.count, b: best.b / best.count }) : undefined;
+  };
+  const color = {};
+  color.body = sample(regions.face, [0.15, 0.30, 0.85, 0.9], c => looksLikeSkin(c) && brightness(c) > 55);
+  color.hair = sample(regions.face, [0.2, 0, 0.8, 0.38], c => brightness(c) < 95);
+  color.top = sample(regions.torso, [0.2, 0.3, 0.8, 0.9], c => brightness(c) < 125);
+  color.clothes = sample(regions.legs, [0.15, 0.05, 0.85, 0.78], c => brightness(c) > 75 && brightness(c) < 230);
+  color.detail = sample(regions.legs, [0.2, 0.8, 0.8, 1], c => brightness(c) > 25 && brightness(c) < 100);
+  color.sole = sample(regions.legs, [0.05, 0.87, 0.95, 1], c => brightness(c) > 145 && saturation(c) < 0.45);
+  color.accent = sample(regions.legs, [0, 0.7, 1, 1], c => c.r > c.g * 1.2 && c.g > c.b * 1.2 && brightness(c) > 65 && saturation(c) > 0.45);
+  return Object.fromEntries(Object.entries(color).filter(([, value]) => value));
+}
+
+export function extractRegionalColors(image, regions) {
+  const canvas = document.createElement('canvas');
+  const scale = Math.min(1, 512 / Math.max(image.naturalWidth, image.naturalHeight));
+  canvas.width = Math.max(1, Math.round(image.naturalWidth * scale)); canvas.height = Math.max(1, Math.round(image.naturalHeight * scale));
+  const ctx = canvas.getContext('2d', { willReadFrequently: true });
+  ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
+  return regionalColorsFromPixels(ctx.getImageData(0, 0, canvas.width, canvas.height).data, canvas.width, canvas.height, regions);
+}

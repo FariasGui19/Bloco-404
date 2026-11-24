@@ -1,23 +1,26 @@
 # Img2GLB Studio
 
-Ferramenta interna independente para criar e animar bases humanoides e criaturas em GLB para o BLOCO 404. Não altera o jogo.
+Ferramenta interna independente para construir, texturizar e animar bases bípedes em GLB para o BLOCO 404. Não altera o jogo e não envia imagens para servidores.
 
 ## Como usar
 
 1. Abra a raiz do repositório com o Live Server do VS Code e acesse `tools/img2glb-studio/`. Ou execute `python3 -m http.server 8000` na raiz e acesse `http://localhost:8000/tools/img2glb-studio/`.
-2. Escolha **Operador / NPC humanoide** ou **Monstro / criatura**. Ambos são bases bípedes procedurais com o mesmo esqueleto; a criatura tem silhueta e detalhes próprios. Trocar o preset redefine suas proporções, aberturas e cores, mas mantém a escala e a imagem carregada.
-3. Opcionalmente, carregue uma imagem PNG ou JPG local. Clique em **Extrair cores da imagem** para sugerir até três cores distintas, ou ajuste as cores manualmente. Corpo colore pele; Roupa / Carapaça colore tronco e pernas; Detalhes colore cabeça, mangas e pés. A extração ignora transparência, cores muito escuras e neutros próximos de preto ou branco. Ela é heurística: outras cores do fundo podem influenciar o resultado, e cores úteis muito escuras ou quase brancas também podem ser ignoradas. Se faltarem cores distintas, os seletores restantes mantêm seus valores.
-4. Ajuste escala, cabeça, tronco, comprimento dos braços e pernas e abertura dos membros. Arraste no viewport para orbitar, use a roda para zoom e o botão direito para mover a câmera. O botão de rig mostra ou oculta ossos e articulações.
-5. Escolha **Idle**, **Walk**, **Run** ou **Action** para pré-visualizar um clipe em loop. Use **Pausar / Reproduzir** e **Velocidade** para controlar a prévia. A velocidade é apenas da prévia e não altera a duração dos clipes exportados. Alterar proporções ou pose recalcula os clipes e reinicia a prévia selecionada; o estado de play/pause é preservado.
-6. Clique em **Exportar GLB**. O arquivo contém apenas a malha, os materiais, o esqueleto e os quatro clipes nomeados; grade, luzes e indicadores do editor não são exportados. O modelo mantém escala, proporções e cores atuais. A pose visível é a do momento da exportação, e os clipes podem ser selecionados em um visualizador glTF ou mixer de animação compatível.
+2. Escolha **Operador / NPC humanoide** ou **Monstro / criatura**. Trocar o preset redefine proporções, aberturas e cores; mantém escala e imagem. Ambos são bípedes com o mesmo esqueleto.
+3. Carregue uma imagem PNG/JPG local. Ela é aplicada automaticamente como projeção e são sugeridas cores; aguarde o modelo atualizar. Para o operador, a extração tenta amostrar pele, cabelo, regata, calça e calçado das regiões detectadas. A detecção é heurística: corrija manualmente os seletores quando necessário.
+4. Em **Região para recortar**, escolha cabeça, tronco, braços ou pernas e arraste um retângulo na imagem. Também é possível ajustar horizontal, vertical, largura e altura pelos controles. A sugestão automática é apenas um ponto de partida: para melhores resultados use uma imagem frontal, com personagem inteiro e fundo simples, e revise todos os recortes. As regiões dos braços e das pernas são divididas automaticamente entre os lados e segmentos.
+5. Marque as regiões desejadas. **Aplicar projeção** reaplica a imagem; **Remover** desativa a projeção sem apagar a referência. As imagens são projetadas na frente das peças; laterais e costas mantêm cores sólidas. Ajuste a **intensidade da imagem** para misturar com a cor manual. A remoção de fundo opcional procura cores semelhantes aos cantos conectadas às bordas: ela pode apagar cabelo ou roupa escuros, especialmente em fundo escuro. Desative-a se isso ocorrer.
+6. O operador inclui cabelo com cachos em relevo, regata com acabamento, nariz e pelos faciais, óculos com ponte e hastes, cinto, bolsos cargo, tiras e tênis com sola, cadarços e acentos. Em **Detalhes modulares**, ative/desative o cabelo, rosto, óculos e conjunto de acessórios, e ajuste tamanho e posição. Eles acompanham os ossos. A projeção facial e os detalhes geométricos podem não se alinhar em toda imagem: ajuste o recorte ou desative os detalhes que se sobrepõem.
+7. Ajuste escala e proporções. Arraste no viewport para orbitar, use a roda para zoom e o botão direito para mover a câmera. **Mostrar rig** exibe ossos e articulações, inclusive um osso por dedo. O skin é rígido por peça; não há articulações nas falanges nem deformação contínua.
+8. Escolha **Idle**, **Walk**, **Run** ou **Action** para pré-visualizar um clipe em loop. Use **Pausar / Reproduzir** e **Velocidade**. A velocidade afeta apenas a prévia, não a duração exportada. Alterar proporções, pose ou detalhes reinicia a prévia selecionada, preservando play/pause.
+9. Clique em **Exportar GLB**. O arquivo incorpora texturas aplicadas, detalhes, malha, materiais, esqueleto e os quatro clipes nomeados; grade, luzes e indicadores do editor não são exportados. A pose visível é a do momento da exportação. O recorte é incorporado ao arquivo, não depende da imagem original após a exportação.
 
-Os clipes são animações procedurais **no lugar**, sem deslocamento horizontal: o jogo deve mover a entidade pelo cenário. A altura da raiz é amostrada e gravada nos clipes para manter o pé mais baixo próximo do chão durante a prévia e a reprodução do GLB; não há IK ou detecção de terreno, e pode haver pequenas variações entre amostras. O botão Resetar restaura o humanoide, os parâmetros e a câmera, mas mantém a imagem de referência.
+Os clipes são procedurais e não avançam continuamente pelo cenário: o jogo deve mover a entidade. Em Walk/Run, a raiz oscila longitudinalmente em cada ciclo para reduzir o deslocamento do tornozelo de apoio, voltando ao início; sua altura é amostrada para manter o pé mais baixo próximo do chão. Ainda pode haver deslizamento, pequenas penetrações entre amostras e contato imperfeito: não há IK ou adaptação ao terreno. Ao integrar com controle de movimento próprio, considere a oscilação horizontal da raiz nos clipes. Resetar restaura o humanoide, parâmetros e câmera e desativa a projeção, mas mantém a imagem carregada.
 
 ## Limitações
 
-A imagem é uma referência visual e fonte de cores. Diferente de um serviço de reconstrução 3D por IA, esta versão **não gera nem reconstrói a geometria a partir da imagem**, não transfere detalhes e não identifica automaticamente a anatomia. Os presets são bípedes, com skin rígido (cada peça segue um osso); não reproduzem formas arbitrárias, criaturas de múltiplas pernas ou esqueletos personalizados. A exportação fornece bases animadas para posterior refinamento e integração, não uma conversão fiel de qualquer imagem.
+A ferramenta **não reconstrói automaticamente a geometria 3D a partir da imagem** como um serviço de geração por IA: ela aplica recortes 2D à frente de uma base procedural e adiciona detalhes geométricos pré-definidos. O resultado depende do enquadramento, pode apresentar emendas, sobreposições ou estiramento e não inventa laterais, costas ou detalhes tridimensionais ocultos. A aparência do operador é inspirada na referência, não uma cópia fiel gerada automaticamente. Para uma malha realmente fiel a imagens arbitrárias, ainda é necessária modelagem manual ou uma solução de reconstrução 3D especializada.
 
-O navegador precisa suportar WebGL e módulos ES/import maps. Use um servidor HTTP, não `file://`. A ferramenta usa o Three.js r187 já presente em `js/vendor/` e os addons correspondentes em `vendor/`, sob a licença MIT em `js/vendor/THREE-LICENSE.txt`. Nenhuma imagem é enviada a um servidor.
+O navegador precisa suportar WebGL e módulos ES/import maps. Use um servidor HTTP, não `file://`. A ferramenta usa o Three.js r187 já presente em `js/vendor/` e os addons correspondentes em `vendor/`, sob a licença MIT em `js/vendor/THREE-LICENSE.txt`.
 
 ## Testes
 
@@ -26,5 +29,3 @@ Com Node.js 22, na raiz do repositório, execute:
 ```sh
 node --experimental-loader ./tools/img2glb-studio/tests/three-loader.mjs --test tools/img2glb-studio/tests/studio.test.mjs
 ```
-
-Os testes cobrem extração, presets, materiais, animações, pés no chão e conteúdo básico do GLB animado.

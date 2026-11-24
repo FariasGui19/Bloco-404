@@ -3,85 +3,35 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#111315">
-  <title>Img2GLB Studio — BLOCO 404</title>
+  <title>Teste de GLB · BLOCO 404</title>
+  <link rel="stylesheet" href="../../css/dimension.css">
   <link rel="stylesheet" href="./style.css">
   <script type="importmap">{"imports":{"three":"../../js/vendor/three.module.js"}}</script>
 </head>
 <body>
-  <header class="topbar">
-    <a class="brand" href="./" aria-label="Img2GLB Studio, início"><span class="brand-mark">B<span>·</span></span><span class="brand-copy">BLOCO <b>404</b><small>FERRAMENTAS INTERNAS</small></span></a>
-    <div class="top-divider"></div><div class="project-name">Img2GLB Studio <span> / </span> <em>Editor de personagem</em></div>
-    <div class="top-actions"><span class="version"><i></i> VERSÃO 03</span><button id="export" class="export-button"><span>↓</span> <span id="export-label">Exportar GLB</span></button></div>
-  </header>
-
-  <main class="workspace">
-    <section class="editor" aria-label="Editor 3D">
-      <div class="editor-heading"><div><div class="eyebrow"><span class="tiny-dot"></span> SEU ESPAÇO DE CRIAÇÃO</div><h1>Editor de personagem<span>.</span></h1><p>Uma base simples para dar forma às suas ideias.</p></div><div class="heading-index">ESTÚDIO <strong>01</strong></div></div>
-      <div class="viewport" id="viewport">
-        <div class="viewport-top"><div class="viewport-label"><span class="live-dot"></span> VIEWPORT 3D <span class="label-separator">/</span> PERSPECTIVA</div><div class="viewport-controls"><button id="view-front" class="viewport-button" type="button">Frente</button> <button id="toggle-rig" class="viewport-button" aria-pressed="false"><span class="rig-icon">♧</span> <span id="rig-label">Mostrar rig</span></button></div></div>
-        <div class="viewport-side-label">BLOCO 404 <span> / </span> CHARACTER STUDIO</div>
-        <div class="viewport-bottom"><div class="view-badge"><span class="axis x">X</span><span class="axis y">Y</span><span class="axis z">Z</span></div><div class="view-help"><span>◉</span> Arraste para girar <b>·</b> Scroll para zoom <b>·</b> Botão direito para mover</div><button id="reset-camera" class="camera-button" title="Reiniciar câmera" aria-label="Reiniciar câmera">↻</button></div>
-      </div>
-      <div class="editor-footer"><span><i></i> <span id="entity-label">MODELO BASE HUMANOIDE</span></span><span>PRONTO PARA CRIAR <b>✳</b></span></div>
-    </section>
-
-    <aside class="sidebar" aria-label="Configurações do personagem">
-      <div class="sidebar-title"><div><span class="eyebrow">PERSONAGEM</span><h2>Configurações</h2></div><button id="reset-all" class="reset-button" title="Restaurar configurações">↺ <span>Resetar</span></button></div>
-      <section class="panel-section preset-section"><div class="section-heading"><div><span class="section-number">00</span><h3>Tipo de entidade</h3></div><span class="section-tag">PRESET</span></div><p class="section-description">Selecione uma base para começar.</p>
-        <label class="select-label" for="entity">Modelo base</label><select id="entity"><option value="human">Operador / NPC humanoide</option><option value="creature">Monstro / criatura</option></select>
-      </section>
-      <section class="panel-section reference-section"><div class="section-heading"><div><span class="section-number">01</span><h3>Imagem de referência</h3></div><span class="section-tag">OPCIONAL</span></div><p class="section-description">Ao carregar, a referência é aplicada à base. Revise os recortes abaixo.</p>
-        <label class="upload" id="upload-label" for="image-input" tabindex="0" role="button"><img id="reference-image" alt="Imagem de referência escolhida" hidden><span id="upload-placeholder"><span class="upload-icon">↑</span><strong>Adicionar imagem</strong><small>Clique para selecionar um arquivo</small><span class="file-types">PNG ou JPG</span></span><span id="change-image" hidden>Alterar imagem ↗</span></label><input id="image-input" type="file" accept="image/png,image/jpeg" hidden>
-        <div id="image-info" class="image-info" hidden><span id="image-name"></span><button id="remove-image" type="button">Remover</button></div>
-        <div id="texture-panel" hidden>
-          <p class="section-description">Projeção frontal: selecione uma região e arraste sobre a imagem para ajustar o recorte.</p>
-          <label class="select-label" for="crop-target">Região para recortar</label><select id="crop-target"><option value="face">Cabeça / rosto</option><option value="torso">Tronco</option><option value="arms">Braços</option><option value="legs">Pernas</option></select>
-          <canvas id="crop-canvas" width="300" height="250" aria-label="Imagem de referência para recorte. Arraste para escolher a região." role="img"></canvas>
-          <div class="crop-sliders"><label class="range-control">Horizontal <output for="crop-x">0%</output><input id="crop-x" type="range" min="0" max="99.9" step="0.1" value="0"></label><label class="range-control">Vertical <output for="crop-y">0%</output><input id="crop-y" type="range" min="0" max="99.9" step="0.1" value="0"></label><label class="range-control">Largura <output for="crop-w">100%</output><input id="crop-w" type="range" min="0.1" max="100" step="0.1" value="100"></label><label class="range-control">Altura <output for="crop-h">100%</output><input id="crop-h" type="range" min="0.1" max="100" step="0.1" value="100"></label></div>
-          <div class="texture-checks"><label><input type="checkbox" id="tex-face" checked> Cabeça</label><label><input type="checkbox" id="tex-torso" checked> Tronco</label><label><input type="checkbox" id="tex-arms" checked> Braços</label><label><input type="checkbox" id="tex-legs" checked> Pernas</label></div>
-          <div class="texture-checks"><label><input type="checkbox" id="remove-background"> Remover fundo pelas bordas (aproximado)</label></div>
-          <label class="range-control texture-strength">Intensidade da imagem <output for="texture-strength">100%</output><input id="texture-strength" type="range" min="0" max="1" step="0.05" value="1"></label>
-          <div class="texture-actions"><button id="apply-texture" type="button">Aplicar projeção</button><button id="clear-texture" type="button">Remover</button></div>
-          <p class="texture-note">A imagem é projetada na frente da base; laterais e costas usam cores sólidas.</p>
-        </div>
-      </section>
-      <section class="panel-section ai-section"><div class="section-heading"><div><span class="section-number">IA</span><h3>Reconstrução 3D real</h3></div><span class="section-tag">OPCIONAL</span></div>
-        <p class="section-description">TripoSR local gera uma malha a partir da imagem. O resultado é estático e não recebe o rig desta base.</p>
-        <p id="ai-status" class="ai-status" role="status">Verificando servidor opcional…</p>
-        <button id="generate-ai" class="extract-button" disabled><span>✳</span> Gerar malha 3D por IA <span>↗</span></button>
-        <div id="ai-result" class="texture-actions ai-result" hidden><button id="view-ai" type="button">Ver malha IA</button><button id="view-base" type="button">Ver base animada</button></div>
-        <p class="texture-note">Requer instalação local e pesos externos; veja o README. Pode levar minutos e não garante fidelidade.</p>
-      </section>
-      <section class="panel-section"><div class="section-heading"><div><span class="section-number">02</span><h3>Proporções</h3></div><span class="section-tag">MODELO BASE</span></div><p class="section-description">Ajuste a silhueta do seu personagem.</p>
-        <div class="controls" id="proportion-controls">
-          <label class="range-control">Escala geral <output for="scale">100%</output><input id="scale" type="range" min="0.65" max="1.4" step="0.01" value="1"></label>
-          <label class="range-control">Cabeça <output for="head">100%</output><input id="head" type="range" min="0.7" max="1.4" step="0.01" value="1"></label>
-          <label class="range-control">Largura do tronco <output for="width">100%</output><input id="width" type="range" min="0.7" max="1.4" step="0.01" value="1"></label>
-          <label class="range-control">Comprimento dos braços <output for="limbs">100%</output><input id="limbs" type="range" min="0.7" max="1.4" step="0.01" value="1"></label>
-          <label class="range-control">Comprimento das pernas <output for="legs">100%</output><input id="legs" type="range" min="0.7" max="1.35" step="0.01" value="1"></label>
-        </div>
-      </section>
-      <section class="panel-section"><div class="section-heading"><div><span class="section-number">03</span><h3>Cores</h3></div><span class="section-tag">PALETA</span></div><p class="section-description">Cores do modelo e dos detalhes. A extração regional é aproximada.</p>
-        <div class="color-grid"><label><input type="color" id="color-body" value="#b97558"><span>Pele</span></label><label><input type="color" id="color-top" value="#252329"><span>Regata</span></label><label><input type="color" id="color-clothes" value="#a99a91"><span>Calça</span></label><label><input type="color" id="color-hair" value="#292127"><span>Cabelo / aros</span></label><label><input type="color" id="color-detail" value="#333039"><span>Cinto / tênis</span></label><label><input type="color" id="color-sole" value="#c5b8ad"><span>Sola / cadarço</span></label><label><input type="color" id="color-accent" value="#d78338"><span>Destaque</span></label></div>
-        <button class="extract-button" id="extract" disabled><span>✳</span> Extrair cores da imagem <span>↗</span></button>
-      </section>
-      <section class="panel-section rig-section"><div class="section-heading"><div><span class="section-number">04</span><h3>Rig &amp; pose</h3></div><span class="section-tag">HUMANOIDE</span></div><p class="section-description">Ajustes simétricos das articulações.</p>
-        <div class="controls"><label class="range-control">Abertura dos braços <output for="arms">12°</output><input id="arms" type="range" min="0" max="75" step="1" value="12"></label><label class="range-control">Abertura das pernas <output for="stance">0°</output><input id="stance" type="range" min="0" max="25" step="1" value="0"></label></div>
-      </section>
-      <section class="panel-section"><div class="section-heading"><div><span class="section-number">05</span><h3>Detalhes modulares</h3></div><span class="section-tag">RIGADOS</span></div><p class="section-description">Acessórios leves que acompanham o corpo.</p>
-        <div class="texture-checks detail-checks"><label><input type="checkbox" id="detail-hair" checked> Cabelo / chifres</label><label><input type="checkbox" id="detail-face" checked> Nariz, sobrancelhas e barba</label><label><input type="checkbox" id="detail-glasses" checked> Óculos</label><label><input type="checkbox" id="detail-gear" checked> Bolsos, faixas e fivelas</label></div>
-        <div class="controls face-adjust"><label class="range-control">Rosto / óculos · horizontal <output for="face-x">0.000</output><input id="face-x" type="range" min="-0.08" max="0.08" step="0.002" value="0"></label><label class="range-control">Rosto / óculos · vertical <output for="face-y">0.000</output><input id="face-y" type="range" min="-0.08" max="0.08" step="0.002" value="0"></label><label class="range-control">Rosto / óculos · tamanho <output for="face-scale">100%</output><input id="face-scale" type="range" min="0.7" max="1.3" step="0.01" value="1"></label></div>
-        <div class="controls"><label class="range-control">Tamanho dos detalhes <output for="detail-scale">100%</output><input id="detail-scale" type="range" min="0.6" max="1.4" step="0.05" value="1"></label><label class="range-control">Posição vertical <output for="detail-offset">0.00</output><input id="detail-offset" type="range" min="-0.1" max="0.1" step="0.01" value="0"></label></div>
-      </section>
-      <section class="panel-section"><div class="section-heading"><div><span class="section-number">06</span><h3>Animação</h3></div><span class="section-tag">EM LOOP</span></div><p class="section-description">Os quatro clipes acompanham o GLB.</p>
-        <label class="select-label" for="animation">Prévia</label><div class="animation-controls"><select id="animation"><option value="Idle">Idle</option><option value="Walk">Walk</option><option value="Run">Run</option><option value="Action">Action</option></select><button id="play-pause" type="button" aria-pressed="true">❚❚ Pausar</button></div>
-        <div class="controls animation-speed"><label class="range-control">Velocidade <output for="speed">1.0×</output><input id="speed" type="range" min="0.25" max="2" step="0.05" value="1"></label></div>
-      </section>
-      <div class="sidebar-foot"><span>✳</span><p>Comece com uma base.<br><strong>Crie algo único.</strong></p><span>404</span></div>
-    </aside>
+  <main id="dimension-root" aria-label="Laboratório isolado do Setor Limiar">
+    <div class="dimension-viewport"></div>
+    <header class="dimension-header"><div class="dimension-brand">BLOCO <b>404</b> <span>LABORATÓRIO GLB / SETOR LIMIAR</span></div><div class="dimension-heading"></div></header>
+    <aside class="dimension-navigation"><canvas class="dimension-map" width="144" height="144" aria-label="Minimapa do Setor Limiar"></canvas><div class="dimension-trail"><span>TRILHA DO LIMIAR</span><div class="dimension-trail-track"></div><span class="dimension-trail-next"></span></div><div class="dimension-landmark-list"></div></aside>
+    <div class="dimension-objective"><span>TESTE ISOLADO · SEM SAVE</span><p class="dimension-notice">Carregue um GLB para testar no Setor Limiar.</p></div>
+    <div class="dimension-prompt"></div>
+    <nav class="lab-touch" aria-label="Movimentação por toque"><button data-spatial-key="KeyW" aria-label="Avançar">↑</button><div><button data-spatial-key="KeyA" aria-label="Esquerda">←</button><button data-spatial-key="KeyS" aria-label="Recuar">↓</button><button data-spatial-key="KeyD" aria-label="Direita">→</button></div><button data-spatial-key="Space">PULAR</button></nav>
+    <div class="lab-info" aria-live="polite"><span class="dimension-suit"></span> · <span class="dimension-level"></span> · <span class="dimension-performance"></span></div>
+    <div hidden><span class="dimension-actions"></span><span class="dimension-capability"></span><span class="dimension-flight"></span><span class="dimension-vitals"></span><img class="dimension-portrait" alt=""><select class="dimension-quality" aria-label="Qualidade"><option value="0.85" selected>85%</option></select></div>
   </main>
-  <div id="status" class="status" role="status" aria-live="polite"></div>
+  <section class="lab-panel" data-dimension-dev aria-label="Teste de modelo GLB">
+    <div class="lab-heading"><div><small>LABORATÓRIO · BLOCO 404</small><h1>Teste de GLB</h1></div><a href="../../index.html" title="Abrir o jogo">Jogo ↗</a></div>
+    <p>Visualize um personagem pronto no Setor Limiar, com câmera, terreno e movimentação do jogo.</p>
+    <label class="file-button" for="glb-file">Abrir arquivo .glb</label><input id="glb-file" type="file" accept=".glb,model/gltf-binary">
+    <p id="status" role="status" aria-live="polite">Nenhum arquivo carregado. O operador original está visível.</p>
+    <div id="model-controls" hidden>
+      <label for="clip">Animação</label><select id="clip"></select>
+      <div class="buttons"><button id="rotate" type="button">Girar 180°</button><button id="remove" type="button">Restaurar operador</button></div>
+      <p id="model-info"></p>
+    </div>
+    <p class="hint"><b>WASD</b> mover · <b>mouse</b> arrastar câmera · <b>roda</b> zoom · <b>espaço</b> pular</p>
+    <p class="hint">Teste temporário: não altera o jogo ou o save. Os recursos devem estar incorporados ao GLB.</p>
+  </section>
   <script type="module" src="./js/main.js"></script>
 </body>
 </html>

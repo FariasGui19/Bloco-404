@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#111315">
+  <title>Img2GLB Studio — BLOCO 404</title>
+  <link rel="stylesheet" href="./style.css">
+  <script type="importmap">{"imports":{"three":"../../js/vendor/three.module.js"}}</script>
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="./" aria-label="Img2GLB Studio, início"><span class="brand-mark">B<span>·</span></span><span class="brand-copy">BLOCO <b>404</b><small>FERRAMENTAS INTERNAS</small></span></a>
+    <div class="top-divider"></div><div class="project-name">Img2GLB Studio <span> / </span> <em>Editor de personagem</em></div>
+    <div class="top-actions"><span class="version"><i></i> VERSÃO 01</span><button id="export" class="export-button"><span>↓</span> Exportar GLB</button></div>
+  </header>
+
+  <main class="workspace">
+    <section class="editor" aria-label="Editor 3D">
+      <div class="editor-heading"><div><div class="eyebrow"><span class="tiny-dot"></span> SEU ESPAÇO DE CRIAÇÃO</div><h1>Editor de personagem<span>.</span></h1><p>Uma base simples para dar forma às suas ideias.</p></div><div class="heading-index">ESTÚDIO <strong>01</strong></div></div>
+      <div class="viewport" id="viewport">
+        <div class="viewport-top"><div class="viewport-label"><span class="live-dot"></span> VIEWPORT 3D <span class="label-separator">/</span> PERSPECTIVA</div><button id="toggle-rig" class="viewport-button active" aria-pressed="true"><span class="rig-icon">♧</span> <span id="rig-label">Ocultar rig</span></button></div>
+        <div class="viewport-side-label">BLOCO 404 <span> / </span> CHARACTER STUDIO</div>
+        <div class="viewport-bottom"><div class="view-badge"><span class="axis x">X</span><span class="axis y">Y</span><span class="axis z">Z</span></div><div class="view-help"><span>◉</span> Arraste para girar <b>·</b> Scroll para zoom <b>·</b> Botão direito para mover</div><button id="reset-camera" class="camera-button" title="Reiniciar câmera" aria-label="Reiniciar câmera">↻</button></div>
+      </div>
+      <div class="editor-footer"><span><i></i> MODELO BASE HUMANOIDE</span><span>PRONTO PARA CRIAR <b>✳</b></span></div>
+    </section>
+
+    <aside class="sidebar" aria-label="Configurações do personagem">
+      <div class="sidebar-title"><div><span class="eyebrow">PERSONAGEM</span><h2>Configurações</h2></div><button id="reset-all" class="reset-button" title="Restaurar configurações">↺ <span>Resetar</span></button></div>
+      <section class="panel-section reference-section"><div class="section-heading"><div><span class="section-number">01</span><h3>Imagem de referência</h3></div><span class="section-tag">OPCIONAL</span></div><p class="section-description">Use uma imagem para inspirar as cores.</p>
+        <label class="upload" id="upload-label" for="image-input" tabindex="0" role="button"><img id="reference-image" alt="Imagem de referência escolhida" hidden><span id="upload-placeholder"><span class="upload-icon">↑</span><strong>Adicionar imagem</strong><small>Clique para selecionar um arquivo</small><span class="file-types">PNG ou JPG</span></span><span id="change-image" hidden>Alterar imagem ↗</span></label><input id="image-input" type="file" accept="image/png,image/jpeg" hidden>
+        <div id="image-info" class="image-info" hidden><span id="image-name"></span><button id="remove-image" type="button">Remover</button></div>
+      </section>
+      <section class="panel-section"><div class="section-heading"><div><span class="section-number">02</span><h3>Proporções</h3></div><span class="section-tag">MODELO BASE</span></div><p class="section-description">Ajuste a silhueta do seu personagem.</p>
+        <div class="controls" id="proportion-controls">
+          <label class="range-control">Escala geral <output for="scale">100%</output><input id="scale" type="range" min="0.65" max="1.4" step="0.01" value="1"></label>
+          <label class="range-control">Cabeça <output for="head">100%</output><input id="head" type="range" min="0.7" max="1.4" step="0.01" value="1"></label>
+          <label class="range-control">Largura do tronco <output for="width">100%</output><input id="width" type="range" min="0.7" max="1.4" step="0.01" value="1"></label>
+          <label class="range-control">Comprimento das pernas <output for="legs">100%</output><input id="legs" type="range" min="0.7" max="1.35" step="0.01" value="1"></label>
+        </div>
+      </section>
+      <section class="panel-section"><div class="section-heading"><div><span class="section-number">03</span><h3>Cores</h3></div><span class="section-tag">PALETA</span></div><p class="section-description">Personalize ou extraia da referência.</p>
+        <div class="color-grid"><label><input type="color" id="color-body" value="#d28a6b"><span>Corpo</span></label><label><input type="color" id="color-clothes" value="#d3c2a7"><span>Roupa</span></label><label><input type="color" id="color-detail" value="#514b47"><span>Detalhes</span></label></div>
+        <button class="extract-button" id="extract" disabled><span>✳</span> Extrair cores da imagem <span>↗</span></button>
+      </section>
+      <section class="panel-section rig-section"><div class="section-heading"><div><span class="section-number">04</span><h3>Rig &amp; pose</h3></div><span class="section-tag">HUMANOIDE</span></div><p class="section-description">Ajustes simétricos das articulações.</p>
+        <div class="controls"><label class="range-control">Abertura dos braços <output for="arms">12°</output><input id="arms" type="range" min="0" max="75" step="1" value="12"></label><label class="range-control">Abertura das pernas <output for="stance">0°</output><input id="stance" type="range" min="0" max="25" step="1" value="0"></label></div>
+      </section>
+      <div class="sidebar-foot"><span>✳</span><p>Comece com uma base.<br><strong>Crie algo único.</strong></p><span>404</span></div>
+    </aside>
+  </main>
+  <div id="status" class="status" role="status" aria-live="polite"></div>
+  <script type="module" src="./js/main.js"></script>
+</body>
+</html>

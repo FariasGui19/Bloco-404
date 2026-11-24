@@ -53,7 +53,13 @@ export function createSectorMaterials() {
     floor = tile("flagstone");
   // Lote 10: texturas pintadas substituem os tiles procedurais quando há DOM.
   // Sem document (testes em Node) o fallback procedural continua valendo.
-  function painted(file, fallback, repeat, folder = "setor-limiar-lote10") {
+  function painted(
+    file,
+    fallback,
+    repeat,
+    folder = "setor-limiar-lote10",
+    base = "textures",
+  ) {
     if (typeof document === "undefined" || typeof Image === "undefined")
       return fallback;
     const tex = new T.Texture();
@@ -63,7 +69,7 @@ export function createSectorMaterials() {
       tex.needsUpdate = true;
     };
     img.src = new URL(
-      `../../assets/textures/${folder}/${file}.png`,
+      `../../assets/${base}/${folder}/${file}.png`,
       import.meta.url,
     ).href;
     tex.colorSpace = T.SRGBColorSpace;
@@ -85,8 +91,42 @@ export function createSectorMaterials() {
   const plankPainting = painted("ponte-madeira", null, 2, lot11);
   const waterPainting = painted("agua-limiar", null, 26, lot11);
   const sigilPainting = painted("runa-brilho", null, 1, lot11);
+  // Lote 12: polimento. Dois mapas de detalhe (chão e pedra), a cáustica que
+  // dá fundura ao leito, a máscara da transição e dois aditivos (halo, neblina).
+  const lot12 = "setor-limiar-lote12";
+  const terrainDetailPainting = painted("detalhe-terreno", null, 34, lot12);
+  const stoneDetailPainting = painted("detalhe-pedra", null, 7, lot12);
+  const causticsPainting = painted("agua-caustica", null, 9, lot12);
+  const transitionMaskPainting = painted("mascara-transicao", null, 1, lot12);
+  // Os dois aditivos moram junto dos sprites, não das texturas tileáveis.
+  const haloPainting = painted("halo-aditivo", null, 1, lot12, "sprites");
+  const mistPainting = painted("neblina-fundo", null, 1, lot12, "sprites");
   const lambert = (color, map = null) =>
     new T.MeshLambertMaterial({ color, map, flatShading: true });
+  // Lote 12: detalhe multiplicado por cima de um material que já tem mapa. A
+  // pintura macro continua sendo a cor; a textura só devolve grão de perto.
+  function grain(material, detail, scale, amount) {
+    if (!detail || !material?.map) return material;
+    material.onBeforeCompile = (shader) => {
+      shader.uniforms.uGrain = { value: detail };
+      shader.uniforms.uGrainScale = { value: scale };
+      shader.uniforms.uGrainAmount = { value: amount };
+      shader.fragmentShader =
+        "uniform sampler2D uGrain;uniform float uGrainScale,uGrainAmount;\n" +
+        shader.fragmentShader;
+      shader.fragmentShader = shader.fragmentShader.replace(
+        "#include <map_fragment>",
+        `#include <map_fragment>
+        vec3 limiarGrain = texture2D(uGrain, vMapUv * uGrainScale).rgb;
+        // Modulação em torno de 1: zero é igual ao material sem detalhe, e a
+        // média da textura não escurece nem clareia a pintura macro.
+        diffuseColor.rgb *= 1.0 + (limiarGrain.rgb - 0.5) * 2.0 * uGrainAmount;`,
+      );
+    };
+    material.customProgramCacheKey = () => "limiar-grain-v1";
+    material.needsUpdate = true;
+    return material;
+  }
   const wind = { value: 0 },
     windStrength = { value: 1 };
   const foliage = new T.MeshLambertMaterial({
@@ -126,7 +166,16 @@ export function createSectorMaterials() {
     textures,
     // Texturas do lote 11 que outros módulos usam direto (sprites aditivos).
     sigilTexture: sigilPainting,
-    masonry: lambert(0xcbd2da, wallPainting),
+    // Lote 12: detalhe multiplicado no chão e na pedra, cáustica do leito,
+    // máscara de dissolução da entrada e os dois aditivos.
+    detailTerrain: terrainDetailPainting,
+    grain,
+    detailStone: stoneDetailPainting,
+    caustics: causticsPainting,
+    transitionMask: transitionMaskPainting,
+    haloTexture: haloPainting,
+    mistTexture: mistPainting,
+    masonry: grain(lambert(0xcbd2da, wallPainting), stoneDetailPainting, 6, 0.42),
     floor: lambert(0xb7c5ce, floorPainting),
     moss: mossPainting ? lambert(0xa9c6b5, mossPainting) : lambert(0x6f9c83),
     wood: lambert(0xc8b9a4, wood),
@@ -140,7 +189,14 @@ export function createSectorMaterials() {
           flatShading: true,
         })
       : lambert(0xd6dee0),
-    seabed: lambert(0x8fb0b4, waterPainting),
+    seabed: causticsPainting
+      ? new T.MeshLambertMaterial({
+          color: 0x9fc2c6,
+          map: causticsPainting,
+          emissive: 0x0d2a30,
+          flatShading: true,
+        })
+      : lambert(0x8fb0b4, waterPainting),
     trim: lambert(0x3c4b60),
     copper: lambert(0xba8e68),
     iron: lambert(gratePainting ? 0x8fa4ac : 0x263748, gratePainting),

@@ -8,6 +8,7 @@ import { navigationBearing } from "./sector-layout.js";
 import * as T from "../vendor/three.module.js";
 import { createSector } from "./sector-scene.js";
 import { createWayfinding } from "./sector-wayfinding.js";
+import { createFootfall } from "./footfall.js";
 import { createOperator } from "./operator.js";
 import { SpatialController } from "./controller.js";
 import {
@@ -72,6 +73,8 @@ export function createSpatialWorld({
     let operator = createOperator(state.progress, state.player),
       archetype = `${state.progress.archetype}:${state.player.nucleoForm ?? ""}:${state.player.equippedSuit ?? ""}`;
     world.scene.add(operator.root);
+    // Lote 12: poeira do passo. Não cria sprite durante o jogo, só reusa o pool.
+    const footfall = createFootfall(world.scene);
     // During the rupture the actual 2D canvas becomes a tilting, fading plane.
     const snapshot = document.createElement("canvas");
     snapshot.width = sourceCanvas?.width || 1;
@@ -90,6 +93,14 @@ export function createSpatialWorld({
         depthWrite: false,
       }),
     );
+    // Lote 12: a entrada do setor dissolve pela máscara de fumaça em vez de
+    // escurecer chapado — o alpha do plano vem da textura, não da opacidade.
+    const transitionMask = world.materials?.transitionMask ?? null;
+    if (transitionMask) {
+      flatPlane.material.alphaMap = transitionMask;
+      flatPlane.material.alphaTest = 0.04;
+      flatPlane.material.needsUpdate = true;
+    }
     flatPlane.position.z = -2;
     flatPlane.renderOrder = 100;
     camera.add(flatPlane);
@@ -108,6 +119,8 @@ export function createSpatialWorld({
       lastY = 0,
       lock = false,
       hudTime = 0,
+      stepPhase = 0,
+      stepSign = 0,
       frames = 0,
       fps = 0,
       fpsTime = 0,
@@ -557,11 +570,30 @@ export function createSpatialWorld({
       pressed.clear();
       const c = controller;
       const reducedMotion = motionPreference.matches;
-      operator.animate(c, time, {
-        reducedMotion,
-        action: actions.action,
-        onStep: () => sound("step"),
-      });
+      operator.animate(c, time, { reducedMotion, action: actions.action });
+      // Lote 12: o passo é medido no controlador, não no modelo. Só o operador
+      // civil reportava `onStep`; assim o som e a poeira valem para qualquer
+      // traje, forma ou velocidade, e nunca disparam dois no mesmo pé.
+      const stepSpeed =
+        Math.hypot(c.vx ?? 0, c.vz ?? 0) || Math.abs(c.speed ?? 0);
+      const stepping =
+        c.grounded !== false && !c.boating && !c.flying && stepSpeed > 0.25;
+      if (stepping) {
+        stepPhase += dt * Math.min(9, stepSpeed * 1.15);
+        const sign = Math.sign(Math.sin(stepPhase)) || 1;
+        if (sign !== stepSign) {
+          stepSign = sign;
+          sound("step");
+          if (!reducedMotion)
+            footfall.spawn(
+              c.x,
+              c.y,
+              c.z,
+              Math.min(1.35, 0.75 + stepSpeed * 0.06),
+            );
+        }
+      } else stepSign = 0;
+      footfall.update(dt);
       world.update(c, time, reducedMotion, dt);
       wayfinding.update(time, reducedMotion);
       const framing = cameraMotion.update(c, dt, {
@@ -635,6 +667,11 @@ export function createSpatialWorld({
           );
       camera.lookAt(target);
       flatPlane.visible = transition.mode === "entering";
+      if (transitionMask && flatPlane.visible)
+        transitionMask.offset.set(
+          Math.sin(time * 0.13) * 0.18,
+          (time * 0.05) % 1,
+        );
       flatPlane.material.opacity = 1 - smooth;
       flatPlane.scale.set(
         2 * Math.tan(T.MathUtils.degToRad(camera.fov / 2)) * 2 * camera.aspect,

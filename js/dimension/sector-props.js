@@ -57,6 +57,8 @@ export function createLimiarProps({
   heightAt = () => 0,
   state = null,
   billboard = () => null,
+  frames = () => [],
+  halo = null,
   sigil = null,
   postMaterial = null,
   reach = 2.9,
@@ -70,7 +72,10 @@ export function createLimiarProps({
 
   // Halo suave: a runa pintada (sigil) é um selo grande; para lanterna e
   // caixote um gradiente radial pequeno lê melhor que o mandala inteiro.
-  const soft = typeof document === "undefined" ? null : softGlowTexture();
+  // Lote 12: o halo pintado substitui o gradiente gerado em canvas quando a
+  // folha carrega. O procedural fica de reserva — é o caso dos testes em Node.
+  const soft =
+    halo ?? (typeof document === "undefined" ? null : softGlowTexture());
 
   function glowSprite(tint, scale, parent, y, map = soft) {
     if (!map) return null;
@@ -149,12 +154,52 @@ export function createLimiarProps({
             shrine ? def.height * 0.86 : (def.base ?? 0) + def.height * 0.52,
             shrine ? sigil ?? soft : soft,
           );
+    // Lote 12: estandarte tremula em quatro quadros e a chama da lanterna é um
+    // flipbook aditivo por cima do vidro. Sem as folhas, os dois continuam
+    // exatamente como no lote 11.
+    let flutter = null;
+    if (sprite && def.art === "estandarte-limiar") {
+      const strip = frames("estandarte-tremura", 4);
+      if (strip.length) {
+        // Já troca a arte no nascimento: o pano do lote 12 tem mastro próprio.
+        sprite.material.map = strip[0];
+        flutter = { frames: strip, base: tex, index: -1 };
+      }
+    }
+    let flame = null;
+    if (def.kind === "lantern") {
+      const strip = frames("lanterna-chama", 4);
+      if (strip.length) {
+        flame = new T.Sprite(
+          new T.SpriteMaterial({
+            map: strip[0],
+            transparent: true,
+            alphaTest: 0.1,
+            depthWrite: false,
+            blending: T.AdditiveBlending,
+            fog: true,
+            opacity: 0,
+          }),
+        );
+        // A lanterna já vem com a chama pintada no vidro: o flipbook entra no
+        // mesmo ponto, aditivo e pequeno, só para ela respirar.
+        flame.center.set(0.5, 0.42);
+        flame.scale.setScalar(def.height * 0.4);
+        flame.position.set(0, (def.base ?? 0) + def.height * 0.6, 0.02);
+        flame.renderOrder = 3;
+        root.add(flame);
+        flame.userData.frames = strip;
+        flame.userData.index = 0;
+      }
+    }
     const on = saved.has(def.id);
     const prop = {
       def,
       root,
       sprite,
       glow,
+      flame,
+      flutter,
       active: on,
       phase: (def.x * 0.7 + def.z * 0.3) % 6.28,
       marker: null,
@@ -182,6 +227,9 @@ export function createLimiarProps({
               : 0xffffff,
       );
     }
+    if (prop.flame)
+      prop.flame.material.opacity =
+        prop.active && kind === "lantern" ? 0.95 : 0;
     if (prop.glow)
       prop.glow.material.opacity = prop.active
         ? kind === "lantern" || kind === "shrine"
@@ -282,7 +330,26 @@ export function createLimiarProps({
     update(time = 0, dt = 0, reducedMotion = false) {
       for (const prop of props) {
         const { kind } = prop.def;
+        // O estandarte tremula mesmo em repouso: é tecido, não mecanismo.
+        if (prop.flutter && prop.sprite) {
+          const index = reducedMotion
+            ? 0
+            : Math.floor((time * 4.5 + prop.phase) % prop.flutter.frames.length);
+          if (index !== prop.flutter.index) {
+            prop.flutter.index = index;
+            prop.sprite.material.map = prop.flutter.frames[index];
+          }
+        }
         if (!prop.active) continue;
+        if (prop.flame && !reducedMotion) {
+          const strip = prop.flame.userData.frames,
+            index = Math.floor((time * 9 + prop.phase * 3) % strip.length);
+          if (index !== prop.flame.userData.index) {
+            prop.flame.userData.index = index;
+            prop.flame.material.map = strip[index];
+          }
+          prop.flame.position.x = Math.sin(time * 2.3 + prop.phase) * 0.012;
+        }
         if (prop.glow) {
           const flicker =
             kind === "lantern" && !reducedMotion

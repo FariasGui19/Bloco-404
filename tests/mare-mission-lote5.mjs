@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
-import {createMission, canStand} from '../js/dimension/mare-mission-model.js';
+import {createMission, canStand, sceneryProps, scannerTarget} from '../js/dimension/mare-mission-model.js';
 import {enemyArt} from '../js/dimension/mare-mission-life.js';
 import {lote5Props, useLote5, lote5Complete, lote5Readout} from '../js/dimension/mare-mission-lote5.js';
 
@@ -12,22 +12,20 @@ const art = path.join(root, 'assets/source-art/mare-missao-lote5');
 const sheets = ['caldeira-sala','tubo-vapor','cristal-mare','valvula-pressao','painel-recompilacao','selo-recompilado','guardiao-mare','guardiao-dano','porta-recompilacao','piso-metal'];
 const missionSource = fs.readFileSync(path.join(root, 'js/dimension/mare-mission.js'), 'utf8');
 
-// Every lote 5 name is published, original and actually loaded by the mission.
+// O acervo permanece publicado. Apenas as peças usadas nesta montagem são carregadas.
 for (const name of sheets) {
   assert.ok(fs.existsSync(path.join(dir, `${name}.png`)), `sprite ausente: ${name}`);
   assert.ok(fs.existsSync(path.join(art, `${name}.png`)), `arte original ausente: ${name}`);
-  assert.ok(missionSource.includes(`"${name}"`), `missão não referencia ${name}`);
+  if (sceneryProps.some(p => p.art === name)) assert.ok(missionSource.includes(name));
 }
 assert.ok(fs.statSync(path.join(dir, 'piso-metal.png')).size > 1000);
 
-// The model exposes collision radii for the whole machine room, and each prop
-// still has a walkable approach within interaction range.
+// Peças de acervo mantêm suas dimensões, mas só as peças escolhidas aparecem
+// na baía. A caldeira antiga no novo portal não é uma colisão fantasma.
 assert.equal(lote5Props.length, 7);
-for (const prop of lote5Props) {
-  const approaches = [[0.8,0],[-0.8,0],[0,0.8],[0,-0.8]].filter(([dx,dy]) => canStand(prop.x+dx, prop.y+dy));
-  assert.ok(approaches.length, `sem aproximação para ${prop.id}`);
-  assert.ok(prop.r > 0 && prop.r < 0.7, `raio inválido em ${prop.id}`);
-}
+for (const prop of lote5Props) assert.ok(prop.r > 0 && prop.r < .7);
+for (const prop of sceneryProps.filter(p => sheets.includes(p.art)))
+  assert.ok([[.8,0],[-.8,0],[0,.8],[0,-.8]].some(([dx,dy]) => canStand(prop.x+dx,prop.y+dy)));
 
 // Interactions are local, one-shot, and the seal needs both machine readings.
 const m = createMission({});
@@ -64,13 +62,10 @@ assert.equal(enemyArt({guardian: true, phase: 'dissolve'}), 'guardiao-dano');
 assert.match(missionSource, /guardian: true/);
 assert.match(missionSource, /scale: e\.hunter \? 1\.08 : e\.guardian \? 1\.12 : 1/);
 
-// Transition, ambience and audio hooks are wired without gating progression.
-const css = fs.readFileSync(path.join(root, 'css/dimension.css'), 'utf8');
-assert.match(css, /\.mare-mission\.recompilado::after/);
-assert.match(missionSource, /shell\.classList\.toggle\("recompilado"/);
-assert.match(missionSource, /if\(lote5Complete\(m\)&&beat%4===0\)tone\(/);
-assert.match(missionSource, /lote5-valve"\)\{tone\(52/);
-assert.match(missionSource, /lote5-seal"\)\{tone\(440/);
+// A antiga sala de máquinas não cria um circuito concorrente no scanner.
+const boiler = sceneryProps.find(p => p.art === 'caldeira-sala');
+const dock = createMission({}); dock.x=boiler.x; dock.y=boiler.y+.7;
+assert.equal(scannerTarget(dock),null);
 assert.match(missionSource, /images\["piso-metal"\]/);
 
-console.log('Maré lote 5: 10 folhas, sala de máquinas alcançável, válvula/painel/selo, guardião, transição e áudio OK');
+console.log('Maré lote 5: acervo, leituras legadas, guardião e cenário fora do scanner OK');

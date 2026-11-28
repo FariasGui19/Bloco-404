@@ -11,7 +11,7 @@ export const lore = Object.freeze([
 export const loreById = (id) => lore.find((entry) => entry.id === id);
 const text = {
   diario:
-    'DIÁRIO — “Dia 19: o sino tocou sem vento. Subi e a lente estava virada para dentro. Não fui eu. Nulo aprendeu a voz do faroleiro antes de aprender a minha.”',
+    'DIÁRIO — “O sino tocou sem vento. Nulo aprendeu a voz do faroleiro.”',
   lente:
     'LENTE FRESNEL — o vidro ainda guarda um eco de luz. Na armação: “cegueira negociada”. O Núcleo comprou o silêncio do farol e chamou isso de manutenção.',
   mapa:
@@ -19,7 +19,7 @@ const text = {
   maca:
     'MACA — correias cortadas por dentro. O último paciente não foi contido; o corredor foi contido com ele. O lençol guarda a marca de uma mão menor.',
   prontuario:
-    'PRONTUÁRIO 07 — “ouve o sino mesmo quando não há sino”. A assinatura é do faroleiro, não do médico. Data de admissão anterior à evacuação.',
+    'PRONTUÁRIO 07 — “Ainda ouço o sino.” Alta assinada três dias antes da evacuação.',
   caixa:
     'CAIXA DE SINAL — faltam três sinalizadores. Alguém os levou para a âncora. O rádio de emergência nunca foi autorizado a transmitir.',
 };

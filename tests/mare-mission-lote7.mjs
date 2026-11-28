@@ -22,7 +22,7 @@ for (const name of sheets) {
   assert.ok(fs.existsSync(original), `arte original ausente: ${name}`);
   assert.equal(fs.readFileSync(sprite).toString('ascii', 1, 4), 'PNG');
   assert.equal(fs.readFileSync(sprite)[25], 6, `${name} sprite is RGBA`);
-  assert.ok(source.includes(`"${name}"`) || main.includes(`/${name}.png`), `missão/docas não referencia ${name}`);
+  assert.ok(source.includes(name) || main.includes(`/${name}.png`), `missão/docas não referencia ${name}`);
   if (textures.has(name)) assert.deepEqual([...fs.readFileSync(sprite).subarray(16, 24)], [0, 0, 0, 64, 0, 0, 0, 64], `${name} is 64x64`);
 }
 
@@ -33,14 +33,14 @@ assert.match(source, /chao-agua-rasa/);
 assert.match(source, /teto-metal-escuro/);
 assert.match(source, /parede-azulejo-quebrado/);
 assert.match(source, /parede-concreto-umido/);
-assert.match(source, /portal-mare/);
-assert.match(source, /drawMap\(\)/);
+assert.match(source, /ancora-cromatica/);
+assert.match(source, /drawServiceMap\(ctx, m\)/);
 assert.match(source, /requestPointerLock/);
 assert.match(source, /noiseBurst/);
 assert.match(source, /CAM 02/);
 
-// Broken partitions shape the yard but the south doors remain walkable.
-assert.ok(lote7Walls.length >= 6);
+// Só as rochas periféricas permanecem; as portas e o pátio ficam abertos.
+assert.ok(lote7Walls.every(([x,y]) => x < 4 || y < 8));
 assert.equal(cell(2.5, 27.5), 2);
 assert.equal(cell(9.5, 27.5), 0, 'west cabin door approach stays open');
 assert.equal(cell(15.5, 27.5), 0, 'central spawn gap stays open');

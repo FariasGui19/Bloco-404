@@ -43,6 +43,10 @@ J alterna ações e L oferece uma variação do poder nativo, sem novos desbloqu
 O [Morfador Mestre 3D](docs/limiar-morfador-mestre.md) permite trocar arquétipos,
 trajes e formas ao vivo em uma sessão criativa isolada do save (painel DEV / F8).
 
+## Maré Cromática — Baía de Quarentena
+
+Na Fenda, depois de estabilizar a âncora da incursão, escolha **Examinar o outro lado**. No píer da Baía, siga o cabo da Estrutura Húmida e use **E** no equipamento âmbar. **M** abre a carta do circuito. [Percurso, retomada e retorno ao Limiar](docs/mare-missao-lote13.md).
+
 ## Testes
 
 Os testes de lógica são scripts Node, sem dependências (testes opcionais de

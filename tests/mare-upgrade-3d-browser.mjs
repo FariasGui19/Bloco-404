@@ -48,17 +48,17 @@ try {
   assert.ok(!/undefined|null/.test(spawnPrompt), `prompt sujo: ${spawnPrompt}`);
   const cleaned = await page.evaluate(() => {
     const m = d.manager.runtime.mission;
-    m.x = 9.8;
-    m.y = 7.9;
+    m.x = 16;
+    m.y = 25.3;
     m.angle = -Math.PI / 2;
     m.pitch = 0;
     d.manager.tick(0.05);
     return document.querySelector(".mare-mission aside").textContent;
   });
-  assert.match(cleaned, /^\[E\] Rádio de emergência$/);
+  assert.match(cleaned, /^\[E\] SINTONIZAR SENSOR COSTEIRO$/);
   assert.match(
     await page.locator(".mare-readout").innerText(),
-    /DESCOMPASSO LOCAL.*REGISTROS.*LORE.*AMEAÇAS/,
+    /ESTRUTURA HÚMIDA.*DOMÍNIO LOCAL.*AMEAÇAS/,
     "diagnóstico continua legível para QA, mas visualmente recortado",
   );
 
@@ -129,7 +129,7 @@ try {
   assert.equal(fear.after, 0, "vulto desmancha quando encarado pela lanterna");
   assert.equal(fear.finished, false, "evento de medo não falha a missão");
 
-  // Entrada e colapso: canvas composto tem imagem e o fim aplica a classe de ruptura.
+  // Canvas composto e retirada real por tempo (o efeito de colapso não é vitória).
   const pixels = await page.evaluate(async () => {
     const data = document
       .querySelector(".mare-mission canvas")
@@ -139,20 +139,23 @@ try {
   assert.ok(pixels > 5000, "frame 3D foi composto no canvas da missão");
   const end = await page.evaluate(() => {
     const m = d.manager.runtime.mission;
-    m.finished = true;
+    m.p.elapsed = 599.99;
     for (let i = 0; i < 20; i++) d.manager.tick(0.05);
     return {
-      cls: document.querySelector(".mare-mission").classList.contains("mare-fim"),
+      overload: d.manager.runtime.world3d.state.overload,
+      victory: Boolean(m.p.completed || s.progress.dimensionalRupture),
       mode: d.manager.mode,
       report: document.querySelector(".mare-message").textContent,
     };
   });
   assert.equal(end.mode, "3d", "o colapso tem tempo de tela antes do retorno");
-  assert.ok(end.cls, "HUD entra no estado de ruptura");
+  assert.ok(end.overload);
+  assert.equal(end.victory, false);
+  assert.match(end.report,/Retirada de emergência/);
 
   assert.deepEqual(errors, []);
   console.log(
-    "Maré upgrade browser: 3D ativo, pitch/lanterna, botões de câmera, prompt [E] limpo, vulto banido pela luz e colapso final OK",
+    "Maré upgrade browser: 3D ativo, pitch/lanterna, botões de câmera, prompt [E] limpo, vulto banido pela luz e retirada sem vitória OK",
   );
 } finally {
   await browser.close();

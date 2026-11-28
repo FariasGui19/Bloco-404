@@ -3,9 +3,10 @@
 // gaze-following flashlight. The WebGL layer is composited into the mission's
 // 2D canvas so saves, HUD, map and tests keep one capture surface.
 import * as THREE from "../vendor/three.module.js";
-import { cell, waterAt, shoreX } from "./mare-mission-model.js";
+import { cell, waterAt, shoreX, CABINS } from "./mare-mission-model.js";
 import { lote7Walls } from "./mare-mission-lote7.js";
-import { LOTE11_BEACON, lote11RingPulse } from "./mare-mission-lote11.js";
+import { anchor, systems, circuitLegs, siteStatus, statusColor } from './mare-mission-circuit.js';
+import { installStations } from './mare-mission-stations.js';
 import { enemyFamily, enemyFrame } from "./mare-mission-life.js";
 
 const TAU = Math.PI * 2;
@@ -15,10 +16,6 @@ const hash = (x, y, seed = 0) => {
 };
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 
-const CABINS = [
-  [5, 5, 7, 6],
-  [6, 20, 7, 7],
-];
 const inCabin = (x, y) =>
   CABINS.some(([cx, cy, w, h]) => x > cx && x < cx + w && y > cy && y < cy + h);
 const onCabinWall = (x, y) =>
@@ -104,8 +101,6 @@ function silhouetteTexture() {
 export async function createMareWorld3D({
   images = {},
   props = [],
-  // Lote 13: percurso calculado fora daqui (dado puro, testável em Node).
-  path = null,
   width = 384,
   height = 216,
   onFear = () => {},
@@ -195,8 +190,7 @@ export async function createMareWorld3D({
     texture("cabo-guia", 1, "mare-missao-lote13"),
   ]);
   // Lote 11: papel de carta, vidro de Fresnel e corda alcatroada.
-  const [papelCartaTex, vidroFarolTex, cordaTex] = await Promise.all([
-    texture("papel-carta", 1, "mare-missao-lote11"),
+  const [vidroFarolTex, cordaTex] = await Promise.all([
     texture("vidro-farol", 1, "mare-missao-lote11"),
     texture("corda-alcatrao", 4, "mare-missao-lote11"),
   ]);
@@ -246,18 +240,6 @@ export async function createMareWorld3D({
     black: new THREE.MeshLambertMaterial({ color: 0x182226 }),
     rust: new THREE.MeshLambertMaterial({ color: 0x58402f }),
     plastic: new THREE.MeshLambertMaterial({ color: 0x1f3234 }),
-    chartPaper: new THREE.MeshLambertMaterial({
-      map: papelCartaTex,
-      color: 0xc9b794,
-      side: THREE.DoubleSide,
-    }),
-    lensGlass: new THREE.MeshBasicMaterial({
-      map: vidroFarolTex,
-      color: 0xc8fff2,
-      transparent: true,
-      opacity: 0.92,
-      fog: true,
-    }),
     rope: lambert(cordaTex, 0xc9b394),
   };
   // Texturas do lote 9 substituem telhado, metal escuro e pedras molhadas.
@@ -395,30 +377,8 @@ export async function createMareWorld3D({
   box(0.18, 1.15, 0.18, mat.woodDark, 19.2, 0.55, 25.2);
   // Píer leste, avançando sobre o mar profundo.
   pierDeck(33.8, 13.2, 17.5, 3.4, 0.18);
-  // passarela do Ponto Zero até o terminal: o olho segue as tábuas.
-  pierDeck(16, 22.2, 3.0, 7.2, 0.035, false);
-  pierDeck(16, 18.6, 3.0, 2.2, 0.035, false);
-  // plataforma central de recompilação, em tábuas gastas
-  pierDeck(16.2, 16.2, 5.4, 4.2, 0.05);
-  // píer de serviço sudeste: a caldeira, o selo e o portal ficam sobre ele.
+  // Plataforma de serviço: o portal final fica de fato sobre o píer.
   pierDeck(27.4, 26.0, 6.0, 8.6, 0.18);
-  const ropeLineMat = new THREE.LineBasicMaterial({ color: 0x554936, transparent: true, opacity: 0.9 });
-  for (let i = 0; i < 5; i++) {
-    const z = 19.2 + i * 1.8;
-    for (const x of [14.35, 17.65]) {
-      box(0.1, 0.86, 0.1, mat.woodDark, x, 0.43, z);
-    }
-    const ropePts = [];
-    for (let j = 0; j <= 6; j++) {
-      const k = j / 6;
-      ropePts.push(new THREE.Vector3(
-        14.35 + k * 3.3,
-        0.8 - Math.sin(k * Math.PI) * 0.12,
-        z,
-      ));
-    }
-    scene.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(ropePts), ropeLineMat));
-  }
 
   // espuma costeira: três faixas que sobem e descem
   const foamMap = espumaTex.clone();
@@ -518,18 +478,15 @@ export async function createMareWorld3D({
     return c;
   };
   function quad(batch, a, b, c, d, normal, uvs, color) {
-    const verts = [a, b, c, a, c, d];
-    // Dois triângulos por face: a,b,c e a,c,d. O segundo triângulo precisa
-    // repetir os UVs de a e c, não inventar índices fora do array.
-    const uvOrder = [
-      uvs[0], uvs[1], uvs[2], uvs[3], uvs[4], uvs[5],
-      uvs[0], uvs[1], uvs[4], uvs[5], uvs[6], uvs[7],
-    ];
-    for (let i = 0; i < 6; i++) {
-      batch.p.push(verts[i][0], verts[i][1], verts[i][2]);
-      batch.n.push(normal[0], normal[1], normal[2]);
-      batch.u.push(uvOrder[i * 2], uvOrder[i * 2 + 1]);
-      batch.c.push(color.r, color.g, color.b);
+    // Respeitar a normal externa inclusive nas tampas e faces em X. Com a
+    // ordem invertida essas fachadas desapareciam quando vistas de fora.
+    const ab = new THREE.Vector3(b[0]-a[0], b[1]-a[1], b[2]-a[2]);
+    const ac = new THREE.Vector3(c[0]-a[0], c[1]-a[1], c[2]-a[2]);
+    const ccw = ab.cross(ac).dot(new THREE.Vector3(...normal)) > 0;
+    const corners = [a,b,c,d];
+    for (const i of ccw ? [0,1,2,0,2,3] : [0,2,1,0,3,2]) {
+      batch.p.push(...corners[i]); batch.n.push(...normal);
+      batch.u.push(uvs[i*2],uvs[i*2+1]); batch.c.push(color.r,color.g,color.b);
     }
   }
   function addBox(batch, cx, cy, cz, w, h, d, color, topDark = 0.38) {
@@ -567,8 +524,8 @@ export async function createMareWorld3D({
     const lit = hash(x, y, 21) > 0.52;
     const cx = x + 0.5, cz = y + 0.5;
     const cy = h * 0.62;
-    const wx = axis === 'x' ? cx : cx;
-    const wz = axis === 'z' ? cz : cz;
+    const wx = axis === 'x' ? cx + sign*.51 : cx;
+    const wz = axis === 'z' ? cz + sign*.51 : cz;
     faceQuad(windowBatch, axis, sign, wx, cy, wz, 0.58, 0.62, col(0x05090a));
     faceQuad(windowBatch, axis, sign, wx, cy, wz, 0.44, 0.48, col(lit ? 0xa87a46 : 0x142427), 0.02);
     if (lit) faceQuad(windowBatch, axis, sign, wx, cy, wz, 0.16, 0.48, col(0x061013), 0.028);
@@ -603,7 +560,7 @@ export async function createMareWorld3D({
       if (onCabinWall(x, y)) {
         // trechos desabados: a colisão permanece, mas o olhar atravessa o vão.
         const h = hash(x, y, 23) > 0.78 ? 1.06 : 2.92 + hash(x, y, 6) * 0.22;
-        addWall(x, y, h, c === 3 ? 'metalDark' : 'wood', c === 3 ? 3 : 0);
+        addWall(x, y, h, c === 3 || y < 12 ? 'metal' : 'wood', c === 3 ? 3 : 0);
         addBox(batches.trim, x + 0.5, h / 2, y + 0.5, 1.06, 0.055, 1.06, col(0x2c322e, 0.9), 0.8);
         addBox(batches.trim, x + 0.045, h / 2, y + 0.5, 0.07, h, 0.07, col(0x242a26, 0.9), 0.8);
         addBox(batches.trim, x + 0.955, h / 2, y + 0.5, 0.07, h, 0.07, col(0x242a26, 0.9), 0.8);
@@ -640,7 +597,7 @@ export async function createMareWorld3D({
   for (const [a, b, w, h] of CABINS) {
     box(w + 0.32, 0.2, h + 0.32, mat.concrete, a + w / 2, 0.1, b + h / 2);
     const doorX = a + 3.5, z = b + h + 0.055;
-    for (const [x0, x1] of [[a - 0.02, doorX - 0.72], [doorX + 0.72, a + w + 0.02]]) {
+    for (const [x0, x1] of [[a - 0.02, doorX - 1.5], [doorX + 1.5, a + w + 0.02]]) {
       const pw = x1 - x0;
       if (pw < 0.4) continue;
       const map = azulejoTex.clone();
@@ -676,37 +633,27 @@ export async function createMareWorld3D({
     // telhado de duas águas simplificado (duas lajes inclinadas)
     for (const side of [-1, 1]) {
       const slab = box(w + 0.9, 0.12, h * 0.58, mat.roof, cx + w / 2, 3.95, cy + h / 2 + side * h * 0.24);
-      slab.rotation.z = side * 0.11;
-    }
-    // portas de serviço: dão escala humana e quebram a fachada cega
-    for (const [side, flip] of [[1, 1], [-1, -1]]) {
-      const doorZ = cy + (side > 0 ? h : 0) + side * 0.025;
-      box(1.06, 2.16, 0.05, mat.black, cx + 2.4, 1.08, doorZ);
-      box(0.86, 1.94, 0.045, mat.woodDark, cx + 2.4, 0.98, doorZ + flip * 0.025);
-      box(0.68, 0.12, 0.03, mat.rust, cx + 2.4, 1.84, doorZ + flip * 0.05);
-      box(0.06, 0.06, 0.04, mat.rust, cx + 2.72, 1.0, doorZ + flip * 0.055);
-      box(0.38, 0.08, 0.035, new THREE.MeshBasicMaterial({ color: 0xb98243 }), cx + 2.4, 2.32, doorZ + flip * 0.05);
+      slab.rotation.x = side * 0.11;
     }
   }
-  // cabos caídos / fios entre telhados
-  const cableMat = new THREE.LineBasicMaterial({ color: 0x030607, transparent: true, opacity: 0.95 });
-  for (const [ax, az, bx, bz, y] of [
-    [10, 7, 20, 13, 3.4],
-    [7, 19, 18, 24, 3.6],
-    [22, 8, 29, 15, 3.2],
-    [12, 25, 24, 27, 3.1],
-  ]) {
-    const pts = [];
-    for (let i = 0; i <= 10; i++) {
-      const k = i / 10;
-      pts.push(new THREE.Vector3(
-        ax + (bx - ax) * k,
-        y - Math.sin(k * Math.PI) * 0.55,
-        az + (bz - az) * k,
-      ));
-    }
-    scene.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts), cableMat));
-  }
+  // Letreiro preso ao beiral, acima da entrada larga do galpão (não é um billboard).
+  const shedSign = canvasTexture(g => {
+    g.fillStyle = '#1a3337'; g.fillRect(0,0,144,32);
+    g.strokeStyle = '#79918a'; g.strokeRect(1.5,1.5,141,29);
+    g.fillStyle = '#d5ae68'; g.fillRect(4,4,28,24);
+    g.font = 'bold 20px monospace'; g.fillStyle = '#142629'; g.fillText('02',6,23);
+    g.font = 'bold 15px monospace'; g.fillStyle = '#d0dad1'; g.fillText('GALPÕES',38,17);
+    g.font = '8px monospace'; g.fillText('GRUPO AUXILIAR',39,27);
+  },144,32);
+  mesh(new THREE.PlaneGeometry(3.6,.8),new THREE.MeshBasicMaterial({map:shedSign}),8.5,3.14,11.12);
+  // Fiação alta só entre beirais; a única linha que cruza o pátio é o
+  // cabo H-03 no chão. Não deixar pontas suspensas onde não há mais galpão.
+  const wire = new THREE.QuadraticBezierCurve3(
+    new THREE.Vector3(11.8, 3.62, 10.5), new THREE.Vector3(12.2, 2.62, 15.4),
+    new THREE.Vector3(12.6, 3.62, 20.3),
+  );
+  scene.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(wire.getPoints(10)),
+    new THREE.LineBasicMaterial({ color: 0x0b1111 })));
 
   const spriteTextures = new Map();
   const spriteTexture = (name) => {
@@ -747,7 +694,7 @@ export async function createMareWorld3D({
     return sprite;
   };
   // Píer do Ponto Zero: portal de quarentena sobre a passarela do spawn.
-  scenerySprite("pier-zero", 16, 29.2, 3.1);
+  scenerySprite("pier-zero", 13, 31.8, 2.2);
   // destroços encalhados na arrebentação
   const wreck = new THREE.Group();
   const hullMesh = new THREE.Mesh(new THREE.BoxGeometry(5.6, 1.35, 2.1), mat.hull);
@@ -766,10 +713,10 @@ export async function createMareWorld3D({
   boom.position.set(2.2, 3.9, 0);
   boom.rotation.z = 1.1;
   wreck.add(boom);
-  wreck.position.set(28.1, 0, 21.5);
+  wreck.position.set(34.5, -.2, 19.5);
   wreck.rotation.y = -0.4;
   scene.add(wreck);
-  scenerySprite("barco-destroco", 27.7, 22.0, 3.6, 0.9);
+  scenerySprite("barco-destroco", 34.1, 20, 2.9, 0.9);
 
   // ---------- fauna ambiente ----------
   // Sprites de pose única animados por deslocamento/rotação: gaivotas circulam,
@@ -856,7 +803,7 @@ export async function createMareWorld3D({
     rockMesh.scale.set(1.4, 0.5, 1);
     scene.add(rockMesh);
   }
-  // cristais cromáticos nas rochas e nos três resíduos de memória.
+  // Cristais discretos nas rochas periféricas.
   const crystalClusters = [];
   const addCrystalCluster = (x, z, scale = 1) => {
     const group = new THREE.Group();
@@ -877,78 +824,16 @@ export async function createMareWorld3D({
     crystalClusters.push({ group, phase: hash(x, z) * 7, base: 1 });
     return group;
   };
-  addCrystalCluster(8.5, 8.5, 0.82);
-  addCrystalCluster(22.5, 8.5, 0.8);
-  addCrystalCluster(9.5, 23.5, 0.82);
   addCrystalCluster(27.1, 6.7, 0.62);
   addCrystalCluster(3.4, 8.2, 0.6);
   addCrystalCluster(27.5, 12.3, 0.55);
   addCrystalCluster(13.9, 4.2, 0.55);
 
-  // Terminal de Recompilação: torre de rádio, tela de varredura e anéis.
-  const terminal = new THREE.Group();
-  const tBase = new THREE.Mesh(new THREE.BoxGeometry(2.5, 0.22, 2.0), mat.concrete);
-  tBase.position.y = 0.11;
-  terminal.add(tBase);
-  const cabinet = new THREE.Mesh(new THREE.BoxGeometry(1.5, 2.25, 0.85), mat.tiles);
-  cabinet.position.set(0, 1.25, 0);
-  terminal.add(cabinet);
-  const screenMat = new THREE.MeshBasicMaterial({ color: 0x4fb7a4, fog: true });
-  const screen = new THREE.Mesh(new THREE.PlaneGeometry(1.0, 0.72), screenMat);
-  screen.position.set(0, 1.55, 0.44);
-  terminal.add(screen);
-  const mastAntenna = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.06, 6.4, 5), mat.black);
-  mastAntenna.position.set(0.48, 3.4, 0);
-  terminal.add(mastAntenna);
-  for (let i = 0; i < 3; i++) {
-    const arm = new THREE.Mesh(new THREE.BoxGeometry(0.9 - i * 0.16, 0.04, 0.04), mat.black);
-    arm.position.set(0.48, 4.1 + i * 1.0, 0);
-    terminal.add(arm);
-  }
-  const terminalRings = [];
-  for (let i = 0; i < 2; i++) {
-    const ring = new THREE.Mesh(
-      new THREE.TorusGeometry(1.15 + i * 0.32, 0.035, 5, 22),
-      new THREE.MeshBasicMaterial({ color: 0x7be1c9, transparent: true, opacity: 0.4, fog: true }),
-    );
-    ring.position.set(0, 2.15, 0);
-    ring.rotation.x = Math.PI / 2;
-    terminal.add(ring);
-    terminalRings.push(ring);
-  }
-  const terminalHalo = new THREE.Sprite(
-    new THREE.SpriteMaterial({
-      map: glowTexture("120,230,204"),
-      transparent: true,
-      opacity: 0.3,
-      depthWrite: false,
-      blending: THREE.AdditiveBlending,
-      fog: false,
-    }),
-  );
-  terminalHalo.scale.set(4.2, 4.2, 1);
-  terminalHalo.position.y = 2.2;
-  terminal.add(terminalHalo);
-  terminal.position.set(17.35, 0.03, 17.35);
-  terminal.rotation.y = Math.PI / 4;
-  scene.add(terminal);
-  // cabos do terminal para a ilha de energia
-  for (const [bx, bz, ex, ez] of [[17.7, 17.7, 22.0, 20.0], [17.0, 17.9, 14.2, 20.4], [18.0, 17.3, 20.5, 13.2]]) {
-    const pts = [];
-    for (let i = 0; i <= 12; i++) {
-      const k = i / 12;
-      pts.push(new THREE.Vector3(
-        bx + (ex - bx) * k,
-        1.2 + Math.sin(k * Math.PI) * 0.45 - k * 1.1,
-        bz + (ez - bz) * k,
-      ));
-    }
-    scene.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts), cableMat));
-  }
+  const updateCircuit = installStations(scene, mat, trilhaTex, caboTex);
 
   // Âncora Próxima do Nulo: o marco final, com anel e eletricidade roxa.
   const anchorGroup = new THREE.Group();
-  const anchorStone = new THREE.Mesh(new THREE.DodecahedronGeometry(1.35, 0), mat.rock);
+  const anchorStone = new THREE.Mesh(new THREE.DodecahedronGeometry(.92, 0), mat.rock);
   anchorStone.position.y = 0.3;
   anchorStone.scale.set(1.4, 0.55, 1.1);
   anchorGroup.add(anchorStone);
@@ -965,7 +850,7 @@ export async function createMareWorld3D({
   anchorGroup.add(anchorRing2);
   const anchorHalo = new THREE.Sprite(
     new THREE.SpriteMaterial({
-      map: glowTexture("214,68,226"),
+      map: glowTexture("255,255,255"),
       transparent: true,
       opacity: 0.42,
       depthWrite: false,
@@ -986,7 +871,9 @@ export async function createMareWorld3D({
     shard.rotation.z = (hash(i, 4) - 0.5) * 0.8;
     anchorGroup.add(shard);
   }
-  anchorGroup.position.set(24.5, 0.02, 24.5);
+  anchorGroup.scale.setScalar(.80);
+  anchorGroup.position.set(anchor.x, .26, anchor.y);
+  anchorGroup.rotation.y = Math.atan2(anchor.approach[0]-anchor.x, anchor.approach[1]-anchor.y);
   scene.add(anchorGroup);
 
   // Sobrecarga final: o Nulo rompe o próprio corpo antes de a fenda abrir.
@@ -1020,10 +907,10 @@ export async function createMareWorld3D({
   );
   overloadCore.scale.set(3, 3, 1);
   overload.add(overloadCore);
-  overload.position.set(24.5, 1.4, 24.5);
+  overload.position.set(anchor.x, 1.4, anchor.y);
   overload.visible = false;
   scene.add(overload);
-  const overloadSprite = scenerySprite("nulo-sobrecarga", 24.5, 24.5, 4.3, 0);
+  const overloadSprite = scenerySprite("nulo-sobrecarga", anchor.x, anchor.y, 4.3, 0);
   if (overloadSprite) overloadSprite.visible = false;
 
   // pilhas de contêineres / galpões fora do limite jogável (silhueta)
@@ -1037,12 +924,10 @@ export async function createMareWorld3D({
   const outside = [
     [-7, 7, 6, 2.9, 8, mat.container],
     [-9, 19, 12, 3.1, 5, mat.containerRust],
-    [39, 27, 8, 3.2, 6, mat.container],
     [36, 1, 5, 2.7, 5, mat.containerRust],
     [8, -7, 14, 4.4, 7, mat.metalDark],
     [24, -9, 9, 5.2, 8, mat.metalDark],
     [-4, 33, 10, 3.4, 6, mat.container],
-    [30, 38, 12, 3.8, 7, mat.metalDark],
   ];
   for (const [x, z, w, h, d, material] of outside) {
     box(w, h, d, cladMaterial(material, w, h), x, h / 2, z);
@@ -1177,12 +1062,12 @@ export async function createMareWorld3D({
     scene.add(halo);
     lamps.push({ light: null, bulb, halo, base: 30, flicker, phase: hash(x, z) * 10 });
   };
-  lampAt(2.7, 2.5, 3.6, 0.1);
+  lampAt(2.5, 5.5, 3.6, 0.1);
   lampAt(29.4, 2.4, 3.5, 0.02);
-  lampAt(2.6, 29.2, 3.2, 0.35);
-  lampAt(29.6, 29.4, 3.8, 0.08);
-  lampAt(16.45, 20.4, 2.7, 0.22);
-  lampAt(23.4, 12.3, 3.1, 0.04);
+  lampAt(2.6, 27.5, 3.2, 0.35);
+  lampAt(31.5, 29.4, 3.8, 0.08);
+  lampAt(11.5, 10.5, 2.7, 0.22);
+  lampAt(31.2, 12.3, 3.1, 0.04);
 
   // lâmpadas presas em cabos, à deriva
   const swinging = [];
@@ -1215,11 +1100,11 @@ export async function createMareWorld3D({
   }
 
   // caixas, tambores, paletes e mourões: props coerentes com o cais.
-  for (let i = 0; i < 22; i++) {
-    const x = 2 + hash(i, 1, 21) * 25,
+  for (let i = 0; i < 9; i++) {
+    const x = 2 + hash(i, 1, 21) * 9,
       z = 2 + hash(i, 2, 21) * 25;
     if (cell(x, z) || waterAt(x, z) || inCabin(x, z)) continue;
-    const kind = i % 4;
+    const kind = i % 3;
     if (kind === 0) {
       const crate = box(0.66, 0.58, 0.62, mat.woodDark, x, 0.29, z, hash(i, 3) * TAU);
       box(0.72, 0.055, 0.07, mat.rust, x, 0.5, z, crate.rotation.y);
@@ -1245,18 +1130,6 @@ export async function createMareWorld3D({
       rope.rotation.x = Math.PI / 2;
       rope.position.set(x, 0.24, z);
       scene.add(rope);
-    } else {
-      // mourão com argola e cabo pendurado.
-      box(0.16, 2.3, 0.16, mat.woodDark, x, 1.15, z);
-      const ring = new THREE.Mesh(new THREE.TorusGeometry(0.15, 0.025, 4, 10), mat.rust);
-      ring.position.set(x + 0.12, 1.75, z);
-      scene.add(ring);
-      const cablePts = [];
-      for (let j = 0; j <= 8; j++) {
-        const k = j / 8;
-        cablePts.push(new THREE.Vector3(x + 0.15 + k * 1.6, 1.7 - k * 1.55 + Math.sin(k * Math.PI) * 0.1, z));
-      }
-      scene.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(cablePts), cableMat));
     }
   }
   // antenas e postes de rádio na silhueta norte
@@ -1388,13 +1261,11 @@ export async function createMareWorld3D({
   }
 
   const overloadLight = new THREE.PointLight(0xe04ce6, 0, 30, 2);
-  overloadLight.position.set(24.5, 4.2, 24.5);
+  overloadLight.position.set(anchor.x, 4.2, anchor.y);
   scene.add(overloadLight);
 
   // ---------- sprites de objetos ----------
   const propSprites = new Map();
-  // Lotes 8/9: luzes locais que dão ofício à orla.
-  const propLights = [];
   const propShadowMat = new THREE.MeshBasicMaterial({
     color: 0x000000,
     transparent: true,
@@ -1414,38 +1285,8 @@ export async function createMareWorld3D({
     "sino-neblina": [0.007, 1.55],
     "lente-farolim": [0.004, 0.95],
   };
-  const artHeight = {
-    boia: 0.58,
-    "porta-recompilacao": 1.05,
-    "portal-mare": 1.2,
-    "selo-recompilado": 0.8,
-    "poste-luz": 1.95,
-    "guindaste-baia": 1.5,
-    "rede-pesca": 0.85,
-    "caixa-energia": 0.8,
-    "tubo-corrosivo": 0.62,
-    "placa-ferrugem": 1.0,
-    "concha-cromatica": 0.5,
-    "coral-magenta": 0.45,
-    "boia-sinalizadora": 0.62,
-    "caixote-madeira": 0.5,
-    "lanterna-querosene": 0.62,
-    "bote-salva-vidas": 0.55,
-    "guincho-manual": 0.6,
-    "cristal-drusa": 0.55,
-    "peixe-morto": 0.28,
-    "bandeira-sinal": 1.35,
-    "cogumelo-sal": 0.35,
-    "mesa-cartas": 0.62,
-    "sino-neblina": 1.35,
-    "gerador-quarentena": 0.72,
-    "boia-cromatica": 0.58,
-    "rede-deriva": 0.5,
-    "placa-quarentena": 1.15,
-    "lente-farolim": 1.05,
-  };
   const addProp = (o) => {
-    const art = o.art === "terminal" ? "terminal-recompilacao" : o.art === "cristal-mare" ? "cristal-cluster" : o.art;
+    const art = o.art;
     const tex = spriteTexture(art);
     if (!tex) return;
     const sprite = new THREE.Sprite(
@@ -1458,7 +1299,7 @@ export async function createMareWorld3D({
         color: 0xffffff,
       }),
     );
-    const h = (o.scale ?? 0.8) * (o.decor ? 1.05 : 1.7) * (artHeight[art] ?? 1);
+    const h = (o.scale ?? 0.8) * (o.note ? 1.7 : 1.3);
     sprite.scale.set((h * tex.image.width) / tex.image.height, h, 1);
     sprite.center.set(0.5, 0);
     sprite.position.set(o.x, 0.025 + (o.lift ?? 0), o.y);
@@ -1472,49 +1313,6 @@ export async function createMareWorld3D({
     );
     shadow.rotation.x = -Math.PI / 2;
     shadow.scale.set(1, 0.55, 1);
-    const lightSpec = {
-      "poste-luz": { color: 0xffb066, base: 9, dist: 8.5, kind: "lamp" },
-      "concha-cromatica": { color: 0xe04ce6, base: 3.2, dist: 3.4, kind: "shell" },
-      "lanterna-querosene": { color: 0xffc07a, base: 4.6, dist: 5.2, kind: "lantern" },
-      "cristal-drusa": { color: 0xc94dde, base: 3.4, dist: 4, kind: "drusa" },
-      "mesa-cartas": { color: 0xffc07a, base: 2.6, dist: 3.6, kind: "chart" },
-      "gerador-quarentena": { color: 0x8fe0c0, base: 1.8, dist: 3.2, kind: "gen" },
-    }[art];
-    if (lightSpec) {
-      const light = new THREE.PointLight(
-        lightSpec.color,
-        lightSpec.base,
-        lightSpec.dist,
-        2,
-      );
-      const high = lightSpec.kind === "lamp" || lightSpec.kind === "lantern";
-      light.position.set(o.x, high ? h * 0.86 : h * 0.45, o.y);
-      let halo = null;
-      if (lightSpec.kind === "lantern" || lightSpec.kind === "drusa") {
-        const warm = lightSpec.kind === "lantern";
-        halo = new THREE.Sprite(
-          new THREE.SpriteMaterial({
-            map: glowTexture(warm ? "255,190,110" : "214,88,226"),
-            transparent: true,
-            blending: THREE.AdditiveBlending,
-            depthWrite: false,
-            fog: true,
-            opacity: warm ? 0.55 : 0.45,
-          }),
-        );
-        halo.scale.setScalar(warm ? 1.05 : 0.9);
-        halo.position.set(o.x, warm ? h * 0.5 : h * 0.45, o.y);
-        scene.add(halo);
-      }
-      light.userData = {
-        kind: lightSpec.kind,
-        base: lightSpec.base,
-        phase: hash(o.x, o.y, 9) * TAU,
-        halo,
-      };
-      scene.add(light);
-      propLights.push(light);
-    }
     const key = `${o.art}@${o.x.toFixed(2)},${o.y.toFixed(2)}`;
     propSprites.set(key, {
       sprite,
@@ -1525,147 +1323,12 @@ export async function createMareWorld3D({
   };
   props.forEach(addProp);
 
-  // ---------- lote 13: percurso, marcador e resposta ----------
-  // A passarela é uma fita de quads com a tábua pintada: um único draw call
-  // cobre o caminho inteiro. Setas são decals no chão (alphaTest), não sprites
-  // em pé, para não parecerem placas flutuando.
-  const walkway = (() => {
-    const planks = path?.planks ?? [];
-    if (!planks.length) return null;
-    const half = 0.85;
-    const geometry = new THREE.BufferGeometry();
-    const vertices = [],
-      uvs = [],
-      indices = [];
-    planks.forEach((plank, index) => {
-      const dx = Math.cos(plank.angle),
-        dy = Math.sin(plank.angle);
-      const nx = -dy,
-        ny = dx;
-      const length = 2.55;
-      const base = index * 4;
-      for (const [along, across] of [
-        [-length / 2, -half],
-        [-length / 2, half],
-        [length / 2, half],
-        [length / 2, -half],
-      ]) {
-        vertices.push(
-          plank.x + dx * along + nx * across,
-          0.035,
-          plank.y + dy * along + ny * across,
-        );
-      }
-      uvs.push(0, 0, 0, 1, 1, 1, 1, 0);
-      indices.push(base, base + 1, base + 2, base, base + 2, base + 3);
-    });
-    geometry.setAttribute("position", new THREE.Float32BufferAttribute(vertices, 3));
-    geometry.setAttribute("uv", new THREE.Float32BufferAttribute(uvs, 2));
-    geometry.setIndex(indices);
-    geometry.computeVertexNormals();
-    const meshWalk = new THREE.Mesh(
-      geometry,
-      new THREE.MeshLambertMaterial({
-        map: trilhaTex,
-        color: 0x74807a,
-        side: THREE.DoubleSide,
-        polygonOffset: true,
-        polygonOffsetFactor: -2,
-      }),
-    );
-    meshWalk.name = "lote13-walkway";
-    scene.add(meshWalk);
-    return meshWalk;
-  })();
-
-  // Postes + cabo: o cabo é um tubo fino com catenária, então lê de qualquer
-  // ângulo (um sprite inclinado só funcionaria de uma câmera).
-  const guidePosts = [];
-  for (const post of path?.posts ?? []) {
-    const sprite = new THREE.Sprite(
-      new THREE.SpriteMaterial({
-        map: spriteTexture("poste-sinalizador"),
-        color: 0xcbbd9c,
-        transparent: true,
-        alphaTest: 0.12,
-        depthWrite: true,
-        fog: true,
-      }),
-    );
-    const height = 1.58;
-    sprite.scale.set(height * 0.58, height, 1);
-    sprite.center.set(0.5, 0);
-    sprite.position.set(post.x, 0.03, post.y);
-    scene.add(sprite);
-    const light = new THREE.PointLight(0xffc07a, 3.2, 5.4, 2);
-    light.position.set(post.x, height * 0.92, post.y);
-    light.userData = {
-      kind: "lamp",
-      base: 3.2,
-      phase: hash(post.x, post.y, 13) * TAU,
-      halo: null,
-    };
-    scene.add(light);
-    propLights.push(light);
-    guidePosts.push(post);
-  }
-  const guideCableMat = new THREE.MeshLambertMaterial({
-    map: caboTex,
-    color: 0x6f6a63,
-  });
-  for (const [a, b] of path?.cables ?? []) {
-    const from = guidePosts[a],
-      to = guidePosts[b];
-    if (!from || !to) continue;
-    const span = Math.hypot(to.x - from.x, to.y - from.y);
-    const sag = Math.min(0.55, span * 0.075);
-    const curve = new THREE.CatmullRomCurve3([
-      new THREE.Vector3(from.x, 1.72, from.y),
-      new THREE.Vector3((from.x + to.x) / 2, 1.72 - sag, (from.y + to.y) / 2),
-      new THREE.Vector3(to.x, 1.72, to.y),
-    ]);
-    const tube = new THREE.Mesh(
-      new THREE.TubeGeometry(curve, 10, 0.022, 4, false),
-      guideCableMat,
-    );
-    scene.add(tube);
-  }
-  if (guideCableMat.map) guideCableMat.map.repeat.set(6, 1);
-
-  const arrowSprites = [];
-  for (const arrow of path?.arrows ?? []) {
-    const sprite = new THREE.Mesh(
-      new THREE.PlaneGeometry(1.5, 1.5),
-      new THREE.MeshBasicMaterial({
-        map: spriteTexture("seta-chao"),
-        transparent: true,
-        alphaTest: 0.08,
-        depthWrite: false,
-        fog: true,
-        opacity: 0.72,
-      }),
-    );
-    sprite.rotation.set(-Math.PI / 2, 0, -arrow.angle + Math.PI / 2);
-    sprite.position.set(arrow.x, 0.045, arrow.y);
-    sprite.renderOrder = 2;
-    scene.add(sprite);
-    arrowSprites.push(sprite);
-  }
-  if (path?.board) {
-    const board = new THREE.Sprite(
-      new THREE.SpriteMaterial({
-        map: spriteTexture("placa-missao"),
-        transparent: true,
-        alphaTest: 0.12,
-        depthWrite: true,
-        fog: true,
-      }),
-    );
-    const height = 1.5;
-    board.scale.set((height * 192) / 192, height, 1);
-    board.center.set(0.5, 0);
-    board.position.set(path.board.x, 0.03, path.board.y);
-    scene.add(board);
+  // Uma seta baixa por trecho, apontando no sentido real do corredor.
+  const paint = new THREE.MeshBasicMaterial({map: spriteTexture('seta-chao'), transparent: true, alphaTest: .18, depthWrite: false});
+  for (const { walk } of circuitLegs) {
+    const [[ax,az],[bx,bz]] = walk;
+    const arrow = mesh(new THREE.PlaneGeometry(.75,.75),paint,(ax+bx)/2,.281,(az+bz)/2);
+    arrow.rotation.set(-Math.PI/2,0,-Math.atan2(bz-az,bx-ax));
   }
 
   // Marcador do objetivo: a mesma tira de quatro quadros do lote 13. Ele é o
@@ -1693,9 +1356,8 @@ export async function createMareWorld3D({
     scene.add(marker);
   }
   let markerTarget = null;
-  let markerState = { visible: false, done: false };
 
-  // Ondas de interação: pool de seis sprites, nada é criado em jogo.
+  // Ondas de interação: pool de quatro sprites, nada é criado em jogo.
   const waveFrames = Array.from({ length: 6 }, (_, index) =>
     spriteTexture(`interacao-onda-${index}`),
   ).filter(Boolean);
@@ -1718,156 +1380,19 @@ export async function createMareWorld3D({
     interactWaves.push({ sprite, age: 1, frame: 0 });
   }
   let waveCursor = 0;
-  const pulse = (x, y, color = 0xffcf87, size = 1.15) => {
+  const pulse = (site) => {
     if (!interactWaves.length) return;
     const wave = interactWaves[waveCursor++ % interactWaves.length];
     wave.age = 0;
     wave.frame = 0;
-    wave.size = size;
-    wave.sprite.material.color.setHex(color);
+    wave.size = site === anchor ? 1.25 : .47;
+    wave.sprite.material.color.set(statusColor.online);
     wave.sprite.material.map = waveFrames[0];
-    wave.sprite.position.set(x, 0.09, y);
+    // Onda na face do equipamento, não enterrada no piso ou dentro da malha.
+    wave.sprite.position.set((site.x+site.approach[0])/2, site === anchor ? 2 : 1.45, (site.y+site.approach[1])/2);
     wave.sprite.visible = true;
   };
 
-  // Pulso do farolim: anel grande, lento, visível de longe quando um sinal cai.
-  let beaconPulse = null;
-  const beaconPulseFrames = Array.from({ length: 6 }, (_, index) =>
-    spriteTexture(`farol-pulso-${index}`),
-  ).filter(Boolean);
-  if (beaconPulseFrames.length) {
-    beaconPulse = new THREE.Sprite(
-      new THREE.SpriteMaterial({
-        map: beaconPulseFrames[0],
-        transparent: true,
-        opacity: 0,
-        depthWrite: false,
-        blending: THREE.AdditiveBlending,
-        fog: true,
-      }),
-    );
-    beaconPulse.center.set(0.5, 0.5);
-    beaconPulse.position.set(LOTE11_BEACON.x, 2.3, LOTE11_BEACON.y);
-    beaconPulse.scale.setScalar(4.6);
-    beaconPulse.visible = false;
-    scene.add(beaconPulse);
-  }
-  let beaconClock = -1;
-  const ringBeacon = () => {
-    beaconClock = 0;
-    if (beaconPulse) beaconPulse.visible = true;
-  };
-
-  // Terminal: quatro estados pintados. O sprite troca de arte conforme a
-  // missão avança, então o objeto responde antes de qualquer texto.
-  const setTerminalState = (index) => {
-    const tex = spriteTexture(`terminal-estados-${Math.max(0, Math.min(3, index))}`);
-    if (!tex) return;
-    for (const entry of propSprites.values()) {
-      if (entry.prop?.id !== "terminal" && entry.prop?.art !== "terminal") continue;
-      entry.sprite.material.map = tex;
-    }
-  };
-
-  // ---------- lote 11: farolim, sino e gerador ----------
-  // Feixe do farolim: só existe aceso. O grupo gira para varrer a água.
-  const beaconGroup = new THREE.Group();
-  beaconGroup.position.set(LOTE11_BEACON.x, 0, LOTE11_BEACON.y);
-  scene.add(beaconGroup);
-  // Pedestal de pedra: o farolim é um lampião de Fresnel sobre uma base, não
-  // uma lâmpada flutuando no chão.
-  const beaconPedestal = new THREE.Mesh(
-    new THREE.CylinderGeometry(0.4, 0.54, 1.12, 8),
-    mat.cliff,
-  );
-  beaconPedestal.position.set(0, 0.56, 0);
-  beaconGroup.add(beaconPedestal);
-  const beaconCap = new THREE.Mesh(new THREE.CylinderGeometry(0.48, 0.48, 0.12, 8), mat.metalDark);
-  beaconCap.position.set(0, 1.15, 0);
-  beaconGroup.add(beaconCap);
-  const beaconLight = new THREE.PointLight(0xa8fff0, 0, 12, 2);
-  beaconLight.position.set(0, 2.2, 0);
-  beaconGroup.add(beaconLight);
-  const beaconGlow = new THREE.Sprite(
-    new THREE.SpriteMaterial({
-      map: glowTexture("190,255,238"),
-      transparent: true,
-      opacity: 0,
-      depthWrite: false,
-      blending: THREE.AdditiveBlending,
-      fog: true,
-    }),
-  );
-  beaconGlow.scale.setScalar(1.9);
-  beaconGlow.position.set(0, 2.15, 0);
-  beaconGroup.add(beaconGlow);
-  // Poça de luz no chão: barata, sem plano aditivo cortando a cena, e lê de
-  // longe que o farolim está aceso.
-  const beaconPool = new THREE.Mesh(
-    new THREE.CircleGeometry(3.4, 24),
-    new THREE.MeshBasicMaterial({
-      color: 0x7fe6d0,
-      transparent: true,
-      opacity: 0,
-      depthWrite: false,
-      blending: THREE.AdditiveBlending,
-      fog: true,
-    }),
-  );
-  beaconPool.rotation.x = -Math.PI / 2;
-  beaconPool.position.set(0, 0.05, 0);
-  beaconGroup.add(beaconPool);
-
-  // Sino: a onda de som no chão acompanha o pulso do bronze.
-  const bellRing = new THREE.Mesh(
-    new THREE.RingGeometry(0.2, 0.24, 20),
-    new THREE.MeshBasicMaterial({
-      color: 0xbdfbee,
-      transparent: true,
-      opacity: 0,
-      depthWrite: false,
-      side: THREE.DoubleSide,
-    }),
-  );
-  bellRing.rotation.x = -Math.PI / 2;
-  bellRing.position.set(26.6, 0.06, 11.8);
-  scene.add(bellRing);
-
-  // Faíscas do gerador: pontos baratos que só brilham com o motor ligado.
-  const sparkCount = 26;
-  const sparkPositions = new Float32Array(sparkCount * 3);
-  for (let i = 0; i < sparkCount; i++) {
-    sparkPositions[i * 3] = 22.8 + (hash(i, 7) - 0.5) * 1.3;
-    sparkPositions[i * 3 + 1] = 0.3 + hash(i, 8) * 0.8;
-    sparkPositions[i * 3 + 2] = 28.1 + (hash(i, 9) - 0.5) * 0.9;
-  }
-  const genSparkGeo = new THREE.BufferGeometry();
-  genSparkGeo.setAttribute("position", new THREE.BufferAttribute(sparkPositions, 3));
-  const genSpark = new THREE.Points(
-    genSparkGeo,
-    new THREE.PointsMaterial({
-      color: 0xa8ffe0,
-      size: 0.06,
-      transparent: true,
-      opacity: 0,
-      depthWrite: false,
-      fog: true,
-    }),
-  );
-  scene.add(genSpark);
-
-  // Quadro de marés atrás da mesa de cartas e cordame no píer.
-  // A carta de maré fica num cavalete atrás da mesa, virada para quem chega
-  // do acampamento. É pequena de propósito: não tapa a mesa que ela explica.
-  const chartBoard = new THREE.Mesh(new THREE.PlaneGeometry(0.64, 0.48), mat.chartPaper);
-  chartBoard.position.set(11.6, 1.0, 28.86);
-  chartBoard.rotation.y = Math.PI - 0.06;
-  scene.add(chartBoard);
-  for (const x of [11.3, 11.9]) {
-    const post = new THREE.Mesh(new THREE.CylinderGeometry(0.028, 0.034, 1.0, 5), mat.woodDark);
-    post.position.set(x, 0.5, 28.9);
-    scene.add(post);
-  }
   // Cordame de proteção na ponta sul do píer, virado para a água.
   const dockRopes = [];
   for (const x of [26.4, 28.2, 30.0]) {
@@ -1886,16 +1411,6 @@ export async function createMareWorld3D({
     dockRopes.push(rope);
   }
 
-  const activeKeys = (list) => new Set(list.map((o) => `${o.art}@${o.x.toFixed(2)},${o.y.toFixed(2)}`));
-  let active = null;
-  const syncProps = (list) => {
-    active = activeKeys(list);
-    for (const [key, entry] of propSprites) {
-      const visible = entry.prop.decor || active.has(key);
-      entry.sprite.visible = visible;
-      entry.shadow.visible = visible;
-    }
-  };
   // Sprites não recebem luz: escurecemos por distância/cone para integrarem a
   // cena em vez de parecerem adesivos flutuantes.
   const shadeSprite = (sprite, m) => {
@@ -2099,12 +1614,12 @@ export async function createMareWorld3D({
     });
     state.threat = Number.isFinite(closest) ? clamp(1 - closest / 12, 0, 1) : 0;
     state.enemyFrame = enemies[0] && enemyFamily(enemies[0]) ? enemyFrame(enemies[0], t) : 0;
-    state.overload = !!m.finished;
+    state.overload = m.timedOut;
   }
 
   function updateNulo(n, m, t = 0, endClock = 0) {
     if (!n) return;
-    const over = !!m?.finished;
+    const over = m.timedOut;
     state.overload = over;
     if (over) {
       const name = images["nulo-sobrecarga"] ? "nulo-sobrecarga" : "nulo-operador-voz";
@@ -2164,7 +1679,6 @@ export async function createMareWorld3D({
     moving = 0,
     enemies = [],
     nulo = null,
-    activeProps = [],
     reducedMotion = false,
   }) {
     if (!state.available) return false;
@@ -2179,26 +1693,8 @@ export async function createMareWorld3D({
       0.95,
     );
     state.interference = interference;
-    state.flashlight = m.finished ? false : true;
-    if (active) syncProps(activeProps);
-    // Poste/lanterna com filamento instável; concha e drusa respirando.
-    for (const light of propLights) {
-      const d = light.userData;
-      if (d.kind === "lamp" || d.kind === "lantern") {
-        const spent =
-          d.kind === "lantern" && m.p?.lote9?.lanterna ? 0.12 : 1;
-        light.intensity =
-          d.base *
-          spent *
-          (0.8 + Math.sin(t * 5.4 + d.phase) * 0.12 + Math.sin(t * 17.3) * 0.05);
-        if (d.halo) d.halo.material.opacity = spent * (0.42 + Math.sin(t * 5.4 + d.phase) * 0.12);
-      } else if (d.kind === "drusa") {
-        light.intensity = d.base * (0.7 + Math.sin(t * 1.7 + d.phase) * 0.3);
-        if (d.halo) d.halo.material.opacity = 0.34 + Math.sin(t * 1.7 + d.phase) * 0.16;
-      } else {
-        light.intensity = d.base * (0.68 + Math.sin(t * 2.1 + d.phase) * 0.3);
-      }
-    }
+    state.flashlight = m.lampOn && m.lamp > .5;
+    updateCircuit(m, t, reducedMotion);
     for (const entry of propSprites.values()) {
       if (!entry.bob || !entry.sprite.visible) continue;
       const [amp, speed] = entry.bob;
@@ -2208,13 +1704,13 @@ export async function createMareWorld3D({
         Math.sin(t * speed + (entry.prop.x + entry.prop.y) * 0.7) * amp;
     }
 
-    // Lote 13: marcador do objetivo, ondas de interação e pulso do farolim.
+    // Marcador do próximo equipamento e onda de leitura do scanner.
     if (marker) {
-      if (markerState.visible && markerTarget) {
+      if (markerTarget) {
         marker.visible = true;
         const bob = reducedMotion ? 0 : Math.sin(t * 1.7) * 0.11;
         const dist = Math.hypot(markerTarget.x - m.x, markerTarget.y - m.y);
-        marker.position.set(markerTarget.x, 1.72 + bob, markerTarget.y);
+        marker.position.set(markerTarget.x, (markerTarget === anchor ? 4.05 : 2.83) + bob, markerTarget.y);
         const index = reducedMotion
           ? 0
           : Math.floor(t * 5) % markerFrames.length;
@@ -2224,7 +1720,7 @@ export async function createMareWorld3D({
           (0.5 + Math.sin(t * 2.6) * 0.14) *
           Math.max(0, Math.min(1, (23 - dist) / 8));
         marker.scale.setScalar(dist < 3 ? 0.42 : 0.6);
-        marker.visible = dist < 23;
+        marker.visible = dist > 2 && dist < 26;
       } else marker.visible = false;
     }
     for (const wave of interactWaves) {
@@ -2239,26 +1735,9 @@ export async function createMareWorld3D({
         wave.sprite.material.map = waveFrames[indexFrame];
       }
       wave.sprite.scale.setScalar(wave.size * (0.9 + wave.age * 1.05));
-      wave.sprite.material.opacity = 0.9 * (1 - wave.age) ** 1.6;
+      wave.sprite.material.opacity = 0.65 * (1 - wave.age) ** 1.6;
       if (wave.age >= 1) wave.sprite.visible = false;
     }
-    if (beaconPulse && beaconClock >= 0) {
-      beaconClock += dt;
-      const span = 2.4;
-      const progress = Math.min(1, beaconClock / span);
-      const frame = Math.min(
-        beaconPulseFrames.length - 1,
-        Math.floor(progress * beaconPulseFrames.length),
-      );
-      beaconPulse.material.map = beaconPulseFrames[frame];
-      beaconPulse.scale.setScalar(4.4 + progress * 3.4);
-      beaconPulse.material.opacity = 0.62 * (1 - progress);
-      if (progress >= 1) {
-        beaconClock = -1;
-        beaconPulse.visible = false;
-      }
-    }
-
     // respiração + passada: o eixo vertical da câmera nunca fica morto.
     const speed = Math.hypot(m.vx || 0, m.vy || 0);
     const breathRate = 1.55 + tension * 1.9 + interference * 0.5;
@@ -2278,14 +1757,14 @@ export async function createMareWorld3D({
     camera.updateProjectionMatrix();
 
     const danger = clamp((state.threat || 0) * 0.55 + (m.finished ? 0.35 : 0), 0, 0.9);
-    fog.density = 0.044 + entry * 0.075 + tension * 0.006 + danger * 0.008 + (m.finished ? clamp(endClock / 3, 0, 1) * 0.022 : 0);
-    fog.color.setHex(m.finished && endClock < 2 ? 0x24101f : 0x0d1a25);
+    fog.density = 0.039 + entry * 0.075 + tension * 0.006 + danger * 0.008 + (m.finished ? clamp(endClock / 3, 0, 1) * 0.022 : 0);
+    fog.color.setHex(m.timedOut ? 0x24101f : m.finished ? 0x174040 : 0x0d1a25);
     if (danger > 0.02) fog.color.lerp(new THREE.Color(0x2b102d), danger * 0.35);
     scene.background.copy(fog.color);
 
     // lanterna: segue o olhar, inclusive para cima/baixo, com flicker do Nulo.
     const flicker =
-      m.finished ? 0.35 + Math.random() * 0.65
+      m.timedOut ? 0.35 + Math.random() * 0.65
         : interference > 0.4 && Math.random() < interference * 0.12 ? 0.15
           : 0.9 + Math.sin(t * 11.7) * 0.04;
     const lampOn = m.lampOn !== false && (m.lamp ?? 100) > 0.5;
@@ -2301,7 +1780,7 @@ export async function createMareWorld3D({
     torch.angle = 0.43 + tension * 0.035;
     torchCone.material.opacity = lampOn ? 0.014 + tension * 0.014 : 0;
     torchCone.visible = !motionless && lampOn;
-    overloadLight.intensity = m.finished
+    overloadLight.intensity = m.timedOut
       ? (Math.sin(t * 27) > 0.55 ? 10 + Math.sin(t * 9) * 5 : 0)
       : 0;
     motes.material.opacity = 0.25 + tension * 0.18;
@@ -2316,7 +1795,7 @@ export async function createMareWorld3D({
     // lâmpadas falhando
     for (const l of lamps) {
       const n = Math.sin(t * (0.7 + l.flicker * 8) + l.phase);
-      const fail = l.flicker > 0.2 && n > 0.96 ? 0.15 : 1;
+      const fail = !m.p.data.includes(systems[1].id) && l.flicker > .2 && n > .96 ? .15 : 1;
       if (l.light) l.light.intensity = l.base * (0.72 + 0.28 * Math.sin(t * 3.1 + l.phase)) * fail;
       l.halo.material.opacity = 0.2 * fail;
       l.bulb.material.color.setHex(fail < 1 ? 0x5b2a12 : 0xffb15c);
@@ -2368,43 +1847,18 @@ export async function createMareWorld3D({
     }
     // farol varrendo a baía
     lighthouseGlow.material.opacity = 0.3 + Math.sin(t * 2.2) * 0.08;
-    // Lote 11: farolim aceso, sino pulsando e gerador faiscando.
-    const lote11 = m.p?.lote11 ?? {};
-    const powered = Boolean(lote11.power);
-    const bellPulse = lote11RingPulse(m);
-    beaconGroup.rotation.y = powered ? t * 0.95 : t * 0.14;
-    beaconPool.material.opacity = powered ? 0.2 + Math.sin(t * 2.2) * 0.05 : 0;
-    beaconLight.intensity = powered ? 7.4 + Math.sin(t * 7.3) * 1.3 : 0;
-    beaconGlow.material.opacity = powered
-      ? 0.46 + Math.sin(t * 2.4) * 0.1
-      : 0.06 + Math.sin(t * 0.8) * 0.02;
-    bellRing.material.opacity = bellPulse * 0.22;
-    bellRing.scale.setScalar(1 + (1 - bellPulse) * 5.5);
-    // A neblina abre um pouco quando o sino toca, e volta devagar.
-    fog.density = 0.054 - bellPulse * 0.018;
-    genSpark.material.opacity = powered ? 0.3 + Math.sin(t * 19.3) * 0.22 : 0;
-    genSpark.rotation.y = t * 0.6;
-    chartBoard.material.color.setRGB(
-      0.9 + Math.sin(t * 1.3) * 0.05,
-      0.86 + Math.sin(t * 1.3) * 0.05,
-      0.74,
-    );
     for (let i = 0; i < dockRopes.length; i++)
       dockRopes[i].position.y = (i ? 0.92 : 0.55) + Math.sin(t * 1.1 + i) * 0.012;
-    // marcos: terminal responde ao rank, âncora ao desfecho.
-    terminalRings.forEach((ring, i) => {
-      ring.rotation.z += dt * (0.4 + i * 0.25) * (m.p.rank > 1 ? 1.6 : 0.7);
-      ring.material.opacity = 0.2 + (m.p.rank / 4) * 0.4 + Math.sin(t * 3 + i) * 0.07;
-    });
-    terminalHalo.material.opacity = 0.2 + (m.p.rank / 4) * 0.25 + Math.sin(t * 2.1) * 0.05;
-    screenMat.color.setHex(
-      m.finished ? 0xe248e8
-        : Math.sin(t * 13) > 0.86 ? 0x1c4a45 : 0x54c7b1,
-    );
-    anchorRing.rotation.z += dt * (m.finished ? 1.8 : 0.35);
-    anchorRing2.rotation.z -= dt * (m.finished ? 1.2 : 0.28);
-    anchorHalo.material.opacity = 0.3 + (m.p.rank / 4) * 0.18 + Math.sin(t * 2.6) * 0.06;
-    anchorHalo.scale.setScalar(6.6 + Math.sin(t * 1.8) * 0.5 + (m.finished ? endClock * 1.4 : 0));
+    const status = siteStatus(m, anchor);
+    anchorRing.material.color.set(statusColor[status]);
+    anchorRing2.material.color.copy(anchorRing.material.color);
+    anchorHalo.material.color.copy(anchorRing.material.color);
+    anchorRing.material.opacity = status === 'offline' ? .37 : .95;
+    anchorRing2.material.opacity = status === 'offline' ? .20 : .8;
+    anchorRing2.rotation.y = status === 'offline' ? 1.18 : .18;
+    anchorRing2.rotation.z = reducedMotion ? 0 : t * .3;
+    anchorHalo.material.opacity = status === 'offline' ? .12 : .48;
+    anchorHalo.scale.setScalar(status === 'online' ? 7 : 4.6);
     for (const s of scenery) {
       s.sprite.position.y = s.baseY + Math.sin(t * 0.8 + s.phase) * 0.012;
       if (s.sprite.visible) shadeSprite(s.sprite, m);
@@ -2509,14 +1963,14 @@ export async function createMareWorld3D({
     const g = ctx;
     g.save();
     if (!reducedMotion) {
-      const shakeAmt = (m.shake ?? 0) + (m.finished ? Math.min(0.6, endClock * 0.24) : 0) + sting * 0.06;
+      const shakeAmt = (m.shake ?? 0) + (m.timedOut ? Math.min(0.6, endClock * 0.24) : 0) + sting * 0.06;
       if (shakeAmt > 0.01)
         g.translate(Math.round(Math.sin(t * 71) * shakeAmt * 9), Math.round(Math.cos(t * 59) * shakeAmt * 6));
     }
 
     // aberração cromática sob interferência / ruptura
     const split = Math.round(
-      (interference * 1.2 + sting * 2 + (m.finished ? Math.min(5, endClock * 2.4) : 0)) *
+      (interference * 1.2 + sting * 2 + (m.timedOut ? Math.min(5, endClock * 2.4) : 0)) *
         (reducedMotion ? 0.3 : 1),
     );
     if (split > 0) {
@@ -2584,8 +2038,8 @@ export async function createMareWorld3D({
       g.fillRect(0, 0, width, height);
     }
 
-    // colapso / ruptura: quando Nulo sabota o desfecho, a imagem rompe.
-    if (m.finished) {
+    // Prazo esgotado: reservar o colapso visual para a retirada de emergência.
+    if (m.timedOut && !reducedMotion) {
       const k = clamp(endClock / 3.4, 0, 1);
       g.globalCompositeOperation = "screen";
       for (let i = 0; i < 3; i++) {
@@ -2607,35 +2061,10 @@ export async function createMareWorld3D({
     }
     g.restore();
 
-    // barra de status interna ao canvas (fora do HUD DOM)
-    g.font = "7px monospace";
-    g.fillStyle = "rgba(183,215,205,.66)";
-    const dirs = ["L", "S", "O", "N"];
-    const heading = dirs[((Math.round(m.angle / (Math.PI / 2)) % 4) + 4) % 4];
-    g.fillText(`${heading} · ${m.p.details.gerador ? "ENERGIA" : "SEM REDE"}`, 12, 15);
+    // Apenas a mira: rumo e telemetria já estão no HUD.
     g.fillStyle = "rgba(205,231,219,.7)";
     g.fillRect(190, 106, 4, 1);
     g.fillRect(192, 104, 1, 4);
-    if (m.finished) {
-      // relatório de eco compacto, sempre legível no encerramento
-      const detailCount = Object.keys(m.p.details ?? {}).length;
-      g.fillStyle = "rgba(3,9,13,.9)";
-      g.fillRect(36, 48, 312, 116);
-      g.strokeStyle = "rgba(116,164,161,.65)";
-      g.strokeRect(36.5, 48.5, 311, 115);
-      g.fillStyle = "#d8e5d0";
-      g.font = "10px monospace";
-      g.fillText("RELATÓRIO DE ECO // MARÉ CROMÁTICA", 52, 66);
-      g.font = "8px monospace";
-      g.fillStyle = "#a8c8c1";
-      g.fillText(`DESCOMPASSO ${m.p.rank}/4 · MEMÓRIAS ${m.p.data?.length ?? 0}/3`, 52, 84);
-      g.fillText(`REGISTROS ${Math.min(8, detailCount)}/8 · LORE ${m.p.lore?.length ?? 0}/6 · NULO ${m.p.nulo?.length ?? 0}/4`, 52, 98);
-      g.fillText(`BALIZA ${m.p.checkpoint === "boia" ? "VINCULADA" : "NÃO VINCULADA"} · FÔLEGO ${Math.round(m.stamina)}`, 52, 112);
-      g.fillStyle = "#e0b56a";
-      g.fillText("A ponte do Limiar aceitará seu eco.", 52, 132);
-      g.fillStyle = "rgba(255,197,113,.8)";
-      g.fillText("NULO: a âncora foi desviada. O retorno 2D está preservado.", 52, 148);
-    }
     return true;
   }
 
@@ -2646,18 +2075,11 @@ export async function createMareWorld3D({
     scene,
     camera,
     render,
-    syncProps,
-    // Lote 13: orientação e resposta, sem tocar na simulação.
-    setMarker(target, { visible = true, done = false } = {}) {
-      markerTarget = target ? { x: target.x, y: target.y } : null;
-      markerState = { visible: Boolean(target) && visible, done };
-    },
+    setMarker(target) { markerTarget = target; },
     pulse,
-    ringBeacon,
-    setTerminalState,
-    guidePosts,
     resize() {},
     dispose() {
+      for (const tex of spriteTextures.values()) tex.dispose();
       scene.traverse((o) => {
         o.geometry?.dispose?.();
         if (o.material) {

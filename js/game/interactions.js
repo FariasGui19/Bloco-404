@@ -451,7 +451,7 @@ function interactWithObject(object) {
       if (!state.progress.mareMission?.completed && !state.progress.dimensionalRupture) {
         state.progress.mareMissionRequested = true;
         saveGame();
-        openDialogue({speaker:'NEXO-04 // BAÍA INFECTADA',dialogue:['O PORTAL ESTÁ ESTÁVEL. A ÂNCORA PRIMÁRIA DO HUB AINDA NÃO RESPONDE.', 'ATRAVESSE A BAÍA, RECUPERE TRÊS MEMÓRIAS E RECOMPILE NO TERMINAL CENTRAL. SUA IDENTIDADE PERMANECE; O DOMÍNIO LOCAL COMEÇA EM 1.', 'WASD: MOVER. SETAS OU ARRASTAR: OLHAR. E: INTERAGIR. Q: HABILIDADE. ESC: RETORNO SEGURO.']});
+        openDialogue({speaker:'NEXO-04 // BAÍA INFECTADA',dialogue:['O PORTAL ESTÁ ESTÁVEL. A ÂNCORA PRIMÁRIA DO HUB AINDA NÃO RESPONDE.', 'SIGA O CABO DA ESTRUTURA HÚMIDA: SENSOR NO PÍER, GERADOR NOS GALPÕES E PAINEL NA ESTAÇÃO. COM OS TRÊS ONLINE, ESTABILIZE A ÂNCORA NO PORTAL.', 'WASD: MOVER. SETAS OU ARRASTAR: OLHAR. E: INTERAGIR. Q: HABILIDADE. ESC: RETORNO SEGURO.']});
         return;
       }
       const requested=requestRupture(state);if(requested)saveGame();

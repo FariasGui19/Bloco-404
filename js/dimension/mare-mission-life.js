@@ -1,13 +1,8 @@
-import {cell, canStand, move, waterAt} from './mare-mission-model.js';
+import {canStand, move, waterAt, visible, CABINS, onDock} from './mare-mission-model.js';
 
 import {details} from './mare-mission-details.js';
 import {pods} from './mare-mission-combat.js';
-export {details};
-export function visible(a,b){
- const distance=Math.hypot(b.x-a.x,b.y-a.y),steps=Math.max(1,Math.ceil(distance/.12));
- for(let i=1;i<steps;i++)if(cell(a.x+(b.x-a.x)*i/steps,a.y+(b.y-a.y)*i/steps))return false;
- return true;
-}
+export {details, visible};
 export function nearestSignal(m,objects){return objects.filter(s=>Math.hypot(s.x-m.x,s.y-m.y)<1.8&&visible(m,s)).sort((a,b)=>Math.hypot(a.x-m.x,a.y-m.y)-Math.hypot(b.x-m.x,b.y-m.y))[0];}
 export function useDetail(m,site){
  if(!site||!nearestSignal(m,[site]))return 'O sinal está atrás de uma parede ou fora de alcance.';
@@ -27,7 +22,8 @@ export function useDetail(m,site){
  return 'A rede guarda etiquetas de embarque do Núcleo X10. A evacuação começou antes do primeiro alarme.';
 }
 export function terrain(m){
- const cabin=[[5,5,7,6],[6,20,7,7]].some(([x,y,w,h])=>m.x>x+1&&m.x<x+w-1&&m.y>y+1&&m.y<y+h-1);
+ const cabin=CABINS.some(([x,y,w,h])=>m.x>x+1&&m.x<x+w-1&&m.y>y+1&&m.y<y+h-1);
+ if(onDock(m.x,m.y) || (Math.abs(m.x-16)<3.7 && Math.abs(m.y-27.5)<2.7))return 'madeira';
  if(waterAt(m.x,m.y))return 'agua';
  if(cabin||(m.x>22&&m.y>10&&m.y<22))return 'madeira';
  return !m.p.details.valvula&&m.x>13&&m.x<19&&m.y>8&&m.y<14?'resina':'areia';

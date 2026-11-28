@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
-import {createMission, canStand} from '../js/dimension/mare-mission-model.js';
+import {createMission, canStand, sceneryProps, scannerTarget} from '../js/dimension/mare-mission-model.js';
 import {
   lote8Names, lote8Decor, lote8Props, isInteractiveLote8,
   useLote8, lote8Readout, conchaRegistrada,
@@ -13,8 +13,6 @@ const read = (...p) => fs.readFileSync(path.join(root, ...p), 'utf8');
 const spriteDir = path.join(root, 'assets/sprites/mare-missao-lote8');
 const sourceDir = path.join(root, 'assets/source-art/mare-missao-lote8');
 const mission = read('js/dimension/mare-mission.js');
-const world = read('js/dimension/mare-mission-world3d.js');
-const model = read('js/dimension/mare-mission-model.js');
 const prep = read('tools/preparar-mare-lote8.py');
 
 // 1. Dez sprites próprios, RGBA, PSX-size, com fonte autoral.
@@ -63,17 +61,12 @@ assert.match(useLote8(m, concha), /já está registrada/);
 assert.match(lote8Readout(m), /1\/1/);
 assert.deepEqual(createMission({mareMission: {lote8: {concha: true, lixo: true}}}).p.lote8, {concha: true});
 
-// 4. Integração: carregamento, mundo 3D, lista de alvos e fallback 2D.
-assert.match(mission, /mare-mission-lote8\.js/);
-assert.match(mission, /lote8Names\.includes\(n\) \? "mare-missao-lote8"/);
-assert.match(mission, /\.\.\.lote8Props/);
-assert.match(mission, /\.\.\.lote8Decor\.map/);
-assert.match(mission, /\.\.\.lote8Props\.filter\(isInteractiveLote8\)/);
-assert.match(mission, /isInteractiveLote8\(near\) \? useLote8/);
-assert.match(mission, /lote8Readout\(m\)/);
-assert.match(mission, /if \(lote8Decor\.some\(\(d\) => d\.art === n\)\) return \[n, null\];/);
-assert.match(model, /lote8Props/);
-for (const name of lote8Names) assert.match(world, new RegExp(`"${name}":`), `altura 3D de ${name}`);
-assert.match(world, /if \(!tex\) return null;/);
-
-console.log('Maré lote 8: 10 props autorais, concha interativa, alturas 3D e fallback OK');
+// 4. Integração atual: os adereços selecionados são os mesmos em WebGL e
+// fallback, sem colisões invisíveis nem prompts de coleta no antigo ponto.
+const selected = sceneryProps.filter(p => lote8Names.includes(p.art));
+assert.ok(selected.length > 0 && selected.length < lote8Decor.length);
+for (const p of selected) assert.ok(mission.includes(p.art));
+assert.equal(scannerTarget(m),null);
+assert.ok(canStand(concha.x,concha.y));
+assert.deepEqual(m.p.data,[]);
+console.log('Maré lote 8: acervo preservado, flags legadas e decoração sem alvos falsos OK');

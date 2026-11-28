@@ -6,7 +6,7 @@ import {createMission, canStand} from '../js/dimension/mare-mission-model.js';
 import {enemyArt} from '../js/dimension/mare-mission-life.js';
 import {
   lote6Props, nuloPoints, nuloStageIndex, nuloEntity, nuloArt, useNulo,
-  useLote6, lote6Readout, fendaOpen, objectiveLine,
+  useLote6, lote6Readout, fendaOpen,
 } from '../js/dimension/mare-mission-lote6.js';
 
 const root = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
@@ -23,19 +23,16 @@ for (const name of sheets) {
   assert.ok(fs.existsSync(original), `arte original ausente: ${name}`);
   assert.equal(fs.readFileSync(sprite).toString('ascii', 1, 4), 'PNG');
   assert.equal(fs.readFileSync(sprite)[25], 6, `${name} sprite is RGBA`);
-  assert.ok(source.includes(`"${name}"`), `missão não referencia ${name}`);
+  if (name.startsWith('nulo-')) assert.ok(source.includes(name));
 }
 assert.ok(fs.statSync(path.join(dir, 'chao-grade.png')).size > 1000);
 
-// Walls and floor use the ten-sheet material, not the old flat fill.
-assert.match(source, /parede-azulejo/);
-assert.match(source, /parede-ferrugem/);
-assert.match(source, /chao-grade/);
+// O plano B continua compondo o piso texturizado e o relatório da missão.
 assert.match(source, /floorCtx\.putImageData/);
-assert.match(source, /transicao-fenda/);
+assert.match(source, /drawBayReport/);
 assert.match(css, /\.mare-mission\.fenda-aberta/);
 
-// Three structures have collision and a walkable interaction approach.
+// As três estruturas de acervo preservam escala e coordenadas acessíveis.
 assert.equal(lote6Props.length, 3);
 for (const prop of lote6Props) {
   const approaches = [[0.9,0],[-0.9,0],[0,0.9],[0,-0.9]].filter(([dx,dy]) => canStand(prop.x+dx, prop.y+dy));
@@ -55,8 +52,8 @@ for (const point of nuloPoints) {
   assert.ok(approaches.length, `Nulo sem aproximação em ${point.id}`);
 }
 m.p.data = ['fita']; assert.equal(nuloStageIndex(m), 1);
-m.p.rank = 2; assert.equal(nuloStageIndex(m), 2);
-m.p.rank = 4; assert.equal(nuloStageIndex(m), 3);
+m.p.data.push('sal'); assert.equal(nuloStageIndex(m), 2);
+m.p.data.push('eco'); assert.equal(nuloStageIndex(m), 3);
 assert.equal(nuloEntity(m, 0).stage, 'ultimo');
 
 // Encounters are local, one-shot for stress and persistent across a reload.
@@ -86,15 +83,6 @@ assert.equal(site.p.lote6.fenda, true);
 assert.match(useLote6(site, lote6Props[2]), /já está aberta/);
 assert.match(lote6Readout(site), /NULO 0\/4.*FENDA ABERTA/);
 assert.equal(fendaOpen(site), true);
-assert.match(objectiveLine(createMission({})), /MEMÓRIAS 0\/3/);
-const objective = createMission({});
-objective.p.data = ['fita','sal','eco'];
-assert.match(objectiveLine(objective), /recompile no terminal/);
-objective.p.rank = 4;
-assert.match(objectiveLine(objective), /ÂNCORA A SUDESTE/);
-assert.match(source, /objectiveLine\(m\)/);
-assert.match(source, /A FENDA DE RECOMPILAÇÃO ABRIU A SUDESTE/);
-
 // Hunter and guardian keep distinct silhouettes; both still use two enemies.
 assert.equal(enemyArt({hunter: true, phase: 'hunt'}), 'afogado-mare');
 assert.equal(enemyArt({hunter: true, phase: 'hurt'}), 'afogado-dano');
@@ -102,10 +90,7 @@ assert.equal(enemyArt({guardian: true, phase: 'hunt'}), 'guardiao-mare');
 assert.match(source, /hunter: true/);
 assert.match(source, /scale: e\.hunter \? 1\.08/);
 
-// Stage/audio/transition hooks remain wired to the main mission.
+// Nulo é presença ambiental, não um quarto sinal obrigatório.
 assert.match(source, /nuloEntity\(m, t\)/);
-assert.match(source, /shell\.classList\.toggle\("fenda-aberta"/);
-assert.match(source, /lote6Readout\(m\)/);
-assert.match(source, /if\(near\?\.kind===\"nulo\"\)/);
-assert.match(source, /ctx\.drawImage\(images\["transicao-fenda"\]/);
+assert.doesNotMatch(source, /useNulo\(/);
 console.log('Maré lote 6: 10 folhas, Nulo em quatro estágios, caçador, paredes/piso texturizados, estruturas e fenda OK');

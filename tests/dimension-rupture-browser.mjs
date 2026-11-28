@@ -118,9 +118,9 @@ if (!process.env.BROWSER_EXECUTABLE) {
       const { sites } = await import('/js/dimension/mare-mission-model.js');
       const m = window.__dimension404.runtime.mission;
       // Staged objective positions: this smoke is not a manual traversal claim.
-      for (const id of ['fita','sal','eco','terminal','ancora']) {
-        const s = sites.find(s => s.id === id);
-        m.x=s.x; m.y=s.y; m.vx=m.vy=0;
+      window.__dimension404.tick(.05);
+      for (const s of sites) {
+        [m.x,m.y]=s.approach; m.vx=m.vy=0;
         window.dispatchEvent(new KeyboardEvent('keydown',{code:'KeyE'}));
         window.dispatchEvent(new KeyboardEvent('keyup',{code:'KeyE'}));
       }
@@ -182,9 +182,15 @@ if (!process.env.BROWSER_EXECUTABLE) {
       "arrived",
       "returned",
     ]);
+    const stored = await page.evaluate(() => {
+      const { progress, world } = JSON.parse(localStorage.getItem('BLOCO404_SAVE_SLOT_1'));
+      return [world.lastMapId, progress.inventory, progress.mareCromatica.desfecho,
+        progress.mareMission.data, progress.mareMission.completed, progress.dimensionalRupture.status];
+    });
+    assert.deepEqual(stored, ['mare_cromatica_fenda',['qa_echo'],'parcial',['fita','sal','eco'],true,'arrived']);
     assert.deepEqual(errors, []);
     console.log(
-      "Rupture browser: real final terminal → Nulo dialogue → entering sequence → Limiar → Esc/2D, unchanged references/vitals/outcome and no page errors OK.",
+      "Rupture browser: portal da Fenda → circuito da Baía → Limiar → Esc/2D. Uma transição, save/estado preservados e nenhum erro de página.",
     );
   } finally {
     await browser.close();

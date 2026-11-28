@@ -21,8 +21,8 @@ export const nuloPoints = Object.freeze([
   },
   {
     id: 'segundo',
-    x: 28.5,
-    y: 11.5,
+    x: 25.6,
+    y: 10.5,
     line: 'NULO: “O arquivo não guarda pessoas. Guarda a forma como elas voltam.” Ele anota sua respiração sem olhar.',
   },
   {
@@ -40,10 +40,7 @@ export const nuloPoints = Object.freeze([
 ]);
 
 export function nuloStageIndex(m) {
-  if (m?.p?.rank >= 4) return 3;
-  if (m?.p?.rank >= 2) return 2;
-  if (m?.p?.data?.length) return 1;
-  return 0;
+  return Math.min(3, m?.p?.data?.length ?? 0);
 }
 
 export function nuloArt(m, t = 0) {
@@ -115,11 +112,3 @@ export const lote6Readout = (m) => {
 };
 
 export const fendaOpen = (m) => (m?.p?.rank ?? 1) >= 4;
-
-export function objectiveLine(m) {
-  if (m?.finished) return 'ECO PRESERVADO — a ponte do Limiar aceitará seu registro.';
-  if (fendaOpen(m)) return 'ÂNCORA A SUDESTE — a fenda responde; leve seu eco até a âncora.';
-  const count = m?.p?.data?.length ?? 0;
-  if (count >= 3) return 'TRÊS MEMÓRIAS — recompile no terminal central.';
-  return `MEMÓRIAS ${count}/3 — recupere ${3 - count} registro(s) nas cabanas.`;
-}

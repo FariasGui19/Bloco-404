@@ -72,7 +72,7 @@ assert.deepEqual({ x: w.x, y: w.y }, before);
 // Pursuit: flow field routes both enemies around cabin walls, states wind up/strike/recover.
 const sim = createMission({});
 sim.x = 16.5; sim.y = 28.5; sim.idle = 0;
-const enemies = [{ x: 23, y: 18 }, { x: 10, y: 18 }];
+const enemies = [{ x: 25, y: 17 }, { x: 10, y: 18 }]; // fora do novo painel sólido
 const pursuit = createPursuit();
 const start = enemies.map((e) => Math.hypot(e.x - sim.x, e.y - sim.y));
 for (let i = 0; i < 30 * 45; i++) {

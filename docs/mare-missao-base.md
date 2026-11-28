@@ -1,5 +1,7 @@
 # Maré Cromática — base jogável da baía
 
+> **Registro histórico desta versão.** Para jogar a missão atual, veja [Baía de Quarentena — circuito H-03](mare-missao-lote13.md). O percurso de memórias/terminal e o antigo fim por sabotagem descritos abaixo foram substituídos pela ativação de três sistemas e pela estabilização do portal.
+
 ## Escopo entregue
 
 Base independente de primeira pessoa, inspirada na linguagem PSX/terror analógico, sem reutilizar a física do Setor Limiar. Baía 32×32 com quatro cabanas atravessáveis, rotas externas conectadas e portas abertas reais. Renderização por raycaster Canvas 384×216, travessia DDA de no máximo 64 células por coluna, profundidade para sprites e distância limitada. Não há dependência de WebGL para esta missão. Não é uma promessa de FPS em celulares, nem uma otimização dos mapas 2D existentes.

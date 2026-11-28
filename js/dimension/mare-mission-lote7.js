@@ -7,21 +7,8 @@ export const lote7Props = Object.freeze([
   { id: 'lampada7', x: 18.4, y: 19.6, art: 'lanterna-sinal', scale: 0.42, r: 0.16, kind: 'lote7-lamp', label: 'Lâmpada de serviço' },
 ]);
 
-// Barreiras costeiras baixas e dunas: o pátio virou orla aberta. Estes
-// volumes continuam com colisão (e o teste do lote 7 continua válido), mas são
-// desenhados como rochas de 0,7-1,1 m, nunca como corredores de muro alto.
-export const lote7Walls = Object.freeze([
-  [1, 27, 7, 1],
-  [11, 27, 2, 1],
-  [18, 27, 5, 1],
-  [26, 27, 4, 1],
-  [2, 4, 1, 4],
-  [28, 6, 1, 4],
-  [4, 17, 2, 1],
-  [24, 11, 2, 1],
-  [9, 13, 2, 1],
-  [20, 18, 2, 1],
-]);
+// Rochas junto ao perímetro, nenhuma divisória atravessa a linha de serviço.
+export const lote7Walls = Object.freeze([[1, 27, 3, 1], [2, 4, 1, 3], [26, 5, 1, 2]]);
 
 // Non-blocking set dressing: silhouette, rust and clutter at knee height.
 export const lote7Decor = Object.freeze([

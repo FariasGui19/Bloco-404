@@ -1,5 +1,7 @@
 # Maré Cromática — upgrade PSX 3D
 
+> **Registro histórico desta versão.** Para jogar a missão atual, veja [Baía de Quarentena — circuito H-03](mare-missao-lote13.md). O percurso de memórias/terminal e o antigo fim por sabotagem descritos abaixo foram substituídos pela ativação de três sistemas e pela estabilização do portal.
+
 Substitui o corredor pseudo-3D em raycaster da Baía de Quarentena por uma cena
 Three.js de baixa poligonagem, mantendo a mesma missão, saves, HUD e contratos de
 teste. O objetivo é PS1/Puppet Combo: névoa densa, texturas de 256 px com

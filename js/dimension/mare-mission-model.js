@@ -1,12 +1,31 @@
 import {details} from './mare-mission-details.js';
 import {lore} from './mare-mission-lore.js';
 import {combatProps} from './mare-mission-combat.js';
-import {lote5Props} from './mare-mission-lote5.js';
-import {lote6Props} from './mare-mission-lote6.js';
-import {lote7Props,lote7Walls} from './mare-mission-lote7.js';
-import {lote8Props} from './mare-mission-lote8.js';
-import {lote9Props} from './mare-mission-lote9.js';
-import {lote11Props} from './mare-mission-lote11.js';
+import {lote7Walls} from './mare-mission-lote7.js';
+import {entry, systems, sites, anchor, currentSite, promptFor} from './mare-mission-circuit.js';
+export {sites};
+
+// Pátio aberto; os dois galpões são marcos laterais, não pedágios na rota.
+export const CABINS = [[5, 5, 7, 6], [6, 20, 7, 7]];
+export const notes = [
+  {...lore.find(s => s.id === 'diario'), note: 'LER DIÁRIO DO FAROLEIRO'},
+  {...lore.find(s => s.id === 'prontuario'), note: 'LER PRONTUÁRIO 07'},
+];
+// Mesmo elenco nos dois renderizadores. Só as notas entram no scanner;
+// nenhum adereço retirado da cena conserva uma colisão invisível.
+export const sceneryProps = [
+  ...combatProps.filter(p => p.kind === 'pod'),
+  {x: 7.4, y: 7.6, art: 'radio', scale: .55},
+  {x: 8.4, y: 21.8, art: 'rede-pesca', scale: .86},
+  {x: 8.7, y: 24.1, art: 'maca-quarentena', scale: .9},
+  {x: 10.5, y: 8.2, art: 'tubo-vapor', scale: .65},
+  {x: 11.4, y: 13.5, art: 'caldeira-sala', scale: 1},
+  {x: 11.8, y: 15.2, art: 'caixote-madeira', scale: .7},
+  {x: 26.7, y: 8.3, art: 'guindaste-baia', scale: 1.25},
+  {x: 30.2, y: 10.6, art: 'boia-cromatica', scale: .65},
+  {x: 27.7, y: 29.5, art: 'rede-deriva', scale: .78},
+];
+const solids = [...sites, ...notes];
 // Local-only mission simulation: never writes global health, inventory or levels.
 export const MARE_MISSION = "mare-cromatica:baia-v1";
 export const SIZE = 32;
@@ -26,10 +45,7 @@ export function cell(x, y) {
   if (onDock(x, y)) return 0;
   if (waterAt(x, y)) return 4;
   // Cabins have actual door gaps; all exterior paths form a connected loop.
-  for (const [a, b, w, h] of [
-    [5, 5, 7, 6],
-    [6, 20, 7, 7],
-  ]) {
+  for (const [a, b, w, h] of CABINS) {
     if (
       x >= a &&
       x < a + w &&
@@ -37,7 +53,8 @@ export function cell(x, y) {
       y < b + h &&
       (x === a || x === a + w - 1 || y === b || y === b + h - 1)
     ) {
-      if (y === b + h - 1 && x === a + 3) return 0;
+      if (y === b + h - 1 && Math.abs(x - (a + 3)) <= 1) return 0;
+      if (x === a + w - 1 && y >= b + 2 && y < b + h - 2) return 0;
       return x === a ? 2 : y === b && x === a + 3 ? 3 : 1;
     }
   }
@@ -46,31 +63,6 @@ export function cell(x, y) {
   }
   return 0;
 }
-export const sites = Object.freeze([
-  {
-    id: "fita",
-    x: 8.5,
-    y: 8.5,
-    art: "gravador",
-    label: "Fita da guarda costeira",
-  },
-  { id: "sal", x: 22.5, y: 8.5, art: "residuo", label: "Resíduo mnemônico" },
-  { id: "eco", x: 9.5, y: 23.5, art: "residuo", label: "Memória da evacuação" },
-  {
-    id: "terminal",
-    x: 16,
-    y: 16,
-    art: "terminal",
-    label: "Terminal de recompilação",
-  },
-  {
-    id: "ancora",
-    x: 24.5,
-    y: 24.5,
-    art: "ancora",
-    label: "Âncora primária do Hub",
-  },
-]);
 export const abilities = {
   mare_astral: "Radar de resina",
   nucleo_dez_forma: "Sobrecarga luminosa",
@@ -86,9 +78,9 @@ export function createMission(progress) {
     completed: false,
   });
   p.data = Array.isArray(p.data)
-    ? [...new Set(p.data.filter((id) => ["fita", "sal", "eco"].includes(id)))]
+    ? [...new Set(p.data.filter((id) => systems.some(site => site.id === id)))]
     : [];
-  p.rank = Math.max(1, Math.min(4, Number(p.rank) || 1));
+  p.rank = 1 + p.data.length;
   p.elapsed = Number.isFinite(Number(p.elapsed)) ? Math.max(0, Number(p.elapsed)) : 0;
   p.lamp = Number.isFinite(Number(p.lamp)) ? Math.max(0, Math.min(100, Number(p.lamp))) : 100;
   p.lampOn = p.lampOn !== false;
@@ -103,8 +95,7 @@ export function createMission(progress) {
   p.details = Object.fromEntries(Object.entries(p.details && typeof p.details === 'object' && !Array.isArray(p.details) ? p.details : {}).filter(([k, v]) => v === true && details.some(d => d.id === k)));
   return {
     p,
-    x: 16,
-    y: 28,
+    ...entry,
     angle: -Math.PI / 2,
     vx: 0,
     vy: 0,
@@ -112,7 +103,8 @@ export function createMission(progress) {
     idle: 0,
     cooldown: 0,
     ward: 0,
-    finished: false,
+    finished: p.completed === true,
+    timedOut: false,
     stamina:100,
     noise:0,
     decoy:null,
@@ -122,12 +114,9 @@ export function createMission(progress) {
   };
 }
 export function canStand(x, y) {
-  return [
-    [-0.2, -0.2],
-    [0.2, -0.2],
-    [-0.2, 0.2],
-    [0.2, 0.2],
-  ].every(([a, b]) => !cell(x + a, y + b)) && details.every(s=>Math.hypot(x-s.x,y-s.y)>(s.r??.46)) && lore.every(s=>Math.hypot(x-s.x,y-s.y)>(s.r??.46)) && combatProps.every(s=>Math.hypot(x-s.x,y-s.y)>(s.r??.46)) && lote5Props.every(s=>Math.hypot(x-s.x,y-s.y)>(s.r??.46)) && lote6Props.every(s=>Math.hypot(x-s.x,y-s.y)>(s.r??.46)) && lote7Props.every(s=>Math.hypot(x-s.x,y-s.y)>(s.r??.46)) && lote8Props.every(s=>Math.hypot(x-s.x,y-s.y)>(s.r??.46)) && lote9Props.every(s=>Math.hypot(x-s.x,y-s.y)>(s.r??.46)) && lote11Props.every(s=>Math.hypot(x-s.x,y-s.y)>(s.r??.46));
+  const pad = .30;
+  return !cell(x-pad, y-pad) && !cell(x+pad, y-pad) && !cell(x-pad, y+pad) && !cell(x+pad, y+pad)
+    && solids.every(s => (x-s.x)**2 + (y-s.y)**2 > s.r**2);
 }
 export function move(m, dx, dy) {
   if(!Number.isFinite(dx)||!Number.isFinite(dy))return;
@@ -139,22 +128,31 @@ export function move(m, dx, dy) {
     if (canStand(m.x, m.y + dy/steps)) m.y += dy/steps;else if('vy' in m)m.vy=0;
   }
 }
+export function visible(a, b) {
+  const steps = Math.ceil(Math.hypot(b.x-a.x, b.y-a.y) / .12);
+  for (let i = 1; i < steps; i++) if (cell(a.x+(b.x-a.x)*i/steps, a.y+(b.y-a.y)*i/steps)) return false;
+  return true;
+}
+const inReach = (m, s) => Math.hypot(m.x-s.x, m.y-s.y) <= 1.8 && visible(m, s);
+
+// HUD e botão E consultam o mesmo alvo. Uma nota nunca rouba o foco do circuito.
+export function scannerTarget(m) {
+  const next = currentSite(m);
+  if (!next) return null;
+  if (inReach(m, next)) return next;
+  const locked = sites.find(s => s !== next && !m.p.data.includes(s.id) && inReach(m, s));
+  if (locked) return locked;
+  return notes.find(n => !m.p.lore.includes(n.id) && inReach(m, n)) ?? null;
+}
 export function interact(m, site) {
-  if (!site || Math.hypot(m.x - site.x, m.y - site.y) > 1.8)
-    return "Aproxime-se do sinal.";
-  if (["fita", "sal", "eco"].includes(site.id)) {
-    if (!m.p.data.includes(site.id)) m.p.data.push(site.id);
-    return site.id === "fita"
-      ? "FITA: “O Aeroporto Central caiu em silêncio. Não deixem o X10 perder gravidade.”"
-      : "Dados mnemônicos recuperados. Retorne ao terminal seguro.";
-  }
-  if (site.id === "terminal") {
+  if (!sites.includes(site) || !inReach(m, site) || m.finished) return null;
+  const cue = promptFor(m, site);
+  if (cue?.kind !== 'mission') return null;
+  if (site === anchor) {
+    m.finished = m.p.completed = true;
+  } else {
+    m.p.data.push(site.id);
     m.p.rank = 1 + m.p.data.length;
-    m.stress = 0;
-    return `Recompilação ${m.p.rank}/4. NULO: eu também aprendi seu padrão.`;
   }
-  if (m.p.rank < 4)
-    return "A âncora exige domínio local 4. Recupere três memórias e recompile.";
-  m.finished = true;
-  return "NULO: a âncora era a isca. Você trouxe a chave. Ruptura inevitável — memória preservada.";
+  return `${site.code} / ${site.short} — ${site.log}`;
 }

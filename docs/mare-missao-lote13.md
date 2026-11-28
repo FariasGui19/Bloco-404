@@ -1,82 +1,29 @@
-# Maré Cromática — lote 13 (leitura de baía)
+# Maré Cromática — Baía de Quarentena
 
-Lote de **orientação**, não de mecânica. Nada aqui muda regra, dano, tempo ou
-progressão: a missão continua concluível exatamente como antes. O que o lote
-resolve são os três incômodos do mapa — decoração solta demais, objetivo
-espalhado em três linhas de texto e o mesmo `[E]` para tudo.
+**Linha de retorno / circuito H-03.** Na Fenda, use **Examinar o outro lado** depois de estabilizar a âncora da incursão 2D. A Baía é a missão em primeira pessoa; o botão de sandbox do Setor Limiar não inicia esse percurso.
 
-## Folhas
+| Etapa | Onde | Scanner (`E`) | O que muda |
+| --- | --- | --- | --- |
+| 01 | Píer de Entrada | Sintonizar sensor costeiro | Fixa a frequência e libera a partida do gerador. |
+| 02 | Setor dos Galpões | Reativar gerador auxiliar | Alimenta o painel, firma a iluminação de serviço e permite recarregar a lanterna junto à máquina. |
+| 03 | Estação da Âncora | Sincronizar painel da âncora | Fecha a fase da rede. O objetivo passa a **Estabilizar Âncora**, no portal. |
+| A | Píer do portal | Estabilizar âncora | Confirma o retorno e entrega a missão à ponte existente para o Setor Limiar. |
 
-| arquivo | uso |
-| --- | --- |
-| `trilha-tabua.png` | textura 256² da passarela de tábuas |
-| `cabo-guia.png` | textura 256² do cabo entre postes |
-| `poste-sinalizador.png` | marco de trilha com placa de seta |
-| `seta-chao.png` | decal de chão nas bifurcações (alphaTest) |
-| `placa-missao.png` | placa do percurso, junto ao píer |
-| `marcador-objetivo-0…3.png` | losango flutuante do objetivo ativo |
-| `farol-pulso-0…5.png` | anel lento do farolim quando um sinal cai |
-| `interacao-onda-0…5.png` | onda no objeto tocado pelo `E` |
-| `terminal-estados-0…3.png` | terminal apagado → leitura → dados → sobrecarga |
+O cabo liga fisicamente os equipamentos. **Vermelho** indica equipamento sem rede; **âmbar**, o próximo pronto para uso; **ciano**, sistema ativo. Os números, as palavras no display e os passos no HUD permitem ler o estado sem depender só da cor ou do som. Cada ativação produz uma onda no equipamento, um sinal sonoro se o áudio estiver ligado e uma linha de rádio. **M** mostra a carta de serviço, sua posição e o que cada sistema liberou. O diário e o prontuário nas cabanas são opcionais. Não existe etapa de coleta ou recompilação em um terminal central.
 
-Originais em `assets/source-art/mare-missao-lote13/`; publicados em
-`assets/sprites/mare-missao-lote13/` e `assets/textures/mare-missao-lote13/` por
-`tools/preparar-mare-lote13.py` (`OK: 2 texturas, 3 props, 4 tiras`).
+## Retomar e sair
 
-## Percurso
+- **Esc** devolve o operador ao mesmo ponto do 2D. Ao reentrar pelo portal da Fenda, a missão começa no píer e indica o primeiro sistema ausente.
+- A contagem usa os IDs existentes `fita`, `sal`, `eco` de `progress.mareMission.data`. A ordem de um save antigo não importa. Os registros e equipamentos opcionais já gravados não são requisitos, nem há uma segunda lista de flags.
+- **3/3 não conclui sozinho.** Só o último `E` na âncora confirma `completed` e solicita a ruptura. A confirmação acontece antes do relatório de quatro segundos, inclusive se o operador usar Esc durante ele. A ponte só inicia o Limiar depois de o manager desmontar a Baía e restaurar o 2D.
+- Se os dez minutos terminarem, o relatório é de **retirada à Fenda**, não de vitória. Uma nova janela permite retomar os sistemas sem recomeçar do zero. O progresso da incursão 2D não é alterado.
 
-`mare-mission-lote13.js` guarda quatro polilinhas conferidas contra `cell()` e
-`canStand()` — amostragem a cada 0,3 m, 241 amostras, **zero bloqueadas**:
+## Implementação e verificação
 
-- `praia` — píer até a porta da cabana 2 (`9.4,26.2`).
-- `volta` — píer → âncora → borda leste → travessia norte → porta da cabana 1
-  (`8.6,9.8`). Desvia do casulo (`26.4,15.3`), da válvula (`25,14`), da lente no
-  muro (`18.8,12.2`) e passa pela única fresta daquele muro (`x≈8.6`).
-- `terminal` — ramo central até `16,16`.
-- `sal` — ramo leste até o resíduo.
+`js/dimension/mare-mission-circuit.js` define os locais, as aproximações, o cabo, o estado e os verbos. Colisão e seleção por alcance/linha de visada ficam em `mare-mission-model.js`. `mare-mission-stations.js` constrói os três aparelhos em Three.js; o raycaster Canvas usa os mesmos locais, cabo e estados. A carta e os dois relatórios são comuns aos dois renderizadores. As tábuas, setas, marcador e onda reutilizam a arte publicada do lote 13; não há carga de modelos externos.
 
-`pathGuides()` deriva as tábuas (passo 2,4 m), os postes (passo 8,2 m, lado
-oposto com folga de 0,3 m em `canStand`), os cabos (catenária entre postes
-vizinhos) e as setas. Hoje: **28 tábuas, 6 postes, 5 cabos, 6 setas**. A
-passarela é uma única `BufferGeometry` (1 draw call), com `polygonOffset` para
-não brigar com o chão.
+```sh
+node --test tests/mare-mission.mjs tests/mare-mission-lote13.mjs tests/dimension-rupture.mjs
+```
 
-## Objetivo no mundo
-
-- `nextObjective(m,{fendaOpen})` devolve **um** passo: recuperar memória
-  (`have/need`, site mais próximo), recompilar no terminal ou alcançar a âncora.
-- O `.mare-next` (chip no alto à esquerda) mostra rótulo, detalhe, contador e
-  distância em metros, com seta de rumo relativa à câmera. É a única linha nova
-  de HUD: o resto do `readout` continua fora da tela, como antes.
-- O alvo da bússola (`mare-target`) agora sai do objetivo atual, não de uma
-  constante `24.5,24.5`.
-- No mundo, um losango flutuante marca o alvo: sobe/desce, troca de quadro,
-  encolhe de perto, desaparece além de 23 m.
-
-## Resposta ao `E`
-
-`promptFor(prop)` classifica cada interativo em quatro famílias — `◆ MISSÃO`,
-`✦ REGISTRO`, `▣ COLETA`, `◇ INSPEÇÃO` — com verbo próprio e tom de áudio
-próprio. O `aside` usa `promptFor(near).line` e ganha `data-kind` para a cor da
-borda. Coletar qualquer coisa dispara uma onda no objeto tocado (`pulse`), um
-tique curto e o pulso do chip (`avancou`); memória nova também faz o farolim
-abrir o anel lento (`ringBeacon`).
-
-O terminal tem quatro estados pintados e troca de arte conforme
-`m.p.data.length` (0 apagado, 1 leitura, 2 dados, 3 sobrecarga âmbar, também em
-`fendaOpen`).
-
-## Curadoria do decorativo
-
-`curateDecor(list,{keep:3.2,spacing:1.6})` mantém o que está a menos de 3,2 m do
-percurso, respeita 1,6 m entre peças e **nunca** descarta pino/farolim. Na baía:
-**33 → 16** decorativos, sem tirar nenhum ponto interativo.
-
-## Contratos preservados
-
-- Sem mecânica nova; nenhum prop novo entra em `nearestSignal`.
-- HUD base intacta (`readout`, `objective`, `message`, `steps`, vitais, botões).
-- Chuva/áudio, câmera, movimentação e colisão não foram tocados.
-- Testes: `tests/mare-mission-lote13.mjs` (6 casos), `tests/mare-upgrade-3d.mjs`
-  atualizado para o novo prompt, `tests/mare-mission-browser.mjs` verde com os
-  contadores `NULO 1/4`, `REGISTROS 1/8`, `LORE 1/6`, `AMEAÇAS 2/2`.
+O teste do modelo percorre a passarela com `move()` e cobre as oito combinações de sistemas em saves parciais. Com um servidor estático na porta 8000 e Playwright/Chromium em `.qa/`, `tests/mare-mission-browser.mjs` exercita teclas, botão de scanner, luzes WebGL, fallback, saída, expiração e falha de decodificação. `tests/dimension-rupture-browser.mjs` verifica no jogo real a sequência Fenda → Baía → Limiar → 2D (precisa de `BROWSER_EXECUTABLE` e `PLAYWRIGHT_MODULE`). Os testes de integração preparam posições para verificar os encontros; não exigem uma partida manual completa.

@@ -1,23 +1,10 @@
-import {details,nearestSignal,useDetail,terrain,createPursuit,enemyArt,hurtEnemy,visible} from './mare-mission-life.js';
-import {lore as loreProps,useLore} from './mare-mission-lore.js';
-import {combatProps,isInteractiveCombat,useCombatProp} from './mare-mission-combat.js';
-import {lote5Props,isInteractiveLote5,lote5Complete,lote5Readout,useLote5} from './mare-mission-lote5.js';
-import {lote6Props,isInteractiveLote6,lote6Readout,nuloEntity,nuloReportLine,objectiveLine,useLote6,useNulo,fendaOpen} from './mare-mission-lote6.js';
-import {lote7Decor,lote7Props,isInteractiveLote7,lampOn,lote7Readout,useLote7} from './mare-mission-lote7.js';
-import {lote8Decor,lote8Names,lote8Props,lote8Readout,isInteractiveLote8,useLote8} from './mare-mission-lote8.js';
-import {lote9Decor,lote9Names,lote9Props,lote9Cue,lote9Readout,isInteractiveLote9,useLote9} from './mare-mission-lote9.js';
-import {lote10Names,lote10Readout} from './mare-mission-lote10.js';
-import {LOTE13_FRAMES,curateDecor,lote13Cue,lote13Names,nextObjective,pathGuides,promptFor} from './mare-mission-lote13.js';
-import {LOTE11_BEACON,lote11BeaconOn,lote11Count,lote11Decor,lote11Hint,lote11Names,lote11Props,lote11Cue,lote11Readout,isInteractiveLote11,useLote11} from './mare-mission-lote11.js';
+import {terrain, createPursuit, enemyArt, hurtEnemy, visible} from './mare-mission-life.js';
+import {useLore} from './mare-mission-lore.js';
+import {nuloEntity} from './mare-mission-lote6.js';
+import {lote13Names, drawServiceMap, drawBayReport} from './mare-mission-lote13.js';
 import {createMareWorld3D} from './mare-mission-world3d.js';
-import {
-  cell,
-  sites,
-  createMission,
-  move,
-  interact,
-  abilities,
-} from "./mare-mission-model.js";
+import {cell, waterAt, onDock, CABINS, notes, sceneryProps, createMission, move, interact, abilities, scannerTarget} from './mare-mission-model.js';
+import {entry, systems, sites, anchor, currentSite, siteStatus, nextObjective, promptFor, relativeBearing, statusColor, circuitLegs, cableColor} from './mare-mission-circuit.js';
 
 // Bounded software renderer: 384x216, no GPU/context requirement or global input hooks retained.
 export async function createMareMission({
@@ -36,18 +23,24 @@ export async function createMareMission({
   shell.className = "mare-mission";
   shell.innerHTML = `<canvas width="384" height="216" tabindex="0" aria-label="Baía de quarentena em primeira pessoa"></canvas><div class="mare-letterbox" aria-hidden="true"></div><div class="mare-frame" aria-hidden="true"></div>
 <header class="mare-hud">
-  <div class="mare-brand"><span class="mare-rec" aria-hidden="true"></span><div><small>MARÉ CROMÁTICA <i>// BAÍA DE QUARENTENA</i></small><h1>A ÂNCORA NÃO RESPONDE</h1></div></div>
+  <div class="mare-brand"><span class="mare-rec" aria-hidden="true"></span><div><small>MARÉ CROMÁTICA <i>// BAÍA DE QUARENTENA</i></small><h1>OPERAÇÃO / LINHA DE RETORNO</h1></div></div>
   <div class="mare-compass" aria-label="Bússola"><span class="mare-heading">N</span><div class="mare-compass-track"><i></i><b></b><i></i><em class="mare-target" aria-hidden="true"></em></div><span class="mare-bearing">000°</span></div>
-  <div class="mare-signal"><small>SINAL</small><div class="mare-signal-bars" aria-hidden="true"><i></i><i></i><i></i><i></i></div><b class="mare-signal-text">FRACO</b>
+  <div class="mare-signal"><small>SINAL DO ALVO</small><div class="mare-signal-bars" aria-hidden="true"><i></i><i></i><i></i><i></i></div><b class="mare-signal-text">FRACO</b>
     <div class="mare-threat" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
     <b class="mare-zone-name">PRAIA</b></div>
 </header>
 <aside aria-live="polite"></aside>
-<div class="mare-next" hidden><span class="mare-next-glyph" aria-hidden="true">◆</span><div class="mare-next-body"><small>PRÓXIMO PASSO</small><b class="mare-next-action">—</b><span class="mare-next-detail"></span></div><span class="mare-next-count"></span><span class="mare-next-dist"></span><i class="mare-next-arrow" aria-hidden="true"></i></div>
-<nav class="mare-move" aria-label="Movimento"><button data-key="KeyW" aria-label="Frente">W</button><button data-key="KeyA" aria-label="Esquerda">A</button><button data-key="KeyS" aria-label="Trás">S</button><button data-key="KeyD" aria-label="Direita">D</button><button data-key="ShiftLeft">CORRER</button><button data-key="KeyC">AGACHAR</button></nav>
-<nav class="mare-look" aria-label="Câmera"><button data-key="ArrowUp" aria-label="Olhar para cima">▲</button><button data-key="ArrowLeft" aria-label="Olhar à esquerda">◀</button><button data-key="ArrowDown" aria-label="Olhar para baixo">▼</button><button data-key="ArrowRight" aria-label="Olhar à direita">▶</button></nav>
+<div class="mare-next" hidden><div class="mare-next-body">
+  <div class="mare-next-title"><small>H-03 / ESTRUTURA HÚMIDA</small><b class="mare-next-count">0/3</b></div>
+  <b class="mare-next-action">—</b><div class="mare-next-loc"><i class="mare-next-arrow" aria-hidden="true"></i><span class="mare-next-detail"></span><span class="mare-next-dist"></span></div>
+  <div class="mare-steps" aria-label="Sistemas da baía">${systems.map(s => `<span data-step="${s.id}">${s.code} ${s.short}</span>`).join('')}</div>
+</div></div>
 <footer class="mare-hud-foot">
-  <div class="mare-objective-row"><span>OBJETIVO</span><p class="mare-objective"></p></div>
+  <div class="mare-handset">
+    <nav class="mare-move" aria-label="Movimento"><button data-key="KeyW" aria-label="Frente">W</button><button data-key="KeyA" aria-label="Esquerda">A</button><button data-key="KeyS" aria-label="Trás">S</button><button data-key="KeyD" aria-label="Direita">D</button><button data-key="ShiftLeft">CORRER</button><button data-key="KeyC">AGACHAR</button></nav>
+    <nav class="mare-look" aria-label="Câmera"><button data-key="ArrowUp" aria-label="Olhar para cima">▲</button><button data-key="ArrowLeft" aria-label="Olhar à esquerda">◀</button><button data-key="ArrowDown" aria-label="Olhar para baixo">▼</button><button data-key="ArrowRight" aria-label="Olhar à direita">▶</button></nav>
+  </div>
+  <div class="mare-log"><span>NEXO-04 / RX</span><p class="mare-message" role="status"></p></div>
   <div class="mare-vitals">
     <div class="mare-vital"><small>TENSÃO</small><div class="mare-meter"><i class="mare-tension"></i></div><b class="mare-tension-value">0</b></div>
     <div class="mare-vital"><small>FÔLEGO</small><div class="mare-meter"><i class="mare-stamina"></i></div></div>
@@ -55,10 +48,8 @@ export async function createMareMission({
     <div class="mare-vital"><small>TEMPO</small><b class="mare-clock">10:00</b></div>
     <div class="mare-vital"><small>RUÍDO</small><b class="mare-noise">QUIETO</b></div>
   </div>
-  <p class="mare-message">Recupere 3 memórias nas cabanas. Recompile no terminal central e alcance a âncora a sudeste.</p>
-  <div class="mare-steps" aria-label="Progresso da missão"><span data-step="memorias">MEMÓRIAS 0/3</span><span data-step="terminal">TERMINAL</span><span data-step="ancora">ÂNCORA</span></div>
   <div class="mare-controls">
-    <button data-audio>ÁUDIO: OFF</button><button data-lamp><b>L</b> LANTERNA</button><button data-dash><b>␣</b> ESQUIVA</button><button data-action><b>E</b> INTERAGIR</button><button data-power><b>Q</b> PULSO</button><button data-attack><b>F</b> GOLPE</button><button data-map><b>M</b> MAPA</button><button data-exit>SAIR</button>
+    <button data-audio>ÁUDIO: OFF</button><button data-lamp><b>L</b> LANTERNA</button><button data-dash><b>␣</b> ESQUIVA</button><button data-action><b>E</b> SCANNER</button><button data-power><b>Q</b> PULSO</button><button data-attack><b>F</b> GOLPE</button><button data-map><b>M</b> MAPA</button><button data-exit>SAIR</button>
     <label class="mare-volume">VOL <input data-volume type="range" min="0" max="100" value="55" aria-label="Volume da missão"></label>
   </div>
   <p class="mare-readout"></p>
@@ -68,64 +59,41 @@ export async function createMareMission({
   const canvas = shell.querySelector("canvas"),
     ctx = canvas.getContext("2d", { alpha: false }),
     readout = shell.querySelector(".mare-readout"),
-    objective = shell.querySelector(".mare-objective"),
     message = shell.querySelector(".mare-message");
   ctx.imageSmoothingEnabled = false;
-  const extraNames = ["retrato","radio","gerador","boia","armario","rede","sino","valvula","infectado-preparo","infectado-golpe"];
-  const lote3Names = ["diario-faroleiro","lente-farol","mapa-evacuacao","maca-quarentena","prontuario-quarentena","caixa-sinal","infectado-busca","infectado-escuta","infectado-atordoado","infectado-erguendo"];
-  const lote4Names = ["infectado-golpe-baixo","infectado-golpe-alto","infectado-dano","infectado-dissolvido","casulo-mare","eco-operador","painel-contencao","cabo-energia","lanterna-sinal","porta-fenda"];
-  const lote5Names = ["caldeira-sala","tubo-vapor","cristal-mare","valvula-pressao","painel-recompilacao","selo-recompilado","guardiao-mare","guardiao-dano","porta-recompilacao","piso-metal"];
-  const lote6Names = ["nulo-operador","nulo-operador-voz","cacador-mare","cacador-dano","parede-azulejo","parede-ferrugem","chao-grade","turbina-sala","escada-servico","transicao-fenda"];
-  const lote7Names = ["parede-concreto-umido","parede-azulejo-quebrado","chao-concreto-umido","chao-agua-rasa","teto-metal-escuro","portal-mare","porta-pesada","lampada-industrial","afogado-mare","afogado-dano"];
-  const upgradeNames = ["terminal-baia","cristal-magenta","farol-lanterna"];
-  const coastNames = [
-    "nulo-0","nulo-1","nulo-2","nulo-3",
-    "afogado-0","afogado-1","afogado-2","afogado-3",
-    "guardiao-0","guardiao-1","guardiao-2","guardiao-3",
-    "terminal-recompilacao","ancora-cromatica","pier-zero","barco-destroco",
-    "nulo-sobrecarga","cristal-cluster","vegetacao-duna",
-    "caranguejo","gaivota","peixe","onda",
-  ];
-  const lote13Set = new Set(lote13Names);
-  const artDir = (n) => lote13Set.has(n) ? "mare-missao-lote13" : coastNames.includes(n) ? "mare-coast" : upgradeNames.includes(n) ? "mare-upgrade" : lote10Names.includes(n) ? "mare-missao-lote10" : lote11Names.includes(n) ? "mare-missao-lote11" : lote9Names.includes(n) ? "mare-missao-lote9" : lote8Names.includes(n) ? "mare-missao-lote8" : lote7Names.includes(n) ? "mare-missao-lote7" : lote6Names.includes(n) ? "mare-missao-lote6" : lote5Names.includes(n) ? "mare-missao-lote5" : lote4Names.includes(n) ? "mare-missao-lote4" : lote3Names.includes(n) ? "mare-missao-lote3" : extraNames.includes(n) ? "mare-missao-lote2" : "mare-missao-base";
-  const names = [
-    "madeira-sal",
-    "concreto-mar",
-    "porta-ferro",
-    "piso-resina",
-    "terminal",
-    "gravador",
-    "residuo",
-    "ancora",
-    "nulo",
-    "infectado",
-  ];
-  const images = Object.fromEntries(
-    await Promise.all(
-      [...names,...extraNames,...lote3Names,...lote4Names,...lote5Names,...lote6Names,...lote7Names,...lote8Names,...lote9Names,...lote10Names,...lote11Names,...lote13Names,...upgradeNames,...coastNames].map(async (n) => {
-        const im = new Image();
-        im.src = new URL(
-          `../../assets/sprites/${artDir(n)}/${n}.png`,
-          import.meta.url,
-        ).href;
-        // Decoração do lote 8 é opcional: se a arte faltar, o prop cai no
-        // fallback e o resto da orla continua. Arte de missão continua
-        // obrigatória e derruba a entrada com rollback (contrato do browser).
-        try {
-          await im.decode();
-        } catch (error) {
-          if (lote8Decor.some((d) => d.art === n)) return [n, null];
-          throw error;
-        }
-        return [n, im];
-      }),
-    ).catch((error) => {
-      shell.remove();
-      if (old === undefined) delete mount.dataset.mission;
-      else mount.dataset.mission = old;
-      throw error;
-    }),
-  );
+  message.textContent = m.p.data.length ? 'Telemetria recuperada. Retome a linha indicada no scanner.'
+    : 'O portal perdeu a portadora. Sintonize o sensor âmbar à frente.';
+  // Apenas as folhas que entram neste percurso (incluindo o fallback).
+  const atlas = {
+    'mare-missao-base': ['piso-resina'],
+    'mare-missao-lote2': ['radio'],
+    'mare-missao-lote3': ['diario-faroleiro','prontuario-quarentena','maca-quarentena'],
+    'mare-missao-lote4': ['casulo-mare'],
+    'mare-missao-lote5': ['caldeira-sala','tubo-vapor','guardiao-mare','guardiao-dano','piso-metal'],
+    'mare-missao-lote6': ['nulo-operador','nulo-operador-voz'],
+    'mare-missao-lote7': ['chao-concreto-umido','chao-agua-rasa','teto-metal-escuro','parede-azulejo-quebrado','porta-pesada','parede-concreto-umido','afogado-mare','afogado-dano'],
+    'mare-missao-lote8': ['guindaste-baia','caixote-madeira','rede-pesca'],
+    'mare-missao-lote11': ['gerador-quarentena','rede-deriva','boia-cromatica'],
+    'mare-missao-lote13': lote13Names,
+    'mare-coast': ['nulo-0','nulo-1','nulo-2','nulo-3','afogado-0','afogado-1','afogado-2','afogado-3',
+      'guardiao-0','guardiao-1','guardiao-2','guardiao-3','ancora-cromatica','pier-zero','barco-destroco',
+      'nulo-sobrecarga','vegetacao-duna',"caranguejo","gaivota","peixe","onda"],
+  };
+  const images = {};
+  try {
+    await Promise.all(Object.entries(atlas).flatMap(([dir, names]) => names.map(async name => {
+      const im = new Image();
+      im.src = new URL(`../../assets/sprites/${dir}/${name}.png`, import.meta.url).href;
+      try { await im.decode(); images[name] = im; }
+      catch (err) {
+        if (!sceneryProps.some(s => s.art === name) || sites.some(s => s.art === name)) throw err;
+      }
+    })));
+  } catch (err) {
+    shell.remove();
+    if (old === undefined) delete mount.dataset.mission; else mount.dataset.mission = old;
+    throw err;
+  }
   // Two opaque 64x64 tiles are sampled into a 192x108 floor layer. The
   // half-resolution buffer keeps the perspective cast cheap and reads as
   // deliberately chunky next to the 384x216 walls.
@@ -153,11 +121,10 @@ export async function createMareMission({
     torch: shell.querySelector(".mare-torch"),
     clock: shell.querySelector(".mare-clock"),
     noise: shell.querySelector(".mare-noise"),
-    rec: shell.querySelector(".mare-rec"),
+    scanner: shell.querySelector("[data-action]"),
     zone: shell.querySelector(".mare-zone-name"),
     threat: [...shell.querySelectorAll(".mare-threat i")],
     steps: [...shell.querySelectorAll(".mare-steps [data-step]")],
-    lampBtn: shell.querySelector("[data-lamp]"),
     target: shell.querySelector(".mare-target"),
     next: shell.querySelector(".mare-next"),
     nextAction: shell.querySelector(".mare-next-action"),
@@ -165,36 +132,13 @@ export async function createMareMission({
     nextCount: shell.querySelector(".mare-next-count"),
     nextDist: shell.querySelector(".mare-next-dist"),
     nextArrow: shell.querySelector(".mare-next-arrow"),
-    nextGlyph: shell.querySelector(".mare-next-glyph"),
   };
   // A cena 3D é construída uma vez. Se o WebGL falhar, o raycaster legado
   // continua como plano B e a missão nunca fica sem imagem.
-  const worldProps = [
-    ...sites,
-    ...details,
-    ...loreProps,
-    ...combatProps,
-    ...lote5Props,
-    ...lote6Props,
-    ...lote7Props,
-    ...lote8Props,
-    ...lote9Props,
-    ...lote11Props,
-    // Curadoria: o decorativo solto some, o que sobra marca referência.
-    ...curateDecor(
-      [
-        ...lote7Decor,
-        ...lote8Decor,
-        ...lote9Decor,
-        ...lote11Decor,
-      ].map((d) => ({ ...d, decor: true })),
-      { keep: 3.2, spacing: 1.6 },
-    ),
-  ];
+  const worldProps = [...sceneryProps, ...notes];
   const world3d = await createMareWorld3D({
     images,
     props: worldProps,
-    path: pathGuides(),
     onFear: ({ kind, x, z }) => {
       if (!enabled) return;
       const dx = x - m.x, dy = z - m.y, dist = Math.hypot(dx, dy) || 1;
@@ -224,7 +168,6 @@ export async function createMareMission({
     t = 0,
     saveClock = 0,
     lastStep = 0,
-    lastRank = m.p.rank,
     endClock = 0,
     drag = false,
     lastX = 0,
@@ -234,10 +177,8 @@ export async function createMareMission({
     mapOpen = false,
     audio = null,
     enabled = false,
-    drone = null, master=null, activeFrame=false, beatClock=0, beat=0, breathClock=0, shake=0, intro=2.0, pulse=0, hurtFlash=0, hazardClock=0, attackClock=0, swing=0, frameDt=1/60;
-  let lastTerminalStep = -1;
+    drone = null, master=null, activeFrame=false, beatClock=0, beat=0, breathClock=0, shake=0, intro=2.0, pulse=0, scanFlash=0, scanned=null, hurtFlash=0, attackClock=0, swing=0, frameDt=1/60;
   const pursuit=createPursuit(), motion=matchMedia("(prefers-reduced-motion: reduce)"), aside=shell.querySelector("aside");
-  const hazardProp=combatProps.find(p=>p.kind==="hazard"), lightProp=combatProps.find(p=>p.kind==="light");
   const enemies = [
     { x: 27, y: 16, hunter: true },
     { x: 4, y: 17, guardian: true },
@@ -250,7 +191,7 @@ export async function createMareMission({
     enemyClock = 0,
     stepClock = 0,
     ambientClock = 0,
-    overloadClock = 0,
+    exitRequested = false,
     coastZone = "praia",
     lampClock = 0,
     portalClock = 0,
@@ -260,7 +201,6 @@ export async function createMareMission({
     musicGain = null,
     musicFilter = null,
     musicOsc = [],
-    musicClock = 0,
     motifClock = 0;
   function score() {
     if (musicGain || !audio || !master) return;
@@ -338,18 +278,21 @@ export async function createMareMission({
     surfGain.connect(master);
     surf.start();
   }
-  function tone(f, d = 0.15, v = 0.025, type = "sine") {
+  function tone(f, d = 0.15, v = 0.025, type = "sine", pan = 0, delay = 0) {
     if (!enabled || !audio || !master) return;
     const o = audio.createOscillator(),
       g = audio.createGain();
     o.type = type;
     o.frequency.value = f;
-    g.gain.setValueAtTime(v, audio.currentTime);
-    g.gain.exponentialRampToValueAtTime(0.0001, audio.currentTime + d);
+    const at = audio.currentTime + delay;
+    g.gain.setValueAtTime(v, at);
+    g.gain.exponentialRampToValueAtTime(0.0001, at + d);
     o.connect(g);
-    g.connect(master);
-    o.start();
-    o.stop(audio.currentTime + d);
+    if (pan && audio.createStereoPanner) {
+      const panner = audio.createStereoPanner(); panner.pan.value = pan;
+      g.connect(panner); panner.connect(master);
+    } else g.connect(master);
+    o.start(at); o.stop(at + d);
   }
   function ensureNoise() {
     if (!noiseBuffer && audio) {
@@ -376,12 +319,9 @@ export async function createMareMission({
   // Ambientes distintos por marco: cada ponto da missão tem seu próprio pulso.
   function zoneOf(m) {
     const near = (x, y) => Math.hypot(m.x - x, m.y - y);
-    const rift = lote6Props.find((p) => p.id === "fenda6");
-    return rift && fendaOpen(m) && near(rift.x, rift.y) < 3.2 ? "fenda"
-      : near(16, 27.5) < 4.4 ? "pier"
-      : near(16, 16) < 3.4 ? "terminal"
-        : near(24.5, 24.5) < 3.6 ? "anchor"
-          : m.x > 25.1 ? "surf" : "praia";
+    return near(anchor.x, anchor.y) < 6 || near(systems[2].x, systems[2].y) < 3 ? 'anchor'
+      : near(systems[1].x, systems[1].y) < 5 ? 'terminal'
+      : near(entry.x, entry.y) < 6 ? 'pier' : m.x > 25.1 ? 'surf' : 'praia';
   }
   function coastAmbient(dt, m) {
     ambientClock -= dt;
@@ -423,19 +363,6 @@ export async function createMareMission({
       tone(48, 4.2, 0.006, "sine");
     }
   }
-  const signals = () => [
-    ...sites.filter((s) => !m.p.data.includes(s.id)),
-    ...details.filter((d) => !m.p.details[d.id] || d.id === "radio" || d.id === "sino"),
-    ...loreProps.filter((d) => !m.p.lore.includes(d.id)),
-    ...combatProps.filter(isInteractiveCombat),
-    ...lote5Props.filter(isInteractiveLote5),
-    ...lote6Props.filter(isInteractiveLote6),
-    ...lote7Props.filter(isInteractiveLote7),
-    ...lote8Props.filter(isInteractiveLote8),
-    ...lote9Props.filter(isInteractiveLote9),
-    ...lote11Props.filter(isInteractiveLote11),
-    nuloEntity(m, t),
-  ];
   function dash() {
     if (m.finished || m.dashCd > 0 || m.stamina < 28) return;
     const f = Number(keys.has("KeyW")) - Number(keys.has("KeyS"));
@@ -450,70 +377,34 @@ export async function createMareMission({
     noiseBurst(0.18, 0.007, 1100, 0.15);
   }
   function action() {
-    if(m.finished)return;
-    const near = nearestSignal(m,signals());
-    const beforeLore = m.p.lore.length;
-    const beforeData = m.p.data.length;
-    const beforeDetails = Object.keys(m.p.details).length;
-    const machine = isInteractiveLote5(near) ? useLote5(m, near)
-      : isInteractiveLote6(near) ? useLote6(m, near)
-      : isInteractiveLote7(near) ? useLote7(m, near)
-      : isInteractiveLote8(near) ? useLote8(m, near)
-      : isInteractiveLote9(near) ? useLote9(m, near)
-      : isInteractiveLote11(near) ? useLote11(m, near)
-      : near?.kind === 'nulo' ? useNulo(m, near) : null;
-    // Resposta sonora curta para o prop do lote 9 usado.
-    if (machine && isInteractiveLote9(near)) {
-      const cue = lote9Cue(near.kind);
-      if (cue) tone(cue.hz, cue.dur, cue.gain, cue.wave);
+    if (!activeFrame || m.finished || mapOpen) return;
+    const near = scannerTarget(m), cue = promptFor(m, near);
+    if (!cue || cue.kind === 'locked') return;
+    if (cue.kind === 'lore') {
+      message.textContent = useLore(m, near);
+      tone(330, .16, .013, 'triangle'); save(); return;
     }
-    if (machine && isInteractiveLote11(near)) {
-      const cue = lote11Cue(near.kind);
-      if (cue) tone(cue.hz, cue.dur, cue.gain, cue.wave);
-    }
-    message.textContent = machine ?? (near && loreProps.includes(near)
-      ? useLore(m, near)
-      : near && details.includes(near) ? useDetail(m, near)
-      : isInteractiveCombat(near) ? useCombatProp(m, near, enemies)
-      : interact(m, near));
-    if (loreProps.includes(near) && m.p.lore.length > beforeLore) {
-      if (m.p.lore.length === 4) message.textContent += ' NULO: “O farol reconhece você.”';
-      if (m.p.lore.length === 6) message.textContent += ' NULO: “Agora você também ouve o sino.”';
-    }
-    if(near?.id==="sino") {tone(440,2,.045);tone(659,1.4,.015);}
-    if(near?.id==="valvula")tone(110,.8,.03,"sawtooth");
-    if(near?.id==="gerador")tone(45,1,.04,"triangle");
-    if(loreProps.includes(near))tone(near.id==="lente"?740:520,.5,.02,"sine");
-    if(near?.kind==="hazard")tone(90,1.1,.04,"sawtooth");
-    if(near?.kind==="light")tone(660,.25,.025,"square");
-    if(near?.kind==="mirror")tone(240,.8,.02,"sine");
-    if(near?.kind==="panel")tone(420,.18,.02,"square");
-    if(near?.kind==="lote5-valve"){tone(52,.9,.045,"sawtooth");tone(190,.22,.025,"square");}
-    if(near?.art==="tubo-vapor")tone(118,.45,.016,"sine");
-    if(near?.kind==="lote5-seal"){tone(440,.8,.03,"sine");tone(660,.55,.018,"triangle");}
-    if(near?.kind==="lote5-panel")tone(360,.16,.02,"square");
-    if(near?.kind==="lote5-lore")tone(720,.4,.015,"sine");
-    if(near?.kind==="lote6-turbine"){tone(64,.8,.035,"sawtooth");tone(310,.5,.018,"triangle");}
-    if(near?.kind==="lote6-rift"){tone(660,.9,.025,"sine");tone(110,.6,.02,"sawtooth");}
-    if(near?.kind==="lote6-stairs")tone(150,.22,.014,"triangle");
-    if(near?.kind==="nulo"){tone(95,.45,.02,"sine");tone(190,.2,.01,"square");}
-    if(near?.kind==="lote7-lamp"){tone(140,.16,.018,"square");tone(280,.08,.008,"sawtooth");}
-    tone(near ? 180 : 70);
-    // Resposta no mundo: onda no objeto tocado. Sem texto, sem HUD extra.
-    const cue = near ? promptFor(near) : null;
-    if (cue) world3d.pulse?.(near.x, near.y, cue.wave);
-    const advanced =
-      m.p.data.length > beforeData ||
-      m.p.lore.length > beforeLore ||
-      Object.keys(m.p.details).length > beforeDetails;
-    if (advanced && hud.next) {
-      hud.next.classList.remove("avancou");
-      void hud.next.offsetWidth;
-      hud.next.classList.add("avancou");
-      tone(880, .14, .014, "triangle");
-      if (m.p.data.length > beforeData) world3d.ringBeacon?.();
-    }
+    const log = interact(m, near);
+    if (!log) return;
+    message.textContent = log;
+    scanned = near; scanFlash = .65;
+    world3d.pulse?.(near);
+    const pan = Math.sin(relativeBearing(m, near) * Math.PI/180);
+    noiseBurst(.10, .013, 1200, pan);
+    if (near === systems[1]) tone(65, .72, .018, 'sawtooth', pan);
+    tone(near.hz, .32, .025, 'triangle', pan);
+    tone(near.hz * 1.5, .42, .017, 'sine', pan, .12);
+    if (m.finished) {
+      // Quinta aberta que resolve em acorde maior; a sirene fica reservada à retirada.
+      [392, 494, 587, 784].forEach((hz,i) => tone(hz, 1.25, .016, 'sine', pan, .24+i*.18));
+    } else if (currentSite(m) === anchor) tone(near.hz*2, .42, .012, 'sine', pan, .3);
+    hud.next.classList.remove('avancou');
+    void hud.next.offsetWidth;
+    hud.next.classList.add('avancou');
+    // Confirmar no toque, não no último frame da vinheta: ESC durante a
+    // transmissão não perde o desfecho. O bridge aguarda a saída do manager.
     save();
+    if (m.finished) complete();
   }
   function attack() {
     if (m.finished || attackClock > 0) return;
@@ -548,13 +439,6 @@ export async function createMareMission({
         move(probe, (e.x - m.x) / d, (e.y - m.y) / d);
         Object.assign(e, probe);
       }
-    if (a === "mare_astral")
-      shell.querySelector("aside").textContent = sites
-        .filter((s) => !m.p.data.includes(s.id))
-        .map(
-          (s) => `${s.label}: ${Math.round(Math.hypot(s.x - m.x, s.y - m.y))}m`,
-        )
-        .join(" · ");
     const radius=3.2+m.p.rank*.35, hits=[];
     for(const e of enemies){
       if(e.dead||e.phase==="dissolve")continue;
@@ -562,7 +446,7 @@ export async function createMareMission({
       const result=hurtEnemy(e,a==="motor_bio_forja"?2:1);
       if(result)hits.push(result);
     }
-    m.pulse=.6;
+    pulse=.6;
     if(hits.length){tone(520,.35,.03,"square");tone(260,.5,.02,"triangle");shake=.18;}
     message.textContent = `${abilities[a] ?? "Pulso de identidade"}: ${a === "mare_astral" ? "sinais revelados" : a === "nucleo_dez_forma" ? "perseguidores cegados" : a === "dominio_anciao" ? "barreira ativa" : "biomassa estabilizada"}. Potência local ${m.p.rank}/4.`;
     if(hits.includes("defeated"))message.textContent+=" Uma forma se dissolveu; o casulo vai chamá-la de volta em 30s.";
@@ -572,7 +456,7 @@ export async function createMareMission({
   const listen = (el, event, fn) =>
     el.addEventListener(event, fn, { signal: abort.signal });
   listen(window, "keydown", (e) => {
-    if (e.repeat) return;
+    if (e.repeat || m.finished) return;
     if (
       [
         "KeyW",
@@ -614,10 +498,13 @@ export async function createMareMission({
     lastY = e.clientY;
     try { canvas.setPointerCapture(e.pointerId); } catch { /* ponteiro sintético */ }
     canvas.focus();
-    canvas.requestPointerLock?.();
+    // Em telas de toque e iframes sem pointer-lock, o arrasto continua ativo.
+    if (e.pointerType !== 'touch') {
+      try { canvas.requestPointerLock?.()?.catch?.(() => {}); } catch { /* usar arrasto */ }
+    }
   });
   listen(canvas, "pointermove", (e) => {
-    if (drag && !document.pointerLockElement) {
+    if (drag && !document.pointerLockElement && !mapOpen && !m.finished) {
       m.angle += (e.clientX - lastX) * 0.005;
       m.pitch = Math.max(-0.92, Math.min(0.92, m.pitch - (e.clientY - lastY) * 0.0035));
       lastX = e.clientX;
@@ -625,14 +512,14 @@ export async function createMareMission({
     }
   });
   listen(document, "mousemove", (e) => {
-    if (document.pointerLockElement === canvas && !mapOpen) {
+    if (document.pointerLockElement === canvas && !mapOpen && !m.finished) {
       m.angle += (e.movementX || 0) * 0.0022;
       m.pitch = Math.max(-0.92, Math.min(0.92, m.pitch - (e.movementY || 0) * 0.0022));
     }
   });
   listen(canvas, "pointerup", () => (drag = false));
   listen(canvas, "pointercancel", () => (drag = false));
-  listen(shell.querySelector("[data-map]"), "click", () => (mapOpen = !mapOpen));
+  listen(shell.querySelector("[data-map]"), "click", () => { if (!m.finished) mapOpen = !mapOpen; });
   for (const b of shell.querySelectorAll("[data-key]")) {
     listen(b, "pointerdown", (e) => {
       e.preventDefault();
@@ -647,6 +534,7 @@ export async function createMareMission({
   shell.querySelector("[data-attack]").onclick = attack;
   shell.querySelector("[data-dash]").onclick = dash;
   shell.querySelector("[data-lamp]").onclick = () => {
+    if (m.finished) return;
     m.lampOn = !m.lampOn;
     message.textContent = m.lampOn ? "Lanterna ON." : "Lanterna OFF — silhueta mais difícil de ler.";
   };
@@ -660,6 +548,7 @@ export async function createMareMission({
       audio ??= new (window.AudioContext || window.webkitAudioContext)();
       if(!master){master=audio.createGain();master.gain.value=Number(shell.querySelector("[data-volume]").value)/100;const limiter=audio.createDynamicsCompressor();limiter.threshold.value=-18;limiter.ratio.value=8;master.connect(limiter);limiter.connect(audio.destination);}
       await audio.resume();
+      if (disposed || !enabled) return;
       if (!drone) {
         drone = audio.createOscillator();
         const g = audio.createGain();
@@ -685,71 +574,34 @@ export async function createMareMission({
     } else audio?.suspend();
     } catch {enabled=false;e.target.textContent="ÁUDIO: INDISPONÍVEL";}
   };
-  const depth = new Float32Array(384);
-  function drawMap() {
-    const ox = 68, oy = 44, size = 4.5;
-    ctx.fillStyle = "rgba(5,9,8,.94)";
-    ctx.fillRect(42, 26, 300, 166);
-    ctx.strokeStyle = "rgba(161,205,181,.65)";
-    ctx.strokeRect(42.5, 26.5, 299, 165);
-    ctx.fillStyle = "#b8d8c4";
-    ctx.font = "8px monospace";
-    ctx.fillText("MAPA TÁTICO // BAÍA DE QUARENTENA", 55, 40);
-    ctx.fillStyle = "rgba(15,30,26,.92)";
-    ctx.fillRect(ox - 2, oy - 2, 32 * size + 4, 32 * size + 4);
-    for (let y = 0; y < 32; y++) for (let x = 0; x < 32; x++) {
-      const c = cell(x + .5, y + .5);
-      if (c) {
-        ctx.fillStyle = c === 1 ? "rgba(122,137,118,.78)" : c === 3 ? "rgba(184,126,70,.9)" : "rgba(76,91,82,.75)";
-        ctx.fillRect(ox + x * size, oy + y * size, size, size);
-      } else {
-        ctx.fillStyle = "rgba(111,188,166,.055)";
-        ctx.fillRect(ox + x * size, oy + y * size, 1, 1);
+  // No raycaster, reprojetar o mesmo cabo sobre o chão, antes das paredes e
+  // sprites. Cortar no plano próximo evita uma faixa virando a tela ao girar.
+  function drawCableOnFloor(fov, eye) {
+    const cos = Math.cos(m.angle), sin = Math.sin(m.angle), focal = 192/fov;
+    const project = ([x,y]) => {
+      const dx = x-m.x, dy = y-m.y;
+      return { side: -dx*sin + dy*cos, z: dx*cos + dy*sin };
+    };
+    const near = .35;
+    ctx.save(); ctx.lineCap = 'round';
+    for (const leg of circuitLegs) {
+      ctx.strokeStyle = cableColor(m, leg);
+      const points = leg.cable.map(project);
+      for (let i=1; i<points.length; i++) {
+        let a = points[i-1], b = points[i];
+        if (a.z > b.z) [a,b] = [b,a];
+        if (b.z <= near) continue;
+        if (a.z < near) a = { side: a.side + (b.side-a.side)*(near-a.z)/(b.z-a.z), z: near };
+        ctx.lineWidth = Math.max(.7, Math.min(5, 12/(a.z+b.z)));
+        ctx.beginPath();
+        ctx.moveTo(192 + focal*a.side/a.z, 108 + eye/a.z);
+        ctx.lineTo(192 + focal*b.side/b.z, 108 + eye/b.z);
+        ctx.stroke();
       }
     }
-    for (const s of sites) {
-      if (m.p.data.includes(s.id) && s.id !== "terminal" && s.id !== "ancora") continue;
-      ctx.fillStyle = s.id === "ancora" ? "#e4a8ff" : s.id === "terminal" ? "#71efe0" : "#ffd28a";
-      ctx.fillRect(ox + s.x * size - 1.5, oy + s.y * size - 1.5, 3, 3);
-    }
-    // Lote 11: os quatro sinais de quarentena e o farolim no mapa tático.
-    const flags11 = m.p.lote11 ?? {};
-    for (const s of lote11Props) {
-      const done = s.kind === "lote11-cartas" ? flags11.cartas
-        : s.kind === "lote11-placa" ? flags11.placa
-          : s.kind === "lote11-sino" ? flags11.sino : flags11.power;
-      ctx.fillStyle = done ? "rgba(159,242,224,.34)" : "#9ff2e0";
-      ctx.fillRect(ox + s.x * size - 1, oy + s.y * size - 1, 2, 2);
-    }
-    ctx.fillStyle = lote11BeaconOn(m) ? "#9ff2e0" : "rgba(126,168,160,.6)";
-    ctx.beginPath();
-    ctx.arc(ox + LOTE11_BEACON.x * size, oy + LOTE11_BEACON.y * size, 2.4, 0, Math.PI * 2);
-    ctx.fill();
-    const n = nuloEntity(m, t);
-    ctx.fillStyle = "#f0e5ca";
-    ctx.fillRect(ox + n.x * size - 1, oy + n.y * size - 1, 2, 2);
-    const px = ox + m.x * size, py = oy + m.y * size;
-    ctx.fillStyle = "#d9fff1";
-    ctx.beginPath();
-    ctx.moveTo(px + Math.cos(m.angle) * 5, py + Math.sin(m.angle) * 5);
-    ctx.lineTo(px + Math.cos(m.angle + 2.5) * 3, py + Math.sin(m.angle + 2.5) * 3);
-    ctx.lineTo(px + Math.cos(m.angle - 2.5) * 3, py + Math.sin(m.angle - 2.5) * 3);
-    ctx.closePath();
-    ctx.fill();
-    ctx.font = "7px monospace";
-    ctx.fillStyle = "#ffd28a";
-    ctx.fillText("● MEMÓRIA", 222, 52);
-    ctx.fillStyle = "#71efe0";
-    ctx.fillText("● TERMINAL", 222, 63);
-    ctx.fillStyle = "#e4a8ff";
-    ctx.fillText("● ÂNCORA", 222, 74);
-    ctx.fillStyle = "#f0e5ca";
-    ctx.fillText("● NULO", 222, 85);
-    ctx.fillStyle = "#9ff2e0";
-    ctx.fillText(`◆ SINAL ${lote11Count(m)}/4 · FAROL ${lote11BeaconOn(m) ? "ON" : "OFF"}`, 222, 96);
-    ctx.fillStyle = "#9bbdb6";
-    ctx.fillText("M FECHA", 222, 178);
+    ctx.restore();
   }
+  const depth = new Float32Array(384);
   function renderLegacy() {
     ctx.save();
     if(shake>0&&!motion.matches)ctx.translate(Math.round(Math.sin(t*73)*shake*10),Math.round(Math.cos(t*59)*shake*6));
@@ -817,10 +669,7 @@ export async function createMareMission({
       ctx.fillStyle = "rgba(72,96,84,.14)";
       ctx.fillRect(0, 101, 384, 18);
     }
-    const indoors = [
-      [5, 5, 7, 6],
-      [6, 20, 7, 7],
-    ].some(
+    const indoors = CABINS.some(
       ([x, y, w, h]) =>
         m.x > x + 1 && m.x < x + w - 1 && m.y > y + 1 && m.y < y + h - 1,
     );
@@ -846,14 +695,15 @@ export async function createMareMission({
           const wx = m.x + Math.cos(a) * distance, wy = m.y + Math.sin(a) * distance;
           const tx = ((wx * 32) | 0) & 63, ty = ((wy * 32) | 0) & 63;
           const src = (ty * 64 + tx) * 4, out = (y * 192 + x) * 4;
-          const wet = Math.sin(wx * 1.7 + wy * 2.3) + Math.sin(wx * 4.1 - wy * 1.3) > 1.18;
+          const sea = waterAt(wx,wy) && !onDock(wx,wy);
+          const wet = sea || Math.sin(wx * 1.7 + wy * 2.3) + Math.sin(wx * 4.1 - wy * 1.3) > 1.18;
           const tile = wet ? floorTiles.water : floorTiles.base;
           const ripple = wet && !motion.matches ? 1.12 + 0.08 * Math.sin(t * 1.8 + wx * 3) : 1;
           const shade = rowShade * ripple;
           const warm = indoors ? 1.14 : 1.02;
           data[out] = tile[src] * shade * warm * (1 - fog) + 8 * fog;
           data[out + 1] = tile[src + 1] * shade * (1 - fog) + 13 * fog;
-          data[out + 2] = tile[src + 2] * shade * (1 - fog) + 17 * fog;
+          data[out + 2] = tile[src + 2] * shade * (1 - fog) + 17 * fog + (sea ? 14 : 0);
           data[out + 3] = 255;
         }
       }
@@ -868,6 +718,7 @@ export async function createMareMission({
       ctx.fillStyle = `rgba(30,130,145,${0.04 + 0.02 * Math.sin(t + y)})`;
       ctx.fillRect(Math.sin(t * 0.3 + y) * 12, y, 384, 1);
     }
+    drawCableOnFloor(fov, eye);
     for (let x = 0; x < 384; x += 2) {
       const a = m.angle + Math.atan((x / 192 - 1) * fov),
         dx = Math.cos(a),
@@ -894,12 +745,15 @@ export async function createMareMission({
         }
         if (d > 26) break;
         hit = cell(mx, my);
+        if (hit === 4 || (hit && waterAt(mx,my))) { hit = 0; continue; }
         if (hit) break;
       }
       const corrected = d * Math.cos(a - m.angle);
       depth[x] = depth[x + 1] = corrected;
       if (!hit) continue;
-      const h = Math.min(980, 300 / corrected),
+      const coastRock = !CABINS.some(([a,b,w,d]) => mx>=a && mx<a+w && my>=b && my<b+d);
+      const wallHeight = coastRock ? 76 : 300;
+      const h = Math.min(980, wallHeight / corrected),
         wx = m.x + dx * d,
         wy = m.y + dy * d;
       const edgeX = Math.abs(wx - Math.round(wx)),
@@ -909,7 +763,7 @@ export async function createMareMission({
         images[
           hit === 1 ? "parede-azulejo-quebrado" : hit === 3 ? "porta-pesada" : "parede-concreto-umido"
         ];
-      const wallTop = 108 - (300-eye) / corrected;
+      const wallTop = 108 - (wallHeight-eye) / corrected;
       ctx.drawImage(
         im,
         Math.floor(u * im.width),
@@ -930,24 +784,11 @@ export async function createMareMission({
       ctx.fillRect(x, wallTop, 2, 1);
       ctx.fillStyle = "rgba(2,7,11,.34)";
       ctx.fillRect(x, wallTop + h - Math.max(1, h * 0.035), 2, Math.max(1, h * 0.035));
-      ctx.fillStyle = `rgba(3,8,17,${Math.min(0.88, (m.p.details.gerador?0.14:0.2) + corrected / 50 + (edgeX < edgeY ? 0.06 : 0))})`;
+      ctx.fillStyle = `rgba(3,8,17,${Math.min(0.88, (m.p.data.includes(systems[1].id)?0.14:0.2) + corrected / 50 + (edgeX < edgeY ? 0.06 : 0))})`;
       ctx.fillRect(x, wallTop, 2, h);
     }
     const objects = [
-      ...sites.filter((s) => !m.p.data.includes(s.id)),
-      ...details.map((d) => ({ ...d, scale: d.scale * 0.72 })),
-      ...loreProps.map((d) => ({ ...d, scale: d.scale * 0.72 })),
-      ...combatProps.map((d) => ({ ...d, scale: d.scale * 0.8 })),
-      ...lote5Props.map((d) => ({ ...d, scale: d.scale * 0.8 })),
-      ...lote6Props.map((d) => ({ ...d, scale: d.scale * 0.8 })),
-      ...lote7Props.map((d) => ({ ...d, scale: d.scale * 0.8 })),
-      ...lote8Props.map((d) => ({ ...d, scale: d.scale * 0.8 })),
-      ...lote9Props.map((d) => ({ ...d, scale: d.scale * 0.8 })),
-      ...lote11Props.map((d) => ({ ...d, scale: d.scale * 0.8 })),
-      ...lote7Decor.map((d) => ({ ...d, scale: d.scale * 0.8 })),
-      ...lote8Decor.map((d) => ({ ...d, scale: d.scale * 0.8 })),
-      ...lote9Decor.map((d) => ({ ...d, scale: d.scale * 0.8 })),
-      ...lote11Decor.map((d) => ({ ...d, scale: d.scale * 0.8 })),
+      ...sites, ...worldProps,
       nuloEntity(m, t),
       ...enemies.filter((e) => !e.dead).map((e) => ({ ...e, art: enemyArt(e), scale: e.hunter ? 1.08 : e.guardian ? 1.12 : 1 })),
     ].sort(
@@ -955,14 +796,16 @@ export async function createMareMission({
         Math.hypot(b.x - m.x, b.y - m.y) - Math.hypot(a.x - m.x, a.y - m.y),
     );
     for (const o of objects) {
+      const station = sites.includes(o), status = station ? siteStatus(m,o) : null;
+      const im = images[o === systems[2] && status === 'online' ? 'terminal-estados-2' : o.art];
+      if (!im) continue;
       const dx = o.x - m.x,
         dy = o.y - m.y,
         forward = dx * Math.cos(m.angle) + dy * Math.sin(m.angle),
         side = -dx * Math.sin(m.angle) + dy * Math.cos(m.angle);
-      if (forward < 0.25) continue;
+      if (forward < 0.25 || (!station && Math.hypot(dx,dy)<.85)) continue;
       const sx = 192 + (side / forward) * 267,
         h = Math.min(430, 210 / forward)*(o.scale??1),
-        im = images[o.art],
         w = (h * im.width) / im.height,
         top =
           108 +
@@ -974,28 +817,7 @@ export async function createMareMission({
           (o.art === "tubo-vapor" && !motion.matches ? Math.sin(t * 2.2 + o.x) * Math.min(3, h * 0.03) : 0) +
           ((o.art === "nulo-operador" || o.art === "nulo-operador-voz") && !motion.matches ? Math.sin(t * 1.25) * Math.min(2, h * 0.02) : 0) +
           (o.art.startsWith("afogado") && !motion.matches ? Math.sin(t * 9 + o.x) * Math.min(2, h * 0.025) : 0);
-      ctx.globalAlpha = Math.max(0.1, 1 - forward / (m.p.details.gerador?40:30));
-      if (o.art === "selo-recompilado") ctx.globalAlpha *= 0.72 + 0.28 * Math.sin(t * 2.4);
-      if (o.art === "portal-mare") ctx.globalAlpha *= fendaOpen(m) ? 0.9 + 0.1 * Math.sin(t * 2.6) : 0.55;
-      if (o.art === "tubo-vapor") {
-        ctx.fillStyle = `rgba(196,236,229,${0.05 + 0.04 * Math.sin(t * 1.7)})`;
-        ctx.fillRect(sx - 2, top - 5, 4, 4);
-      }
-      if (o.art === "nulo-operador-voz") {
-        ctx.globalAlpha *= 0.68 + 0.18 * Math.sin(t * 8.7);
-        ctx.fillStyle = `rgba(112,232,220,${0.08 + 0.04 * Math.sin(t * 5)})`;
-        ctx.fillRect(sx - w * 0.32, top + h * 0.1, w * 0.64, h * 0.8);
-      }
-      if (o.art === "transicao-fenda") ctx.globalAlpha *= 0.8 + 0.2 * Math.sin(t * 2.6);
-      if ((o.kind === "nulo" || o.art === "transicao-fenda" || o.art === "turbina-sala" || o.art === "portal-mare" || o.art === "lampada-industrial" || o.art === "lanterna-sinal") && forward <= depth[Math.max(0, Math.min(383, Math.floor(sx)))] + 0.25) {
-        const glow = ctx.createRadialGradient(sx, top + h * 0.45, 1, sx, top + h * 0.45, Math.max(8, w * 0.55));
-        const tone = o.art === "turbina-sala" || o.art === "lampada-industrial" || o.art === "lanterna-sinal" ? "255,178,92" : o.art === "transicao-fenda" || o.art === "portal-mare" ? "255,197,117" : "113,231,218";
-        glow.addColorStop(0, `rgba(${tone},${o.kind === "nulo" ? ".28" : ".16"})`);
-        glow.addColorStop(1, `rgba(${tone},0)`);
-        ctx.fillStyle = glow;
-        ctx.fillRect(sx - w, top - h * 0.08, w * 2, h * 1.05);
-        if (o.kind === "nulo") { ctx.fillStyle = "rgba(255,198,110,.55)"; ctx.fillRect(sx - 1, top + h * 0.13, 2, 2); }
-      }
+      ctx.globalAlpha = Math.max(0.1, 1 - forward / (m.p.data.includes(systems[1].id)?40:30));
       ctx.fillStyle = "rgba(0,0,0,.34)";
       ctx.beginPath();
       ctx.ellipse(sx, 108 + eye / forward, Math.max(2, w * 0.36), Math.max(1, h * 0.032), 0, 0, Math.PI * 2);
@@ -1025,20 +847,18 @@ export async function createMareMission({
           h,
         );
       }
-      if (o.art === "transicao-fenda" && forward <= depth[Math.max(0, Math.min(383, Math.floor(sx)))] + 0.25) {
-        ctx.save();
-        ctx.globalCompositeOperation = "lighter";
-        ctx.globalAlpha = (motion.matches ? 0.62 : 0.55 + 0.2 * Math.sin(t * 3.4)) * (0.55 + 0.45 * (1 - forward / 30));
-        const rift = ctx.createRadialGradient(sx, top + h * 0.45, 1, sx, top + h * 0.45, Math.max(10, w * 0.8));
-        rift.addColorStop(0, "rgba(180,255,240,.9)");
-        rift.addColorStop(0.32, "rgba(125,246,229,.55)");
-        rift.addColorStop(0.62, "rgba(255,184,96,.28)");
-        rift.addColorStop(1, "rgba(125,246,229,0)");
-        ctx.fillStyle = rift;
-        ctx.fillRect(sx - w, top - h * 0.2, w * 2, h * 1.4);
-        ctx.fillStyle = "rgba(198,255,242,.68)";
-        ctx.fillRect(sx - Math.max(1, w * 0.035), top + h * 0.1, Math.max(2, w * 0.07), h * 0.8);
-        ctx.restore();
+      if (station && sx > 0 && sx < 384 && forward <= depth[sx | 0] + .1) {
+        const k = Math.max(3, Math.min(14, 25/forward));
+        ctx.globalAlpha = 1; ctx.fillStyle = '#101d22';
+        ctx.fillRect(sx-k,top-k*1.5,k*2,k*1.45);
+        ctx.fillStyle = statusColor[status];
+        ctx.fillRect(sx-k,top-1,k*2,2);
+        ctx.textAlign='center'; ctx.font=`bold ${Math.max(6,k)|0}px monospace`;
+        ctx.fillText(o.code,sx,top-3); ctx.textAlign='left';
+        if (scanFlash > 0 && scanned === o) {
+          ctx.globalAlpha=scanFlash/.65; ctx.strokeStyle=statusColor.online;
+          ctx.beginPath(); ctx.arc(sx,top+h*.4,k*(2.4-scanFlash),0,Math.PI*2); ctx.stroke();
+        }
       }
       ctx.globalAlpha = 1;
     }
@@ -1057,27 +877,7 @@ export async function createMareMission({
         ctx.fillRect(-30 + drift, 96, 250, 9);
         ctx.fillRect(170 - drift * 0.7, 107, 260, 6);
       }
-      // Foreground cables and a work bulb: depth in front of the lens.
-      ctx.strokeStyle = "rgba(3,6,6,.92)";
-      ctx.lineWidth = 2;
-      const sway = motion.matches ? 0 : Math.sin(t * 1.3) * 2;
-      ctx.beginPath();
-      ctx.moveTo(292, -4);
-      ctx.quadraticCurveTo(322 + sway, 32, 338 + sway, 66);
-      ctx.stroke();
-      ctx.beginPath();
-      ctx.moveTo(102, -6);
-      ctx.quadraticCurveTo(74 - sway, 24, 58 - sway, 44);
-      ctx.stroke();
-      const bulbX = 338 + sway, bulbY = 66;
-      ctx.fillStyle = "rgba(230,185,112,.12)";
-      ctx.beginPath(); ctx.arc(bulbX, bulbY, 11, 0, Math.PI * 2); ctx.fill();
-      ctx.fillStyle = "rgba(244,210,154,.28)";
-      ctx.fillRect(bulbX - 2, bulbY - 1, 4, 4);
     }
-    ctx.font="9px monospace";ctx.fillStyle="#9bbdb6";
-    const directions=["L","S","O","N"],heading=directions[((Math.round(m.angle/(Math.PI/2))%4)+4)%4];
-    ctx.fillText(`${heading} · BAÍA / ${m.p.details.gerador?"ENERGIA RESTAURADA":"SEM REDE"}`,120,17);
     ctx.fillStyle = "#c0e7da";
     ctx.fillRect(190, 108, 4, 1);
     ctx.fillRect(192, 106, 1, 4);
@@ -1102,29 +902,13 @@ export async function createMareMission({
     if(hurtFlash>0){ctx.fillStyle=`rgba(170,18,52,${.3*hurtFlash/.32})`;ctx.fillRect(0,0,384,216);}
     if(swing>0){const k=swing/.18;ctx.strokeStyle=`rgba(198,242,231,${.65*k})`;ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(118,186);ctx.lineTo(206,140);ctx.lineTo(268,72);ctx.stroke();ctx.strokeStyle=`rgba(198,242,231,${.22*k})`;ctx.lineWidth=6;ctx.stroke();}
     if(m.p.containment.lanterna){ctx.fillStyle="rgba(104,206,170,.035)";ctx.fillRect(0,0,384,216);}
-    if(m.finished){
-      const k=Math.min(1,endClock/2.4);
-      ctx.globalAlpha=0.55*(1-k*0.45);
-      ctx.drawImage(images["transicao-fenda"],192-50-k*26,108-90-k*34,100+k*52,180+k*68);
-      ctx.globalAlpha=1;
-      const detailCount=Object.keys(m.p.details).filter(k=>details.some(d=>d.id===k)).length;
-      ctx.fillStyle="rgba(3,9,13,.94)";ctx.fillRect(52,46,280,120);
-      ctx.strokeStyle="#537379";ctx.strokeRect(52.5,46.5,279,119);
-      ctx.font="11px monospace";ctx.fillStyle="#c0e7da";ctx.fillText("RELATÓRIO DE ECO",68,64);
-      ctx.font="9px monospace";ctx.fillStyle="#9bbdb6";
-      ctx.fillText(`DESCOMPASSO ${m.p.rank}/4 · MEMÓRIAS ${m.p.data.length}/3`,68,82);
-      ctx.fillText(`REGISTROS ${detailCount}/8 · LORE ${m.p.lore.length}/6 · NULO ${m.p.nulo.length}/4`,68,96);
-      ctx.fillText(`BALIZA ${m.p.checkpoint==="boia"?"VINCULADA":"NÃO VINCULADA"} · FÔLEGO ${Math.round(m.stamina)}`,68,110);
-      ctx.fillStyle="#e0b56a";ctx.fillText(nuloReportLine(m),68,128);
-      ctx.fillStyle="#c0e7da";ctx.fillText("A ponte do Limiar aceitará seu eco.",68,146);
-    }
     if(intro>0){ctx.fillStyle=`rgba(0,0,0,${Math.min(1,intro/1.6)})`;ctx.fillRect(0,0,384,216);}
     if(m.finished&&endClock>3.15){ctx.fillStyle=`rgba(0,0,0,${Math.min(1,(endClock-3.15)/.85)})`;ctx.fillRect(0,0,384,216);}
     // VHS/PSX finish: soft lens vignette, warm tape grade, scanlines, grain
     // and a low-bitrate timestamp. The flashlight is a screen-space cone so
     // the bay edges fall away even in the open yard.
     {
-      const reach = lampOn(m) ? 268 : 236;
+      const reach = m.lampOn ? 268 : 205;
       const flash = ctx.createRadialGradient(192, 114, 16, 192, 116, reach);
       flash.addColorStop(0, "rgba(0,0,0,0)");
       flash.addColorStop(0.42, "rgba(0,0,0,.08)");
@@ -1181,13 +965,11 @@ export async function createMareMission({
         ctx.fillText(`CAM 02  ${String(Math.floor(secs / 60)).padStart(2, "0")}:${String(secs % 60).padStart(2, "0")}`, 300, 16);
       }
     }
-    if(mapOpen) drawMap();
     ctx.restore();
   }
   function render() {
     if (world3d?.available) {
       m.shake = shake;
-      world3d.syncProps(signals().filter((s) => s.label && s.kind !== "nulo"));
       world3d.render({
         ctx,
         m,
@@ -1198,7 +980,6 @@ export async function createMareMission({
         endClock,
         enemies,
         nulo: nuloEntity(m, t),
-        activeProps: signals().filter((s) => s.label && s.kind !== "nulo"),
         reducedMotion: motion.matches,
       });
       if (intro > 0.55 && !m.finished && !mapOpen) {
@@ -1218,10 +999,9 @@ export async function createMareMission({
         ctx.stroke();
         ctx.restore();
       }
-      if (mapOpen) drawMap();
-      return;
-    }
-    renderLegacy();
+    } else renderLegacy();
+    if (m.finished && endClock > .55) drawBayReport(ctx, m);
+    else if (mapOpen && !m.finished) drawServiceMap(ctx, m);
   }
   return {
     mission: m,
@@ -1233,14 +1013,10 @@ export async function createMareMission({
       frameDt = dt;
       t += dt;
       activeFrame=mode==="3d";
-      shell.classList.toggle("recompilado", lote5Complete(m));
-      shell.classList.toggle("fenda-aberta", fendaOpen(m));
+      shell.classList.toggle('fenda-aberta', currentSite(m) === anchor || m.p.completed);
+      scanFlash = Math.max(0, scanFlash-dt);
       shake=Math.max(0,shake-dt);
       if(mode!=="2d")intro=Math.max(0,intro-dt);
-      if(activeFrame&&!m.finished&&m.p.rank!==lastRank){
-        lastRank=m.p.rank;
-        if(m.p.rank>=4){message.textContent+=" A FENDA DE RECOMPILAÇÃO ABRIU A SUDESTE.";tone(660,.9,.024,"sine");tone(110,.5,.02,"sawtooth");}
-      }
       if (mode === "3d" && !m.finished) {
         m.p.elapsed += dt;
         coastAmbient(dt, m);
@@ -1286,27 +1062,20 @@ export async function createMareMission({
           move(m, Math.cos(m.dashDir) * 6.4 * dt, Math.sin(m.dashDir) * 6.4 * dt);
           shake = Math.max(shake, 0.08);
         }
-        // Lanterna com carga: dura a exploração, recarrega no terminal.
-        const atTerminal = Math.hypot(m.x - 16, m.y - 16) < 4.2;
-        if (atTerminal) m.lamp = Math.min(100, m.lamp + dt * 16);
+        // O gerador online também alimenta a recarga local da lanterna.
+        const charging = m.p.data.includes(systems[1].id) && Math.hypot(m.x-systems[1].x, m.y-systems[1].y) < 4.2;
+        if (charging) m.lamp = Math.min(100, m.lamp + dt * 16);
         else if (m.lampOn) m.lamp = Math.max(0, m.lamp - dt * 0.32);
         m.p.lamp = m.lamp;
         m.p.lampOn = m.lampOn;
         if (m.lamp <= 0.5 && m.lampOn) {
           m.lampOn = false;
-          message.textContent = "A lanterna morre. O terminal central pode recarregá-la.";
+          message.textContent = "Sem carga. O gerador auxiliar recarrega a lanterna quando está online.";
           tone(74, 0.7, 0.02, "sawtooth");
         }
         // Respirar agachado, longe de caça, alivia a tensão.
         const hunterNear = enemies.some((e) => !e.dead && Math.hypot(e.x - m.x, e.y - m.y) < 11);
         if (!hunterNear && m.crouched && m.noise < 0.2) m.stress = Math.max(0, m.stress - dt * 1.6);
-        // Containment hazards and the lantern are local trade-offs, never global health.
-        if(hazardProp&&!m.p.containment.cabo&&Math.hypot(hazardProp.x-m.x,hazardProp.y-m.y)<1.3){
-          m.stress=Math.min(100,m.stress+dt*13);
-          if((hazardClock+=dt)>1.1){hazardClock=0;tone(120+Math.random()*40,.18,.02,"sawtooth");}
-        }
-        if(lightProp&&m.p.containment.lanterna&&Math.hypot(lightProp.x-m.x,lightProp.y-m.y)<6)
-          m.stress=Math.max(0,m.stress-dt*2.6);
         const stressBefore=m.stress;
         if (m.p.elapsed > 45) {
           const phases=enemies.map(e=>e.phase);
@@ -1324,12 +1093,13 @@ export async function createMareMission({
         }
         if(m.stress>stressBefore+2){hurtFlash=.32;shake=Math.max(shake,.2);}
         if (m.stress >= 100) {
-          m.x =m.p.checkpoint==="boia"?17.5:16;
-          m.y = m.p.checkpoint==="boia"?24.5:19;
+          // Uma baliza vinculada em partida anterior continua sendo respeitada.
+          m.x = m.p.checkpoint === 'boia' ? 17.5 : entry.x;
+          m.y = m.p.checkpoint === 'boia' ? 24.5 : entry.y;
           m.vx=m.vy=0;m.ward=3;
           m.stress = 25;
           message.textContent =
-            "NEXO recuperou seu eco no terminal. Nenhum dado ou item perdido.";
+            "NEXO recuperou seu eco. Os sistemas ativos foram preservados.";
           tone(65, 0.7);
         }
         if (Math.hypot(m.vx, m.vy) > 0.4 && t - lastStep > (sprint?.32:crouch?.8:.55)) {
@@ -1339,9 +1109,11 @@ export async function createMareMission({
           if(surface==="areia")noiseBurst(.11,crouch?.002:.006,520,-.1);
         }
         if (m.p.elapsed >= 600) {
-          m.finished = true;
-          message.textContent =
-            "NULO: dez minutos. A âncora foi desviada. A culpa não é o fim: encontre o Hub além do plano.";
+          m.timedOut = m.finished = true;
+          m.p.elapsed = 0; // outra janela na próxima visita; não apagar sistemas nem conceder vitória
+          mapOpen = false;
+          message.textContent = 'Janela encerrada. Retirada de emergência à Fenda; reentre para retomar.';
+          tone(82, 1.2, .025, 'triangle');
         }
         if ((saveClock += dt) > 5) {
           saveClock = 0;
@@ -1380,8 +1152,8 @@ export async function createMareMission({
           noiseBurst(wood?.07:.05, m.crouched?.0025:.0045+(wood?.001:0), wood?760:420, Math.random()*.5-.25);
           tone(wood?78:58, .06, m.crouched?.003:.006, "triangle");
         }
-        if((beatClock+=dt)>(m.finished?.34:m.stress>30||nearEnemy<11?.46:.85)){beatClock=0;beat++;const notes=[55,65.406,73.416,61.735];tone(notes[Math.floor(beat/8)%4],1.5,.012,"triangle");if(m.stress>20||m.finished)tone(beat%2?42:84,.13,.025,"sine");if(m.finished)tone(220*(1+beat%3),.3,.014,"sawtooth");
-          if(lote5Complete(m)&&beat%4===0)tone(330+beat%3*55,.55,.009,"sine");}
+        if((beatClock+=dt)>(m.timedOut?.34:m.stress>30||nearEnemy<11?.46:.85)){beatClock=0;beat++;const notes=[55,65.406,73.416,61.735];tone(notes[Math.floor(beat/8)%4],1.5,.012,"triangle");if(m.stress>20||m.timedOut)tone(beat%2?42:84,.13,.025,"sine");if(m.timedOut)tone(220*(1+beat%3),.3,.014,"sawtooth");
+          if(m.p.data.length===3&&beat%4===0)tone(330+beat%3*55,.55,.009,"sine");}
         if (surfGain)
           surfGain.gain.setTargetAtTime(
             0.045 + Math.sin(t * 0.5) * 0.014 + m.stress / 4000,
@@ -1398,7 +1170,7 @@ export async function createMareMission({
           radioClock = 0;
           tone(85 + m.stress * 3, 0.22, 0.012, "sawtooth");
         }
-        const lamp = lote7Props[0], rift = lote6Props.find((p) => p.id === "fenda6");
+        const lamp = systems[1], rift = anchor;
         if (lamp && Math.hypot(m.x - lamp.x, m.y - lamp.y) < 7 && (lampClock += dt) > 2.2) {
           lampClock = 0;
           tone(118, .12, .007, "sawtooth");
@@ -1428,134 +1200,62 @@ export async function createMareMission({
       }
       if (m.finished && mode === "3d") {
         endClock += dt;
-        shell.classList.toggle("mare-overload", endClock > 0.2 && endClock < 3.4);
-        if (endClock > 0.2 && overloadClock === 0) {
-          overloadClock = 0.21;
-          message.textContent = "SOBRECARGA — o Operador Nulo dobra a própria silhueta. Não solte o eco.";
-          tone(44, 2.2, 0.03, "sawtooth");
-          tone(88, 1.1, 0.018, "triangle");
-        }
-        if (endClock > 1.15 && overloadClock < 1.2) {
-          overloadClock = 1.21;
-          message.textContent = "NULO: “Você não abre a porta. Você vira a porta.”";
-          noiseBurst(0.8, 0.02, 1600, 0);
-          tone(233, 0.9, 0.022, "square");
-        }
-        if (endClock > 2.4 && overloadClock < 2.5) {
-          overloadClock = 2.51;
-          message.textContent = "A fenda aceita o registro. Ruptura dimensional em curso.";
-          tone(660, 1.2, 0.025, "sine");
-          tone(1320, 0.8, 0.008, "triangle");
-        }
-        if (Math.random() < dt * 6) tone(60 + Math.random() * 900, 0.12, 0.006, "square");
-        if (endClock > 4) {
-          m.p.completed = true;
-          save();
-          complete();
-          exit();
-        }
+        shell.classList.toggle('mare-overload', m.timedOut && endClock < 3.4);
+        if (endClock > 4 && !exitRequested) { exitRequested = true; exit(); }
       }
-      readout.textContent = `DESCOMPASSO LOCAL ${m.p.rank}/4 · DADOS ${m.p.data.length}/3 · ${Math.max(0, 600 - Math.floor(m.p.elapsed))}s · FÔLEGO ${Math.round(m.stamina)} · ${m.crouched?"SILENCIOSO":m.noise>.8?"PASSOS ALTOS":"CAMINHANDO"} · REGISTROS ${Object.keys(m.p.details).filter(k=>details.some(d=>d.id===k)).length}/8 · LORE ${m.p.lore.length}/6 · TENSÃO ${Math.round(m.stress)} · AMEAÇAS ${enemies.filter(e=>!e.dead&&e.phase!=="dissolve").length}/${enemies.length} · Q ${Math.ceil(m.cooldown)}s · LANTERNA ${m.lampOn ? Math.round(m.lamp) + "%" : "OFF"} · ESQUIVA ${m.dashCd > 0 ? Math.ceil(m.dashCd) + "s" : "PRONTA"} · ${lote5Readout(m)} · ${lote6Readout(m)} · ${lote7Readout(m)} · ${lote8Readout(m)} · ${lote9Readout(m)} · ${lote11Readout(m)} · ${lote10Readout(enemies)}`;
-      // Próximo passo: um chip, uma ação, uma distância. O resto é silêncio.
-      const hint = lote11Hint(m);
-      const next = nextObjective(m, { fendaOpen: fendaOpen(m), side: hint });
-      if (hud.next) {
-        if (next) {
-          hud.next.hidden = false;
-          hud.nextAction.textContent = next.action;
-          hud.nextDetail.textContent = next.label ?? "";
-          hud.nextCount.textContent = next.need > 1 ? `${next.have}/${next.need}` : "";
-          hud.nextDist.textContent = next.distance != null ? `${next.distance}m` : "";
-          hud.nextGlyph.textContent = next.have >= next.need ? "▲" : "◆";
-        } else hud.next.hidden = true;
-      }
+      const next = nextObjective(m);
+      readout.textContent = `ESTRUTURA HÚMIDA ${m.p.data.length}/3 · DOMÍNIO LOCAL ${m.p.rank}/4 · AMEAÇAS ${enemies.filter(e=>!e.dead&&e.phase!=='dissolve').length}/${enemies.length}`;
+      hud.next.hidden = !next || mapOpen;
+      if (next) {
+        hud.nextAction.textContent = next.action;
+        hud.nextDetail.textContent = next.label;
+        hud.nextCount.textContent = `${next.have}/${next.need}`;
+        hud.nextDist.textContent = `${next.distance} m`;
+        const relative = relativeBearing(m, next.target);
+        hud.nextArrow.style.transform = `rotate(${relative}deg)`;
+        hud.target.style.display = Math.abs(relative) < 92 ? 'block' : 'none';
+        hud.target.style.left = `${50 + Math.max(-50, Math.min(50, relative/92*50))}%`;
+        hud.target.classList.toggle('chegou', next.distance <= 2);
+      } else hud.target.style.display = 'none';
       world3d.setMarker?.(next?.target ?? null);
-      // A carta de maré acrescenta um alvo concreto à linha de objetivo.
-      objective.textContent = hint ? `${objectiveLine(m)} · ${hint}` : objectiveLine(m);
-      const near = nearestSignal(m,signals());
-      const nearCue = near ? promptFor(near) : null;
-      aside.dataset.kind = nearCue?.kind ?? "";
-      aside.textContent = m.finished
-        ? ""
-        : nearCue
-        ? nearCue.detail
-          ? `${nearCue.line} — ${nearCue.detail}`
-          : nearCue.line
-        : m.ward > 0
-          ? state.progress.archetype === "mare_astral"
-            ? sites
-                .filter((s) => !m.p.data.includes(s.id))
-                .map(
-                  (s) =>
-                    `${s.label}: ${Math.round(Math.hypot(s.x - m.x, s.y - m.y))}m`,
-                )
-                .join(" · ")
-            : "HABILIDADE ATIVA"
-          : m.idle > 12
-            ? "NULO: eu sei onde você espera."
-            : "";
-      const secs = Math.max(0, 600 - Math.floor(m.p.elapsed));
-      const headingIndex = ((Math.round(m.angle / (Math.PI / 2)) % 4) + 4) % 4;
-      const dirs = ["L", "S", "O", "N"];
-      if (hud.heading) hud.heading.textContent = dirs[headingIndex];
-      if (hud.bearing) hud.bearing.textContent = `${String(Math.round(((90 + m.angle * 180 / Math.PI) % 360 + 360) % 360)).padStart(3, "0")}°`;
-      if (hud.target) {
-        const goal = m.finished ? null : next?.target ?? { x: 24.5, y: 24.5 };
-        if (goal) {
-          const bearingDeg = Math.atan2(goal.y - m.y, goal.x - m.x) * 180 / Math.PI;
-          const relative = ((bearingDeg - (90 + m.angle * 180 / Math.PI) + 540) % 360) - 180;
-          hud.target.style.display = Math.abs(relative) < 92 ? "block" : "none";
-          hud.target.style.left = `${50 + Math.max(-50, Math.min(50, (relative / 92) * 50))}%`;
-          hud.target.classList.toggle("chegou", Math.hypot(goal.x - m.x, goal.y - m.y) < 4);
-        } else hud.target.style.display = "none";
-      }
-      if (hud.nextArrow) {
-        if (next?.target) {
-          const bearingDeg = Math.atan2(next.target.y - m.y, next.target.x - m.x) * 180 / Math.PI;
-          const relative = ((bearingDeg - (90 + m.angle * 180 / Math.PI) + 540) % 360) - 180;
-          hud.nextArrow.style.opacity = Math.abs(relative) < 26 ? "1" : "0.62";
-          hud.nextArrow.style.transform = `rotate(${Math.max(-90, Math.min(90, relative))}deg)`;
-        } else hud.nextArrow.style.opacity = "0";
-      }
-      // O terminal muda de cara conforme as memórias entram.
-      const terminalStep = m.p.rank >= 4 || fendaOpen(m) ? 3 : Math.min(3, m.p.data.length);
-      if (terminalStep !== lastTerminalStep) {
-        lastTerminalStep = terminalStep;
-        world3d.setTerminalState?.(terminalStep);
-      }
+      const cue = mapOpen ? null : promptFor(m, scannerTarget(m));
+      aside.dataset.kind = cue?.kind ?? '';
+      hud.scanner.classList.toggle('em-alcance', cue?.kind === 'mission' || cue?.kind === 'lore');
+      // É uma região viva: não anunciar o mesmo prompt sessenta vezes por segundo.
+      if (aside.textContent !== (cue?.line ?? '')) aside.textContent = cue?.line ?? '';
+      const secs = m.timedOut ? 0 : Math.max(0, 600-Math.floor(m.p.elapsed));
+      const deg = ((90+m.angle*180/Math.PI)%360+360)%360;
+      hud.heading.textContent = ['N','L','S','O'][Math.round(deg/90)%4];
+      hud.bearing.textContent = `${String(Math.round(deg)%360).padStart(3,'0')}°`;
       if (hud.tension) hud.tension.style.width = `${Math.max(0, Math.min(100, m.stress))}%`;
       if (hud.tensionValue) hud.tensionValue.textContent = String(Math.round(m.stress));
       if (hud.stamina) hud.stamina.style.width = `${Math.max(0, Math.min(100, m.stamina))}%`;
       if (hud.clock) hud.clock.textContent = `${String(Math.floor(secs / 60)).padStart(2, "0")}:${String(secs % 60).padStart(2, "0")}`;
       if (hud.torch) {
-        hud.torch.textContent = m.finished ? "FALHA" : !m.lampOn ? "OFF" : `${Math.round(m.lamp)}%`;
-        hud.torch.classList.toggle("falha", m.finished || !m.lampOn || m.lamp < 18);
+        hud.torch.textContent = !m.lampOn ? "OFF" : `${Math.round(m.lamp)}%`;
+        hud.torch.classList.toggle("falha", !m.lampOn || m.lamp < 18);
       }
       const zoneNow = zoneOf(m);
       coastZone = zoneNow;
       shell.dataset.zone = zoneNow;
       if (hud.zone) {
-        const zoneNames = { pier: "PONTO ZERO", terminal: "TERMINAL", anchor: "ÂNCORA", surf: "ARREBENTAÇÃO", fenda: "FENDA", praia: "PRAIA" };
-        hud.zone.textContent = m.finished ? "FENDA" : zoneNames[zoneNow] ?? "PRAIA";
+        const zoneNames = { pier: "PÍER DE ENTRADA", terminal: "GALPÕES", anchor: "ESTAÇÃO DA ÂNCORA", surf: "ARREBENTAÇÃO", fenda: "FENDA", praia: "PRAIA" };
+        hud.zone.textContent = m.finished ? (m.timedOut ? "RETIRADA" : "PONTE ESTÁVEL") : zoneNames[zoneNow] ?? "PRAIA";
       }
       const liveEnemies = enemies.filter((e) => !e.dead && e.phase !== "dissolve");
       const nearestEnemy = Math.min(99, ...liveEnemies.map((e) => Math.hypot(e.x - m.x, e.y - m.y)));
       const threatLevel = Math.max(0, Math.min(4, Math.round((1 - Math.min(1, nearestEnemy / 17)) * 4) + (m.stress > 72 ? 1 : 0)));
       hud.threat.forEach((bar, i) => bar.classList.toggle("on", i < threatLevel));
       shell.dataset.threat = String(threatLevel);
-      const memories = m.p.data.length;
-      const terminalDone = m.p.rank >= 4 || fendaOpen(m);
-      hud.steps.forEach((step) => {
-        const id = step.dataset.step;
-        const done = id === "memorias" ? memories >= 3 : id === "terminal" ? terminalDone : m.finished;
-        const active = id === "memorias" ? memories < 3 : id === "terminal" ? memories >= 3 && !terminalDone : terminalDone && !m.finished;
-        step.classList.toggle("feito", done);
-        step.classList.toggle("ativo", active);
-        if (id === "memorias") step.textContent = `MEMÓRIAS ${Math.min(3, memories)}/3`;
+      hud.steps.forEach((step,i) => {
+        const status = siteStatus(m, systems[i]);
+        step.classList.toggle('feito', status === 'online');
+        step.classList.toggle('ativo', status === 'ready');
+        step.setAttribute('aria-label', `${systems[i].label}: ${status === 'online' ? 'ativo' : status === 'ready' ? 'disponível' : 'sem rede'}`);
       });
       shell.classList.toggle("mare-abertura", intro > 0.45 && !m.finished);
       shell.classList.toggle("mare-mapa", mapOpen);
-      shell.classList.toggle("mare-colapso", m.finished && endClock > 3.2);
+      shell.classList.toggle("mare-colapso", m.timedOut && endClock > 3.2);
       if (zoneNow !== lastZoneShown) {
         lastZoneShown = zoneNow;
         zoneClock = 1.8;
@@ -1566,10 +1266,10 @@ export async function createMareMission({
       zoneClock = Math.max(0, zoneClock - dt);
       if (!zoneClock) shell.classList.remove("mare-virada");
       if (hud.noise) hud.noise.textContent = m.crouched ? "SILÊNCIO" : m.noise > 0.8 ? "ALTO" : m.noise > 0.2 ? "PASSOS" : "QUIETO";
-      const nearestSite = Math.min(...sites.filter((s) => !m.p.data.includes(s.id)).map((s) => Math.hypot(s.x - m.x, s.y - m.y)), 30);
+      const nearestSite = next?.distance ?? 0;
       const barsOn = Math.max(1, Math.min(4, Math.round((1 - nearestSite / 30) * 4)));
       hud.signalBars.forEach((bar, i) => bar.classList.toggle("on", i < barsOn));
-      if (hud.signalText) hud.signalText.textContent = m.finished ? "ROMPIDO" : barsOn >= 3 ? "FORTE" : barsOn === 2 ? "INSTÁVEL" : "FRACO";
+      if (hud.signalText) hud.signalText.textContent = m.finished ? (m.timedOut ? "PERDIDO" : "ESTÁVEL") : barsOn >= 3 ? "FORTE" : barsOn === 2 ? "INSTÁVEL" : "FRACO";
       shell.classList.toggle("mare-tenso", m.stress > 62);
       shell.classList.toggle("mare-cansado", m.stamina < 25);
       shell.classList.toggle("mare-escuro", m.lampOn === false);
@@ -1583,6 +1283,7 @@ export async function createMareMission({
       disposed = true;
       abort.abort();
       keys.clear();
+      if (document.pointerLockElement === canvas) document.exitPointerLock?.();
       drone?.stop();
       surf?.stop();
       audio?.close().catch(() => {});
